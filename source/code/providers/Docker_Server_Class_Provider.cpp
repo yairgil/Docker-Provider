@@ -47,8 +47,8 @@ void Docker_Server_Class_set(Docker_Server_Class& inst, cJSON* version, cJSON* i
     inst.Images_value(cJSON_Get(info, "Images")->valuedouble);
     inst.InitPath_value(cJSON_Get(info, "InitPath")->valuestring);
     inst.MemTotal_value(cJSON_Get(info, "MemTotal")->valuedouble);
-    inst.MemLimit_value(cJSON_Get(info, "MemoryLimit")->valuedouble);
-    inst.SwapLimit_value(cJSON_Get(info, "SwapLimit")->valuedouble);
+    inst.MemLimit_value(cJSON_Get(info, "MemoryLimit")->valueint);
+    inst.SwapLimit_value(cJSON_Get(info, "SwapLimit")->valueint);
     inst.Name_value(cJSON_Get(info, "Name")->valuestring);
     inst.NCPU_value(cJSON_Get(info, "NCPU")->valuedouble);
     return;

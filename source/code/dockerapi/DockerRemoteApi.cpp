@@ -67,38 +67,37 @@ void createConnection(unsigned int n, vector<int>& fds) {
 
 cJSON* parseMultiJson(string &raw_response)
 {
-	if (raw_response.find("\r\n0\r\n\r\n") == (int)std::string::npos) {
+	if (raw_response.find("\r\n0\r\n\r\n") == std::string::npos) {
 		return NULL;
 	}
 
-	int json_begin = 0;
+	std::size_t json_begin = 0;
 	string json_array = "[";
 	while (true) {
 		json_begin = raw_response.find("\r\n{\"", json_begin);
-		if (json_begin == (int)std::string::npos) {
+		if (json_begin == std::string::npos) {
 			break;
 		}
 		json_begin += 2;
-		int json_end = raw_response.find("}\n\r\n", json_begin);
+		std::size_t json_end = raw_response.find("}\n\r\n", json_begin);
+                if (json_end == std::string::npos) {
+                        break;
+                }
 		if (json_array.length() > 1) {
 			json_array+=",";
-		}
-		if (json_end == (int)std::string::npos) {
-			break;
 		}
 		json_array = json_array+=raw_response.substr(json_begin, json_end - json_begin + 1);
 	}
 	json_array+="]";
 	return cJSON_Parse(json_array.c_str());
-
 }
 
 cJSON* parseJson(string &raw_response) {
-	int json_begin = raw_response.find("\r\n{\""); //Json object
-	if (json_begin == (int)std::string::npos) {
+	std::size_t json_begin = raw_response.find("\r\n{\""); //Json object
+	if (json_begin == std::string::npos) {
 		json_begin = raw_response.find("\r\n["); //Json array
 	}
-	if (json_begin != (int)std::string::npos) {
+	if (json_begin != std::string::npos) {
 		return  cJSON_Parse(raw_response.c_str() + json_begin);
 	}
 	return NULL;
@@ -140,6 +139,7 @@ void  getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsi
 		if (raw_response.length() > 0 && response[start + i] == NULL) {
 			throw string("Fail to parse data:`" + raw_response + "` to json" + " \n Request :" + request[start + i]);
 		}
+                std::cout<<raw_response<<"\r\n";
 	}
 
 }
@@ -147,7 +147,7 @@ void  getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsi
 /*
 response should be empty when pass to this function
 */
-vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson = false) {
+vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson) {
 	vector<cJSON*> response;
 
 	for (unsigned int i = 0; i < request.size(); i += 100) {
@@ -179,3 +179,4 @@ vector<string> listContainer(bool all) {
 	cJSON_Delete(response[0]);
 	return ids;
 }
+

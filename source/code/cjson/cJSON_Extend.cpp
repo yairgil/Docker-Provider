@@ -36,7 +36,7 @@ cJSON* cJSON_Get(cJSON* json, string  name) {
 string cJSON_GetChildName(cJSON* cjson) {
     cJSON* child = cjson->child;
     string ret = "";
-    if (child != NULL) {
+    while (child != NULL) {
         ret = ret + child->string + " ";
         child = child->next;
     }
