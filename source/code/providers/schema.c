@@ -8,10 +8,12 @@
 */
 #include <ctype.h>
 #include <MI.h>
-#include "Docker_ContainerStatistics.h"
-#include "Docker_Server.h"
-#include "Docker_ContainerProcessorStatistics.h"
-#include "Docker_Container.h"
+#include "Container_ImageInventory.h"
+#include "Container_DaemonEvent.h"
+#include "Container_Server.h"
+#include "Container_Container.h"
+#include "Container_ContainerStatistics.h"
+#include "Container_ContainerProcessorStatistics.h"
 
 /*
 **==============================================================================
@@ -179,741 +181,172 @@ MI_CONST MI_ClassDecl CIM_ManagedElement_rtti =
 /*
 **==============================================================================
 **
-** CIM_StatisticalData
+** Container_ImageInventory
 **
 **==============================================================================
 */
 
-static MI_CONST MI_Char* CIM_StatisticalData_InstanceID_Override_qual_value = MI_T("InstanceID");
-
-static MI_CONST MI_Qualifier CIM_StatisticalData_InstanceID_Override_qual =
+/* property Container_ImageInventory.Image */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_Image_prop =
 {
-    MI_T("Override"),
-    MI_STRING,
-    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
-    &CIM_StatisticalData_InstanceID_Override_qual_value
-};
-
-static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_InstanceID_quals[] =
-{
-    &CIM_StatisticalData_InstanceID_Override_qual,
-};
-
-/* property CIM_StatisticalData.InstanceID */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_InstanceID_prop =
-{
-    MI_FLAG_PROPERTY|MI_FLAG_KEY, /* flags */
-    0x0069640A, /* code */
-    MI_T("InstanceID"), /* name */
-    CIM_StatisticalData_InstanceID_quals, /* qualifiers */
-    MI_COUNT(CIM_StatisticalData_InstanceID_quals), /* numQualifiers */
+    MI_FLAG_PROPERTY, /* flags */
+    0x00696505, /* code */
+    MI_T("Image"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(CIM_StatisticalData, InstanceID), /* offset */
-    MI_T("CIM_ManagedElement"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
+    offsetof(Container_ImageInventory, Image), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
     NULL,
 };
 
-static MI_CONST MI_Char* CIM_StatisticalData_ElementName_Override_qual_value = MI_T("ElementName");
-
-static MI_CONST MI_Qualifier CIM_StatisticalData_ElementName_Override_qual =
+/* property Container_ImageInventory.Repository */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_Repository_prop =
 {
-    MI_T("Override"),
-    MI_STRING,
-    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
-    &CIM_StatisticalData_ElementName_Override_qual_value
-};
-
-static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_ElementName_quals[] =
-{
-    &CIM_StatisticalData_ElementName_Override_qual,
-};
-
-/* property CIM_StatisticalData.ElementName */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_ElementName_prop =
-{
-    MI_FLAG_PROPERTY|MI_FLAG_REQUIRED, /* flags */
-    0x0065650B, /* code */
-    MI_T("ElementName"), /* name */
-    CIM_StatisticalData_ElementName_quals, /* qualifiers */
-    MI_COUNT(CIM_StatisticalData_ElementName_quals), /* numQualifiers */
+    MI_FLAG_PROPERTY, /* flags */
+    0x0072790A, /* code */
+    MI_T("Repository"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(CIM_StatisticalData, ElementName), /* offset */
-    MI_T("CIM_ManagedElement"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
+    offsetof(Container_ImageInventory, Repository), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
     NULL,
 };
 
-/* property CIM_StatisticalData.StartStatisticTime */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_StartStatisticTime_prop =
+/* property Container_ImageInventory.ImageTag */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_ImageTag_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
-    0x00736512, /* code */
-    MI_T("StartStatisticTime"), /* name */
+    0x00696708, /* code */
+    MI_T("ImageTag"), /* name */
     NULL, /* qualifiers */
     0, /* numQualifiers */
-    MI_DATETIME, /* type */
+    MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(CIM_StatisticalData, StartStatisticTime), /* offset */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
+    offsetof(Container_ImageInventory, ImageTag), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
     NULL,
 };
 
-/* property CIM_StatisticalData.StatisticTime */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_StatisticTime_prop =
+/* property Container_ImageInventory.Computer */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_Computer_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
-    0x0073650D, /* code */
-    MI_T("StatisticTime"), /* name */
+    0x00637208, /* code */
+    MI_T("Computer"), /* name */
     NULL, /* qualifiers */
     0, /* numQualifiers */
-    MI_DATETIME, /* type */
+    MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(CIM_StatisticalData, StatisticTime), /* offset */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
+    offsetof(Container_ImageInventory, Computer), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
     NULL,
 };
 
-static MI_CONST MI_Datetime CIM_StatisticalData_SampleInterval_value = {0,{{0,0,0,0,0}}};
-
-/* property CIM_StatisticalData.SampleInterval */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_SampleInterval_prop =
+/* property Container_ImageInventory.Running */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_Running_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
-    0x00736C0E, /* code */
-    MI_T("SampleInterval"), /* name */
+    0x00726707, /* code */
+    MI_T("Running"), /* name */
     NULL, /* qualifiers */
     0, /* numQualifiers */
-    MI_DATETIME, /* type */
+    MI_UINT32, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(CIM_StatisticalData, SampleInterval), /* offset */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    &CIM_StatisticalData_SampleInterval_value,
+    offsetof(Container_ImageInventory, Running), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
+    NULL,
 };
 
-static MI_PropertyDecl MI_CONST* MI_CONST CIM_StatisticalData_props[] =
+/* property Container_ImageInventory.Stopped */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_Stopped_prop =
 {
-    &CIM_StatisticalData_InstanceID_prop,
+    MI_FLAG_PROPERTY, /* flags */
+    0x00736407, /* code */
+    MI_T("Stopped"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ImageInventory, Stopped), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ImageInventory.Failed */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_Failed_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00666406, /* code */
+    MI_T("Failed"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ImageInventory, Failed), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ImageInventory.Paused */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_Paused_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00706406, /* code */
+    MI_T("Paused"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ImageInventory, Paused), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
+    NULL,
+};
+
+static MI_PropertyDecl MI_CONST* MI_CONST Container_ImageInventory_props[] =
+{
+    &CIM_ManagedElement_InstanceID_prop,
     &CIM_ManagedElement_Caption_prop,
     &CIM_ManagedElement_Description_prop,
-    &CIM_StatisticalData_ElementName_prop,
-    &CIM_StatisticalData_StartStatisticTime_prop,
-    &CIM_StatisticalData_StatisticTime_prop,
-    &CIM_StatisticalData_SampleInterval_prop,
+    &CIM_ManagedElement_ElementName_prop,
+    &Container_ImageInventory_Image_prop,
+    &Container_ImageInventory_Repository_prop,
+    &Container_ImageInventory_ImageTag_prop,
+    &Container_ImageInventory_Computer_prop,
+    &Container_ImageInventory_Running_prop,
+    &Container_ImageInventory_Stopped_prop,
+    &Container_ImageInventory_Failed_prop,
+    &Container_ImageInventory_Paused_prop,
 };
 
-/* parameter CIM_StatisticalData.ResetSelectedStats(): SelectedStatistics */
-static MI_CONST MI_ParameterDecl CIM_StatisticalData_ResetSelectedStats_SelectedStatistics_param =
+static MI_CONST MI_ProviderFT Container_ImageInventory_funcs =
 {
-    MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
-    0x00737312, /* code */
-    MI_T("SelectedStatistics"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_STRINGA, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData_ResetSelectedStats, SelectedStatistics), /* offset */
-};
-
-/* parameter CIM_StatisticalData.ResetSelectedStats(): MIReturn */
-static MI_CONST MI_ParameterDecl CIM_StatisticalData_ResetSelectedStats_MIReturn_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
-    0x006D6E08, /* code */
-    MI_T("MIReturn"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData_ResetSelectedStats, MIReturn), /* offset */
-};
-
-static MI_ParameterDecl MI_CONST* MI_CONST CIM_StatisticalData_ResetSelectedStats_params[] =
-{
-    &CIM_StatisticalData_ResetSelectedStats_MIReturn_param,
-    &CIM_StatisticalData_ResetSelectedStats_SelectedStatistics_param,
-};
-
-/* method CIM_StatisticalData.ResetSelectedStats() */
-MI_CONST MI_MethodDecl CIM_StatisticalData_ResetSelectedStats_rtti =
-{
-    MI_FLAG_METHOD, /* flags */
-    0x00727312, /* code */
-    MI_T("ResetSelectedStats"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    CIM_StatisticalData_ResetSelectedStats_params, /* parameters */
-    MI_COUNT(CIM_StatisticalData_ResetSelectedStats_params), /* numParameters */
-    sizeof(CIM_StatisticalData_ResetSelectedStats), /* size */
-    MI_UINT32, /* returnType */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    &schemaDecl, /* schema */
-    NULL, /* method */
-};
-
-static MI_MethodDecl MI_CONST* MI_CONST CIM_StatisticalData_meths[] =
-{
-    &CIM_StatisticalData_ResetSelectedStats_rtti,
-};
-
-static MI_CONST MI_Char* CIM_StatisticalData_UMLPackagePath_qual_value = MI_T("CIM::Core::Statistics");
-
-static MI_CONST MI_Qualifier CIM_StatisticalData_UMLPackagePath_qual =
-{
-    MI_T("UMLPackagePath"),
-    MI_STRING,
-    0,
-    &CIM_StatisticalData_UMLPackagePath_qual_value
-};
-
-static MI_CONST MI_Char* CIM_StatisticalData_Version_qual_value = MI_T("2.19.0");
-
-static MI_CONST MI_Qualifier CIM_StatisticalData_Version_qual =
-{
-    MI_T("Version"),
-    MI_STRING,
-    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
-    &CIM_StatisticalData_Version_qual_value
-};
-
-static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_quals[] =
-{
-    &CIM_StatisticalData_UMLPackagePath_qual,
-    &CIM_StatisticalData_Version_qual,
-};
-
-/* class CIM_StatisticalData */
-MI_CONST MI_ClassDecl CIM_StatisticalData_rtti =
-{
-    MI_FLAG_CLASS|MI_FLAG_ABSTRACT, /* flags */
-    0x00636113, /* code */
-    MI_T("CIM_StatisticalData"), /* name */
-    CIM_StatisticalData_quals, /* qualifiers */
-    MI_COUNT(CIM_StatisticalData_quals), /* numQualifiers */
-    CIM_StatisticalData_props, /* properties */
-    MI_COUNT(CIM_StatisticalData_props), /* numProperties */
-    sizeof(CIM_StatisticalData), /* size */
-    MI_T("CIM_ManagedElement"), /* superClass */
-    &CIM_ManagedElement_rtti, /* superClassDecl */
-    CIM_StatisticalData_meths, /* methods */
-    MI_COUNT(CIM_StatisticalData_meths), /* numMethods */
-    &schemaDecl, /* schema */
-    NULL, /* functions */
-    NULL, /* owningClass */
-};
-
-/*
-**==============================================================================
-**
-** Docker_ContainerStatistics
-**
-**==============================================================================
-*/
-
-/* property Docker_ContainerStatistics.updatetime */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_updatetime_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x0075650A, /* code */
-    MI_T("updatetime"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, updatetime), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.NetRXBytes */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_NetRXBytes_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006E730A, /* code */
-    MI_T("NetRXBytes"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, NetRXBytes), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.NetTXBytes */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_NetTXBytes_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006E730A, /* code */
-    MI_T("NetTXBytes"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, NetTXBytes), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.NetBytes */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_NetBytes_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006E7308, /* code */
-    MI_T("NetBytes"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, NetBytes), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.NetRXKBytesPerSec */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_NetRXKBytesPerSec_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006E6311, /* code */
-    MI_T("NetRXKBytesPerSec"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, NetRXKBytesPerSec), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.NetTXKBytesPerSec */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_NetTXKBytesPerSec_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006E6311, /* code */
-    MI_T("NetTXKBytesPerSec"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, NetTXKBytesPerSec), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemCacheMB */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemCacheMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D620A, /* code */
-    MI_T("MemCacheMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemCacheMB), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemRSSMB */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemRSSMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6208, /* code */
-    MI_T("MemRSSMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemRSSMB), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemPGFault */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemPGFault_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D740A, /* code */
-    MI_T("MemPGFault"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemPGFault), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemPGMajFault */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemPGMajFault_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D740D, /* code */
-    MI_T("MemPGMajFault"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemPGMajFault), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemPGFaultPerSec */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemPGFaultPerSec_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6310, /* code */
-    MI_T("MemPGFaultPerSec"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemPGFaultPerSec), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemPGMajFaultPerSec */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemPGMajFaultPerSec_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6313, /* code */
-    MI_T("MemPGMajFaultPerSec"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemPGMajFaultPerSec), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemSwapMB */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemSwapMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6209, /* code */
-    MI_T("MemSwapMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemSwapMB), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemUnevictableMB */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemUnevictableMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6210, /* code */
-    MI_T("MemUnevictableMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemUnevictableMB), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemLimitMB */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemLimitMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D620A, /* code */
-    MI_T("MemLimitMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemLimitMB), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemSWLimitMB */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemSWLimitMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D620C, /* code */
-    MI_T("MemSWLimitMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemSWLimitMB), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemUsedPct */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemUsedPct_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D740A, /* code */
-    MI_T("MemUsedPct"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemUsedPct), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.MemSWUsedPct */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_MemSWUsedPct_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D740C, /* code */
-    MI_T("MemSWUsedPct"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, MemSWUsedPct), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.CPUTotal */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_CPUTotal_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x00636C08, /* code */
-    MI_T("CPUTotal"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, CPUTotal), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.CPUSystem */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_CPUSystem_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x00636D09, /* code */
-    MI_T("CPUSystem"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, CPUSystem), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.CPUTotalPct */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_CPUTotalPct_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x0063740B, /* code */
-    MI_T("CPUTotalPct"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, CPUTotalPct), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.CPUSystemPct */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_CPUSystemPct_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x0063740C, /* code */
-    MI_T("CPUSystemPct"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, CPUSystemPct), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerStatistics.CPUHost */
-static MI_CONST MI_PropertyDecl Docker_ContainerStatistics_CPUHost_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x00637407, /* code */
-    MI_T("CPUHost"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics, CPUHost), /* offset */
-    MI_T("Docker_ContainerStatistics"), /* origin */
-    MI_T("Docker_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-static MI_PropertyDecl MI_CONST* MI_CONST Docker_ContainerStatistics_props[] =
-{
-    &CIM_StatisticalData_InstanceID_prop,
-    &CIM_ManagedElement_Caption_prop,
-    &CIM_ManagedElement_Description_prop,
-    &CIM_StatisticalData_ElementName_prop,
-    &CIM_StatisticalData_StartStatisticTime_prop,
-    &CIM_StatisticalData_StatisticTime_prop,
-    &CIM_StatisticalData_SampleInterval_prop,
-    &Docker_ContainerStatistics_updatetime_prop,
-    &Docker_ContainerStatistics_NetRXBytes_prop,
-    &Docker_ContainerStatistics_NetTXBytes_prop,
-    &Docker_ContainerStatistics_NetBytes_prop,
-    &Docker_ContainerStatistics_NetRXKBytesPerSec_prop,
-    &Docker_ContainerStatistics_NetTXKBytesPerSec_prop,
-    &Docker_ContainerStatistics_MemCacheMB_prop,
-    &Docker_ContainerStatistics_MemRSSMB_prop,
-    &Docker_ContainerStatistics_MemPGFault_prop,
-    &Docker_ContainerStatistics_MemPGMajFault_prop,
-    &Docker_ContainerStatistics_MemPGFaultPerSec_prop,
-    &Docker_ContainerStatistics_MemPGMajFaultPerSec_prop,
-    &Docker_ContainerStatistics_MemSwapMB_prop,
-    &Docker_ContainerStatistics_MemUnevictableMB_prop,
-    &Docker_ContainerStatistics_MemLimitMB_prop,
-    &Docker_ContainerStatistics_MemSWLimitMB_prop,
-    &Docker_ContainerStatistics_MemUsedPct_prop,
-    &Docker_ContainerStatistics_MemSWUsedPct_prop,
-    &Docker_ContainerStatistics_CPUTotal_prop,
-    &Docker_ContainerStatistics_CPUSystem_prop,
-    &Docker_ContainerStatistics_CPUTotalPct_prop,
-    &Docker_ContainerStatistics_CPUSystemPct_prop,
-    &Docker_ContainerStatistics_CPUHost_prop,
-};
-
-/* parameter Docker_ContainerStatistics.ResetSelectedStats(): SelectedStatistics */
-static MI_CONST MI_ParameterDecl Docker_ContainerStatistics_ResetSelectedStats_SelectedStatistics_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
-    0x00737312, /* code */
-    MI_T("SelectedStatistics"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_STRINGA, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics_ResetSelectedStats, SelectedStatistics), /* offset */
-};
-
-/* parameter Docker_ContainerStatistics.ResetSelectedStats(): MIReturn */
-static MI_CONST MI_ParameterDecl Docker_ContainerStatistics_ResetSelectedStats_MIReturn_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
-    0x006D6E08, /* code */
-    MI_T("MIReturn"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerStatistics_ResetSelectedStats, MIReturn), /* offset */
-};
-
-static MI_ParameterDecl MI_CONST* MI_CONST Docker_ContainerStatistics_ResetSelectedStats_params[] =
-{
-    &Docker_ContainerStatistics_ResetSelectedStats_MIReturn_param,
-    &Docker_ContainerStatistics_ResetSelectedStats_SelectedStatistics_param,
-};
-
-/* method Docker_ContainerStatistics.ResetSelectedStats() */
-MI_CONST MI_MethodDecl Docker_ContainerStatistics_ResetSelectedStats_rtti =
-{
-    MI_FLAG_METHOD, /* flags */
-    0x00727312, /* code */
-    MI_T("ResetSelectedStats"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    Docker_ContainerStatistics_ResetSelectedStats_params, /* parameters */
-    MI_COUNT(Docker_ContainerStatistics_ResetSelectedStats_params), /* numParameters */
-    sizeof(Docker_ContainerStatistics_ResetSelectedStats), /* size */
-    MI_UINT32, /* returnType */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    &schemaDecl, /* schema */
-    (MI_ProviderFT_Invoke)Docker_ContainerStatistics_Invoke_ResetSelectedStats, /* method */
-};
-
-static MI_MethodDecl MI_CONST* MI_CONST Docker_ContainerStatistics_meths[] =
-{
-    &Docker_ContainerStatistics_ResetSelectedStats_rtti,
-};
-
-static MI_CONST MI_ProviderFT Docker_ContainerStatistics_funcs =
-{
-  (MI_ProviderFT_Load)Docker_ContainerStatistics_Load,
-  (MI_ProviderFT_Unload)Docker_ContainerStatistics_Unload,
-  (MI_ProviderFT_GetInstance)Docker_ContainerStatistics_GetInstance,
-  (MI_ProviderFT_EnumerateInstances)Docker_ContainerStatistics_EnumerateInstances,
-  (MI_ProviderFT_CreateInstance)Docker_ContainerStatistics_CreateInstance,
-  (MI_ProviderFT_ModifyInstance)Docker_ContainerStatistics_ModifyInstance,
-  (MI_ProviderFT_DeleteInstance)Docker_ContainerStatistics_DeleteInstance,
+  (MI_ProviderFT_Load)Container_ImageInventory_Load,
+  (MI_ProviderFT_Unload)Container_ImageInventory_Unload,
+  (MI_ProviderFT_GetInstance)NULL,
+  (MI_ProviderFT_EnumerateInstances)NULL,
+  (MI_ProviderFT_CreateInstance)NULL,
+  (MI_ProviderFT_ModifyInstance)NULL,
+  (MI_ProviderFT_DeleteInstance)NULL,
   (MI_ProviderFT_AssociatorInstances)NULL,
   (MI_ProviderFT_ReferenceInstances)NULL,
   (MI_ProviderFT_EnableIndications)NULL,
@@ -923,49 +356,201 @@ static MI_CONST MI_ProviderFT Docker_ContainerStatistics_funcs =
   (MI_ProviderFT_Invoke)NULL,
 };
 
-static MI_CONST MI_Char* Docker_ContainerStatistics_UMLPackagePath_qual_value = MI_T("CIM::Core::Statistics");
+static MI_CONST MI_Char* Container_ImageInventory_UMLPackagePath_qual_value = MI_T("CIM::Core::CoreElements");
 
-static MI_CONST MI_Qualifier Docker_ContainerStatistics_UMLPackagePath_qual =
+static MI_CONST MI_Qualifier Container_ImageInventory_UMLPackagePath_qual =
 {
     MI_T("UMLPackagePath"),
     MI_STRING,
     0,
-    &Docker_ContainerStatistics_UMLPackagePath_qual_value
+    &Container_ImageInventory_UMLPackagePath_qual_value
 };
 
-static MI_CONST MI_Char* Docker_ContainerStatistics_Version_qual_value = MI_T("1.0.0");
+static MI_CONST MI_Char* Container_ImageInventory_Version_qual_value = MI_T("1.0.0");
 
-static MI_CONST MI_Qualifier Docker_ContainerStatistics_Version_qual =
+static MI_CONST MI_Qualifier Container_ImageInventory_Version_qual =
 {
     MI_T("Version"),
     MI_STRING,
     MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
-    &Docker_ContainerStatistics_Version_qual_value
+    &Container_ImageInventory_Version_qual_value
 };
 
-static MI_Qualifier MI_CONST* MI_CONST Docker_ContainerStatistics_quals[] =
+static MI_Qualifier MI_CONST* MI_CONST Container_ImageInventory_quals[] =
 {
-    &Docker_ContainerStatistics_UMLPackagePath_qual,
-    &Docker_ContainerStatistics_Version_qual,
+    &Container_ImageInventory_UMLPackagePath_qual,
+    &Container_ImageInventory_Version_qual,
 };
 
-/* class Docker_ContainerStatistics */
-MI_CONST MI_ClassDecl Docker_ContainerStatistics_rtti =
+/* class Container_ImageInventory */
+MI_CONST MI_ClassDecl Container_ImageInventory_rtti =
 {
     MI_FLAG_CLASS, /* flags */
-    0x0064731A, /* code */
-    MI_T("Docker_ContainerStatistics"), /* name */
-    Docker_ContainerStatistics_quals, /* qualifiers */
-    MI_COUNT(Docker_ContainerStatistics_quals), /* numQualifiers */
-    Docker_ContainerStatistics_props, /* properties */
-    MI_COUNT(Docker_ContainerStatistics_props), /* numProperties */
-    sizeof(Docker_ContainerStatistics), /* size */
-    MI_T("CIM_StatisticalData"), /* superClass */
-    &CIM_StatisticalData_rtti, /* superClassDecl */
-    Docker_ContainerStatistics_meths, /* methods */
-    MI_COUNT(Docker_ContainerStatistics_meths), /* numMethods */
+    0x00637918, /* code */
+    MI_T("Container_ImageInventory"), /* name */
+    Container_ImageInventory_quals, /* qualifiers */
+    MI_COUNT(Container_ImageInventory_quals), /* numQualifiers */
+    Container_ImageInventory_props, /* properties */
+    MI_COUNT(Container_ImageInventory_props), /* numProperties */
+    sizeof(Container_ImageInventory), /* size */
+    MI_T("CIM_ManagedElement"), /* superClass */
+    &CIM_ManagedElement_rtti, /* superClassDecl */
+    NULL, /* methods */
+    0, /* numMethods */
     &schemaDecl, /* schema */
-    &Docker_ContainerStatistics_funcs, /* functions */
+    &Container_ImageInventory_funcs, /* functions */
+    NULL, /* owningClass */
+};
+
+/*
+**==============================================================================
+**
+** Container_DaemonEvent
+**
+**==============================================================================
+*/
+
+/* property Container_DaemonEvent.Computer */
+static MI_CONST MI_PropertyDecl Container_DaemonEvent_Computer_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00637208, /* code */
+    MI_T("Computer"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_DaemonEvent, Computer), /* offset */
+    MI_T("Container_DaemonEvent"), /* origin */
+    MI_T("Container_DaemonEvent"), /* propagator */
+    NULL,
+};
+
+/* property Container_DaemonEvent.TimeOfCommand */
+static MI_CONST MI_PropertyDecl Container_DaemonEvent_TimeOfCommand_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0074640D, /* code */
+    MI_T("TimeOfCommand"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_DaemonEvent, TimeOfCommand), /* offset */
+    MI_T("Container_DaemonEvent"), /* origin */
+    MI_T("Container_DaemonEvent"), /* propagator */
+    NULL,
+};
+
+/* property Container_DaemonEvent.Command */
+static MI_CONST MI_PropertyDecl Container_DaemonEvent_Command_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00636407, /* code */
+    MI_T("Command"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_DaemonEvent, Command), /* offset */
+    MI_T("Container_DaemonEvent"), /* origin */
+    MI_T("Container_DaemonEvent"), /* propagator */
+    NULL,
+};
+
+/* property Container_DaemonEvent.Id */
+static MI_CONST MI_PropertyDecl Container_DaemonEvent_Id_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00696402, /* code */
+    MI_T("Id"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_DaemonEvent, Id), /* offset */
+    MI_T("Container_DaemonEvent"), /* origin */
+    MI_T("Container_DaemonEvent"), /* propagator */
+    NULL,
+};
+
+static MI_PropertyDecl MI_CONST* MI_CONST Container_DaemonEvent_props[] =
+{
+    &CIM_ManagedElement_InstanceID_prop,
+    &CIM_ManagedElement_Caption_prop,
+    &CIM_ManagedElement_Description_prop,
+    &CIM_ManagedElement_ElementName_prop,
+    &Container_DaemonEvent_Computer_prop,
+    &Container_DaemonEvent_TimeOfCommand_prop,
+    &Container_DaemonEvent_Command_prop,
+    &Container_DaemonEvent_Id_prop,
+};
+
+static MI_CONST MI_ProviderFT Container_DaemonEvent_funcs =
+{
+  (MI_ProviderFT_Load)Container_DaemonEvent_Load,
+  (MI_ProviderFT_Unload)Container_DaemonEvent_Unload,
+  (MI_ProviderFT_GetInstance)NULL,
+  (MI_ProviderFT_EnumerateInstances)NULL,
+  (MI_ProviderFT_CreateInstance)NULL,
+  (MI_ProviderFT_ModifyInstance)NULL,
+  (MI_ProviderFT_DeleteInstance)NULL,
+  (MI_ProviderFT_AssociatorInstances)NULL,
+  (MI_ProviderFT_ReferenceInstances)NULL,
+  (MI_ProviderFT_EnableIndications)NULL,
+  (MI_ProviderFT_DisableIndications)NULL,
+  (MI_ProviderFT_Subscribe)NULL,
+  (MI_ProviderFT_Unsubscribe)NULL,
+  (MI_ProviderFT_Invoke)NULL,
+};
+
+static MI_CONST MI_Char* Container_DaemonEvent_UMLPackagePath_qual_value = MI_T("CIM::Core::CoreElements");
+
+static MI_CONST MI_Qualifier Container_DaemonEvent_UMLPackagePath_qual =
+{
+    MI_T("UMLPackagePath"),
+    MI_STRING,
+    0,
+    &Container_DaemonEvent_UMLPackagePath_qual_value
+};
+
+static MI_CONST MI_Char* Container_DaemonEvent_Version_qual_value = MI_T("1.0.0");
+
+static MI_CONST MI_Qualifier Container_DaemonEvent_Version_qual =
+{
+    MI_T("Version"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
+    &Container_DaemonEvent_Version_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST Container_DaemonEvent_quals[] =
+{
+    &Container_DaemonEvent_UMLPackagePath_qual,
+    &Container_DaemonEvent_Version_qual,
+};
+
+/* class Container_DaemonEvent */
+MI_CONST MI_ClassDecl Container_DaemonEvent_rtti =
+{
+    MI_FLAG_CLASS, /* flags */
+    0x00637415, /* code */
+    MI_T("Container_DaemonEvent"), /* name */
+    Container_DaemonEvent_quals, /* qualifiers */
+    MI_COUNT(Container_DaemonEvent_quals), /* numQualifiers */
+    Container_DaemonEvent_props, /* properties */
+    MI_COUNT(Container_DaemonEvent_props), /* numProperties */
+    sizeof(Container_DaemonEvent), /* size */
+    MI_T("CIM_ManagedElement"), /* superClass */
+    &CIM_ManagedElement_rtti, /* superClassDecl */
+    NULL, /* methods */
+    0, /* numMethods */
+    &schemaDecl, /* schema */
+    &Container_DaemonEvent_funcs, /* functions */
     NULL, /* owningClass */
 };
 
@@ -1371,13 +956,13 @@ MI_CONST MI_ClassDecl CIM_InstalledProduct_rtti =
 /*
 **==============================================================================
 **
-** Docker_Server
+** Container_Server
 **
 **==============================================================================
 */
 
-/* property Docker_Server.Containers */
-static MI_CONST MI_PropertyDecl Docker_Server_Containers_prop =
+/* property Container_Server.Containers */
+static MI_CONST MI_PropertyDecl Container_Server_Containers_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x0063730A, /* code */
@@ -1387,14 +972,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_Containers_prop =
     MI_UINT16, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, Containers), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, Containers), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.DockerRootDir */
-static MI_CONST MI_PropertyDecl Docker_Server_DockerRootDir_prop =
+/* property Container_Server.DockerRootDir */
+static MI_CONST MI_PropertyDecl Container_Server_DockerRootDir_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x0064720D, /* code */
@@ -1404,14 +989,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_DockerRootDir_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, DockerRootDir), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, DockerRootDir), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.Hostname */
-static MI_CONST MI_PropertyDecl Docker_Server_Hostname_prop =
+/* property Container_Server.Hostname */
+static MI_CONST MI_PropertyDecl Container_Server_Hostname_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00686508, /* code */
@@ -1421,14 +1006,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_Hostname_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, Hostname), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, Hostname), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.Driver */
-static MI_CONST MI_PropertyDecl Docker_Server_Driver_prop =
+/* property Container_Server.Driver */
+static MI_CONST MI_PropertyDecl Container_Server_Driver_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00647206, /* code */
@@ -1438,14 +1023,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_Driver_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, Driver), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, Driver), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.DriverStatus */
-static MI_CONST MI_PropertyDecl Docker_Server_DriverStatus_prop =
+/* property Container_Server.DriverStatus */
+static MI_CONST MI_PropertyDecl Container_Server_DriverStatus_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x0064730C, /* code */
@@ -1455,14 +1040,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_DriverStatus_prop =
     MI_UINT16, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, DriverStatus), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, DriverStatus), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.Images */
-static MI_CONST MI_PropertyDecl Docker_Server_Images_prop =
+/* property Container_Server.Images */
+static MI_CONST MI_PropertyDecl Container_Server_Images_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00697306, /* code */
@@ -1472,14 +1057,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_Images_prop =
     MI_UINT16, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, Images), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, Images), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.InitPath */
-static MI_CONST MI_PropertyDecl Docker_Server_InitPath_prop =
+/* property Container_Server.InitPath */
+static MI_CONST MI_PropertyDecl Container_Server_InitPath_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00696808, /* code */
@@ -1489,14 +1074,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_InitPath_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, InitPath), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, InitPath), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.KernelVersion */
-static MI_CONST MI_PropertyDecl Docker_Server_KernelVersion_prop =
+/* property Container_Server.KernelVersion */
+static MI_CONST MI_PropertyDecl Container_Server_KernelVersion_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x006B6E0D, /* code */
@@ -1506,14 +1091,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_KernelVersion_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, KernelVersion), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, KernelVersion), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.OperatingStatus */
-static MI_CONST MI_PropertyDecl Docker_Server_OperatingStatus_prop =
+/* property Container_Server.OperatingStatus */
+static MI_CONST MI_PropertyDecl Container_Server_OperatingStatus_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x006F730F, /* code */
@@ -1523,14 +1108,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_OperatingStatus_prop =
     MI_UINT16, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, OperatingStatus), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, OperatingStatus), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.MemTotal */
-static MI_CONST MI_PropertyDecl Docker_Server_MemTotal_prop =
+/* property Container_Server.MemTotal */
+static MI_CONST MI_PropertyDecl Container_Server_MemTotal_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x006D6C08, /* code */
@@ -1540,14 +1125,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_MemTotal_prop =
     MI_UINT64, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, MemTotal), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, MemTotal), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.MemLimit */
-static MI_CONST MI_PropertyDecl Docker_Server_MemLimit_prop =
+/* property Container_Server.MemLimit */
+static MI_CONST MI_PropertyDecl Container_Server_MemLimit_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x006D7408, /* code */
@@ -1557,14 +1142,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_MemLimit_prop =
     MI_UINT64, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, MemLimit), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, MemLimit), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.SwapLimit */
-static MI_CONST MI_PropertyDecl Docker_Server_SwapLimit_prop =
+/* property Container_Server.SwapLimit */
+static MI_CONST MI_PropertyDecl Container_Server_SwapLimit_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00737409, /* code */
@@ -1574,14 +1159,14 @@ static MI_CONST MI_PropertyDecl Docker_Server_SwapLimit_prop =
     MI_UINT64, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, SwapLimit), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, SwapLimit), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-/* property Docker_Server.NCPU */
-static MI_CONST MI_PropertyDecl Docker_Server_NCPU_prop =
+/* property Container_Server.NCPU */
+static MI_CONST MI_PropertyDecl Container_Server_NCPU_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x006E7504, /* code */
@@ -1591,13 +1176,13 @@ static MI_CONST MI_PropertyDecl Docker_Server_NCPU_prop =
     MI_UINT16, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Server, NCPU), /* offset */
-    MI_T("Docker_Server"), /* origin */
-    MI_T("Docker_Server"), /* propagator */
+    offsetof(Container_Server, NCPU), /* offset */
+    MI_T("Container_Server"), /* origin */
+    MI_T("Container_Server"), /* propagator */
     NULL,
 };
 
-static MI_PropertyDecl MI_CONST* MI_CONST Docker_Server_props[] =
+static MI_PropertyDecl MI_CONST* MI_CONST Container_Server_props[] =
 {
     &CIM_ManagedElement_InstanceID_prop,
     &CIM_ManagedElement_Caption_prop,
@@ -1610,30 +1195,30 @@ static MI_PropertyDecl MI_CONST* MI_CONST Docker_Server_props[] =
     &CIM_InstalledProduct_SystemID_prop,
     &CIM_InstalledProduct_CollectionID_prop,
     &CIM_InstalledProduct_Name_prop,
-    &Docker_Server_Containers_prop,
-    &Docker_Server_DockerRootDir_prop,
-    &Docker_Server_Hostname_prop,
-    &Docker_Server_Driver_prop,
-    &Docker_Server_DriverStatus_prop,
-    &Docker_Server_Images_prop,
-    &Docker_Server_InitPath_prop,
-    &Docker_Server_KernelVersion_prop,
-    &Docker_Server_OperatingStatus_prop,
-    &Docker_Server_MemTotal_prop,
-    &Docker_Server_MemLimit_prop,
-    &Docker_Server_SwapLimit_prop,
-    &Docker_Server_NCPU_prop,
+    &Container_Server_Containers_prop,
+    &Container_Server_DockerRootDir_prop,
+    &Container_Server_Hostname_prop,
+    &Container_Server_Driver_prop,
+    &Container_Server_DriverStatus_prop,
+    &Container_Server_Images_prop,
+    &Container_Server_InitPath_prop,
+    &Container_Server_KernelVersion_prop,
+    &Container_Server_OperatingStatus_prop,
+    &Container_Server_MemTotal_prop,
+    &Container_Server_MemLimit_prop,
+    &Container_Server_SwapLimit_prop,
+    &Container_Server_NCPU_prop,
 };
 
-static MI_CONST MI_ProviderFT Docker_Server_funcs =
+static MI_CONST MI_ProviderFT Container_Server_funcs =
 {
-  (MI_ProviderFT_Load)Docker_Server_Load,
-  (MI_ProviderFT_Unload)Docker_Server_Unload,
-  (MI_ProviderFT_GetInstance)Docker_Server_GetInstance,
-  (MI_ProviderFT_EnumerateInstances)Docker_Server_EnumerateInstances,
-  (MI_ProviderFT_CreateInstance)Docker_Server_CreateInstance,
-  (MI_ProviderFT_ModifyInstance)Docker_Server_ModifyInstance,
-  (MI_ProviderFT_DeleteInstance)Docker_Server_DeleteInstance,
+  (MI_ProviderFT_Load)Container_Server_Load,
+  (MI_ProviderFT_Unload)Container_Server_Unload,
+  (MI_ProviderFT_GetInstance)Container_Server_GetInstance,
+  (MI_ProviderFT_EnumerateInstances)Container_Server_EnumerateInstances,
+  (MI_ProviderFT_CreateInstance)Container_Server_CreateInstance,
+  (MI_ProviderFT_ModifyInstance)Container_Server_ModifyInstance,
+  (MI_ProviderFT_DeleteInstance)Container_Server_DeleteInstance,
   (MI_ProviderFT_AssociatorInstances)NULL,
   (MI_ProviderFT_ReferenceInstances)NULL,
   (MI_ProviderFT_EnableIndications)NULL,
@@ -1643,243 +1228,49 @@ static MI_CONST MI_ProviderFT Docker_Server_funcs =
   (MI_ProviderFT_Invoke)NULL,
 };
 
-static MI_CONST MI_Char* Docker_Server_UMLPackagePath_qual_value = MI_T("CIM::Application::InstalledProduct");
+static MI_CONST MI_Char* Container_Server_UMLPackagePath_qual_value = MI_T("CIM::Application::InstalledProduct");
 
-static MI_CONST MI_Qualifier Docker_Server_UMLPackagePath_qual =
+static MI_CONST MI_Qualifier Container_Server_UMLPackagePath_qual =
 {
     MI_T("UMLPackagePath"),
     MI_STRING,
     0,
-    &Docker_Server_UMLPackagePath_qual_value
+    &Container_Server_UMLPackagePath_qual_value
 };
 
-static MI_CONST MI_Char* Docker_Server_Version_qual_value = MI_T("1.0.0");
+static MI_CONST MI_Char* Container_Server_Version_qual_value = MI_T("1.0.0");
 
-static MI_CONST MI_Qualifier Docker_Server_Version_qual =
+static MI_CONST MI_Qualifier Container_Server_Version_qual =
 {
     MI_T("Version"),
     MI_STRING,
     MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
-    &Docker_Server_Version_qual_value
+    &Container_Server_Version_qual_value
 };
 
-static MI_Qualifier MI_CONST* MI_CONST Docker_Server_quals[] =
+static MI_Qualifier MI_CONST* MI_CONST Container_Server_quals[] =
 {
-    &Docker_Server_UMLPackagePath_qual,
-    &Docker_Server_Version_qual,
+    &Container_Server_UMLPackagePath_qual,
+    &Container_Server_Version_qual,
 };
 
-/* class Docker_Server */
-MI_CONST MI_ClassDecl Docker_Server_rtti =
+/* class Container_Server */
+MI_CONST MI_ClassDecl Container_Server_rtti =
 {
     MI_FLAG_CLASS, /* flags */
-    0x0064720D, /* code */
-    MI_T("Docker_Server"), /* name */
-    Docker_Server_quals, /* qualifiers */
-    MI_COUNT(Docker_Server_quals), /* numQualifiers */
-    Docker_Server_props, /* properties */
-    MI_COUNT(Docker_Server_props), /* numProperties */
-    sizeof(Docker_Server), /* size */
+    0x00637210, /* code */
+    MI_T("Container_Server"), /* name */
+    Container_Server_quals, /* qualifiers */
+    MI_COUNT(Container_Server_quals), /* numQualifiers */
+    Container_Server_props, /* properties */
+    MI_COUNT(Container_Server_props), /* numProperties */
+    sizeof(Container_Server), /* size */
     MI_T("CIM_InstalledProduct"), /* superClass */
     &CIM_InstalledProduct_rtti, /* superClassDecl */
     NULL, /* methods */
     0, /* numMethods */
     &schemaDecl, /* schema */
-    &Docker_Server_funcs, /* functions */
-    NULL, /* owningClass */
-};
-
-/*
-**==============================================================================
-**
-** Docker_ContainerProcessorStatistics
-**
-**==============================================================================
-*/
-
-/* property Docker_ContainerProcessorStatistics.ProcessorID */
-static MI_CONST MI_PropertyDecl Docker_ContainerProcessorStatistics_ProcessorID_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x0070640B, /* code */
-    MI_T("ProcessorID"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerProcessorStatistics, ProcessorID), /* offset */
-    MI_T("Docker_ContainerProcessorStatistics"), /* origin */
-    MI_T("Docker_ContainerProcessorStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerProcessorStatistics.CPUTotal */
-static MI_CONST MI_PropertyDecl Docker_ContainerProcessorStatistics_CPUTotal_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x00636C08, /* code */
-    MI_T("CPUTotal"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerProcessorStatistics, CPUTotal), /* offset */
-    MI_T("Docker_ContainerProcessorStatistics"), /* origin */
-    MI_T("Docker_ContainerProcessorStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Docker_ContainerProcessorStatistics.CPUTotalPct */
-static MI_CONST MI_PropertyDecl Docker_ContainerProcessorStatistics_CPUTotalPct_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x0063740B, /* code */
-    MI_T("CPUTotalPct"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerProcessorStatistics, CPUTotalPct), /* offset */
-    MI_T("Docker_ContainerProcessorStatistics"), /* origin */
-    MI_T("Docker_ContainerProcessorStatistics"), /* propagator */
-    NULL,
-};
-
-static MI_PropertyDecl MI_CONST* MI_CONST Docker_ContainerProcessorStatistics_props[] =
-{
-    &CIM_StatisticalData_InstanceID_prop,
-    &CIM_ManagedElement_Caption_prop,
-    &CIM_ManagedElement_Description_prop,
-    &CIM_StatisticalData_ElementName_prop,
-    &CIM_StatisticalData_StartStatisticTime_prop,
-    &CIM_StatisticalData_StatisticTime_prop,
-    &CIM_StatisticalData_SampleInterval_prop,
-    &Docker_ContainerProcessorStatistics_ProcessorID_prop,
-    &Docker_ContainerProcessorStatistics_CPUTotal_prop,
-    &Docker_ContainerProcessorStatistics_CPUTotalPct_prop,
-};
-
-/* parameter Docker_ContainerProcessorStatistics.ResetSelectedStats(): SelectedStatistics */
-static MI_CONST MI_ParameterDecl Docker_ContainerProcessorStatistics_ResetSelectedStats_SelectedStatistics_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
-    0x00737312, /* code */
-    MI_T("SelectedStatistics"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_STRINGA, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerProcessorStatistics_ResetSelectedStats, SelectedStatistics), /* offset */
-};
-
-/* parameter Docker_ContainerProcessorStatistics.ResetSelectedStats(): MIReturn */
-static MI_CONST MI_ParameterDecl Docker_ContainerProcessorStatistics_ResetSelectedStats_MIReturn_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
-    0x006D6E08, /* code */
-    MI_T("MIReturn"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Docker_ContainerProcessorStatistics_ResetSelectedStats, MIReturn), /* offset */
-};
-
-static MI_ParameterDecl MI_CONST* MI_CONST Docker_ContainerProcessorStatistics_ResetSelectedStats_params[] =
-{
-    &Docker_ContainerProcessorStatistics_ResetSelectedStats_MIReturn_param,
-    &Docker_ContainerProcessorStatistics_ResetSelectedStats_SelectedStatistics_param,
-};
-
-/* method Docker_ContainerProcessorStatistics.ResetSelectedStats() */
-MI_CONST MI_MethodDecl Docker_ContainerProcessorStatistics_ResetSelectedStats_rtti =
-{
-    MI_FLAG_METHOD, /* flags */
-    0x00727312, /* code */
-    MI_T("ResetSelectedStats"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    Docker_ContainerProcessorStatistics_ResetSelectedStats_params, /* parameters */
-    MI_COUNT(Docker_ContainerProcessorStatistics_ResetSelectedStats_params), /* numParameters */
-    sizeof(Docker_ContainerProcessorStatistics_ResetSelectedStats), /* size */
-    MI_UINT32, /* returnType */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    &schemaDecl, /* schema */
-    (MI_ProviderFT_Invoke)Docker_ContainerProcessorStatistics_Invoke_ResetSelectedStats, /* method */
-};
-
-static MI_MethodDecl MI_CONST* MI_CONST Docker_ContainerProcessorStatistics_meths[] =
-{
-    &Docker_ContainerProcessorStatistics_ResetSelectedStats_rtti,
-};
-
-static MI_CONST MI_ProviderFT Docker_ContainerProcessorStatistics_funcs =
-{
-  (MI_ProviderFT_Load)Docker_ContainerProcessorStatistics_Load,
-  (MI_ProviderFT_Unload)Docker_ContainerProcessorStatistics_Unload,
-  (MI_ProviderFT_GetInstance)Docker_ContainerProcessorStatistics_GetInstance,
-  (MI_ProviderFT_EnumerateInstances)Docker_ContainerProcessorStatistics_EnumerateInstances,
-  (MI_ProviderFT_CreateInstance)Docker_ContainerProcessorStatistics_CreateInstance,
-  (MI_ProviderFT_ModifyInstance)Docker_ContainerProcessorStatistics_ModifyInstance,
-  (MI_ProviderFT_DeleteInstance)Docker_ContainerProcessorStatistics_DeleteInstance,
-  (MI_ProviderFT_AssociatorInstances)NULL,
-  (MI_ProviderFT_ReferenceInstances)NULL,
-  (MI_ProviderFT_EnableIndications)NULL,
-  (MI_ProviderFT_DisableIndications)NULL,
-  (MI_ProviderFT_Subscribe)NULL,
-  (MI_ProviderFT_Unsubscribe)NULL,
-  (MI_ProviderFT_Invoke)NULL,
-};
-
-static MI_CONST MI_Char* Docker_ContainerProcessorStatistics_UMLPackagePath_qual_value = MI_T("CIM::Core::Statistics");
-
-static MI_CONST MI_Qualifier Docker_ContainerProcessorStatistics_UMLPackagePath_qual =
-{
-    MI_T("UMLPackagePath"),
-    MI_STRING,
-    0,
-    &Docker_ContainerProcessorStatistics_UMLPackagePath_qual_value
-};
-
-static MI_CONST MI_Char* Docker_ContainerProcessorStatistics_Version_qual_value = MI_T("1.0.0");
-
-static MI_CONST MI_Qualifier Docker_ContainerProcessorStatistics_Version_qual =
-{
-    MI_T("Version"),
-    MI_STRING,
-    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
-    &Docker_ContainerProcessorStatistics_Version_qual_value
-};
-
-static MI_Qualifier MI_CONST* MI_CONST Docker_ContainerProcessorStatistics_quals[] =
-{
-    &Docker_ContainerProcessorStatistics_UMLPackagePath_qual,
-    &Docker_ContainerProcessorStatistics_Version_qual,
-};
-
-/* class Docker_ContainerProcessorStatistics */
-MI_CONST MI_ClassDecl Docker_ContainerProcessorStatistics_rtti =
-{
-    MI_FLAG_CLASS, /* flags */
-    0x00647323, /* code */
-    MI_T("Docker_ContainerProcessorStatistics"), /* name */
-    Docker_ContainerProcessorStatistics_quals, /* qualifiers */
-    MI_COUNT(Docker_ContainerProcessorStatistics_quals), /* numQualifiers */
-    Docker_ContainerProcessorStatistics_props, /* properties */
-    MI_COUNT(Docker_ContainerProcessorStatistics_props), /* numProperties */
-    sizeof(Docker_ContainerProcessorStatistics), /* size */
-    MI_T("CIM_StatisticalData"), /* superClass */
-    &CIM_StatisticalData_rtti, /* superClassDecl */
-    Docker_ContainerProcessorStatistics_meths, /* methods */
-    MI_COUNT(Docker_ContainerProcessorStatistics_meths), /* numMethods */
-    &schemaDecl, /* schema */
-    &Docker_ContainerProcessorStatistics_funcs, /* functions */
+    &Container_Server_funcs, /* functions */
     NULL, /* owningClass */
 };
 
@@ -4906,13 +4297,13 @@ MI_CONST MI_ClassDecl CIM_VirtualComputerSystem_rtti =
 /*
 **==============================================================================
 **
-** Docker_Container
+** Container_Container
 **
 **==============================================================================
 */
 
-/* property Docker_Container.InstanceID */
-static MI_CONST MI_PropertyDecl Docker_Container_InstanceID_prop =
+/* property Container_Container.InstanceID */
+static MI_CONST MI_PropertyDecl Container_Container_InstanceID_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x0069640A, /* code */
@@ -4922,14 +4313,14 @@ static MI_CONST MI_PropertyDecl Docker_Container_InstanceID_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container, InstanceID), /* offset */
+    offsetof(Container_Container, InstanceID), /* offset */
     MI_T("CIM_ManagedElement"), /* origin */
-    MI_T("Docker_Container"), /* propagator */
+    MI_T("Container_Container"), /* propagator */
     NULL,
 };
 
-/* property Docker_Container.Ports */
-static MI_CONST MI_PropertyDecl Docker_Container_Ports_prop =
+/* property Container_Container.Ports */
+static MI_CONST MI_PropertyDecl Container_Container_Ports_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00707305, /* code */
@@ -4939,14 +4330,14 @@ static MI_CONST MI_PropertyDecl Docker_Container_Ports_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container, Ports), /* offset */
-    MI_T("Docker_Container"), /* origin */
-    MI_T("Docker_Container"), /* propagator */
+    offsetof(Container_Container, Ports), /* offset */
+    MI_T("Container_Container"), /* origin */
+    MI_T("Container_Container"), /* propagator */
     NULL,
 };
 
-/* property Docker_Container.Command */
-static MI_CONST MI_PropertyDecl Docker_Container_Command_prop =
+/* property Container_Container.Command */
+static MI_CONST MI_PropertyDecl Container_Container_Command_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00636407, /* code */
@@ -4956,14 +4347,14 @@ static MI_CONST MI_PropertyDecl Docker_Container_Command_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container, Command), /* offset */
-    MI_T("Docker_Container"), /* origin */
-    MI_T("Docker_Container"), /* propagator */
+    offsetof(Container_Container, Command), /* offset */
+    MI_T("Container_Container"), /* origin */
+    MI_T("Container_Container"), /* propagator */
     NULL,
 };
 
-/* property Docker_Container.Image */
-static MI_CONST MI_PropertyDecl Docker_Container_Image_prop =
+/* property Container_Container.Image */
+static MI_CONST MI_PropertyDecl Container_Container_Image_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00696505, /* code */
@@ -4973,14 +4364,14 @@ static MI_CONST MI_PropertyDecl Docker_Container_Image_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container, Image), /* offset */
-    MI_T("Docker_Container"), /* origin */
-    MI_T("Docker_Container"), /* propagator */
+    offsetof(Container_Container, Image), /* offset */
+    MI_T("Container_Container"), /* origin */
+    MI_T("Container_Container"), /* propagator */
     NULL,
 };
 
-/* property Docker_Container.SizeRW */
-static MI_CONST MI_PropertyDecl Docker_Container_SizeRW_prop =
+/* property Container_Container.SizeRW */
+static MI_CONST MI_PropertyDecl Container_Container_SizeRW_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00737706, /* code */
@@ -4990,15 +4381,15 @@ static MI_CONST MI_PropertyDecl Docker_Container_SizeRW_prop =
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container, SizeRW), /* offset */
-    MI_T("Docker_Container"), /* origin */
-    MI_T("Docker_Container"), /* propagator */
+    offsetof(Container_Container, SizeRW), /* offset */
+    MI_T("Container_Container"), /* origin */
+    MI_T("Container_Container"), /* propagator */
     NULL,
 };
 
-static MI_PropertyDecl MI_CONST* MI_CONST Docker_Container_props[] =
+static MI_PropertyDecl MI_CONST* MI_CONST Container_Container_props[] =
 {
-    &Docker_Container_InstanceID_prop,
+    &Container_Container_InstanceID_prop,
     &CIM_ManagedElement_Caption_prop,
     &CIM_ManagedElement_Description_prop,
     &CIM_ManagedElement_ElementName_prop,
@@ -5031,14 +4422,14 @@ static MI_PropertyDecl MI_CONST* MI_CONST Docker_Container_props[] =
     &CIM_ComputerSystem_ResetCapability_prop,
     &CIM_ComputerSystem_PowerManagementCapabilities_prop,
     &CIM_VirtualComputerSystem_VirtualSystem_prop,
-    &Docker_Container_Ports_prop,
-    &Docker_Container_Command_prop,
-    &Docker_Container_Image_prop,
-    &Docker_Container_SizeRW_prop,
+    &Container_Container_Ports_prop,
+    &Container_Container_Command_prop,
+    &Container_Container_Image_prop,
+    &Container_Container_SizeRW_prop,
 };
 
-/* parameter Docker_Container.RequestStateChange(): RequestedState */
-static MI_CONST MI_ParameterDecl Docker_Container_RequestStateChange_RequestedState_param =
+/* parameter Container_Container.RequestStateChange(): RequestedState */
+static MI_CONST MI_ParameterDecl Container_Container_RequestStateChange_RequestedState_param =
 {
     MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
     0x0072650E, /* code */
@@ -5048,11 +4439,11 @@ static MI_CONST MI_ParameterDecl Docker_Container_RequestStateChange_RequestedSt
     MI_UINT16, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container_RequestStateChange, RequestedState), /* offset */
+    offsetof(Container_Container_RequestStateChange, RequestedState), /* offset */
 };
 
-/* parameter Docker_Container.RequestStateChange(): Job */
-static MI_CONST MI_ParameterDecl Docker_Container_RequestStateChange_Job_param =
+/* parameter Container_Container.RequestStateChange(): Job */
+static MI_CONST MI_ParameterDecl Container_Container_RequestStateChange_Job_param =
 {
     MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
     0x006A6203, /* code */
@@ -5062,11 +4453,11 @@ static MI_CONST MI_ParameterDecl Docker_Container_RequestStateChange_Job_param =
     MI_REFERENCE, /* type */
     MI_T("CIM_ConcreteJob"), /* className */
     0, /* subscript */
-    offsetof(Docker_Container_RequestStateChange, Job), /* offset */
+    offsetof(Container_Container_RequestStateChange, Job), /* offset */
 };
 
-/* parameter Docker_Container.RequestStateChange(): TimeoutPeriod */
-static MI_CONST MI_ParameterDecl Docker_Container_RequestStateChange_TimeoutPeriod_param =
+/* parameter Container_Container.RequestStateChange(): TimeoutPeriod */
+static MI_CONST MI_ParameterDecl Container_Container_RequestStateChange_TimeoutPeriod_param =
 {
     MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
     0x0074640D, /* code */
@@ -5076,11 +4467,11 @@ static MI_CONST MI_ParameterDecl Docker_Container_RequestStateChange_TimeoutPeri
     MI_DATETIME, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container_RequestStateChange, TimeoutPeriod), /* offset */
+    offsetof(Container_Container_RequestStateChange, TimeoutPeriod), /* offset */
 };
 
-/* parameter Docker_Container.RequestStateChange(): MIReturn */
-static MI_CONST MI_ParameterDecl Docker_Container_RequestStateChange_MIReturn_param =
+/* parameter Container_Container.RequestStateChange(): MIReturn */
+static MI_CONST MI_ParameterDecl Container_Container_RequestStateChange_MIReturn_param =
 {
     MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
     0x006D6E08, /* code */
@@ -5090,61 +4481,61 @@ static MI_CONST MI_ParameterDecl Docker_Container_RequestStateChange_MIReturn_pa
     MI_UINT32, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container_RequestStateChange, MIReturn), /* offset */
+    offsetof(Container_Container_RequestStateChange, MIReturn), /* offset */
 };
 
-static MI_ParameterDecl MI_CONST* MI_CONST Docker_Container_RequestStateChange_params[] =
+static MI_ParameterDecl MI_CONST* MI_CONST Container_Container_RequestStateChange_params[] =
 {
-    &Docker_Container_RequestStateChange_MIReturn_param,
-    &Docker_Container_RequestStateChange_RequestedState_param,
-    &Docker_Container_RequestStateChange_Job_param,
-    &Docker_Container_RequestStateChange_TimeoutPeriod_param,
+    &Container_Container_RequestStateChange_MIReturn_param,
+    &Container_Container_RequestStateChange_RequestedState_param,
+    &Container_Container_RequestStateChange_Job_param,
+    &Container_Container_RequestStateChange_TimeoutPeriod_param,
 };
 
-/* method Docker_Container.RequestStateChange() */
-MI_CONST MI_MethodDecl Docker_Container_RequestStateChange_rtti =
+/* method Container_Container.RequestStateChange() */
+MI_CONST MI_MethodDecl Container_Container_RequestStateChange_rtti =
 {
     MI_FLAG_METHOD, /* flags */
     0x00726512, /* code */
     MI_T("RequestStateChange"), /* name */
     NULL, /* qualifiers */
     0, /* numQualifiers */
-    Docker_Container_RequestStateChange_params, /* parameters */
-    MI_COUNT(Docker_Container_RequestStateChange_params), /* numParameters */
-    sizeof(Docker_Container_RequestStateChange), /* size */
+    Container_Container_RequestStateChange_params, /* parameters */
+    MI_COUNT(Container_Container_RequestStateChange_params), /* numParameters */
+    sizeof(Container_Container_RequestStateChange), /* size */
     MI_UINT32, /* returnType */
     MI_T("CIM_EnabledLogicalElement"), /* origin */
     MI_T("CIM_EnabledLogicalElement"), /* propagator */
     &schemaDecl, /* schema */
-    (MI_ProviderFT_Invoke)Docker_Container_Invoke_RequestStateChange, /* method */
+    (MI_ProviderFT_Invoke)Container_Container_Invoke_RequestStateChange, /* method */
 };
 
-static MI_CONST MI_Char* Docker_Container_SetPowerState_Deprecated_qual_data_value[] =
+static MI_CONST MI_Char* Container_Container_SetPowerState_Deprecated_qual_data_value[] =
 {
     MI_T("CIM_PowerManagementService.SetPowerState"),
 };
 
-static MI_CONST MI_ConstStringA Docker_Container_SetPowerState_Deprecated_qual_value =
+static MI_CONST MI_ConstStringA Container_Container_SetPowerState_Deprecated_qual_value =
 {
-    Docker_Container_SetPowerState_Deprecated_qual_data_value,
-    MI_COUNT(Docker_Container_SetPowerState_Deprecated_qual_data_value),
+    Container_Container_SetPowerState_Deprecated_qual_data_value,
+    MI_COUNT(Container_Container_SetPowerState_Deprecated_qual_data_value),
 };
 
-static MI_CONST MI_Qualifier Docker_Container_SetPowerState_Deprecated_qual =
+static MI_CONST MI_Qualifier Container_Container_SetPowerState_Deprecated_qual =
 {
     MI_T("Deprecated"),
     MI_STRINGA,
     MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
-    &Docker_Container_SetPowerState_Deprecated_qual_value
+    &Container_Container_SetPowerState_Deprecated_qual_value
 };
 
-static MI_Qualifier MI_CONST* MI_CONST Docker_Container_SetPowerState_quals[] =
+static MI_Qualifier MI_CONST* MI_CONST Container_Container_SetPowerState_quals[] =
 {
-    &Docker_Container_SetPowerState_Deprecated_qual,
+    &Container_Container_SetPowerState_Deprecated_qual,
 };
 
-/* parameter Docker_Container.SetPowerState(): PowerState */
-static MI_CONST MI_ParameterDecl Docker_Container_SetPowerState_PowerState_param =
+/* parameter Container_Container.SetPowerState(): PowerState */
+static MI_CONST MI_ParameterDecl Container_Container_SetPowerState_PowerState_param =
 {
     MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
     0x0070650A, /* code */
@@ -5154,11 +4545,11 @@ static MI_CONST MI_ParameterDecl Docker_Container_SetPowerState_PowerState_param
     MI_UINT32, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container_SetPowerState, PowerState), /* offset */
+    offsetof(Container_Container_SetPowerState, PowerState), /* offset */
 };
 
-/* parameter Docker_Container.SetPowerState(): Time */
-static MI_CONST MI_ParameterDecl Docker_Container_SetPowerState_Time_param =
+/* parameter Container_Container.SetPowerState(): Time */
+static MI_CONST MI_ParameterDecl Container_Container_SetPowerState_Time_param =
 {
     MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
     0x00746504, /* code */
@@ -5168,87 +4559,87 @@ static MI_CONST MI_ParameterDecl Docker_Container_SetPowerState_Time_param =
     MI_DATETIME, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container_SetPowerState, Time), /* offset */
+    offsetof(Container_Container_SetPowerState, Time), /* offset */
 };
 
-static MI_CONST MI_Char* Docker_Container_SetPowerState_MIReturn_Deprecated_qual_data_value[] =
+static MI_CONST MI_Char* Container_Container_SetPowerState_MIReturn_Deprecated_qual_data_value[] =
 {
     MI_T("CIM_PowerManagementService.SetPowerState"),
 };
 
-static MI_CONST MI_ConstStringA Docker_Container_SetPowerState_MIReturn_Deprecated_qual_value =
+static MI_CONST MI_ConstStringA Container_Container_SetPowerState_MIReturn_Deprecated_qual_value =
 {
-    Docker_Container_SetPowerState_MIReturn_Deprecated_qual_data_value,
-    MI_COUNT(Docker_Container_SetPowerState_MIReturn_Deprecated_qual_data_value),
+    Container_Container_SetPowerState_MIReturn_Deprecated_qual_data_value,
+    MI_COUNT(Container_Container_SetPowerState_MIReturn_Deprecated_qual_data_value),
 };
 
-static MI_CONST MI_Qualifier Docker_Container_SetPowerState_MIReturn_Deprecated_qual =
+static MI_CONST MI_Qualifier Container_Container_SetPowerState_MIReturn_Deprecated_qual =
 {
     MI_T("Deprecated"),
     MI_STRINGA,
     MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
-    &Docker_Container_SetPowerState_MIReturn_Deprecated_qual_value
+    &Container_Container_SetPowerState_MIReturn_Deprecated_qual_value
 };
 
-static MI_Qualifier MI_CONST* MI_CONST Docker_Container_SetPowerState_MIReturn_quals[] =
+static MI_Qualifier MI_CONST* MI_CONST Container_Container_SetPowerState_MIReturn_quals[] =
 {
-    &Docker_Container_SetPowerState_MIReturn_Deprecated_qual,
+    &Container_Container_SetPowerState_MIReturn_Deprecated_qual,
 };
 
-/* parameter Docker_Container.SetPowerState(): MIReturn */
-static MI_CONST MI_ParameterDecl Docker_Container_SetPowerState_MIReturn_param =
+/* parameter Container_Container.SetPowerState(): MIReturn */
+static MI_CONST MI_ParameterDecl Container_Container_SetPowerState_MIReturn_param =
 {
     MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
     0x006D6E08, /* code */
     MI_T("MIReturn"), /* name */
-    Docker_Container_SetPowerState_MIReturn_quals, /* qualifiers */
-    MI_COUNT(Docker_Container_SetPowerState_MIReturn_quals), /* numQualifiers */
+    Container_Container_SetPowerState_MIReturn_quals, /* qualifiers */
+    MI_COUNT(Container_Container_SetPowerState_MIReturn_quals), /* numQualifiers */
     MI_UINT32, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Docker_Container_SetPowerState, MIReturn), /* offset */
+    offsetof(Container_Container_SetPowerState, MIReturn), /* offset */
 };
 
-static MI_ParameterDecl MI_CONST* MI_CONST Docker_Container_SetPowerState_params[] =
+static MI_ParameterDecl MI_CONST* MI_CONST Container_Container_SetPowerState_params[] =
 {
-    &Docker_Container_SetPowerState_MIReturn_param,
-    &Docker_Container_SetPowerState_PowerState_param,
-    &Docker_Container_SetPowerState_Time_param,
+    &Container_Container_SetPowerState_MIReturn_param,
+    &Container_Container_SetPowerState_PowerState_param,
+    &Container_Container_SetPowerState_Time_param,
 };
 
-/* method Docker_Container.SetPowerState() */
-MI_CONST MI_MethodDecl Docker_Container_SetPowerState_rtti =
+/* method Container_Container.SetPowerState() */
+MI_CONST MI_MethodDecl Container_Container_SetPowerState_rtti =
 {
     MI_FLAG_METHOD, /* flags */
     0x0073650D, /* code */
     MI_T("SetPowerState"), /* name */
-    Docker_Container_SetPowerState_quals, /* qualifiers */
-    MI_COUNT(Docker_Container_SetPowerState_quals), /* numQualifiers */
-    Docker_Container_SetPowerState_params, /* parameters */
-    MI_COUNT(Docker_Container_SetPowerState_params), /* numParameters */
-    sizeof(Docker_Container_SetPowerState), /* size */
+    Container_Container_SetPowerState_quals, /* qualifiers */
+    MI_COUNT(Container_Container_SetPowerState_quals), /* numQualifiers */
+    Container_Container_SetPowerState_params, /* parameters */
+    MI_COUNT(Container_Container_SetPowerState_params), /* numParameters */
+    sizeof(Container_Container_SetPowerState), /* size */
     MI_UINT32, /* returnType */
     MI_T("CIM_ComputerSystem"), /* origin */
     MI_T("CIM_ComputerSystem"), /* propagator */
     &schemaDecl, /* schema */
-    (MI_ProviderFT_Invoke)Docker_Container_Invoke_SetPowerState, /* method */
+    (MI_ProviderFT_Invoke)Container_Container_Invoke_SetPowerState, /* method */
 };
 
-static MI_MethodDecl MI_CONST* MI_CONST Docker_Container_meths[] =
+static MI_MethodDecl MI_CONST* MI_CONST Container_Container_meths[] =
 {
-    &Docker_Container_RequestStateChange_rtti,
-    &Docker_Container_SetPowerState_rtti,
+    &Container_Container_RequestStateChange_rtti,
+    &Container_Container_SetPowerState_rtti,
 };
 
-static MI_CONST MI_ProviderFT Docker_Container_funcs =
+static MI_CONST MI_ProviderFT Container_Container_funcs =
 {
-  (MI_ProviderFT_Load)Docker_Container_Load,
-  (MI_ProviderFT_Unload)Docker_Container_Unload,
-  (MI_ProviderFT_GetInstance)Docker_Container_GetInstance,
-  (MI_ProviderFT_EnumerateInstances)Docker_Container_EnumerateInstances,
-  (MI_ProviderFT_CreateInstance)Docker_Container_CreateInstance,
-  (MI_ProviderFT_ModifyInstance)Docker_Container_ModifyInstance,
-  (MI_ProviderFT_DeleteInstance)Docker_Container_DeleteInstance,
+  (MI_ProviderFT_Load)Container_Container_Load,
+  (MI_ProviderFT_Unload)Container_Container_Unload,
+  (MI_ProviderFT_GetInstance)Container_Container_GetInstance,
+  (MI_ProviderFT_EnumerateInstances)Container_Container_EnumerateInstances,
+  (MI_ProviderFT_CreateInstance)Container_Container_CreateInstance,
+  (MI_ProviderFT_ModifyInstance)Container_Container_ModifyInstance,
+  (MI_ProviderFT_DeleteInstance)Container_Container_DeleteInstance,
   (MI_ProviderFT_AssociatorInstances)NULL,
   (MI_ProviderFT_ReferenceInstances)NULL,
   (MI_ProviderFT_EnableIndications)NULL,
@@ -5258,49 +4649,1036 @@ static MI_CONST MI_ProviderFT Docker_Container_funcs =
   (MI_ProviderFT_Invoke)NULL,
 };
 
-static MI_CONST MI_Char* Docker_Container_UMLPackagePath_qual_value = MI_T("CIM::System::SystemElements");
+static MI_CONST MI_Char* Container_Container_UMLPackagePath_qual_value = MI_T("CIM::System::SystemElements");
 
-static MI_CONST MI_Qualifier Docker_Container_UMLPackagePath_qual =
+static MI_CONST MI_Qualifier Container_Container_UMLPackagePath_qual =
 {
     MI_T("UMLPackagePath"),
     MI_STRING,
     0,
-    &Docker_Container_UMLPackagePath_qual_value
+    &Container_Container_UMLPackagePath_qual_value
 };
 
-static MI_CONST MI_Char* Docker_Container_Version_qual_value = MI_T("1.0.0");
+static MI_CONST MI_Char* Container_Container_Version_qual_value = MI_T("1.0.0");
 
-static MI_CONST MI_Qualifier Docker_Container_Version_qual =
+static MI_CONST MI_Qualifier Container_Container_Version_qual =
 {
     MI_T("Version"),
     MI_STRING,
     MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
-    &Docker_Container_Version_qual_value
+    &Container_Container_Version_qual_value
 };
 
-static MI_Qualifier MI_CONST* MI_CONST Docker_Container_quals[] =
+static MI_Qualifier MI_CONST* MI_CONST Container_Container_quals[] =
 {
-    &Docker_Container_UMLPackagePath_qual,
-    &Docker_Container_Version_qual,
+    &Container_Container_UMLPackagePath_qual,
+    &Container_Container_Version_qual,
 };
 
-/* class Docker_Container */
-MI_CONST MI_ClassDecl Docker_Container_rtti =
+/* class Container_Container */
+MI_CONST MI_ClassDecl Container_Container_rtti =
 {
     MI_FLAG_CLASS, /* flags */
-    0x00647210, /* code */
-    MI_T("Docker_Container"), /* name */
-    Docker_Container_quals, /* qualifiers */
-    MI_COUNT(Docker_Container_quals), /* numQualifiers */
-    Docker_Container_props, /* properties */
-    MI_COUNT(Docker_Container_props), /* numProperties */
-    sizeof(Docker_Container), /* size */
+    0x00637213, /* code */
+    MI_T("Container_Container"), /* name */
+    Container_Container_quals, /* qualifiers */
+    MI_COUNT(Container_Container_quals), /* numQualifiers */
+    Container_Container_props, /* properties */
+    MI_COUNT(Container_Container_props), /* numProperties */
+    sizeof(Container_Container), /* size */
     MI_T("CIM_VirtualComputerSystem"), /* superClass */
     &CIM_VirtualComputerSystem_rtti, /* superClassDecl */
-    Docker_Container_meths, /* methods */
-    MI_COUNT(Docker_Container_meths), /* numMethods */
+    Container_Container_meths, /* methods */
+    MI_COUNT(Container_Container_meths), /* numMethods */
     &schemaDecl, /* schema */
-    &Docker_Container_funcs, /* functions */
+    &Container_Container_funcs, /* functions */
+    NULL, /* owningClass */
+};
+
+/*
+**==============================================================================
+**
+** CIM_StatisticalData
+**
+**==============================================================================
+*/
+
+static MI_CONST MI_Char* CIM_StatisticalData_InstanceID_Override_qual_value = MI_T("InstanceID");
+
+static MI_CONST MI_Qualifier CIM_StatisticalData_InstanceID_Override_qual =
+{
+    MI_T("Override"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
+    &CIM_StatisticalData_InstanceID_Override_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_InstanceID_quals[] =
+{
+    &CIM_StatisticalData_InstanceID_Override_qual,
+};
+
+/* property CIM_StatisticalData.InstanceID */
+static MI_CONST MI_PropertyDecl CIM_StatisticalData_InstanceID_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_KEY, /* flags */
+    0x0069640A, /* code */
+    MI_T("InstanceID"), /* name */
+    CIM_StatisticalData_InstanceID_quals, /* qualifiers */
+    MI_COUNT(CIM_StatisticalData_InstanceID_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(CIM_StatisticalData, InstanceID), /* offset */
+    MI_T("CIM_ManagedElement"), /* origin */
+    MI_T("CIM_StatisticalData"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Char* CIM_StatisticalData_ElementName_Override_qual_value = MI_T("ElementName");
+
+static MI_CONST MI_Qualifier CIM_StatisticalData_ElementName_Override_qual =
+{
+    MI_T("Override"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
+    &CIM_StatisticalData_ElementName_Override_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_ElementName_quals[] =
+{
+    &CIM_StatisticalData_ElementName_Override_qual,
+};
+
+/* property CIM_StatisticalData.ElementName */
+static MI_CONST MI_PropertyDecl CIM_StatisticalData_ElementName_prop =
+{
+    MI_FLAG_PROPERTY|MI_FLAG_REQUIRED, /* flags */
+    0x0065650B, /* code */
+    MI_T("ElementName"), /* name */
+    CIM_StatisticalData_ElementName_quals, /* qualifiers */
+    MI_COUNT(CIM_StatisticalData_ElementName_quals), /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(CIM_StatisticalData, ElementName), /* offset */
+    MI_T("CIM_ManagedElement"), /* origin */
+    MI_T("CIM_StatisticalData"), /* propagator */
+    NULL,
+};
+
+/* property CIM_StatisticalData.StartStatisticTime */
+static MI_CONST MI_PropertyDecl CIM_StatisticalData_StartStatisticTime_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00736512, /* code */
+    MI_T("StartStatisticTime"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_DATETIME, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(CIM_StatisticalData, StartStatisticTime), /* offset */
+    MI_T("CIM_StatisticalData"), /* origin */
+    MI_T("CIM_StatisticalData"), /* propagator */
+    NULL,
+};
+
+/* property CIM_StatisticalData.StatisticTime */
+static MI_CONST MI_PropertyDecl CIM_StatisticalData_StatisticTime_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0073650D, /* code */
+    MI_T("StatisticTime"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_DATETIME, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(CIM_StatisticalData, StatisticTime), /* offset */
+    MI_T("CIM_StatisticalData"), /* origin */
+    MI_T("CIM_StatisticalData"), /* propagator */
+    NULL,
+};
+
+static MI_CONST MI_Datetime CIM_StatisticalData_SampleInterval_value = {0,{{0,0,0,0,0}}};
+
+/* property CIM_StatisticalData.SampleInterval */
+static MI_CONST MI_PropertyDecl CIM_StatisticalData_SampleInterval_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00736C0E, /* code */
+    MI_T("SampleInterval"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_DATETIME, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(CIM_StatisticalData, SampleInterval), /* offset */
+    MI_T("CIM_StatisticalData"), /* origin */
+    MI_T("CIM_StatisticalData"), /* propagator */
+    &CIM_StatisticalData_SampleInterval_value,
+};
+
+static MI_PropertyDecl MI_CONST* MI_CONST CIM_StatisticalData_props[] =
+{
+    &CIM_StatisticalData_InstanceID_prop,
+    &CIM_ManagedElement_Caption_prop,
+    &CIM_ManagedElement_Description_prop,
+    &CIM_StatisticalData_ElementName_prop,
+    &CIM_StatisticalData_StartStatisticTime_prop,
+    &CIM_StatisticalData_StatisticTime_prop,
+    &CIM_StatisticalData_SampleInterval_prop,
+};
+
+/* parameter CIM_StatisticalData.ResetSelectedStats(): SelectedStatistics */
+static MI_CONST MI_ParameterDecl CIM_StatisticalData_ResetSelectedStats_SelectedStatistics_param =
+{
+    MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
+    0x00737312, /* code */
+    MI_T("SelectedStatistics"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRINGA, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(CIM_StatisticalData_ResetSelectedStats, SelectedStatistics), /* offset */
+};
+
+/* parameter CIM_StatisticalData.ResetSelectedStats(): MIReturn */
+static MI_CONST MI_ParameterDecl CIM_StatisticalData_ResetSelectedStats_MIReturn_param =
+{
+    MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
+    0x006D6E08, /* code */
+    MI_T("MIReturn"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(CIM_StatisticalData_ResetSelectedStats, MIReturn), /* offset */
+};
+
+static MI_ParameterDecl MI_CONST* MI_CONST CIM_StatisticalData_ResetSelectedStats_params[] =
+{
+    &CIM_StatisticalData_ResetSelectedStats_MIReturn_param,
+    &CIM_StatisticalData_ResetSelectedStats_SelectedStatistics_param,
+};
+
+/* method CIM_StatisticalData.ResetSelectedStats() */
+MI_CONST MI_MethodDecl CIM_StatisticalData_ResetSelectedStats_rtti =
+{
+    MI_FLAG_METHOD, /* flags */
+    0x00727312, /* code */
+    MI_T("ResetSelectedStats"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    CIM_StatisticalData_ResetSelectedStats_params, /* parameters */
+    MI_COUNT(CIM_StatisticalData_ResetSelectedStats_params), /* numParameters */
+    sizeof(CIM_StatisticalData_ResetSelectedStats), /* size */
+    MI_UINT32, /* returnType */
+    MI_T("CIM_StatisticalData"), /* origin */
+    MI_T("CIM_StatisticalData"), /* propagator */
+    &schemaDecl, /* schema */
+    NULL, /* method */
+};
+
+static MI_MethodDecl MI_CONST* MI_CONST CIM_StatisticalData_meths[] =
+{
+    &CIM_StatisticalData_ResetSelectedStats_rtti,
+};
+
+static MI_CONST MI_Char* CIM_StatisticalData_UMLPackagePath_qual_value = MI_T("CIM::Core::Statistics");
+
+static MI_CONST MI_Qualifier CIM_StatisticalData_UMLPackagePath_qual =
+{
+    MI_T("UMLPackagePath"),
+    MI_STRING,
+    0,
+    &CIM_StatisticalData_UMLPackagePath_qual_value
+};
+
+static MI_CONST MI_Char* CIM_StatisticalData_Version_qual_value = MI_T("2.19.0");
+
+static MI_CONST MI_Qualifier CIM_StatisticalData_Version_qual =
+{
+    MI_T("Version"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
+    &CIM_StatisticalData_Version_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_quals[] =
+{
+    &CIM_StatisticalData_UMLPackagePath_qual,
+    &CIM_StatisticalData_Version_qual,
+};
+
+/* class CIM_StatisticalData */
+MI_CONST MI_ClassDecl CIM_StatisticalData_rtti =
+{
+    MI_FLAG_CLASS|MI_FLAG_ABSTRACT, /* flags */
+    0x00636113, /* code */
+    MI_T("CIM_StatisticalData"), /* name */
+    CIM_StatisticalData_quals, /* qualifiers */
+    MI_COUNT(CIM_StatisticalData_quals), /* numQualifiers */
+    CIM_StatisticalData_props, /* properties */
+    MI_COUNT(CIM_StatisticalData_props), /* numProperties */
+    sizeof(CIM_StatisticalData), /* size */
+    MI_T("CIM_ManagedElement"), /* superClass */
+    &CIM_ManagedElement_rtti, /* superClassDecl */
+    CIM_StatisticalData_meths, /* methods */
+    MI_COUNT(CIM_StatisticalData_meths), /* numMethods */
+    &schemaDecl, /* schema */
+    NULL, /* functions */
+    NULL, /* owningClass */
+};
+
+/*
+**==============================================================================
+**
+** Container_ContainerStatistics
+**
+**==============================================================================
+*/
+
+/* property Container_ContainerStatistics.updatetime */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_updatetime_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0075650A, /* code */
+    MI_T("updatetime"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, updatetime), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.NetRXBytes */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetRXBytes_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006E730A, /* code */
+    MI_T("NetRXBytes"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, NetRXBytes), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.NetTXBytes */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetTXBytes_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006E730A, /* code */
+    MI_T("NetTXBytes"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, NetTXBytes), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.NetBytes */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetBytes_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006E7308, /* code */
+    MI_T("NetBytes"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, NetBytes), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.NetRXKBytesPerSec */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetRXKBytesPerSec_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006E6311, /* code */
+    MI_T("NetRXKBytesPerSec"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, NetRXKBytesPerSec), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.NetTXKBytesPerSec */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetTXKBytesPerSec_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006E6311, /* code */
+    MI_T("NetTXKBytesPerSec"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, NetTXKBytesPerSec), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemCacheMB */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemCacheMB_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D620A, /* code */
+    MI_T("MemCacheMB"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemCacheMB), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemRSSMB */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemRSSMB_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D6208, /* code */
+    MI_T("MemRSSMB"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemRSSMB), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemPGFault */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemPGFault_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D740A, /* code */
+    MI_T("MemPGFault"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemPGFault), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemPGMajFault */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemPGMajFault_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D740D, /* code */
+    MI_T("MemPGMajFault"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemPGMajFault), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemPGFaultPerSec */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemPGFaultPerSec_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D6310, /* code */
+    MI_T("MemPGFaultPerSec"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemPGFaultPerSec), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemPGMajFaultPerSec */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemPGMajFaultPerSec_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D6313, /* code */
+    MI_T("MemPGMajFaultPerSec"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemPGMajFaultPerSec), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemSwapMB */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemSwapMB_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D6209, /* code */
+    MI_T("MemSwapMB"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemSwapMB), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemUnevictableMB */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemUnevictableMB_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D6210, /* code */
+    MI_T("MemUnevictableMB"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemUnevictableMB), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemLimitMB */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemLimitMB_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D620A, /* code */
+    MI_T("MemLimitMB"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemLimitMB), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemSWLimitMB */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemSWLimitMB_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D620C, /* code */
+    MI_T("MemSWLimitMB"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemSWLimitMB), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemUsedPct */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemUsedPct_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D740A, /* code */
+    MI_T("MemUsedPct"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemUsedPct), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.MemSWUsedPct */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemSWUsedPct_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006D740C, /* code */
+    MI_T("MemSWUsedPct"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, MemSWUsedPct), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.CPUTotal */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUTotal_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00636C08, /* code */
+    MI_T("CPUTotal"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, CPUTotal), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.CPUSystem */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUSystem_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00636D09, /* code */
+    MI_T("CPUSystem"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, CPUSystem), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.CPUTotalPct */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUTotalPct_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0063740B, /* code */
+    MI_T("CPUTotalPct"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, CPUTotalPct), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.CPUSystemPct */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUSystemPct_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0063740C, /* code */
+    MI_T("CPUSystemPct"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, CPUSystemPct), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.CPUHost */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUHost_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00637407, /* code */
+    MI_T("CPUHost"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, CPUHost), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+static MI_PropertyDecl MI_CONST* MI_CONST Container_ContainerStatistics_props[] =
+{
+    &CIM_StatisticalData_InstanceID_prop,
+    &CIM_ManagedElement_Caption_prop,
+    &CIM_ManagedElement_Description_prop,
+    &CIM_StatisticalData_ElementName_prop,
+    &CIM_StatisticalData_StartStatisticTime_prop,
+    &CIM_StatisticalData_StatisticTime_prop,
+    &CIM_StatisticalData_SampleInterval_prop,
+    &Container_ContainerStatistics_updatetime_prop,
+    &Container_ContainerStatistics_NetRXBytes_prop,
+    &Container_ContainerStatistics_NetTXBytes_prop,
+    &Container_ContainerStatistics_NetBytes_prop,
+    &Container_ContainerStatistics_NetRXKBytesPerSec_prop,
+    &Container_ContainerStatistics_NetTXKBytesPerSec_prop,
+    &Container_ContainerStatistics_MemCacheMB_prop,
+    &Container_ContainerStatistics_MemRSSMB_prop,
+    &Container_ContainerStatistics_MemPGFault_prop,
+    &Container_ContainerStatistics_MemPGMajFault_prop,
+    &Container_ContainerStatistics_MemPGFaultPerSec_prop,
+    &Container_ContainerStatistics_MemPGMajFaultPerSec_prop,
+    &Container_ContainerStatistics_MemSwapMB_prop,
+    &Container_ContainerStatistics_MemUnevictableMB_prop,
+    &Container_ContainerStatistics_MemLimitMB_prop,
+    &Container_ContainerStatistics_MemSWLimitMB_prop,
+    &Container_ContainerStatistics_MemUsedPct_prop,
+    &Container_ContainerStatistics_MemSWUsedPct_prop,
+    &Container_ContainerStatistics_CPUTotal_prop,
+    &Container_ContainerStatistics_CPUSystem_prop,
+    &Container_ContainerStatistics_CPUTotalPct_prop,
+    &Container_ContainerStatistics_CPUSystemPct_prop,
+    &Container_ContainerStatistics_CPUHost_prop,
+};
+
+/* parameter Container_ContainerStatistics.ResetSelectedStats(): SelectedStatistics */
+static MI_CONST MI_ParameterDecl Container_ContainerStatistics_ResetSelectedStats_SelectedStatistics_param =
+{
+    MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
+    0x00737312, /* code */
+    MI_T("SelectedStatistics"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRINGA, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics_ResetSelectedStats, SelectedStatistics), /* offset */
+};
+
+/* parameter Container_ContainerStatistics.ResetSelectedStats(): MIReturn */
+static MI_CONST MI_ParameterDecl Container_ContainerStatistics_ResetSelectedStats_MIReturn_param =
+{
+    MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
+    0x006D6E08, /* code */
+    MI_T("MIReturn"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics_ResetSelectedStats, MIReturn), /* offset */
+};
+
+static MI_ParameterDecl MI_CONST* MI_CONST Container_ContainerStatistics_ResetSelectedStats_params[] =
+{
+    &Container_ContainerStatistics_ResetSelectedStats_MIReturn_param,
+    &Container_ContainerStatistics_ResetSelectedStats_SelectedStatistics_param,
+};
+
+/* method Container_ContainerStatistics.ResetSelectedStats() */
+MI_CONST MI_MethodDecl Container_ContainerStatistics_ResetSelectedStats_rtti =
+{
+    MI_FLAG_METHOD, /* flags */
+    0x00727312, /* code */
+    MI_T("ResetSelectedStats"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    Container_ContainerStatistics_ResetSelectedStats_params, /* parameters */
+    MI_COUNT(Container_ContainerStatistics_ResetSelectedStats_params), /* numParameters */
+    sizeof(Container_ContainerStatistics_ResetSelectedStats), /* size */
+    MI_UINT32, /* returnType */
+    MI_T("CIM_StatisticalData"), /* origin */
+    MI_T("CIM_StatisticalData"), /* propagator */
+    &schemaDecl, /* schema */
+    (MI_ProviderFT_Invoke)Container_ContainerStatistics_Invoke_ResetSelectedStats, /* method */
+};
+
+static MI_MethodDecl MI_CONST* MI_CONST Container_ContainerStatistics_meths[] =
+{
+    &Container_ContainerStatistics_ResetSelectedStats_rtti,
+};
+
+static MI_CONST MI_ProviderFT Container_ContainerStatistics_funcs =
+{
+  (MI_ProviderFT_Load)Container_ContainerStatistics_Load,
+  (MI_ProviderFT_Unload)Container_ContainerStatistics_Unload,
+  (MI_ProviderFT_GetInstance)Container_ContainerStatistics_GetInstance,
+  (MI_ProviderFT_EnumerateInstances)Container_ContainerStatistics_EnumerateInstances,
+  (MI_ProviderFT_CreateInstance)Container_ContainerStatistics_CreateInstance,
+  (MI_ProviderFT_ModifyInstance)Container_ContainerStatistics_ModifyInstance,
+  (MI_ProviderFT_DeleteInstance)Container_ContainerStatistics_DeleteInstance,
+  (MI_ProviderFT_AssociatorInstances)NULL,
+  (MI_ProviderFT_ReferenceInstances)NULL,
+  (MI_ProviderFT_EnableIndications)NULL,
+  (MI_ProviderFT_DisableIndications)NULL,
+  (MI_ProviderFT_Subscribe)NULL,
+  (MI_ProviderFT_Unsubscribe)NULL,
+  (MI_ProviderFT_Invoke)NULL,
+};
+
+static MI_CONST MI_Char* Container_ContainerStatistics_UMLPackagePath_qual_value = MI_T("CIM::Core::Statistics");
+
+static MI_CONST MI_Qualifier Container_ContainerStatistics_UMLPackagePath_qual =
+{
+    MI_T("UMLPackagePath"),
+    MI_STRING,
+    0,
+    &Container_ContainerStatistics_UMLPackagePath_qual_value
+};
+
+static MI_CONST MI_Char* Container_ContainerStatistics_Version_qual_value = MI_T("1.0.0");
+
+static MI_CONST MI_Qualifier Container_ContainerStatistics_Version_qual =
+{
+    MI_T("Version"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
+    &Container_ContainerStatistics_Version_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST Container_ContainerStatistics_quals[] =
+{
+    &Container_ContainerStatistics_UMLPackagePath_qual,
+    &Container_ContainerStatistics_Version_qual,
+};
+
+/* class Container_ContainerStatistics */
+MI_CONST MI_ClassDecl Container_ContainerStatistics_rtti =
+{
+    MI_FLAG_CLASS, /* flags */
+    0x0063731D, /* code */
+    MI_T("Container_ContainerStatistics"), /* name */
+    Container_ContainerStatistics_quals, /* qualifiers */
+    MI_COUNT(Container_ContainerStatistics_quals), /* numQualifiers */
+    Container_ContainerStatistics_props, /* properties */
+    MI_COUNT(Container_ContainerStatistics_props), /* numProperties */
+    sizeof(Container_ContainerStatistics), /* size */
+    MI_T("CIM_StatisticalData"), /* superClass */
+    &CIM_StatisticalData_rtti, /* superClassDecl */
+    Container_ContainerStatistics_meths, /* methods */
+    MI_COUNT(Container_ContainerStatistics_meths), /* numMethods */
+    &schemaDecl, /* schema */
+    &Container_ContainerStatistics_funcs, /* functions */
+    NULL, /* owningClass */
+};
+
+/*
+**==============================================================================
+**
+** Container_ContainerProcessorStatistics
+**
+**==============================================================================
+*/
+
+/* property Container_ContainerProcessorStatistics.ProcessorID */
+static MI_CONST MI_PropertyDecl Container_ContainerProcessorStatistics_ProcessorID_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0070640B, /* code */
+    MI_T("ProcessorID"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerProcessorStatistics, ProcessorID), /* offset */
+    MI_T("Container_ContainerProcessorStatistics"), /* origin */
+    MI_T("Container_ContainerProcessorStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerProcessorStatistics.CPUTotal */
+static MI_CONST MI_PropertyDecl Container_ContainerProcessorStatistics_CPUTotal_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00636C08, /* code */
+    MI_T("CPUTotal"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerProcessorStatistics, CPUTotal), /* offset */
+    MI_T("Container_ContainerProcessorStatistics"), /* origin */
+    MI_T("Container_ContainerProcessorStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerProcessorStatistics.CPUTotalPct */
+static MI_CONST MI_PropertyDecl Container_ContainerProcessorStatistics_CPUTotalPct_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0063740B, /* code */
+    MI_T("CPUTotalPct"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT16, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerProcessorStatistics, CPUTotalPct), /* offset */
+    MI_T("Container_ContainerProcessorStatistics"), /* origin */
+    MI_T("Container_ContainerProcessorStatistics"), /* propagator */
+    NULL,
+};
+
+static MI_PropertyDecl MI_CONST* MI_CONST Container_ContainerProcessorStatistics_props[] =
+{
+    &CIM_StatisticalData_InstanceID_prop,
+    &CIM_ManagedElement_Caption_prop,
+    &CIM_ManagedElement_Description_prop,
+    &CIM_StatisticalData_ElementName_prop,
+    &CIM_StatisticalData_StartStatisticTime_prop,
+    &CIM_StatisticalData_StatisticTime_prop,
+    &CIM_StatisticalData_SampleInterval_prop,
+    &Container_ContainerProcessorStatistics_ProcessorID_prop,
+    &Container_ContainerProcessorStatistics_CPUTotal_prop,
+    &Container_ContainerProcessorStatistics_CPUTotalPct_prop,
+};
+
+/* parameter Container_ContainerProcessorStatistics.ResetSelectedStats(): SelectedStatistics */
+static MI_CONST MI_ParameterDecl Container_ContainerProcessorStatistics_ResetSelectedStats_SelectedStatistics_param =
+{
+    MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
+    0x00737312, /* code */
+    MI_T("SelectedStatistics"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRINGA, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerProcessorStatistics_ResetSelectedStats, SelectedStatistics), /* offset */
+};
+
+/* parameter Container_ContainerProcessorStatistics.ResetSelectedStats(): MIReturn */
+static MI_CONST MI_ParameterDecl Container_ContainerProcessorStatistics_ResetSelectedStats_MIReturn_param =
+{
+    MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
+    0x006D6E08, /* code */
+    MI_T("MIReturn"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerProcessorStatistics_ResetSelectedStats, MIReturn), /* offset */
+};
+
+static MI_ParameterDecl MI_CONST* MI_CONST Container_ContainerProcessorStatistics_ResetSelectedStats_params[] =
+{
+    &Container_ContainerProcessorStatistics_ResetSelectedStats_MIReturn_param,
+    &Container_ContainerProcessorStatistics_ResetSelectedStats_SelectedStatistics_param,
+};
+
+/* method Container_ContainerProcessorStatistics.ResetSelectedStats() */
+MI_CONST MI_MethodDecl Container_ContainerProcessorStatistics_ResetSelectedStats_rtti =
+{
+    MI_FLAG_METHOD, /* flags */
+    0x00727312, /* code */
+    MI_T("ResetSelectedStats"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    Container_ContainerProcessorStatistics_ResetSelectedStats_params, /* parameters */
+    MI_COUNT(Container_ContainerProcessorStatistics_ResetSelectedStats_params), /* numParameters */
+    sizeof(Container_ContainerProcessorStatistics_ResetSelectedStats), /* size */
+    MI_UINT32, /* returnType */
+    MI_T("CIM_StatisticalData"), /* origin */
+    MI_T("CIM_StatisticalData"), /* propagator */
+    &schemaDecl, /* schema */
+    (MI_ProviderFT_Invoke)Container_ContainerProcessorStatistics_Invoke_ResetSelectedStats, /* method */
+};
+
+static MI_MethodDecl MI_CONST* MI_CONST Container_ContainerProcessorStatistics_meths[] =
+{
+    &Container_ContainerProcessorStatistics_ResetSelectedStats_rtti,
+};
+
+static MI_CONST MI_ProviderFT Container_ContainerProcessorStatistics_funcs =
+{
+  (MI_ProviderFT_Load)Container_ContainerProcessorStatistics_Load,
+  (MI_ProviderFT_Unload)Container_ContainerProcessorStatistics_Unload,
+  (MI_ProviderFT_GetInstance)Container_ContainerProcessorStatistics_GetInstance,
+  (MI_ProviderFT_EnumerateInstances)Container_ContainerProcessorStatistics_EnumerateInstances,
+  (MI_ProviderFT_CreateInstance)Container_ContainerProcessorStatistics_CreateInstance,
+  (MI_ProviderFT_ModifyInstance)Container_ContainerProcessorStatistics_ModifyInstance,
+  (MI_ProviderFT_DeleteInstance)Container_ContainerProcessorStatistics_DeleteInstance,
+  (MI_ProviderFT_AssociatorInstances)NULL,
+  (MI_ProviderFT_ReferenceInstances)NULL,
+  (MI_ProviderFT_EnableIndications)NULL,
+  (MI_ProviderFT_DisableIndications)NULL,
+  (MI_ProviderFT_Subscribe)NULL,
+  (MI_ProviderFT_Unsubscribe)NULL,
+  (MI_ProviderFT_Invoke)NULL,
+};
+
+static MI_CONST MI_Char* Container_ContainerProcessorStatistics_UMLPackagePath_qual_value = MI_T("CIM::Core::Statistics");
+
+static MI_CONST MI_Qualifier Container_ContainerProcessorStatistics_UMLPackagePath_qual =
+{
+    MI_T("UMLPackagePath"),
+    MI_STRING,
+    0,
+    &Container_ContainerProcessorStatistics_UMLPackagePath_qual_value
+};
+
+static MI_CONST MI_Char* Container_ContainerProcessorStatistics_Version_qual_value = MI_T("1.0.0");
+
+static MI_CONST MI_Qualifier Container_ContainerProcessorStatistics_Version_qual =
+{
+    MI_T("Version"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
+    &Container_ContainerProcessorStatistics_Version_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST Container_ContainerProcessorStatistics_quals[] =
+{
+    &Container_ContainerProcessorStatistics_UMLPackagePath_qual,
+    &Container_ContainerProcessorStatistics_Version_qual,
+};
+
+/* class Container_ContainerProcessorStatistics */
+MI_CONST MI_ClassDecl Container_ContainerProcessorStatistics_rtti =
+{
+    MI_FLAG_CLASS, /* flags */
+    0x00637326, /* code */
+    MI_T("Container_ContainerProcessorStatistics"), /* name */
+    Container_ContainerProcessorStatistics_quals, /* qualifiers */
+    MI_COUNT(Container_ContainerProcessorStatistics_quals), /* numQualifiers */
+    Container_ContainerProcessorStatistics_props, /* properties */
+    MI_COUNT(Container_ContainerProcessorStatistics_props), /* numProperties */
+    sizeof(Container_ContainerProcessorStatistics), /* size */
+    MI_T("CIM_StatisticalData"), /* superClass */
+    &CIM_StatisticalData_rtti, /* superClassDecl */
+    Container_ContainerProcessorStatistics_meths, /* methods */
+    MI_COUNT(Container_ContainerProcessorStatistics_meths), /* numMethods */
+    &schemaDecl, /* schema */
+    &Container_ContainerProcessorStatistics_funcs, /* functions */
     NULL, /* owningClass */
 };
 
@@ -5336,10 +5714,12 @@ static MI_ClassDecl MI_CONST* MI_CONST classes[] =
     &CIM_StatisticalData_rtti,
     &CIM_System_rtti,
     &CIM_VirtualComputerSystem_rtti,
-    &Docker_Container_rtti,
-    &Docker_ContainerProcessorStatistics_rtti,
-    &Docker_ContainerStatistics_rtti,
-    &Docker_Server_rtti,
+    &Container_Container_rtti,
+    &Container_ContainerProcessorStatistics_rtti,
+    &Container_ContainerStatistics_rtti,
+    &Container_DaemonEvent_rtti,
+    &Container_ImageInventory_rtti,
+    &Container_Server_rtti,
 };
 
 MI_SchemaDecl schemaDecl =

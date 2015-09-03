@@ -8,21 +8,23 @@
 */
 #include <MI.h>
 #include "module.h"
-#include "Docker_ContainerStatistics_Class_Provider.h"
-#include "Docker_Server_Class_Provider.h"
-#include "Docker_ContainerProcessorStatistics_Class_Provider.h"
-#include "Docker_Container_Class_Provider.h"
+#include "Container_ImageInventory_Class_Provider.h"
+#include "Container_DaemonEvent_Class_Provider.h"
+#include "Container_Server_Class_Provider.h"
+#include "Container_Container_Class_Provider.h"
+#include "Container_ContainerStatistics_Class_Provider.h"
+#include "Container_ContainerProcessorStatistics_Class_Provider.h"
 
 using namespace mi;
 
-MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_Load(
-    Docker_ContainerStatistics_Self** self,
+MI_EXTERN_C void MI_CALL Container_ImageInventory_Load(
+    Container_ImageInventory_Self** self,
     MI_Module_Self* selfModule,
     MI_Context* context)
 {
     MI_Result r = MI_RESULT_OK;
     Context ctx(context, &r);
-    Docker_ContainerStatistics_Class_Provider* prov = new Docker_ContainerStatistics_Class_Provider((Module*)selfModule);
+    Container_ImageInventory_Class_Provider* prov = new Container_ImageInventory_Class_Provider((Module*)selfModule);
 
     prov->Load(ctx);
     if (MI_RESULT_OK != r)
@@ -31,25 +33,91 @@ MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_Load(
         MI_Context_PostResult(context, r);
         return;
     }
-    *self = (Docker_ContainerStatistics_Self*)prov;
+    *self = (Container_ImageInventory_Self*)prov;
     MI_Context_PostResult(context, MI_RESULT_OK);
 }
 
-MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_Unload(
-    Docker_ContainerStatistics_Self* self,
+MI_EXTERN_C void MI_CALL Container_ImageInventory_Unload(
+    Container_ImageInventory_Self* self,
     MI_Context* context)
 {
     MI_Result r = MI_RESULT_OK;
     Context ctx(context, &r);
-    Docker_ContainerStatistics_Class_Provider* prov = (Docker_ContainerStatistics_Class_Provider*)self;
+    Container_ImageInventory_Class_Provider* prov = (Container_ImageInventory_Class_Provider*)self;
 
     prov->Unload(ctx);
-    delete ((Docker_ContainerStatistics_Class_Provider*)self);
+    delete ((Container_ImageInventory_Class_Provider*)self);
     MI_Context_PostResult(context, r);
 }
 
-MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_EnumerateInstances(
-    Docker_ContainerStatistics_Self* self,
+MI_EXTERN_C void MI_CALL Container_DaemonEvent_Load(
+    Container_DaemonEvent_Self** self,
+    MI_Module_Self* selfModule,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_DaemonEvent_Class_Provider* prov = new Container_DaemonEvent_Class_Provider((Module*)selfModule);
+
+    prov->Load(ctx);
+    if (MI_RESULT_OK != r)
+    {
+        delete prov;
+        MI_Context_PostResult(context, r);
+        return;
+    }
+    *self = (Container_DaemonEvent_Self*)prov;
+    MI_Context_PostResult(context, MI_RESULT_OK);
+}
+
+MI_EXTERN_C void MI_CALL Container_DaemonEvent_Unload(
+    Container_DaemonEvent_Self* self,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_DaemonEvent_Class_Provider* prov = (Container_DaemonEvent_Class_Provider*)self;
+
+    prov->Unload(ctx);
+    delete ((Container_DaemonEvent_Class_Provider*)self);
+    MI_Context_PostResult(context, r);
+}
+
+MI_EXTERN_C void MI_CALL Container_Server_Load(
+    Container_Server_Self** self,
+    MI_Module_Self* selfModule,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_Server_Class_Provider* prov = new Container_Server_Class_Provider((Module*)selfModule);
+
+    prov->Load(ctx);
+    if (MI_RESULT_OK != r)
+    {
+        delete prov;
+        MI_Context_PostResult(context, r);
+        return;
+    }
+    *self = (Container_Server_Self*)prov;
+    MI_Context_PostResult(context, MI_RESULT_OK);
+}
+
+MI_EXTERN_C void MI_CALL Container_Server_Unload(
+    Container_Server_Self* self,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_Server_Class_Provider* prov = (Container_Server_Class_Provider*)self;
+
+    prov->Unload(ctx);
+    delete ((Container_Server_Class_Provider*)self);
+    MI_Context_PostResult(context, r);
+}
+
+MI_EXTERN_C void MI_CALL Container_Server_EnumerateInstances(
+    Container_Server_Self* self,
     MI_Context* context,
     const MI_Char* nameSpace,
     const MI_Char* className,
@@ -57,7 +125,7 @@ MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_EnumerateInstances(
     MI_Boolean keysOnly,
     const MI_Filter* filter)
 {
-    Docker_ContainerStatistics_Class_Provider* cxxSelf =((Docker_ContainerStatistics_Class_Provider*)self);
+    Container_Server_Class_Provider* cxxSelf =((Container_Server_Class_Provider*)self);
     Context  cxxContext(context);
 
     cxxSelf->EnumerateInstances(
@@ -68,17 +136,17 @@ MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_EnumerateInstances(
         filter);
 }
 
-MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_GetInstance(
-    Docker_ContainerStatistics_Self* self,
+MI_EXTERN_C void MI_CALL Container_Server_GetInstance(
+    Container_Server_Self* self,
     MI_Context* context,
     const MI_Char* nameSpace,
     const MI_Char* className,
-    const Docker_ContainerStatistics* instanceName,
+    const Container_Server* instanceName,
     const MI_PropertySet* propertySet)
 {
-    Docker_ContainerStatistics_Class_Provider* cxxSelf =((Docker_ContainerStatistics_Class_Provider*)self);
+    Container_Server_Class_Provider* cxxSelf =((Container_Server_Class_Provider*)self);
     Context  cxxContext(context);
-    Docker_ContainerStatistics_Class cxxInstanceName(instanceName, true);
+    Container_Server_Class cxxInstanceName(instanceName, true);
 
     cxxSelf->GetInstance(
         cxxContext,
@@ -87,31 +155,31 @@ MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_GetInstance(
         __PropertySet(propertySet));
 }
 
-MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_CreateInstance(
-    Docker_ContainerStatistics_Self* self,
+MI_EXTERN_C void MI_CALL Container_Server_CreateInstance(
+    Container_Server_Self* self,
     MI_Context* context,
     const MI_Char* nameSpace,
     const MI_Char* className,
-    const Docker_ContainerStatistics* newInstance)
+    const Container_Server* newInstance)
 {
-    Docker_ContainerStatistics_Class_Provider* cxxSelf =((Docker_ContainerStatistics_Class_Provider*)self);
+    Container_Server_Class_Provider* cxxSelf =((Container_Server_Class_Provider*)self);
     Context  cxxContext(context);
-    Docker_ContainerStatistics_Class cxxNewInstance(newInstance, false);
+    Container_Server_Class cxxNewInstance(newInstance, false);
 
     cxxSelf->CreateInstance(cxxContext, nameSpace, cxxNewInstance);
 }
 
-MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_ModifyInstance(
-    Docker_ContainerStatistics_Self* self,
+MI_EXTERN_C void MI_CALL Container_Server_ModifyInstance(
+    Container_Server_Self* self,
     MI_Context* context,
     const MI_Char* nameSpace,
     const MI_Char* className,
-    const Docker_ContainerStatistics* modifiedInstance,
+    const Container_Server* modifiedInstance,
     const MI_PropertySet* propertySet)
 {
-    Docker_ContainerStatistics_Class_Provider* cxxSelf =((Docker_ContainerStatistics_Class_Provider*)self);
+    Container_Server_Class_Provider* cxxSelf =((Container_Server_Class_Provider*)self);
     Context  cxxContext(context);
-    Docker_ContainerStatistics_Class cxxModifiedInstance(modifiedInstance, false);
+    Container_Server_Class cxxModifiedInstance(modifiedInstance, false);
 
     cxxSelf->ModifyInstance(
         cxxContext,
@@ -120,443 +188,443 @@ MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_ModifyInstance(
         __PropertySet(propertySet));
 }
 
-MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_DeleteInstance(
-    Docker_ContainerStatistics_Self* self,
+MI_EXTERN_C void MI_CALL Container_Server_DeleteInstance(
+    Container_Server_Self* self,
     MI_Context* context,
     const MI_Char* nameSpace,
     const MI_Char* className,
-    const Docker_ContainerStatistics* instanceName)
+    const Container_Server* instanceName)
 {
-    Docker_ContainerStatistics_Class_Provider* cxxSelf =((Docker_ContainerStatistics_Class_Provider*)self);
+    Container_Server_Class_Provider* cxxSelf =((Container_Server_Class_Provider*)self);
     Context  cxxContext(context);
-    Docker_ContainerStatistics_Class cxxInstanceName(instanceName, true);
+    Container_Server_Class cxxInstanceName(instanceName, true);
 
     cxxSelf->DeleteInstance(cxxContext, nameSpace, cxxInstanceName);
 }
 
-MI_EXTERN_C void MI_CALL Docker_ContainerStatistics_Invoke_ResetSelectedStats(
-    Docker_ContainerStatistics_Self* self,
+MI_EXTERN_C void MI_CALL Container_Container_Load(
+    Container_Container_Self** self,
+    MI_Module_Self* selfModule,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_Container_Class_Provider* prov = new Container_Container_Class_Provider((Module*)selfModule);
+
+    prov->Load(ctx);
+    if (MI_RESULT_OK != r)
+    {
+        delete prov;
+        MI_Context_PostResult(context, r);
+        return;
+    }
+    *self = (Container_Container_Self*)prov;
+    MI_Context_PostResult(context, MI_RESULT_OK);
+}
+
+MI_EXTERN_C void MI_CALL Container_Container_Unload(
+    Container_Container_Self* self,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_Container_Class_Provider* prov = (Container_Container_Class_Provider*)self;
+
+    prov->Unload(ctx);
+    delete ((Container_Container_Class_Provider*)self);
+    MI_Context_PostResult(context, r);
+}
+
+MI_EXTERN_C void MI_CALL Container_Container_EnumerateInstances(
+    Container_Container_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const MI_PropertySet* propertySet,
+    MI_Boolean keysOnly,
+    const MI_Filter* filter)
+{
+    Container_Container_Class_Provider* cxxSelf =((Container_Container_Class_Provider*)self);
+    Context  cxxContext(context);
+
+    cxxSelf->EnumerateInstances(
+        cxxContext,
+        nameSpace,
+        __PropertySet(propertySet),
+        __bool(keysOnly),
+        filter);
+}
+
+MI_EXTERN_C void MI_CALL Container_Container_GetInstance(
+    Container_Container_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_Container* instanceName,
+    const MI_PropertySet* propertySet)
+{
+    Container_Container_Class_Provider* cxxSelf =((Container_Container_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_Container_Class cxxInstanceName(instanceName, true);
+
+    cxxSelf->GetInstance(
+        cxxContext,
+        nameSpace,
+        cxxInstanceName,
+        __PropertySet(propertySet));
+}
+
+MI_EXTERN_C void MI_CALL Container_Container_CreateInstance(
+    Container_Container_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_Container* newInstance)
+{
+    Container_Container_Class_Provider* cxxSelf =((Container_Container_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_Container_Class cxxNewInstance(newInstance, false);
+
+    cxxSelf->CreateInstance(cxxContext, nameSpace, cxxNewInstance);
+}
+
+MI_EXTERN_C void MI_CALL Container_Container_ModifyInstance(
+    Container_Container_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_Container* modifiedInstance,
+    const MI_PropertySet* propertySet)
+{
+    Container_Container_Class_Provider* cxxSelf =((Container_Container_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_Container_Class cxxModifiedInstance(modifiedInstance, false);
+
+    cxxSelf->ModifyInstance(
+        cxxContext,
+        nameSpace,
+        cxxModifiedInstance,
+        __PropertySet(propertySet));
+}
+
+MI_EXTERN_C void MI_CALL Container_Container_DeleteInstance(
+    Container_Container_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_Container* instanceName)
+{
+    Container_Container_Class_Provider* cxxSelf =((Container_Container_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_Container_Class cxxInstanceName(instanceName, true);
+
+    cxxSelf->DeleteInstance(cxxContext, nameSpace, cxxInstanceName);
+}
+
+MI_EXTERN_C void MI_CALL Container_Container_Invoke_RequestStateChange(
+    Container_Container_Self* self,
     MI_Context* context,
     const MI_Char* nameSpace,
     const MI_Char* className,
     const MI_Char* methodName,
-    const Docker_ContainerStatistics* instanceName,
-    const Docker_ContainerStatistics_ResetSelectedStats* in)
+    const Container_Container* instanceName,
+    const Container_Container_RequestStateChange* in)
 {
-    Docker_ContainerStatistics_Class_Provider* cxxSelf =((Docker_ContainerStatistics_Class_Provider*)self);
-    Docker_ContainerStatistics_Class instance(instanceName, false);
+    Container_Container_Class_Provider* cxxSelf =((Container_Container_Class_Provider*)self);
+    Container_Container_Class instance(instanceName, false);
     Context  cxxContext(context);
-    Docker_ContainerStatistics_ResetSelectedStats_Class param(in, false);
-
-    cxxSelf->Invoke_ResetSelectedStats(cxxContext, nameSpace, instance, param);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Server_Load(
-    Docker_Server_Self** self,
-    MI_Module_Self* selfModule,
-    MI_Context* context)
-{
-    MI_Result r = MI_RESULT_OK;
-    Context ctx(context, &r);
-    Docker_Server_Class_Provider* prov = new Docker_Server_Class_Provider((Module*)selfModule);
-
-    prov->Load(ctx);
-    if (MI_RESULT_OK != r)
-    {
-        delete prov;
-        MI_Context_PostResult(context, r);
-        return;
-    }
-    *self = (Docker_Server_Self*)prov;
-    MI_Context_PostResult(context, MI_RESULT_OK);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Server_Unload(
-    Docker_Server_Self* self,
-    MI_Context* context)
-{
-    MI_Result r = MI_RESULT_OK;
-    Context ctx(context, &r);
-    Docker_Server_Class_Provider* prov = (Docker_Server_Class_Provider*)self;
-
-    prov->Unload(ctx);
-    delete ((Docker_Server_Class_Provider*)self);
-    MI_Context_PostResult(context, r);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Server_EnumerateInstances(
-    Docker_Server_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const MI_PropertySet* propertySet,
-    MI_Boolean keysOnly,
-    const MI_Filter* filter)
-{
-    Docker_Server_Class_Provider* cxxSelf =((Docker_Server_Class_Provider*)self);
-    Context  cxxContext(context);
-
-    cxxSelf->EnumerateInstances(
-        cxxContext,
-        nameSpace,
-        __PropertySet(propertySet),
-        __bool(keysOnly),
-        filter);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Server_GetInstance(
-    Docker_Server_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_Server* instanceName,
-    const MI_PropertySet* propertySet)
-{
-    Docker_Server_Class_Provider* cxxSelf =((Docker_Server_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_Server_Class cxxInstanceName(instanceName, true);
-
-    cxxSelf->GetInstance(
-        cxxContext,
-        nameSpace,
-        cxxInstanceName,
-        __PropertySet(propertySet));
-}
-
-MI_EXTERN_C void MI_CALL Docker_Server_CreateInstance(
-    Docker_Server_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_Server* newInstance)
-{
-    Docker_Server_Class_Provider* cxxSelf =((Docker_Server_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_Server_Class cxxNewInstance(newInstance, false);
-
-    cxxSelf->CreateInstance(cxxContext, nameSpace, cxxNewInstance);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Server_ModifyInstance(
-    Docker_Server_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_Server* modifiedInstance,
-    const MI_PropertySet* propertySet)
-{
-    Docker_Server_Class_Provider* cxxSelf =((Docker_Server_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_Server_Class cxxModifiedInstance(modifiedInstance, false);
-
-    cxxSelf->ModifyInstance(
-        cxxContext,
-        nameSpace,
-        cxxModifiedInstance,
-        __PropertySet(propertySet));
-}
-
-MI_EXTERN_C void MI_CALL Docker_Server_DeleteInstance(
-    Docker_Server_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_Server* instanceName)
-{
-    Docker_Server_Class_Provider* cxxSelf =((Docker_Server_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_Server_Class cxxInstanceName(instanceName, true);
-
-    cxxSelf->DeleteInstance(cxxContext, nameSpace, cxxInstanceName);
-}
-
-MI_EXTERN_C void MI_CALL Docker_ContainerProcessorStatistics_Load(
-    Docker_ContainerProcessorStatistics_Self** self,
-    MI_Module_Self* selfModule,
-    MI_Context* context)
-{
-    MI_Result r = MI_RESULT_OK;
-    Context ctx(context, &r);
-    Docker_ContainerProcessorStatistics_Class_Provider* prov = new Docker_ContainerProcessorStatistics_Class_Provider((Module*)selfModule);
-
-    prov->Load(ctx);
-    if (MI_RESULT_OK != r)
-    {
-        delete prov;
-        MI_Context_PostResult(context, r);
-        return;
-    }
-    *self = (Docker_ContainerProcessorStatistics_Self*)prov;
-    MI_Context_PostResult(context, MI_RESULT_OK);
-}
-
-MI_EXTERN_C void MI_CALL Docker_ContainerProcessorStatistics_Unload(
-    Docker_ContainerProcessorStatistics_Self* self,
-    MI_Context* context)
-{
-    MI_Result r = MI_RESULT_OK;
-    Context ctx(context, &r);
-    Docker_ContainerProcessorStatistics_Class_Provider* prov = (Docker_ContainerProcessorStatistics_Class_Provider*)self;
-
-    prov->Unload(ctx);
-    delete ((Docker_ContainerProcessorStatistics_Class_Provider*)self);
-    MI_Context_PostResult(context, r);
-}
-
-MI_EXTERN_C void MI_CALL Docker_ContainerProcessorStatistics_EnumerateInstances(
-    Docker_ContainerProcessorStatistics_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const MI_PropertySet* propertySet,
-    MI_Boolean keysOnly,
-    const MI_Filter* filter)
-{
-    Docker_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Docker_ContainerProcessorStatistics_Class_Provider*)self);
-    Context  cxxContext(context);
-
-    cxxSelf->EnumerateInstances(
-        cxxContext,
-        nameSpace,
-        __PropertySet(propertySet),
-        __bool(keysOnly),
-        filter);
-}
-
-MI_EXTERN_C void MI_CALL Docker_ContainerProcessorStatistics_GetInstance(
-    Docker_ContainerProcessorStatistics_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_ContainerProcessorStatistics* instanceName,
-    const MI_PropertySet* propertySet)
-{
-    Docker_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Docker_ContainerProcessorStatistics_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_ContainerProcessorStatistics_Class cxxInstanceName(instanceName, true);
-
-    cxxSelf->GetInstance(
-        cxxContext,
-        nameSpace,
-        cxxInstanceName,
-        __PropertySet(propertySet));
-}
-
-MI_EXTERN_C void MI_CALL Docker_ContainerProcessorStatistics_CreateInstance(
-    Docker_ContainerProcessorStatistics_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_ContainerProcessorStatistics* newInstance)
-{
-    Docker_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Docker_ContainerProcessorStatistics_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_ContainerProcessorStatistics_Class cxxNewInstance(newInstance, false);
-
-    cxxSelf->CreateInstance(cxxContext, nameSpace, cxxNewInstance);
-}
-
-MI_EXTERN_C void MI_CALL Docker_ContainerProcessorStatistics_ModifyInstance(
-    Docker_ContainerProcessorStatistics_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_ContainerProcessorStatistics* modifiedInstance,
-    const MI_PropertySet* propertySet)
-{
-    Docker_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Docker_ContainerProcessorStatistics_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_ContainerProcessorStatistics_Class cxxModifiedInstance(modifiedInstance, false);
-
-    cxxSelf->ModifyInstance(
-        cxxContext,
-        nameSpace,
-        cxxModifiedInstance,
-        __PropertySet(propertySet));
-}
-
-MI_EXTERN_C void MI_CALL Docker_ContainerProcessorStatistics_DeleteInstance(
-    Docker_ContainerProcessorStatistics_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_ContainerProcessorStatistics* instanceName)
-{
-    Docker_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Docker_ContainerProcessorStatistics_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_ContainerProcessorStatistics_Class cxxInstanceName(instanceName, true);
-
-    cxxSelf->DeleteInstance(cxxContext, nameSpace, cxxInstanceName);
-}
-
-MI_EXTERN_C void MI_CALL Docker_ContainerProcessorStatistics_Invoke_ResetSelectedStats(
-    Docker_ContainerProcessorStatistics_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const MI_Char* methodName,
-    const Docker_ContainerProcessorStatistics* instanceName,
-    const Docker_ContainerProcessorStatistics_ResetSelectedStats* in)
-{
-    Docker_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Docker_ContainerProcessorStatistics_Class_Provider*)self);
-    Docker_ContainerProcessorStatistics_Class instance(instanceName, false);
-    Context  cxxContext(context);
-    Docker_ContainerProcessorStatistics_ResetSelectedStats_Class param(in, false);
-
-    cxxSelf->Invoke_ResetSelectedStats(cxxContext, nameSpace, instance, param);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Container_Load(
-    Docker_Container_Self** self,
-    MI_Module_Self* selfModule,
-    MI_Context* context)
-{
-    MI_Result r = MI_RESULT_OK;
-    Context ctx(context, &r);
-    Docker_Container_Class_Provider* prov = new Docker_Container_Class_Provider((Module*)selfModule);
-
-    prov->Load(ctx);
-    if (MI_RESULT_OK != r)
-    {
-        delete prov;
-        MI_Context_PostResult(context, r);
-        return;
-    }
-    *self = (Docker_Container_Self*)prov;
-    MI_Context_PostResult(context, MI_RESULT_OK);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Container_Unload(
-    Docker_Container_Self* self,
-    MI_Context* context)
-{
-    MI_Result r = MI_RESULT_OK;
-    Context ctx(context, &r);
-    Docker_Container_Class_Provider* prov = (Docker_Container_Class_Provider*)self;
-
-    prov->Unload(ctx);
-    delete ((Docker_Container_Class_Provider*)self);
-    MI_Context_PostResult(context, r);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Container_EnumerateInstances(
-    Docker_Container_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const MI_PropertySet* propertySet,
-    MI_Boolean keysOnly,
-    const MI_Filter* filter)
-{
-    Docker_Container_Class_Provider* cxxSelf =((Docker_Container_Class_Provider*)self);
-    Context  cxxContext(context);
-
-    cxxSelf->EnumerateInstances(
-        cxxContext,
-        nameSpace,
-        __PropertySet(propertySet),
-        __bool(keysOnly),
-        filter);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Container_GetInstance(
-    Docker_Container_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_Container* instanceName,
-    const MI_PropertySet* propertySet)
-{
-    Docker_Container_Class_Provider* cxxSelf =((Docker_Container_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_Container_Class cxxInstanceName(instanceName, true);
-
-    cxxSelf->GetInstance(
-        cxxContext,
-        nameSpace,
-        cxxInstanceName,
-        __PropertySet(propertySet));
-}
-
-MI_EXTERN_C void MI_CALL Docker_Container_CreateInstance(
-    Docker_Container_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_Container* newInstance)
-{
-    Docker_Container_Class_Provider* cxxSelf =((Docker_Container_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_Container_Class cxxNewInstance(newInstance, false);
-
-    cxxSelf->CreateInstance(cxxContext, nameSpace, cxxNewInstance);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Container_ModifyInstance(
-    Docker_Container_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_Container* modifiedInstance,
-    const MI_PropertySet* propertySet)
-{
-    Docker_Container_Class_Provider* cxxSelf =((Docker_Container_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_Container_Class cxxModifiedInstance(modifiedInstance, false);
-
-    cxxSelf->ModifyInstance(
-        cxxContext,
-        nameSpace,
-        cxxModifiedInstance,
-        __PropertySet(propertySet));
-}
-
-MI_EXTERN_C void MI_CALL Docker_Container_DeleteInstance(
-    Docker_Container_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const Docker_Container* instanceName)
-{
-    Docker_Container_Class_Provider* cxxSelf =((Docker_Container_Class_Provider*)self);
-    Context  cxxContext(context);
-    Docker_Container_Class cxxInstanceName(instanceName, true);
-
-    cxxSelf->DeleteInstance(cxxContext, nameSpace, cxxInstanceName);
-}
-
-MI_EXTERN_C void MI_CALL Docker_Container_Invoke_RequestStateChange(
-    Docker_Container_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const MI_Char* methodName,
-    const Docker_Container* instanceName,
-    const Docker_Container_RequestStateChange* in)
-{
-    Docker_Container_Class_Provider* cxxSelf =((Docker_Container_Class_Provider*)self);
-    Docker_Container_Class instance(instanceName, false);
-    Context  cxxContext(context);
-    Docker_Container_RequestStateChange_Class param(in, false);
+    Container_Container_RequestStateChange_Class param(in, false);
 
     cxxSelf->Invoke_RequestStateChange(cxxContext, nameSpace, instance, param);
 }
 
-MI_EXTERN_C void MI_CALL Docker_Container_Invoke_SetPowerState(
-    Docker_Container_Self* self,
+MI_EXTERN_C void MI_CALL Container_Container_Invoke_SetPowerState(
+    Container_Container_Self* self,
     MI_Context* context,
     const MI_Char* nameSpace,
     const MI_Char* className,
     const MI_Char* methodName,
-    const Docker_Container* instanceName,
-    const Docker_Container_SetPowerState* in)
+    const Container_Container* instanceName,
+    const Container_Container_SetPowerState* in)
 {
-    Docker_Container_Class_Provider* cxxSelf =((Docker_Container_Class_Provider*)self);
-    Docker_Container_Class instance(instanceName, false);
+    Container_Container_Class_Provider* cxxSelf =((Container_Container_Class_Provider*)self);
+    Container_Container_Class instance(instanceName, false);
     Context  cxxContext(context);
-    Docker_Container_SetPowerState_Class param(in, false);
+    Container_Container_SetPowerState_Class param(in, false);
 
     cxxSelf->Invoke_SetPowerState(cxxContext, nameSpace, instance, param);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerStatistics_Load(
+    Container_ContainerStatistics_Self** self,
+    MI_Module_Self* selfModule,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_ContainerStatistics_Class_Provider* prov = new Container_ContainerStatistics_Class_Provider((Module*)selfModule);
+
+    prov->Load(ctx);
+    if (MI_RESULT_OK != r)
+    {
+        delete prov;
+        MI_Context_PostResult(context, r);
+        return;
+    }
+    *self = (Container_ContainerStatistics_Self*)prov;
+    MI_Context_PostResult(context, MI_RESULT_OK);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerStatistics_Unload(
+    Container_ContainerStatistics_Self* self,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_ContainerStatistics_Class_Provider* prov = (Container_ContainerStatistics_Class_Provider*)self;
+
+    prov->Unload(ctx);
+    delete ((Container_ContainerStatistics_Class_Provider*)self);
+    MI_Context_PostResult(context, r);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerStatistics_EnumerateInstances(
+    Container_ContainerStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const MI_PropertySet* propertySet,
+    MI_Boolean keysOnly,
+    const MI_Filter* filter)
+{
+    Container_ContainerStatistics_Class_Provider* cxxSelf =((Container_ContainerStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+
+    cxxSelf->EnumerateInstances(
+        cxxContext,
+        nameSpace,
+        __PropertySet(propertySet),
+        __bool(keysOnly),
+        filter);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerStatistics_GetInstance(
+    Container_ContainerStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerStatistics* instanceName,
+    const MI_PropertySet* propertySet)
+{
+    Container_ContainerStatistics_Class_Provider* cxxSelf =((Container_ContainerStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_ContainerStatistics_Class cxxInstanceName(instanceName, true);
+
+    cxxSelf->GetInstance(
+        cxxContext,
+        nameSpace,
+        cxxInstanceName,
+        __PropertySet(propertySet));
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerStatistics_CreateInstance(
+    Container_ContainerStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerStatistics* newInstance)
+{
+    Container_ContainerStatistics_Class_Provider* cxxSelf =((Container_ContainerStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_ContainerStatistics_Class cxxNewInstance(newInstance, false);
+
+    cxxSelf->CreateInstance(cxxContext, nameSpace, cxxNewInstance);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerStatistics_ModifyInstance(
+    Container_ContainerStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerStatistics* modifiedInstance,
+    const MI_PropertySet* propertySet)
+{
+    Container_ContainerStatistics_Class_Provider* cxxSelf =((Container_ContainerStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_ContainerStatistics_Class cxxModifiedInstance(modifiedInstance, false);
+
+    cxxSelf->ModifyInstance(
+        cxxContext,
+        nameSpace,
+        cxxModifiedInstance,
+        __PropertySet(propertySet));
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerStatistics_DeleteInstance(
+    Container_ContainerStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerStatistics* instanceName)
+{
+    Container_ContainerStatistics_Class_Provider* cxxSelf =((Container_ContainerStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_ContainerStatistics_Class cxxInstanceName(instanceName, true);
+
+    cxxSelf->DeleteInstance(cxxContext, nameSpace, cxxInstanceName);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerStatistics_Invoke_ResetSelectedStats(
+    Container_ContainerStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const MI_Char* methodName,
+    const Container_ContainerStatistics* instanceName,
+    const Container_ContainerStatistics_ResetSelectedStats* in)
+{
+    Container_ContainerStatistics_Class_Provider* cxxSelf =((Container_ContainerStatistics_Class_Provider*)self);
+    Container_ContainerStatistics_Class instance(instanceName, false);
+    Context  cxxContext(context);
+    Container_ContainerStatistics_ResetSelectedStats_Class param(in, false);
+
+    cxxSelf->Invoke_ResetSelectedStats(cxxContext, nameSpace, instance, param);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_Load(
+    Container_ContainerProcessorStatistics_Self** self,
+    MI_Module_Self* selfModule,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_ContainerProcessorStatistics_Class_Provider* prov = new Container_ContainerProcessorStatistics_Class_Provider((Module*)selfModule);
+
+    prov->Load(ctx);
+    if (MI_RESULT_OK != r)
+    {
+        delete prov;
+        MI_Context_PostResult(context, r);
+        return;
+    }
+    *self = (Container_ContainerProcessorStatistics_Self*)prov;
+    MI_Context_PostResult(context, MI_RESULT_OK);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_Unload(
+    Container_ContainerProcessorStatistics_Self* self,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_ContainerProcessorStatistics_Class_Provider* prov = (Container_ContainerProcessorStatistics_Class_Provider*)self;
+
+    prov->Unload(ctx);
+    delete ((Container_ContainerProcessorStatistics_Class_Provider*)self);
+    MI_Context_PostResult(context, r);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_EnumerateInstances(
+    Container_ContainerProcessorStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const MI_PropertySet* propertySet,
+    MI_Boolean keysOnly,
+    const MI_Filter* filter)
+{
+    Container_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Container_ContainerProcessorStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+
+    cxxSelf->EnumerateInstances(
+        cxxContext,
+        nameSpace,
+        __PropertySet(propertySet),
+        __bool(keysOnly),
+        filter);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_GetInstance(
+    Container_ContainerProcessorStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerProcessorStatistics* instanceName,
+    const MI_PropertySet* propertySet)
+{
+    Container_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Container_ContainerProcessorStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_ContainerProcessorStatistics_Class cxxInstanceName(instanceName, true);
+
+    cxxSelf->GetInstance(
+        cxxContext,
+        nameSpace,
+        cxxInstanceName,
+        __PropertySet(propertySet));
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_CreateInstance(
+    Container_ContainerProcessorStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerProcessorStatistics* newInstance)
+{
+    Container_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Container_ContainerProcessorStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_ContainerProcessorStatistics_Class cxxNewInstance(newInstance, false);
+
+    cxxSelf->CreateInstance(cxxContext, nameSpace, cxxNewInstance);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_ModifyInstance(
+    Container_ContainerProcessorStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerProcessorStatistics* modifiedInstance,
+    const MI_PropertySet* propertySet)
+{
+    Container_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Container_ContainerProcessorStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_ContainerProcessorStatistics_Class cxxModifiedInstance(modifiedInstance, false);
+
+    cxxSelf->ModifyInstance(
+        cxxContext,
+        nameSpace,
+        cxxModifiedInstance,
+        __PropertySet(propertySet));
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_DeleteInstance(
+    Container_ContainerProcessorStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerProcessorStatistics* instanceName)
+{
+    Container_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Container_ContainerProcessorStatistics_Class_Provider*)self);
+    Context  cxxContext(context);
+    Container_ContainerProcessorStatistics_Class cxxInstanceName(instanceName, true);
+
+    cxxSelf->DeleteInstance(cxxContext, nameSpace, cxxInstanceName);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_Invoke_ResetSelectedStats(
+    Container_ContainerProcessorStatistics_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const MI_Char* methodName,
+    const Container_ContainerProcessorStatistics* instanceName,
+    const Container_ContainerProcessorStatistics_ResetSelectedStats* in)
+{
+    Container_ContainerProcessorStatistics_Class_Provider* cxxSelf =((Container_ContainerProcessorStatistics_Class_Provider*)self);
+    Container_ContainerProcessorStatistics_Class instance(instanceName, false);
+    Context  cxxContext(context);
+    Container_ContainerProcessorStatistics_ResetSelectedStats_Class param(in, false);
+
+    cxxSelf->Invoke_ResetSelectedStats(cxxContext, nameSpace, instance, param);
 }
 
 
