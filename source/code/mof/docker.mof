@@ -218,3 +218,50 @@ class Container_DaemonEvent : CIM_ManagedElement
 	[ Description ( "Container ID" ) ]
 	String Id;
 };
+
+// Container_ContainerInventory
+// -------------------------------------------------------------------
+[   Version ( "1.0.0" ),
+	Description ( "Docker container inventory data" )
+]
+class Container_ContainerInventory : CIM_ManagedElement
+{
+	[ Description ( "Time when container was created" ) ]
+	String CreatedTime;
+
+	[ Description ( "State of container" ) ]
+	String State;
+
+	[ Description ( "Exit code of container" ) ]
+	uint32 ExitCode;
+
+	[ Description ( "Time when container started" ) ]
+	String StartedTime;
+
+	[ Description ( "Time when container exited" ) ]
+	String FinishedTime;
+
+	[ Description ( "Image ID of container" ) ]
+	String ImageId;
+
+	[ Description ( "Compose group which contains the container" ) ]
+	String ComposeGroup;
+
+	[ Description ( "Host name of container" ) ]
+	String ContainerHostname;
+
+	[ Description ( "Host name of Docker host" ) ]
+	String Computer;
+
+	[ Description ( "JSON of command run inside container" ) ]
+	String Command;
+
+	[ Description ( "JSON of container environment variables" ) ]
+	String EnvironmentVar;
+
+	[ Description ( "JSON of container port mappings" ) ]
+	String Ports;
+
+	[ Description ( "JSON of container links" ) ]
+	String Links;
+};
