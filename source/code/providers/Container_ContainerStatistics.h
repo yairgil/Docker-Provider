@@ -59,6 +59,8 @@ typedef struct _Container_ContainerStatistics /* extends CIM_StatisticalData */
     MI_ConstUint16Field CPUTotalPct;
     MI_ConstUint16Field CPUSystemPct;
     MI_ConstUint64Field CPUHost;
+    MI_ConstUint64Field DiskBytesRead;
+    MI_ConstUint64Field DiskBytesWritten;
 }
 Container_ContainerStatistics;
 
@@ -691,6 +693,38 @@ MI_INLINE MI_Result MI_CALL Container_ContainerStatistics_Clear_CPUHost(
     Container_ContainerStatistics* self)
 {
     memset((void*)&self->CPUHost, 0, sizeof(self->CPUHost));
+    return MI_RESULT_OK;
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerStatistics_Set_DiskBytesRead(
+    Container_ContainerStatistics* self,
+    MI_Uint64 x)
+{
+    ((MI_Uint64Field*)&self->DiskBytesRead)->value = x;
+    ((MI_Uint64Field*)&self->DiskBytesRead)->exists = 1;
+    return MI_RESULT_OK;
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerStatistics_Clear_DiskBytesRead(
+    Container_ContainerStatistics* self)
+{
+    memset((void*)&self->DiskBytesRead, 0, sizeof(self->DiskBytesRead));
+    return MI_RESULT_OK;
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerStatistics_Set_DiskBytesWritten(
+    Container_ContainerStatistics* self,
+    MI_Uint64 x)
+{
+    ((MI_Uint64Field*)&self->DiskBytesWritten)->value = x;
+    ((MI_Uint64Field*)&self->DiskBytesWritten)->exists = 1;
+    return MI_RESULT_OK;
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerStatistics_Clear_DiskBytesWritten(
+    Container_ContainerStatistics* self)
+{
+    memset((void*)&self->DiskBytesWritten, 0, sizeof(self->DiskBytesWritten));
     return MI_RESULT_OK;
 }
 
@@ -1855,6 +1889,86 @@ public:
     void CPUHost_clear()
     {
         const size_t n = offsetof(Self, CPUHost);
+        GetField<Uint64>(n).Clear();
+    }
+
+    //
+    // Container_ContainerStatistics_Class.DiskBytesRead
+    //
+    
+    const Field<Uint64>& DiskBytesRead() const
+    {
+        const size_t n = offsetof(Self, DiskBytesRead);
+        return GetField<Uint64>(n);
+    }
+    
+    void DiskBytesRead(const Field<Uint64>& x)
+    {
+        const size_t n = offsetof(Self, DiskBytesRead);
+        GetField<Uint64>(n) = x;
+    }
+    
+    const Uint64& DiskBytesRead_value() const
+    {
+        const size_t n = offsetof(Self, DiskBytesRead);
+        return GetField<Uint64>(n).value;
+    }
+    
+    void DiskBytesRead_value(const Uint64& x)
+    {
+        const size_t n = offsetof(Self, DiskBytesRead);
+        GetField<Uint64>(n).Set(x);
+    }
+    
+    bool DiskBytesRead_exists() const
+    {
+        const size_t n = offsetof(Self, DiskBytesRead);
+        return GetField<Uint64>(n).exists ? true : false;
+    }
+    
+    void DiskBytesRead_clear()
+    {
+        const size_t n = offsetof(Self, DiskBytesRead);
+        GetField<Uint64>(n).Clear();
+    }
+
+    //
+    // Container_ContainerStatistics_Class.DiskBytesWritten
+    //
+    
+    const Field<Uint64>& DiskBytesWritten() const
+    {
+        const size_t n = offsetof(Self, DiskBytesWritten);
+        return GetField<Uint64>(n);
+    }
+    
+    void DiskBytesWritten(const Field<Uint64>& x)
+    {
+        const size_t n = offsetof(Self, DiskBytesWritten);
+        GetField<Uint64>(n) = x;
+    }
+    
+    const Uint64& DiskBytesWritten_value() const
+    {
+        const size_t n = offsetof(Self, DiskBytesWritten);
+        return GetField<Uint64>(n).value;
+    }
+    
+    void DiskBytesWritten_value(const Uint64& x)
+    {
+        const size_t n = offsetof(Self, DiskBytesWritten);
+        GetField<Uint64>(n).Set(x);
+    }
+    
+    bool DiskBytesWritten_exists() const
+    {
+        const size_t n = offsetof(Self, DiskBytesWritten);
+        return GetField<Uint64>(n).exists ? true : false;
+    }
+    
+    void DiskBytesWritten_clear()
+    {
+        const size_t n = offsetof(Self, DiskBytesWritten);
         GetField<Uint64>(n).Clear();
     }
 };

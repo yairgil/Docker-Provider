@@ -14,6 +14,7 @@
 #include "Container_Container_Class_Provider.h"
 #include "Container_ContainerStatistics_Class_Provider.h"
 #include "Container_ContainerProcessorStatistics_Class_Provider.h"
+#include "Container_ContainerInventory_Class_Provider.h"
 
 using namespace mi;
 
@@ -625,6 +626,39 @@ MI_EXTERN_C void MI_CALL Container_ContainerProcessorStatistics_Invoke_ResetSele
     Container_ContainerProcessorStatistics_ResetSelectedStats_Class param(in, false);
 
     cxxSelf->Invoke_ResetSelectedStats(cxxContext, nameSpace, instance, param);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerInventory_Load(
+    Container_ContainerInventory_Self** self,
+    MI_Module_Self* selfModule,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_ContainerInventory_Class_Provider* prov = new Container_ContainerInventory_Class_Provider((Module*)selfModule);
+
+    prov->Load(ctx);
+    if (MI_RESULT_OK != r)
+    {
+        delete prov;
+        MI_Context_PostResult(context, r);
+        return;
+    }
+    *self = (Container_ContainerInventory_Self*)prov;
+    MI_Context_PostResult(context, MI_RESULT_OK);
+}
+
+MI_EXTERN_C void MI_CALL Container_ContainerInventory_Unload(
+    Container_ContainerInventory_Self* self,
+    MI_Context* context)
+{
+    MI_Result r = MI_RESULT_OK;
+    Context ctx(context, &r);
+    Container_ContainerInventory_Class_Provider* prov = (Container_ContainerInventory_Class_Provider*)self;
+
+    prov->Unload(ctx);
+    delete ((Container_ContainerInventory_Class_Provider*)self);
+    MI_Context_PostResult(context, r);
 }
 
 

@@ -39,6 +39,8 @@ typedef struct _Container_ImageInventory /* extends CIM_ManagedElement */
     MI_ConstUint32Field Stopped;
     MI_ConstUint32Field Failed;
     MI_ConstUint32Field Paused;
+    MI_ConstStringField ImageSize;
+    MI_ConstStringField VirtualSize;
 }
 Container_ImageInventory;
 
@@ -450,6 +452,70 @@ MI_INLINE MI_Result MI_CALL Container_ImageInventory_Clear_Paused(
     return MI_RESULT_OK;
 }
 
+MI_INLINE MI_Result MI_CALL Container_ImageInventory_Set_ImageSize(
+    Container_ImageInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        12,
+        (MI_Value*)&str,
+        MI_STRING,
+        0);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ImageInventory_SetPtr_ImageSize(
+    Container_ImageInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        12,
+        (MI_Value*)&str,
+        MI_STRING,
+        MI_FLAG_BORROW);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ImageInventory_Clear_ImageSize(
+    Container_ImageInventory* self)
+{
+    return self->__instance.ft->ClearElementAt(
+        (MI_Instance*)&self->__instance,
+        12);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ImageInventory_Set_VirtualSize(
+    Container_ImageInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        13,
+        (MI_Value*)&str,
+        MI_STRING,
+        0);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ImageInventory_SetPtr_VirtualSize(
+    Container_ImageInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        13,
+        (MI_Value*)&str,
+        MI_STRING,
+        MI_FLAG_BORROW);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ImageInventory_Clear_VirtualSize(
+    Container_ImageInventory* self)
+{
+    return self->__instance.ft->ClearElementAt(
+        (MI_Instance*)&self->__instance,
+        13);
+}
+
 /*
 **==============================================================================
 **
@@ -855,6 +921,86 @@ public:
     {
         const size_t n = offsetof(Self, Paused);
         GetField<Uint32>(n).Clear();
+    }
+
+    //
+    // Container_ImageInventory_Class.ImageSize
+    //
+    
+    const Field<String>& ImageSize() const
+    {
+        const size_t n = offsetof(Self, ImageSize);
+        return GetField<String>(n);
+    }
+    
+    void ImageSize(const Field<String>& x)
+    {
+        const size_t n = offsetof(Self, ImageSize);
+        GetField<String>(n) = x;
+    }
+    
+    const String& ImageSize_value() const
+    {
+        const size_t n = offsetof(Self, ImageSize);
+        return GetField<String>(n).value;
+    }
+    
+    void ImageSize_value(const String& x)
+    {
+        const size_t n = offsetof(Self, ImageSize);
+        GetField<String>(n).Set(x);
+    }
+    
+    bool ImageSize_exists() const
+    {
+        const size_t n = offsetof(Self, ImageSize);
+        return GetField<String>(n).exists ? true : false;
+    }
+    
+    void ImageSize_clear()
+    {
+        const size_t n = offsetof(Self, ImageSize);
+        GetField<String>(n).Clear();
+    }
+
+    //
+    // Container_ImageInventory_Class.VirtualSize
+    //
+    
+    const Field<String>& VirtualSize() const
+    {
+        const size_t n = offsetof(Self, VirtualSize);
+        return GetField<String>(n);
+    }
+    
+    void VirtualSize(const Field<String>& x)
+    {
+        const size_t n = offsetof(Self, VirtualSize);
+        GetField<String>(n) = x;
+    }
+    
+    const String& VirtualSize_value() const
+    {
+        const size_t n = offsetof(Self, VirtualSize);
+        return GetField<String>(n).value;
+    }
+    
+    void VirtualSize_value(const String& x)
+    {
+        const size_t n = offsetof(Self, VirtualSize);
+        GetField<String>(n).Set(x);
+    }
+    
+    bool VirtualSize_exists() const
+    {
+        const size_t n = offsetof(Self, VirtualSize);
+        return GetField<String>(n).exists ? true : false;
+    }
+    
+    void VirtualSize_clear()
+    {
+        const size_t n = offsetof(Self, VirtualSize);
+        GetField<String>(n).Clear();
     }
 };
 

@@ -3,6 +3,7 @@
 #include "Container_ImageInventory_Class_Provider.h"
 
 #include <map>
+#include <stdio.h>
 #include <string>
 #include <syslog.h>
 #include <unistd.h>
@@ -10,6 +11,8 @@
 
 #include "cJSON.h"
 #include "DockerRemoteApi.h"
+
+#define NUMBYTESPERMB 1048576
 
 using namespace std;
 
@@ -263,6 +266,14 @@ public:
 
 					// Get ID
 					instance.InstanceID_value(cJSON_GetObjectItem(entry, "Id")->valuestring);
+
+					// Get size
+					char imageSize[128];
+					char virtualSize[128];
+					sprintf(imageSize, "%d MB", cJSON_GetObjectItem(entry, "Size")->valueint / NUMBYTESPERMB);
+					sprintf(virtualSize, "%d MB", cJSON_GetObjectItem(entry, "VirtualSize")->valueint / NUMBYTESPERMB);
+					instance.ImageSize_value(imageSize);
+					instance.VirtualSize_value(virtualSize);
 
 					// Get image
 					SetImageRepositoryImageTag(instance, SelectTag(cJSON_GetObjectItem(entry, "RepoTags")));

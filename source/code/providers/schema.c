@@ -14,6 +14,7 @@
 #include "Container_Container.h"
 #include "Container_ContainerStatistics.h"
 #include "Container_ContainerProcessorStatistics.h"
+#include "Container_ContainerInventory.h"
 
 /*
 **==============================================================================
@@ -322,6 +323,40 @@ static MI_CONST MI_PropertyDecl Container_ImageInventory_Paused_prop =
     NULL,
 };
 
+/* property Container_ImageInventory.ImageSize */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_ImageSize_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00696509, /* code */
+    MI_T("ImageSize"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ImageInventory, ImageSize), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ImageInventory.VirtualSize */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_VirtualSize_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0076650B, /* code */
+    MI_T("VirtualSize"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ImageInventory, VirtualSize), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
+    NULL,
+};
+
 static MI_PropertyDecl MI_CONST* MI_CONST Container_ImageInventory_props[] =
 {
     &CIM_ManagedElement_InstanceID_prop,
@@ -336,6 +371,8 @@ static MI_PropertyDecl MI_CONST* MI_CONST Container_ImageInventory_props[] =
     &Container_ImageInventory_Stopped_prop,
     &Container_ImageInventory_Failed_prop,
     &Container_ImageInventory_Paused_prop,
+    &Container_ImageInventory_ImageSize_prop,
+    &Container_ImageInventory_VirtualSize_prop,
 };
 
 static MI_CONST MI_ProviderFT Container_ImageInventory_funcs =
@@ -5333,6 +5370,40 @@ static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUHost_prop =
     NULL,
 };
 
+/* property Container_ContainerStatistics.DiskBytesRead */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_DiskBytesRead_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0064640D, /* code */
+    MI_T("DiskBytesRead"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, DiskBytesRead), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerStatistics.DiskBytesWritten */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_DiskBytesWritten_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00646E10, /* code */
+    MI_T("DiskBytesWritten"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT64, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerStatistics, DiskBytesWritten), /* offset */
+    MI_T("Container_ContainerStatistics"), /* origin */
+    MI_T("Container_ContainerStatistics"), /* propagator */
+    NULL,
+};
+
 static MI_PropertyDecl MI_CONST* MI_CONST Container_ContainerStatistics_props[] =
 {
     &CIM_StatisticalData_InstanceID_prop,
@@ -5365,6 +5436,8 @@ static MI_PropertyDecl MI_CONST* MI_CONST Container_ContainerStatistics_props[] 
     &Container_ContainerStatistics_CPUTotalPct_prop,
     &Container_ContainerStatistics_CPUSystemPct_prop,
     &Container_ContainerStatistics_CPUHost_prop,
+    &Container_ContainerStatistics_DiskBytesRead_prop,
+    &Container_ContainerStatistics_DiskBytesWritten_prop,
 };
 
 /* parameter Container_ContainerStatistics.ResetSelectedStats(): SelectedStatistics */
@@ -5685,6 +5758,338 @@ MI_CONST MI_ClassDecl Container_ContainerProcessorStatistics_rtti =
 /*
 **==============================================================================
 **
+** Container_ContainerInventory
+**
+**==============================================================================
+*/
+
+/* property Container_ContainerInventory.CreatedTime */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_CreatedTime_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0063650B, /* code */
+    MI_T("CreatedTime"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, CreatedTime), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.State */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_State_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00736505, /* code */
+    MI_T("State"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, State), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.ExitCode */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_ExitCode_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00656508, /* code */
+    MI_T("ExitCode"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, ExitCode), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.StartedTime */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_StartedTime_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0073650B, /* code */
+    MI_T("StartedTime"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, StartedTime), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.FinishedTime */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_FinishedTime_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0066650C, /* code */
+    MI_T("FinishedTime"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, FinishedTime), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.ImageId */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_ImageId_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00696407, /* code */
+    MI_T("ImageId"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, ImageId), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.ImageFullName */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_ImageFullName_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0069650D, /* code */
+    MI_T("ImageFullName"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, ImageFullName), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.ComposeGroup */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_ComposeGroup_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0063700C, /* code */
+    MI_T("ComposeGroup"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, ComposeGroup), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.ContainerHostname */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_ContainerHostname_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00636511, /* code */
+    MI_T("ContainerHostname"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, ContainerHostname), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.Computer */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_Computer_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00637208, /* code */
+    MI_T("Computer"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, Computer), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.Command */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_Command_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00636407, /* code */
+    MI_T("Command"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, Command), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.EnvironmentVar */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_EnvironmentVar_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0065720E, /* code */
+    MI_T("EnvironmentVar"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, EnvironmentVar), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.Ports */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_Ports_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00707305, /* code */
+    MI_T("Ports"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, Ports), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+/* property Container_ContainerInventory.Links */
+static MI_CONST MI_PropertyDecl Container_ContainerInventory_Links_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006C7305, /* code */
+    MI_T("Links"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ContainerInventory, Links), /* offset */
+    MI_T("Container_ContainerInventory"), /* origin */
+    MI_T("Container_ContainerInventory"), /* propagator */
+    NULL,
+};
+
+static MI_PropertyDecl MI_CONST* MI_CONST Container_ContainerInventory_props[] =
+{
+    &CIM_ManagedElement_InstanceID_prop,
+    &CIM_ManagedElement_Caption_prop,
+    &CIM_ManagedElement_Description_prop,
+    &CIM_ManagedElement_ElementName_prop,
+    &Container_ContainerInventory_CreatedTime_prop,
+    &Container_ContainerInventory_State_prop,
+    &Container_ContainerInventory_ExitCode_prop,
+    &Container_ContainerInventory_StartedTime_prop,
+    &Container_ContainerInventory_FinishedTime_prop,
+    &Container_ContainerInventory_ImageId_prop,
+    &Container_ContainerInventory_ImageFullName_prop,
+    &Container_ContainerInventory_ComposeGroup_prop,
+    &Container_ContainerInventory_ContainerHostname_prop,
+    &Container_ContainerInventory_Computer_prop,
+    &Container_ContainerInventory_Command_prop,
+    &Container_ContainerInventory_EnvironmentVar_prop,
+    &Container_ContainerInventory_Ports_prop,
+    &Container_ContainerInventory_Links_prop,
+};
+
+static MI_CONST MI_ProviderFT Container_ContainerInventory_funcs =
+{
+  (MI_ProviderFT_Load)Container_ContainerInventory_Load,
+  (MI_ProviderFT_Unload)Container_ContainerInventory_Unload,
+  (MI_ProviderFT_GetInstance)NULL,
+  (MI_ProviderFT_EnumerateInstances)NULL,
+  (MI_ProviderFT_CreateInstance)NULL,
+  (MI_ProviderFT_ModifyInstance)NULL,
+  (MI_ProviderFT_DeleteInstance)NULL,
+  (MI_ProviderFT_AssociatorInstances)NULL,
+  (MI_ProviderFT_ReferenceInstances)NULL,
+  (MI_ProviderFT_EnableIndications)NULL,
+  (MI_ProviderFT_DisableIndications)NULL,
+  (MI_ProviderFT_Subscribe)NULL,
+  (MI_ProviderFT_Unsubscribe)NULL,
+  (MI_ProviderFT_Invoke)NULL,
+};
+
+static MI_CONST MI_Char* Container_ContainerInventory_UMLPackagePath_qual_value = MI_T("CIM::Core::CoreElements");
+
+static MI_CONST MI_Qualifier Container_ContainerInventory_UMLPackagePath_qual =
+{
+    MI_T("UMLPackagePath"),
+    MI_STRING,
+    0,
+    &Container_ContainerInventory_UMLPackagePath_qual_value
+};
+
+static MI_CONST MI_Char* Container_ContainerInventory_Version_qual_value = MI_T("1.0.0");
+
+static MI_CONST MI_Qualifier Container_ContainerInventory_Version_qual =
+{
+    MI_T("Version"),
+    MI_STRING,
+    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
+    &Container_ContainerInventory_Version_qual_value
+};
+
+static MI_Qualifier MI_CONST* MI_CONST Container_ContainerInventory_quals[] =
+{
+    &Container_ContainerInventory_UMLPackagePath_qual,
+    &Container_ContainerInventory_Version_qual,
+};
+
+/* class Container_ContainerInventory */
+MI_CONST MI_ClassDecl Container_ContainerInventory_rtti =
+{
+    MI_FLAG_CLASS, /* flags */
+    0x0063791C, /* code */
+    MI_T("Container_ContainerInventory"), /* name */
+    Container_ContainerInventory_quals, /* qualifiers */
+    MI_COUNT(Container_ContainerInventory_quals), /* numQualifiers */
+    Container_ContainerInventory_props, /* properties */
+    MI_COUNT(Container_ContainerInventory_props), /* numProperties */
+    sizeof(Container_ContainerInventory), /* size */
+    MI_T("CIM_ManagedElement"), /* superClass */
+    &CIM_ManagedElement_rtti, /* superClassDecl */
+    NULL, /* methods */
+    0, /* numMethods */
+    &schemaDecl, /* schema */
+    &Container_ContainerInventory_funcs, /* functions */
+    NULL, /* owningClass */
+};
+
+/*
+**==============================================================================
+**
 ** __mi_server
 **
 **==============================================================================
@@ -5715,6 +6120,7 @@ static MI_ClassDecl MI_CONST* MI_CONST classes[] =
     &CIM_System_rtti,
     &CIM_VirtualComputerSystem_rtti,
     &Container_Container_rtti,
+    &Container_ContainerInventory_rtti,
     &Container_ContainerProcessorStatistics_rtti,
     &Container_ContainerStatistics_rtti,
     &Container_DaemonEvent_rtti,

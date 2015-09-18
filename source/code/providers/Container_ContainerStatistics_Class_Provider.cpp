@@ -5,18 +5,20 @@
 #include <map>
 #include <stdlib.h>
 #include <string>
+#include <string.h>
+#include <vector>
 
 #include "cJSON_Extend.h"
 #include "DockerRemoteApi.h"
 
 using namespace std;
 
-string api_get_container_info(id)
+string api_get_container_info(string id)
 {
 	return string("GET /containers/" + id + "/json HTTP/1.1\r\n\r\n");
 }
 
-string api_get_container_stats(id)
+string api_get_container_stats(string id)
 {
 	return string("GET /containers/" + id + "/stats?stream=false HTTP/1.1\r\n\r\n");
 }
@@ -31,6 +33,51 @@ long getreadtimeofdockerapi(char* time)
 }
 
 MI_BEGIN_NAMESPACE
+
+void TrySetContainerDiskData(Container_ContainerStatistics_Class& instance, string id)
+{
+	// Request stats
+	vector<string> request(1, api_get_container_stats(id));
+	vector<cJSON*> response = getResponse(request);
+
+	if (response.size() && response[0])
+	{
+		cJSON* blkio_stats = cJSON_GetObjectItem(response[0], "blkio_stats");
+
+		if (blkio_stats)
+		{
+			cJSON* values = cJSON_GetObjectItem(blkio_stats, "io_service_bytes_recursive");
+
+			bool readFlag = false;
+			bool writeFlag = false;
+
+			for (int i = 0; values && !readFlag && !writeFlag && i < cJSON_GetArraySize(values); i++)
+			{
+				cJSON* entry = cJSON_GetArrayItem(values, i);
+
+				if (entry)
+				{
+					cJSON* op = cJSON_GetObjectItem(entry, "op");
+					cJSON* rawValue = cJSON_GetObjectItem(entry, "value");
+
+					if (op && rawValue)
+					{
+						if (!strcmp(op->valuestring, "Read"))
+						{
+							instance.DiskBytesRead_value((long)rawValue);
+							readFlag = true;
+						}
+						else if (!strcmp(op->valuestring, "Write"))
+						{
+							instance.DiskBytesWritten_value((long)rawValue);
+							writeFlag = true;
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 void Container_ContainerStatistics_Class_set(Container_ContainerStatistics_Class& stats, cJSON* data, map<string, Container_ContainerStatistics_Class>& map)
 {
@@ -116,6 +163,7 @@ void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& c
 			Container_ContainerStatistics_Class inst;
 			inst.InstanceID_value(containers[i].c_str());
 			Container_ContainerStatistics_Class_set(inst, response[i], map_data);
+			TrySetContainerDiskData(inst, containers[i]);
 			context.Post(inst);
 			cJSON_Delete(response[i]);
 		}
