@@ -2,15 +2,16 @@
 #include <MI.h>
 #include "Container_DaemonEvent_Class_Provider.h"
 
-#include <time.h>
 #include <stdio.h>
 #include <string>
 #include <syslog.h>
+#include <time.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
 #include <vector>
 
-#include "DockerRemoteApi.h"
+#include "../cjson/cJSON.h"
+#include "../dockerapi/DockerRemoteApi.h"
 
 #define LASTQUERYTIMEFILE "/var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt"
 
@@ -137,7 +138,11 @@ public:
 						instance.Computer_value(hostname.c_str());
 						instance.InstanceID_value(Guid::NewToString().c_str());
 						instance.Command_value(cJSON_GetObjectItem(entry, "status")->valuestring);
-						instance.TimeOfCommand_value(cJSON_GetObjectItem(entry, "time")->valuestring);
+
+						char buffer[33];
+						sprintf(buffer, "%d", cJSON_GetObjectItem(entry, "time")->valueint);
+						instance.TimeOfCommand_value(buffer);
+
 						instance.Id_value(cJSON_GetObjectItem(entry, "id")->valuestring);
 
 						result.push_back(instance);

@@ -9,8 +9,8 @@
 #include <unistd.h>
 #include <vector>
 
-#include "cJSON.h"
-#include "DockerRemoteApi.h"
+#include "../cjson/cJSON.h"
+#include "../dockerapi/DockerRemoteApi.h"
 
 #define NUMBYTESPERMB 1048576
 
@@ -99,7 +99,7 @@ private:
 
 				if ((unsigned)colonLocation != string::npos)
 				{
-					if ((unsigned)slashLocation == string::npos)
+					if ((unsigned)slashLocation >= properties.size())
 					{
 						// image:imagetag
 						instance.Image_value(properties.substr(0, colonLocation).c_str());
@@ -142,7 +142,7 @@ private:
 
 		if (state)
 		{
-			string id = string(cJSON_GetObjectItem(entry, "Id")->valuestring).substr(0, 12);
+			string id = string(cJSON_GetObjectItem(entry, "Image")->valuestring);
 
 			if (cJSON_GetObjectItem(state, "Running")->valueint)
 			{
@@ -341,22 +341,22 @@ void Container_ImageInventory_Class_Provider::EnumerateInstances(Context& contex
 
 void Container_ImageInventory_Class_Provider::GetInstance(Context& context, const String& nameSpace, const Container_ImageInventory_Class& instanceName, const PropertySet& propertySet)
 {
-	context.Post(MI_RESULT_NOT_SUPPORTED);
+	context.Post(MI_RESULT_OK);
 }
 
 void Container_ImageInventory_Class_Provider::CreateInstance(Context& context, const String& nameSpace, const Container_ImageInventory_Class& newInstance)
 {
-	context.Post(MI_RESULT_NOT_SUPPORTED);
+	context.Post(MI_RESULT_OK);
 }
 
 void Container_ImageInventory_Class_Provider::ModifyInstance(Context& context, const String& nameSpace, const Container_ImageInventory_Class& modifiedInstance, const PropertySet& propertySet)
 {
-	context.Post(MI_RESULT_NOT_SUPPORTED);
+	context.Post(MI_RESULT_OK);
 }
 
 void Container_ImageInventory_Class_Provider::DeleteInstance(Context& context, const String& nameSpace, const Container_ImageInventory_Class& instanceName)
 {
-	context.Post(MI_RESULT_NOT_SUPPORTED);
+	context.Post(MI_RESULT_OK);
 }
 
 #ifdef _MSC_VER

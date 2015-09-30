@@ -8,8 +8,8 @@
 #include <string.h>
 #include <vector>
 
-#include "cJSON_Extend.h"
-#include "DockerRemoteApi.h"
+#include "../cjson/cJSON_Extend.h"
+#include "../dockerapi/DockerRemoteApi.h"
 
 using namespace std;
 
@@ -39,6 +39,9 @@ void TrySetContainerDiskData(Container_ContainerStatistics_Class& instance, stri
 	// Request stats
 	vector<string> request(1, api_get_container_stats(id));
 	vector<cJSON*> response = getResponse(request);
+
+	instance.DiskBytesRead_value(0);
+	instance.DiskBytesWritten_value(0);
 
 	if (response.size() && response[0])
 	{
@@ -85,28 +88,36 @@ void Container_ContainerStatistics_Class_set(Container_ContainerStatistics_Class
 	long readtime = getreadtimeofdockerapi(cJSON_Get(data, "read")->valuestring);
 	stats.updatetime_value(readtime);
 	stats.ElementName_value(lstats.ElementName().value);
-	double interval = (readtime - lstats.updatetime().value) / 10000.0;
-	stats.CPUTotal_value(cJSON_Get(data, "cpu_stats.cpu_usage.total_usage")->valuedouble);
-	stats.NetRXBytes_value(cJSON_Get(data, "network.rx_bytes")->valuedouble);
-	stats.NetBytes_value(cJSON_Get(data, "network.tx_bytes")->valuedouble + cJSON_Get(data, "network.rx_bytes")->valuedouble);
-	stats.NetTXBytes_value(cJSON_Get(data, "network.tx_bytes")->valuedouble);
-	stats.NetRXKBytesPerSec_value((stats.NetRXBytes().value - lstats.NetRXBytes().value) / 1024 / interval);
-	stats.NetTXKBytesPerSec_value((stats.NetTXBytes().value - lstats.NetTXBytes().value) / 1024 / interval);
-	stats.MemCacheMB_value(cJSON_Get(data, "memory_stats.stats.cache")->valuedouble / 1024 / 1024);
-	stats.MemRSSMB_value(cJSON_Get(data, "memory_stats.stats.total_rss")->valuedouble / 1024 / 1024);
-	stats.MemPGFault_value(cJSON_Get(data, "memory_stats.stats.pgfault")->valuedouble);
-	stats.MemPGFaultPerSec_value((stats.MemPGFault().value - lstats.MemPGFault().value) / interval);
-	stats.MemPGMajFault_value(cJSON_Get(data, "memory_stats.stats.pgmajfault")->valuedouble);
-	stats.MemPGMajFaultPerSec_value((stats.MemPGMajFault().value - lstats.MemPGMajFault().value) / interval);
-	stats.MemUnevictableMB_value(cJSON_Get(data, "memory_stats.stats.unevictable")->valuedouble / 1024 / 1024);
-	stats.MemLimitMB_value(cJSON_Get(data, "memory_stats.limit")->valuedouble / 1024 / 1024);
-	stats.MemUsedPct_value(cJSON_Get(data, "memory_stats.usage")->valuedouble * 100 / cJSON_Get(data, "memory_stats.limit")->valuedouble);
-	stats.CPUTotal_value(cJSON_Get(data, "cpu_stats.cpu_usage.total_usage")->valuedouble);
-	stats.CPUHost_value(cJSON_Get(data, "cpu_stats.system_cpu_usage")->valuedouble);
-	stats.CPUSystem_value(cJSON_Get(data, "cpu_stats.cpu_usage.usage_in_kernelmode")->valuedouble);
+	// double interval = (readtime - lstats.updatetime().value) / 10000.0;
+	stats.NetRXBytes_value(cJSON_Get(data, "network.rx_bytes")->valueint);
+	// stats.NetBytes_value(cJSON_Get(data, "network.tx_bytes")->valuedouble + cJSON_Get(data, "network.rx_bytes")->valuedouble);
+	stats.NetTXBytes_value(cJSON_Get(data, "network.tx_bytes")->valueint);
+	// stats.NetRXKBytesPerSec_value((stats.NetRXBytes().value - lstats.NetRXBytes().value) / 1024 / interval);
+	// stats.NetTXKBytesPerSec_value((stats.NetTXBytes().value - lstats.NetTXBytes().value) / 1024 / interval);
+	// stats.MemCacheMB_value(cJSON_Get(data, "memory_stats.stats.cache")->valuedouble / 1024 / 1024);
+	// stats.MemRSSMB_value(cJSON_Get(data, "memory_stats.stats.total_rss")->valuedouble / 1024 / 1024);
+	// stats.MemPGFault_value(cJSON_Get(data, "memory_stats.stats.pgfault")->valuedouble);
+	// stats.MemPGFaultPerSec_value((stats.MemPGFault().value - lstats.MemPGFault().value) / interval);
+	// stats.MemPGMajFault_value(cJSON_Get(data, "memory_stats.stats.pgmajfault")->valuedouble);
+	// stats.MemPGMajFaultPerSec_value((stats.MemPGMajFault().value - lstats.MemPGMajFault().value) / interval);
+	// stats.MemUnevictableMB_value(cJSON_Get(data, "memory_stats.stats.unevictable")->valuedouble / 1024 / 1024);
+	// stats.MemLimitMB_value(cJSON_Get(data, "memory_stats.limit")->valuedouble / 1024 / 1024);
+	stats.MemUsedPct_value(cJSON_Get(data, "memory_stats.usage")->valueint / 1024 / 1024);
+	stats.CPUTotal_value(cJSON_Get(data, "cpu_stats.cpu_usage.total_usage")->valueint);
+	// stats.CPUHost_value(cJSON_Get(data, "cpu_stats.system_cpu_usage")->valuedouble);
+	// stats.CPUSystem_value(cJSON_Get(data, "cpu_stats.cpu_usage.usage_in_kernelmode")->valuedouble);
 	int cpu_number = cJSON_GetArraySize(cJSON_Get(data, "cpu_stats.cpu_usage.percpu_usage"));
-	stats.CPUTotalPct_value((stats.CPUTotal().value - lstats.CPUTotal().value)*cpu_number * 100 / (stats.CPUHost().value - lstats.CPUHost().value));
-	stats.CPUSystemPct_value((stats.CPUSystem().value - lstats.CPUSystem().value)*cpu_number * 100 / (stats.CPUHost().value - lstats.CPUHost().value));
+	
+	if ((stats.CPUHost().value - lstats.CPUHost().value))
+	{
+		stats.CPUTotalPct_value((stats.CPUTotal().value - lstats.CPUTotal().value)*cpu_number * 100 / (stats.CPUHost().value - lstats.CPUHost().value));
+	}
+	else
+	{
+		stats.CPUTotalPct_value(0);
+	}
+
+	// stats.CPUSystemPct_value((stats.CPUSystem().value - lstats.CPUSystem().value)*cpu_number * 100 / (stats.CPUHost().value - lstats.CPUHost().value));
 	map[string(stats.InstanceID().value.Str())] = stats;
 }
 
@@ -131,7 +142,7 @@ void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& c
 	try
 	{
 		vector<string> containers = listContainer();
-		vector<string > request;
+		vector<string> request;
 
 		for (unsigned int i = 0; i < containers.size(); i++)
 		{

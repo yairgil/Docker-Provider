@@ -18,6 +18,7 @@
 ** Container_ContainerInventory [Container_ContainerInventory]
 **
 ** Keys:
+**    InstanceID
 **
 **==============================================================================
 */
@@ -26,7 +27,7 @@ typedef struct _Container_ContainerInventory /* extends CIM_ManagedElement */
 {
     MI_Instance __instance;
     /* CIM_ManagedElement properties */
-    MI_ConstStringField InstanceID;
+    /*KEY*/ MI_ConstStringField InstanceID;
     MI_ConstStringField Caption;
     MI_ConstStringField Description;
     MI_ConstStringField ElementName;
@@ -37,6 +38,9 @@ typedef struct _Container_ContainerInventory /* extends CIM_ManagedElement */
     MI_ConstStringField StartedTime;
     MI_ConstStringField FinishedTime;
     MI_ConstStringField ImageId;
+    MI_ConstStringField Image;
+    MI_ConstStringField Repository;
+    MI_ConstStringField ImageTag;
     MI_ConstStringField ComposeGroup;
     MI_ConstStringField ContainerHostname;
     MI_ConstStringField Computer;
@@ -439,13 +443,109 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_ImageId(
         9);
 }
 
-MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_ComposeGroup(
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Image(
     Container_ContainerInventory* self,
     const MI_Char* str)
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
         10,
+        (MI_Value*)&str,
+        MI_STRING,
+        0);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_Image(
+    Container_ContainerInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        10,
+        (MI_Value*)&str,
+        MI_STRING,
+        MI_FLAG_BORROW);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_Image(
+    Container_ContainerInventory* self)
+{
+    return self->__instance.ft->ClearElementAt(
+        (MI_Instance*)&self->__instance,
+        10);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Repository(
+    Container_ContainerInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        11,
+        (MI_Value*)&str,
+        MI_STRING,
+        0);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_Repository(
+    Container_ContainerInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        11,
+        (MI_Value*)&str,
+        MI_STRING,
+        MI_FLAG_BORROW);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_Repository(
+    Container_ContainerInventory* self)
+{
+    return self->__instance.ft->ClearElementAt(
+        (MI_Instance*)&self->__instance,
+        11);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_ImageTag(
+    Container_ContainerInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        12,
+        (MI_Value*)&str,
+        MI_STRING,
+        0);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_ImageTag(
+    Container_ContainerInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        12,
+        (MI_Value*)&str,
+        MI_STRING,
+        MI_FLAG_BORROW);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_ImageTag(
+    Container_ContainerInventory* self)
+{
+    return self->__instance.ft->ClearElementAt(
+        (MI_Instance*)&self->__instance,
+        12);
+}
+
+MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_ComposeGroup(
+    Container_ContainerInventory* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        13,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -457,7 +557,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_ComposeGroup(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        10,
+        13,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -468,7 +568,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_ComposeGroup(
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        10);
+        13);
 }
 
 MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_ContainerHostname(
@@ -477,7 +577,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_ContainerHostname(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        11,
+        14,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -489,7 +589,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_ContainerHostnam
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        11,
+        14,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -500,7 +600,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_ContainerHostname
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        11);
+        14);
 }
 
 MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Computer(
@@ -509,7 +609,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Computer(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        12,
+        15,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -521,7 +621,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_Computer(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        12,
+        15,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -532,7 +632,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_Computer(
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        12);
+        15);
 }
 
 MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Command(
@@ -541,7 +641,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Command(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        13,
+        16,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -553,7 +653,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_Command(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        13,
+        16,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -564,7 +664,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_Command(
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        13);
+        16);
 }
 
 MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_EnvironmentVar(
@@ -573,7 +673,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_EnvironmentVar(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        14,
+        17,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -585,7 +685,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_EnvironmentVar(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        14,
+        17,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -596,7 +696,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_EnvironmentVar(
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        14);
+        17);
 }
 
 MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Ports(
@@ -605,7 +705,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Ports(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        15,
+        18,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -617,7 +717,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_Ports(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        15,
+        18,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -628,7 +728,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_Ports(
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        15);
+        18);
 }
 
 MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Links(
@@ -637,7 +737,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Set_Links(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        16,
+        19,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -649,7 +749,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_SetPtr_Links(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        16,
+        19,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -660,7 +760,7 @@ MI_INLINE MI_Result MI_CALL Container_ContainerInventory_Clear_Links(
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        16);
+        19);
 }
 
 /*
@@ -682,6 +782,45 @@ MI_EXTERN_C void MI_CALL Container_ContainerInventory_Load(
 MI_EXTERN_C void MI_CALL Container_ContainerInventory_Unload(
     Container_ContainerInventory_Self* self,
     MI_Context* context);
+
+MI_EXTERN_C void MI_CALL Container_ContainerInventory_EnumerateInstances(
+    Container_ContainerInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const MI_PropertySet* propertySet,
+    MI_Boolean keysOnly,
+    const MI_Filter* filter);
+
+MI_EXTERN_C void MI_CALL Container_ContainerInventory_GetInstance(
+    Container_ContainerInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerInventory* instanceName,
+    const MI_PropertySet* propertySet);
+
+MI_EXTERN_C void MI_CALL Container_ContainerInventory_CreateInstance(
+    Container_ContainerInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerInventory* newInstance);
+
+MI_EXTERN_C void MI_CALL Container_ContainerInventory_ModifyInstance(
+    Container_ContainerInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerInventory* modifiedInstance,
+    const MI_PropertySet* propertySet);
+
+MI_EXTERN_C void MI_CALL Container_ContainerInventory_DeleteInstance(
+    Container_ContainerInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ContainerInventory* instanceName);
 
 
 /*
@@ -987,6 +1126,126 @@ public:
     void ImageId_clear()
     {
         const size_t n = offsetof(Self, ImageId);
+        GetField<String>(n).Clear();
+    }
+
+    //
+    // Container_ContainerInventory_Class.Image
+    //
+    
+    const Field<String>& Image() const
+    {
+        const size_t n = offsetof(Self, Image);
+        return GetField<String>(n);
+    }
+    
+    void Image(const Field<String>& x)
+    {
+        const size_t n = offsetof(Self, Image);
+        GetField<String>(n) = x;
+    }
+    
+    const String& Image_value() const
+    {
+        const size_t n = offsetof(Self, Image);
+        return GetField<String>(n).value;
+    }
+    
+    void Image_value(const String& x)
+    {
+        const size_t n = offsetof(Self, Image);
+        GetField<String>(n).Set(x);
+    }
+    
+    bool Image_exists() const
+    {
+        const size_t n = offsetof(Self, Image);
+        return GetField<String>(n).exists ? true : false;
+    }
+    
+    void Image_clear()
+    {
+        const size_t n = offsetof(Self, Image);
+        GetField<String>(n).Clear();
+    }
+
+    //
+    // Container_ContainerInventory_Class.Repository
+    //
+    
+    const Field<String>& Repository() const
+    {
+        const size_t n = offsetof(Self, Repository);
+        return GetField<String>(n);
+    }
+    
+    void Repository(const Field<String>& x)
+    {
+        const size_t n = offsetof(Self, Repository);
+        GetField<String>(n) = x;
+    }
+    
+    const String& Repository_value() const
+    {
+        const size_t n = offsetof(Self, Repository);
+        return GetField<String>(n).value;
+    }
+    
+    void Repository_value(const String& x)
+    {
+        const size_t n = offsetof(Self, Repository);
+        GetField<String>(n).Set(x);
+    }
+    
+    bool Repository_exists() const
+    {
+        const size_t n = offsetof(Self, Repository);
+        return GetField<String>(n).exists ? true : false;
+    }
+    
+    void Repository_clear()
+    {
+        const size_t n = offsetof(Self, Repository);
+        GetField<String>(n).Clear();
+    }
+
+    //
+    // Container_ContainerInventory_Class.ImageTag
+    //
+    
+    const Field<String>& ImageTag() const
+    {
+        const size_t n = offsetof(Self, ImageTag);
+        return GetField<String>(n);
+    }
+    
+    void ImageTag(const Field<String>& x)
+    {
+        const size_t n = offsetof(Self, ImageTag);
+        GetField<String>(n) = x;
+    }
+    
+    const String& ImageTag_value() const
+    {
+        const size_t n = offsetof(Self, ImageTag);
+        return GetField<String>(n).value;
+    }
+    
+    void ImageTag_value(const String& x)
+    {
+        const size_t n = offsetof(Self, ImageTag);
+        GetField<String>(n).Set(x);
+    }
+    
+    bool ImageTag_exists() const
+    {
+        const size_t n = offsetof(Self, ImageTag);
+        return GetField<String>(n).exists ? true : false;
+    }
+    
+    void ImageTag_clear()
+    {
+        const size_t n = offsetof(Self, ImageTag);
         GetField<String>(n).Clear();
     }
 

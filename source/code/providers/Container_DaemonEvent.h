@@ -18,6 +18,7 @@
 ** Container_DaemonEvent [Container_DaemonEvent]
 **
 ** Keys:
+**    InstanceID
 **
 **==============================================================================
 */
@@ -26,7 +27,7 @@ typedef struct _Container_DaemonEvent /* extends CIM_ManagedElement */
 {
     MI_Instance __instance;
     /* CIM_ManagedElement properties */
-    MI_ConstStringField InstanceID;
+    /*KEY*/ MI_ConstStringField InstanceID;
     MI_ConstStringField Caption;
     MI_ConstStringField Description;
     MI_ConstStringField ElementName;
@@ -401,6 +402,45 @@ MI_EXTERN_C void MI_CALL Container_DaemonEvent_Load(
 MI_EXTERN_C void MI_CALL Container_DaemonEvent_Unload(
     Container_DaemonEvent_Self* self,
     MI_Context* context);
+
+MI_EXTERN_C void MI_CALL Container_DaemonEvent_EnumerateInstances(
+    Container_DaemonEvent_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const MI_PropertySet* propertySet,
+    MI_Boolean keysOnly,
+    const MI_Filter* filter);
+
+MI_EXTERN_C void MI_CALL Container_DaemonEvent_GetInstance(
+    Container_DaemonEvent_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_DaemonEvent* instanceName,
+    const MI_PropertySet* propertySet);
+
+MI_EXTERN_C void MI_CALL Container_DaemonEvent_CreateInstance(
+    Container_DaemonEvent_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_DaemonEvent* newInstance);
+
+MI_EXTERN_C void MI_CALL Container_DaemonEvent_ModifyInstance(
+    Container_DaemonEvent_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_DaemonEvent* modifiedInstance,
+    const MI_PropertySet* propertySet);
+
+MI_EXTERN_C void MI_CALL Container_DaemonEvent_DeleteInstance(
+    Container_DaemonEvent_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_DaemonEvent* instanceName);
 
 
 /*

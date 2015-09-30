@@ -1,78 +1,3 @@
-// Container_Server
-// -------------------------------------------------------------------
-[   Version ( "1.0.0" ),
-	Description ( "Docker Server Information" )
-]
-class Container_Server : CIM_InstalledProduct
-{
-	[ Description ( "Count of containers" ) ]
-	uint16 Containers;
-
-	[ Description ( "Docker root directory" ) ]
-	string DockerRootDir;
-
-	[ Description ( "Server hostname" ) ]
-	string Hostname;
-
-	[ Description ( "Docker driver" ) ]
-	string Driver;
-
-	[ Description ( "Current operating status for the Driver" ),
-	  ValueMap { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" },
-	  Values { "Unknown", "Other", "OK", "Degraded", "Stressed", "Predictive Failure", "Error", "Non-Recoverable Error", "Starting", "Stopping", "Stopped", "In Service", "No Contact",  "Lost Communication", "Aborted", "Dormant", "Supporting Entity in Error", "Completed", "Power Mode", "Insufficient Privileges", "Authentication File in Error" } ]
-	uint16 DriverStatus;
-
-	[ Description ( "Count of Images" ) ]
-	uint16 Images;
-
-	[ Description ( "Docker InitPath" ) ]
-	string InitPath;
-
-	[ Description ( "Kernel version" ) ]
-	string KernelVersion;
-
-	[ Description ( "Current operating status for the MySQL instance" ),
-	  ValueMap { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" },
-	  Values { "Unknown", "Other", "OK", "Degraded", "Stressed", "Predictive Failure", "Error", "Non-Recoverable Error", "Starting", "Stopping", "Stopped", "In Service", "No Contact",  "Lost Communication", "Aborted", "Dormant", "Supporting Entity in Error", "Completed", "Power Mode", "Insufficient Privileges", "Authentication File in Error" } ]
-	uint16 OperatingStatus;
-
-	[ Description ( "Total installed memory in bytes" ) ]
-	uint64 MemTotal;
-
-	[ Description ( "Memory Limit in bytes" ) ]
-	uint64 MemLimit;
-
-	[ Description ( "Swap Limit in bytes" ) ]
-	uint64 SwapLimit;
-
-	[ Description ( "Number of CPUs" ) ]
-	uint16 NCPU;
-};
-
-// Container_Container
-// -------------------------------------------------------------------
-[   Version ( "1.0.0" ),
-	Description ( "Docker Container Information" )
-]
-class Container_Container : CIM_VirtualComputerSystem
-{
-	[ Description ( "Active Ports for the Container" ) ]
-	string Ports;
-
-	[ Description ( "Command for the Container" ) ]
-	string Command;
-
-	[ Description ( "Image for the Container" ) ]
-	string Image;
-
-	[ Description ( "ID for the Container" ) ]
-	string InstanceID;
-
-	[ Description ( "Readwrite size for the Container" ) ]
-	string SizeRW;
-};
-
-
 // Container_ContainerStatistics
 // -------------------------------------------------------------------
 [   Version ( "1.0.0" ),
@@ -148,23 +73,12 @@ class Container_ContainerStatistics : CIM_StatisticalData
 	   
 	[ Description ( "CPU (host) used for host vm" ) ]
 	uint64 CPUHost;
-};
 
-// Container_ContainerProcessorStatistics
-// -------------------------------------------------------------------
-[   Version ( "1.0.0" ),
-	Description ( "Docker Container Processor Statistical Information" )
-]
-class Container_ContainerProcessorStatistics : CIM_StatisticalData
-{
-	[ Description ( "ID of the processor instance" ) ]
-	uint16 ProcessorID;
+	[ Description ( "Number of bytes read from disk" ) ]
+	uint64 DiskBytesRead;
 
-	[ Description ( "CPU used for the processor instance" ) ]
-	uint64 CPUTotal;
-
-	[ Description ( "Percentage of CPU used for the processor instance" ) ]
-	uint16 CPUTotalPct;
+	[ Description ( "Number of bytes written to disk" ) ]
+	uint64 DiskBytesWritten;
 };
 
 // Container_ImageInventory
@@ -174,6 +88,9 @@ class Container_ContainerProcessorStatistics : CIM_StatisticalData
 ]
 class Container_ImageInventory : CIM_ManagedElement
 {
+	[ Key, Description ( "Image ID" ) ]
+	String InstanceID;
+
 	[ Description ( "Image name" ) ]
 	String Image;
 
@@ -197,6 +114,12 @@ class Container_ImageInventory : CIM_ManagedElement
 
 	[ Description ( "Number of paused containers" ) ]
 	Uint32 Paused;
+
+	[ Description ( "Image actual size in MB" ) ]
+	string ImageSize;
+
+	[ Description ( "Virtual image size in MB") ]
+	string VirtualSize;
 };
 
 // Container_DaemonEvent
@@ -206,6 +129,9 @@ class Container_ImageInventory : CIM_ManagedElement
 ]
 class Container_DaemonEvent : CIM_ManagedElement
 {
+	[ Key, Description ( "GUID" ) ]
+	String InstanceID;
+
 	[ Description ( "Host name of Docker host" ) ]
 	String Computer;
 
@@ -226,6 +152,9 @@ class Container_DaemonEvent : CIM_ManagedElement
 ]
 class Container_ContainerInventory : CIM_ManagedElement
 {
+	[ Key, Description ( "Container ID" ) ]
+	String InstanceID;
+
 	[ Description ( "Time when container was created" ) ]
 	String CreatedTime;
 
@@ -243,6 +172,15 @@ class Container_ContainerInventory : CIM_ManagedElement
 
 	[ Description ( "Image ID of container" ) ]
 	String ImageId;
+
+	[ Description ( "Image name of container") ]
+	String Image;
+
+	[ Description ( "Repository name of container") ]
+	String Repository;
+
+	[ Description ( "Image tag of container") ]
+	String ImageTag;
 
 	[ Description ( "Compose group which contains the container" ) ]
 	String ComposeGroup;

@@ -18,6 +18,7 @@
 ** Container_ImageInventory [Container_ImageInventory]
 **
 ** Keys:
+**    InstanceID
 **
 **==============================================================================
 */
@@ -26,7 +27,7 @@ typedef struct _Container_ImageInventory /* extends CIM_ManagedElement */
 {
     MI_Instance __instance;
     /* CIM_ManagedElement properties */
-    MI_ConstStringField InstanceID;
+    /*KEY*/ MI_ConstStringField InstanceID;
     MI_ConstStringField Caption;
     MI_ConstStringField Description;
     MI_ConstStringField ElementName;
@@ -535,6 +536,45 @@ MI_EXTERN_C void MI_CALL Container_ImageInventory_Load(
 MI_EXTERN_C void MI_CALL Container_ImageInventory_Unload(
     Container_ImageInventory_Self* self,
     MI_Context* context);
+
+MI_EXTERN_C void MI_CALL Container_ImageInventory_EnumerateInstances(
+    Container_ImageInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const MI_PropertySet* propertySet,
+    MI_Boolean keysOnly,
+    const MI_Filter* filter);
+
+MI_EXTERN_C void MI_CALL Container_ImageInventory_GetInstance(
+    Container_ImageInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ImageInventory* instanceName,
+    const MI_PropertySet* propertySet);
+
+MI_EXTERN_C void MI_CALL Container_ImageInventory_CreateInstance(
+    Container_ImageInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ImageInventory* newInstance);
+
+MI_EXTERN_C void MI_CALL Container_ImageInventory_ModifyInstance(
+    Container_ImageInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ImageInventory* modifiedInstance,
+    const MI_PropertySet* propertySet);
+
+MI_EXTERN_C void MI_CALL Container_ImageInventory_DeleteInstance(
+    Container_ImageInventory_Self* self,
+    MI_Context* context,
+    const MI_Char* nameSpace,
+    const MI_Char* className,
+    const Container_ImageInventory* instanceName);
 
 
 /*
