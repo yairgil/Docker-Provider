@@ -103,7 +103,7 @@ void Container_ContainerStatistics_Class_set(Container_ContainerStatistics_Class
 	// stats.MemUnevictableMB_value(cJSON_Get(data, "memory_stats.stats.unevictable")->valuedouble / 1024 / 1024);
 	// stats.MemLimitMB_value(cJSON_Get(data, "memory_stats.limit")->valuedouble / 1024 / 1024);
 	stats.MemUsedPct_value(cJSON_Get(data, "memory_stats.usage")->valueint / 1024 / 1024);
-	stats.CPUTotal_value(cJSON_Get(data, "cpu_stats.cpu_usage.total_usage")->valueint);
+	stats.CPUTotal_value(cJSON_Get(data, "cpu_stats.cpu_usage.total_usage")->valueint / 1000000000);
 	// stats.CPUHost_value(cJSON_Get(data, "cpu_stats.system_cpu_usage")->valuedouble);
 	// stats.CPUSystem_value(cJSON_Get(data, "cpu_stats.cpu_usage.usage_in_kernelmode")->valuedouble);
 	int cpu_number = cJSON_GetArraySize(cJSON_Get(data, "cpu_stats.cpu_usage.percpu_usage"));
@@ -175,6 +175,14 @@ void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& c
 			inst.InstanceID_value(containers[i].c_str());
 			Container_ContainerStatistics_Class_set(inst, response[i], map_data);
 			TrySetContainerDiskData(inst, containers[i]);
+
+			if (strlen(inst.ElementName().value.Str()) < 192)
+			{
+				char longName[256];
+				sprintf(longName, "%s\\%s", containers[i].c_str(), inst.ElementName().value.Str() + 1);
+				inst.InstanceID_value(longName);
+			}
+
 			context.Post(inst);
 			cJSON_Delete(response[i]);
 		}
