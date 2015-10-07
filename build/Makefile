@@ -55,6 +55,24 @@ SHARED_FLAGS := -shared
 
 STAGING_DIR := $(TARGET_DIR)/staging
 
+CONTAINER_BUILDVERSION_MAJOR := 0
+CONTAINER_BUILDVERSION_MINOR := 1
+CONTAINER_BUILDVERSION_PATCH := 0
+CONTAINER_BUILDVERSION_BUILDNR := 0
+
+ifeq ($(ULINUX),1)
+  OUTPUT_PACKAGE_PREFIX=docker-cimprov-$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH)-$(CONTAINER_BUILDVERSION_BUILDNR).universal.$(PF_ARCH)
+else
+  PF_DISTRO_LC := $(shell echo $(PF_DISTRO) | tr A-Z a-z)
+  OUTPUT_PACKAGE_PREFIX=docker-cimprov-$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH)-$(CONTAINER_BUILDVERSION_BUILDNR).$(PF_DISTRO_LC).$(PF_MAJOR).$(PF_ARCH)
+endif
+
+ifeq ("$(wildcard /usr/bin/dpkg-deb)","")
+	DPKG_LOCATION="--DPKG_LOCATION=$(SCXPAL_DIR)/installer/InstallBuilder/tools/bin/dpkg-deb-$(PF_ARCH)"
+else
+	DPKG_LOCATION=
+endif
+
 # Support for src_to_obj handling
 
 INCLUDES = $(OMI_INCLUDE_FLAGS) $(PROVIDER_INCLUDE_FLAGS)
@@ -286,3 +304,91 @@ TEST_STATUS:
 test : TEST_STATUS $(SCXPAL_INTERMEDIATE_DIR) $(TARGET_DIR)/testrunner
 	@echo "========================= Performing container testrun execution"
 	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(OMI_ROOT)/output/lib; cd $(TARGET_DIR); ./testrunner
+
+#--------------------------------------------------------------------------------
+# Build the distribution kit
+#
+# Build the packages via installbuilder
+#
+# While the "formal build" only builds ULINUX, we may build something else for DEV purposes.
+# Assume we ALWAYS build DPKG, but only build RPM if --enable-ulinux is speified in configure.
+
+kit : CONTAINERLIB_FILENAME = libcontainer.so
+kit : $(OMI_ROOT)/output $(PROVIDER_LIBRARY)
+
+ifeq ($(ULINUX),1)
+
+	@echo "========================= Performing Building RPM and DPKG packages"
+	$(MKPATH) $(INSTALLER_TMPDIR)
+	sudo $(RMDIR) $(STAGING_DIR)
+	$(MKPATH) $(TARGET_DIR)
+	python $(SCXPAL_DIR)/installer/InstallBuilder/installbuilder.py \
+		--BASE_DIR=$(BASE_DIR) \
+		--TARGET_DIR=$(TARGET_DIR) \
+		--INTERMEDIATE_DIR=$(INSTALLER_TMPDIR) \
+		--STAGING_DIR=$(STAGING_DIR) \
+		--BUILD_TYPE=$(BUILD_TYPE) \
+		--BUILD_CONFIGURATION=$(BUILD_CONFIGURATION) \
+		--PFARCH=$(PF_ARCH) \
+		--PFDISTRO=$(PF_DISTRO) \
+		--PFMAJOR=$(PF_MAJOR) \
+		--PFMINOR=$(PF_MINOR) \
+		--VERSION=0.1.0 \
+		--RELEASE=1 \
+		--CONTAINER_BUILD_LIBRARY=$(CONTAINERLIB_FILENAME) \
+		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
+		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
+		base_container.data linux.data linux_rpm.data
+
+	sudo $(RMDIR) $(STAGING_DIR)
+	$(MKPATH) $(TARGET_DIR)
+	python $(SCXPAL_DIR)/installer/InstallBuilder/installbuilder.py \
+		--BASE_DIR=$(BASE_DIR) \
+		--TARGET_DIR=$(TARGET_DIR) \
+		--INTERMEDIATE_DIR=$(INSTALLER_TMPDIR) \
+		--STAGING_DIR=$(STAGING_DIR) \
+		--BUILD_TYPE=$(BUILD_TYPE) \
+		--BUILD_CONFIGURATION=$(BUILD_CONFIGURATION) \
+		--PFARCH=$(PF_ARCH) \
+		--PFDISTRO=$(PF_DISTRO) \
+		--PFMAJOR=$(PF_MAJOR) \
+		--PFMINOR=$(PF_MINOR) \
+		--VERSION=0.1.0 \
+		--RELEASE=1 \
+		--CONTAINER_BUILD_LIBRARY=$(CONTAINERLIB_FILENAME) \
+		$(DPKG_LOCATION) \
+		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
+		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
+		base_container.data linux.data linux_dpkg.data
+
+	# Strip the package extension from the package filename
+	sed -re 's/.rpm$$|.deb$$//' $(TARGET_DIR)/package_filename > $(TARGET_DIR)/package_file.tmp
+
+	# Build the tar file containing both .rpm and .deb packages
+	cd $(TARGET_DIR); tar cvf $(OUTPUT_PACKAGE_PREFIX).tar $(OUTPUT_PACKAGE_PREFIX).rpm $(OUTPUT_PACKAGE_PREFIX).deb
+
+	../installer/bundle/create_bundle.sh $(PF)_$(PF_DISTRO) $(TARGET_DIR) $(OUTPUT_PACKAGE_PREFIX)
+else
+
+	@echo "========================= Performing Building RPM and DPKG packages"
+	sudo $(RMDIR) $(STAGING_DIR)
+	$(MKPATH) $(TARGET_DIR)
+	python $(SCXPAL_DIR)/installer/InstallBuilder/installbuilder.py \
+		--BASE_DIR=$(BASE_DIR) \
+		--TARGET_DIR=$(TARGET_DIR) \
+		--INTERMEDIATE_DIR=$(INSTALLER_TMPDIR) \
+		--STAGING_DIR=$(STAGING_DIR) \
+		--BUILD_TYPE=$(BUILD_TYPE) \
+		--BUILD_CONFIGURATION=$(BUILD_CONFIGURATION) \
+		--PFARCH=$(PF_ARCH) \
+		--PFDISTRO=$(PF_DISTRO) \
+		--PFMAJOR=$(PF_MAJOR) \
+		--PFMINOR=$(PF_MINOR) \
+		--VERSION=0.1.0 \
+		--RELEASE=1 \
+		--CONTAINER_BUILD_LIBRARY=$(CONTAINERLIB_FILENAME) \
+		$(DPKG_LOCATION) \
+		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
+		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
+		base_container.data linux.data linux_dpkg.data
+endif

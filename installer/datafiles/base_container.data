@@ -1,0 +1,106 @@
+%Variables
+SHELL_HEADER:            '#!/bin/sh'
+SHLIB_EXT:               'so'
+
+SHORT_NAME:              'docker-cimprov'
+SHORT_NAME_PREFIX:       'MSFT'
+LONG_NAME:               'Microsoft CIM management interface for containers'
+GROUP:                   'Applications/System'
+LICENSE:                 'none'
+VENDOR:                  'http://www.microsoft.com'
+PROVIDES:                'dockercimprovider'
+DESCRIPTION:             'Provides CIM management interface for containers'
+MAINTAINER:              'Microsoft Corporation'
+
+%Defines
+
+%Files
+/opt/microsoft/docker-cimprov/lib/libcontainer.so;			target/${{BUILD_CONFIGURATION}}/libcontainer.so;	755; root; root
+
+/etc/opt/microsoft/docker-cimprov/conf/installinfo.txt;     installer/conf/installinfo.txt;						644; root; root; conffile
+
+/etc/opt/omi/conf/omiregister/root-cimv2/container.reg;     installer/conf/omi/container.reg;					755; root; root
+
+/opt/microsoft/omsagent/plugin/filter_docker_log.rb;		source/code/plugin/filter_docker_log.rb;			644; root; root;
+
+%Links
+/opt/omi/lib/libcontainer.${{SHLIB_EXT}}; /opt/microsoft/docker-cimprov/lib/libcontainer.${{SHLIB_EXT}}; 644; root; root
+
+%Directories
+/etc;                                                   755; root; root; sysdir
+/etc/opt;                                               755; root; root; sysdir
+/opt;                                                   755; root; root; sysdir
+/var;                                                   755; root; root; sysdir
+/var/opt;                                               755; root; root; sysdir
+
+/etc/opt/microsoft;                                     755; root; root
+/etc/opt/microsoft/docker-cimprov;                      755; root; root
+/etc/opt/microsoft/docker-cimprov/conf;                 755; root; root
+
+/etc/opt/omi;                                           755; root; root
+/etc/opt/omi/conf;                                      755; root; root
+/etc/opt/omi/conf/omiregister;                          755; root; root
+/etc/opt/omi/conf/omiregister/root-cimv2;               755; root; root
+
+/opt/microsoft;                                         755; root; root
+/opt/microsoft/docker-cimprov;                          755; root; root
+/opt/microsoft/docker-cimprov/bin;                      755; root; root
+/opt/microsoft/docker-cimprov/lib;                      755; root; root
+/opt/microsoft/omsagent/plugin/;						755; root; root
+
+/opt/omi;                                               755; root; root
+/opt/omi/lib;                                           755; root; root
+
+/var/opt/microsoft;                                     755; root; root
+/var/opt/microsoft/docker-cimprov;                      755; root; root
+/var/opt/microsoft/docker-cimprov/auth;                 755; root; root
+/var/opt/microsoft/docker-cimprov/log;                  755; root; root
+/var/opt/microsoft/docker-cimprov/run;                  755; root; root
+/var/opt/microsoft/docker-cimprov/state;                755; root; root
+
+
+%Dependencies
+
+%CheckIfOmiIsRunning
+OMI_IS_RUNNING=1
+if [ -f /var/opt/omi/run/omiserver.pid ]; then
+	# Check if omiserver is running with this pid.
+	omi_pid=`cat /var/opt/omi/run/omiserver.pid`
+	ps -aef | grep $omi_pid | grep omiserver 1> /dev/null 2> /dev/null
+	if [ $? -ne 0 ]; then
+		OMI_IS_RUNNING=0
+	fi
+else
+	OMI_IS_RUNNING=0
+fi
+
+%Postinstall_10
+WriteInstallInfo() {
+	date +%Y-%m-%dT%T.0Z > /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt
+	echo ${{VERSION}}-${{RELEASE}} >> /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt
+}
+WriteInstallInfo
+touch /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
+
+%Postuninstall_10
+# If we're an upgrade, skip all of this cleanup
+if ${{PERFORMING_UPGRADE_NOT}}; then 
+   # Clean up installinfo.txt file (registered as "conf" file to pass rpmcheck)
+   rm -f /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt*
+   rm -f /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
+   rm -f /opt/microsoft/omsagent/plugin/filter_docker_log.rb
+   rmdir /etc/opt/microsoft/docker-cimprov/conf 2> /dev/null
+   rmdir /etc/opt/microsoft/docker-cimprov 2> /dev/null
+   rmdir /etc/opt/microsoft 2> /dev/null
+   rmdir /etc/opt 2> /dev/null
+fi
+
+%Preinstall_0
+${{SHELL_HEADER}}
+%Postinstall_0
+${{SHELL_HEADER}}
+%Preuninstall_0
+${{SHELL_HEADER}}
+
+%Postuninstall_0
+${{SHELL_HEADER}}

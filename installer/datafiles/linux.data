@@ -1,0 +1,96 @@
+%Variables
+PF:	'Linux'
+
+%ValidateDockerServer
+ValidateDockerServer()
+{
+	if [ -S "/var/run/docker.sock" ]; then
+		DOCKER_PATH=`which docker`
+		if [ -x "${DOCKER_PATH}" ]; then
+			if [ `docker version --format '{{.Server.Version}}'` > "1.8" ]; then
+				echo "Docker 1.8 or greater is installed" 1>&2
+			else
+				echo "Verify that Docker 1.8 or greater is installed and listening on /var/run/docker.sock" 1>&2
+				exit 1
+			fi
+		fi
+	fi
+}
+
+ValidateDockerServer
+
+%OmiService_funcs
+StopOmiServer() {
+	if [ -x /usr/sbin/invoke-rc.d ]; then
+		/usr/sbin/invoke-rc.d omiserverd stop
+	elif [ -x /sbin/service ]; then
+		service omiserverd stop
+	else
+		echo "Unrecognized Service Controller to start OMI Service" 1>&2
+		exit 1
+	fi
+}
+
+StartOmiServer() {
+	if [ -x /usr/sbin/invoke-rc.d ]; then
+		/usr/sbin/invoke-rc.d omiserverd start
+	elif [ -x /sbin/service ]; then
+		service omiserverd start
+	else
+		echo "Unrecognized Service Controller to start OMI Service" 1>&2
+		exit 1
+	fi
+}
+
+RestartOmiServer() {
+	if [ $OMI_IS_RUNNING -eq 1 ]; then
+		StopOmiServer
+	fi
+	StartOmiServer
+}
+
+%Preinstall_100
+#include ValidateDockerServer
+
+%Preinstall_200
+#include OmiService_funcs
+
+#include CheckIfOmiIsRunning
+if [ $OMI_IS_RUNNING -eq 1 ]; then
+	StopOmiServer
+fi
+
+%Postinstall_2000
+#include OmiService_funcs
+StartOmiServer
+
+%Postuninstall_1000
+# Calling sequence for RPM pre/post scripts, during upgrade, is as follows:
+#   1. Run the %pre section of the RPM being installed.
+#   2. Install the files that the RPM provides.
+#   3. Run the %post section of the RPM.
+#   4. Run the %preun of the old package.
+#   5. Delete any old files not overwritten by the newer version.
+#      (This step deletes files that the new package does not require.)
+#   6. Run the %postun hook of the old package.
+#
+# Thus, if we're an upgrade, skip all of this cleanup
+if ${{PERFORMING_UPGRADE_NOT}}; then 
+   # Remove linkage in case it exists
+   CONTAINER_BUILD_LIBRARY=${{CONTAINER_BUILD_LIBRARY}}
+   LIBRARY_DIR='/opt/microsoft/docker-cimprov/lib'
+   [ -e ${LIBRARY_DIR}/${CONTAINER_BUILD_LIBRARY} ] && rm ${LIBRARY_DIR}/${CONTAINER_BUILD_LIBRARY}
+   rmdir /opt/microsoft/docker-cimprov/lib 2> /dev/null
+   rmdir /opt/microsoft/docker-cimprov 2> /dev/null
+   rmdir /opt/microsoft 2> /dev/null
+   rmdir /opt 2> /dev/null
+fi
+
+%Postuninstall_1100
+#include OmiService_funcs
+#include CheckIfOmiIsRunning
+
+# If we're called for upgrade, don't do anything
+if ${{PERFORMING_UPGRADE_NOT}}; then 
+	RestartOmiServer
+fi
