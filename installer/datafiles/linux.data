@@ -64,6 +64,10 @@ fi
 #include OmiService_funcs
 StartOmiServer
 
+echo "\nIn order to view container logs in OMS, Docker needs to be configured with the correct log driver using the option:" 1>&2
+echo "\n\t--log-driver=fluentd --log-opt fluentd-address=localhost:25224" 1>&2
+echo "\nSpecify this option either when starting the Docker daemon or when starting any container that you want to send logs to OMS." 1>&2
+
 %Postuninstall_1000
 # Calling sequence for RPM pre/post scripts, during upgrade, is as follows:
 #   1. Run the %pre section of the RPM being installed.
