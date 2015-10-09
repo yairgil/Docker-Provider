@@ -15,13 +15,15 @@ MAINTAINER:              'Microsoft Corporation'
 %Defines
 
 %Files
-/opt/microsoft/docker-cimprov/lib/libcontainer.so;			target/${{BUILD_CONFIGURATION}}/libcontainer.so;	755; root; root
+/opt/microsoft/docker-cimprov/lib/libcontainer.so;				target/${{BUILD_CONFIGURATION}}/libcontainer.so;	755; root; root
 
-/etc/opt/microsoft/docker-cimprov/conf/installinfo.txt;     installer/conf/installinfo.txt;						644; root; root; conffile
+/etc/opt/microsoft/docker-cimprov/conf/installinfo.txt;			installer/conf/installinfo.txt;						644; root; root; conffile
 
-/etc/opt/omi/conf/omiregister/root-cimv2/container.reg;     installer/conf/omi/container.reg;					755; root; root
+/etc/opt/omi/conf/omiregister/root-cimv2/container.reg;			installer/conf/omi/container.reg;					755; root; root
 
-/opt/microsoft/omsagent/plugin/filter_docker_log.rb;		source/code/plugin/filter_docker_log.rb;			644; root; root;
+/opt/microsoft/omsagent/plugin/filter_docker_log.rb;			source/code/plugin/filter_docker_log.rb;			644; root; root
+
+/var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt; installer/LastEventQueryTime.txt;					644; root; root
 
 %Links
 /opt/omi/lib/libcontainer.${{SHLIB_EXT}}; /opt/microsoft/docker-cimprov/lib/libcontainer.${{SHLIB_EXT}}; 644; root; root
@@ -53,11 +55,7 @@ MAINTAINER:              'Microsoft Corporation'
 
 /var/opt/microsoft;                                     755; root; root
 /var/opt/microsoft/docker-cimprov;                      755; root; root
-/var/opt/microsoft/docker-cimprov/auth;                 755; root; root
-/var/opt/microsoft/docker-cimprov/log;                  755; root; root
-/var/opt/microsoft/docker-cimprov/run;                  755; root; root
 /var/opt/microsoft/docker-cimprov/state;                755; root; root
-
 
 %Dependencies
 
@@ -80,7 +78,8 @@ WriteInstallInfo() {
 	echo ${{VERSION}}-${{RELEASE}} >> /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt
 }
 WriteInstallInfo
-touch /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
+
+chown omsagent:omsagent /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
 
 %Postuninstall_10
 # If we're an upgrade, skip all of this cleanup
