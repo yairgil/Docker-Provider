@@ -38,7 +38,13 @@ module Fluent
 			newRecord['LogEntry'] = record['log']
 			newRecord['Computer'] = @hostname
 			
-			newRecord
+			wrapper = {
+	        	"DataType"=>"CONTAINER_LOG_BLOB",
+	        	"IPName"=>"Containers",
+	        	"DataItems"=>[newRecord]
+	      	}
+
+      		wrapper
 		end
 		
 		# Get image ID from container

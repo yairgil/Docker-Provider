@@ -22,6 +22,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/omi/conf/omiregister/root-cimv2/container.reg;			installer/conf/omi/container.reg;					755; root; root
 
 /opt/microsoft/omsagent/plugin/filter_docker_log.rb;			source/code/plugin/filter_docker_log.rb;			644; root; root
+/opt/microsoft/omsagent/plugin/filter_container.rb;				source/code/plugin/filter_container.rb;				644; root; root
 
 /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt; installer/LastEventQueryTime.txt;					644; root; root
 
@@ -88,6 +89,7 @@ if ${{PERFORMING_UPGRADE_NOT}}; then
    rm -f /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt*
    rm -f /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
    rm -f /opt/microsoft/omsagent/plugin/filter_docker_log.rb
+   rm -f /opt/microsoft/omsagent/plugin/filter_container.rb
    rmdir /etc/opt/microsoft/docker-cimprov/conf 2> /dev/null
    rmdir /etc/opt/microsoft/docker-cimprov 2> /dev/null
    rmdir /etc/opt/microsoft 2> /dev/null
