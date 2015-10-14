@@ -42,6 +42,12 @@ for container in containers:
 
 	result["InstanceID"] = inspect["Id"]
 	result["ImageId"] = inspect["Image"]
+
+	if len(inspect["Name"]):
+		result["ElementName"] = inspect["Name"][1:] if inspect["Name"][0] == "/" else inspect["Name"]
+	else:
+		result["ElementName"] = ""
+
 	result["ContainerHostname"] = inspect["Config"]["Hostname"]
 	result["ExitCode"] = inspect["State"]["ExitCode"]
 	result["CreatedTime"] = inspect["Created"]
@@ -57,6 +63,12 @@ for container in containers:
 	result["EnvironmentVar"] = j.encode(inspect["Config"]["Env"])
 	result["Ports"] = j.encode(inspect["HostConfig"]["PortBindings"])
 	result["Links"] = j.encode(inspect["HostConfig"]["Links"])
+
+	if result["Links"] == "null":
+		result["Links"] = ""
+
+	if result["EnvironmentVar"] == "null":
+		result["EnvironmentVar"] = ""
 
 	result["Image"] = nameDict[inspect["Image"]]["Image"]
 	result["ImageTag"] = nameDict[inspect["Image"]]["ImageTag"]

@@ -150,7 +150,8 @@ private:
 			instance.ContainerHostname_value(cJSON_GetObjectItem(config, "Hostname")->valuestring);
 
 			// Environment variables
-			instance.EnvironmentVar_value(cJSON_Print(cJSON_GetObjectItem(config, "Env")));
+			char* env = cJSON_Print(cJSON_GetObjectItem(config, "Env"));
+			instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
 
 			// Command
 			instance.Command_value(cJSON_Print(cJSON_GetObjectItem(config, "Cmd")));
@@ -237,10 +238,12 @@ private:
 		if (hostConfig)
 		{
 			// Links
-			instance.Links_value(cJSON_Print(cJSON_GetObjectItem(hostConfig, "Links")));
+			char* links = cJSON_Print(cJSON_GetObjectItem(hostConfig, "Links"));
+			instance.Links_value(strcmp(links, "null") ? links : "");
 
 			// Ports
-			instance.Ports_value(cJSON_Print(cJSON_GetObjectItem(hostConfig, "PortBindings")));
+			char* ports = cJSON_Print(cJSON_GetObjectItem(hostConfig, "PortBindings"));
+			instance.Ports_value(strcmp(ports, "{\n}") ? ports : "");
 		}
 		else
 		{
@@ -268,6 +271,14 @@ private:
 		{
 			instance.InstanceID_value(cJSON_GetObjectItem(response[0], "Id")->valuestring);
 			instance.CreatedTime_value(cJSON_GetObjectItem(response[0], "Created")->valuestring);
+
+			char* containerName = cJSON_GetObjectItem(response[0], "Name")->valuestring;
+
+			if (strlen(containerName))
+			{
+				// Remove the leading / from the name if it exists (this is an API issue)
+				instance.ElementName_value(containerName[0] == '/' ? containerName + 1 : containerName);
+			}
 
 			string imageId = string(cJSON_GetObjectItem(response[0], "Image")->valuestring);
 			instance.ImageId_value(imageId.c_str());

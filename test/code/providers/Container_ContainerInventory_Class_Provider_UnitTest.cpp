@@ -180,6 +180,9 @@ protected:
 					mbstowcs(temp, cJSON_GetObjectItem(containersList[i], "CreatedTime")->valuestring, 511);
 					CPPUNIT_ASSERT_EQUAL(wstring(temp), context[j].GetProperty(L"CreatedTime", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
 
+					mbstowcs(temp, cJSON_GetObjectItem(containersList[i], "ElementName")->valuestring, 511);
+					CPPUNIT_ASSERT_EQUAL(wstring(temp), context[j].GetProperty(L"ElementName", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
+
 					mbstowcs(temp, cJSON_GetObjectItem(containersList[i], "State")->valuestring, 511);
 					CPPUNIT_ASSERT_EQUAL(wstring(temp), context[j].GetProperty(L"State", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
 
