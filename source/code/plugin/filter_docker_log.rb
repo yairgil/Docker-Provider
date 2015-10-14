@@ -27,24 +27,29 @@ module Fluent
 			if @log != nil
 				@log.debug {'Accepted a log from container ' + record['container_id']}
 			end
-		
-			# Need to query image information from ID
-			newRecord = obtainImageId(record['container_id'])
 			
-			# No query is required
-			newRecord['Id'] = record['container_id']
-			newRecord['Name'] = record['container_name'][0] == "/" ?  record['container_name'][1..-1] : record['container_name']
-			newRecord['LogEntrySource'] = record['source']
-			newRecord['LogEntry'] = record['log']
-			newRecord['Computer'] = @hostname
-			
-			wrapper = {
-	        	"DataType"=>"CONTAINER_LOG_BLOB",
-	        	"IPName"=>"Containers",
-	        	"DataItems"=>[newRecord]
-	      	}
+			if record['log'].empty?
+				@log.debug {'Log from container ' + record['container_id'] + ' had length 0 and will be discarded'}
+			else
+				# Need to query image information from ID
+				newRecord = obtainImageId(record['container_id'])
+				
+				# No query is required
+				newRecord['Id'] = record['container_id']
+				newRecord['Name'] = record['container_name'][0] == "/" ?  record['container_name'][1..-1] : record['container_name']
+				newRecord['LogEntrySource'] = record['source']
+				newRecord['LogEntry'] = record['log']
+				newRecord['Computer'] = @hostname
+				newRecord['Host'] = @hostname
+				
+				wrapper = {
+		        	"DataType"=>"CONTAINER_LOG_BLOB",
+		        	"IPName"=>"Containers",
+		        	"DataItems"=>[newRecord]
+		      	}
 
-      		wrapper
+	      		return wrapper
+			end
 		end
 		
 		# Get image ID from container
@@ -57,7 +62,7 @@ module Fluent
 				details = JSON.parse(`sudo docker inspect #{containerId}`)
 			rescue => e
 				if @log != nil
-					@log.error {'sudo docker inspect ' + container_id + ' failed'}
+					@log.error {'sudo docker inspect ' + containerId + ' failed'}
 				end
 			end
 			
