@@ -28,6 +28,8 @@ module Fluent
 				@log.debug {'Accepted a log from container ' + record['container_id']}
 			end
 			
+			wrapper = Hash.new
+			
 			if record['log'].empty?
 				@log.debug {'Log from container ' + record['container_id'] + ' had length 0 and will be discarded'}
 			else
@@ -47,9 +49,9 @@ module Fluent
 		        	"IPName"=>"Containers",
 		        	"DataItems"=>[newRecord]
 		      	}
-
-	      		return wrapper
 			end
+			
+			wrapper
 		end
 		
 		# Get image ID from container
