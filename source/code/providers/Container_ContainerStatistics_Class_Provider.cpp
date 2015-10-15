@@ -11,6 +11,8 @@
 #include "../cjson/cJSON_Extend.h"
 #include "../dockerapi/DockerRemoteApi.h"
 
+#define NUMBYTESPERMB 1048576
+
 using namespace std;
 
 string api_get_container_info(string id)
@@ -67,12 +69,12 @@ void TrySetContainerDiskData(Container_ContainerStatistics_Class& instance, stri
 					{
 						if (!strcmp(op->valuestring, "Read"))
 						{
-							instance.DiskBytesRead_value((long)rawValue);
+							instance.DiskBytesRead_value((long)rawValue / NUMBYTESPERMB);
 							readFlag = true;
 						}
 						else if (!strcmp(op->valuestring, "Write"))
 						{
-							instance.DiskBytesWritten_value((long)rawValue);
+							instance.DiskBytesWritten_value((long)rawValue / NUMBYTESPERMB);
 							writeFlag = true;
 						}
 					}

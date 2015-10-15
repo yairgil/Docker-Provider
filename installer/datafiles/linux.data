@@ -68,9 +68,12 @@ if ${{PERFORMING_UPGRADE_NOT}}; then
 	/opt/omi/bin/omicli ei root/cimv2 Container_DaemonEvent
 fi
 
-echo "\nIn order to view container logs in OMS, Docker needs to be configured with the correct log driver using the option:" 1>&2
-echo "\n\t--log-driver=fluentd --log-opt fluentd-address=localhost:<port>" 1>&2
-echo "\nwhere <port> is the port that is exposed in the config file. Specify this option either when starting the Docker daemon or when starting any container that you want to send logs to OMS." 1>&2
+echo
+echo "In order to view container logs in OMS, Docker needs to be configured with the correct log driver using the option:" 1>&2
+echo
+echo "    --log-driver=fluentd --log-opt fluentd-address=localhost:<port>" 1>&2
+echo
+echo "where <port> is the port that is exposed in the config file (default: 25225). Specify this option either when starting the Docker daemon or when starting any container that you want to send logs to OMS." 1>&2
 
 %Postuninstall_1000
 # Calling sequence for RPM pre/post scripts, during upgrade, is as follows:
