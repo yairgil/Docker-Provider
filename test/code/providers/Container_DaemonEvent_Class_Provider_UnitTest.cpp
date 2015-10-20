@@ -134,7 +134,11 @@ protected:
 			CPPUNIT_ASSERT(t >= fileTime);
 
 			CPPUNIT_ASSERT(allowedCommands.count(context[i].GetProperty(L"Command", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg))));
-			CPPUNIT_ASSERT(context[i].GetProperty(L"Id", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
+			CPPUNIT_ASSERT(context[i].GetProperty(L"ElementName", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
+			
+			// Length of ID is empty if event is image type and 12 if event is container type
+			int idLength = context[i].GetProperty(L"Id", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length();
+			CPPUNIT_ASSERT(!length || length == 12);
 		}
 	}
 };
