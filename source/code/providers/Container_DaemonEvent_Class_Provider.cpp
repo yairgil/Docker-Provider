@@ -143,12 +143,12 @@ public:
 						sprintf(buffer, "%d", cJSON_GetObjectItem(entry, "time")->valueint);
 						instance.TimeOfCommand_value(buffer);
 
-						char* tempImageName = cJSON_GetObjectItem(entry, "from")->valuestring;
+						cJSON* tempImageName = cJSON_GetObjectItem(entry, "from");
 
 						if (tempImageName)
 						{
 							// Container event
-							instance.ElementName_value(tempImageName);
+							instance.ElementName_value(tempImageName->valuestring);
 							instance.Id_value(cJSON_GetObjectItem(entry, "id")->valuestring);
 						}
 						else
