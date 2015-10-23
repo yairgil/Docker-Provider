@@ -24,6 +24,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/filter_docker_log.rb;			source/code/plugin/filter_docker_log.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/filter_container.rb;				source/code/plugin/filter_container.rb;				644; root; root
 
+/etc/opt/microsoft/docker-cimprov/container.conf;				installer/conf/container.conf;                      644; root; root
+
 /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt; installer/LastEventQueryTime.txt;					644; root; root
 
 %Links
@@ -69,14 +71,16 @@ WriteInstallInfo
 
 chown omsagent:omsagent /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
 
+mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/conf/omsagent.d/container.conf
+chown omsagent:omsagent /etc/opt/microsoft/omsagent/conf/omsagent.d/container.conf
+
 %Postuninstall_10
 # If we're an upgrade, skip all of this cleanup
 if ${{PERFORMING_UPGRADE_NOT}}; then 
    # Clean up installinfo.txt file (registered as "conf" file to pass rpmcheck)
    rm -f /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt*
    rm -f /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
-   rm -f /opt/microsoft/omsagent/plugin/filter_docker_log.rb
-   rm -f /opt/microsoft/omsagent/plugin/filter_container.rb
+   rm -f /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
    rmdir /etc/opt/microsoft/docker-cimprov/conf 2> /dev/null
    rmdir /etc/opt/microsoft/docker-cimprov 2> /dev/null
    rmdir /etc/opt/microsoft 2> /dev/null

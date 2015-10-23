@@ -2,33 +2,12 @@
 PF:           'Linux'
 OMI_SERVICE:  '/opt/omi/bin/service_control'
 
-%ValidateDockerServer
-ValidateDockerServer()
-{
-	if [ -S "/var/run/docker.sock" ]; then
-		DOCKER_PATH=`which docker`
-		if [ -x "${DOCKER_PATH}" ]; then
-			if [ `docker version --format '{{.Server.Version}}'` > "1.8" ]; then
-				echo "Docker 1.8 or greater is installed" 1>&2
-			else
-				echo "Verify that Docker 1.8 or greater is installed and listening on /var/run/docker.sock" 1>&2
-				exit 1
-			fi
-		fi
-	fi
-}
-
-ValidateDockerServer
-
-%Preinstall_100
-#include ValidateDockerServer
-
 %Postinstall_2000
 # Reload the OMI server
 ${{OMI_SERVICE}} reload
 
 if ${{PERFORMING_UPGRADE_NOT}}; then
-    /opt/omi/bin/omicli ei root/cimv2 Container_DaemonEvent
+	/opt/omi/bin/omicli ei root/cimv2 Container_DaemonEvent
 fi
 
 echo
@@ -63,6 +42,6 @@ fi
 %Postuninstall_1100
 # If we're called for upgrade, don't do anything
 if ${{PERFORMING_UPGRADE_NOT}}; then
-    # Reload the OMI server
-    ${{OMI_SERVICE}} reload
+	# Reload the OMI server
+	${{OMI_SERVICE}} reload
 fi
