@@ -69,12 +69,12 @@ void TrySetContainerDiskData(Container_ContainerStatistics_Class& instance, stri
 					{
 						if (!strcmp(op->valuestring, "Read"))
 						{
-							instance.DiskBytesRead_value((long)rawValue / NUMBYTESPERMB);
+							instance.DiskBytesRead_value(rawValue->valueint / NUMBYTESPERMB);
 							readFlag = true;
 						}
 						else if (!strcmp(op->valuestring, "Write"))
 						{
-							instance.DiskBytesWritten_value((long)rawValue / NUMBYTESPERMB);
+							instance.DiskBytesWritten_value(rawValue->valueint / NUMBYTESPERMB);
 							writeFlag = true;
 						}
 					}
