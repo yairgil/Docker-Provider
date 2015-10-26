@@ -80,7 +80,7 @@ if ${{PERFORMING_UPGRADE_NOT}}; then
    # Clean up installinfo.txt file (registered as "conf" file to pass rpmcheck)
    rm -f /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt*
    rm -f /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
-   rm -f /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
+   rm -f /etc/opt/microsoft/omsagent/conf/omsagent.d/container.conf
    rmdir /etc/opt/microsoft/docker-cimprov/conf 2> /dev/null
    rmdir /etc/opt/microsoft/docker-cimprov 2> /dev/null
    rmdir /etc/opt/microsoft 2> /dev/null
