@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string>
 #include <string.h>
+#include <unistd.h>
 #include <vector>
 
 #include "../cjson/cJSON_Extend.h"
@@ -84,9 +85,71 @@ void TrySetContainerDiskData(Container_ContainerStatistics_Class& instance, stri
 	}
 }
 
-void Container_ContainerStatistics_Class_set(Container_ContainerStatistics_Class& stats, cJSON* data, map<string, Container_ContainerStatistics_Class>& map)
+map<string, unsigned long long> PreliminarySetContainerCpuData(string id, Container_ContainerStatistics_Class& instance)
 {
-	Container_ContainerStatistics_Class& lstats = map[string(stats.InstanceID().value.Str())];
+	// Request stats
+	vector<string> request(1, api_get_container_stats(id));
+	vector<cJSON*> response = getResponse(request);
+	map<string, unsigned long long> result;
+
+	result["container"] = 0;
+	result["system"] = 0;
+
+	if (response.size() && response[0])
+	{
+		cJSON* cpu_stats = cJSON_GetObjectItem(response[0], "cpu_stats");
+
+		if (cpu_stats)
+		{
+			cJSON* cpu_usage = cJSON_GetObjectItem(cpu_stats, "cpu_usage");
+
+			if (cpu_usage)
+			{
+				result["container"] = (unsigned long long)cJSON_GetObjectItem(cpu_usage, "total_usage")->valuedouble;
+				result["system"] = (unsigned long long)cJSON_GetObjectItem(cpu_stats, "system_cpu_usage")->valuedouble;
+			}
+		}
+	}
+
+	return result;
+}
+
+void TrySetContainerCpuData(Container_ContainerStatistics_Class& instance, string id, map<string, unsigned long long> previousStats)
+{
+	// Request stats
+	vector<string> request(1, api_get_container_stats(id));
+	vector<cJSON*> response = getResponse(request);
+
+	instance.CPUTotal_value(0);
+	instance.CPUTotalPct_value(0);
+
+	if (response.size() && response[0])
+	{
+		cJSON* cpu_stats = cJSON_GetObjectItem(response[0], "cpu_stats");
+
+		if (cpu_stats)
+		{
+			cJSON* cpu_usage = cJSON_GetObjectItem(cpu_stats, "cpu_usage");
+
+			if (cpu_usage)
+			{
+				unsigned long long containerUsage = (unsigned long long)cJSON_GetObjectItem(cpu_usage, "total_usage")->valuedouble;
+				unsigned long long systemTotalUsage = (unsigned long long)cJSON_GetObjectItem(cpu_stats, "system_cpu_usage")->valuedouble;
+
+				instance.CPUTotal_value((unsigned long)(containerUsage / (unsigned long long)1000000000));
+
+				if (systemTotalUsage - previousStats["system"])
+				{
+					instance.CPUTotalPct_value((unsigned short)((containerUsage - previousStats["container"]) * 100 / (systemTotalUsage - previousStats["system"])));
+				}
+			}
+		}
+	}
+}
+
+void Container_ContainerStatistics_Class_set(Container_ContainerStatistics_Class& stats, cJSON* data, map<string, Container_ContainerStatistics_Class>& lmap)
+{
+	Container_ContainerStatistics_Class& lstats = lmap[string(stats.InstanceID().value.Str())];
 	long readtime = getreadtimeofdockerapi(cJSON_Get(data, "read")->valuestring);
 	stats.updatetime_value(readtime);
 	stats.ElementName_value(lstats.ElementName().value);
@@ -105,22 +168,7 @@ void Container_ContainerStatistics_Class_set(Container_ContainerStatistics_Class
 	// stats.MemUnevictableMB_value(cJSON_Get(data, "memory_stats.stats.unevictable")->valuedouble / 1024 / 1024);
 	// stats.MemLimitMB_value(cJSON_Get(data, "memory_stats.limit")->valuedouble / 1024 / 1024);
 	stats.MemUsedPct_value(cJSON_Get(data, "memory_stats.usage")->valueint / 1024 / 1024);
-	stats.CPUTotal_value(cJSON_Get(data, "cpu_stats.cpu_usage.total_usage")->valueint / 1000000000);
-	// stats.CPUHost_value(cJSON_Get(data, "cpu_stats.system_cpu_usage")->valuedouble);
-	// stats.CPUSystem_value(cJSON_Get(data, "cpu_stats.cpu_usage.usage_in_kernelmode")->valuedouble);
-	int cpu_number = cJSON_GetArraySize(cJSON_Get(data, "cpu_stats.cpu_usage.percpu_usage"));
-	
-	if ((stats.CPUHost().value - lstats.CPUHost().value))
-	{
-		stats.CPUTotalPct_value((stats.CPUTotal().value - lstats.CPUTotal().value)*cpu_number * 100 / (stats.CPUHost().value - lstats.CPUHost().value));
-	}
-	else
-	{
-		stats.CPUTotalPct_value(0);
-	}
-
-	// stats.CPUSystemPct_value((stats.CPUSystem().value - lstats.CPUSystem().value)*cpu_number * 100 / (stats.CPUHost().value - lstats.CPUHost().value));
-	map[string(stats.InstanceID().value.Str())] = stats;
+	lmap[string(stats.InstanceID().value.Str())] = stats;
 }
 
 static map<string, Container_ContainerStatistics_Class> map_data;
@@ -171,12 +219,16 @@ void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& c
 			cJSON_Delete(response[i]);
 		}
 
+		vector<Container_ContainerStatistics_Class> instances;
+		vector<map<string, unsigned long long> > previousStatsList;
+
 		for (unsigned int i = 0; i < containers.size(); i++)
 		{
 			Container_ContainerStatistics_Class inst;
 			inst.InstanceID_value(containers[i].c_str());
 			Container_ContainerStatistics_Class_set(inst, response[i], map_data);
 			TrySetContainerDiskData(inst, containers[i]);
+			previousStatsList.push_back(PreliminarySetContainerCpuData(containers[i], inst));
 
 			if (strlen(inst.ElementName().value.Str()) < 192)
 			{
@@ -185,8 +237,17 @@ void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& c
 				inst.InstanceID_value(longName);
 			}
 
-			context.Post(inst);
+			instances.push_back(inst);
 			cJSON_Delete(response[i]);
+		}
+
+		// Wait 1 second and query CPU time again to get % CPU usage
+		sleep(1);
+
+		for (unsigned int i = 0; i < containers.size(); i++)
+		{
+			TrySetContainerCpuData(instances[i], containers[i], previousStatsList[i]);
+			context.Post(instances[i]);
 		}
 
 		context.Post(MI_RESULT_OK);
