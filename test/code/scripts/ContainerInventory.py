@@ -49,7 +49,7 @@ for container in containers:
 		result["ElementName"] = ""
 
 	result["ContainerHostname"] = inspect["Config"]["Hostname"]
-	result["ExitCode"] = inspect["State"]["ExitCode"]
+	result["ExitCode"] = inspect["State"]["ExitCode"] if inspect["State"]["ExitCode"] >= 0 else 128
 	result["CreatedTime"] = inspect["Created"]
 	result["StartedTime"] = inspect["State"]["StartedAt"]
 	result["FinishedTime"] = inspect["State"]["FinishedAt"]

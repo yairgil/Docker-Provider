@@ -190,6 +190,14 @@ private:
 		if (state)
 		{
 			int exitCode = cJSON_GetObjectItem(state, "ExitCode")->valueint;
+
+			// Exit codes less than 0 are not supported by the engine
+			if (exitCode < 0)
+			{
+				exitCode = 128;
+				syslog(LOG_NOTICE, "Container %s returned negative exit code", cJSON_GetObjectItem(entry, "Id")->valuestring);
+			}
+
 			instance.ExitCode_value(exitCode);
 
 			if (exitCode)

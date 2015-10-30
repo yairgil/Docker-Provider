@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <set>
 #include <stdio.h>
 #include <stdlib.h>
@@ -230,7 +231,9 @@ protected:
 					CPPUNIT_ASSERT_EQUAL(wstring(temp), context[j].GetProperty(L"Links", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
 
 					count = cJSON_GetObjectItem(containersList[i], "ExitCode")->valueint;
-					CPPUNIT_ASSERT_EQUAL(count, context[j].GetProperty(L"ExitCode", CALL_LOCATION(errMsg)).GetValue_MIUint32(CALL_LOCATION(errMsg)));
+					unsigned providerExitCode = context[j].GetProperty(L"ExitCode", CALL_LOCATION(errMsg)).GetValue_MIUint32(CALL_LOCATION(errMsg));
+					CPPUNIT_ASSERT_EQUAL(count, providerExitCode);
+					CPPUNIT_ASSERT(providerExitCode <= INT_MAX);
 
 					flag = true;
 					containerCount += 1;
