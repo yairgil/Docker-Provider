@@ -1,10 +1,12 @@
 %Variables
 PF:           'Linux'
 OMI_SERVICE:  '/opt/omi/bin/service_control'
+OMS_SERVICE:  '/opt/microsoft/omsagent/bin/service_control'
 
 %Postinstall_2000
 # Reload the OMI server
 ${{OMI_SERVICE}} reload
+${{OMS_SERVICE}} reload
 
 if ${{PERFORMING_UPGRADE_NOT}}; then
 	/opt/omi/bin/omicli ei root/cimv2 Container_DaemonEvent
@@ -44,4 +46,5 @@ fi
 if ${{PERFORMING_UPGRADE_NOT}}; then
 	# Reload the OMI server
 	${{OMI_SERVICE}} reload
+	${{OMS_SERVICE}} reload
 fi
