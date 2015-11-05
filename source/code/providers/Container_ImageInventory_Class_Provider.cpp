@@ -57,8 +57,12 @@ private:
 	/// \param[in] instance Object representing the image
 	/// \param[in] properties Raw string of form image:imagetag or repository/image:imagetag
 	///
-	static void SetImageRepositoryImageTag(Container_ImageInventory_Class& instance, string properties)
+	/// \returns false if image name <none>, true otherwise
+	///
+	static bool SetImageRepositoryImageTag(Container_ImageInventory_Class& instance, string properties)
 	{
+		bool result = true;
+
 		switch (properties.size())
 		{
 			default:
@@ -69,22 +73,29 @@ private:
 
 				if ((unsigned)colonLocation != string::npos)
 				{
+					string name = "<none>";
+
 					if ((unsigned)slashLocation >= properties.size())
 					{
 						// image:imagetag
-						instance.Image_value(properties.substr(0, colonLocation).c_str());
+						name = properties.substr(0, colonLocation);
 						instance.Repository_value("");
 					}
 					else
 					{
 						// repository/image:imagetag
-						instance.Image_value(properties.substr(slashLocation + 1, colonLocation - slashLocation - 1).c_str());
+						name = properties.substr(slashLocation + 1, colonLocation - slashLocation - 1);
 						instance.Repository_value(properties.substr(0, slashLocation).c_str());
 					}
 
+					result = name.compare("<none>");
+
+					instance.Image_value(name.c_str());
 					instance.ImageTag_value(properties.substr(colonLocation + 1).c_str());
 					break;
 				}
+
+				// If the colon was not found, the name is invalid and execution will fall through to case 0
 			}
 			case 0:
 			{
@@ -94,9 +105,12 @@ private:
 				instance.Image_value("");
 				instance.Repository_value("");
 				instance.ImageTag_value("");
+				result = false;
 				break;
 			}
 		}
+
+		return result;
 	}
 
 	///
@@ -213,6 +227,7 @@ public:
 		openlog("Container_ImageInventory", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
 		vector<Container_ImageInventory_Class> result;
+		vector<Container_ImageInventory_Class> filteredResult;
 		map<string, int> idTable;
 
 		// Get computer name
@@ -226,6 +241,8 @@ public:
 		// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
 		if (!response.empty() && response[0])
 		{
+			vector<bool> imageNameIsNotNone;
+
 			for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
 			{
 				cJSON* entry = cJSON_GetArrayItem(response[0], i);
@@ -248,7 +265,7 @@ public:
 					instance.VirtualSize_value(virtualSize);
 
 					// Get image
-					SetImageRepositoryImageTag(instance, SelectTag(cJSON_GetObjectItem(entry, "RepoTags")));
+					imageNameIsNotNone.push_back(SetImageRepositoryImageTag(instance, SelectTag(cJSON_GetObjectItem(entry, "RepoTags"))));
 
 					// Default container states
 					instance.Running_value(0);
@@ -271,6 +288,15 @@ public:
 
 			// Get container status
 			AggregateContainerStatus(result, idTable);
+
+			// Remove intermediary images
+			for (unsigned i = 0; i < result.size() && i < imageNameIsNotNone.size() ; i++)
+			{
+				if (imageNameIsNotNone[i] && result[i].Total_value())
+				{
+					filteredResult.push_back(result[i]);
+				}
+			}
 		}
 		else
 		{
@@ -278,7 +304,7 @@ public:
 		}
 
 		closelog();
-		return result;
+		return filteredResult;
 	}
 };
 

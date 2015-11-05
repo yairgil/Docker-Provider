@@ -51,4 +51,5 @@ for container in containers:
 j = JSONEncoder()
 
 for entry in tempDict.values():
-	print j.encode(entry)
+	if entry["Total"] or (entry["Image"] != "<none>"):
+	    print j.encode(entry)
