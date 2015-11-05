@@ -11,6 +11,7 @@
 
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
+#include "../dockerapi/DockerRestHelper.h"
 
 #define NUMBYTESPERMB 1048576
 
@@ -21,37 +22,6 @@ MI_BEGIN_NAMESPACE
 class InventoryQuery
 {
 private:
-	///
-	/// Create the REST request to list images
-	///
-	/// \returns Request in string format
-	///
-	static string restDockerImages()
-	{
-		return "GET /images/json?all=0 HTTP/1.1\r\n\r\n";
-	}
-
-	///
-	/// Create the REST request to list containers
-	///
-	/// \returns Request in string format
-	///
-	static string restDockerPs()
-	{
-		return "GET /containers/json?all=1 HTTP/1.1\r\n\r\n";
-	}
-
-	///
-	/// Create the REST request to inspect a container
-	///
-	/// \param[in] id ID of the container to be inspected
-	/// \returns Request in string format
-	///
-	static string restDockerInspect(string id)
-	{
-		return "GET /containers/" + id + "/json HTTP/1.1\r\n\r\n";
-	}
-
 	///
 	/// Select the tag which contains :latest, if not present, select the last tag
 	///
@@ -170,6 +140,8 @@ private:
 					}
 				}
 			}
+
+			instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
 		}
 		else
 		{
@@ -186,7 +158,7 @@ private:
 	static void AggregateContainerStatus(vector<Container_ImageInventory_Class>& instances, map<string, int>& idTable)
 	{
 		// Request containers
-		vector<string> request(1, restDockerPs());
+		vector<string> request(1, DockerRestHelper::restDockerPs());
 		vector<cJSON*> response = getResponse(request);
 
 		// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
@@ -199,7 +171,7 @@ private:
 				if (entry)
 				{
 					// Inspect container
-					vector<string> subRequest(1, restDockerInspect(string(cJSON_GetObjectItem(entry, "Id")->valuestring)));
+					vector<string> subRequest(1, DockerRestHelper::restDockerInspect(string(cJSON_GetObjectItem(entry, "Id")->valuestring)));
 					vector<cJSON*> subResponse = getResponse(subRequest);
 
 					// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
@@ -248,7 +220,7 @@ public:
 		string hostname = gethostname(name, 256) ? "" : string(name);
 
 		// Request images
-		vector<string> request(1, restDockerImages());
+		vector<string> request(1, DockerRestHelper::restDockerImages());
 		vector<cJSON*> response = getResponse(request);
 
 		// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
@@ -283,6 +255,7 @@ public:
 					instance.Paused_value(0);
 					instance.Stopped_value(0);
 					instance.Failed_value(0);
+					instance.Total_value(0);
 
 					idTable[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = result.size();
 					result.push_back(instance);

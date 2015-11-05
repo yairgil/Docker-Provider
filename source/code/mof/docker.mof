@@ -115,6 +115,9 @@ class Container_ImageInventory : CIM_ManagedElement
 	[ Description ( "Number of paused containers" ) ]
 	Uint32 Paused;
 
+	[ Description ( "Total number of containers" ) ]
+	Uint32 Total;
+
 	[ Description ( "Image actual size in MB" ) ]
 	string ImageSize;
 
@@ -143,6 +146,9 @@ class Container_DaemonEvent : CIM_ManagedElement
 
 	[ Description ( "Container ID" ) ]
 	String Id;
+
+	[ Description ( "Container name" ) ]
+	String ContainerName;
 };
 
 // Container_ContainerInventory

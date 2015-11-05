@@ -337,6 +337,23 @@ static MI_CONST MI_PropertyDecl Container_ImageInventory_Paused_prop =
     NULL,
 };
 
+/* property Container_ImageInventory.Total */
+static MI_CONST MI_PropertyDecl Container_ImageInventory_Total_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00746C05, /* code */
+    MI_T("Total"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_UINT32, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_ImageInventory, Total), /* offset */
+    MI_T("Container_ImageInventory"), /* origin */
+    MI_T("Container_ImageInventory"), /* propagator */
+    NULL,
+};
+
 /* property Container_ImageInventory.ImageSize */
 static MI_CONST MI_PropertyDecl Container_ImageInventory_ImageSize_prop =
 {
@@ -385,6 +402,7 @@ static MI_PropertyDecl MI_CONST* MI_CONST Container_ImageInventory_props[] =
     &Container_ImageInventory_Stopped_prop,
     &Container_ImageInventory_Failed_prop,
     &Container_ImageInventory_Paused_prop,
+    &Container_ImageInventory_Total_prop,
     &Container_ImageInventory_ImageSize_prop,
     &Container_ImageInventory_VirtualSize_prop,
 };
@@ -546,6 +564,23 @@ static MI_CONST MI_PropertyDecl Container_DaemonEvent_Id_prop =
     NULL,
 };
 
+/* property Container_DaemonEvent.ContainerName */
+static MI_CONST MI_PropertyDecl Container_DaemonEvent_ContainerName_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x0063650D, /* code */
+    MI_T("ContainerName"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_DaemonEvent, ContainerName), /* offset */
+    MI_T("Container_DaemonEvent"), /* origin */
+    MI_T("Container_DaemonEvent"), /* propagator */
+    NULL,
+};
+
 static MI_PropertyDecl MI_CONST* MI_CONST Container_DaemonEvent_props[] =
 {
     &Container_DaemonEvent_InstanceID_prop,
@@ -556,6 +591,7 @@ static MI_PropertyDecl MI_CONST* MI_CONST Container_DaemonEvent_props[] =
     &Container_DaemonEvent_TimeOfCommand_prop,
     &Container_DaemonEvent_Command_prop,
     &Container_DaemonEvent_Id_prop,
+    &Container_DaemonEvent_ContainerName_prop,
 };
 
 static MI_CONST MI_ProviderFT Container_DaemonEvent_funcs =

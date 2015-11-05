@@ -40,6 +40,7 @@ typedef struct _Container_ImageInventory /* extends CIM_ManagedElement */
     MI_ConstUint32Field Stopped;
     MI_ConstUint32Field Failed;
     MI_ConstUint32Field Paused;
+    MI_ConstUint32Field Total;
     MI_ConstStringField ImageSize;
     MI_ConstStringField VirtualSize;
 }
@@ -453,13 +454,29 @@ MI_INLINE MI_Result MI_CALL Container_ImageInventory_Clear_Paused(
     return MI_RESULT_OK;
 }
 
+MI_INLINE MI_Result MI_CALL Container_ImageInventory_Set_Total(
+    Container_ImageInventory* self,
+    MI_Uint32 x)
+{
+    ((MI_Uint32Field*)&self->Total)->value = x;
+    ((MI_Uint32Field*)&self->Total)->exists = 1;
+    return MI_RESULT_OK;
+}
+
+MI_INLINE MI_Result MI_CALL Container_ImageInventory_Clear_Total(
+    Container_ImageInventory* self)
+{
+    memset((void*)&self->Total, 0, sizeof(self->Total));
+    return MI_RESULT_OK;
+}
+
 MI_INLINE MI_Result MI_CALL Container_ImageInventory_Set_ImageSize(
     Container_ImageInventory* self,
     const MI_Char* str)
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        12,
+        13,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -471,7 +488,7 @@ MI_INLINE MI_Result MI_CALL Container_ImageInventory_SetPtr_ImageSize(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        12,
+        13,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -482,7 +499,7 @@ MI_INLINE MI_Result MI_CALL Container_ImageInventory_Clear_ImageSize(
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        12);
+        13);
 }
 
 MI_INLINE MI_Result MI_CALL Container_ImageInventory_Set_VirtualSize(
@@ -491,7 +508,7 @@ MI_INLINE MI_Result MI_CALL Container_ImageInventory_Set_VirtualSize(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        13,
+        14,
         (MI_Value*)&str,
         MI_STRING,
         0);
@@ -503,7 +520,7 @@ MI_INLINE MI_Result MI_CALL Container_ImageInventory_SetPtr_VirtualSize(
 {
     return self->__instance.ft->SetElementAt(
         (MI_Instance*)&self->__instance,
-        13,
+        14,
         (MI_Value*)&str,
         MI_STRING,
         MI_FLAG_BORROW);
@@ -514,7 +531,7 @@ MI_INLINE MI_Result MI_CALL Container_ImageInventory_Clear_VirtualSize(
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
-        13);
+        14);
 }
 
 /*
@@ -960,6 +977,46 @@ public:
     void Paused_clear()
     {
         const size_t n = offsetof(Self, Paused);
+        GetField<Uint32>(n).Clear();
+    }
+
+    //
+    // Container_ImageInventory_Class.Total
+    //
+    
+    const Field<Uint32>& Total() const
+    {
+        const size_t n = offsetof(Self, Total);
+        return GetField<Uint32>(n);
+    }
+    
+    void Total(const Field<Uint32>& x)
+    {
+        const size_t n = offsetof(Self, Total);
+        GetField<Uint32>(n) = x;
+    }
+    
+    const Uint32& Total_value() const
+    {
+        const size_t n = offsetof(Self, Total);
+        return GetField<Uint32>(n).value;
+    }
+    
+    void Total_value(const Uint32& x)
+    {
+        const size_t n = offsetof(Self, Total);
+        GetField<Uint32>(n).Set(x);
+    }
+    
+    bool Total_exists() const
+    {
+        const size_t n = offsetof(Self, Total);
+        return GetField<Uint32>(n).exists ? true : false;
+    }
+    
+    void Total_clear()
+    {
+        const size_t n = offsetof(Self, Total);
         GetField<Uint32>(n).Clear();
     }
 

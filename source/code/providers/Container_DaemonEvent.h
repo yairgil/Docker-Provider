@@ -36,6 +36,7 @@ typedef struct _Container_DaemonEvent /* extends CIM_ManagedElement */
     MI_ConstStringField TimeOfCommand;
     MI_ConstStringField Command;
     MI_ConstStringField Id;
+    MI_ConstStringField ContainerName;
 }
 Container_DaemonEvent;
 
@@ -383,6 +384,38 @@ MI_INLINE MI_Result MI_CALL Container_DaemonEvent_Clear_Id(
         7);
 }
 
+MI_INLINE MI_Result MI_CALL Container_DaemonEvent_Set_ContainerName(
+    Container_DaemonEvent* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        8,
+        (MI_Value*)&str,
+        MI_STRING,
+        0);
+}
+
+MI_INLINE MI_Result MI_CALL Container_DaemonEvent_SetPtr_ContainerName(
+    Container_DaemonEvent* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        8,
+        (MI_Value*)&str,
+        MI_STRING,
+        MI_FLAG_BORROW);
+}
+
+MI_INLINE MI_Result MI_CALL Container_DaemonEvent_Clear_ContainerName(
+    Container_DaemonEvent* self)
+{
+    return self->__instance.ft->ClearElementAt(
+        (MI_Instance*)&self->__instance,
+        8);
+}
+
 /*
 **==============================================================================
 **
@@ -666,6 +699,46 @@ public:
     void Id_clear()
     {
         const size_t n = offsetof(Self, Id);
+        GetField<String>(n).Clear();
+    }
+
+    //
+    // Container_DaemonEvent_Class.ContainerName
+    //
+    
+    const Field<String>& ContainerName() const
+    {
+        const size_t n = offsetof(Self, ContainerName);
+        return GetField<String>(n);
+    }
+    
+    void ContainerName(const Field<String>& x)
+    {
+        const size_t n = offsetof(Self, ContainerName);
+        GetField<String>(n) = x;
+    }
+    
+    const String& ContainerName_value() const
+    {
+        const size_t n = offsetof(Self, ContainerName);
+        return GetField<String>(n).value;
+    }
+    
+    void ContainerName_value(const String& x)
+    {
+        const size_t n = offsetof(Self, ContainerName);
+        GetField<String>(n).Set(x);
+    }
+    
+    bool ContainerName_exists() const
+    {
+        const size_t n = offsetof(Self, ContainerName);
+        return GetField<String>(n).exists ? true : false;
+    }
+    
+    void ContainerName_clear()
+    {
+        const size_t n = offsetof(Self, ContainerName);
         GetField<String>(n).Clear();
     }
 };

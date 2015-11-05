@@ -2,6 +2,7 @@
 #include <MI.h>
 #include "Container_DaemonEvent_Class_Provider.h"
 
+#include <map>
 #include <stdio.h>
 #include <string>
 #include <syslog.h>
@@ -12,6 +13,7 @@
 
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
+#include "../dockerapi/DockerRestHelper.h"
 
 #define LASTQUERYTIMEFILE "/var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt"
 
@@ -38,18 +40,6 @@ MI_BEGIN_NAMESPACE
 class EventQuery
 {
 private:
-	///
-	/// Create the REST request to list events
-	///
-	/// \returns Request in string format
-	///
-	static string restDockerEvents(int start, int end)
-	{
-		char result[70];
-		sprintf(result, "GET /events?since=%d&until=%d HTTP/1.1\r\n\r\n", start, end);
-		return string(result);
-	}
-
 	///
 	/// Get the previous time if it was stored, otherwise get the current time
 	///
@@ -100,6 +90,41 @@ private:
 		}
 	}
 
+	///
+	/// Map all container ID to name
+	///
+	/// \returns Map object
+	///
+	static map<string, string> MapContainerIdToName()
+	{
+		map<string, string> result;
+
+		// Request list of containers
+		vector<string> request(1, DockerRestHelper::restDockerPs());
+		vector<cJSON*> response = getResponse(request);
+
+		// See https://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
+		if (!response.empty() && response[0])
+		{
+			for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
+			{
+				cJSON* entry = cJSON_GetArrayItem(response[0], i);
+
+				if (entry)
+				{
+					cJSON* nameField = cJSON_GetObjectItem(entry, "Names");
+
+					if (cJSON_GetArraySize(nameField))
+					{
+						result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = string(cJSON_GetArrayItem(nameField, 0)->valuestring + 1);
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+
 public:
 	///
 	/// Get information about Docker events since the last query
@@ -121,12 +146,14 @@ public:
 			string hostname = gethostname(name, 256) ? "" : string(name);
 
 			// Request events
-			vector<string> request(1, restDockerEvents(previousTime, currentTime));
+			vector<string> request(1, DockerRestHelper::restDockerEvents(previousTime, currentTime));
 			vector<cJSON*> response = getResponse(request, true);
 
 			// See https://docs.docker.com/reference/api/Container_remote_api_v1.21/#monitor-docker-s-events for example output
 			if (!response.empty() && response[0])
 			{
+				map<string, string> idMap = MapContainerIdToName();
+
 				for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
 				{
 					cJSON* entry = cJSON_GetArrayItem(response[0], i);
@@ -149,13 +176,27 @@ public:
 						{
 							// Container event
 							instance.ElementName_value(tempImageName->valuestring);
-							instance.Id_value(cJSON_GetObjectItem(entry, "id")->valuestring);
+
+							char* id = cJSON_GetObjectItem(entry, "id")->valuestring;
+							instance.Id_value(id);
+
+							string shortId = string(id).substr(0, 12);
+
+							if (idMap.count(shortId))
+							{
+								instance.ContainerName_value(idMap[shortId].c_str());
+							}
+							else
+							{
+								syslog(LOG_NOTICE, "No container name found for container %s", id);
+							}
 						}
 						else
 						{
 							// Image event
 							instance.ElementName_value(cJSON_GetObjectItem(entry, "id")->valuestring);
 							instance.Id_value("");
+							instance.ContainerName_value("");
 						}
 
 						result.push_back(instance);

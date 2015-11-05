@@ -11,20 +11,11 @@
 
 #include "../cjson/cJSON_Extend.h"
 #include "../dockerapi/DockerRemoteApi.h"
+#include "../dockerapi/DockerRestHelper.h"
 
 #define NUMBYTESPERMB 1048576
 
 using namespace std;
-
-string api_get_container_info(string id)
-{
-	return string("GET /containers/" + id + "/json HTTP/1.1\r\n\r\n");
-}
-
-string api_get_container_stats(string id)
-{
-	return string("GET /containers/" + id + "/stats?stream=false HTTP/1.1\r\n\r\n");
-}
 
 long getreadtimeofdockerapi(char* time)
 {
@@ -40,7 +31,7 @@ MI_BEGIN_NAMESPACE
 void TrySetContainerDiskData(Container_ContainerStatistics_Class& instance, string id)
 {
 	// Request stats
-	vector<string> request(1, api_get_container_stats(id));
+	vector<string> request(1, DockerRestHelper::restDockerStats(id));
 	vector<cJSON*> response = getResponse(request);
 
 	instance.DiskBytesRead_value(0);
@@ -82,13 +73,15 @@ void TrySetContainerDiskData(Container_ContainerStatistics_Class& instance, stri
 				}
 			}
 		}
+
+		cJSON_Delete(response[0]);
 	}
 }
 
 map<string, unsigned long long> PreliminarySetContainerCpuData(string id, Container_ContainerStatistics_Class& instance)
 {
 	// Request stats
-	vector<string> request(1, api_get_container_stats(id));
+	vector<string> request(1, DockerRestHelper::restDockerStats(id));
 	vector<cJSON*> response = getResponse(request);
 	map<string, unsigned long long> result;
 
@@ -109,6 +102,8 @@ map<string, unsigned long long> PreliminarySetContainerCpuData(string id, Contai
 				result["system"] = (unsigned long long)cJSON_GetObjectItem(cpu_stats, "system_cpu_usage")->valuedouble;
 			}
 		}
+
+		cJSON_Delete(response[0]);
 	}
 
 	return result;
@@ -117,7 +112,7 @@ map<string, unsigned long long> PreliminarySetContainerCpuData(string id, Contai
 void TrySetContainerCpuData(Container_ContainerStatistics_Class& instance, string id, map<string, unsigned long long> previousStats)
 {
 	// Request stats
-	vector<string> request(1, api_get_container_stats(id));
+	vector<string> request(1, DockerRestHelper::restDockerStats(id));
 	vector<cJSON*> response = getResponse(request);
 
 	instance.CPUTotal_value(0);
@@ -144,6 +139,8 @@ void TrySetContainerCpuData(Container_ContainerStatistics_Class& instance, strin
 				}
 			}
 		}
+
+		cJSON_Delete(response[0]);
 	}
 }
 
@@ -196,14 +193,14 @@ void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& c
 
 		for (unsigned int i = 0; i < containers.size(); i++)
 		{
-			request.push_back(api_get_container_stats(containers[i]));
+			request.push_back(DockerRestHelper::restDockerStats(containers[i]));
 		}
 
 		for (unsigned int i = 0; i < containers.size(); i++)
 		{
 			if (map_data.find(containers[i]) == map_data.end())
 			{
-				request.push_back(api_get_container_info(containers[i]));
+				request.push_back(DockerRestHelper::restDockerInspect(containers[i]));
 			}
 		}
 

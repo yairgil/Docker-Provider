@@ -24,6 +24,7 @@ for image in imageDict:
 	result["Stopped"] = 0
 	result["Failed"] = 0
 	result["Paused"] = 0
+	result["Total"] = 0
 	result["ImageSize"] = str(image["Size"] / NUMBYTESPERMB) + " MB"
 	result["VirtualSize"] = str(image["VirtualSize"] / NUMBYTESPERMB) + " MB"
 
@@ -44,6 +45,8 @@ for container in containers:
 			   tempDict[inspect["Image"]]["Failed"] += 1
 			else:
 			   tempDict[inspect["Image"]]["Stopped"] += 1
+
+	tempDict[inspect["Image"]]["Total"] += 1
 
 j = JSONEncoder()
 

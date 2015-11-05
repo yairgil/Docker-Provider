@@ -192,6 +192,9 @@ protected:
 					count = cJSON_GetObjectItem(images[i], "Paused")->valueint;
 					CPPUNIT_ASSERT_EQUAL(count, context[j].GetProperty(L"Paused", CALL_LOCATION(errMsg)).GetValue_MIUint32(CALL_LOCATION(errMsg)));
 
+					count = cJSON_GetObjectItem(images[i], "Total")->valueint;
+					CPPUNIT_ASSERT_EQUAL(count, context[j].GetProperty(L"Total", CALL_LOCATION(errMsg)).GetValue_MIUint32(CALL_LOCATION(errMsg)));
+
 					flag = true;
 					imageCount += 1;
 				}

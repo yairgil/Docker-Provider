@@ -10,6 +10,7 @@
 
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
+#include "../dockerapi/DockerRestHelper.h"
 
 using namespace std;
 
@@ -18,27 +19,6 @@ MI_BEGIN_NAMESPACE
 class ContainerQuery
 {
 private:
-	///
-	/// Create the REST request to inspect a container
-	///
-	/// \param[in] id ID of the container to be inspected
-	/// \returns Request in string format
-	///
-	static string restDockerInspect(string id)
-	{
-		return "GET /containers/" + id + "/json HTTP/1.1\r\n\r\n";
-	}
-
-	///
-	/// Create the REST request to list images
-	///
-	/// \returns Request in string format
-	///
-	static string restDockerImages()
-	{
-		return "GET /images/json?all=0 HTTP/1.1\r\n\r\n";
-	}
-
 	///
 	/// Seperate the repository, image, and image tag strings
 	///
@@ -98,7 +78,7 @@ private:
 		map<string, vector<string> > result;
 
 		// Request images
-		vector<string> request(1, restDockerImages());
+		vector<string> request(1, DockerRestHelper::restDockerImages());
 		vector<cJSON*> response = getResponse(request);
 
 		// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
@@ -271,7 +251,7 @@ private:
 		Container_ContainerInventory_Class instance;
 
 		// Inspect container
-		vector<string> request(1, restDockerInspect(id));
+		vector<string> request(1, DockerRestHelper::restDockerInspect(id));
 		vector<cJSON*> response = getResponse(request);
 
 		// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
