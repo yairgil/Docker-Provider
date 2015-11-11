@@ -58,7 +58,7 @@ public:
 		{
 			sprintf(command, "docker stop %s", containers[i].c_str());
 			system(command);
-			sprintf(command, "docker rm %s", containers[i].c_str());
+			sprintf(command, "docker rm -f %s", containers[i].c_str());
 			system(command);
 		}
 
@@ -87,7 +87,7 @@ protected:
 		StandardTestEnumerateInstances<mi::Container_ContainerStatistics_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
 
 		CPPUNIT_ASSERT(context.Size());
-
+		
 		// Only check that the values are present and within the valid range because it is not possible to create a controlled environment
 		for (unsigned i = 0; i < context.Size(); ++i)
 		{
@@ -96,15 +96,10 @@ protected:
 
 			CPPUNIT_ASSERT(context[i].GetProperty(L"NetRXBytes", CALL_LOCATION(errMsg)).GetValue_MIUint64(CALL_LOCATION(errMsg)) >= 0);
 			CPPUNIT_ASSERT(context[i].GetProperty(L"NetTXBytes", CALL_LOCATION(errMsg)).GetValue_MIUint64(CALL_LOCATION(errMsg)) >= 0);
-
-			unsigned short memUse = context[i].GetProperty(L"MemUsedPct", CALL_LOCATION(errMsg)).GetValue_MIUint16(CALL_LOCATION(errMsg));
-			CPPUNIT_ASSERT(memUse >= 0);
-			CPPUNIT_ASSERT(memUse <= 100);
-
+			CPPUNIT_ASSERT(context[i].GetProperty(L"MemUsedMB", CALL_LOCATION(errMsg)).GetValue_MIUint64(CALL_LOCATION(errMsg)) >= 0);
 			CPPUNIT_ASSERT(context[i].GetProperty(L"CPUTotal", CALL_LOCATION(errMsg)).GetValue_MIUint64(CALL_LOCATION(errMsg)) >= 0);
 
 			unsigned short cpuUse = context[i].GetProperty(L"CPUTotalPct", CALL_LOCATION(errMsg)).GetValue_MIUint16(CALL_LOCATION(errMsg));
-			CPPUNIT_ASSERT(cpuUse >= 0);
 			CPPUNIT_ASSERT(cpuUse <= 100);
 
 			CPPUNIT_ASSERT(context[i].GetProperty(L"DiskBytesRead", CALL_LOCATION(errMsg)).GetValue_MIUint64(CALL_LOCATION(errMsg)) >= 0);

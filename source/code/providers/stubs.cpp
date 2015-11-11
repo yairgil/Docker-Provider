@@ -372,23 +372,6 @@ MI_EXTERN_C void MI_CALL Container_ContainerStatistics_DeleteInstance(
     cxxSelf->DeleteInstance(cxxContext, nameSpace, cxxInstanceName);
 }
 
-MI_EXTERN_C void MI_CALL Container_ContainerStatistics_Invoke_ResetSelectedStats(
-    Container_ContainerStatistics_Self* self,
-    MI_Context* context,
-    const MI_Char* nameSpace,
-    const MI_Char* className,
-    const MI_Char* methodName,
-    const Container_ContainerStatistics* instanceName,
-    const Container_ContainerStatistics_ResetSelectedStats* in)
-{
-    Container_ContainerStatistics_Class_Provider* cxxSelf =((Container_ContainerStatistics_Class_Provider*)self);
-    Container_ContainerStatistics_Class instance(instanceName, false);
-    Context  cxxContext(context);
-    Container_ContainerStatistics_ResetSelectedStats_Class param(in, false);
-
-    cxxSelf->Invoke_ResetSelectedStats(cxxContext, nameSpace, instance, param);
-}
-
 MI_EXTERN_C void MI_CALL Container_ContainerInventory_Load(
     Container_ContainerInventory_Self** self,
     MI_Module_Self* selfModule,

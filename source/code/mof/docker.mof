@@ -3,10 +3,10 @@
 [   Version ( "1.0.0" ),
 	Description ( "Docker Container Statistical Information" )
 ]
-class Container_ContainerStatistics : CIM_StatisticalData
+class Container_ContainerStatistics : CIM_ManagedElement
 {
-	[ Description ( "Update time:seconds since 1/1/1970 * 1000 " ) ]
-	uint64 updatetime;
+	[ Key, Description ( "Container ID" ) ]
+	String InstanceID;
 
 	[ Description ( "Network received bytes for the container instance" ) ]
 	uint64 NetRXBytes;
@@ -14,65 +14,14 @@ class Container_ContainerStatistics : CIM_StatisticalData
 	[ Description ( "Network transmitted bytes for the container instance" ) ]
 	uint64 NetTXBytes;
 
-	[ Description ( "Network total bytes for the container instance" ) ]
-	uint64 NetBytes;
-
-	[ Description ( "Network received kilobytes per second for the container instance" ) ]
-	uint32 NetRXKBytesPerSec;
-
-	[ Description ( "Network transmitted kilobytes per second for the container instance" ) ]
-	uint32 NetTXKBytesPerSec;
-
-	[ Description ( "Memory cache in megabytes for the container instance" ) ]
-	uint32 MemCacheMB;
-
-	[ Description ( "Memory rss in megabytes for the container instance" ) ]
-	uint32 MemRSSMB;
-
-	[ Description ( "Memory page faults for the container instance" ) ]
-	uint16 MemPGFault;
-
-	[ Description ( "Memory major page faultsfor the container instance" ) ]
-	uint16 MemPGMajFault;
-		 
-	[ Description ( "Memory page faults per second for the container instance" ) ]
-	uint16 MemPGFaultPerSec;
-
-	[ Description ( "Memory major page faults per second for the container instance" ) ]
-	uint16 MemPGMajFaultPerSec;
-
-	[ Description ( "Memory swap used in megabytes for the container instance" ) ]
-	uint32 MemSwapMB;
-
-	[ Description ( "Memory unvicatable in megabytes for the container instance" ) ]
-	uint32 MemUnevictableMB;
-
-	[ Description ( "Memory limit in megabytes for the container instance" ) ]
-	uint32 MemLimitMB;
-
-	[ Description ( "Memory swap limit in megabytes for the container instance" ) ]
-	uint32 MemSWLimitMB;
-
-	[ Description ( "Percent of the memory limit currently used for the container instance" ) ]
-	uint16 MemUsedPct;
-
-	[ Description ( "Percent of the memory swap limit currently used for the container instance" ) ]
-	uint16 MemSWUsedPct;
+	[ Description ( "Memory currently used for the container instance" ) ]
+	uint64 MemUsedMB;
 
 	[ Description ( "CPU (total) used for container instance" ) ]
 	uint64 CPUTotal;
 
-	[ Description ( "System CPU (total) used for container instance" ) ]
-	uint64 CPUSystem;
-
 	[ Description ( "Percentage of CPU (total) used for container instance" ) ]
 	uint16 CPUTotalPct;
-
-	[ Description ( "Percentage of CPU (total) used for container instance" ) ]
-	uint16 CPUSystemPct;
-	   
-	[ Description ( "CPU (host) used for host vm" ) ]
-	uint64 CPUHost;
 
 	[ Description ( "Number of bytes read from disk" ) ]
 	uint64 DiskBytesRead;

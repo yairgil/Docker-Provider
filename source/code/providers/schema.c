@@ -661,263 +661,24 @@ MI_CONST MI_ClassDecl Container_DaemonEvent_rtti =
 /*
 **==============================================================================
 **
-** CIM_StatisticalData
-**
-**==============================================================================
-*/
-
-static MI_CONST MI_Char* CIM_StatisticalData_InstanceID_Override_qual_value = MI_T("InstanceID");
-
-static MI_CONST MI_Qualifier CIM_StatisticalData_InstanceID_Override_qual =
-{
-    MI_T("Override"),
-    MI_STRING,
-    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
-    &CIM_StatisticalData_InstanceID_Override_qual_value
-};
-
-static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_InstanceID_quals[] =
-{
-    &CIM_StatisticalData_InstanceID_Override_qual,
-};
-
-/* property CIM_StatisticalData.InstanceID */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_InstanceID_prop =
-{
-    MI_FLAG_PROPERTY|MI_FLAG_KEY, /* flags */
-    0x0069640A, /* code */
-    MI_T("InstanceID"), /* name */
-    CIM_StatisticalData_InstanceID_quals, /* qualifiers */
-    MI_COUNT(CIM_StatisticalData_InstanceID_quals), /* numQualifiers */
-    MI_STRING, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData, InstanceID), /* offset */
-    MI_T("CIM_ManagedElement"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    NULL,
-};
-
-static MI_CONST MI_Char* CIM_StatisticalData_ElementName_Override_qual_value = MI_T("ElementName");
-
-static MI_CONST MI_Qualifier CIM_StatisticalData_ElementName_Override_qual =
-{
-    MI_T("Override"),
-    MI_STRING,
-    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_RESTRICTED,
-    &CIM_StatisticalData_ElementName_Override_qual_value
-};
-
-static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_ElementName_quals[] =
-{
-    &CIM_StatisticalData_ElementName_Override_qual,
-};
-
-/* property CIM_StatisticalData.ElementName */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_ElementName_prop =
-{
-    MI_FLAG_PROPERTY|MI_FLAG_REQUIRED, /* flags */
-    0x0065650B, /* code */
-    MI_T("ElementName"), /* name */
-    CIM_StatisticalData_ElementName_quals, /* qualifiers */
-    MI_COUNT(CIM_StatisticalData_ElementName_quals), /* numQualifiers */
-    MI_STRING, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData, ElementName), /* offset */
-    MI_T("CIM_ManagedElement"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    NULL,
-};
-
-/* property CIM_StatisticalData.StartStatisticTime */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_StartStatisticTime_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x00736512, /* code */
-    MI_T("StartStatisticTime"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_DATETIME, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData, StartStatisticTime), /* offset */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    NULL,
-};
-
-/* property CIM_StatisticalData.StatisticTime */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_StatisticTime_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x0073650D, /* code */
-    MI_T("StatisticTime"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_DATETIME, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData, StatisticTime), /* offset */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    NULL,
-};
-
-static MI_CONST MI_Datetime CIM_StatisticalData_SampleInterval_value = {0,{{0,0,0,0,0}}};
-
-/* property CIM_StatisticalData.SampleInterval */
-static MI_CONST MI_PropertyDecl CIM_StatisticalData_SampleInterval_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x00736C0E, /* code */
-    MI_T("SampleInterval"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_DATETIME, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData, SampleInterval), /* offset */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    &CIM_StatisticalData_SampleInterval_value,
-};
-
-static MI_PropertyDecl MI_CONST* MI_CONST CIM_StatisticalData_props[] =
-{
-    &CIM_StatisticalData_InstanceID_prop,
-    &CIM_ManagedElement_Caption_prop,
-    &CIM_ManagedElement_Description_prop,
-    &CIM_StatisticalData_ElementName_prop,
-    &CIM_StatisticalData_StartStatisticTime_prop,
-    &CIM_StatisticalData_StatisticTime_prop,
-    &CIM_StatisticalData_SampleInterval_prop,
-};
-
-/* parameter CIM_StatisticalData.ResetSelectedStats(): SelectedStatistics */
-static MI_CONST MI_ParameterDecl CIM_StatisticalData_ResetSelectedStats_SelectedStatistics_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
-    0x00737312, /* code */
-    MI_T("SelectedStatistics"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_STRINGA, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData_ResetSelectedStats, SelectedStatistics), /* offset */
-};
-
-/* parameter CIM_StatisticalData.ResetSelectedStats(): MIReturn */
-static MI_CONST MI_ParameterDecl CIM_StatisticalData_ResetSelectedStats_MIReturn_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
-    0x006D6E08, /* code */
-    MI_T("MIReturn"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(CIM_StatisticalData_ResetSelectedStats, MIReturn), /* offset */
-};
-
-static MI_ParameterDecl MI_CONST* MI_CONST CIM_StatisticalData_ResetSelectedStats_params[] =
-{
-    &CIM_StatisticalData_ResetSelectedStats_MIReturn_param,
-    &CIM_StatisticalData_ResetSelectedStats_SelectedStatistics_param,
-};
-
-/* method CIM_StatisticalData.ResetSelectedStats() */
-MI_CONST MI_MethodDecl CIM_StatisticalData_ResetSelectedStats_rtti =
-{
-    MI_FLAG_METHOD, /* flags */
-    0x00727312, /* code */
-    MI_T("ResetSelectedStats"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    CIM_StatisticalData_ResetSelectedStats_params, /* parameters */
-    MI_COUNT(CIM_StatisticalData_ResetSelectedStats_params), /* numParameters */
-    sizeof(CIM_StatisticalData_ResetSelectedStats), /* size */
-    MI_UINT32, /* returnType */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    &schemaDecl, /* schema */
-    NULL, /* method */
-};
-
-static MI_MethodDecl MI_CONST* MI_CONST CIM_StatisticalData_meths[] =
-{
-    &CIM_StatisticalData_ResetSelectedStats_rtti,
-};
-
-static MI_CONST MI_Char* CIM_StatisticalData_UMLPackagePath_qual_value = MI_T("CIM::Core::Statistics");
-
-static MI_CONST MI_Qualifier CIM_StatisticalData_UMLPackagePath_qual =
-{
-    MI_T("UMLPackagePath"),
-    MI_STRING,
-    0,
-    &CIM_StatisticalData_UMLPackagePath_qual_value
-};
-
-static MI_CONST MI_Char* CIM_StatisticalData_Version_qual_value = MI_T("2.19.0");
-
-static MI_CONST MI_Qualifier CIM_StatisticalData_Version_qual =
-{
-    MI_T("Version"),
-    MI_STRING,
-    MI_FLAG_ENABLEOVERRIDE|MI_FLAG_TRANSLATABLE|MI_FLAG_RESTRICTED,
-    &CIM_StatisticalData_Version_qual_value
-};
-
-static MI_Qualifier MI_CONST* MI_CONST CIM_StatisticalData_quals[] =
-{
-    &CIM_StatisticalData_UMLPackagePath_qual,
-    &CIM_StatisticalData_Version_qual,
-};
-
-/* class CIM_StatisticalData */
-MI_CONST MI_ClassDecl CIM_StatisticalData_rtti =
-{
-    MI_FLAG_CLASS|MI_FLAG_ABSTRACT, /* flags */
-    0x00636113, /* code */
-    MI_T("CIM_StatisticalData"), /* name */
-    CIM_StatisticalData_quals, /* qualifiers */
-    MI_COUNT(CIM_StatisticalData_quals), /* numQualifiers */
-    CIM_StatisticalData_props, /* properties */
-    MI_COUNT(CIM_StatisticalData_props), /* numProperties */
-    sizeof(CIM_StatisticalData), /* size */
-    MI_T("CIM_ManagedElement"), /* superClass */
-    &CIM_ManagedElement_rtti, /* superClassDecl */
-    CIM_StatisticalData_meths, /* methods */
-    MI_COUNT(CIM_StatisticalData_meths), /* numMethods */
-    &schemaDecl, /* schema */
-    NULL, /* functions */
-    NULL, /* owningClass */
-};
-
-/*
-**==============================================================================
-**
 ** Container_ContainerStatistics
 **
 **==============================================================================
 */
 
-/* property Container_ContainerStatistics.updatetime */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_updatetime_prop =
+/* property Container_ContainerStatistics.InstanceID */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_InstanceID_prop =
 {
-    MI_FLAG_PROPERTY, /* flags */
-    0x0075650A, /* code */
-    MI_T("updatetime"), /* name */
+    MI_FLAG_PROPERTY|MI_FLAG_KEY, /* flags */
+    0x0069640A, /* code */
+    MI_T("InstanceID"), /* name */
     NULL, /* qualifiers */
     0, /* numQualifiers */
-    MI_UINT64, /* type */
+    MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Container_ContainerStatistics, updatetime), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
+    offsetof(Container_ContainerStatistics, InstanceID), /* offset */
+    MI_T("CIM_ManagedElement"), /* origin */
     MI_T("Container_ContainerStatistics"), /* propagator */
     NULL,
 };
@@ -956,256 +717,18 @@ static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetTXBytes_prop =
     NULL,
 };
 
-/* property Container_ContainerStatistics.NetBytes */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetBytes_prop =
+/* property Container_ContainerStatistics.MemUsedMB */
+static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemUsedMB_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
-    0x006E7308, /* code */
-    MI_T("NetBytes"), /* name */
+    0x006D740A, /* code */
+    MI_T("MemUsedMB"), /* name */
     NULL, /* qualifiers */
     0, /* numQualifiers */
     MI_UINT64, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Container_ContainerStatistics, NetBytes), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.NetRXKBytesPerSec */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetRXKBytesPerSec_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006E6311, /* code */
-    MI_T("NetRXKBytesPerSec"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, NetRXKBytesPerSec), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.NetTXKBytesPerSec */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_NetTXKBytesPerSec_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006E6311, /* code */
-    MI_T("NetTXKBytesPerSec"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, NetTXKBytesPerSec), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemCacheMB */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemCacheMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D620A, /* code */
-    MI_T("MemCacheMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemCacheMB), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemRSSMB */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemRSSMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6208, /* code */
-    MI_T("MemRSSMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemRSSMB), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemPGFault */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemPGFault_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D740A, /* code */
-    MI_T("MemPGFault"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemPGFault), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemPGMajFault */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemPGMajFault_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D740D, /* code */
-    MI_T("MemPGMajFault"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemPGMajFault), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemPGFaultPerSec */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemPGFaultPerSec_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6310, /* code */
-    MI_T("MemPGFaultPerSec"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemPGFaultPerSec), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemPGMajFaultPerSec */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemPGMajFaultPerSec_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6313, /* code */
-    MI_T("MemPGMajFaultPerSec"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemPGMajFaultPerSec), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemSwapMB */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemSwapMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6209, /* code */
-    MI_T("MemSwapMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemSwapMB), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemUnevictableMB */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemUnevictableMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D6210, /* code */
-    MI_T("MemUnevictableMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemUnevictableMB), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemLimitMB */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemLimitMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D620A, /* code */
-    MI_T("MemLimitMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemLimitMB), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemSWLimitMB */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemSWLimitMB_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D620C, /* code */
-    MI_T("MemSWLimitMB"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemSWLimitMB), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemUsedPct */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemUsedPct_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D740A, /* code */
-    MI_T("MemUsedPct"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemUsedPct), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.MemSWUsedPct */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_MemSWUsedPct_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x006D740C, /* code */
-    MI_T("MemSWUsedPct"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, MemSWUsedPct), /* offset */
+    offsetof(Container_ContainerStatistics, MemUsedMB), /* offset */
     MI_T("Container_ContainerStatistics"), /* origin */
     MI_T("Container_ContainerStatistics"), /* propagator */
     NULL,
@@ -1228,23 +751,6 @@ static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUTotal_prop =
     NULL,
 };
 
-/* property Container_ContainerStatistics.CPUSystem */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUSystem_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x00636D09, /* code */
-    MI_T("CPUSystem"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, CPUSystem), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
 /* property Container_ContainerStatistics.CPUTotalPct */
 static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUTotalPct_prop =
 {
@@ -1257,40 +763,6 @@ static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUTotalPct_prop =
     NULL, /* className */
     0, /* subscript */
     offsetof(Container_ContainerStatistics, CPUTotalPct), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.CPUSystemPct */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUSystemPct_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x0063740C, /* code */
-    MI_T("CPUSystemPct"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT16, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, CPUSystemPct), /* offset */
-    MI_T("Container_ContainerStatistics"), /* origin */
-    MI_T("Container_ContainerStatistics"), /* propagator */
-    NULL,
-};
-
-/* property Container_ContainerStatistics.CPUHost */
-static MI_CONST MI_PropertyDecl Container_ContainerStatistics_CPUHost_prop =
-{
-    MI_FLAG_PROPERTY, /* flags */
-    0x00637407, /* code */
-    MI_T("CPUHost"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT64, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics, CPUHost), /* offset */
     MI_T("Container_ContainerStatistics"), /* origin */
     MI_T("Container_ContainerStatistics"), /* propagator */
     NULL,
@@ -1332,95 +804,17 @@ static MI_CONST MI_PropertyDecl Container_ContainerStatistics_DiskBytesWritten_p
 
 static MI_PropertyDecl MI_CONST* MI_CONST Container_ContainerStatistics_props[] =
 {
-    &CIM_StatisticalData_InstanceID_prop,
+    &Container_ContainerStatistics_InstanceID_prop,
     &CIM_ManagedElement_Caption_prop,
     &CIM_ManagedElement_Description_prop,
-    &CIM_StatisticalData_ElementName_prop,
-    &CIM_StatisticalData_StartStatisticTime_prop,
-    &CIM_StatisticalData_StatisticTime_prop,
-    &CIM_StatisticalData_SampleInterval_prop,
-    &Container_ContainerStatistics_updatetime_prop,
+    &CIM_ManagedElement_ElementName_prop,
     &Container_ContainerStatistics_NetRXBytes_prop,
     &Container_ContainerStatistics_NetTXBytes_prop,
-    &Container_ContainerStatistics_NetBytes_prop,
-    &Container_ContainerStatistics_NetRXKBytesPerSec_prop,
-    &Container_ContainerStatistics_NetTXKBytesPerSec_prop,
-    &Container_ContainerStatistics_MemCacheMB_prop,
-    &Container_ContainerStatistics_MemRSSMB_prop,
-    &Container_ContainerStatistics_MemPGFault_prop,
-    &Container_ContainerStatistics_MemPGMajFault_prop,
-    &Container_ContainerStatistics_MemPGFaultPerSec_prop,
-    &Container_ContainerStatistics_MemPGMajFaultPerSec_prop,
-    &Container_ContainerStatistics_MemSwapMB_prop,
-    &Container_ContainerStatistics_MemUnevictableMB_prop,
-    &Container_ContainerStatistics_MemLimitMB_prop,
-    &Container_ContainerStatistics_MemSWLimitMB_prop,
-    &Container_ContainerStatistics_MemUsedPct_prop,
-    &Container_ContainerStatistics_MemSWUsedPct_prop,
+    &Container_ContainerStatistics_MemUsedMB_prop,
     &Container_ContainerStatistics_CPUTotal_prop,
-    &Container_ContainerStatistics_CPUSystem_prop,
     &Container_ContainerStatistics_CPUTotalPct_prop,
-    &Container_ContainerStatistics_CPUSystemPct_prop,
-    &Container_ContainerStatistics_CPUHost_prop,
     &Container_ContainerStatistics_DiskBytesRead_prop,
     &Container_ContainerStatistics_DiskBytesWritten_prop,
-};
-
-/* parameter Container_ContainerStatistics.ResetSelectedStats(): SelectedStatistics */
-static MI_CONST MI_ParameterDecl Container_ContainerStatistics_ResetSelectedStats_SelectedStatistics_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_IN, /* flags */
-    0x00737312, /* code */
-    MI_T("SelectedStatistics"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_STRINGA, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics_ResetSelectedStats, SelectedStatistics), /* offset */
-};
-
-/* parameter Container_ContainerStatistics.ResetSelectedStats(): MIReturn */
-static MI_CONST MI_ParameterDecl Container_ContainerStatistics_ResetSelectedStats_MIReturn_param =
-{
-    MI_FLAG_PARAMETER|MI_FLAG_OUT, /* flags */
-    0x006D6E08, /* code */
-    MI_T("MIReturn"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    MI_UINT32, /* type */
-    NULL, /* className */
-    0, /* subscript */
-    offsetof(Container_ContainerStatistics_ResetSelectedStats, MIReturn), /* offset */
-};
-
-static MI_ParameterDecl MI_CONST* MI_CONST Container_ContainerStatistics_ResetSelectedStats_params[] =
-{
-    &Container_ContainerStatistics_ResetSelectedStats_MIReturn_param,
-    &Container_ContainerStatistics_ResetSelectedStats_SelectedStatistics_param,
-};
-
-/* method Container_ContainerStatistics.ResetSelectedStats() */
-MI_CONST MI_MethodDecl Container_ContainerStatistics_ResetSelectedStats_rtti =
-{
-    MI_FLAG_METHOD, /* flags */
-    0x00727312, /* code */
-    MI_T("ResetSelectedStats"), /* name */
-    NULL, /* qualifiers */
-    0, /* numQualifiers */
-    Container_ContainerStatistics_ResetSelectedStats_params, /* parameters */
-    MI_COUNT(Container_ContainerStatistics_ResetSelectedStats_params), /* numParameters */
-    sizeof(Container_ContainerStatistics_ResetSelectedStats), /* size */
-    MI_UINT32, /* returnType */
-    MI_T("CIM_StatisticalData"), /* origin */
-    MI_T("CIM_StatisticalData"), /* propagator */
-    &schemaDecl, /* schema */
-    (MI_ProviderFT_Invoke)Container_ContainerStatistics_Invoke_ResetSelectedStats, /* method */
-};
-
-static MI_MethodDecl MI_CONST* MI_CONST Container_ContainerStatistics_meths[] =
-{
-    &Container_ContainerStatistics_ResetSelectedStats_rtti,
 };
 
 static MI_CONST MI_ProviderFT Container_ContainerStatistics_funcs =
@@ -1441,7 +835,7 @@ static MI_CONST MI_ProviderFT Container_ContainerStatistics_funcs =
   (MI_ProviderFT_Invoke)NULL,
 };
 
-static MI_CONST MI_Char* Container_ContainerStatistics_UMLPackagePath_qual_value = MI_T("CIM::Core::Statistics");
+static MI_CONST MI_Char* Container_ContainerStatistics_UMLPackagePath_qual_value = MI_T("CIM::Core::CoreElements");
 
 static MI_CONST MI_Qualifier Container_ContainerStatistics_UMLPackagePath_qual =
 {
@@ -1478,10 +872,10 @@ MI_CONST MI_ClassDecl Container_ContainerStatistics_rtti =
     Container_ContainerStatistics_props, /* properties */
     MI_COUNT(Container_ContainerStatistics_props), /* numProperties */
     sizeof(Container_ContainerStatistics), /* size */
-    MI_T("CIM_StatisticalData"), /* superClass */
-    &CIM_StatisticalData_rtti, /* superClassDecl */
-    Container_ContainerStatistics_meths, /* methods */
-    MI_COUNT(Container_ContainerStatistics_meths), /* numMethods */
+    MI_T("CIM_ManagedElement"), /* superClass */
+    &CIM_ManagedElement_rtti, /* superClassDecl */
+    NULL, /* methods */
+    0, /* numMethods */
     &schemaDecl, /* schema */
     &Container_ContainerStatistics_funcs, /* functions */
     NULL, /* owningClass */
@@ -1892,7 +1286,6 @@ MI_Server* __mi_server;
 static MI_ClassDecl MI_CONST* MI_CONST classes[] =
 {
     &CIM_ManagedElement_rtti,
-    &CIM_StatisticalData_rtti,
     &Container_ContainerInventory_rtti,
     &Container_ContainerStatistics_rtti,
     &Container_DaemonEvent_rtti,

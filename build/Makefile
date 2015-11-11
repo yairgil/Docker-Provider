@@ -241,13 +241,12 @@ STATIC_PROVIDERLIB_SRCFILES += \
 
 STATIC_PROVIDERLIB_SRCFILES += \
 	$(SOURCE_DIR)/cjson/cJSON.c \
-	$(SOURCE_DIR)/cjson/cJSON_Extend.cpp \
 	$(SOURCE_DIR)/dockerapi/DockerRemoteApi.cpp
 
 PROVIDER_HEADERS = \
 	$(SOURCE_DIR)/cjson/cJSON.h \
-	$(SOURCE_DIR)/cjson/cJSON_Extend.h \
-	$(SOURCE_DIR)/dockerapi/DockerRemoteApi.h
+	$(SOURCE_DIR)/dockerapi/DockerRemoteApi.h \
+	$(SOURCE_DIR)/dockerapi/DockerRestHelper.h
 
 STATIC_PROVIDERLIB_OBJFILES = $(call src_to_obj,$(STATIC_PROVIDERLIB_SRCFILES))
 

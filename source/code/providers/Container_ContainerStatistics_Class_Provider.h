@@ -64,12 +64,6 @@ public:
         const String& nameSpace,
         const Container_ContainerStatistics_Class& instance);
 
-    void Invoke_ResetSelectedStats(
-        Context& context,
-        const String& nameSpace,
-        const Container_ContainerStatistics_Class& instanceName,
-        const Container_ContainerStatistics_ResetSelectedStats_Class& in);
-
 /* @MIGEN.END@ CAUTION: PLEASE DO NOT EDIT OR DELETE THIS LINE. */
 };
 

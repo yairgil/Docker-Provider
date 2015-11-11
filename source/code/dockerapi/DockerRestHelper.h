@@ -29,6 +29,16 @@ public:
 	}
 
 	///
+	/// Create the REST request to list running containers
+	///
+	/// \returns Request in string format
+	///
+	static string restDockerPsRunning()
+	{
+		return "GET /containers/json HTTP/1.1\r\n\r\n";
+	}
+
+	///
 	/// Create the REST request to inspect a container
 	///
 	/// \param[in] id ID of the container to be inspected
