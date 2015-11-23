@@ -36,30 +36,35 @@ public:
 		return s;
 	}
 
-public:
-	void setUp()
+	static string RunCommand(const char* command)
 	{
 		istringstream processInput;
 		ostringstream processOutput;
 		ostringstream processErr;
 
+		CPPUNIT_ASSERT(!SCXProcess::Run(StrFromMultibyte(string(command)), processInput, processOutput, processErr, 0));
+		CPPUNIT_ASSERT_EQUAL(processErr.str(), string());
+
+		return processOutput.str();
+	}
+
+public:
+	void setUp()
+	{
 		// Get some images to use
 		fputc('\n', stdout);
-		SCXProcess::Run(L"docker pull centos", processInput, processOutput, processErr, 0);
+		RunCommand("docker pull centos");
 	}
 
 	void tearDown()
 	{
 		char command[128];
-		sleep(5);
 
 		// Remove the containers that were started by the tests
 		for (unsigned i = 0; i < containers.size(); i++)
 		{
-			sprintf(command, "docker stop %s", containers[i].c_str());
-			system(command);
 			sprintf(command, "docker rm -f %s", containers[i].c_str());
-			system(command);
+			RunCommand(command);
 		}
 
 		containers.clear();

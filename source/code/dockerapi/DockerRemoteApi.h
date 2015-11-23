@@ -1,11 +1,18 @@
 #ifndef DOCKERREMOTEAPI_H
 #define DOCKERREMOTEAPI_H
-#include<string>
-#include<vector>
-#include"cJSON.h"
+
+#include <set>
+#include <string>
+#include <vector>
+
+#include "../cjson/cJSON.h"
+
+using std::set;
 using std::string;
 using std::vector;
 
-vector<string> listContainer(bool all=false );
-vector<cJSON*> getResponse(vector<string>& request,bool isMultiJson=false);
+set<string> listContainerSet(bool all = false);
+vector<string> listContainer(bool all = false);
+vector<cJSON*> getResponse(vector<string>& request,bool isMultiJson = false);
+
 #endif

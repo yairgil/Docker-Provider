@@ -13,27 +13,32 @@
 #include "DockerRemoteApi.h"
 #include "DockerRestHelper.h"
 
-#define docker_socket "/var/run/docker.sock"
+#define SOCKET_PATH "/var/run/docker.sock"
+
+using namespace std;
 
 /**
 *  read the size data from socket, support timeout
 *  return the size of data readed
 */
-size_t readSocket(int fd, char* buf, int size, int timeout)
+int readSocket(int fd, char* buf, int size, int timeout)
 {
+	int result = -1;
+
 	fd_set rfds;
-	struct timeval tv;
 	FD_ZERO(&rfds);
 	FD_SET(fd, &rfds);
+
+	struct timeval tv;
 	tv.tv_sec = timeout;
 	tv.tv_usec = 0;
 
 	if (select(fd + 1, &rfds, NULL, NULL, &tv) != -1 && FD_ISSET(fd, &rfds))
 	{
-		return read(fd, buf, size);
+		result = read(fd, buf, size);
 	}
 	
-	return 0;
+	return result;
 }
 
 /**
@@ -43,36 +48,41 @@ void createConnection(unsigned int n, vector<int>& fds)
 {
 	fds.clear();
 	fds.reserve(n);
-	char socket_path[] = docker_socket;
+
 	struct sockaddr_un addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
+
+	char socket_path[] = SOCKET_PATH;
 	memcpy(addr.sun_path, socket_path, sizeof(socket_path));
 
-	for (unsigned int i = 0; i < n; i++)
+	bool next = true;
+
+	for (unsigned int i = 0; next && i < n; i++)
 	{
 		int fd = socket(AF_UNIX, SOCK_STREAM, 0);
 
-		if (fd <= 0)
+		if (fd > 0)
 		{
-			break;
+			if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) != -1)
+			{
+				fds.push_back(fd);
+			}
+			else
+			{
+				close(fd);
+				next = false;
+			}
 		}
-
-		if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
+		else
 		{
-			close(fd);
-			break;
+			next = false;
 		}
-
-		fds.push_back(fd);
 	}
 
-	if (fds.size() < n)
+	for (unsigned int i = 0; i < fds.size(); i++)
 	{
-		for (unsigned int i = 0; i < fds.size(); i++)
-		{
-			close(fds[i]);
-		}
+		close(fds[i]);
 	}
 }
 
@@ -116,8 +126,9 @@ cJSON* parseMultiJson(string &raw_response)
 	return cJSON_Parse(json_array.c_str());
 }
 
-cJSON* parseJson(string &raw_response)
+cJSON* parseJson(string& raw_response)
 {
+	cJSON* result = NULL;
 	std::size_t json_begin = raw_response.find("\r\n{\""); //Json object
 
 	if (json_begin == std::string::npos)
@@ -127,10 +138,10 @@ cJSON* parseJson(string &raw_response)
 
 	if (json_begin != std::string::npos)
 	{
-		return cJSON_Parse(raw_response.c_str() + json_begin);
+		result = cJSON_Parse(raw_response.c_str() + json_begin);
 	}
 
-	return NULL;
+	return result;
 }
 
 /**
@@ -198,36 +209,56 @@ vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson)
 	return response;
 }
 
-/*
-*  return currently running container ids
-*/
+///
+/// Return vector of container IDs
+///
+/// \param[in] all true for all containers, false for running containers only
+///
 vector<string> listContainer(bool all)
 {
-	vector<string> request(1, all ? DockerRestHelper::restDockerPs() : DockerRestHelper::restDockerPsRunning());
 	vector<string> ids;
+	vector<string> request(1, all ? DockerRestHelper::restDockerPs() : DockerRestHelper::restDockerPsRunning());
 	vector<cJSON*> response = getResponse(request);
 
-	if (!response[0])
+	if (response[0])
 	{
-		return ids;
-	}
+		int n = cJSON_GetArraySize(response[0]);
 
-	int n = cJSON_GetArraySize(response[0]);
+		for (int i = 0; i < n; i++)
+		{
+			cJSON* container = cJSON_GetArrayItem(response[0], i);
+			ids.push_back(string(cJSON_GetObjectItem(container, "Id")->valuestring));
+		}
 
-	if (!n)
-	{
 		cJSON_Delete(response[0]);
-		return ids;
 	}
 
-	for (int i = 0; i < n; i++)
-	{
-		cJSON* container = cJSON_GetArrayItem(response[0], i);
-		std::string id = cJSON_GetObjectItem(container, "Id")->valuestring;
-		ids.push_back(id);
-	}
-
-	cJSON_Delete(response[0]);
 	return ids;
 }
 
+///
+/// Return set of container IDs
+///
+/// \param[in] all true for all containers, false for running containers only
+///
+set<string> listContainerSet(bool all)
+{
+	set<string> ids;
+	vector<string> request(1, all ? DockerRestHelper::restDockerPs() : DockerRestHelper::restDockerPsRunning());
+	vector<cJSON*> response = getResponse(request);
+
+	if (response[0])
+	{
+		int n = cJSON_GetArraySize(response[0]);
+
+		for (int i = 0; i < n; i++)
+		{
+			cJSON* container = cJSON_GetArrayItem(response[0], i);
+			ids.insert(string(cJSON_GetObjectItem(container, "Id")->valuestring));
+		}
+
+		cJSON_Delete(response[0]);
+	}
+
+	return ids;
+}

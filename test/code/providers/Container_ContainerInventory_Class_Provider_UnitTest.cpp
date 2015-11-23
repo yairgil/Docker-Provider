@@ -1,8 +1,11 @@
+#include <errno.h>
 #include <limits.h>
 #include <set>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
 #include <vector>
@@ -26,6 +29,7 @@ class ContainerInventoryTest : public CppUnit::TestFixture
 	CPPUNIT_TEST_SUITE(ContainerInventoryTest);
 	CPPUNIT_TEST(TestEnumerateInstances);
 	CPPUNIT_TEST(TestEnumerateVerifyAllValues);
+	CPPUNIT_TEST(TestEnumerateDeletedContainer);
 	CPPUNIT_TEST_SUITE_END();
 
 private:
@@ -40,33 +44,36 @@ private:
 		return s;
 	}
 
-public:
-	void setUp()
+	static string RunCommand(const char* command)
 	{
 		istringstream processInput;
 		ostringstream processOutput;
 		ostringstream processErr;
 
+		CPPUNIT_ASSERT(!SCXProcess::Run(StrFromMultibyte(string(command)), processInput, processOutput, processErr, 0));
+		CPPUNIT_ASSERT_EQUAL(processErr.str(), string());
+
+		return processOutput.str();
+	}
+
+public:
+	void setUp()
+	{
 		// Get some images to use
 		fputc('\n', stdout);
-		SCXProcess::Run(L"docker pull hello-world", processInput, processOutput, processErr, 0);
+		RunCommand("docker pull hello-world");
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ContainerInventory/*");
 	}
 
 	void tearDown()
 	{
-		istringstream processInput;
-		ostringstream processOutput;
-		ostringstream processErr;
-
-		wchar_t command[128];
-		wchar_t temp[128];
+		char command[128];
 
 		// Remove the containers that were started by the tests
 		for (unsigned i = 0; i < containers.size(); i++)
 		{
-			mbstowcs(temp, containers[i].c_str(), 127);
-			swprintf(command, 127, L"docker rm %s", temp);
-			SCXProcess::Run(command, processInput, processOutput, processErr, 0);
+			snprintf(command, 128, "docker rm -f %s", containers[i].c_str());
+			RunCommand(command);
 		}
 
 		containers.clear();
@@ -82,23 +89,23 @@ protected:
 		m_keyNames.push_back(L"InstanceID");
 
 		// Run a container to ensure that there is at lease one result
-		char containerName[65];
-		strcpy(containerName, NewGuid().c_str());
-		containers.push_back(string(containerName));
+		string containerName = NewGuid();
+		containers.push_back(containerName);
 		char command[128];
-		sprintf(command, "docker run --name=%s hello-world", containerName);
-
-		CPPUNIT_ASSERT(!system(command));
-		sleep(5);
+		snprintf(command, 128, "docker run --name=%s hello-world", containerName.c_str());
+		RunCommand(command);
 
 		// Enumerate provider
 		StandardTestEnumerateInstances<mi::Container_ContainerInventory_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
 
-		// Get images using command line
-		CPPUNIT_ASSERT(!system("docker ps -aq --no-trunc > /tmp/docker_container_ids.txt"));
+		// Get containers using command line - there is a Docker bug that causes this to fail if SCXProcess::Run() is used instead of system()
+		char path[128];
+		snprintf(path, 128, "/tmp/docker_container_ids_%d.txt", getpid());
+		snprintf(command, 128, "docker ps -aq --no-trunc > %s", path);
+		CPPUNIT_ASSERT_MESSAGE(string(strerror(errno)), !system(command));
 
-		FILE* idFile = fopen("/tmp/docker_container_ids.txt", "r");
-		CPPUNIT_ASSERT(idFile);
+		FILE* idFile = fopen(path, "r");
+		CPPUNIT_ASSERT_MESSAGE(string(strerror(errno)), idFile);
 
 		wchar_t id[13];
 		set<wstring> allIds;
@@ -110,7 +117,7 @@ protected:
 		}
 
 		fclose(idFile);
-		remove("/tmp/docker_image_ids.txt");
+		CPPUNIT_ASSERT_MESSAGE(string(strerror(errno)), !remove(path));
 
 		CPPUNIT_ASSERT_EQUAL(allIds.size(), context.Size());
 
@@ -120,7 +127,7 @@ protected:
 			CPPUNIT_ASSERT(allIds.count(context[i].GetKey(L"InstanceID", CALL_LOCATION(errMsg))));
 		}
 	}
-	
+
 	void TestEnumerateVerifyAllValues()
 	{
 		wstring errMsg;
@@ -130,24 +137,23 @@ protected:
 		m_keyNames.push_back(L"InstanceID");
 
 		// Run a container to ensure that there is at lease one result
-		char containerName[65];
-		strcpy(containerName, NewGuid().c_str());
-		containers.push_back(string(containerName));
+		string containerName = NewGuid();
+		containers.push_back(containerName);
 		char command[256];
-		sprintf(command, "docker run --name=%s hello-world", containerName);
-
-		CPPUNIT_ASSERT(!system(command));
-		sleep(5);
+		snprintf(command, 256, "docker run --name=%s hello-world", containerName.c_str());
+		RunCommand(command);
 
 		// Enumerate provider
 		StandardTestEnumerateInstances<mi::Container_ContainerInventory_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
 
 		// Get container inventory using a script
-		sprintf(command, "python %sContainerInventory.py > /tmp/docker_container_inventory.txt", TEST_SCRIPT_PATH);
-		CPPUNIT_ASSERT(!system(command));
+		char path[128];
+		snprintf(path, 128, "/tmp/docker_container_inventory_%d.txt", getpid());
+		snprintf(command, 256, "python %sContainerInventory.py > %s", TEST_SCRIPT_PATH, path);
+		CPPUNIT_ASSERT_MESSAGE(string(strerror(errno)), !system(command));
 
-		FILE* containerFile = fopen("/tmp/docker_container_inventory.txt", "r");
-		CPPUNIT_ASSERT(containerFile);
+		FILE* containerFile = fopen(path, "r");
+		CPPUNIT_ASSERT_MESSAGE(string(strerror(errno)), containerFile);
 
 		char buffer[1024];
 		vector<cJSON*> containersList;
@@ -158,10 +164,10 @@ protected:
 		}
 
 		fclose(containerFile);
-		remove("/tmp/docker_container_inventory.txt");
+		CPPUNIT_ASSERT_MESSAGE(string(strerror(errno)), !remove(path));
 
-		// Should have same number of images
-		CPPUNIT_ASSERT_EQUAL(containersList.size(), context.Size());
+		// Should have no more current containers than current + deleted containers
+		CPPUNIT_ASSERT(containersList.size() <= context.Size());
 
 		wchar_t currentId[66];
 		int containerCount = 0;
@@ -244,7 +250,43 @@ protected:
 		}
 
 		// Ensure all objects were validated
-		CPPUNIT_ASSERT_EQUAL(containerCount, context.Size());
+		CPPUNIT_ASSERT_EQUAL(containerCount, containersList.size());
+	}
+
+	void TestEnumerateDeletedContainer()
+	{
+		wstring errMsg;
+		TestableContext context;
+
+		vector<wstring> m_keyNames;
+		m_keyNames.push_back(L"InstanceID");
+
+		// Run a container to ensure that there is at lease one result
+		string containerName = NewGuid();
+		char command[128];
+		snprintf(command, 128, "docker run --name=%s hello-world", containerName.c_str());
+		RunCommand(command);
+
+		// Enumerate provider
+		StandardTestEnumerateInstances<mi::Container_ContainerInventory_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
+
+		// Delete container
+		snprintf(command, 128, "docker rm -f %s", containerName.c_str());
+		RunCommand(command);
+
+		// Enumerate provider
+		StandardTestEnumerateInstances<mi::Container_ContainerInventory_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
+
+		wchar_t wcontainerName[65];
+		mbstowcs(wcontainerName, containerName.c_str(), 64);
+
+		for (unsigned i = 0; i < context.Size(); ++i)
+		{
+			if (!context[i].GetProperty(L"InstanceID", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).compare(wstring(wcontainerName)))
+			{
+				CPPUNIT_ASSERT_EQUAL(wstring(L"Deleted"), context[i].GetProperty(L"State", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
+			}
+		}
 	}
 };
 

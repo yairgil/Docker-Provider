@@ -3,6 +3,7 @@
 #include "Container_ContainerInventory_Class_Provider.h"
 
 #include <map>
+#include <set>
 #include <string>
 #include <syslog.h>
 #include <unistd.h>
@@ -11,6 +12,8 @@
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
 #include "../dockerapi/DockerRestHelper.h"
+#include "Container_ContainerInventory_Serialization.h"
+#include "Container_ContainerInventory_Validation.h"
 
 using namespace std;
 
@@ -27,7 +30,7 @@ private:
 	///
 	/// \returns vector<string> of length 3 of form [repository, image, imagetag]
 	///
-	static vector<string> SetImageRepositoryImageTag(string properties)
+	static vector<string> SetImageRepositoryImageTag(string& properties)
 	{
 		vector<string> result(3, "");
 
@@ -94,7 +97,8 @@ private:
 
 					if (tags && cJSON_GetArraySize(tags))
 					{
-						result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = SetImageRepositoryImageTag(string(cJSON_GetArrayItem(tags, 0)->valuestring));
+						string value = string(cJSON_GetArrayItem(tags, 0)->valuestring);
+						result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = SetImageRepositoryImageTag(value);
 					}
 				}
 				else
@@ -245,7 +249,7 @@ private:
 	/// \param[in] id Container ID
 	/// \returns Object representing the container
 	///
-	static Container_ContainerInventory_Class InspectContainer(string id, map<string, vector<string> >& nameMap)
+	static Container_ContainerInventory_Class InspectContainer(string& id, map<string, vector<string> >& nameMap)
 	{
 		// New inventory entry
 		Container_ContainerInventory_Class instance;
@@ -305,17 +309,38 @@ public:
 
 		// Get computer name
 		char name[256];
-		string hostname = gethostname(name, 256) ? "" : string(name);
+		string hostname = gethostname(name, 256) ? "Unknown" : string(name);
 
 		vector<Container_ContainerInventory_Class> result;
 
-		vector<string> containerIds = listContainer(true);
+		// Get all current containers
+		set<string> containerIds = listContainerSet(true);
+
+		/// Map the image name, repository, imagetag to ID
 		map<string, vector<string> > nameMap = GenerateImageNameMap();
 
-		for (unsigned i = 0; i < containerIds.size(); i++)
+		for (set<string>::iterator i = containerIds.begin(); i != containerIds.end(); ++i)
 		{
-			result.push_back(InspectContainer(containerIds[i], nameMap));
-			result[i].Computer_value(hostname.c_str());
+			// Set all data
+			string id = string(*i);
+			Container_ContainerInventory_Class instance = InspectContainer(id, nameMap);
+			instance.Computer_value(hostname.c_str());
+
+			ContainerInventorySerializer::SerializeObject(instance);
+			result.push_back(instance);
+		}
+
+		// Find IDs of deleted containers
+		ContainerInventoryValidation cv;
+		set<string> deleted = cv.GetDeletedContainers(containerIds);
+
+		for (set<string>::iterator i = deleted.begin(); i != deleted.end(); ++i)
+		{
+			string id = string(*i);
+			Container_ContainerInventory_Class instance = ContainerInventorySerializer::DeserializeObject(id);
+			instance.State_value("Deleted");
+
+			result.push_back(instance);
 		}
 
 		closelog();
