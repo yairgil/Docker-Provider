@@ -44,7 +44,6 @@ module Fluent
 				newRecord['LogEntrySource'] = record['source']
 				newRecord['LogEntry'] = record['log']
 				newRecord['Computer'] = @hostname
-				newRecord['Host'] = @hostname
 				
 				wrapper = {
 					"DataType"=>"CONTAINER_LOG_BLOB",
