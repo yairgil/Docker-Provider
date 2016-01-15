@@ -88,6 +88,9 @@ protected:
 		vector<wstring> m_keyNames;
 		m_keyNames.push_back(L"InstanceID");
 
+		// Remove cached state
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ContainerInventory/*");
+
 		// Run a container to ensure that there is at lease one result
 		string containerName = NewGuid();
 		containers.push_back(containerName);
@@ -135,6 +138,9 @@ protected:
 
 		vector<wstring> m_keyNames;
 		m_keyNames.push_back(L"InstanceID");
+
+		// Remove cached state
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ContainerInventory/*");
 
 		// Run a container to ensure that there is at lease one result
 		string containerName = NewGuid();
@@ -260,6 +266,9 @@ protected:
 
 		vector<wstring> m_keyNames;
 		m_keyNames.push_back(L"InstanceID");
+
+		// Remove cached state
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ContainerInventory/*");
 
 		// Run a container to ensure that there is at lease one result
 		string containerName = NewGuid();

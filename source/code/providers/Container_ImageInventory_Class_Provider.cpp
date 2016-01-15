@@ -3,6 +3,7 @@
 #include "Container_ImageInventory_Class_Provider.h"
 
 #include <map>
+#include <set>
 #include <stdio.h>
 #include <string>
 #include <syslog.h>
@@ -12,6 +13,8 @@
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
 #include "../dockerapi/DockerRestHelper.h"
+#include "Container_ContainerInventory_Validation.h"
+#include "Container_ImageInventory_Serialization.h"
 
 #define NUMBYTESPERMB 1048576
 
@@ -31,7 +34,7 @@ private:
 	{
 		string result = "";
 
-		if (tags)
+		if (tags && cJSON_GetArraySize(tags))
 		{
 			bool flag = false;
 
@@ -88,7 +91,7 @@ private:
 						instance.Repository_value(properties.substr(0, slashLocation).c_str());
 					}
 
-					result = name.compare("<none>");
+					result = (name.compare("<none>") != 0) && !name.empty();
 
 					instance.Image_value(name.c_str());
 					instance.ImageTag_value(properties.substr(colonLocation + 1).c_str());
@@ -229,10 +232,11 @@ public:
 		vector<Container_ImageInventory_Class> result;
 		vector<Container_ImageInventory_Class> filteredResult;
 		map<string, int> idTable;
+		set<string> imageIds;
 
 		// Get computer name
 		char name[256];
-		string hostname = gethostname(name, 256) ? "" : string(name);
+		string hostname = gethostname(name, 256) ? "Unknown" : string(name);
 
 		// Request images
 		vector<string> request(1, DockerRestHelper::restDockerImages());
@@ -254,7 +258,8 @@ public:
 					instance.Computer_value(hostname.c_str());
 
 					// Get ID
-					instance.InstanceID_value(cJSON_GetObjectItem(entry, "Id")->valuestring);
+					string instanceId = string(cJSON_GetObjectItem(entry, "Id")->valuestring);
+					instance.InstanceID_value(instanceId.c_str());
 
 					// Get size
 					char imageSize[128];
@@ -274,8 +279,12 @@ public:
 					instance.Failed_value(0);
 					instance.Total_value(0);
 
-					idTable[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = result.size();
+					// Map the image ID to the vector index
+					idTable[instanceId] = result.size();
 					result.push_back(instance);
+
+					// Store all image IDs in set for deleted image check
+					imageIds.insert(instanceId);
 				}
 				else
 				{
@@ -292,10 +301,25 @@ public:
 			// Remove intermediary images
 			for (unsigned i = 0; i < result.size() && i < imageNameIsNotNone.size() ; i++)
 			{
-				if (imageNameIsNotNone[i] && result[i].Total_value())
+				if (imageNameIsNotNone[i] || result[i].Total_value())
 				{
 					filteredResult.push_back(result[i]);
+
+					// Serialize object for deleted image check
+					ImageInventorySerializer::SerializeObject(result[i]);
 				}
+			}
+			
+			// Find IDs of deleted images
+			ContainerInventoryValidation cv(true);
+			set<string> deleted = cv.GetDeletedContainers(imageIds);
+
+			for (set<string>::iterator i = deleted.begin(); i != deleted.end(); ++i)
+			{
+				// Putting string(*i) directly in the function call will cause compilation error
+				string id = string(*i);
+				Container_ImageInventory_Class instance = ImageInventorySerializer::DeserializeObject(id);
+				filteredResult.push_back(instance);
 			}
 		}
 		else

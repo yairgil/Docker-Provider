@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <dirent.h>
+#include <errno.h>
 #include <iterator>
 #include <set>
 #include <sys/types.h>
 #include <syslog.h>
 
 #define INVENTORYDIR "/var/opt/microsoft/docker-cimprov/state/ContainerInventory"
+#define IMAGEINVENTORYDIR "/var/opt/microsoft/docker-cimprov/state/ImageInventory"
 
 using std::set;
 
@@ -17,12 +19,12 @@ public:
 	///
 	/// Constructor
 	///
-	ContainerInventoryValidation()
+	ContainerInventoryValidation(bool isImages = false)
 	{
 		openlog("ContainerInventoryValidation", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
 		struct dirent* dt;
-		DIR* dir = opendir(INVENTORYDIR);
+		DIR* dir = opendir(isImages ? IMAGEINVENTORYDIR : INVENTORYDIR);
 
 		// Get the container IDs stored previously
 		if (dir)

@@ -336,6 +336,7 @@ public:
 
 		for (set<string>::iterator i = deleted.begin(); i != deleted.end(); ++i)
 		{
+			// Putting string(*i) directly in the function call will cause compilation error
 			string id = string(*i);
 			Container_ContainerInventory_Class instance = ContainerInventorySerializer::DeserializeObject(id);
 			instance.State_value("Deleted");

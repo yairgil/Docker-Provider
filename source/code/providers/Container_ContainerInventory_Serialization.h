@@ -38,7 +38,7 @@ public:
 			cJSON* root = cJSON_CreateObject();
 
 			// Add all fields to JSON
-			cJSON_AddStringToObject(root, "ElementName", object.CreatedTime_value().Str());
+			cJSON_AddStringToObject(root, "ElementName", object.ElementName_value().Str());
 			cJSON_AddStringToObject(root, "CreatedTime", object.CreatedTime_value().Str());
 			cJSON_AddStringToObject(root, "State", object.State_value().Str());
 			cJSON_AddNumberToObject(root, "ExitCode", object.ExitCode_value());
@@ -96,7 +96,7 @@ public:
 				cJSON* root = cJSON_Parse(buffer);
 
 				// Get all fields from JSON
-				instance.ElementName_value(cJSON_GetObjectItem(root, "ELementName")->valuestring);
+				instance.ElementName_value(cJSON_GetObjectItem(root, "ElementName")->valuestring);
 				instance.CreatedTime_value(cJSON_GetObjectItem(root, "CreatedTime")->valuestring);
 				instance.State_value(cJSON_GetObjectItem(root, "State")->valuestring);
 				instance.ExitCode_value(cJSON_GetObjectItem(root, "ExitCode")->valueint);
