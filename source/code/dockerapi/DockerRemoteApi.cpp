@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <vector>
 
@@ -80,7 +81,7 @@ void createConnection(unsigned int n, vector<int>& fds)
 		}
 	}
 
-	for (unsigned int i = 0; i < fds.size(); i++)
+	for (unsigned int i = 0; !next && i < fds.size(); i++)
 	{
 		close(fds[i]);
 	}
@@ -163,7 +164,7 @@ void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsig
 
 		if (r != request[start + i].length())
 		{
-			throw string("write socket error");
+			throw string("Write to socket in getResponseInBatch failed");
 		}
 	}
 
@@ -192,7 +193,7 @@ void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsig
 
 		if (raw_response.length() > 0 && response[start + i] == NULL)
 		{
-			throw string("Fail to parse data:`" + raw_response + "` to json" + " \n Request :" + request[start + i]);
+			throw string("Failed to parse data:`" + raw_response + "` to json" + " \n Request :" + request[start + i]);
 		}
 	}
 }
@@ -201,9 +202,17 @@ vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson)
 {
 	vector<cJSON*> response;
 
-	for (unsigned int i = 0; i < request.size(); i += 100)
+	try
 	{
-		getResponseInBatch(request, response, i, i + 100, isMultiJson);
+		for (unsigned int i = 0; i < request.size(); i += 100)
+		{
+			getResponseInBatch(request, response, i, i + 100, isMultiJson);
+		}
+	}
+	catch (string str)
+	{
+		openlog("DockerRemoteApi", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		syslog(LOG_ERR, str.c_str());
 	}
 
 	return response;
