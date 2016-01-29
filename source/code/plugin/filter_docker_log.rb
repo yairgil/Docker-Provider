@@ -15,6 +15,10 @@ module Fluent
 		def configure(conf)
 			super
 			@hostname = Socket.gethostname
+			
+			# Cache the image name and ID of each container so we don't have to inspect each time
+			@containerCache = Hash.new
+			
 			@log = nil
 			
 			if @enable_log
@@ -36,10 +40,43 @@ module Fluent
 				end
 			else
 				# Need to query image information from ID
-				newRecord = obtainImageId(record['container_id'])
+				containerId = record['container_id']
+				
+				unless @containerCache.has_key?(containerId)
+					if @log != nil
+						@log.debug {'Container ' + containerId + ' information is not in the cache, inspecting'}
+					end
+						
+					# Value not in cache, use inspect
+					@containerCache[containerId] = Hash.new
+					details = ''
+					
+					begin
+						details = JSON.parse(`sudo docker inspect #{containerId}`)
+					rescue => e
+						if @log != nil
+							@log.error {'sudo docker inspect ' + containerId + ' failed'}
+						end
+					end
+					
+					if details.empty?
+						# This should not occur
+						@containerCache[containerId]['Image'] = 'Unknown'
+						@containerCache[containerId]['ImageName'] = 'Unknown'
+						
+						if @log != nil
+							@log.warn {'The image ID of container ' + containerId + ' could not be determined'}
+						end
+					else
+						@containerCache[containerId]['Image'] = details[0]['Image']
+						@containerCache[containerId]['ImageName'] = details[0]['Config']['Image']
+					end
+				end
+				
+				newRecord = @containerCache[containerId]
 				
 				# No query is required
-				newRecord['Id'] = record['container_id']
+				newRecord['Id'] = containerId
 				newRecord['Name'] = record['container_name'][0] == "/" ?  record['container_name'][1..-1] : record['container_name']
 				newRecord['LogEntrySource'] = record['source']
 				newRecord['LogEntry'] = record['log']
@@ -53,36 +90,6 @@ module Fluent
 			end
 			
 			wrapper
-		end
-		
-		# Get image ID from container
-		def obtainImageId(containerId)
-			result = Hash.new
-		
-			details = ''
-			
-			begin
-				details = JSON.parse(`sudo docker inspect #{containerId}`)
-			rescue => e
-				if @log != nil
-					@log.error {'sudo docker inspect ' + containerId + ' failed'}
-				end
-			end
-			
-			if details.empty?
-				# This should not occur
-				result['Image'] = 'Unknown'
-				result['ImageName'] = 'Unknown'
-				
-				if @log != nil
-					@log.warn {'The image ID of container ' + containerId + ' could not be determined'}
-				end
-			else
-				result['Image'] = details[0]['Image']
-				result['ImageName'] = details[0]['Config']['Image']
-			end
-			
-			result
 		end
 	end
 end
