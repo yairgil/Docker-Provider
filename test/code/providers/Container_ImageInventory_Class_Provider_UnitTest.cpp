@@ -60,6 +60,7 @@ public:
 		fputc('\n', stdout);
 		RunCommand("docker pull hello-world");
 		RunCommand("docker pull centos");
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ImageInventory/*");
 	}
 
 	void tearDown()
@@ -84,6 +85,9 @@ protected:
 
 		vector<wstring> m_keyNames;
 		m_keyNames.push_back(L"InstanceID");
+
+		// Remove cached state
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ContainerInventory/*");
 
 		// Enumerate provider
 		StandardTestEnumerateInstances<mi::Container_ImageInventory_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
@@ -122,6 +126,9 @@ protected:
 
 		vector<wstring> m_keyNames;
 		m_keyNames.push_back(L"InstanceID");
+
+		// Remove cached state
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ContainerInventory/*");
 
 		// Enumerate provider
 		StandardTestEnumerateInstances<mi::Container_ImageInventory_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
@@ -217,6 +224,9 @@ protected:
 		vector<wstring> m_keyNames;
 		m_keyNames.push_back(L"InstanceID");
 
+		// Remove cached state
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ContainerInventory/*");
+
 		char containerName[64];
 		strcpy(containerName, NewGuid().c_str());
 		containers.push_back(string(containerName));
@@ -249,6 +259,9 @@ protected:
 
 		vector<wstring> m_keyNames;
 		m_keyNames.push_back(L"InstanceID");
+
+		// Remove cached state
+		RunCommand("rm -f /var/opt/microsoft/docker-cimprov/state/ContainerInventory/*");
 
 		char containerName[64];
 		strcpy(containerName, NewGuid().c_str());

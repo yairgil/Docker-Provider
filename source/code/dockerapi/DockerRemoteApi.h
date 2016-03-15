@@ -13,6 +13,6 @@ using std::vector;
 
 set<string> listContainerSet(bool all = false);
 vector<string> listContainer(bool all = false);
-vector<cJSON*> getResponse(vector<string>& request,bool isMultiJson = false);
+vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson = false, bool ignoreResponse = false);
 
 #endif

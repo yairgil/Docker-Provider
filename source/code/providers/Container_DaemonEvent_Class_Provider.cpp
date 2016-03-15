@@ -5,6 +5,7 @@
 #include <map>
 #include <stdio.h>
 #include <string>
+#include <string.h>
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
@@ -14,6 +15,7 @@
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
 #include "../dockerapi/DockerRestHelper.h"
+#include "Container_ContainerLogFileReader.h"
 
 #define LASTQUERYTIMEFILE "/var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt"
 
@@ -63,7 +65,7 @@ private:
 		}
 		else
 		{
-			syslog(LOG_WARNING, "Attempt in GetPreviousTime to open %s for reading failed", LASTQUERYTIMEFILE);
+			syslog(LOG_ERR, "Attempt in GetPreviousTime to open %s for reading failed", LASTQUERYTIMEFILE);
 		}
 
 		// Discard stored times that are more recent than the current time
@@ -86,7 +88,7 @@ private:
 		}
 		else
 		{
-			syslog(LOG_WARNING, "Attempt in SetPreviousTime to open %s for writing failed", LASTQUERYTIMEFILE);
+			syslog(LOG_ERR, "Attempt in SetPreviousTime to open %s for writing failed", LASTQUERYTIMEFILE);
 		}
 	}
 
@@ -103,7 +105,7 @@ private:
 		vector<string> request(1, DockerRestHelper::restDockerPs());
 		vector<cJSON*> response = getResponse(request);
 
-		// See https://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
+		// See https://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#list-containers for example output
 		if (!response.empty() && response[0])
 		{
 			for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
@@ -114,15 +116,33 @@ private:
 				{
 					cJSON* nameField = cJSON_GetObjectItem(entry, "Names");
 
-					if (cJSON_GetArraySize(nameField))
+					if (nameField && cJSON_GetArraySize(nameField))
 					{
+						// Docker API documentation says that this field contains the short ID but that is not the case; use full ID instead
 						result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = string(cJSON_GetArrayItem(nameField, 0)->valuestring + 1);
 					}
 				}
 			}
 		}
+		else
+		{
+			syslog(LOG_ERR, "Attempt in MapContainerIdToName to list containers failed");
+		}
 
 		return result;
+	}
+
+	///
+	/// Create symbolic links to /dev/stdout or /dev/stderr in the target containers
+	///
+	/// \param[in] ids Vector of container IDs
+	///
+	static void LinkFilesNewContainers(vector<string> ids)
+	{
+		for (unsigned i = 0; i < ids.size(); i++)
+		{
+			ContainerLogFileReader::LinkFilesToStream(ids[i]);
+		}
 	}
 
 public:
@@ -153,6 +173,7 @@ public:
 			if (!response.empty() && response[0])
 			{
 				map<string, string> idMap = MapContainerIdToName();
+				vector<string> newContainers;
 
 				for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
 				{
@@ -167,7 +188,7 @@ public:
 						instance.Command_value(cJSON_GetObjectItem(entry, "status")->valuestring);
 
 						char buffer[33];
-						sprintf(buffer, "%d", cJSON_GetObjectItem(entry, "time")->valueint);
+						snprintf(buffer, 33, "%d", cJSON_GetObjectItem(entry, "time")->valueint);
 						instance.TimeOfCommand_value(buffer);
 
 						cJSON* tempImageName = cJSON_GetObjectItem(entry, "from");
@@ -179,16 +200,22 @@ public:
 
 							char* id = cJSON_GetObjectItem(entry, "id")->valuestring;
 							instance.Id_value(id);
+							string idStr = string(id);
 
-							string shortId = string(id).substr(0, 12);
-
-							if (idMap.count(shortId))
+							// Get the container name
+							if (idMap.count(idStr))
 							{
-								instance.ContainerName_value(idMap[shortId].c_str());
+								instance.ContainerName_value(idMap[idStr].c_str());
 							}
 							else
 							{
 								syslog(LOG_NOTICE, "No container name found for container %s", id);
+							}
+
+							// Add newly created containers to list
+							if (!strcmp(cJSON_GetObjectItem(entry, "status")->valuestring, "create"))
+							{
+								newContainers.push_back(string(id));
 							}
 						}
 						else
@@ -207,8 +234,14 @@ public:
 					}
 				}
 
+				LinkFilesNewContainers(newContainers);
+
 				// Clean up object
 				cJSON_Delete(response[0]);
+			}
+			else
+			{
+				syslog(LOG_ERR, "Attempt in QueryAll to get Docker events failed");
 			}
 		}
 

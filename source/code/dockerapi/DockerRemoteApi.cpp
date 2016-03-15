@@ -149,7 +149,7 @@ cJSON* parseJson(string& raw_response)
 *  Give multi request to docker remote api,
 *  return multi cJSON* response
 */
-void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsigned int start, unsigned int end, bool isMultiJson = false)
+void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsigned int start, unsigned int end, bool isMultiJson = false, bool ignoreResponse = false)
 {
 	const int bufferSize = 4096;
 	const int timeoutSecond = 5;
@@ -168,7 +168,7 @@ void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsig
 		}
 	}
 
-	for (int i = 0; i < n; i++)
+	for (int i = 0; !ignoreResponse && i < n; i++)
 	{
 		char readBuf[bufferSize + 1];
 		size_t read_n = 0;
@@ -186,19 +186,18 @@ void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsig
 				response[start + i] = json;
 				break;
 			}
-
 		}
 
 		close(sockfd[i]);
 
-		if (raw_response.length() > 0 && response[start + i] == NULL)
+		if (!ignoreResponse && raw_response.length() > 0 && response[start + i] == NULL)
 		{
 			throw string("Failed to parse data:`" + raw_response + "` to json" + " \n Request :" + request[start + i]);
 		}
 	}
 }
 
-vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson)
+vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson, bool ignoreResponse)
 {
 	vector<cJSON*> response;
 
@@ -206,13 +205,13 @@ vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson)
 	{
 		for (unsigned int i = 0; i < request.size(); i += 100)
 		{
-			getResponseInBatch(request, response, i, i + 100, isMultiJson);
+			getResponseInBatch(request, response, i, i + 100, isMultiJson, ignoreResponse);
 		}
 	}
 	catch (string str)
 	{
 		openlog("DockerRemoteApi", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
-		syslog(LOG_ERR, str.c_str());
+		syslog(LOG_ERR, "%s", str.c_str());
 	}
 
 	return response;
