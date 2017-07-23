@@ -77,7 +77,7 @@ public:
                                     processInstance.Name_value(containerName.c_str());
                                     processInstance.Computer_value(hostname.c_str());                                
                                 }
-                                runningProcessListInstance.push_front(processInstance);
+                                runningProcessListInstance.push(processInstance);
                             }
                         }
                     }
