@@ -52,28 +52,31 @@ public:
                     if (!dockerTopResponse.empty() && dockerTopResponse[0])
                     {
                         //Get process entry
-                        cJSON* processArrEntry = cJSON_GetObjectItem(dockerTopResponse[0], "Process");
-                        if(processArrEntry != NULL)
+                        cJSON* processArr = cJSON_GetObjectItem(dockerTopResponse[0], "Process");
+                        if(processArr != NULL)
                         {
-                            for(int j =0; j < cJSON_GetArraySize(processArrEntry); j++)
+                            for(int j =0; j < cJSON_GetArraySize(processArr); j++)
                             {
                                 Container_Process_Class processInstance;
 
-                                cJSON* processEntry = processArrEntry[j];
+                                cJSON* processEntry = cJSON_GetArrayItem(processArr, j);
                                 //process scpecific values
-                                processInstance.InstanceID_value(containerId.c_str());
-                                processInstance.Uid_value(processEntry[0]);
-                                processInstance.PID_value(processEntry[1]);
-                                processInstance.PPID_value(processEntry[2]);
-                                processInstance.C_value(processEntry[3]);
-                                processInstance.STIME_value(processEntry[4]);
-                                processInstance.Tty_value(processEntry[5]);
-                                processInstance.StartTime_value(processEntry[6]);
-                                processInstance.Cmd_value(processEntry[7]);
-                                //container specific values
-                                processInstance.Id_value(containerId.c_str());
-                                processInstance.Name_value(containerName.c_str());
-                                processInstance.Computer_value(hostname.c_str());
+                                if((processEntry != NULL) && (cJSON_GetArraySize(processEntry) >= 8))
+                                {
+                                    processInstance.InstanceID_value(containerId.c_str());
+                                    processInstance.Uid_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    processInstance.PID_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    processInstance.PPID_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    processInstance.C_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    processInstance.STIME_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    processInstance.Tty_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    processInstance.StartTime_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    processInstance.Cmd_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    //container specific values
+                                    processInstance.Id_value(containerId.c_str());
+                                    processInstance.Name_value(containerName.c_str());
+                                    processInstance.Computer_value(hostname.c_str());                                
+                                }
                                 runningProcessListInstance.push_front(processInstance);
                             }
                         }
