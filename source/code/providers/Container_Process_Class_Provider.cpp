@@ -4,10 +4,11 @@
 
 #include <vector>
 #include <string>
+#include <cstdlib>
+#include <syslog.h>
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
 #include "../dockerapi/DockerRestHelper.h"
-#include "Helper.h"
 
 MI_BEGIN_NAMESPACE
 
@@ -17,7 +18,7 @@ public:
     ///
     /// \returns Object representing process info for each container
     ///
-    static Container_Process_Class GetProcessInfoPerContainer()
+    static vector<Container_Process_Class> GetProcessInfoPerContainer()
     {
         vector<Container_Process_Class> runningProcessListInstance;
 
@@ -51,8 +52,8 @@ public:
                     if (!dockerTopResponse.empty() && dockerTopResponse[0])
                     {
                         //Get process entry
-                        cJson* processArrEntry = cJSON_GetObjectItem(dockerTopResponse[0], "Process");
-                        if(processArrEntry != null)
+                        cJSON* processArrEntry = cJSON_GetObjectItem(dockerTopResponse[0], "Process");
+                        if(processArrEntry != NULL)
                         {
                             for(int j =0; j < cJSON_GetArraySize(processArrEntry); j++)
                             {
