@@ -52,7 +52,7 @@ public:
                     if (!dockerTopResponse.empty() && dockerTopResponse[0])
                     {
                         //Get process entry
-                        cJSON* processArr = cJSON_GetObjectItem(dockerTopResponse[0], "Process");
+                        cJSON* processArr = cJSON_GetObjectItem(dockerTopResponse[0], "Processes");
                         if(processArr != NULL)
                         {
                             for(int j =0; j < cJSON_GetArraySize(processArr); j++)
