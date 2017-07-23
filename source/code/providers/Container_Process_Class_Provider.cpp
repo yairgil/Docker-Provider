@@ -77,15 +77,15 @@ public:
                                     processInstance.Name_value(containerName.c_str());
                                     processInstance.Computer_value(hostname.c_str());                                
                                 }
-                                runningProcessListInstance.push(processInstance);
+                                runningProcessListInstance.push_back(processInstance);
                             }
                         }
                     }
-                    dockerTopResponse.clear();
+                    cJSON_Delete(dockerTopResponse[0]);
                 }
             }
         }
-        dockerPsResponse.clear();
+        cJSON_Delete(dockerPsResponse[0])
     }
 };
 
