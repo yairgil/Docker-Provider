@@ -2,6 +2,13 @@
 #include <MI.h>
 #include "Container_Process_Class_Provider.h"
 
+#include <vector>
+#include <string>
+#include "../cjson/cJSON.h"
+#include "../dockerapi/DockerRemoteApi.h"
+#include "../dockerapi/DockerRestHelper.h"
+#include "Helper.h"
+
 MI_BEGIN_NAMESPACE
 
 class ContainerProcessQuery
