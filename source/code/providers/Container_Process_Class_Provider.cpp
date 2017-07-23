@@ -85,8 +85,9 @@ public:
                 }
             }
         }
-        cJSON_Delete(dockerPsResponse[0])
+        cJSON_Delete(dockerPsResponse[0]);
     }
+    return runningProcessListInstance;
 };
 
 Container_Process_Class_Provider::Container_Process_Class_Provider(
