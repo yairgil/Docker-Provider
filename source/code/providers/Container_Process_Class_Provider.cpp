@@ -58,14 +58,15 @@ public:
                 {
                     string containerId = string(cJSON_GetObjectItem(containerEntry, "Id")->valuestring);
                     string containerName;
+                    string containerPod;                    
+                    string containerNamespace;
+
                     // Get container name
                     cJSON* names = cJSON_GetObjectItem(containerEntry, "Names");
                     if (cJSON_GetArraySize(names))
                     {
                         containerName = string(cJSON_GetArrayItem(names, 0)->valuestring + 1);
-                        string containerNamespace;
-                        string containerPod;
-                        vector <string> containerMetaInformation = parseDelimiter(containerName, "_");
+                        vector <string> containerMetaInformation = delimiterParse(containerName, "_");
                         //only k8 now
                         if(containerMetaInformation[0].find("k8s") != string::npos)
                         {
@@ -75,7 +76,7 @@ public:
                         }
                         else
                         {
-                            containrPod = "None";
+                            containerPod = "None";
                             containerNamespace = "None"
                         }
                     }
