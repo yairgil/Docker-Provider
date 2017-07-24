@@ -11,6 +11,8 @@
 #include "../dockerapi/DockerRemoteApi.h"
 #include "../dockerapi/DockerRestHelper.h"
 
+using namespace std;
+
 MI_BEGIN_NAMESPACE
 
 class ContainerProcessQuery
