@@ -6,6 +6,7 @@
 #include <string>
 #include <cstdlib>
 #include <syslog.h>
+#include <sstream>
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
 #include "../dockerapi/DockerRestHelper.h"
@@ -15,6 +16,23 @@ MI_BEGIN_NAMESPACE
 class ContainerProcessQuery
 {
 public:
+
+    ///
+    /// \returns vector of strings parsed based on delimiter
+    ///
+    static vector<string> delimiterParse(const string strToParse, const string delimiterChar)
+    {
+        vector<string> parsedList;
+        stringstream  strStream(strToParse);
+
+        string delmitedStr;
+        while(getline(strStream,delmitedStr,delimiterChar.c_str()))
+        {
+            parsedList.push_back(delmitedStr);
+        }
+        return parsedList;
+    }
+
     ///
     /// \returns Object representing process info for each container
     ///
@@ -43,6 +61,21 @@ public:
                     if (cJSON_GetArraySize(names))
                     {
                         containerName = string(cJSON_GetArrayItem(names, 0)->valuestring + 1);
+                        string containerNamespace;
+                        string containerPod;
+                        vector <string> containerMetaInformation = parseDelimiter(containerName, "_");
+                        //only k8 now
+                        if(containerMetaInformation[0].find("k8s") != string::npos)
+                        {
+                            //add namespace pod info
+                            containerPod = containerMetaInformation[2];
+                            containerNamespace = containerMetaInformation[3];
+                        }
+                        else
+                        {
+                            containrPod = "None";
+                            containerNamespace = "None"
+                        }
                     }
 
                     // Request container process info
@@ -75,6 +108,8 @@ public:
                                     //container specific values
                                     processInstance.Id_value(containerId.c_str());
                                     processInstance.Name_value(containerName.c_str());
+                                    processInstance.Pod_value(containerPod.c_str());
+                                    processInstance.Namespace_value(containerNamespace.c_str());
                                     processInstance.Computer_value(hostname.c_str());                                
                                 }
                                 runningProcessListInstance.push_back(processInstance);
