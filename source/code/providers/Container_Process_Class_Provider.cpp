@@ -65,13 +65,13 @@ public:
                                 {
                                     processInstance.InstanceID_value(containerId.c_str());
                                     processInstance.Uid_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
-                                    processInstance.PID_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
-                                    processInstance.PPID_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
-                                    processInstance.C_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
-                                    processInstance.STIME_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
-                                    processInstance.Tty_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
-                                    processInstance.StartTime_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
-                                    processInstance.Cmd_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
+                                    processInstance.PID_value(cJSON_GetArrayItem(processEntry, 1)->valuestring);
+                                    processInstance.PPID_value(cJSON_GetArrayItem(processEntry, 2)->valuestring);
+                                    processInstance.C_value(cJSON_GetArrayItem(processEntry, 3)->valuestring);
+                                    processInstance.STIME_value(cJSON_GetArrayItem(processEntry, 4)->valuestring);
+                                    processInstance.Tty_value(cJSON_GetArrayItem(processEntry, 5)->valuestring);
+                                    processInstance.StartTime_value(cJSON_GetArrayItem(processEntry, 6)->valuestring);
+                                    processInstance.Cmd_value(cJSON_GetArrayItem(processEntry, 7)->valuestring);
                                     //container specific values
                                     processInstance.Id_value(containerId.c_str());
                                     processInstance.Name_value(containerName.c_str());
