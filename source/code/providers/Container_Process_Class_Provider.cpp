@@ -77,7 +77,7 @@ public:
                         else
                         {
                             containerPod = "None";
-                            containerNamespace = "None"
+                            containerNamespace = "None";
                         }
                     }
 
