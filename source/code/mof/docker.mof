@@ -236,7 +236,7 @@ class Container_Process : CIM_ManagedElement
 	[ Key, Description ( "GUID" ) ]
 	String InstanceID;
 
-	[ Key, Description ( "User ID number" ) ]
+	[ Description ( "User ID number" ) ]
 	String Uid;
 
 	[ Description ( "Process ID" ) ]
@@ -265,6 +265,12 @@ class Container_Process : CIM_ManagedElement
 
 	[ Description ( "Container Name" ) ]
 	String Name;
+
+	[ Description ( "Pod Name" ) ]
+	String Pod;
+
+	[ Description ( "Namespace " ) ]
+	String Namespace;
 
 	[ Description ( "Host name of Docker host" ) ]
 	String Computer;

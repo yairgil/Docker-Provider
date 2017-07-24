@@ -42,6 +42,8 @@ typedef struct _Container_Process /* extends CIM_ManagedElement */
     MI_ConstStringField Cmd;
     MI_ConstStringField Id;
     MI_ConstStringField Name;
+    MI_ConstStringField Pod;
+    MI_ConstStringField Namespace;
     MI_ConstStringField Computer;
 }
 Container_Process;
@@ -582,7 +584,7 @@ MI_INLINE MI_Result MI_CALL Container_Process_Clear_Name(
         13);
 }
 
-MI_INLINE MI_Result MI_CALL Container_Process_Set_Computer(
+MI_INLINE MI_Result MI_CALL Container_Process_Set_Pod(
     Container_Process* self,
     const MI_Char* str)
 {
@@ -594,7 +596,7 @@ MI_INLINE MI_Result MI_CALL Container_Process_Set_Computer(
         0);
 }
 
-MI_INLINE MI_Result MI_CALL Container_Process_SetPtr_Computer(
+MI_INLINE MI_Result MI_CALL Container_Process_SetPtr_Pod(
     Container_Process* self,
     const MI_Char* str)
 {
@@ -606,12 +608,76 @@ MI_INLINE MI_Result MI_CALL Container_Process_SetPtr_Computer(
         MI_FLAG_BORROW);
 }
 
-MI_INLINE MI_Result MI_CALL Container_Process_Clear_Computer(
+MI_INLINE MI_Result MI_CALL Container_Process_Clear_Pod(
     Container_Process* self)
 {
     return self->__instance.ft->ClearElementAt(
         (MI_Instance*)&self->__instance,
         14);
+}
+
+MI_INLINE MI_Result MI_CALL Container_Process_Set_Namespace(
+    Container_Process* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        15,
+        (MI_Value*)&str,
+        MI_STRING,
+        0);
+}
+
+MI_INLINE MI_Result MI_CALL Container_Process_SetPtr_Namespace(
+    Container_Process* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        15,
+        (MI_Value*)&str,
+        MI_STRING,
+        MI_FLAG_BORROW);
+}
+
+MI_INLINE MI_Result MI_CALL Container_Process_Clear_Namespace(
+    Container_Process* self)
+{
+    return self->__instance.ft->ClearElementAt(
+        (MI_Instance*)&self->__instance,
+        15);
+}
+
+MI_INLINE MI_Result MI_CALL Container_Process_Set_Computer(
+    Container_Process* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        16,
+        (MI_Value*)&str,
+        MI_STRING,
+        0);
+}
+
+MI_INLINE MI_Result MI_CALL Container_Process_SetPtr_Computer(
+    Container_Process* self,
+    const MI_Char* str)
+{
+    return self->__instance.ft->SetElementAt(
+        (MI_Instance*)&self->__instance,
+        16,
+        (MI_Value*)&str,
+        MI_STRING,
+        MI_FLAG_BORROW);
+}
+
+MI_INLINE MI_Result MI_CALL Container_Process_Clear_Computer(
+    Container_Process* self)
+{
+    return self->__instance.ft->ClearElementAt(
+        (MI_Instance*)&self->__instance,
+        16);
 }
 
 /*
@@ -1137,6 +1203,86 @@ public:
     void Name_clear()
     {
         const size_t n = offsetof(Self, Name);
+        GetField<String>(n).Clear();
+    }
+
+    //
+    // Container_Process_Class.Pod
+    //
+    
+    const Field<String>& Pod() const
+    {
+        const size_t n = offsetof(Self, Pod);
+        return GetField<String>(n);
+    }
+    
+    void Pod(const Field<String>& x)
+    {
+        const size_t n = offsetof(Self, Pod);
+        GetField<String>(n) = x;
+    }
+    
+    const String& Pod_value() const
+    {
+        const size_t n = offsetof(Self, Pod);
+        return GetField<String>(n).value;
+    }
+    
+    void Pod_value(const String& x)
+    {
+        const size_t n = offsetof(Self, Pod);
+        GetField<String>(n).Set(x);
+    }
+    
+    bool Pod_exists() const
+    {
+        const size_t n = offsetof(Self, Pod);
+        return GetField<String>(n).exists ? true : false;
+    }
+    
+    void Pod_clear()
+    {
+        const size_t n = offsetof(Self, Pod);
+        GetField<String>(n).Clear();
+    }
+
+    //
+    // Container_Process_Class.Namespace
+    //
+    
+    const Field<String>& Namespace() const
+    {
+        const size_t n = offsetof(Self, Namespace);
+        return GetField<String>(n);
+    }
+    
+    void Namespace(const Field<String>& x)
+    {
+        const size_t n = offsetof(Self, Namespace);
+        GetField<String>(n) = x;
+    }
+    
+    const String& Namespace_value() const
+    {
+        const size_t n = offsetof(Self, Namespace);
+        return GetField<String>(n).value;
+    }
+    
+    void Namespace_value(const String& x)
+    {
+        const size_t n = offsetof(Self, Namespace);
+        GetField<String>(n).Set(x);
+    }
+    
+    bool Namespace_exists() const
+    {
+        const size_t n = offsetof(Self, Namespace);
+        return GetField<String>(n).exists ? true : false;
+    }
+    
+    void Namespace_clear()
+    {
+        const size_t n = offsetof(Self, Namespace);
         GetField<String>(n).Clear();
     }
 

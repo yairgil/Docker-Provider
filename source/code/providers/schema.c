@@ -1928,6 +1928,40 @@ static MI_CONST MI_PropertyDecl Container_Process_Name_prop =
     NULL,
 };
 
+/* property Container_Process.Pod */
+static MI_CONST MI_PropertyDecl Container_Process_Pod_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x00706403, /* code */
+    MI_T("Pod"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_Process, Pod), /* offset */
+    MI_T("Container_Process"), /* origin */
+    MI_T("Container_Process"), /* propagator */
+    NULL,
+};
+
+/* property Container_Process.Namespace */
+static MI_CONST MI_PropertyDecl Container_Process_Namespace_prop =
+{
+    MI_FLAG_PROPERTY, /* flags */
+    0x006E6509, /* code */
+    MI_T("Namespace"), /* name */
+    NULL, /* qualifiers */
+    0, /* numQualifiers */
+    MI_STRING, /* type */
+    NULL, /* className */
+    0, /* subscript */
+    offsetof(Container_Process, Namespace), /* offset */
+    MI_T("Container_Process"), /* origin */
+    MI_T("Container_Process"), /* propagator */
+    NULL,
+};
+
 /* property Container_Process.Computer */
 static MI_CONST MI_PropertyDecl Container_Process_Computer_prop =
 {
@@ -1961,6 +1995,8 @@ static MI_PropertyDecl MI_CONST* MI_CONST Container_Process_props[] =
     &Container_Process_Cmd_prop,
     &Container_Process_Id_prop,
     &Container_Process_Name_prop,
+    &Container_Process_Pod_prop,
+    &Container_Process_Namespace_prop,
     &Container_Process_Computer_prop,
 };
 
