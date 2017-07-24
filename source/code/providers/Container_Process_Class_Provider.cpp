@@ -22,13 +22,13 @@ public:
     ///
     /// \returns vector of strings parsed based on delimiter
     ///
-    static vector<string> delimiterParse(const string strToParse, const string delimiterChar)
+    static vector<string> delimiterParse(const string strToParse, const char delimiterChar)
     {
         vector<string> parsedList;
         stringstream  strStream(strToParse);
 
         string delmitedStr;
-        while(getline(strStream,delmitedStr,delimiterChar.c_str()))
+        while(getline(strStream,delmitedStr,delimiterChar))
         {
             parsedList.push_back(delmitedStr);
         }
@@ -66,7 +66,7 @@ public:
                     if (cJSON_GetArraySize(names))
                     {
                         containerName = string(cJSON_GetArrayItem(names, 0)->valuestring + 1);
-                        vector <string> containerMetaInformation = delimiterParse(containerName, "_");
+                        vector <string> containerMetaInformation = delimiterParse(containerName, '_');
                         //only k8 now
                         if(containerMetaInformation[0].find("k8s") != string::npos)
                         {
