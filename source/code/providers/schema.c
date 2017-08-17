@@ -1860,18 +1860,18 @@ static MI_CONST MI_PropertyDecl Container_Process_Tty_prop =
     NULL,
 };
 
-/* property Container_Process.StartTime */
-static MI_CONST MI_PropertyDecl Container_Process_StartTime_prop =
+/* property Container_Process.TIME */
+static MI_CONST MI_PropertyDecl Container_Process_TIME_prop =
 {
     MI_FLAG_PROPERTY, /* flags */
     0x00736509, /* code */
-    MI_T("StartTime"), /* name */
+    MI_T("TIME"), /* name */
     NULL, /* qualifiers */
     0, /* numQualifiers */
     MI_STRING, /* type */
     NULL, /* className */
     0, /* subscript */
-    offsetof(Container_Process, StartTime), /* offset */
+    offsetof(Container_Process, TIME), /* offset */
     MI_T("Container_Process"), /* origin */
     MI_T("Container_Process"), /* propagator */
     NULL,
@@ -1991,7 +1991,7 @@ static MI_PropertyDecl MI_CONST* MI_CONST Container_Process_props[] =
     &Container_Process_C_prop,
     &Container_Process_STIME_prop,
     &Container_Process_Tty_prop,
-    &Container_Process_StartTime_prop,
+    &Container_Process_TIME_prop,
     &Container_Process_Cmd_prop,
     &Container_Process_Id_prop,
     &Container_Process_Name_prop,

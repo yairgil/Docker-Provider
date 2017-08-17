@@ -106,7 +106,7 @@ public:
                                     processInstance.C_value(cJSON_GetArrayItem(processEntry, 3)->valuestring);
                                     processInstance.STIME_value(cJSON_GetArrayItem(processEntry, 4)->valuestring);
                                     processInstance.Tty_value(cJSON_GetArrayItem(processEntry, 5)->valuestring);
-                                    processInstance.StartTime_value(cJSON_GetArrayItem(processEntry, 6)->valuestring);
+                                    processInstance.TIME_value(cJSON_GetArrayItem(processEntry, 6)->valuestring);
                                     processInstance.Cmd_value(cJSON_GetArrayItem(processEntry, 7)->valuestring);
                                     //container specific values
                                     processInstance.Id_value(containerId.c_str());

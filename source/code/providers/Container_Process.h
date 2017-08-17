@@ -38,7 +38,7 @@ typedef struct _Container_Process /* extends CIM_ManagedElement */
     MI_ConstStringField C;
     MI_ConstStringField STIME;
     MI_ConstStringField Tty;
-    MI_ConstStringField StartTime;
+    MI_ConstStringField TIME;
     MI_ConstStringField Cmd;
     MI_ConstStringField Id;
     MI_ConstStringField Name;
@@ -456,7 +456,7 @@ MI_INLINE MI_Result MI_CALL Container_Process_Clear_Tty(
         9);
 }
 
-MI_INLINE MI_Result MI_CALL Container_Process_Set_StartTime(
+MI_INLINE MI_Result MI_CALL Container_Process_Set_TIME(
     Container_Process* self,
     const MI_Char* str)
 {
@@ -468,7 +468,7 @@ MI_INLINE MI_Result MI_CALL Container_Process_Set_StartTime(
         0);
 }
 
-MI_INLINE MI_Result MI_CALL Container_Process_SetPtr_StartTime(
+MI_INLINE MI_Result MI_CALL Container_Process_SetPtr_TIME(
     Container_Process* self,
     const MI_Char* str)
 {
@@ -480,7 +480,7 @@ MI_INLINE MI_Result MI_CALL Container_Process_SetPtr_StartTime(
         MI_FLAG_BORROW);
 }
 
-MI_INLINE MI_Result MI_CALL Container_Process_Clear_StartTime(
+MI_INLINE MI_Result MI_CALL Container_Process_Clear_TIME(
     Container_Process* self)
 {
     return self->__instance.ft->ClearElementAt(
@@ -1047,42 +1047,42 @@ public:
     }
 
     //
-    // Container_Process_Class.StartTime
+    // Container_Process_Class.TIME
     //
     
-    const Field<String>& StartTime() const
+    const Field<String>& TIME() const
     {
-        const size_t n = offsetof(Self, StartTime);
+        const size_t n = offsetof(Self, TIME);
         return GetField<String>(n);
     }
     
-    void StartTime(const Field<String>& x)
+    void TIME(const Field<String>& x)
     {
-        const size_t n = offsetof(Self, StartTime);
+        const size_t n = offsetof(Self, TIME);
         GetField<String>(n) = x;
     }
     
-    const String& StartTime_value() const
+    const String& TIME_value() const
     {
-        const size_t n = offsetof(Self, StartTime);
+        const size_t n = offsetof(Self, TIME);
         return GetField<String>(n).value;
     }
     
-    void StartTime_value(const String& x)
+    void TIME_value(const String& x)
     {
-        const size_t n = offsetof(Self, StartTime);
+        const size_t n = offsetof(Self, TIME);
         GetField<String>(n).Set(x);
     }
     
-    bool StartTime_exists() const
+    bool TIME_exists() const
     {
-        const size_t n = offsetof(Self, StartTime);
+        const size_t n = offsetof(Self, TIME);
         return GetField<String>(n).exists ? true : false;
     }
     
-    void StartTime_clear()
+    void TIME_clear()
     {
-        const size_t n = offsetof(Self, StartTime);
+        const size_t n = offsetof(Self, TIME);
         GetField<String>(n).Clear();
     }
 

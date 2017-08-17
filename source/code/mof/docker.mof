@@ -248,14 +248,14 @@ class Container_Process : CIM_ManagedElement
 	[ Description ( "Cpu utilization" ) ]
 	String C;
 
-	[ Description ( "Host volume information" ) ]
+	[ Description ( "Time process was started" ) ]
 	String STIME;
 
 	[ Description ( "The device number of the controling tty" ) ]
 	String Tty;
 
-	[ Description ( "Time process was started" ) ]
-	String StartTime;
+	[ Description ( "System time" ) ]
+	String TIME;
 
 	[ Description ( "Name of executable" ) ]
 	String Cmd;
