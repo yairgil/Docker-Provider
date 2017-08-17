@@ -18,7 +18,7 @@
 using namespace std;
 using namespace SCXCoreLib;
 
-class ContainerHostInventoryTest : public CppUnit::TestFixture
+class ContainerProcessTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(ContainerProcessTest);
     CPPUNIT_TEST(TestPsParsing);
@@ -71,7 +71,7 @@ protected:
         setenv(DOCKER_TESTRUNNER_STRING,k8NodeInfoString.c_str(),1);
 
         // Enumerate provider. Use k8 specific response instead of the standard docker info response
-        StandardTestEnumerateInstances<mi::Container_HostInventory_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
+        StandardTestEnumerateInstances<mi::Container_Process_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
         CPPUNIT_ASSERT(context.Size() > 0);
 
         for (unsigned i = 0; i < context.Size(); ++i)
@@ -90,4 +90,4 @@ protected:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(ContainerHostInventoryTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(ContainerProcessTest);
