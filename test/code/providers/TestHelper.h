@@ -7,6 +7,9 @@
 #include <testutils/scxunit.h>
 #include <testutils/providertestutils.h>
 
+using namespace std;
+using namespace SCXCoreLib;
+
 class TestHelper
 {
 public:
