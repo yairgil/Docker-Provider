@@ -7,8 +7,6 @@
 # include <micxx/micxx.h>
 # include "module.h"
 
-#define DOCKER_TESTRUNNER_STRING "DOCKER_TESTRUNNER_STRING"
-
 MI_BEGIN_NAMESPACE
 
 /*
