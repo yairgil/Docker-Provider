@@ -6,12 +6,7 @@
 #include <uuid/uuid.h>
 #include <vector>
 
-#include <scxcorelib/scxcmn.h>
-#include <scxcorelib/scxprocess.h>
-#include <scxcorelib/stringaid.h>
-#include <testutils/scxunit.h>
-#include <testutils/providertestutils.h>
-
+#include "TestHelper.h"
 #include "Container_HostInventory_Class_Provider.h"
 #include "cjson/cJSON.h"
 
