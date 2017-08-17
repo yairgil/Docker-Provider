@@ -24,7 +24,8 @@ private:
 public:
     void setUp()
     {        
-        gethostname((char*)hostname, sizeof hostname); 
+        gethostname((char*)hostname, sizeof hostname);
+        printf("hostname %s", hostname); 
         processCmd.push_back(wstring(L"/bin/sh -c sleep inf;"));
         processCmd.push_back(wstring(L"sleep inf"));       
     }
@@ -32,6 +33,8 @@ public:
     void tearDown()
     {
         processCmd.clear();
+        TestHelper::RunCommand("docker rm -f $(docker ps --filter name=k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid -a -q)");
+        TestHelper::RunCommand("docker rm -f $(docker ps --filter name=ContainerProcessTest -a -q)");
     }
 
 protected:
@@ -42,7 +45,7 @@ protected:
         vector<wstring> m_keyNames;
         m_keyNames.push_back(L"InstanceID");
 
-        TestHelper::RunCommand("docker run -d --name=\"k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid\" ubuntu /bin/sh -c \"sleep inf;\"");
+        TestHelper::RunCommand("docker run -d --name=k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid ubuntu /bin/sh -c \"sleep inf;\"");
 
         // Enumerate provider. This just tests if the provider is able to pick up properties from a docker info call on the machine
         StandardTestEnumerateInstances<mi::Container_Process_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
