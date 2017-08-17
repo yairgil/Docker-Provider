@@ -1,6 +1,12 @@
 #ifndef _TEST_HELPER_H_
 #define _TEST_HELPER_H_
 
+#include <scxcorelib/scxcmn.h>
+#include <scxcorelib/scxprocess.h>
+#include <scxcorelib/stringaid.h>
+#include <testutils/scxunit.h>
+#include <testutils/providertestutils.h>
+
 class TestHelper
 {
 public:
