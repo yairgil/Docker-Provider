@@ -13,6 +13,7 @@
 #include <testutils/providertestutils.h>
 
 #include "Container_Process_Class_Provider.h"
+#include "TestHelper.h"
 #include "cjson/cJSON.h"
 
 using namespace std;
@@ -22,17 +23,24 @@ class ContainerProcessTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(ContainerProcessTest);
     CPPUNIT_TEST(Testk8EnumerateInstances);
-    CPPUNIT_TEST(TestNonk8EnumerateInstances);
+    //CPPUNIT_TEST(TestNonk8EnumerateInstances);
     CPPUNIT_TEST_SUITE_END();
 
 private:
     char hostname[128];
-    wstring processCmdArr = [L"/bin/sh -c sleep inf;", L"sleep inf"];
+    vector<wstring> processCmd;
 
 public:
     void setUp()
     {        
-        gethostname(hostname, sizeof hostname);        
+        gethostname(hostname, sizeof hostname); 
+        processCmd.push_back(wstring(L"/bin/sh -c sleep inf;"));
+        processCmd.push_back(wstring(L"sleep inf"));       
+    }
+
+    void tearDown()
+    {
+        processCmd.clear();
     }
 
 protected:
@@ -43,7 +51,7 @@ protected:
         vector<wstring> m_keyNames;
         m_keyNames.push_back(L"InstanceID");
 
-        RunCommand("docker run -d --name=\"k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid\" ubuntu /bin/sh -c \"sleep inf;\"");
+        TestHelper::RunCommand("docker run -d --name=\"k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid\" ubuntu /bin/sh -c \"sleep inf;\"");
 
         // Enumerate provider. This just tests if the provider is able to pick up properties from a docker info call on the machine
         StandardTestEnumerateInstances<mi::Container_Process_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
@@ -67,17 +75,17 @@ protected:
             CPPUNIT_ASSERT(context[i].GetProperty(L"Id", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT_EQUAL(std::wstring(L"k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid"), context[i].GetProperty(L"Name", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
         }
-        RunCommand("docker rm -f $(docker ps --filter \"name=k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid\" -a -q)");
+        TestHelper::RunCommand("docker rm -f $(docker ps --filter \"name=k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid\" -a -q)");
     }
 
-    void TestNonk8EnumerateInstances()
+    /*void TestNonk8EnumerateInstances()
     {
         wstring errMsg;
         TestableContext context;
         vector<wstring> m_keyNames;
         m_keyNames.push_back(L"InstanceID");
 
-        RunCommand("docker run -d --name=\"ContainerProcessTest\" ubuntu /bin/sh -c \"sleep inf;\"");
+        TestHelper::RunCommand("docker run -d --name=\"ContainerProcessTest\" ubuntu /bin/sh -c \"sleep inf;\"");
 
         // Enumerate provider. This just tests if the provider is able to pick up properties from a docker info call on the machine
         StandardTestEnumerateInstances<mi::Container_Process_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
@@ -101,8 +109,8 @@ protected:
             CPPUNIT_ASSERT(context[i].GetProperty(L"Id", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT_EQUAL(std::wstring(L"ContainerProcessTest"),context[i].GetProperty(L"Name", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
         }
-        RunCommand("docker rm -f $(docker ps --filter \"name=ContainerProcessTest\" -a -q)");
-    }
+        TestHelper::RunCommand("docker rm -f $(docker ps --filter \"name=ContainerProcessTest\" -a -q)");
+    }*/
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(ContainerProcessTest);
