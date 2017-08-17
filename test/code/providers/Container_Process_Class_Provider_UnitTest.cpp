@@ -27,7 +27,7 @@ class ContainerProcessTest : public CppUnit::TestFixture
 
 private:
     char hostname[128];
-    wstring processCmdArr = {L"/bin/sh -c sleep inf;", L"sleep inf"};
+    wstring processCmdArr = [L"/bin/sh -c sleep inf;", L"sleep inf"];
 
 public:
     void setUp()
