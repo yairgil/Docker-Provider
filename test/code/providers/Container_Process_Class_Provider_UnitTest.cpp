@@ -24,7 +24,7 @@ class ContainerProcessTest : public CppUnit::TestFixture
     CPPUNIT_TEST(Testk8EnumerateInstances);
     CPPUNIT_TEST(TestNonk8EnumerateInstances);
     CPPUNIT_TEST_SUITE_END();
-    
+
 private:
     char hostname[128];
     wstring processCmdArr = {L"/bin/sh -c sleep inf;", L"sleep inf"};
@@ -55,14 +55,14 @@ protected:
             wstring instanceId = context[i].GetProperty(L"InstanceID", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg));
             CPPUNIT_ASSERT(instanceId.length());
             CPPUNIT_ASSERT_EQUAL(std::wstring(hostname), context[i].GetProperty(L"Computer", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
-            CPPUNIT_ASSERT_EQUAL(std::wstring(L"cptpodname"),context[i].GetProperty(L"Pod", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).;
-            CPPUNIT_ASSERT_EQUAL(std::wstring(L"cptnamespace"),context[i].GetProperty(L"Namespace", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
-            CPPUNIT_ASSERT_EQUAL(std::wstring(L"root"),context[i].GetProperty(L"Uid", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
+            CPPUNIT_ASSERT_EQUAL(std::wstring(L"cptpodname"), context[i].GetProperty(L"Pod", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).;
+            CPPUNIT_ASSERT_EQUAL(std::wstring(L"cptnamespace"), context[i].GetProperty(L"Namespace", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
+            CPPUNIT_ASSERT_EQUAL(std::wstring(L"root"), context[i].GetProperty(L"Uid", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
             CPPUNIT_ASSERT(context[i].GetProperty(L"PID", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT(context[i].GetProperty(L"PPID", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT(context[i].GetProperty(L"C", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT(context[i].GetProperty(L"STIME", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
-            CPPUNIT_ASSERT_EQUAL(std::wstring(L"?"),context[i].GetProperty(L"Tty", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
+            CPPUNIT_ASSERT_EQUAL(std::wstring(L"?"),context[i].GetProperty(L"Tty", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
             CPPUNIT_ASSERT_EQUAL(processCmdArr[i], context[i].GetProperty(L"Cmd", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg));
             CPPUNIT_ASSERT(context[i].GetProperty(L"Id", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT_EQUAL(std::wstring(L"k8_cpt.sandboxname_cptpodname_cptnamepsace_cptid"), context[i].GetProperty(L"Name", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg));
@@ -91,12 +91,12 @@ protected:
             CPPUNIT_ASSERT_EQUAL(std::wstring(hostname), context[i].GetProperty(L"Computer", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
             CPPUNIT_ASSERT_EQUAL(std::wstring(L"None"), context[i].GetProperty(L"Cmd", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
             CPPUNIT_ASSERT_EQUAL(std::wstring(L"None"), context[i].GetProperty(L"Cmd", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)));
-            CPPUNIT_ASSERT_EQUAL(std::wstring(L"root"),context[i].GetProperty(L"Uid", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
+            CPPUNIT_ASSERT_EQUAL(std::wstring(L"root"),context[i].GetProperty(L"Uid", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg));
             CPPUNIT_ASSERT(context[i].GetProperty(L"PID", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT(context[i].GetProperty(L"PPID", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT(context[i].GetProperty(L"C", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT(context[i].GetProperty(L"STIME", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
-            CPPUNIT_ASSERT_EQUAL(std::wstring(L"?"),context[i].GetProperty(L"Tty", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
+            CPPUNIT_ASSERT_EQUAL(std::wstring(L"?"),context[i].GetProperty(L"Tty", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg));
             CPPUNIT_ASSERT_EQUAL(processCmdArr[i], context[i].GetProperty(L"Cmd", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg));
             CPPUNIT_ASSERT(context[i].GetProperty(L"Id", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg)).length());
             CPPUNIT_ASSERT_EQUAL(std::wstring(L"ContainerProcessTest"),context[i].GetProperty(L"Name", CALL_LOCATION(errMsg)).GetValue_MIString(CALL_LOCATION(errMsg));
