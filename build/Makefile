@@ -284,6 +284,7 @@ STATIC_PROVIDER_UNITFILES = \
 	$(PROVIDER_TEST_DIR)/Container_DaemonEvent_Class_Provider_UnitTest.cpp \
 	$(PROVIDER_TEST_DIR)/Container_ImageInventory_Class_Provider_UnitTest.cpp \
 	$(PROVIDER_TEST_DIR)/Container_HostInventory_Class_Provider_UnitTest.cpp \
+	$(PROVIDER_TEST_DIR)/Container_Process_Class_Provider_UnitTest.cpp \
 	$(PROVIDER_TEST_DIR)/support/testrunnerlogpolicy.cpp \
 	$(PROVIDER_TEST_DIR)/support/productdependencies.cpp \
 	$(PROVIDER_TEST_DIR)/providertestutils.cpp
