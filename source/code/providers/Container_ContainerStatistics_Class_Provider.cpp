@@ -82,7 +82,10 @@ private:
         if (stats)
         {
             cJSON* memory_stats = cJSON_GetObjectItem(stats, "memory_stats");
-            instance.MemUsedMB_value((unsigned long long)cJSON_GetObjectItem(memory_stats, "usage")->valuedouble / (unsigned long long)NUMBYTESPERMB);
+            if(memory_stats)
+            {
+                instance.MemUsedMB_value((unsigned long long)cJSON_GetObjectItem(memory_stats, "usage")->valuedouble / (unsigned long long)NUMBYTESPERMB);
+            }
         }
         else
         {
