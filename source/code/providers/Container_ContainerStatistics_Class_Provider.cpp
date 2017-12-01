@@ -82,7 +82,10 @@ private:
         if (stats)
         {
             cJSON* memory_stats = cJSON_GetObjectItem(stats, "memory_stats");
-            instance.MemUsedMB_value((unsigned long long)cJSON_GetObjectItem(memory_stats, "usage")->valuedouble / (unsigned long long)NUMBYTESPERMB);
+            if(memory_stats)
+            {
+                instance.MemUsedMB_value((unsigned long long)cJSON_GetObjectItem(memory_stats, "usage")->valuedouble / (unsigned long long)NUMBYTESPERMB);
+            }            
         }
         else
         {
@@ -251,13 +254,14 @@ public:
                     // Set container name
                     cJSON* names = cJSON_GetObjectItem(entry, "Names");
 
-                    if (cJSON_GetArraySize(names))
+                    if (names != NULL && cJSON_GetArraySize(names))
                     {
                         instance.ElementName_value(cJSON_GetArrayItem(names, 0)->valuestring + 1);
                     }
                     else
                     {
-                        syslog(LOG_WARNING, "Attempt in QueryAll to get name of container %s failed", id);
+                        break;
+                        syslog(LOG_WARNING, "Attempt in Container_ContainerStatistics_Class::QueryAll to get name of container %s failed", id);
                     }
 
                     // Request container stats

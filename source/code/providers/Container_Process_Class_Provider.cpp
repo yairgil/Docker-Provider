@@ -63,7 +63,7 @@ public:
 
                     // Get container name
                     cJSON* names = cJSON_GetObjectItem(containerEntry, "Names");
-                    if (cJSON_GetArraySize(names))
+                    if (names != NULL && cJSON_GetArraySize(names))
                     {
                         containerName = string(cJSON_GetArrayItem(names, 0)->valuestring + 1);
                         vector <string> containerMetaInformation = delimiterParse(containerName, '_');
@@ -79,6 +79,11 @@ public:
                             containerPod = "None";
                             containerNamespace = "None";
                         }
+                    }
+                    else
+                    {
+                        break;
+                        syslog(LOG_WARNING, "Attempt in Container_Process_Class::QueryAll to get name of container %s failed", containerId.c_str());
                     }
 
                     // Request container process info
