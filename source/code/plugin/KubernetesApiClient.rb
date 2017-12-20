@@ -26,7 +26,7 @@ class KubernetesApiClient
     class << self
         def getKubeResourceInfo(resource)    
             headers = {}
-            responseJson = {}
+            response = ""
             @Log.info 'Getting Kube resource'
             @Log.info resource
             begin
@@ -45,12 +45,12 @@ class KubernetesApiClient
                     kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
                     kubeApiRequest['Authorization'] = "Bearer " + getTokenStr
                     response = http.request(kubeApiRequest)
-                    responseJson = JSON.parse(response.body)
+                    #responseJson = JSON.parse(response.body)
                 end    
             rescue => error
                 @Log.warn("kubernetes api request failed: #{error}") 
             end       
-            return responseJson
+            return response
         end
 
         def getTokenStr
@@ -81,17 +81,24 @@ class KubernetesApiClient
             return @@ClusterName if !@@ClusterName.nil?
             begin
                 kubesystemResourceUri = "namespaces/" + @@KubeSystemNamespace +"/pods"
-                podInfo = getKubeResourceInfo("namespaces/kube-system/pods")
+                podInfo = JSON.parse(getKubeResourceInfo("namespaces/kube-system/pods").body)
+                @@ClusterName = "None"
                 podInfo['items'].each do |items|
                     if items['metadata']['name'].include? "kube-controller-manager"
                        items['spec']['containers'][0]['command'].each do |command|
                            if command.include? "--cluster-name"
-                               @@ClusterName = command.split('=')[1]
+                               clusterName = command.split('=')[1]
+                               if !clusterName.to_s.empty?
+                                @@ClusterName = clusterName
+			                   else
+                                @@ClusterName = OMS::Common.get_hostname.split('-')[2]
+                               end 
+                               break
                            end    
                        end
                     end
                 end
-                @@ClusterName = "None"
+
             rescue => error
                 @Log.warn("cluster name request failed: #{error}")    
             end
@@ -102,7 +109,7 @@ class KubernetesApiClient
             return @@IsNodeMaster if !@@IsNodeMaster.nil?
             @@IsNodeMaster = false
             begin
-                allNodesInfo =  getKubeResourceInfo('nodes')
+                allNodesInfo =  JSON.parse(getKubeResourceInfo('nodes').body)
                 if !allNodesInfo.nil? && !allNodesInfo.empty?
                     thisNodeName = OMS::Common.get_hostname
                     allNodesInfo['items'].each do |item|
@@ -123,6 +130,36 @@ class KubernetesApiClient
                 @Log.info("Not Electing current node to talk to k8 api")
             end
             return @@IsNodeMaster
-        end                    
+        end
+
+	def getContainerLogs(namespace, pod, container, showTimeStamp)
+                @@ContainerLogs = ""
+                begin
+                    kubesystemResourceUri = "namespaces/" + namespace + "/pods/" + pod + "/log" + "?container=" + container
+                    if showTimeStamp 
+                        kubesystemResourceUri += "&timestamps=true"
+                    end
+                    @@ContainerLogs = getKubeResourceInfo(kubesystemResourceUri).body
+                rescue => error
+                    @Log.warn("Pod logs request failed: #{error}")    
+                end
+                return @@ContainerLogs  
+            end
+    
+            def getContainerLogsSinceTime(namespace, pod, container, since, showTimeStamp)
+                @@ContainerLogs = ""
+                begin
+                    kubesystemResourceUri = "namespaces/" + namespace + "/pods/" + pod + "/log" + "?container=" + container + "&sinceTime=" + since
+                    kubesystemResourceUri = URI.escape(kubesystemResourceUri, ":.+") # HTML URL Encoding for date
+
+                    if showTimeStamp 
+                        kubesystemResourceUri += "&timestamps=true"
+                    end
+                    @@ContainerLogs = getKubeResourceInfo(kubesystemResourceUri).body
+                rescue => error
+                    @Log.warn("Pod logs request failed: #{error}")    
+                end
+                return @@ContainerLogs  
+            end                    
     end    
 end   

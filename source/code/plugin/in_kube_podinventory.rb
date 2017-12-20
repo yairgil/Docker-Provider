@@ -8,6 +8,7 @@ module Fluent
     def initialize
       super
       require 'yaml'
+      require 'json'
       require_relative 'KubernetesApiClient'
       require_relative 'oms_common'
       require_relative 'omslog'
@@ -44,29 +45,33 @@ module Fluent
     def enumerate(podList = nil)
       time = Time.now.to_f
       if KubernetesApiClient.isNodeMaster
+        $log.info "Kube pod inventory start"
         if podList.nil?
-          podInventory = KubernetesApiClient.getKubeResourceInfo('pods')
+	        podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo('pods').body)
         else
           podInventory = podList
-        end    
-        podInventory['items'].each do |items|
-          record = {}
-          begin 
-            record['Name'] = items['metadata']['name']
-            record['PodUid'] = items['metadata']['uid']
-            record['PodLabel'] = items['metadata']['labels']
-            record['Namespace'] = items['metadata']['namespace']
-            record['PodCreationTimeStamp'] = items['metadata']['creationTimestamp']
-            record['PodStatus'] = items['status']['phase']
-            record['PodIp'] =items['status']['podIP']
-            record['Computer'] = items['spec']['nodeName']
-            record['ClusterName'] = KubernetesApiClient.getClusterName
-            router.emit(@tag, time, record) if record
-          rescue  => errorStr
-            $log.warn line.dump, error: errorStr.to_s
-            $log.debug_backtrace(e.backtrace)
-          end
         end
+        begin
+          if(!podInventory.empty?)    
+            podInventory['items'].each do |items|
+              record = {}             
+              record['Name'] = items['metadata']['name']
+              record['PodUid'] = items['metadata']['uid']
+              record['PodLabel'] = items['metadata']['labels']
+              record['Namespace'] = items['metadata']['namespace']
+              record['PodCreationTimeStamp'] = items['metadata']['creationTimestamp']
+              record['PodStatus'] = items['status']['phase']
+              record['PodIp'] =items['status']['podIP']
+              record['Computer'] = items['spec']['nodeName']
+              record['ClusterName'] = KubernetesApiClient.getClusterName
+              router.emit(@tag, time, record) if record
+            end
+          end
+        rescue  => errorStr
+          $log.warn line.dump, error: errorStr.to_s
+          $log.debug_backtrace(e.backtrace)
+        end 
+        $log.info "Kube pod inventory end with record "   
       else
         record = {}
         record['Name'] = ""
@@ -79,6 +84,7 @@ module Fluent
         record['Computer'] = ""
         record['ClusterName'] = ""
         router.emit(@tag, time, record)  
+        $log.info "Kube pod inventory end with empty"
       end  
     end
 
