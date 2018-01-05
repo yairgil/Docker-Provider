@@ -29,7 +29,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/in_kube_events.rb;			    source/code/plugin/in_kube_events.rb;				644; root; root
 /opt/microsoft/omsagent/plugin/KubernetesApiClient.rb;			source/code/plugin/KubernetesApiClient.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_custom_sudo_tail.rb;			source/code/plugin/in_custom_sudo_tail.rb;			644; root; root
-/opt/microsoft/docker-cimprov/tailfilereader.rb;			    source/code/plugin/tailfilereader.rb;			    644; omsagent; root
+/opt/microsoft/docker-cimprov/customtailfilereader.rb;			source/code/plugin/customtailfilereader.rb;			644; omsagent; root
 
 /etc/opt/microsoft/docker-cimprov/container.conf;			    installer/conf/container.conf;                      644; root; root
 

@@ -4,9 +4,9 @@ require 'logger'
 require_relative 'omslog'
 require 'fluent/filter'
 
-module Tailscript
+module CustomTailscript
 
-  class NewTail  
+  class CustomNewTail  
     def initialize(paths)
       @paths = paths
       @tails = {}
@@ -382,8 +382,7 @@ if __FILE__ == $0
       $options[:read_from_head] = h 
     end
   end.parse!
-
-  a = Tailscript::NewTail.new(ARGV)
+  a = CustomTailscript::CustomNewTail.new(ARGV)
   a.start
   a.shutdown
 end

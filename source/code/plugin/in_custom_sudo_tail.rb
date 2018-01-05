@@ -33,7 +33,7 @@ module Fluent
 
     BASE_DIR = File.dirname(File.expand_path('..', __FILE__))
     RUBY_DIR = BASE_DIR + '/ruby/bin/ruby '
-    TAILSCRIPT = BASE_DIR + '/plugin/tailfilereader.rb '
+    TAILSCRIPT = BASE_DIR + '/plugin/customtailfilereader.rb '
 
     def configure(conf)
       super
