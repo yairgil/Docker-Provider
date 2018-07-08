@@ -331,14 +331,27 @@ void Container_ContainerStatistics_Class_Provider::Unload(Context& context)
 
 void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& context, const String& nameSpace, const PropertySet& propertySet, bool keysOnly, const MI_Filter* filter)
 {
-    vector<Container_ContainerStatistics_Class> queryResult = StatsQuery::QueryAll();
-
-    for (unsigned i = 0; i < queryResult.size(); i++)
+    try 
     {
-        context.Post(queryResult[i]);
-    }
+        vector<Container_ContainerStatistics_Class> queryResult = StatsQuery::QueryAll();
 
-    context.Post(MI_RESULT_OK);
+        for (unsigned i = 0; i < queryResult.size(); i++)
+        {
+            context.Post(queryResult[i]);
+        }
+
+        context.Post(MI_RESULT_OK);
+    }
+     catch (std::exception &e)
+    {
+        syslog(LOG_ERR, "Container_ContainerStatistics %s", e.what());
+        context.Post(MI_RESULT_FAILED);
+    }
+    catch (...)
+    {
+        syslog(LOG_ERR, "Container_ContainerStatistics Unknown exception");
+        context.Post(MI_RESULT_FAILED);
+    }
 }
 
 void Container_ContainerStatistics_Class_Provider::GetInstance(Context& context, const String& nameSpace, const Container_ContainerStatistics_Class& instanceName, const PropertySet& propertySet)
