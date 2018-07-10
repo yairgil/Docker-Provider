@@ -427,6 +427,11 @@ public:
 		}
 
 		closelog();
+		ofstream myfile;
+		myfile.open("/var/opt/microsoft/omsagent/log/inventorylogs.txt", std::ios_base::app);
+		string mylog = "Returning results";
+		myfile << mylog.c_str() << endl;
+		myfile.close();
 		return result;
 	}
 };
@@ -458,6 +463,11 @@ void Container_ContainerInventory_Class_Provider::EnumerateInstances(Context& co
 		for (unsigned i = 0; i < queryResult.size(); i++)
 		{
 			context.Post(queryResult[i]);
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/inventorylogs.txt", std::ios_base::app);
+			string mylog = "Context post successful";
+			myfile << mylog.c_str() << endl;
+			myfile.close();
 		}
 		context.Post(MI_RESULT_OK);
 	}
