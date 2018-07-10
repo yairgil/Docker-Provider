@@ -278,7 +278,8 @@ public:
                     }
                     else
                     {
-						string mylog = "Attempt in QueryAll to get name of container " + id + " failed";
+						string myid = id;
+						string mylog = "Attempt in QueryAll to get name of container " + myid + " failed";
 						ofstream myfile;
 						myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
 						myfile << mylog.c_str() << endl;
@@ -370,7 +371,8 @@ void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& c
     }
      catch (std::exception &e)
     {
-		 string mylog = "Container_ContainerStatistics " + e.what();
+		 string myexception = e.what();
+		 string mylog = "Container_ContainerStatistics: " + myexception;
 		 ofstream myfile;
 		 myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
 		 myfile << mylog.c_str() << endl;
