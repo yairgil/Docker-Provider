@@ -9,7 +9,8 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <vector>
-
+#include <iostream>
+#include <fstream>
 #include "../cjson/cJSON.h"
 #include "../dockerapi/DockerRemoteApi.h"
 #include "../dockerapi/DockerRestHelper.h"
@@ -103,6 +104,11 @@ private:
             case 0:
             {
                 // Do not crash the program
+				string mylog = "Container image name (" + properties + ") is improperly formed and could not be parsed in SetRepositoryImageTag";
+				ofstream myfile;
+				myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+				myfile << mylog.c_str() << endl;
+				myfile.close();
                 syslog(LOG_WARNING, "Container image name (%s) is improperly formed and could not be parsed in SetRepositoryImageTag", properties.c_str());
 
                 instance.Image_value("");
@@ -162,6 +168,12 @@ private:
         }
         else
         {
+			string myid = cJSON_GetObjectItem(entry, "Id")->valuestring;
+			string mylog = "Attempt in ObtainContainerState to get container " + myid + " state information returned null";
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+			myfile << mylog.c_str() << endl;
+			myfile.close();
             syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
         }
     }
@@ -201,11 +213,22 @@ private:
                     }
                     else
                     {
+						string myid = cJSON_GetObjectItem(entry, "Id")->valuestring;
+						string mylog = "API call in AggregateContainerStatus to inspect container " + myid + "  returned null";
+						ofstream myfile;
+						myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+						myfile << mylog.c_str() << endl;
+						myfile.close();
                         syslog(LOG_WARNING, "API call in AggregateContainerStatus to inspect container %s returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
                     }
                 }
                 else
                 {
+					string mylog = "Attempt in AggregateContainerStatus to get element " + i + " of container list returned null";
+					ofstream myfile;
+					myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+					myfile << mylog.c_str() << endl;
+					myfile.close();
                     syslog(LOG_WARNING, "Attempt in AggregateContainerStatus to get element %d of container list returned null", i);
                 }
             }
@@ -215,6 +238,11 @@ private:
         }
         else
         {
+			string mylog = "API call in AggregateContainerStatus to list containers returned null";
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+			myfile << mylog.c_str() << endl;
+			myfile.close();
             syslog(LOG_WARNING, "API call in AggregateContainerStatus to list containers returned null");
         }
     }
@@ -287,6 +315,11 @@ public:
                 }
                 else
                 {
+					string mylog = "Attempt in QueryAll to get element "+ i +" of image list returned null";
+					ofstream myfile;
+					myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+					myfile << mylog.c_str() << endl;
+					myfile.close();
                     syslog(LOG_WARNING, "Attempt in QueryAll to get element %d of image list returned null", i);
                 }
             }
@@ -323,6 +356,11 @@ public:
         }
         else
         {
+			string mylog = "API call in QueryAll to list images returned null";
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+			myfile << mylog.c_str() << endl;
+			myfile.close();
             syslog(LOG_WARNING, "API call in QueryAll to list images returned null");
         }
 
@@ -364,11 +402,22 @@ void Container_ImageInventory_Class_Provider::EnumerateInstances(Context& contex
     }
     catch (std::exception &e)
     {
+		string myexception = e.what();
+		string mylog = "Container_ContainerImageInventory " + myexception;
+		ofstream myfile;
+		myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+		myfile << mylog.c_str() << endl;
+		myfile.close();
         syslog(LOG_ERR, "Container_ContainerImageInventory %s", e.what());
         context.Post(MI_RESULT_FAILED);
     }
     catch (...)
     {
+		string mylog = "Container_ContainerImageInventory Unknown exception";
+		ofstream myfile;
+		myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
+		myfile << mylog.c_str() << endl;
+		myfile.close();
         syslog(LOG_ERR, "Container_ContainerImageInventory Unknown exception");
         context.Post(MI_RESULT_FAILED);
     }

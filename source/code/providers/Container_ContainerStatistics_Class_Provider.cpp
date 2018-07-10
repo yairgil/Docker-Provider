@@ -9,7 +9,8 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <vector>
-
+#include <iostream>
+#include <fstream>
 #include "../dockerapi/DockerRemoteApi.h"
 #include "../dockerapi/DockerRestHelper.h"
 
@@ -64,6 +65,11 @@ private:
         }
         else
         {
+			string mylog = "Null stats JSON was passed to TrySetContainerNetworkData";
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+			myfile << mylog.c_str() << endl;
+			myfile.close();
             syslog(LOG_WARNING, "Null stats JSON was passed to TrySetContainerNetworkData");
         }
 
@@ -86,6 +92,11 @@ private:
         }
         else
         {
+			string mylog = "Null stats JSON was passed to TrySetContainerMemoryData";
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+			myfile << mylog.c_str() << endl;
+			myfile.close();
             syslog(LOG_WARNING, "Null stats JSON was passed to TrySetContainerMemoryData");
         }
     }
@@ -140,6 +151,11 @@ private:
         }
         else
         {
+			string mylog = "Null stats JSON was passed to TrySetContainerDiskData";
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+			myfile << mylog.c_str() << endl;
+			myfile.close();
             syslog(LOG_WARNING, "Null stats JSON was passed to TrySetContainerDiskData");
         }
     }
@@ -173,6 +189,11 @@ private:
         }
         else
         {
+			string mylog = "Null stats JSON was passed to PreliminarySetContainerCpuData";
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+			myfile << mylog.c_str() << endl;
+			myfile.close();
             syslog(LOG_WARNING, "Null stats JSON was passed to PreliminarySetContainerCpuData");
         }
 
@@ -257,6 +278,11 @@ public:
                     }
                     else
                     {
+						string mylog = "Attempt in QueryAll to get name of container " + id + " failed";
+						ofstream myfile;
+						myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+						myfile << mylog.c_str() << endl;
+						myfile.close();
                         syslog(LOG_WARNING, "Attempt in QueryAll to get name of container %s failed", id);
                     }
 
@@ -344,11 +370,21 @@ void Container_ContainerStatistics_Class_Provider::EnumerateInstances(Context& c
     }
      catch (std::exception &e)
     {
+		 string mylog = "Container_ContainerStatistics " + e.what();
+		 ofstream myfile;
+		 myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+		 myfile << mylog.c_str() << endl;
+		 myfile.close();
         syslog(LOG_ERR, "Container_ContainerStatistics %s", e.what());
         context.Post(MI_RESULT_FAILED);
     }
     catch (...)
     {
+		string mylog = "Container_ContainerStatistics Unknown exception";
+		ofstream myfile;
+		myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+		myfile << mylog.c_str() << endl;
+		myfile.close();
         syslog(LOG_ERR, "Container_ContainerStatistics Unknown exception");
         context.Post(MI_RESULT_FAILED);
     }
