@@ -39,29 +39,47 @@ public:
             cJSON* root = cJSON_CreateObject();
 
             // Add all fields to JSON
-            cJSON_AddStringToObject(root, "ElementName", object.ElementName_value().Str());
-            cJSON_AddStringToObject(root, "CreatedTime", object.CreatedTime_value().Str());
-            cJSON_AddStringToObject(root, "State", object.State_value().Str());
-            cJSON_AddNumberToObject(root, "ExitCode", object.ExitCode_value());
-            cJSON_AddStringToObject(root, "StartedTime", object.StartedTime_value().Str());
-            cJSON_AddStringToObject(root, "FinishedTime", object.FinishedTime_value().Str());
-            cJSON_AddStringToObject(root, "ImageId", object.ImageId_value().Str());
-            cJSON_AddStringToObject(root, "Image", object.Image_value().Str());
-            cJSON_AddStringToObject(root, "Repository", object.Repository_value().Str());
-            cJSON_AddStringToObject(root, "ImageTag", object.ImageTag_value().Str());
-            cJSON_AddStringToObject(root, "ComposeGroup", object.ComposeGroup_value().Str());
-            cJSON_AddStringToObject(root, "ContainerHostname", object.ContainerHostname_value().Str());
-            cJSON_AddStringToObject(root, "Computer", object.Computer_value().Str());
-            cJSON_AddStringToObject(root, "Command", object.Command_value().Str());
-            cJSON_AddStringToObject(root, "EnvironmentVar", object.EnvironmentVar_value().Str());
-            cJSON_AddStringToObject(root, "Ports", object.Ports_value().Str());
-            cJSON_AddStringToObject(root, "Links", object.Links_value().Str());
+			try
+			{
+				cJSON_AddStringToObject(root, "ElementName", object.ElementName_value().Str());
+				cJSON_AddStringToObject(root, "CreatedTime", object.CreatedTime_value().Str());
+				cJSON_AddStringToObject(root, "State", object.State_value().Str());
+				cJSON_AddNumberToObject(root, "ExitCode", object.ExitCode_value());
+				cJSON_AddStringToObject(root, "StartedTime", object.StartedTime_value().Str());
+				cJSON_AddStringToObject(root, "FinishedTime", object.FinishedTime_value().Str());
+				cJSON_AddStringToObject(root, "ImageId", object.ImageId_value().Str());
+				cJSON_AddStringToObject(root, "Image", object.Image_value().Str());
+				cJSON_AddStringToObject(root, "Repository", object.Repository_value().Str());
+				cJSON_AddStringToObject(root, "ImageTag", object.ImageTag_value().Str());
+				cJSON_AddStringToObject(root, "ComposeGroup", object.ComposeGroup_value().Str());
+				cJSON_AddStringToObject(root, "ContainerHostname", object.ContainerHostname_value().Str());
+				cJSON_AddStringToObject(root, "Computer", object.Computer_value().Str());
+				cJSON_AddStringToObject(root, "Command", object.Command_value().Str());
+				cJSON_AddStringToObject(root, "EnvironmentVar", object.EnvironmentVar_value().Str());
+				cJSON_AddStringToObject(root, "Ports", object.Ports_value().Str());
+				cJSON_AddStringToObject(root, "Links", object.Links_value().Str());
 
-            char* containerInventoryStr = cJSON_PrintUnformatted(root);
-            fprintf(target, "%s", containerInventoryStr);
-            fclose(target);
-            cJSON_Delete(root);
-            if(containerInventoryStr) free(containerInventoryStr);
+				char* containerInventoryStr = cJSON_PrintUnformatted(root);
+				fprintf(target, "%s", containerInventoryStr);
+				fclose(target);
+				cJSON_Delete(root);
+				if (containerInventoryStr) free(containerInventoryStr);
+				string mylog = "Successfully serialized object for container: " + object.ElementName_value().Str();
+				ofstream myfile;
+				myfile.open("/var/opt/microsoft/omsagent/log/inventoryserializationlogs.txt", std::ios_base::app);
+				myfile << mylog.c_str() << endl;
+				myfile.close();
+			}
+
+			catch (std::exception &e) {
+				string myexception = e.what();
+				string mylog = "Serialization exception for container: " + object.ElementName_value().Str();
+				ofstream myfile;
+				myfile.open("/var/opt/microsoft/omsagent/log/inventoryserializationfailurelogs.txt", std::ios_base::app);
+				myfile << mylog.c_str() << endl;
+				myfile << myexception.c_str() << endl;
+				myfile.close();
+			}
         }
         else
         {
