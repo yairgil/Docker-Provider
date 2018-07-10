@@ -177,6 +177,8 @@ public:
 			{
 				syslog(LOG_ERR, "Failed to deserialize %s - file could not be opened: %s", id.c_str(), strerror(errno));
 			}
+			closelog();
+			return instance;
 		}
 		catch (std::exception &e) {
 			string myexception = e.what();
@@ -187,8 +189,6 @@ public:
 			myfile << myexception.c_str() << endl;
 			myfile.close();
 		}
-        closelog();
-        return instance;
     }
 };
 
