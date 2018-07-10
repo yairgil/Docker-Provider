@@ -224,7 +224,7 @@ private:
                 }
                 else
                 {
-					string myid = i;
+					string myid = to_string(i);
 					string mylog = "Attempt in AggregateContainerStatus to get element " + myid + " of container list returned null";
 					ofstream myfile;
 					myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
@@ -316,7 +316,7 @@ public:
                 }
                 else
                 {
-					string myid = i;
+					string myid = to_string(i);
 					string mylog = "Attempt in QueryAll to get element "+ myid +" of image list returned null";
 					ofstream myfile;
 					myfile.open("/var/opt/microsoft/omsagent/log/imageinventorylogs.txt", std::ios_base::app);
