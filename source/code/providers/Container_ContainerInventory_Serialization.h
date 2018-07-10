@@ -103,80 +103,90 @@ public:
         openlog("ContainerInventorySerializer", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
         // New inventory entry
-        Container_ContainerInventory_Class instance;
+		try {
+			Container_ContainerInventory_Class instance;
 
-        instance.InstanceID_value(id.c_str());
+			instance.InstanceID_value(id.c_str());
 
-        char filename[128];
-        sprintf(filename, "%s%s", DIRECTORY, id.c_str());
+			char filename[128];
+			sprintf(filename, "%s%s", DIRECTORY, id.c_str());
 
-        FILE* target = fopen(filename, "r");
+			FILE* target = fopen(filename, "r");
 
-        if (target)
-        {
-	        //Go to EOF
-            fseek(target, 0, SEEK_END);
-            //Get file size
-            long fileSize = ftell(target);
-            //Rewind to beginning
-            rewind(target);
-            //Get a buffer for the size of the file being read
-            char* buffer = (char*) malloc(fileSize + 1);
+			if (target)
+			{
+				//Go to EOF
+				fseek(target, 0, SEEK_END);
+				//Get file size
+				long fileSize = ftell(target);
+				//Rewind to beginning
+				rewind(target);
+				//Get a buffer for the size of the file being read
+				char* buffer = (char*)malloc(fileSize + 1);
 
-            if (fgets(buffer, fileSize+1, target))
-            {
-                cJSON* root = cJSON_Parse(buffer);
-		        if(root != NULL)
-                {
-                    // Get all fields from JSON
-                    instance.ElementName_value(cJSON_GetObjectItem(root, "ElementName")->valuestring);
-                    instance.CreatedTime_value(cJSON_GetObjectItem(root, "CreatedTime")->valuestring);
-                    instance.State_value(cJSON_GetObjectItem(root, "State")->valuestring);
-                    instance.ExitCode_value(cJSON_GetObjectItem(root, "ExitCode")->valueint);
-                    instance.StartedTime_value(cJSON_GetObjectItem(root, "StartedTime")->valuestring);
-                    instance.FinishedTime_value(cJSON_GetObjectItem(root, "FinishedTime")->valuestring);
-                    instance.ImageId_value(cJSON_GetObjectItem(root, "ImageId")->valuestring);
-                    instance.Image_value(cJSON_GetObjectItem(root, "Image")->valuestring);
-                    instance.Repository_value(cJSON_GetObjectItem(root, "Repository")->valuestring);
-                    instance.ImageTag_value(cJSON_GetObjectItem(root, "ImageTag")->valuestring);
-                    instance.ComposeGroup_value(cJSON_GetObjectItem(root, "ComposeGroup")->valuestring);
-                    instance.ContainerHostname_value(cJSON_GetObjectItem(root, "ContainerHostname")->valuestring);
-                    instance.Computer_value(cJSON_GetObjectItem(root, "Computer")->valuestring);
-                    instance.Command_value(cJSON_GetObjectItem(root, "Command")->valuestring);
-                    instance.EnvironmentVar_value(cJSON_GetObjectItem(root, "EnvironmentVar")->valuestring);
-                    instance.Ports_value(cJSON_GetObjectItem(root, "Ports")->valuestring);
-                    instance.Links_value(cJSON_GetObjectItem(root, "Links")->valuestring);
-    
-                    cJSON_Delete(root);
-                }
-                else
-                {
-                    syslog(LOG_ERR, "Could not parse deleted container info %s", cJSON_GetErrorPtr());
-                }
-            }
-            else
-            {
-                syslog(LOG_ERR, "Failed to deserialize %s - file could not be read: %s", id.c_str(), strerror(errno));
-            }
+				if (fgets(buffer, fileSize + 1, target))
+				{
+					cJSON* root = cJSON_Parse(buffer);
+					if (root != NULL)
+					{
+						// Get all fields from JSON
+						instance.ElementName_value(cJSON_GetObjectItem(root, "ElementName")->valuestring);
+						instance.CreatedTime_value(cJSON_GetObjectItem(root, "CreatedTime")->valuestring);
+						instance.State_value(cJSON_GetObjectItem(root, "State")->valuestring);
+						instance.ExitCode_value(cJSON_GetObjectItem(root, "ExitCode")->valueint);
+						instance.StartedTime_value(cJSON_GetObjectItem(root, "StartedTime")->valuestring);
+						instance.FinishedTime_value(cJSON_GetObjectItem(root, "FinishedTime")->valuestring);
+						instance.ImageId_value(cJSON_GetObjectItem(root, "ImageId")->valuestring);
+						instance.Image_value(cJSON_GetObjectItem(root, "Image")->valuestring);
+						instance.Repository_value(cJSON_GetObjectItem(root, "Repository")->valuestring);
+						instance.ImageTag_value(cJSON_GetObjectItem(root, "ImageTag")->valuestring);
+						instance.ComposeGroup_value(cJSON_GetObjectItem(root, "ComposeGroup")->valuestring);
+						instance.ContainerHostname_value(cJSON_GetObjectItem(root, "ContainerHostname")->valuestring);
+						instance.Computer_value(cJSON_GetObjectItem(root, "Computer")->valuestring);
+						instance.Command_value(cJSON_GetObjectItem(root, "Command")->valuestring);
+						instance.EnvironmentVar_value(cJSON_GetObjectItem(root, "EnvironmentVar")->valuestring);
+						instance.Ports_value(cJSON_GetObjectItem(root, "Ports")->valuestring);
+						instance.Links_value(cJSON_GetObjectItem(root, "Links")->valuestring);
 
-            fclose(target);
+						cJSON_Delete(root);
+					}
+					else
+					{
+						syslog(LOG_ERR, "Could not parse deleted container info %s", cJSON_GetErrorPtr());
+					}
+				}
+				else
+				{
+					syslog(LOG_ERR, "Failed to deserialize %s - file could not be read: %s", id.c_str(), strerror(errno));
+				}
 
-	        if(buffer) 
-            {
-                free(buffer);
-                buffer = NULL;
-            }
+				fclose(target);
 
-            if (remove(filename))
-            {
-                syslog(LOG_ERR, "Failed to remove %s after deserialization: %s", id.c_str(), strerror(errno));
-            }
-        }
-        else
-        {
-            syslog(LOG_ERR, "Failed to deserialize %s - file could not be opened: %s", id.c_str(), strerror(errno));
-        }
+				if (buffer)
+				{
+					free(buffer);
+					buffer = NULL;
+				}
 
+				if (remove(filename))
+				{
+					syslog(LOG_ERR, "Failed to remove %s after deserialization: %s", id.c_str(), strerror(errno));
+				}
+			}
+			else
+			{
+				syslog(LOG_ERR, "Failed to deserialize %s - file could not be opened: %s", id.c_str(), strerror(errno));
+			}
+		}
+		catch (std::exception &e) {
+			string myexception = e.what();
+			string mylog = "DeSerialization exception for container: " + id;
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/inventoryserializationfailurelogs.txt", std::ios_base::app);
+			myfile << mylog.c_str() << endl;
+			myfile << myexception.c_str() << endl;
+			myfile.close();
+		}
         closelog();
         return instance;
     }
