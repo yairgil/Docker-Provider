@@ -411,19 +411,13 @@ public:
 		// Find IDs of deleted containers
 		ContainerInventoryValidation cv;
 		set<string> deleted = cv.GetDeletedContainers(containerIds);
-		ofstream myfile;
-		myfile.open("/var/opt/microsoft/omsagent/log/inventorylogs.txt", std::ios_base::app);
-		string mylog = "";
-		if (deleted.count() == 0) {
-			mylog = "Deleted containers count is 0";
-		}
-		else {
-			mylog = "Deleted containers count is non zero"
-		}
-		myfile << mylog.c_str() << endl;
-		myfile.close();
 		for (set<string>::iterator i = deleted.begin(); i != deleted.end(); ++i)
 		{
+			ofstream myfile;
+			myfile.open("/var/opt/microsoft/omsagent/log/inventorylogs.txt", std::ios_base::app);
+			string mylog = "In deleted containers iterator";
+			myfile << mylog.c_str() << endl;
+			myfile.close();
 			// Putting string(*i) directly in the function call will cause compilation error
 			string id = string(*i);
 			Container_ContainerInventory_Class instance = ContainerInventorySerializer::DeserializeObject(id);
