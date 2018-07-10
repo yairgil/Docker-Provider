@@ -9,6 +9,8 @@
 #include <string.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <iostream>
+#include <fstream>
 
 #include "../cjson/cJSON.h"
 
