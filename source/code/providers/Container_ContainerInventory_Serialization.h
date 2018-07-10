@@ -64,7 +64,8 @@ public:
 				fclose(target);
 				cJSON_Delete(root);
 				if (containerInventoryStr) free(containerInventoryStr);
-				string mylog = "Successfully serialized object for container: " + object.ElementName_value();
+				string mycontainer = object.ElementName_value().Str();
+				string mylog = "Successfully serialized object for container: " + mycontainer;
 				ofstream myfile;
 				myfile.open("/var/opt/microsoft/omsagent/log/inventoryserializationlogs.txt", std::ios_base::app);
 				myfile << mylog.c_str() << endl;
@@ -73,7 +74,8 @@ public:
 
 			catch (std::exception &e) {
 				string myexception = e.what();
-				string mylog = "Serialization exception for container: " + object.ElementName_value();
+				string mycontainer = object.ElementName_value().Str();
+				string mylog = "Serialization exception for container: " + mycontainer;
 				ofstream myfile;
 				myfile.open("/var/opt/microsoft/omsagent/log/inventoryserializationfailurelogs.txt", std::ios_base::app);
 				myfile << mylog.c_str() << endl;
