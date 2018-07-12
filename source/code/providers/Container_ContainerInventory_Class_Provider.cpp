@@ -462,10 +462,52 @@ void Container_ContainerInventory_Class_Provider::EnumerateInstances(Context& co
 
 		for (unsigned i = 0; i < queryResult.size(); i++)
 		{
-			context.Post(queryResult[i]);
 			ofstream myfile;
 			myfile.open("/var/opt/microsoft/omsagent/log/inventorylogs.txt", std::ios_base::app);
-			string mylog = "Context post successful";
+			string mylog = "Posting context for container with following values:";
+			myfile << mylog.c_str() << endl;
+			string instanceid = queryResult[i].InstanceID_value().Str();
+			myfile << instanceid.c_str() << endl;
+			string caption = queryResult[i].Caption_value().Str();
+			myfile << caption.c_str() << endl;
+			string description = queryResult[i].Description_value().Str();
+			myfile << description.c_str() << endl;
+			string ElementName = queryResult[i].ElementName_value().Str();
+			myfile << ElementName.c_str() << endl;
+			string CreatedTime = queryResult[i].CreatedTime_value().Str();
+			myfile << CreatedTime.c_str() << endl;
+			string State = queryResult[i].State_value().Str();
+			myfile << State.c_str() << endl;
+			string StartedTime = queryResult[i].StartedTime_value().Str();
+			myfile << StartedTime.c_str() << endl;
+			string FinishedTime = queryResult[i].FinishedTime_value().Str();
+			myfile << FinishedTime.c_str() << endl;
+			string ImageId = queryResult[i].ImageId_value().Str();
+			myfile << ImageId.c_str() << endl;
+			string Image = queryResult[i].Image_value().Str();
+			myfile << Image.c_str() << endl;
+			string Repository = queryResult[i].Repository_value().Str();
+			myfile << Repository.c_str() << endl;
+			string ImageTag = queryResult[i].ImageTag_value().Str();
+			myfile << ImageTag.c_str() << endl;
+			string ComposeGroup = queryResult[i].ComposeGroup_value().Str();
+			myfile << ComposeGroup.c_str() << endl;
+			string ContainerHostname = queryResult[i].ContainerHostname_value().Str();
+			myfile << ContainerHostname.c_str() << endl;
+			string Computer = queryResult[i].Computer_value().Str();
+			myfile << Computer.c_str() << endl;
+			string Command = queryResult[i].Command_value().Str();
+			myfile << Command.c_str() << endl;
+			string EnvironmentVar = queryResult[i].EnvironmentVar_value().Str();
+			myfile << EnvironmentVar.c_str() << endl;
+			string Ports = queryResult[i].Ports_value().Str();
+			myfile << Ports.c_str() << endl;
+			string Links = queryResult[i].Links_value().Str();
+			myfile << Links.c_str() << endl;
+
+			context.Post(queryResult[i]);
+			
+			mylog = "Context post successful for container with instance id: " + instanceid;
 			myfile << mylog.c_str() << endl;
 			myfile.close();
 		}
