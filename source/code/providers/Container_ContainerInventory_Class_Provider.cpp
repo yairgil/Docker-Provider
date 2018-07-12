@@ -473,7 +473,7 @@ void Container_ContainerInventory_Class_Provider::EnumerateInstances(Context& co
 			mylog = "Caption: " + caption;
 			myfile << mylog.c_str() << endl;
 			string description = queryResult[i].Description_value().Str();
-			mylog = "Description: " + description
+			mylog = "Description: " + description;
 			myfile << mylog.c_str() << endl;
 			string ElementName = queryResult[i].ElementName_value().Str();
 			mylog = "Element name: " + ElementName;
