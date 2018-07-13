@@ -223,7 +223,6 @@ private:
 			}
 			catch (std::exception &e) {
 				string myexception = e.what();
-				string mycontainer = object.ElementName_value().Str();
 				string mylog = "Exception while truncating environment variable ";
 				ofstream myfile;
 				myfile.open("/var/opt/microsoft/omsagent/log/inventoryenvtruncationfailurelogs.txt", std::ios_base::app);
