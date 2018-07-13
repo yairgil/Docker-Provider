@@ -182,7 +182,7 @@ private:
 						myfile.open("/var/opt/microsoft/omsagent/log/envtrimmedinventorylogs.txt", std::ios_base::app);
 						myfile << mylog.c_str() << endl;
 						myfile.close();
-						env = const_cast<char *>(correctedstring.c_str());
+						//env = const_cast<char *>(correctedstring.c_str());
 						//std::cout << "correcting it: " << correctedstring << endl;
 					}
 					else if (stringToTruncate.compare(stringToTruncate.size() - quoteandbracestring.size(), quoteandbracestring.size(), quoteandbracestring) == 0) {
@@ -194,7 +194,8 @@ private:
 						myfile.open("/var/opt/microsoft/omsagent/log/envtrimmedinventorylogs.txt", std::ios_base::app);
 						myfile << mylog.c_str() << endl;
 						myfile.close();
-						env = const_cast<char *>(correctedstring.c_str());
+						correctedstring = stringToTruncate;
+						//env = const_cast<char *>(correctedstring.c_str());
 					}
 					else if (stringToTruncate.compare(stringToTruncate.size() - quoteandcommastring.size(), quoteandcommastring.size(), quoteandcommastring) == 0) {
 						//std::cout << "stringtotruncate ends with : " << quoteandcommastring << endl;
@@ -205,7 +206,7 @@ private:
 						myfile.open("/var/opt/microsoft/omsagent/log/envtrimmedinventorylogs.txt", std::ios_base::app);
 						myfile << mylog.c_str() << endl;
 						myfile.close();
-						env = const_cast<char *>(correctedstring.c_str());
+						//env = const_cast<char *>(correctedstring.c_str());
 						//std::cout << "correcting it: " << correctedstring;
 					}
 					else {
@@ -216,9 +217,13 @@ private:
 						myfile.open("/var/opt/microsoft/omsagent/log/envtrimmedinventorylogs.txt", std::ios_base::app);
 						myfile << mylog.c_str() << endl;
 						myfile.close();
-						env = const_cast<char *>(correctedstring.c_str());
+						//env = const_cast<char *>(correctedstring.c_str());
 						//std::cout << "corrected string: " << correctedstring << endl;
 					}
+					instance.EnvironmentVar_value(correctedstring);
+				}
+				else {
+					instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
 				}
 			}
 			catch (std::exception &e) {
@@ -230,7 +235,7 @@ private:
 				myfile << myexception.c_str() << endl;
 				myfile.close();
 			}
-			instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
+			
 
 			// Command
 			char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
