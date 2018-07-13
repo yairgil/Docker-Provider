@@ -164,8 +164,74 @@ private:
 
 			// Environment variables
 			char* env = cJSON_Print(cJSON_GetObjectItem(config, "Env"));
-			//instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
-			instance.EnvironmentVar_value("");
+			try {
+				int envStringLength = strlen(env);
+				if (envStringLength > 300000)
+				{
+					string stringToTruncate = env;
+					string quotestring = "\"";
+					string quoteandbracestring = "\"]";
+					string quoteandcommastring = "\",";
+					string correctedstring;
+					stringToTruncate.resize(300000);
+					if (stringToTruncate.compare(stringToTruncate.size() - quotestring.size(), quotestring.size(), quotestring) == 0) {
+						//std::cout << "stringtotruncate ends with : " << quotestring << endl;
+						correctedstring = stringToTruncate + "]";
+						ofstream myfile;
+						string mylog = "correcting env variable1";
+						myfile.open("/var/opt/microsoft/omsagent/log/envtrimmedinventorylogs.txt", std::ios_base::app);
+						myfile << mylog.c_str() << endl;
+						myfile.close();
+						env = correctedstring;
+						//std::cout << "correcting it: " << correctedstring << endl;
+					}
+					else if (stringToTruncate.compare(stringToTruncate.size() - quoteandbracestring.size(), quoteandbracestring.size(), quoteandbracestring) == 0) {
+						//std::cout << "stringtotruncate ends with : " << quoteandbracestring << endl;
+						/*std::cout << "do nothing" << endl;
+						std::cout << "string is: " << stringToTruncate << endl;*/
+						ofstream myfile;
+						string mylog = "correcting env variable2";
+						myfile.open("/var/opt/microsoft/omsagent/log/envtrimmedinventorylogs.txt", std::ios_base::app);
+						myfile << mylog.c_str() << endl;
+						myfile.close();
+						env = correctedstring;
+					}
+					else if (stringToTruncate.compare(stringToTruncate.size() - quoteandcommastring.size(), quoteandcommastring.size(), quoteandcommastring) == 0) {
+						//std::cout << "stringtotruncate ends with : " << quoteandcommastring << endl;
+						correctedstring = stringToTruncate.substr(0, stringToTruncate.length() - 1);
+						correctedstring = correctedstring + "]";
+						ofstream myfile;
+						string mylog = "correcting env variable3";
+						myfile.open("/var/opt/microsoft/omsagent/log/envtrimmedinventorylogs.txt", std::ios_base::app);
+						myfile << mylog.c_str() << endl;
+						myfile.close();
+						env = correctedstring;
+						//std::cout << "correcting it: " << correctedstring;
+					}
+					else {
+						//std::cout << "stringtotruncate doesnt have quote or brace or comma : " << stringToTruncate << endl;
+						correctedstring = stringToTruncate + "\"]";
+						ofstream myfile;
+						string mylog = "correcting env variable4";
+						myfile.open("/var/opt/microsoft/omsagent/log/envtrimmedinventorylogs.txt", std::ios_base::app);
+						myfile << mylog.c_str() << endl;
+						myfile.close();
+						env = correctedstring;
+						//std::cout << "corrected string: " << correctedstring << endl;
+					}
+				}
+			}
+			catch (std::exception &e) {
+				string myexception = e.what();
+				string mycontainer = object.ElementName_value().Str();
+				string mylog = "Exception while truncating environment variable ";
+				ofstream myfile;
+				myfile.open("/var/opt/microsoft/omsagent/log/inventoryenvtruncationfailurelogs.txt", std::ios_base::app);
+				myfile << mylog.c_str() << endl;
+				myfile << myexception.c_str() << endl;
+				myfile.close();
+			}
+			instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
 
 			// Command
 			char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
