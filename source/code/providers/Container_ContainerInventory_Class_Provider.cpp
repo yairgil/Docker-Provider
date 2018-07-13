@@ -164,7 +164,8 @@ private:
 
 			// Environment variables
 			char* env = cJSON_Print(cJSON_GetObjectItem(config, "Env"));
-			instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
+			//instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
+			instance.EnvironmentVar_value("");
 
 			// Command
 			char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
