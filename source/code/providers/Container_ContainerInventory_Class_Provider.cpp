@@ -173,7 +173,7 @@ private:
 					string quoteandbracestring = "\"]";
 					string quoteandcommastring = "\",";
 					string correctedstring;
-					stringToTruncate.resize(300000);
+					stringToTruncate.resize(200000);
 					if (stringToTruncate.compare(stringToTruncate.size() - quotestring.size(), quotestring.size(), quotestring) == 0) {
 						//std::cout << "stringtotruncate ends with : " << quotestring << endl;
 						correctedstring = stringToTruncate + "]";
