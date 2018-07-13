@@ -220,7 +220,7 @@ private:
 						//env = const_cast<char *>(correctedstring.c_str());
 						//std::cout << "corrected string: " << correctedstring << endl;
 					}
-					instance.EnvironmentVar_value(correctedstring);
+					instance.EnvironmentVar_value(correctedstring.c_str());
 				}
 				else {
 					instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
