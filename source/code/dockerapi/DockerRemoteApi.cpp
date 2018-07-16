@@ -159,50 +159,64 @@ cJSON* parseJson(string& raw_response)
  */
 void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsigned int start, unsigned int end, bool isMultiJson = false, bool ignoreResponse = false)
 {
-    const int bufferSize = 4096;
-    const int timeoutSecond = 5;
-    vector<int> sockfd;
-    end = (end == 0 || end > request.size()) ? request.size() : end;
-    int n = end - start;
-    createConnection(n, sockfd);
+	try {
+		const int bufferSize = 4096;
+		const int timeoutSecond = 5;
+		vector<int> sockfd;
+		end = (end == 0 || end > request.size()) ? request.size() : end;
+		int n = end - start;
+		createConnection(n, sockfd);
 
-    for (int i = 0; i < n; i++)
-    {
-        size_t r = write(sockfd[i], request[start + i].c_str(), request[start + i].length());
+		for (int i = 0; i < n; i++)
+		{
+			size_t r = write(sockfd[i], request[start + i].c_str(), request[start + i].length());
 
-        if (r != request[start + i].length())
-        {
-            throw string("Write to socket in getResponseInBatch failed");
-        }
-    }
+			if (r != request[start + i].length())
+			{
+				throw string("Write to socket in getResponseInBatch failed");
+			}
+		}
 
-    for (int i = 0; !ignoreResponse && i < n; i++)
-    {
-        char readBuf[bufferSize + 1];
-        int read_n = 0;
-        string raw_response;
-        response.push_back(NULL);
+		for (int i = 0; !ignoreResponse && i < n; i++)
+		{
+			char readBuf[bufferSize + 1];
+			int read_n = 0;
+			string raw_response;
+			response.push_back(NULL);
 
-        while ((read_n = readSocket(sockfd[i], readBuf, bufferSize, timeoutSecond)) > 0)
-        {
-            readBuf[read_n] = 0;
-            raw_response.append(readBuf);
-            cJSON* json = isMultiJson ? parseMultiJson(raw_response) : parseJson(raw_response);
+			while ((read_n = readSocket(sockfd[i], readBuf, bufferSize, timeoutSecond)) > 0)
+			{
+				readBuf[read_n] = 0;
+				raw_response.append(readBuf);
+				cJSON* json = isMultiJson ? parseMultiJson(raw_response) : parseJson(raw_response);
 
-            if (json)
-            {
-                response[start + i] = json;
-                break;
-            }
-        }
+				if (json)
+				{
+					response[start + i] = json;
+					break;
+				}
+			}
 
-        close(sockfd[i]);
+			close(sockfd[i]);
 
-        if (!ignoreResponse && raw_response.length() > 0 && response[start + i] == NULL)
-        {
-            throw string("Failed to parse data:`" + raw_response + "` to json" + " \n Request :" + request[start + i]);
-        }
-    }
+			if (!ignoreResponse && raw_response.length() > 0 && response[start + i] == NULL)
+			{
+				throw string("Failed to parse data:`" + raw_response + "` to json" + " \n Request :" + request[start + i]);
+			}
+		}
+	}
+	catch (std::exception &e)
+	{
+		openlog("DockerRemoteApiBatch", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		syslog(LOG_ERR, "DockerRemoteApi-Batch response %s", e.what());
+		closelog();
+	}
+	catch (...)
+	{
+		openlog("DockerRemoteApiBatch", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		syslog(LOG_ERR, "DockerRemoteApi-Batch response -unknown exception");
+		closelog();
+	}
 }
 
 vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson, bool ignoreResponse)
