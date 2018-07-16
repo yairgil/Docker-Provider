@@ -343,7 +343,6 @@ public:
 					ofstream myfile;
 					myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
 					myfile << mylog.c_str() << endl;
-					myfile << myexception.c_str() << endl;
 					myfile.close();
 				}
             }
