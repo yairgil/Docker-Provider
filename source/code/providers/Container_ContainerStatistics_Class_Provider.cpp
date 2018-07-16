@@ -316,17 +316,36 @@ public:
                 vector<string> subRequest(1, DockerRestHelper::restDockerStats(string(result[i].InstanceID_value().Str())));
                 vector<cJSON*> subResponse = getResponse(subRequest);
 
-                // See http://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#get-container-stats-based-on-resource-usage for example output
-                if (!subResponse.empty() && subResponse[0])
-                {
-                    TrySetContainerCpuData(result[i], subResponse[0], previousStatsList[i]);
+				try {
+					// See http://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#get-container-stats-based-on-resource-usage for example output
+					if (!subResponse.empty() && subResponse[0])
+					{
+						TrySetContainerCpuData(result[i], subResponse[0], previousStatsList[i]);
 
-                    // Set container name in 'InstanceName' field of Perf data.
-                    result[i].InstanceID_value(result[i].ElementName_value());
+						// Set container name in 'InstanceName' field of Perf data.
+						result[i].InstanceID_value(result[i].ElementName_value());
 
-                    // Clean up object
-                    cJSON_Delete(subResponse[0]);
-                }
+						// Clean up object
+						cJSON_Delete(subResponse[0]);
+					}
+				}
+				catch (std::exception &e) {
+					string myexception = e.what();
+					string mylog = "Exception while TrySetContainerCpuData: ";
+					ofstream myfile;
+					myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+					myfile << mylog.c_str() << endl;
+					myfile << myexception.c_str() << endl;
+					myfile.close();
+				}
+				catch (...) {
+					string mylog = "Exception while TrySetContainerCpuData : unknown exception ";
+					ofstream myfile;
+					myfile.open("/var/opt/microsoft/omsagent/log/containerstatisticslogs.txt", std::ios_base::app);
+					myfile << mylog.c_str() << endl;
+					myfile << myexception.c_str() << endl;
+					myfile.close();
+				}
             }
 
             // Clean up object
