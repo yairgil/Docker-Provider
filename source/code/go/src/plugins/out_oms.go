@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/fluent/fluent-bit-go/output"
 )
 import (
@@ -19,7 +17,9 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
-	readConfig()
+	Log("Initializing out_oms go plugin for fluentbit")
+	PluginConfiguration = ReadConfig("/etc/opt/microsoft/docker-cimprov/out_oms.conf")
+	CreateHTTPClient()
 	go initMaps()
 	go updateIgnoreContainerIds()
 	return output.FLB_OK
@@ -32,7 +32,6 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	var record map[interface{}]interface{}
 	var records []map[interface{}]interface{}
 
-	start := time.Now()
 	// Create Fluent Bit decoder
 	dec := output.NewDecoder(data, int(length))
 
@@ -47,13 +46,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 		records = append(records, record)
 		count++
 	}
-	PostDataHelper(records)
-
-	elapsed := time.Since(start)
-
-	Log("Successfully flushed %d records in %s", len(records), elapsed)
-
-	return output.FLB_OK
+	return PostDataHelper(records)
 }
 
 //export FLBPluginExit
