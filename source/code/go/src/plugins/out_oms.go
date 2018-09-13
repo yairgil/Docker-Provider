@@ -20,8 +20,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	Log("Initializing out_oms go plugin for fluentbit")
 	PluginConfiguration = ReadConfig("/etc/opt/microsoft/docker-cimprov/out_oms.conf")
 	CreateHTTPClient()
-	go initMaps()
-	go updateIgnoreContainerIds()
+	updateContainersData()
 	return output.FLB_OK
 }
 
@@ -49,7 +48,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	return PostDataHelper(records)
 }
 
-//export FLBPluginExit
+// FLBPluginExit exits the plugin
 func FLBPluginExit() int {
 	return output.FLB_OK
 }
