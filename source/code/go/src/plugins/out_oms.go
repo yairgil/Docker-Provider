@@ -49,7 +49,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	return PostDataHelper(records)
 }
 
-//export FLBPluginExit
+// FLBPluginExit exits the plugin
 func FLBPluginExit() int {
 	return output.FLB_OK
 }

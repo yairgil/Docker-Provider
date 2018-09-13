@@ -26,6 +26,8 @@ const DataType = "CONTAINER_LOG_BLOB"
 // IPName for Container Log
 const IPName = "Containers"
 
+const containerInventoryPath = "/var/opt/microsoft/docker-cimprov/state/ContainerInventory"
+
 var (
 	// PluginConfiguration the plugins configuration
 	PluginConfiguration map[string]string
@@ -44,6 +46,9 @@ var (
 	NameIDMap map[string]string
 	// IgnoreIDSet set of  container Ids of kube-system pods
 	IgnoreIDSet map[string]bool
+
+	// DataUpdateMutex read and write mutex access to the container id set
+	DataUpdateMutex = &sync.Mutex{}
 )
 
 var (
@@ -53,14 +58,6 @@ var (
 	// Log wrapper function
 	Log = FLBLogger.Printf
 )
-
-// Log wrapper to Log with timestamp
-// func Log(format string, v ...interface{}) {
-// 	FLBLogger.SetPrefix(time.Now().Format("2006-01-02 15:04:05") + " : ")
-// 	FLBLogger.Printf(format, v)
-// }
-
-const containerInventoryPath = "/var/opt/microsoft/docker-cimprov/state/ContainerInventory"
 
 // ContainerInventory represents the container info
 type ContainerInventory struct {
@@ -106,16 +103,15 @@ type ContainerLogBlob struct {
 func populateMaps() {
 
 	Log("Updating ImageIDMap and NameIDMap")
-	var mutex = &sync.Mutex{}
+
+	DataUpdateMutex.Lock()
+	ImageIDMap = make(map[string]string)
+	NameIDMap = make(map[string]string)
 	files, err := ioutil.ReadDir(containerInventoryPath)
 
 	if err != nil {
 		Log("error when reading container inventory %s\n", err.Error())
 	}
-
-	mutex.Lock()
-	ImageIDMap = make(map[string]string)
-	NameIDMap = make(map[string]string)
 
 	for _, file := range files {
 		fullPath := fmt.Sprintf("%s/%s", containerInventoryPath, file.Name())
@@ -134,13 +130,13 @@ func populateMaps() {
 		ImageIDMap[file.Name()] = containerInventory.Image
 		NameIDMap[file.Name()] = containerInventory.ElementName
 	}
-	mutex.Unlock()
+	DataUpdateMutex.Unlock()
 }
 
 func createLogger() *log.Logger {
 
 	var logfile *os.File
-	path := "/var/log/fluent-bit-out-oms-runtime.log"
+	path := "/var/opt/microsoft/docker-cimprov/log/fluent-bit-out-oms-runtime.log"
 	if _, err := os.Stat(path); err == nil {
 		fmt.Printf("File Exists. Opening file in append mode...\n")
 		logfile, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
@@ -194,8 +190,7 @@ func updateIgnoreContainerIds() {
 
 func updateKubeSystemContainerIDs() {
 
-	var mutex = &sync.Mutex{}
-	mutex.Lock()
+	DataUpdateMutex.Lock()
 	IgnoreIDSet = make(map[string]bool)
 
 	if strings.Compare(os.Getenv("DISABLE_KUBE_SYSTEM_LOG_COLLECTION"), "true") != 0 {
@@ -221,10 +216,11 @@ func updateKubeSystemContainerIDs() {
 
 	for _, pod := range pods.Items {
 		for _, status := range pod.Status.ContainerStatuses {
-			IgnoreIDSet[status.ContainerID[9:len(status.ContainerID)]] = true
+			lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+			IgnoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
 		}
 	}
-	mutex.Unlock()
+	DataUpdateMutex.Unlock()
 }
 
 // PostDataHelper sends data to the OMS endpoint
@@ -232,12 +228,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	start := time.Now()
 	var dataItems []DataItem
+	DataUpdateMutex.Lock()
+
 	for _, record := range tailPluginRecords {
 
-		//id := toString(record["Id"])
 		containerID := getContainerIDFromFilePath(toString(record["Filepath"]))
 
-		// if Id is in the list of Ids to drop  (Kube-system containers) continue
 		if containsKey(IgnoreIDSet, containerID) {
 			continue
 		}
@@ -258,6 +254,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		mapstructure.Decode(stringMap, &dataItem)
 		dataItems = append(dataItems, dataItem)
 	}
+	DataUpdateMutex.Unlock()
 
 	if len(dataItems) > 0 {
 		logEntry := ContainerLogBlob{
@@ -270,15 +267,17 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := HTTPClient.Do(req)
+		elapsed := time.Since(start)
+
 		if err != nil {
 			Log("Error when sending request %s \n", err.Error())
+			Log("Failed to flush %d records after %s", len(dataItems), elapsed)
 		}
 
 		if resp == nil || resp.StatusCode != 200 {
 			return output.FLB_RETRY
 		}
 
-		elapsed := time.Since(start)
 		Log("Successfully flushed %d records in %s", len(dataItems), elapsed)
 	}
 
@@ -288,26 +287,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 func containsKey(currentMap map[string]bool, key string) bool {
 	_, c := currentMap[key]
 	return c
-}
-
-func readConfig() {
-	workspaceIDFile := "/shared/data/workspaceId"
-	workspaceID, err := ioutil.ReadFile(workspaceIDFile)
-	if err != nil {
-		Log("Error when reading workspaceId file")
-	}
-
-	OMSEndpoint = fmt.Sprintf("https://%s.ods.opinsights.azure.com/OperationalData.svc/PostJsonDataItems", strings.TrimSpace(string(workspaceID)))
-	Log("OMSEndpoint %s \n\n", OMSEndpoint)
-
-	containerHostNameFile := "/var/opt/microsoft/docker-cimprov/state/containerhostname"
-	containerHostName, err := ioutil.ReadFile(containerHostNameFile)
-	if err != nil {
-		Log("Error when reading containerHostName file")
-	}
-
-	Computer = toString(containerHostName)
-	Log("Computer == %s \n\n", Computer)
 }
 
 func toString(s interface{}) string {
