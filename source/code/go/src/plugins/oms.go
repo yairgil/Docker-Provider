@@ -25,7 +25,6 @@ const DataType = "CONTAINER_LOG_BLOB"
 
 // IPName for Container Log
 const IPName = "Containers"
-
 const containerInventoryPath = "/var/opt/microsoft/docker-cimprov/state/ContainerInventory"
 
 var (
@@ -104,9 +103,9 @@ func populateMaps() {
 
 	Log("Updating ImageIDMap and NameIDMap")
 
-	DataUpdateMutex.Lock()
-	ImageIDMap = make(map[string]string)
-	NameIDMap = make(map[string]string)
+	_imageIDMap := make(map[string]string)
+	_nameIDMap := make(map[string]string)
+
 	files, err := ioutil.ReadDir(containerInventoryPath)
 
 	if err != nil {
@@ -127,10 +126,20 @@ func populateMaps() {
 			Log("Unmarshall error when reading file %s %s \n", fullPath, unmarshallErr.Error())
 		}
 
-		ImageIDMap[file.Name()] = containerInventory.Image
-		NameIDMap[file.Name()] = containerInventory.ElementName
+		_imageIDMap[file.Name()] = containerInventory.Image
+		_nameIDMap[file.Name()] = containerInventory.ElementName
 	}
+	Log("Locking to update image and name maps")
+	DataUpdateMutex.Lock()
+	ImageIDMap = _imageIDMap
+	NameIDMap = _nameIDMap
 	DataUpdateMutex.Unlock()
+	Log("Unlocking after updating image and name maps")
+
+	for k, v := range ImageIDMap {
+		Log("ID ==> %s | Image ==> %s \n", k, v)
+		Log("ID ==> %s | Image ==> %s \n", k, NameIDMap[k])
+	}
 }
 
 func createLogger() *log.Logger {
@@ -190,9 +199,6 @@ func updateIgnoreContainerIds() {
 
 func updateKubeSystemContainerIDs() {
 
-	DataUpdateMutex.Lock()
-	IgnoreIDSet = make(map[string]bool)
-
 	if strings.Compare(os.Getenv("DISABLE_KUBE_SYSTEM_LOG_COLLECTION"), "true") != 0 {
 		Log("Kube System Log Collection is ENABLED.")
 		return
@@ -214,13 +220,19 @@ func updateKubeSystemContainerIDs() {
 		Log("Error getting pods %s\n", err.Error())
 	}
 
+	_ignoreIDSet := make(map[string]bool)
 	for _, pod := range pods.Items {
 		for _, status := range pod.Status.ContainerStatuses {
 			lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
-			IgnoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
+			_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
 		}
 	}
+
+	Log("Locking to update kube-system container IDs")
+	DataUpdateMutex.Lock()
+	IgnoreIDSet = _ignoreIDSet
 	DataUpdateMutex.Unlock()
+	Log("Unlocking after updating kube-system container IDs")
 }
 
 // PostDataHelper sends data to the OMS endpoint

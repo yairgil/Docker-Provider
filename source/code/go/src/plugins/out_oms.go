@@ -8,12 +8,12 @@ import (
 	"unsafe"
 )
 
-//export FLBPluginRegister
+// FLBPluginRegister registers the plugin
 func FLBPluginRegister(ctx unsafe.Pointer) int {
 	return output.FLBPluginRegister(ctx, "oms", "Stdout GO!")
 }
 
-//export FLBPluginInit
+// FLBPluginInit initializes the plugin
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
@@ -25,7 +25,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	return output.FLB_OK
 }
 
-//export FLBPluginFlush
+// FLBPluginFlush flushes the data in the stream
 func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	var count int
 	var ret int
