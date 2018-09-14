@@ -87,7 +87,7 @@ type DataItem struct {
 	LogEntry          string `json:"LogEntry"`
 	LogEntrySource    string `json:"LogEntrySource"`
 	LogEntryTimeStamp string `json:"LogEntryTimeStamp"`
-	ContainerID       string `json:"ContainerId"`
+	ID                string `json:"Id"`
 	Image             string `json:"Image"`
 	Name              string `json:"Name"`
 	SourceSystem      string `json:"SourceSystem"`
@@ -277,6 +277,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			stringMap[strKey] = strValue
 		}
 
+		stringMap["Id"] = containerID
 		stringMap["Image"] = ImageIDMap[containerID]
 		stringMap["Name"] = NameIDMap[containerID]
 		stringMap["Computer"] = Computer
@@ -348,7 +349,7 @@ func ReadConfig(pluginConfPath string) map[string]string {
 		Log("Error when reading containerHostName file %s", err.Error())
 	}
 
-	Computer = toString(containerHostName)
+	Computer = strings.TrimSuffix(toString(containerHostName), "\n")
 	Log("Computer == %s \n", Computer)
 
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
