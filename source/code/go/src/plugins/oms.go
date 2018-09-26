@@ -51,10 +51,8 @@ var (
 	NameIDMap map[string]string
 	// IgnoreIDSet set of  container Ids of kube-system pods
 	IgnoreIDSet map[string]bool
-
 	// DataUpdateMutex read and write mutex access to the container id set
 	DataUpdateMutex = &sync.Mutex{}
-
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
 )
@@ -62,7 +60,6 @@ var (
 var (
 	// KubeSystemContainersRefreshTicker updates the kube-system containers
 	KubeSystemContainersRefreshTicker = time.NewTicker(time.Second * 300)
-
 	// ContainerImageNameRefreshTicker updates the container image and names periodically
 	ContainerImageNameRefreshTicker = time.NewTicker(time.Second * 60)
 )
@@ -70,7 +67,6 @@ var (
 var (
 	// FLBLogger stream
 	FLBLogger = createLogger()
-
 	// Log wrapper function
 	Log = FLBLogger.Printf
 )
@@ -137,7 +133,7 @@ func updateContainerImageNameMaps() {
 
 		pods, err := ClientSet.CoreV1().Pods("").List(metav1.ListOptions{})
 		if err != nil {
-			Log("Error getting pods %s\n", err.Error())
+			Log("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 		}
 
 		for _, pod := range pods.Items {
@@ -173,7 +169,7 @@ func updateKubeSystemContainerIDs() {
 
 		pods, err := ClientSet.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
 		if err != nil {
-			Log("Error getting pods %s\n", err.Error())
+			Log("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected", err.Error())
 		}
 
 		_ignoreIDSet := make(map[string]bool)
@@ -203,9 +199,13 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	for _, record := range tailPluginRecords {
 
-		containerID := getContainerIDFromFilePath(toString(record["Filepath"]))
+		filepath := toString(record["Filepath"])
+		containerID := getContainerIDFromFilePath(filepath)
 
-		if containsKey(IgnoreIDSet, containerID) {
+		if containerID == "" || containsKey(IgnoreIDSet, containerID) {
+			if containerID == "" {
+				Log("Container ID is empty for filepath: %s", filepath)
+			}
 			continue
 		}
 
@@ -291,7 +291,9 @@ func toString(s interface{}) string {
 func getContainerIDFromFilePath(filepath string) string {
 	start := strings.LastIndex(filepath, "-")
 	end := strings.LastIndex(filepath, ".")
-	if start == -1 || end == -1 {
+	if start >= end || start == -1 || end == -1 {
+		// This means the file is not a managed Kubernetes docker log file.
+		// Drop all records from the file
 		return ""
 	}
 	return filepath[start+1 : end]
@@ -306,8 +308,8 @@ func InitializePlugin(pluginConfPath string) {
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
-		fmt.Printf("Error Reading plugin config path : %s \n", err.Error())
 		Log("Error Reading plugin config path : %s \n", err.Error())
+		log.Fatalf("Error Reading plugin config path : %s \n", err.Error())
 	}
 
 	omsadminConf, err := ReadConfiguration(pluginConfig["omsadmin_conf_path"])

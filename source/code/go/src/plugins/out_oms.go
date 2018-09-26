@@ -5,7 +5,6 @@ import (
 )
 import (
 	"C"
-	"fmt"
 	"unsafe"
 )
 
@@ -18,7 +17,6 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
-	fmt.Printf("Initializing out_oms go plugin for fluentbit")
 	Log("Initializing out_oms go plugin for fluentbit")
 	InitializePlugin(ContainerLogPluginConfFilePath)
 	return output.FLB_OK
@@ -52,7 +50,6 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 func FLBPluginExit() int {
 	KubeSystemContainersRefreshTicker.Stop()
 	ContainerImageNameRefreshTicker.Stop()
-
 	return output.FLB_OK
 }
 
