@@ -203,9 +203,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		containerID := getContainerIDFromFilePath(filepath)
 
 		if containerID == "" || containsKey(IgnoreIDSet, containerID) {
-			if containerID == "" {
-				Log("Container ID is empty for filepath: %s", filepath)
-			}
 			continue
 		}
 
