@@ -291,6 +291,7 @@ func getContainerIDFromFilePath(filepath string) string {
 	if start >= end || start == -1 || end == -1 {
 		// This means the file is not a managed Kubernetes docker log file.
 		// Drop all records from the file
+		Log("File %s is not a Kubernetes managed docker log file. Dropping all records from the file", filepath)
 		return ""
 	}
 	return filepath[start+1 : end]
