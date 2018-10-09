@@ -248,7 +248,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		marshalled, err := json.Marshal(logEntry)
 		if err != nil {
 			Log("Error while Marshalling log Entry: %s", err.Error())
-			return output.FLB_RETRY
+			return output.FLB_OK
 		}
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
