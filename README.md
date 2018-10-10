@@ -9,6 +9,12 @@ additional questions or comments.
 
 ## Release History
 
+### 10/09/2018 - Version microsoft/oms:latest microsoft/oms:universe microsoft/oms: 1.6.0-163
+
+- Docker-Provider 1.0.0-35
+- More json parsing errors for OMI provider
+- Change log level to debug for output plugin
+
 ### 7/31/2018 - Version microsoft/oms:latest microsoft/oms:universe microsoft/oms: 1.6.0-163
 
 - UTF encoding support for Container logs
