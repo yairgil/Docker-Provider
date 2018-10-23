@@ -55,15 +55,18 @@ var (
 	IgnoreIDSet map[string]bool
 	// DataUpdateMutex read and write mutex access to the container id set
 	DataUpdateMutex = &sync.Mutex{}
+	// ContainerLogTelemetryMutex read and write mutex access to the Container Log Telemetry
+	ContainerLogTelemetryMutex = &sync.Mutex{}
+
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
 )
 
 var (
 	// KubeSystemContainersRefreshTicker updates the kube-system containers
-	KubeSystemContainersRefreshTicker = time.NewTicker(time.Second * 300)
+	KubeSystemContainersRefreshTicker *time.Ticker
 	// ContainerImageNameRefreshTicker updates the container image and names periodically
-	ContainerImageNameRefreshTicker = time.NewTicker(time.Second * 60)
+	ContainerImageNameRefreshTicker *time.Ticker
 )
 
 var (
@@ -99,6 +102,7 @@ func createLogger() *log.Logger {
 		fmt.Printf("File Exists. Opening file in append mode...\n")
 		logfile, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
+			SendException(err)
 			fmt.Printf(err.Error())
 		}
 	}
@@ -107,6 +111,7 @@ func createLogger() *log.Logger {
 		fmt.Printf("File Doesnt Exist. Creating file...\n")
 		logfile, err = os.Create(path)
 		if err != nil {
+			SendException(err)
 			fmt.Printf(err.Error())
 		}
 	}
@@ -134,6 +139,7 @@ func updateContainerImageNameMaps() {
 
 		pods, err := ClientSet.CoreV1().Pods("").List(metav1.ListOptions{})
 		if err != nil {
+			SendException(err)
 			Log("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 			continue
 		}
@@ -171,6 +177,7 @@ func updateKubeSystemContainerIDs() {
 
 		pods, err := ClientSet.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
 		if err != nil {
+			SendException(err)
 			Log("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected", err.Error())
 			continue
 		}
@@ -194,17 +201,29 @@ func updateKubeSystemContainerIDs() {
 // PostDataHelper sends data to the OMS endpoint
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
-	defer DataUpdateMutex.Unlock()
-
 	start := time.Now()
 	var dataItems []DataItem
+	ignoreIDSet := make(map[string]bool)
+	imageIDMap := make(map[string]string)
+	nameIDMap := make(map[string]string)
+
 	DataUpdateMutex.Lock()
+	for k, v := range IgnoreIDSet {
+		ignoreIDSet[k] = v
+	}
+	for k, v := range ImageIDMap {
+		imageIDMap[k] = v
+	}
+	for k, v := range NameIDMap {
+		nameIDMap[k] = v
+	}
+	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
 
 		containerID := GetContainerIDFromFilePath(toString(record["filepath"]))
 
-		if containerID == "" || containsKey(IgnoreIDSet, containerID) {
+		if containerID == "" || containsKey(ignoreIDSet, containerID) {
 			continue
 		}
 
@@ -216,13 +235,13 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap["SourceSystem"] = "Containers"
 		stringMap["Id"] = containerID
 
-		if val, ok := ImageIDMap[containerID]; ok {
+		if val, ok := imageIDMap[containerID]; ok {
 			stringMap["Image"] = val
 		} else {
 			Log("ContainerId %s not present in Map ", containerID)
 		}
 
-		if val, ok := NameIDMap[containerID]; ok {
+		if val, ok := nameIDMap[containerID]; ok {
 			stringMap["Name"] = val
 		} else {
 			Log("ContainerId %s not present in Map ", containerID)
@@ -251,6 +270,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		marshalled, err := json.Marshal(logEntry)
 		if err != nil {
 			Log("Error while Marshalling log Entry: %s", err.Error())
+			SendException(err)
 			return output.FLB_OK
 		}
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
@@ -262,6 +282,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if err != nil {
 			Log("Error when sending request %s \n", err.Error())
 			Log("Failed to flush %d records after %s", len(dataItems), elapsed)
+			SendException(err)
 			return output.FLB_RETRY
 		}
 
@@ -274,8 +295,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		numRecords := len(dataItems)
 		Log("Successfully flushed %d records in %s", numRecords, elapsed)
+		ContainerLogTelemetryMutex.Lock()
 		FlushedRecordsCount += float64(numRecords)
 		FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
+		ContainerLogTelemetryMutex.Unlock()
 	}
 
 	return output.FLB_OK
@@ -319,12 +342,14 @@ func InitializePlugin(pluginConfPath string) {
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
 		Log("Error Reading plugin config path : %s \n", err.Error())
+		SendException(err)
 		log.Fatalf("Error Reading plugin config path : %s \n", err.Error())
 	}
 
 	omsadminConf, err := ReadConfiguration(pluginConfig["omsadmin_conf_path"])
 	if err != nil {
 		Log(err.Error())
+		SendException(err)
 		log.Fatalf("Error Reading omsadmin configuration %s\n", err.Error())
 	}
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
@@ -335,6 +360,7 @@ func InitializePlugin(pluginConfPath string) {
 	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
 	if err != nil {
 		Log("Error Reading Container Inventory Refresh Interval %s", err.Error())
+		SendException(err)
 		Log("Using Default Refresh Interval of %d s\n", defaultContainerInventoryRefreshInterval)
 		containerInventoryRefreshInterval = defaultContainerInventoryRefreshInterval
 	}
@@ -345,6 +371,7 @@ func InitializePlugin(pluginConfPath string) {
 	kubeSystemContainersRefreshInterval, err := strconv.Atoi(pluginConfig["kube_system_containers_refresh_interval"])
 	if err != nil {
 		Log("Error Reading Kube System Container Ids Refresh Interval %s", err.Error())
+		SendException(err)
 		Log("Using Default Refresh Interval of %d s\n", defaultKubeSystemContainersRefreshInterval)
 		kubeSystemContainersRefreshInterval = defaultKubeSystemContainersRefreshInterval
 	}
@@ -356,6 +383,7 @@ func InitializePlugin(pluginConfPath string) {
 	if err != nil {
 		// It is ok to log here and continue, because only the Computer column will be missing,
 		// which can be deduced from a combination of containerId, and docker logs on the node
+		SendException(err)
 		Log("Error when reading containerHostName file %s.\n It is ok to log here and continue, because only the Computer column will be missing, which can be deduced from a combination of containerId, and docker logs on the nodes\n", err.Error())
 	}
 	Computer = strings.TrimSuffix(toString(containerHostName), "\n")
@@ -364,11 +392,13 @@ func InitializePlugin(pluginConfPath string) {
 	// Initialize KubeAPI Client
 	config, err := rest.InClusterConfig()
 	if err != nil {
+		SendException(err)
 		Log("Error getting config %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 	}
 
 	ClientSet, err = kubernetes.NewForConfig(config)
 	if err != nil {
+		SendException(err)
 		Log("Error getting clientset %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 	}
 
