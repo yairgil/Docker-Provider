@@ -102,7 +102,7 @@ func createLogger() *log.Logger {
 		fmt.Printf("File Exists. Opening file in append mode...\n")
 		logfile, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
-			SendException(err)
+			SendException(err.Error())
 			fmt.Printf(err.Error())
 		}
 	}
@@ -111,7 +111,7 @@ func createLogger() *log.Logger {
 		fmt.Printf("File Doesnt Exist. Creating file...\n")
 		logfile, err = os.Create(path)
 		if err != nil {
-			SendException(err)
+			SendException(err.Error())
 			fmt.Printf(err.Error())
 		}
 	}
@@ -139,8 +139,9 @@ func updateContainerImageNameMaps() {
 
 		pods, err := ClientSet.CoreV1().Pods("").List(metav1.ListOptions{})
 		if err != nil {
-			SendException(err)
-			Log("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
+			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
+			Log(message)
+			SendException(message)
 			continue
 		}
 
@@ -177,8 +178,9 @@ func updateKubeSystemContainerIDs() {
 
 		pods, err := ClientSet.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
 		if err != nil {
-			SendException(err)
-			Log("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected", err.Error())
+			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected", err.Error())
+			SendException(message)
+			Log(message)
 			continue
 		}
 
@@ -269,8 +271,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		marshalled, err := json.Marshal(logEntry)
 		if err != nil {
-			Log("Error while Marshalling log Entry: %s", err.Error())
-			SendException(err)
+			message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
+			Log(message)
+			SendException(message)
 			return output.FLB_OK
 		}
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
@@ -280,9 +283,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		elapsed := time.Since(start)
 
 		if err != nil {
-			Log("Error when sending request %s \n", err.Error())
+			message := fmt.Sprintf("Error when sending request %s \n", err.Error())
+			Log(message)
+			SendException(message)
 			Log("Failed to flush %d records after %s", len(dataItems), elapsed)
-			SendException(err)
+
 			return output.FLB_RETRY
 		}
 
@@ -341,15 +346,17 @@ func InitializePlugin(pluginConfPath string) {
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
-		Log("Error Reading plugin config path : %s \n", err.Error())
-		SendException(err)
-		log.Fatalf("Error Reading plugin config path : %s \n", err.Error())
+		message := fmt.Sprintf("Error Reading plugin config path : %s \n", err.Error())
+		Log(message)
+		SendException(message)
+		time.Sleep(30 * time.Second)
+		log.Fatalln(message)
 	}
 
 	omsadminConf, err := ReadConfiguration(pluginConfig["omsadmin_conf_path"])
 	if err != nil {
 		Log(err.Error())
-		SendException(err)
+		SendException(err.Error())
 		log.Fatalf("Error Reading omsadmin configuration %s\n", err.Error())
 	}
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
@@ -359,8 +366,9 @@ func InitializePlugin(pluginConfPath string) {
 	// Initialize image,name map refresh ticker
 	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
 	if err != nil {
-		Log("Error Reading Container Inventory Refresh Interval %s", err.Error())
-		SendException(err)
+		message := fmt.Sprintf("Error Reading Container Inventory Refresh Interval %s", err.Error())
+		Log(message)
+		SendException(message)
 		Log("Using Default Refresh Interval of %d s\n", defaultContainerInventoryRefreshInterval)
 		containerInventoryRefreshInterval = defaultContainerInventoryRefreshInterval
 	}
@@ -370,8 +378,9 @@ func InitializePlugin(pluginConfPath string) {
 	// Initialize Kube System Refresh Ticker
 	kubeSystemContainersRefreshInterval, err := strconv.Atoi(pluginConfig["kube_system_containers_refresh_interval"])
 	if err != nil {
-		Log("Error Reading Kube System Container Ids Refresh Interval %s", err.Error())
-		SendException(err)
+		message := fmt.Sprintf("Error Reading Kube System Container Ids Refresh Interval %s", err.Error())
+		Log(message)
+		SendException(message)
 		Log("Using Default Refresh Interval of %d s\n", defaultKubeSystemContainersRefreshInterval)
 		kubeSystemContainersRefreshInterval = defaultKubeSystemContainersRefreshInterval
 	}
@@ -383,8 +392,9 @@ func InitializePlugin(pluginConfPath string) {
 	if err != nil {
 		// It is ok to log here and continue, because only the Computer column will be missing,
 		// which can be deduced from a combination of containerId, and docker logs on the node
-		SendException(err)
-		Log("Error when reading containerHostName file %s.\n It is ok to log here and continue, because only the Computer column will be missing, which can be deduced from a combination of containerId, and docker logs on the nodes\n", err.Error())
+		message := fmt.Sprintf("Error when reading containerHostName file %s.\n It is ok to log here and continue, because only the Computer column will be missing, which can be deduced from a combination of containerId, and docker logs on the nodes\n", err.Error())
+		Log(message)
+		SendException(message)
 	}
 	Computer = strings.TrimSuffix(toString(containerHostName), "\n")
 	Log("Computer == %s \n", Computer)
@@ -392,14 +402,16 @@ func InitializePlugin(pluginConfPath string) {
 	// Initialize KubeAPI Client
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		SendException(err)
-		Log("Error getting config %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
+		message := fmt.Sprintf("Error getting config %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
+		Log(message)
+		SendException(message)
 	}
 
 	ClientSet, err = kubernetes.NewForConfig(config)
 	if err != nil {
-		SendException(err)
-		Log("Error getting clientset %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
+		message := fmt.Sprintf("Error getting clientset %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
+		SendException(message)
+		Log(message)
 	}
 
 	PluginConfiguration = pluginConfig

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,8 +20,9 @@ func ReadConfiguration(filename string) (map[string]string, error) {
 
 	file, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err)
 		SendException(err)
+		log.Fatal(err)
+
 		return nil, err
 	}
 	defer file.Close()
@@ -40,8 +42,8 @@ func ReadConfiguration(filename string) (map[string]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
 		SendException(err)
+		log.Fatal(err)
 		return nil, err
 	}
 
@@ -53,8 +55,9 @@ func CreateHTTPClient() {
 
 	cert, err := tls.LoadX509KeyPair(PluginConfiguration["cert_file_path"], PluginConfiguration["key_file_path"])
 	if err != nil {
-		SendException(err)
-		Log("Error when loading cert %s", err.Error())
+		message := fmt.Sprintf("Error when loading cert %s", err.Error())
+		SendException(message)
+		Log(message)
 		log.Fatalf("Error when loading cert %s", err.Error())
 	}
 
