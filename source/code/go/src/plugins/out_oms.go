@@ -52,7 +52,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	}
 
 	incomingTag := C.GoString(tag)
-	if strings.Contains(strings.ToLower(incomingTag), "flbplugin") {
+	if strings.Contains(strings.ToLower(incomingTag), "oms.container.log.flbplugin") {
 		return PushToAppInsightsTraces(records)
 	}
 
