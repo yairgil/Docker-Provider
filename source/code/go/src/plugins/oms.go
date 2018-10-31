@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,7 +18,9 @@ import (
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -44,6 +47,8 @@ var (
 	Computer string
 	// WorkspaceID log analytics workspace id
 	WorkspaceID string
+
+	disableKubeSystemLogCollection bool
 )
 
 var (
@@ -53,6 +58,10 @@ var (
 	NameIDMap map[string]string
 	// IgnoreIDSet set of  container Ids of kube-system pods
 	IgnoreIDSet map[string]bool
+	// AddedPodUIDSet contains the list of pod UIDs that were added. This is required for subsequent Pod Modified Events to get the container Metadata
+	AddedPodUIDSet map[string]bool
+	// ModifiedPodUIDSet contains the list of pod UIDs that were added. This is required for subsequent Pod Modified Events to get the container Metadata
+	ModifiedPodUIDSet map[string][]string
 	// DataUpdateMutex read and write mutex access to the container id set
 	DataUpdateMutex = &sync.Mutex{}
 	// ContainerLogTelemetryMutex read and write mutex access to the Container Log Telemetry
@@ -128,76 +137,6 @@ func createLogger() *log.Logger {
 
 	logger.SetFlags(log.Ltime | log.Lshortfile | log.LstdFlags)
 	return logger
-}
-
-func updateContainerImageNameMaps() {
-	for ; true; <-ContainerImageNameRefreshTicker.C {
-		Log("Updating ImageIDMap and NameIDMap")
-
-		_imageIDMap := make(map[string]string)
-		_nameIDMap := make(map[string]string)
-
-		pods, err := ClientSet.CoreV1().Pods("").List(metav1.ListOptions{})
-		if err != nil {
-			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
-			Log(message)
-			SendException(message)
-			continue
-		}
-
-		for _, pod := range pods.Items {
-			for _, status := range pod.Status.ContainerStatuses {
-				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
-				containerID := status.ContainerID[lastSlashIndex+1 : len(status.ContainerID)]
-				image := status.Image
-				name := fmt.Sprintf("%s/%s", pod.UID, status.Name)
-				if containerID != "" {
-					_imageIDMap[containerID] = image
-					_nameIDMap[containerID] = name
-				}
-			}
-		}
-
-		Log("Locking to update image and name maps")
-		DataUpdateMutex.Lock()
-		ImageIDMap = _imageIDMap
-		NameIDMap = _nameIDMap
-		DataUpdateMutex.Unlock()
-		Log("Unlocking after updating image and name maps")
-	}
-}
-
-func updateKubeSystemContainerIDs() {
-	for ; true; <-KubeSystemContainersRefreshTicker.C {
-		if strings.Compare(os.Getenv("DISABLE_KUBE_SYSTEM_LOG_COLLECTION"), "true") != 0 {
-			Log("Kube System Log Collection is ENABLED.")
-			return
-		}
-
-		Log("Kube System Log Collection is DISABLED. Collecting containerIds to drop their records")
-
-		pods, err := ClientSet.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
-		if err != nil {
-			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected", err.Error())
-			SendException(message)
-			Log(message)
-			continue
-		}
-
-		_ignoreIDSet := make(map[string]bool)
-		for _, pod := range pods.Items {
-			for _, status := range pod.Status.ContainerStatuses {
-				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
-				_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
-			}
-		}
-
-		Log("Locking to update kube-system container IDs")
-		DataUpdateMutex.Lock()
-		IgnoreIDSet = _ignoreIDSet
-		DataUpdateMutex.Unlock()
-		Log("Unlocking after updating kube-system container IDs")
-	}
 }
 
 // PostDataHelper sends data to the OMS endpoint
@@ -416,6 +355,189 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
-	go updateKubeSystemContainerIDs()
-	go updateContainerImageNameMaps()
+	go setupPodWatcher()
+}
+
+func setupPodWatcher() {
+
+	if strings.Compare(strings.ToLower(os.Getenv("DISABLE_KUBE_SYSTEM_LOG_COLLECTION")), "true") == 0 {
+		disableKubeSystemLogCollection = true
+	} else {
+		disableKubeSystemLogCollection = false
+	}
+
+	pods, err := ClientSet.CoreV1().Pods("").List(metav1.ListOptions{})
+
+	if err != nil {
+		message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected, the logs will be missing image and Name, but the logs will still have the containerID ", err.Error())
+		SendException(message)
+		Log(message)
+		return
+	}
+
+	_ignoreIDSet := make(map[string]bool)
+	_imageIDMap := make(map[string]string)
+	_nameIDMap := make(map[string]string)
+
+	// Initialize the maps on startup
+	for _, pod := range pods.Items {
+		for _, status := range pod.Status.ContainerStatuses {
+			lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+			containerID := status.ContainerID[lastSlashIndex+1 : len(status.ContainerID)]
+			image := status.Image
+			name := fmt.Sprintf("%s/%s", pod.UID, status.Name)
+			if strings.Compare(strings.ToLower(pod.Namespace), "kube-system") == 0 && disableKubeSystemLogCollection {
+				_ignoreIDSet[containerID] = true
+			}
+			if containerID != "" {
+				_imageIDMap[containerID] = image
+				_nameIDMap[containerID] = name
+			}
+		}
+	}
+
+	DataUpdateMutex.Lock()
+	IgnoreIDSet = _ignoreIDSet
+	NameIDMap = _nameIDMap
+	ImageIDMap = _imageIDMap
+	DataUpdateMutex.Unlock()
+
+	// set up the watcher
+	watcher, err := ClientSet.Core().Pods("").Watch(metav1.ListOptions{})
+	if watcher != nil {
+		Log("%v", watcher)
+	} else {
+		Log("watcher is nil\n")
+	}
+	if err != nil {
+		message := fmt.Sprintf("Error when setting up Pod Watcher %v\n", err)
+		Log(message)
+		SendException(message)
+		// if we exit this goroutine, logs will not be enriched. but they will continue to flow to the LA workspace
+		runtime.Goexit()
+	}
+
+	AddedPodUIDSet = make(map[string]bool)
+	ModifiedPodUIDSet = make(map[string][]string)
+	ch := watcher.ResultChan()
+
+	for event := range ch {
+		pod, ok := event.Object.(*v1.Pod)
+		if !ok {
+			message := fmt.Sprintf("Set up pod watcher, but got unexpected type in event")
+			Log(message)
+			SendException(message)
+			// if we exit this goroutine, logs will not be enriched. but they will continue to flow to the LA workspace
+			runtime.Goexit()
+		}
+
+		switch event.Type {
+		case watch.Added:
+			Log("Pod Added : %s <==> %s \n", pod.Name, pod.Namespace)
+			podAddedEventHasContainerID := false
+			for _, status := range pod.Status.ContainerStatuses {
+				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+				containerID := status.ContainerID[lastSlashIndex+1 : len(status.ContainerID)]
+				if containerID != "" {
+					Log("Container ID %s present in a POD ADDED event \n", containerID)
+					podAddedEventHasContainerID = true
+					break
+				}
+			}
+			if !podAddedEventHasContainerID {
+				handlePodAddedEvent(pod)
+			}
+		case watch.Deleted:
+			Log("Pod Deleted : %s <==> %s \n", pod.Name, pod.Namespace)
+			handlePodDeletedEvent(pod)
+		case watch.Modified:
+			Log("Pod Modified: %s <==> %s \n", pod.Name, pod.Namespace)
+			handlePodModifiedEvent(pod)
+		default:
+			Log("Unknown event %s got Pod %s \n", event.Type, pod.Name)
+		}
+	}
+}
+
+func handlePodAddedEvent(pod *v1.Pod) {
+	if !containsKey(AddedPodUIDSet, string(pod.UID)) {
+		AddedPodUIDSet[string(pod.UID)] = true
+	}
+}
+
+func handlePodModifiedEvent(pod *v1.Pod) {
+	// Add and Delete are tricky.
+	// Need to keep track of the array of container IDs (there can be multiple containers in a pod for a customer workload)
+	// The Delete event doesnt have the containers ids. So keep a mapping of Pod UID to container IDs, and get the container ids from this mapping to deleted from our enrichment maps
+	// For pod added event, the sequence of events are A, M, M , M (the last M has the container ID info). So check for that and update the maps as required
+	if _, ok := ModifiedPodUIDSet[string(pod.UID)]; !ok {
+		var containerIDs []string
+		for _, status := range pod.Status.ContainerStatuses {
+			if status.ContainerID == "" {
+				Log("ContainerID is empty in POD MODIFIED event with a corresponding POD ADDED event")
+				continue
+			} else {
+				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+				containerID := status.ContainerID[lastSlashIndex+1 : len(status.ContainerID)]
+				containerIDs = append(containerIDs, containerID)
+			}
+		}
+		ModifiedPodUIDSet[string(pod.UID)] = containerIDs
+	}
+
+	if !containsKey(AddedPodUIDSet, string(pod.UID)) {
+		Log("No matching POD ADDED event for a POD MODIFIED event with UID %s \n", string(pod.UID))
+		// if there was no matching Pod Added Event for PodModified event, continue
+		return
+	}
+
+	Log("Found Pod UID with a corresponding ADD event ==> %s\n", string(pod.UID))
+	// we have a matching PodAdded Event. Get the container metadata if the pod contains the container Id information
+	for _, status := range pod.Status.ContainerStatuses {
+		// there will be some Pod Modified events after a pod is created, which dont have the container Id
+		if status.ContainerID == "" {
+			Log("ContainerID is empty in POD MODIFIED event with a corresponding POD ADDED event")
+			continue
+		} else {
+			Log("ContainerID is %s in POD MODIFIED event with a corresponding POD ADDED event", status.ContainerID)
+			lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+			containerID := status.ContainerID[lastSlashIndex+1 : len(status.ContainerID)]
+			image := status.Image
+			name := fmt.Sprintf("%s/%s", pod.UID, status.Name)
+			if containerID != "" {
+				Log("Adding Container ID : %s Pod Name: %s to maps\n", containerID, pod.Name)
+				DataUpdateMutex.Lock()
+				NameIDMap[containerID] = name
+				ImageIDMap[containerID] = image
+				if strings.Compare(strings.ToLower(pod.Namespace), "kube-system") == 0 && disableKubeSystemLogCollection {
+					IgnoreIDSet[containerID] = true
+				}
+				DataUpdateMutex.Unlock()
+			}
+			// finished processing modified event. Remove from the set of POD ADDED Event UIDs
+			delete(AddedPodUIDSet, string(pod.UID))
+			delete(ModifiedPodUIDSet, string(pod.UID))
+		}
+	}
+}
+
+func handlePodDeletedEvent(pod *v1.Pod) {
+
+	if _, ok := ModifiedPodUIDSet[string(pod.UID)]; !ok {
+		Log("No matching POD MODIFIED event for a POD DELETED event with UID %s \n", string(pod.UID))
+		// if there was no matching Pod Added Event for PodModified event, continue
+		return
+	}
+
+	containerIDs := ModifiedPodUIDSet[string(pod.UID)]
+	for _, containerID := range containerIDs {
+		Log("Deleting Container ID : %s Pod Name %s from maps\n", containerID, pod.Name)
+		DataUpdateMutex.Lock()
+		// delete is safe even if the key is not present in the map
+		// https://golang.org/doc/effective_go.html#maps
+		delete(IgnoreIDSet, containerID)
+		delete(NameIDMap, containerID)
+		delete(ImageIDMap, containerID)
+		DataUpdateMutex.Unlock()
+	}
 }
