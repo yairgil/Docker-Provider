@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"net"
+	/*"github.com/fluent/fluent-logger-golang/fluent"*/
 )
 
 // ReadConfiguration reads a property file
@@ -65,4 +67,26 @@ func CreateHTTPClient() {
 	HTTPClient = http.Client{Transport: transport}
 
 	Log("Successfully created HTTP Client")
+}
+
+// CreateFluentClient
+/*func CreateFluentClient() {
+
+	logger, err := fluent.New(fluent.Config{FluentPort: 29230, FluentHost: "127.0.0.1"})
+	//logger, err := fluent.New(fluent.Config{FluentPort: 25225, FluentHost: "127.0.0.1"})
+	if err != nil {
+		Log("Error creating fluent client %s", err.Error())
+	}
+
+	FluentClient = logger
+	
+	Log("Successfully created Fluent Client")
+}*/
+
+func CreateMDSDClient() {
+	conn, err := net.Dial("tcp", "127.0.0.1:29230")
+	if err!= nil {
+		Log ("Unable to open a TCP socket connection to MDSD %s", err.Error())
+	}
+	TCPClient = conn
 }

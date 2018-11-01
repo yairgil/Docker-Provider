@@ -17,3 +17,7 @@ import:
   version: ^0.4.2
   subpackages:
   - appinsights
+- package: github.com/vmihailenco/msgpack
+  version: v4.0.1
+- package: github.com/fluent/fluent-logger-golang
+  version: v1.3.0

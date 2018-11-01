@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -20,6 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"github.com/vmihailenco/msgpack"
+	/*"github.com/fluent/fluent-logger-golang/fluent"*/
 )
 
 // DataType for Container Log
@@ -44,6 +47,11 @@ var (
 	Computer string
 	// WorkspaceID log analytics workspace id
 	WorkspaceID string
+	// Fluent Client
+	/* FluentClient *fluent.Fluent */
+
+	//TCP Client for MDSD
+	TCPClient net.Conn
 )
 
 var (
@@ -90,6 +98,19 @@ type ContainerLogBlob struct {
 	DataType  string     `json:"DataType"`
 	IPName    string     `json:"IPName"`
 	DataItems []DataItem `json:"DataItems"`
+}
+
+//msgp:tuple Entry
+type Entry struct {
+	Time   int64       `msgpack:"time"`
+	Record DataItem    `msgpack:"record"`
+}
+
+//msgp:tuple Forward
+type Forward struct {
+	Tag     string      `msgpack:"tag"`
+	Entries []Entry     `msgpack:"entries"`
+	//Option  interface{} `msg:"option"`
 }
 
 func createLogger() *log.Logger {
@@ -198,6 +219,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	start := time.Now()
 	var dataItems []DataItem
+	var entries []Entry
+	var forwards []Forward
 	DataUpdateMutex.Lock()
 
 	for _, record := range tailPluginRecords {
@@ -240,6 +263,19 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		dataItems = append(dataItems, dataItem)
+		/*
+		//FluentClient.Post("vishwas.containerlog",dataItem)
+		//FluentClient.EncodeAndPostData("vishwas.containerlog", time.Now(), dataItem)
+		error := FluentClient.PostWithTime("vishwas.containerlog", time.Now(), dataItems)
+		if error != nil {
+			Log(error.Error())
+		  }
+		  */
+		entry := Entry{
+			Time:	time.Now().Unix(),
+			Record: dataItem}
+
+		entries = append(entries, entry)
 	}
 
 	if len(dataItems) > 0 {
@@ -253,6 +289,46 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Log("Error while Marshalling log Entry: %s", err.Error())
 			return output.FLB_OK
 		}
+
+		fluentForward := Forward{
+			Tag:		"vishwas.containerlog",
+			Entries:	entries}
+
+		forwards =append(forwards, fluentForward)
+
+		b, err := msgpack.Marshal(forwards)
+		if b == nil {
+			Log ("Error b is nil")
+		}
+		if err!= nil {
+			Log ("Error while Marshaling to messagePack: %s", err.Error)
+		}
+
+		var f Forward
+		e := msgpack.Unmarshal(b, &f)
+		if e != nil {
+			Log ("Error while unmarshaling from messagePack: %s")
+		} else {
+			Log ("Unmarshalled : %s", f )
+		}
+
+		/*error := FluentClient.write(b) */
+		if TCPClient == nil {
+			CreateMDSDClient()
+		}
+
+		if (TCPClient != nil) {
+			byts, err := TCPClient.Write(b)
+			if err != nil {
+				Log ("Error while writing to socket %s", err.Error())
+			} else {
+				Log ("Successfully wrote %d bytes to socket", byts)
+			}
+		}
+
+		
+
+
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -375,6 +451,8 @@ func InitializePlugin(pluginConfPath string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
+	/*CreateFluentClient()*/
+	CreateMDSDClient()
 	go updateKubeSystemContainerIDs()
 	go updateContainerImageNameMaps()
 }
