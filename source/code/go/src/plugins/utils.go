@@ -84,7 +84,10 @@ func CreateHTTPClient() {
 }*/
 
 func CreateMDSDClient() {
-	conn, err := net.Dial("tcp", "127.0.0.1:29230")
+	//conn, err := net.Dial("tcp", "127.0.0.1:29230")
+	//conn, err := net.Dial("tcp", "127.0.0.1:25225")
+	conn, err := net.Dial("tcp", "127.0.0.1:25224")
+	//conn, err := net.Dial("tcp", "10.91.52.127 :29230")
 	if err!= nil {
 		Log ("Unable to open a TCP socket connection to MDSD %s", err.Error())
 	}

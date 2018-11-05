@@ -21,8 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"github.com/vmihailenco/msgpack"
-	/*"github.com/fluent/fluent-logger-golang/fluent"*/
+	/*"github.com/vmihailenco/msgpack"
+	"github.com/fluent/fluent-logger-golang/fluent"*/
+	"github.com/tinylib/msgp/msgp"
 )
 
 // DataType for Container Log
@@ -100,18 +101,20 @@ type ContainerLogBlob struct {
 	DataItems []DataItem `json:"DataItems"`
 }
 
-//msgp:tuple Entry
 type Entry struct {
-	Time   int64       `msgpack:"time"`
-	Record DataItem    `msgpack:"record"`
+	Time   int64       
+	Record interface{} 
 }
 
 //msgp:tuple Forward
 type Forward struct {
-	Tag     string      `msgpack:"tag"`
-	Entries []Entry     `msgpack:"entries"`
-	//Option  interface{} `msg:"option"`
+	Tag     string      
+	Entries []Entry     
+	//Option  interface{}
 }
+
+
+
 
 func createLogger() *log.Logger {
 	var logfile *os.File
@@ -220,10 +223,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
 	var dataItems []DataItem
 	var entries []Entry
-	var forwards []Forward
+
 	DataUpdateMutex.Lock()
 
-	for _, record := range tailPluginRecords {
+	//payLoad = append(payLoad, ([]byte (fmt.Sprintf("[\"%s\",[", "vishwas.containerlog")))...)
+
+	for c, record := range tailPluginRecords {
 
 		containerID := GetContainerIDFromFilePath(toString(record["filepath"]))
 
@@ -271,11 +276,17 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Log(error.Error())
 		  }
 		  */
-		entry := Entry{
-			Time:	time.Now().Unix(),
-			Record: dataItem}
-
-		entries = append(entries, entry)
+		m, err := json.Marshal(dataItem)
+		if err != nil {
+			Log (" Error while marshaling dataItem %s", err.Error())
+		} else {
+			entry := Entry{
+				Time: time.Now().Unix(),
+				Record: m}
+			if c == (len(tailPluginRecords) - 1) {
+				entries = append (entries, entry)
+			}
+		}
 	}
 
 	if len(dataItems) > 0 {
@@ -293,26 +304,28 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		fluentForward := Forward{
 			Tag:		"vishwas.containerlog",
 			Entries:	entries}
-
-		forwards =append(forwards, fluentForward)
-
-		b, err := msgpack.Marshal(forwards)
-		if b == nil {
-			Log ("Error b is nil")
-		}
-		if err!= nil {
-			Log ("Error while Marshaling to messagePack: %s", err.Error)
+		
+		size := 1 + msgp.StringPrefixSize + len (fluentForward.Tag) + msgp.ArrayHeaderSize
+		for i := range fluentForward.Entries {
+			size += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
 		}
 
-		var f Forward
-		e := msgpack.Unmarshal(b, &f)
-		if e != nil {
-			Log ("Error while unmarshaling from messagePack: %s")
-		} else {
-			Log ("Unmarshalled : %s", f )
-		}
+		var b []byte
 
-		/*error := FluentClient.write(b) */
+		b = msgp.Require(nil, size)
+		b = append(b, 0x92)
+		b = msgp.AppendString(b, fluentForward.Tag)
+		b = msgp.AppendArrayHeader(b, uint32(len(fluentForward.Entries)))
+		for i := range fluentForward.Entries {
+			b = append(b, 0x92)
+			b = msgp.AppendInt64(b, fluentForward.Entries[i].Time)
+			var e error
+			b,e = msgp.AppendIntf(b, fluentForward.Entries[i].Record)
+			if e != nil {
+				Log ("Error when marshaling to msgp %s", e.Error())
+			}
+		}
+			
 		if TCPClient == nil {
 			CreateMDSDClient()
 		}
@@ -325,6 +338,46 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Log ("Successfully wrote %d bytes to socket", byts)
 			}
 		}
+			
+		
+
+		/*b, err := msgpack.Marshal(payLoad)
+		if b == nil {
+			Log ("Error b is nil")
+		}
+		if err!= nil {
+			Log ("Error while Marshaling to messagePack: %s", err.Error)
+		}*/
+
+		/*var b bytes.Buffer
+		enc := msgpack.NewEncoder(&b)
+		e := enc.Encode(payLoad)
+		if e != nil {
+			Log("Error while encoding %s ", e.Error())
+		}*/
+
+		/*var f []byte
+		e := msgpack.Unmarshal(b, &f)
+		if e != nil {
+			Log ("Error while unmarshaling from messagePack: %s")
+		} else {
+			Log ("Unmarshalled : %s", f )
+		}*/
+
+		/*error := FluentClient.write(b) */
+		/*if TCPClient == nil {
+			CreateMDSDClient()
+		}
+
+		if (TCPClient != nil) {
+			byts, err := TCPClient.Write(b)
+		//	byts, err := TCPClient.Write(b.Bytes())
+			if err != nil {
+				Log ("Error while writing to socket %s", err.Error())
+			} else {
+				Log ("Successfully wrote %d bytes to socket", byts)
+			}
+		}*/
 
 		
 
