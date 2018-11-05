@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net"
+	//"net"
 	"os"
 	"strconv"
 	"strings"
@@ -52,7 +52,7 @@ var (
 	/* FluentClient *fluent.Fluent */
 
 	//TCP Client for MDSD
-	TCPClient net.Conn
+	//TCPClient net.Conn
 )
 
 var (
@@ -102,14 +102,14 @@ type ContainerLogBlob struct {
 }
 
 type Entry struct {
-	Time   int64       
-	Record interface{} 
+	Time   int64 `msg:"time"`
+	Record interface{} `msg:"record"`
 }
 
 //msgp:tuple Forward
 type Forward struct {
-	Tag     string      
-	Entries []Entry     
+	Tag     string `msg:"tag"`     
+	Entries []Entry `msg:"entries"`    
 	//Option  interface{}
 }
 
@@ -326,11 +326,13 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 		}
 			
-		if TCPClient == nil {
-			CreateMDSDClient()
-		}
+		//if TCPClient == nil {
+			TCPClient := CreateMDSDClient()
+		//}
 
 		if (TCPClient != nil) {
+			defer TCPClient.Close()
+			TCPClient.SetDeadline(time.Now().Add(5 * time.Second))
 			byts, err := TCPClient.Write(b)
 			if err != nil {
 				Log ("Error while writing to socket %s", err.Error())
@@ -505,7 +507,7 @@ func InitializePlugin(pluginConfPath string) {
 
 	CreateHTTPClient()
 	/*CreateFluentClient()*/
-	CreateMDSDClient()
+	//CreateMDSDClient()
 	go updateKubeSystemContainerIDs()
 	go updateContainerImageNameMaps()
 }
