@@ -103,7 +103,7 @@ type ContainerLogBlob struct {
 
 type Entry struct {
 	Time   int64 `msg:"time"`
-	Record interface{} `msg:"record"`
+	Record map[string]string `msg:"record"`
 }
 
 //msgp:tuple Forward
@@ -276,17 +276,17 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Log(error.Error())
 		  }
 		  */
-		m, err := json.Marshal(dataItem)
-		if err != nil {
+		//m, err := json.Marshal(dataItem)
+		/*if err != nil {
 			Log (" Error while marshaling dataItem %s", err.Error())
-		} else {
+		} else {*/
 			entry := Entry{
 				Time: time.Now().Unix(),
-				Record: m}
+				Record: stringMap}
 			if c == (len(tailPluginRecords) - 1) {
 				entries = append (entries, entry)
 			}
-		}
+		//}
 	}
 
 	if len(dataItems) > 0 {
@@ -319,11 +319,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		for i := range fluentForward.Entries {
 			b = append(b, 0x92)
 			b = msgp.AppendInt64(b, fluentForward.Entries[i].Time)
-			var e error
-			b,e = msgp.AppendIntf(b, fluentForward.Entries[i].Record)
-			if e != nil {
+			//var e error
+			b = msgp.AppendMapStrStr(b, fluentForward.Entries[i].Record)
+			/*if e != nil {
 				Log ("Error when marshaling to msgp %s", e.Error())
-			}
+			}*/
 		}
 			
 		//if TCPClient == nil {
