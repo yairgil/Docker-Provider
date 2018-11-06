@@ -228,7 +228,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	//payLoad = append(payLoad, ([]byte (fmt.Sprintf("[\"%s\",[", "vishwas.containerlog")))...)
 
-	for c, record := range tailPluginRecords {
+	for _, record := range tailPluginRecords {
 
 		containerID := GetContainerIDFromFilePath(toString(record["filepath"]))
 
@@ -283,9 +283,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			entry := Entry{
 				Time: time.Now().Unix(),
 				Record: stringMap}
-			if c == (len(tailPluginRecords) - 1) {
+			//if c == (len(tailPluginRecords) - 1) {
 				entries = append (entries, entry)
-			}
+			//}
 		//}
 	}
 
