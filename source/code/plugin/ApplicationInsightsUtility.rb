@@ -5,6 +5,7 @@ class ApplicationInsightsUtility
     require_relative 'lib/application_insights'
     require_relative 'omslog'
     require_relative 'DockerApiClient'
+    require_relative 'oms_common'
     require 'json'
     require 'base64'
 
@@ -20,6 +21,7 @@ class ApplicationInsightsUtility
     @@EnvApplicationInsightsKey = 'APPLICATIONINSIGHTS_AUTH'
     @@CustomProperties = {}
     @@Tc = nil
+    @@hostName = (OMS::Common.get_hostname)
 
     def initialize
     end
@@ -121,6 +123,33 @@ class ApplicationInsightsUtility
                 sendCustomEvent(pluginName, properties)
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
+            end
+        end
+
+        #Method to send metric. It will merge passed-in properties with common custom properties
+        def sendMetricTelemetry(metricName, metricValue, properties)
+            begin
+                if (metricName.empty? || metricName.nil?)
+                    $log.warn("SendMetricTelemetry: metricName is missing")
+                    return
+                end
+                if @@CustomProperties.empty? || @@CustomProperties.nil?
+                    initializeUtility
+                end
+                telemetryProps = {}
+                telemetryProps["Computer"] = @@hostName
+                @@CustomProperties.each do |prop|
+                    telemetryProps[prop] = @@CustomProperties[prop]
+                end
+                if !(@@Tc.nil?)
+                    @@Tc.track_metric metricName, metricValue, 
+                    :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT, 
+                    :properties => telemetryProps
+                    @@Tc.flush
+                    $log.info("AppInsights metric Telemetry #{metricName} sent successfully")
+                end
+            rescue => errorStr
+                $log.warn("Exception in AppInsightsUtility: sendMetricTelemetry - error: #{errorStr}")
             end
         end
 
