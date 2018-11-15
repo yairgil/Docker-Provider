@@ -136,13 +136,13 @@ class CAdvisorMetricsAPIClient
                                     begin
                                         # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                                         # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                                        if (podName.downcase.start_with?('omsagent-') && podNameSpace.eql?("kube-system") && containerName.downcase.start_with?('omsagent') && metricNameToReturn.eql?("cpuUsageNanoCores"))
+                                        if (podName.downcase.start_with?('omsagent-') && podNamespace.eql?("kube-system") && containerName.downcase.start_with?('omsagent') && metricNametoReturn.eql?("cpuUsageNanoCores"))
                                             
                                             if (timeDifferenceInMinutes >= 10)
                                                 telemetryProps = {}
                                                 telemetryProps['PodName'] = podName
                                                 telemetryProps['ContainerName'] = containerName
-                                                ApplicationInsightsUtility.sendMetricTelemetry(metricNameToReturn, metricValue, telemetryProps)
+                                                ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                                             end
                                         end
                                     rescue => errorStr
@@ -152,7 +152,7 @@ class CAdvisorMetricsAPIClient
                             end
                         end
                         # reset time outside pod iterator as we use one timer per metric for 2 pods (ds & rs)
-                        if (timeDifferenceInMinutes >= 10 && metricNameToReturn.eql?("cpuUsageNanoCores"))
+                        if (timeDifferenceInMinutes >= 10 && metricNametoReturn.eql?("cpuUsageNanoCores"))
                             @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
                         end
                         rescue => error
@@ -165,10 +165,14 @@ class CAdvisorMetricsAPIClient
                 def getContainerMemoryMetricItems(metricJSON, hostName, memoryMetricNameToCollect, metricNametoReturn)
                     metricItems = []
                     clusterId = KubernetesApiClient.getClusterId
+                    timeDifference =  (DateTime.now.to_time.to_i - @@telemetryMemoryMetricTimeTracker).abs
+                    timeDifferenceInMinutes = timeDifference/60
                     begin
                         metricInfo = metricJSON
                         metricInfo['pods'].each do |pod|
                             podUid = pod['podRef']['uid']
+                            podName = pod['podRef']['name']
+                            podNamespace = pod['podRef']['namespace']
                             if (!pod['containers'].nil?)
                                 pod['containers'].each do |container|
                                     containerName = container['name']
@@ -192,8 +196,27 @@ class CAdvisorMetricsAPIClient
                                     metricProps['Collections'].push(metricCollections)
                                     metricItem['DataItems'].push(metricProps)
                                     metricItems.push(metricItem)
+                                    #Telemetry about agent performance
+                                    begin
+                                        # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
+                                        # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
+                                        if (podName.downcase.start_with?('omsagent-') && podNamespace.eql?("kube-system") && containerName.downcase.start_with?('omsagent') && metricNametoReturn.eql?("memoryRssBytes"))
+                                            if (timeDifferenceInMinutes >= 10)
+                                                telemetryProps = {}
+                                                telemetryProps['PodName'] = podName
+                                                telemetryProps['ContainerName'] = containerName
+                                                ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
+                                            end
+                                        end
+                                    rescue => errorStr
+                                        $log.warn("Exception while generating Telemetry from getcontainerMemoryMetricItems failed: #{errorStr} for metric #{memoryMetricNameToCollect}")
+                                    end
                                 end
                             end
+                        end
+                        # reset time outside pod iterator as we use one timer per metric for 2 pods (ds & rs)
+                        if (timeDifferenceInMinutes >= 10 && metricNametoReturn.eql?("memoryRssBytes"))
+                            @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
                         end
                         rescue => error
                         @Log.warn("getcontainerMemoryMetricItems failed: #{error} for metric #{memoryMetricNameToCollect}")

@@ -138,8 +138,11 @@ class ApplicationInsightsUtility
                 end
                 telemetryProps = {}
                 telemetryProps["Computer"] = @@hostName
-                @@CustomProperties.each do |prop|
-                    telemetryProps[prop] = @@CustomProperties[prop]
+                # add common dimensions
+                @@CustomProperties.each{ |k,v| telemetryProps[k]=v}
+                # add passed-in dimensions if any
+                if (!properties.nil? && !properties.empty?)
+                    properties.each{ |k,v| telemetryProps[k]=v}
                 end
                 if !(@@Tc.nil?)
                     @@Tc.track_metric metricName, metricValue, 
