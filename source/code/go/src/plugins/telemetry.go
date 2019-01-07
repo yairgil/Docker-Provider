@@ -62,7 +62,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 	for ; true; <-ContainerLogTelemetryTicker.C {
 		SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
 		elapsed := time.Since(start)
-		ContainerLogTelemetryMutex.Lock()
+		//ContainerLogTelemetryMutex.Lock()
 		flushRate := FlushedRecordsCount / FlushedRecordsTimeTaken * 1000
 		logRate := FlushedRecordsCount / float64(elapsed/time.Second)
 		FlushedRecordsCount = 0.0
@@ -71,7 +71,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		logLatencyMsContainer := AgentLogProcessingMaxLatencyMsContainer
 		AgentLogProcessingMaxLatencyMs = 0
 		AgentLogProcessingMaxLatencyMsContainer = ""
-		ContainerLogTelemetryMutex.Unlock()
+		//ContainerLogTelemetryMutex.Unlock()
 
 		flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 		TelemetryClient.Track(flushRateMetric)

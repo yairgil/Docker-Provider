@@ -8,18 +8,18 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
+	//"strconv"
 	"strings"
-	"sync"
+	//"sync"
 	"time"
 
 	"github.com/fluent/fluent-bit-go/output"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//"k8s.io/client-go/kubernetes"
+	//"k8s.io/client-go/rest"
 )
 
 // DataType for Container Log
@@ -30,12 +30,12 @@ const ContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_om
 
 // IPName for Container Log
 const IPName = "Containers"
-const defaultContainerInventoryRefreshInterval = 60
-const defaultKubeSystemContainersRefreshInterval = 300
+//const defaultContainerInventoryRefreshInterval = 60
+//const defaultKubeSystemContainersRefreshInterval = 300
 
 var (
 	// PluginConfiguration the plugins configuration
-	PluginConfiguration map[string]string
+	//PluginConfiguration map[string]string
 	// HTTPClient for making POST requests to OMSEndpoint
 	HTTPClient http.Client
 	// OMSEndpoint ingestion endpoint
@@ -46,27 +46,27 @@ var (
 	WorkspaceID string
 )
 
-var (
+/*var (
 	// ImageIDMap caches the container id to image mapping
-	ImageIDMap map[string]string
+	//ImageIDMap map[string]string
 	// NameIDMap caches the container it to Name mapping
-	NameIDMap map[string]string
+	//NameIDMap map[string]string
 	// IgnoreIDSet set of  container Ids of kube-system pods
-	IgnoreIDSet map[string]bool
+	//IgnoreIDSet map[string]bool
 	// DataUpdateMutex read and write mutex access to the container id set
-	DataUpdateMutex = &sync.Mutex{}
+	//DataUpdateMutex = &sync.Mutex{}
 	// ContainerLogTelemetryMutex read and write mutex access to the Container Log Telemetry
-	ContainerLogTelemetryMutex = &sync.Mutex{}
+	//ContainerLogTelemetryMutex = &sync.Mutex{}
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
-)
+)*/
 
-var (
+//var (
 	// KubeSystemContainersRefreshTicker updates the kube-system containers
-	KubeSystemContainersRefreshTicker *time.Ticker
+	//KubeSystemContainersRefreshTicker *time.Ticker
 	// ContainerImageNameRefreshTicker updates the container image and names periodically
-	ContainerImageNameRefreshTicker *time.Ticker
-)
+	//ContainerImageNameRefreshTicker *time.Ticker
+//)
 
 var (
 	// FLBLogger stream
@@ -130,7 +130,7 @@ func createLogger() *log.Logger {
 	return logger
 }
 
-func updateContainerImageNameMaps() {
+/*func updateContainerImageNameMaps() {
 	for ; true; <-ContainerImageNameRefreshTicker.C {
 		Log("Updating ImageIDMap and NameIDMap")
 
@@ -165,9 +165,9 @@ func updateContainerImageNameMaps() {
 		DataUpdateMutex.Unlock()
 		Log("Unlocking after updating image and name maps")
 	}
-}
+}*/
 
-func updateKubeSystemContainerIDs() {
+/*func updateKubeSystemContainerIDs() {
 	for ; true; <-KubeSystemContainersRefreshTicker.C {
 		if strings.Compare(os.Getenv("DISABLE_KUBE_SYSTEM_LOG_COLLECTION"), "true") != 0 {
 			Log("Kube System Log Collection is ENABLED.")
@@ -198,20 +198,20 @@ func updateKubeSystemContainerIDs() {
 		DataUpdateMutex.Unlock()
 		Log("Unlocking after updating kube-system container IDs")
 	}
-}
+}*/
 
 // PostDataHelper sends data to the OMS endpoint
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	start := time.Now()
 	var dataItems []DataItem
-	var maxLatency float64
-	var maxLatencyContainer string
-	ignoreIDSet := make(map[string]bool)
-	imageIDMap := make(map[string]string)
-	nameIDMap := make(map[string]string)
+	//var maxLatency float64
+	//var maxLatencyContainer string
+	//ignoreIDSet := make(map[string]bool)
+	//imageIDMap := make(map[string]string)
+	//nameIDMap := make(map[string]string)
 
-	DataUpdateMutex.Lock()
+	/*DataUpdateMutex.Lock()
 	for k, v := range IgnoreIDSet {
 		ignoreIDSet[k] = v
 	}
@@ -221,13 +221,14 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	for k, v := range NameIDMap {
 		nameIDMap[k] = v
 	}
-	DataUpdateMutex.Unlock()
+	DataUpdateMutex.Unlock()*/
 
 	for _, record := range tailPluginRecords {
 
 		containerID := GetContainerIDFromFilePath(ToString(record["filepath"]))
 
-		if containerID == "" || containsKey(ignoreIDSet, containerID) {
+		//if containerID == "" || containsKey(ignoreIDSet, containerID) {
+		if containerID == "" {
 			continue
 		}
 
@@ -239,7 +240,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap["SourceSystem"] = "Containers"
 		stringMap["Id"] = containerID
 
-		if val, ok := imageIDMap[containerID]; ok {
+		/*if val, ok := imageIDMap[containerID]; ok {
 			stringMap["Image"] = val
 		} else {
 			Log("ContainerId %s not present in Map ", containerID)
@@ -249,7 +250,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			stringMap["Name"] = val
 		} else {
 			Log("ContainerId %s not present in Map ", containerID)
-		}
+		}*/
 
 
 		dataItem := DataItem{
@@ -265,7 +266,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		dataItems = append(dataItems, dataItem)
-		loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
+		/*loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
 		if e!= nil {
 			message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
 			Log(message)
@@ -276,8 +277,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				maxLatency = ltncy
 				maxLatencyContainer = dataItem.Name + "=" + dataItem.ID
 			}
-		}
-	}
+		}*/
+	} //end for-loop
 
 	if len(dataItems) > 0 {
 		logEntry := ContainerLogBlob{
@@ -316,58 +317,60 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		numRecords := len(dataItems)
 		Log("Successfully flushed %d records in %s", numRecords, elapsed)
-		ContainerLogTelemetryMutex.Lock()
+		/*ContainerLogTelemetryMutex.Lock()
 		FlushedRecordsCount += float64(numRecords)
 		FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
 		if maxLatency >= AgentLogProcessingMaxLatencyMs {
 			AgentLogProcessingMaxLatencyMs = maxLatency
 			AgentLogProcessingMaxLatencyMsContainer = maxLatencyContainer
 		}
-		ContainerLogTelemetryMutex.Unlock()
+		ContainerLogTelemetryMutex.Unlock()*/
 	}
 
 	return output.FLB_OK
 }
 
-func containsKey(currentMap map[string]bool, key string) bool {
+/*func containsKey(currentMap map[string]bool, key string) bool {
 	_, c := currentMap[key]
 	return c
-}
+}*/
 
 // GetContainerIDFromFilePath Gets the container ID From the file Path
 func GetContainerIDFromFilePath(filepath string) string {
-	start := strings.LastIndex(filepath, "-")
-	end := strings.LastIndex(filepath, ".")
+	//Log("filepath=%s",filepath)
+	start := strings.LastIndex(filepath, "/")
+	end := strings.LastIndex(filepath, "-")
 	if start >= end || start == -1 || end == -1 {
 		// This means the file is not a managed Kubernetes docker log file.
 		// Drop all records from the file
-		Log("File %s is not a Kubernetes managed docker log file. Dropping all records from the file", filepath)
+		Log("Cannot get containerID from filename. File %s is not a docker log file. Dropping all records from the file", filepath)
 		return ""
 	}
 	return filepath[start+1 : end]
 }
 
 // InitializePlugin reads and populates plugin configuration
-func InitializePlugin(pluginConfPath string, agentVersion string) {
+func InitializePlugin () { //(pluginConfPath string, agentVersion string) {
 
-	IgnoreIDSet = make(map[string]bool)
+	/*IgnoreIDSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
-	NameIDMap = make(map[string]string)
+	NameIDMap = make(map[string]string)*/
 
-	pluginConfig, err := ReadConfiguration(pluginConfPath)
+	/*pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
 		message := fmt.Sprintf("Error Reading plugin config path : %s \n", err.Error())
 		Log(message)
-		SendException(message)
+		//SendException(message)
 		time.Sleep(30 * time.Second)
 		log.Fatalln(message)
-	}
+	}*/
 
-	omsadminConf, err := ReadConfiguration(pluginConfig["omsadmin_conf_path"])
+	//omsadminConf, err := ReadConfiguration(pluginConfig["omsadmin_conf_path"])
+	omsadminConf, err := ReadConfiguration("/etc/opt/microsoft/omsagent/conf/omsadmin.conf")
 	if err != nil {
 		message := fmt.Sprintf("Error Reading omsadmin configuration %s\n", err.Error())
 		Log(message)
-		SendException(message)
+		//SendException(message)
 		time.Sleep(30 * time.Second)
 		log.Fatalln(message)
 	}
@@ -376,7 +379,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	Log("OMSEndpoint %s", OMSEndpoint)
 
 	// Initialize image,name map refresh ticker
-	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
+	/*containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
 	if err != nil {
 		message := fmt.Sprintf("Error Reading Container Inventory Refresh Interval %s", err.Error())
 		Log(message)
@@ -397,21 +400,22 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		kubeSystemContainersRefreshInterval = defaultKubeSystemContainersRefreshInterval
 	}
 	Log("kubeSystemContainersRefreshInterval = %d \n", kubeSystemContainersRefreshInterval)
-	KubeSystemContainersRefreshTicker = time.NewTicker(time.Second * time.Duration(kubeSystemContainersRefreshInterval))
+	KubeSystemContainersRefreshTicker = time.NewTicker(time.Second * time.Duration(kubeSystemContainersRefreshInterval)) */
 
 	// Populate Computer field
-	containerHostName, err := ioutil.ReadFile(pluginConfig["container_host_file_path"])
+	containerHostName, err := ioutil.ReadFile("/var/opt/microsoft/docker-cimprov/state/containerhostname")
+	
 	if err != nil {
 		// It is ok to log here and continue, because only the Computer column will be missing,
 		// which can be deduced from a combination of containerId, and docker logs on the node
 		message := fmt.Sprintf("Error when reading containerHostName file %s.\n It is ok to log here and continue, because only the Computer column will be missing, which can be deduced from a combination of containerId, and docker logs on the nodes\n", err.Error())
 		Log(message)
-		SendException(message)
+		//SendException(message)
 	}
 	Computer = strings.TrimSuffix(ToString(containerHostName), "\n")
 	Log("Computer == %s \n", Computer)
 
-	ret, err := InitializeTelemetryClient(agentVersion)
+	/*ret, err := InitializeTelemetryClient(agentVersion)
 	if ret != 0 || err != nil {
 		message := fmt.Sprintf("Error During Telemetry Initialization :%s", err.Error())
 		fmt.Printf(message)
@@ -431,11 +435,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		message := fmt.Sprintf("Error getting clientset %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 		SendException(message)
 		Log(message)
-	}
+	} */
 
-	PluginConfiguration = pluginConfig
+	//PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
-	go updateKubeSystemContainerIDs()
-	go updateContainerImageNameMaps()
+	//go updateKubeSystemContainerIDs()
+	//go updateContainerImageNameMaps()
 }

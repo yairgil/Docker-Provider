@@ -5,7 +5,7 @@ import (
 )
 import (
 	"C"
-	"strings"
+	//"strings"
 	"unsafe"
 )
 
@@ -19,16 +19,16 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	Log("Initializing out_oms go plugin for fluentbit")
-	agentVersion := output.FLBPluginConfigKey(ctx, "AgentVersion")
-	InitializePlugin(ContainerLogPluginConfFilePath, agentVersion)
-	enableTelemetry := output.FLBPluginConfigKey(ctx, "EnableTelemetry")
+	//agentVersion := output.FLBPluginConfigKey(ctx, "AgentVersion")
+	InitializePlugin() //(ContainerLogPluginConfFilePath, agentVersion)
+	/*enableTelemetry := output.FLBPluginConfigKey(ctx, "EnableTelemetry")
 	if strings.Compare(strings.ToLower(enableTelemetry), "true") == 0 {
 		telemetryPushInterval := output.FLBPluginConfigKey(ctx, "TelemetryPushIntervalSeconds")
 		go SendContainerLogPluginMetrics(telemetryPushInterval)
 	} else {
 		Log("Telemetry is not enabled for the plugin %s \n", output.FLBPluginConfigKey(ctx, "Name"))
 		return output.FLB_OK
-	}
+	}*/
 	return output.FLB_OK
 }
 
@@ -51,19 +51,19 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 		records = append(records, record)
 	}
 
-	incomingTag := C.GoString(tag)
+	/*incomingTag := C.GoString(tag)
 	if strings.Contains(strings.ToLower(incomingTag), "oms.container.log.flbplugin") {
 		return PushToAppInsightsTraces(records)
-	}
+	}*/
 
 	return PostDataHelper(records)
 }
 
 // FLBPluginExit exits the plugin
 func FLBPluginExit() int {
-	ContainerLogTelemetryTicker.Stop()
-	KubeSystemContainersRefreshTicker.Stop()
-	ContainerImageNameRefreshTicker.Stop()
+	//ContainerLogTelemetryTicker.Stop()
+	//KubeSystemContainersRefreshTicker.Stop()
+	//ContainerImageNameRefreshTicker.Stop()
 	return output.FLB_OK
 }
 

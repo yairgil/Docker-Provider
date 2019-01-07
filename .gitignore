@@ -11,3 +11,4 @@
 source/code/go/src/plugins/profiling
 .vscode/launch.json
 source/code/go/src/plugins/vendor/
+/source/code/go/src/plugins/out_oms.h
