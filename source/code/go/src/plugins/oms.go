@@ -238,16 +238,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		if val, ok := imageIDMap[containerID]; ok {
 			stringMap["Image"] = val
-		} else {
-			Log("ContainerId %s not present in Map ", containerID)
 		}
 
 		if val, ok := nameIDMap[containerID]; ok {
 			stringMap["Name"] = val
-		} else {
-			Log("ContainerId %s not present in Map ", containerID)
 		}
-
 		dataItem := DataItem{
 			ID:                stringMap["Id"],
 			LogEntry:          stringMap["LogEntry"],
@@ -416,5 +411,5 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	CreateHTTPClient()
 	go updateKubeSystemContainerIDs()
-	go updateContainerImageNameMaps()
+	// go updateContainerImageNameMaps()
 }
