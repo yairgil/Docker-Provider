@@ -105,7 +105,7 @@ module Fluent
         def check_custom_metrics_availability
             aks_region = ENV['AKS_REGION']
             if aks_region.to_s.empty?
-                false
+                false # This will also take care of AKS-Engine Scenario. AKS_REGION is not set for AKS-Engine. Only ACS_RESOURCE_NAME is set
             end
             @log.debug "AKS_REGION #{aks_region}"
             custom_metrics_regions_arr = @custom_metrics_azure_regions.split(',')
