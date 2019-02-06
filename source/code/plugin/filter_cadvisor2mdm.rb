@@ -5,18 +5,21 @@
 module Fluent
     require 'logger'
     require 'json'
+    require_relative 'oms_common'
 
 	class CAdvisor2MdmFilter < Filter
 		Fluent::Plugin.register_filter('filter_cadvisor2mdm', self)
 		
 		config_param :enable_log, :integer, :default => 0
-        config_param :log_path, :string, :default => '/var/opt/microsoft/omsagent/log/filter_cadvisor2mdm.log'
+        config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log'
         config_param :custom_metrics_azure_regions, :string
         config_param :metrics_to_collect, :string, :default => 'cpuUsageNanoCores,memoryWorkingSetBytes,memoryRssBytes'
         
         @@cpu_usage_milli_cores = 'cpuUsageMilliCores'
         @@cpu_usage_nano_cores = 'cpuusagenanocores'
         @@object_name_k8s_node = 'K8SNode'
+        @@hostName = (OMS::Common.get_hostname)
+
         @process_incoming_stream = true
         @metrics_to_collect_hash = {}
 		def initialize
@@ -41,7 +44,7 @@ module Fluent
                 "data": { 
                     "baseData": { 
                         "metric": "%{metricName}", 
-                        "namespace": "Insights.Containers/node", 
+                        "namespace": "Insights.Container/nodes", 
                         "dimNames": [ 
                         "host"
                         ], 
@@ -66,29 +69,29 @@ module Fluent
 
             # initialize cpu and memory limit 
             if @process_incoming_stream
-                @cpu_limit = 0.0
-                @memory_limit = 0.0 
+                @cpu_capacity = 0.0
+                @memory_capacity = 0.0 
                 
                 begin 
-                    nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo('nodes').body)
+                    nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes?fieldSelector=metadata.name%3D#{@@hostName}").body)
                 rescue Exception => e
                     @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
                     ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
                 end
                 if !nodeInventory.nil? 
-                    cpu_limit_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
-                    if !cpu_limit_json.nil? 
-                        @cpu_limit = cpu_limit_json[0]['DataItems'][0]['Collections'][0]['Value']
-                        @log.info "CPU Limit #{@cpu_limit}"
+                    cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
+                    if !cpu_capacity_json.nil? && !cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
+                        @cpu_capacity = cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
+                        @log.info "CPU Limit #{@cpu_capacity}"
                     else
-                        @log.info "Error getting cpu_limit"
+                        @log.info "Error getting cpu_capacity"
                     end
-                    memory_limit_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
-                    if !memory_limit_json.nil?
-                        @memory_limit = memory_limit_json[0]['DataItems'][0]['Collections'][0]['Value']
-                        @log.info "Memory Limit #{@memory_limit}"
+                    memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
+                    if !memory_capacity_json.nil? && !memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
+                        @memory_capacity = memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
+                        @log.info "Memory Limit #{@memory_capacity}"
                     else
-                        @log.info "Error getting memory_limit"
+                        @log.info "Error getting memory_capacity"
                     end
                 end
             end
@@ -104,8 +107,9 @@ module Fluent
 
         def check_custom_metrics_availability
             aks_region = ENV['AKS_REGION']
-            if aks_region.to_s.empty?
-                false # This will also take care of AKS-Engine Scenario. AKS_REGION is not set for AKS-Engine. Only ACS_RESOURCE_NAME is set
+            aks_resource_id = ENV['AKS_RESOURCE_ID']
+            if aks_region.to_s.empty? && aks_resource_id.to_s.empty?
+                false # This will also take care of AKS-Engine Scenario. AKS_REGION/AKS_RESOURCE_ID is not set for AKS-Engine. Only ACS_RESOURCE_NAME is set
             end
             @log.debug "AKS_REGION #{aks_region}"
             custom_metrics_regions_arr = @custom_metrics_azure_regions.split(',')
@@ -139,15 +143,15 @@ module Fluent
                         if counter_name.downcase == @@cpu_usage_nano_cores
                             metric_name = @@cpu_usage_milli_cores
                             metric_value = metric_value/1000000
-                            if @cpu_limit != 0.0
-                                percentage_metric_value = (metric_value*1000000)*100/@cpu_limit
+                            if @cpu_capacity != 0.0
+                                percentage_metric_value = (metric_value*1000000)*100/@cpu_capacity
                             end
                         end
 
                         if counter_name.start_with?("memory")
                             metric_name = counter_name
-                            if @memory_limit != 0.0
-                                percentage_metric_value = metric_value*100/@memory_limit
+                            if @memory_capacity != 0.0
+                                percentage_metric_value = metric_value*100/@memory_capacity
                             end
                         end 
                         return get_metric_records(record, metric_name, metric_value, percentage_metric_value)

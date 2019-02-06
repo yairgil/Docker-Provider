@@ -24,6 +24,7 @@ module Fluent
       
       @data_hash = {}
       @token_url = nil
+      @http_client = nil
       @token_expiry_time = Time.now
       @cached_access_token = String.new
       @last_post_attempt_time = Time.now
@@ -53,7 +54,11 @@ module Fluent
         @log.info "Environment Variable AKS_REGION is not set.. "
         raise Exception.new "Environment Variable AKS_REGION is not set!!" 
       end
+
       @@post_request_url = @@post_request_url_template % {aks_region: aks_region, aks_resource_id: aks_resource_id}
+      @post_request_uri = URI.parse(@@post_request_url)
+      @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+      @http_client.use_ssl = true
       @log.info "POST Request url: #{@@post_request_url}"
       ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPluginStart", {})
     end
@@ -123,14 +128,11 @@ module Fluent
     def send_to_mdm(post_body) 
       begin
         access_token = get_access_token
-        uri = URI.parse(@@post_request_url)
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-        request = Net::HTTP::Post.new(uri.request_uri)
+        request = Net::HTTP::Post.new(@post_request_uri.request_uri)
         request['Content-Type'] = "application/x-ndjson"
         request['Authorization'] = "Bearer #{access_token}"
         request.body = post_body.join("\n")
-        response = http.request(request)
+        response = @http_client.request(request)
         response.value # this throws for non 200 HTTP response code
         @log.info "HTTP Post Response Code : #{response.code}"
         ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
@@ -143,6 +145,7 @@ module Fluent
           ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
         end
         @log.debug_backtrace(e.backtrace)
+        raise e
       end
     end
   private
