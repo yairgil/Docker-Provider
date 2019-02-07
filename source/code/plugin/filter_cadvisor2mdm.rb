@@ -19,26 +19,7 @@ module Fluent
         @@cpu_usage_nano_cores = 'cpuusagenanocores'
         @@object_name_k8s_node = 'K8SNode'
         @@hostName = (OMS::Common.get_hostname)
-
-        @process_incoming_stream = true
-        @metrics_to_collect_hash = {}
-		def initialize
-			super
-		end
-
-		def configure(conf)
-			super
-			@log = nil
-			
-			if @enable_log
-				@log = Logger.new(@log_path, 'weekly')
-				@log.debug {'Starting filter_cadvisor2mdm plugin'}
-			end
-		end
-
-        def start
-            super
-            @@custom_metrics_template = '
+        @@custom_metrics_template = '
             { 
                 "time": "%{timestamp}", 
                 "data": { 
@@ -63,37 +44,34 @@ module Fluent
                 } 
             }'
 
+        @process_incoming_stream = true
+        @metrics_to_collect_hash = {}
+
+		def initialize
+            super
+		end
+
+		def configure(conf)
+			super
+			@log = nil
+			
+			if @enable_log
+				@log = Logger.new(@log_path, 'weekly')
+				@log.debug {'Starting filter_cadvisor2mdm plugin'}
+			end
+		end
+
+        def start
+            super
             @process_incoming_stream = check_custom_metrics_availability
             @metrics_to_collect_hash = build_metrics_hash
             @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
-
+            
             # initialize cpu and memory limit 
             if @process_incoming_stream
                 @cpu_capacity = 0.0
-                @memory_capacity = 0.0 
-                
-                begin 
-                    nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes?fieldSelector=metadata.name%3D#{@@hostName}").body)
-                rescue Exception => e
-                    @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
-                    ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
-                end
-                if !nodeInventory.nil? 
-                    cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
-                    if !cpu_capacity_json.nil? && !cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
-                        @cpu_capacity = cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
-                        @log.info "CPU Limit #{@cpu_capacity}"
-                    else
-                        @log.info "Error getting cpu_capacity"
-                    end
-                    memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
-                    if !memory_capacity_json.nil? && !memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
-                        @memory_capacity = memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
-                        @log.info "Memory Limit #{@memory_capacity}"
-                    else
-                        @log.info "Error getting memory_capacity"
-                    end
-                end
+                @memory_capacity = 0.0
+                ensure_cpu_memory_capacity_set
             end
         end
 
@@ -131,14 +109,14 @@ module Fluent
 		end
 
         def filter(tag, time, record)
-            if @process_incoming_stream
-                object_name = record['DataItems'][0]['ObjectName']
-                counter_name = record['DataItems'][0]['Collections'][0]['CounterName']
-                if object_name == @@object_name_k8s_node && @metrics_to_collect_hash.key?(counter_name.downcase)
-                    percentage_metric_value = 0.0
+            begin
+                if @process_incoming_stream
+                    object_name = record['DataItems'][0]['ObjectName']
+                    counter_name = record['DataItems'][0]['Collections'][0]['CounterName']
+                    if object_name == @@object_name_k8s_node && @metrics_to_collect_hash.key?(counter_name.downcase)
+                        percentage_metric_value = 0.0
 
-                    # Compute and send % CPU and Memory
-                    begin
+                        # Compute and send % CPU and Memory
                         metric_value = record['DataItems'][0]['Collections'][0]['Value']
                         if counter_name.downcase == @@cpu_usage_nano_cores
                             metric_name = @@cpu_usage_milli_cores
@@ -155,19 +133,51 @@ module Fluent
                             end
                         end 
                         return get_metric_records(record, metric_name, metric_value, percentage_metric_value)
-                    rescue Exception => e
-                        @log.info "Error parsing cadvisor record Exception: #{e.class} Message: #{e.message}"
-                        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+                    else 
                         return []
                     end
-                else 
+                else
                     return []
                 end
-            else
+            rescue Exception => e
+                @log.info "Error processing cadvisor record Exception: #{e.class} Message: #{e.message}"
+                ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
                 return []
             end
         end
 
+        def ensure_cpu_memory_capacity_set
+
+            @log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
+            if @cpu_capacity != 0.0 && @memory_capacity != 0.0
+                @log.info "CPU And Memory Capacity are already set"
+                return
+            end
+
+            begin 
+                nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes?fieldSelector=metadata.name%3D#{@@hostName}").body)
+            rescue Exception => e
+                @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
+                ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+            end
+            if !nodeInventory.nil? 
+                cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
+                if !cpu_capacity_json.nil? && !cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
+                    @cpu_capacity = cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
+                    @log.info "CPU Limit #{@cpu_capacity}"
+                else
+                    @log.info "Error getting cpu_capacity"
+                end
+                memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
+                if !memory_capacity_json.nil? && !memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
+                    @memory_capacity = memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
+                    @log.info "Memory Limit #{@memory_capacity}"
+                else
+                    @log.info "Error getting memory_capacity"
+                end
+            end
+        end
+        
         def get_metric_records(record, metric_name, metric_value, percentage_metric_value)
             records = []
             custommetricrecord = @@custom_metrics_template % {
@@ -202,6 +212,7 @@ module Fluent
         
         def filter_stream(tag, es)
             new_es = MultiEventStream.new
+            ensure_cpu_memory_capacity_set
             es.each { |time, record|
               begin
                 filtered_records = filter(tag, time, record)

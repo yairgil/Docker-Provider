@@ -51,7 +51,6 @@ class KubernetesApiClient
                         kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
                         kubeApiRequest['Authorization'] = "Bearer " + getTokenStr
                         @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
-                        @Log.info "KubernetesAPIClient::getKubeResourceInfo : Query Parameters #{URI::decode_www_form(uri.query).to_h} @ #{Time.now.utc.iso8601}"
                         response = http.request(kubeApiRequest)
                         @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
                     end

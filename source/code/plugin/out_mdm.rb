@@ -114,14 +114,18 @@ module Fluent
     # This method is called every flush interval. Send the buffer chunk to MDM. 
     # 'chunk' is a buffer chunk that includes multiple formatted records
     def write(chunk)
-      if !@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes*60)
-        post_body = []
-        chunk.msgpack_each {|(tag, record)|
-          post_body.push(record.to_json)
-        }
-        send_to_mdm post_body
-      else
-        @log.info "Last Failed POST attempt to MDM was made #{((Time.now - @last_post_attempt_time)/60).round(1)} min ago. This is less than the current retry threshold of #{@retry_mdm_post_wait_minutes} min. NO-OP"
+      begin
+        if !@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes*60)
+          post_body = []
+          chunk.msgpack_each {|(tag, record)|
+            post_body.push(record.to_json)
+          }
+          send_to_mdm post_body
+        else
+          @log.info "Last Failed POST attempt to MDM was made #{((Time.now - @last_post_attempt_time)/60).round(1)} min ago. This is less than the current retry threshold of #{@retry_mdm_post_wait_minutes} min. NO-OP"
+        end
+      rescue Exception => e
+        @log.info "Exception when writing to MDM: #{e}"
       end
     end
 
@@ -137,14 +141,27 @@ module Fluent
         @log.info "HTTP Post Response Code : #{response.code}"
         ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
       rescue Net::HTTPServerException => e
-        @log.info "Failed in Post: #{e} Code: #{response.code}"
-        if response.code == 403.to_s
+        @log.info "Failed to Post Metrics to MDM : #{e} Response: #{response}"
+        @log.debug_backtrace(e.backtrace)
+        if !response.code.empty? && response.code == 403.to_s
           @log.info "Response Code #{response.code} Updating @last_post_attempt_time"
           @last_post_attempt_time = Time.now
           @first_post_attempt_made = true
           ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+          # Not raising exception, as that will cause retries to happen
+        else
+          @log.info "HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
+          raise e
         end
+      rescue Errno::ETIMEDOUT => e
+        @log.info "Timed out when POSTing Metrics to MDM : #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        raise e
+      rescue Exception => e
+        @log.info "Exception POSTing Metrics to MDM : #{e} Response: #{response}"
+        @log.debug_backtrace(e.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
         raise e
       end
     end

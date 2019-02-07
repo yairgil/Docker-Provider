@@ -174,8 +174,8 @@ chmod 666 /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
 
 touch /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
-chmod 666 /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
-chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
+chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
