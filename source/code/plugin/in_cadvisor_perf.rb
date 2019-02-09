@@ -17,7 +17,7 @@ module Fluent
 
     config_param :run_interval, :time, :default => "1m"
     config_param :tag, :string, :default => "oms.api.cadvisorperf"
-    config_param :healthtag, :string, :default => "oms.api.ci_health_perf"
+    config_param :healthtag, :string, :default => "oms.api.CIHealthPerf"
 
     def configure(conf)
       super
