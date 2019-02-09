@@ -224,6 +224,6 @@ module Fluent
               end
             }
             new_es
-          end
+        end
 	end
 end
