@@ -127,7 +127,7 @@ module Fluent
         if ((cpuHealthState != @@previousCpuHealthStateSent &&
              #@@previousCpuHealthDetails["State"].nil? ||
              ((cpuHealthState == @@previousCpuHealthDetails["State"]) && (cpuHealthState == @@previousPreviousCpuHealthDetails["State"]))) ||
-            timeDifferenceInMinutes > 5)
+            timeDifferenceInMinutes > 50)
           @log.debug "cpu conditions met."
           cpuHealthRecord["NodeCpuHealthState"] = cpuHealthState
           cpuHealthRecord["NodeCpuUsagePercentage"] = cpuMetricPercentValue
@@ -144,7 +144,7 @@ module Fluent
         if updateCpuHealthState
           @log.debug "cpu health record: #{cpuHealthRecord}"
           #healthRecords.push(cpuHealthRecord)
-          @@nodeCpuHealthDataTimeTracker = DateTime.now.to_time.to_i
+          @@nodeCpuHealthDataTimeTracker = currentTime
           @log.debug "cpu record sent"
           return cpuHealthRecord
         else
@@ -193,7 +193,7 @@ module Fluent
         if ((memoryRssHealthState != @@previousMemoryRssHealthStateSent &&
              # @@previousMemoryRssHealthDetails["State"].nil? ||
              ((memoryRssHealthState == @@previousMemoryRssHealthDetails["State"]) && (memoryRssHealthState == @@previousPreviousMemoryRssHealthDetails["State"]))) ||
-            timeDifferenceInMinutes > 5)
+            timeDifferenceInMinutes > 50)
           @log.debug "memory conditions met"
           memRssHealthRecord["NodeMemoryRssHealthState"] = memoryRssHealthState
           memRssHealthRecord["NodeMemoryRssPercentage"] = memoryRssMetricPercentValue
