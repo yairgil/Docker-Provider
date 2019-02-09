@@ -15,7 +15,7 @@ module Fluent
         config_param :custom_metrics_azure_regions, :string
         config_param :metrics_to_collect, :string, :default => 'cpuUsageNanoCores,memoryWorkingSetBytes,memoryRssBytes'
         
-        @@cpu_usage_milli_cores = 'cpuUsageMilliCores'
+        @@cpu_usage_milli_cores = 'cpuUsageMillicores'
         @@cpu_usage_nano_cores = 'cpuusagenanocores'
         @@object_name_k8s_node = 'K8SNode'
         @@hostName = (OMS::Common.get_hostname)
@@ -43,6 +43,12 @@ module Fluent
                     } 
                 } 
             }'
+        
+        @@metric_name_metric_percentage_name_hash = {
+            @@cpu_usage_milli_cores => "cpuUsagePercentage", 
+            "memoryRssBytes" => "memoryRssPercentage",
+            "memoryWorkingSetBytes" => "memoryWorkingSetPercentage" 
+        }
 
         @process_incoming_stream = true
         @metrics_to_collect_hash = {}
@@ -195,7 +201,7 @@ module Fluent
             if !percentage_metric_value.nil?
                 additional_record = @@custom_metrics_template % {
                     timestamp: record['DataItems'][0]['Timestamp'],
-                    metricName: metric_name + "Percentage",
+                    metricName: @@metric_name_metric_percentage_name_hash[metric_name],
                     hostvalue: record['DataItems'][0]['Host'],
                     objectnamevalue: record['DataItems'][0]['ObjectName'],
                     instancenamevalue: record['DataItems'][0]['InstanceName'],
@@ -224,6 +230,6 @@ module Fluent
               end
             }
             new_es
-          end
+        end
 	end
 end
