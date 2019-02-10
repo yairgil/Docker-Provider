@@ -26,7 +26,8 @@ import (
 const DataType = "CONTAINER_LOG_BLOB"
 
 // ContainerLogPluginConfFilePath --> config file path for container log plugin
-const ContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
+const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
+const ReplicaSetSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms-rs.conf"
 
 // IPName for Container Log
 const IPName = "Containers"
