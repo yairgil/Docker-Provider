@@ -159,13 +159,15 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 }
 
 // PushToAppInsightsTraces sends the log lines as trace messages to the configured App Insights Instance
-func PushToAppInsightsTraces(records []map[interface{}]interface{}) int {
+func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel int, tag string) int {
 	var logLines []string
 	for _, record := range records {
 		logLines = append(logLines, ToString(record["log"]))
 	}
 
 	traceEntry := strings.Join(logLines, "\n")
-	TelemetryClient.TrackTrace(traceEntry, 1)
+	traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
+	traceTelemetryItem.Properties["tag"] = tag
+	TelemetryClient.Track(traceTelemetryItem)
 	return output.FLB_OK
 }
