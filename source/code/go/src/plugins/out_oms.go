@@ -22,7 +22,7 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	Log("Initializing out_oms go plugin for fluentbit")
 	agentVersion := os.Getenv("AGENT_VERSION")
-	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "replicaset") == 0) {
+	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "replicaset") == 0 {
 		Log("Using %s for plugin config \n", ReplicaSetContainerLogPluginConfFilePath)
 		InitializePlugin(ReplicaSetContainerLogPluginConfFilePath, agentVersion)
 	} else {
