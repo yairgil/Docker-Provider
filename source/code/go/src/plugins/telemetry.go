@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/fluent/fluent-bit-go/output"
 )
 
@@ -159,7 +160,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 }
 
 // PushToAppInsightsTraces sends the log lines as trace messages to the configured App Insights Instance
-func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel appinsights.contracts.SeverityLevel, tag string) int {
+func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
 	var logLines []string
 	for _, record := range records {
 		logLines = append(logLines, ToString(record["log"]))
