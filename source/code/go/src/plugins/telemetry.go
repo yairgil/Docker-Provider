@@ -33,8 +33,6 @@ var (
 const (
 	clusterTypeACS                      = "ACS"
 	clusterTypeAKS                      = "AKS"
-	controllerTypeDaemonSet             = "DaemonSet"
-	controllerTypeReplicaSet            = "ReplicaSet"
 	envAKSResourceID                    = "AKS_RESOURCE_ID"
 	envACSResourceName                  = "ACS_RESOURCE_NAME"
 	envAppInsightsAuth                  = "APPLICATIONINSIGHTS_AUTH"
@@ -125,7 +123,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	CommonProperties = make(map[string]string)
 	CommonProperties["Computer"] = Computer
 	CommonProperties["WorkspaceID"] = WorkspaceID
-	CommonProperties["ControllerType"] = controllerTypeDaemonSet
+	CommonProperties["ControllerType"] = os.Getenv("CONTROLLER_TYPE")
 	CommonProperties["AgentVersion"] = agentVersion
 
 	aksResourceID := os.Getenv(envAKSResourceID)
