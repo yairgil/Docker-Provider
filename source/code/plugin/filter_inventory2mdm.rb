@@ -14,7 +14,7 @@ module Fluent
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log'
         config_param :custom_metrics_azure_regions, :string
         
-        @@node_count_metric_name = 'nodeCount'
+        @@node_count_metric_name = 'nodesReadyCount'
         @@pod_count_metric_name = 'podCount'
         @@pod_inventory_tag = 'mdm.kubepodinventory'
         @@node_inventory_tag = 'mdm.kubenodeinventory'
@@ -54,7 +54,6 @@ module Fluent
                         "metric": "%{metricName}", 
                         "namespace": "insights.container/nodes", 
                         "dimNames": [ 
-                        "podName",
                         "phase", 
                         "namespace", 
                         "node", 
@@ -63,7 +62,6 @@ module Fluent
                         "series": [ 
                         { 
                             "dimValues": [ 
-                            "%{podNameDimValue}",
                             "%{phaseDimValue}", 
                             "%{namespaceDimValue}", 
                             "%{nodeDimValue}", 
@@ -189,18 +187,15 @@ module Fluent
                 es.each{|time,record|
                     
                     timestamp = record['DataItems'][0]['CollectionTime']
-                    podNameDimValue = record['DataItems'][0]['Name']
-                    podStatusDimValue = record['DataItems'][0]['PodStatus']
+                    podPhaseDimValue = record['DataItems'][0]['PodStatus']
                     podNamespaceDimValue = record['DataItems'][0]['Namespace']
-                    podServiceNameDimValue = record['DataItems'][0]['ServiceName']
                     podControllerNameDimValue = record['DataItems'][0]['ControllerName']
                     podNodeDimValue = record['DataItems'][0]['Computer']
 
                     record = @@pod_inventory_custom_metrics_template % {
                         timestamp: timestamp,
                         metricName: @@pod_count_metric_name,
-                        podNameDimValue: podNameDimValue, 
-                        phaseDimValue: podStatusDimValue,
+                        phaseDimValue: podPhaseDimValue,
                         namespaceDimValue: podNamespaceDimValue, 
                         nodeDimValue: podNodeDimValue, 
                         controllerNameDimValue: podControllerNameDimValue

@@ -15,7 +15,7 @@ module Fluent
         config_param :custom_metrics_azure_regions, :string
         config_param :metrics_to_collect, :string, :default => 'cpuUsageNanoCores,memoryWorkingSetBytes,memoryRssBytes'
         
-        @@cpu_usage_milli_cores = 'cpuUsageMilliCores'
+        @@cpu_usage_milli_cores = 'cpuUsageMillicores'
         @@cpu_usage_nano_cores = 'cpuusagenanocores'
         @@object_name_k8s_node = 'K8SNode'
         @@hostName = (OMS::Common.get_hostname)
@@ -43,6 +43,12 @@ module Fluent
                     } 
                 } 
             }'
+        
+        @@metric_name_metric_percentage_name_hash = {
+            @@cpu_usage_milli_cores => "cpuUsagePercentage", 
+            "memoryRssBytes" => "memoryRssPercentage",
+            "memoryWorkingSetBytes" => "memoryWorkingSetPercentage" 
+        }
 
         @process_incoming_stream = true
         @metrics_to_collect_hash = {}
@@ -156,12 +162,14 @@ module Fluent
 
             begin 
                 nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes?fieldSelector=metadata.name%3D#{@@hostName}").body)
+                @log.info "nodeInventory #{nodeInventory}"
             rescue Exception => e
                 @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
                 ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
             end
             if !nodeInventory.nil? 
                 cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
+                @log.info "cpu_capacity_json #{cpu_capacity_json}"
                 if !cpu_capacity_json.nil? && !cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
                     @cpu_capacity = cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
                     @log.info "CPU Limit #{@cpu_capacity}"
@@ -195,7 +203,7 @@ module Fluent
             if !percentage_metric_value.nil?
                 additional_record = @@custom_metrics_template % {
                     timestamp: record['DataItems'][0]['Timestamp'],
-                    metricName: metric_name + "Percentage",
+                    metricName: metric_name_metric_percentage_name_hash[metric_name],
                     hostvalue: record['DataItems'][0]['Host'],
                     objectnamevalue: record['DataItems'][0]['ObjectName'],
                     instancenamevalue: record['DataItems'][0]['InstanceName'],
