@@ -36,6 +36,8 @@ module Fluent
         @@clusterName = KubernetesApiClient.getClusterName
         @@clusterId = KubernetesApiClient.getClusterId
         @@clusterRegion = KubernetesApiClient.getClusterRegion
+        @@telemetryTimeTracker = DateTime.now.to_time.to_i
+        @@PluginName = "in_health_docker"
       end
     end
 
@@ -81,11 +83,19 @@ module Fluent
           record["ClusterId"] = @@clusterId
           record["ClusterRegion"] = @@clusterRegion
           eventStream.add(emitTime, record) if record
-          $log.info("record: #{record}")
         end
 
         if isDockerStateFlush
           router.emit_stream(@tag, eventStream) if eventStream
+          timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
+          timeDifferenceInMinutes = timeDifference / 60
+          if (timeDifferenceInMinutes >= 5)
+            @@telemetryTimeTracker = DateTime.now.to_time.to_i
+            telemetryProperties = {}
+            telemetryProperties["Computer"] = hostname
+            telemetryProperties["DockerState"] = dockerState
+            ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
+          end
         end
       rescue => errorStr
         $log.warn("error : #{errorStr.to_s}")

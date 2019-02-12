@@ -15,6 +15,7 @@ module Fluent
     config_param :metrics_to_collect, :string, :default => "cpuUsageNanoCores,memoryWorkingSetBytes,memoryRssBytes"
 
     @@HealthConfigFile = "/var/opt/microsoft/docker-cimprov/healthConfig/CpuMemory/config"
+    @@PluginName = "filter_health_cpu_memory"
     # Setting the memory and cpu pass and fail percentages to default values
     @@memoryPassPercentage = 80.0
     @@memoryFailPercentage = 90.0
@@ -115,6 +116,7 @@ module Fluent
         end
       rescue => errorStr
         @log.debug "Exception occured while reading config file at location #{@@HealthConfigFile}, error: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 
@@ -176,8 +178,11 @@ module Fluent
         @@previousPreviousCpuHealthDetails = @@previousCpuHealthDetails.clone
         @@previousCpuHealthDetails = currentCpuHealthDetails.clone
         if updateCpuHealthState
-          @log.debug "cpu health record: #{cpuHealthRecord}"
           @@nodeCpuHealthDataTimeTracker = currentTime
+          telemetryProperties = {}
+          telemetryProperties["Computer"] = host
+          telemetryProperties["NodeCpuHealthState"] = cpuHealthState
+          ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
           @log.debug "cpu record sent"
           return cpuHealthRecord
         else
@@ -185,6 +190,7 @@ module Fluent
         end
       rescue => errorStr
         @log.debug "In processCpuMetrics: exception: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 
@@ -236,8 +242,11 @@ module Fluent
         @@previousPreviousMemoryRssHealthDetails = @@previousMemoryRssHealthDetails.clone
         @@previousMemoryRssHealthDetails = currentMemoryRssHealthDetails.clone
         if updateMemoryRssHealthState
-          @log.debug "memory health record: #{memRssHealthRecord}"
           @@nodeMemoryRssDataTimeTracker = currentTime
+          telemetryProperties = {}
+          telemetryProperties["Computer"] = host
+          telemetryProperties["NodeMemoryRssHealthState"] = memoryRssHealthState
+          ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
           @log.debug "memory record sent"
           return memRssHealthRecord
         else
@@ -245,6 +254,7 @@ module Fluent
         end
       rescue => errorStr
         @log.debug "In processMemoryRssMetrics: exception: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 
@@ -291,6 +301,7 @@ module Fluent
           new_es.add(time, filtered_record) if filtered_record
         rescue => e
           router.emit_error_event(tag, time, record, e)
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
         end
       }
       new_es
