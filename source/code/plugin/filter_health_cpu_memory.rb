@@ -91,18 +91,24 @@ module Fluent
           healthConfigObject = JSON.parse(fileContents)
           file.close
           if !healthConfigObject.nil?
-            if !healthConfigObject.memoryPassPercentage.nil? && healthConfigObject.memoryPassPercentage.is_a?(Numeric)
-              @@memoryPassPercentage = healthConfigObject.memoryPassPercentage
+            memPassPercent = healthConfigObject["memoryPassPercentage"]
+            memFailPercent = healthConfigObject["memoryFailPercentage"]
+            cpuPassPercent = healthConfigObject["cpuPassPercentage"]
+            cpuFailPercent = healthConfigObject["cpuFailPercentage"]
+
+            if !memPassPercent.nil? && memPassPercent.is_a?(Numeric)
+              @@memoryPassPercentage = memPassPercent
             end
-            if !healthConfigObject.memoryFailPercentage.nil? && healthConfigObject.memoryFailPercentage.is_a?(Numeric)
-              @@memoryFailPercentage = healthConfigObject.memoryFailPercentage
+            if !memFailPercent.nil? && memFailPercent.is_a?(Numeric)
+              @@memoryFailPercentage = memFailPercent
             end
-            if !healthConfigObject.cpuPassPercentage.nil? && healthConfigObject.cpuPassPercentage.is_a?(Numeric)
-              @@cpuPassPercentage = healthConfigObject.cpuPassPercentage
+            if !cpuPassPercent.nil? && cpuPassPercent.is_a?(Numeric)
+              @@cpuPassPercentage = cpuPassPercent
             end
-            if !healthConfigObject.cpuFailPercentage.nil? && healthConfigObject.cpuFailPercentage.is_a?(Numeric)
-              @@cpuFailPercentage = healthConfigObject.cpuFailPercentage
+            if !cpuFailPercent.nil? && cpuFailPercent.is_a?(Numeric)
+              @@cpuFailPercentage = cpuFailPercent
             end
+            @log.info "Successfully read config values from file, using values for cpu and memory health."
           end
         else
           @log.warn "Failed to open file at location #{@@HealthConfigFile} to read health config, using defaults"
