@@ -14,6 +14,12 @@ module Fluent
     config_param :log_path, :string, :default => "/var/opt/microsoft/omsagent/log/filter_health_cpu_memory.log"
     config_param :metrics_to_collect, :string, :default => "cpuUsageNanoCores,memoryWorkingSetBytes,memoryRssBytes"
 
+    @@HealthConfigFile = "/var/opt/microsoft/docker-cimprov/healthConfig/CpuMemory/config"
+    # Setting the memory and cpu pass and fail percentages to default values
+    @@memoryPassPercentage = 80.0
+    @@memoryFailPercentage = 90.0
+    @@cpuPassPercentage = 80.0
+    @@cpuFailPercentage = 90.0
     @@previousCpuHealthDetails = {}
     @@previousPreviousCpuHealthDetails = {}
     @@previousCpuHealthStateSent = ""
@@ -26,7 +32,6 @@ module Fluent
     @@clusterName = KubernetesApiClient.getClusterName
     @@clusterId = KubernetesApiClient.getClusterId
     @@clusterRegion = KubernetesApiClient.getClusterRegion
-    # @@cpu_usage_milli_cores = "cpuUsageMilliCores"
     @@cpu_usage_nano_cores = "cpuusagenanocores"
     @@memory_rss_bytes = "memoryrssbytes"
     @@object_name_k8s_node = "K8SNode"
@@ -77,6 +82,34 @@ module Fluent
           @log.info "Error getting memory_limit"
         end
       end
+      # Read config information for cpu and memory limits.
+      begin
+        healthConfigObject = nil
+        file = File.open(@@HealthConfigFile, "r")
+        if !file.nil?
+          fileContents = file.read
+          healthConfigObject = JSON.parse(fileContents)
+          file.close
+          if !healthConfigObject.nil?
+            if !healthConfigObject.memoryPassPercentage.nil? && healthConfigObject.memoryPassPercentage.is_a?(Numeric)
+              @@memoryPassPercentage = healthConfigObject.memoryPassPercentage
+            end
+            if !healthConfigObject.memoryFailPercentage.nil? && healthConfigObject.memoryFailPercentage.is_a?(Numeric)
+              @@memoryFailPercentage = healthConfigObject.memoryFailPercentage
+            end
+            if !healthConfigObject.cpuPassPercentage.nil? && healthConfigObject.cpuPassPercentage.is_a?(Numeric)
+              @@cpuPassPercentage = healthConfigObject.cpuPassPercentage
+            end
+            if !healthConfigObject.cpuFailPercentage.nil? && healthConfigObject.cpuFailPercentage.is_a?(Numeric)
+              @@cpuFailPercentage = healthConfigObject.cpuFailPercentage
+            end
+          end
+        else
+          @log.warn "Failed to open file at location #{@@HealthConfigFile} to read health config, using defaults"
+        end
+      rescue => errorStr
+        @log.debug "Exception occured while reading config file at location #{@@HealthConfigFile}, error: #{errorStr}"
+      end
     end
 
     def shutdown
@@ -91,12 +124,10 @@ module Fluent
       return metrics_hash
     end
 
-    #def processCpuMetrics(cpuMetricValue, cpuMetricPercentValue, healthRecords)
     def processCpuMetrics(cpuMetricValue, cpuMetricPercentValue, host, timeStamp)
       begin
         @log.debug "cpuMetricValue: #{cpuMetricValue}"
         @log.debug "cpuMetricPercentValue: #{cpuMetricPercentValue}"
-        #@log.debug "healthRecords: #{healthRecords}"
         # Get node CPU usage health
         updateCpuHealthState = false
         cpuHealthRecord = {}
@@ -106,10 +137,9 @@ module Fluent
         cpuHealthRecord["ClusterRegion"] = @@clusterRegion
         cpuHealthRecord["Computer"] = host
         cpuHealthState = ""
-        if cpuMetricPercentValue.to_f < 80.0
-          #nodeCpuHealthState = 'Pass'
+        if cpuMetricPercentValue.to_f < @@cpuPassPercentage
           cpuHealthState = "Pass"
-        elsif cpuMetricPercentValue.to_f > 90.0
+        elsif cpuMetricPercentValue.to_f > @@cpuFailPercentage
           cpuHealthState = "Fail"
         else
           cpuHealthState = "Warning"
@@ -125,14 +155,12 @@ module Fluent
 
         @log.debug "processing cpu metrics"
         if ((cpuHealthState != @@previousCpuHealthStateSent &&
-             #@@previousCpuHealthDetails["State"].nil? ||
              ((cpuHealthState == @@previousCpuHealthDetails["State"]) && (cpuHealthState == @@previousPreviousCpuHealthDetails["State"]))) ||
             timeDifferenceInMinutes > 50)
           @log.debug "cpu conditions met."
           cpuHealthRecord["NodeCpuHealthState"] = cpuHealthState
           cpuHealthRecord["NodeCpuUsagePercentage"] = cpuMetricPercentValue
           cpuHealthRecord["NodeCpuUsageMilliCores"] = cpuMetricValue
-          #healthRecord['TimeStateDetected'] = @@previousPreviousCpuHealthDetails['Time']
           cpuHealthRecord["CollectionTime"] = @@previousPreviousCpuHealthDetails["Time"]
           cpuHealthRecord["PrevNodeCpuUsageDetails"] = {"Percent": @@previousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousCpuHealthDetails["Time"], "Millicores": @@previousCpuHealthDetails["CPUUsageMillicores"]}
           cpuHealthRecord["PrevPrevNodeCpuUsageDetails"] = {"Percent": @@previousPreviousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousPreviousCpuHealthDetails["Time"], "Millicores": @@previousPreviousCpuHealthDetails["CPUUsageMillicores"]}
@@ -143,7 +171,6 @@ module Fluent
         @@previousCpuHealthDetails = currentCpuHealthDetails.clone
         if updateCpuHealthState
           @log.debug "cpu health record: #{cpuHealthRecord}"
-          #healthRecords.push(cpuHealthRecord)
           @@nodeCpuHealthDataTimeTracker = currentTime
           @log.debug "cpu record sent"
           return cpuHealthRecord
@@ -155,12 +182,10 @@ module Fluent
       end
     end
 
-    #def processMemoryRssHealthMetrics(memoryRssMetricValue, memoryRssMetricPercentValue, healthRecords)
     def processMemoryRssHealthMetrics(memoryRssMetricValue, memoryRssMetricPercentValue, host, timeStamp)
       begin
         @log.debug "memoryRssMetricValue: #{memoryRssMetricValue}"
         @log.debug "memoryRssMetricPercentValue: #{memoryRssMetricPercentValue}"
-        #@log.debug "healthRecords: #{healthRecords}"
 
         # Get node memory RSS health
         memRssHealthRecord = {}
@@ -171,10 +196,9 @@ module Fluent
         memRssHealthRecord["Computer"] = host
 
         memoryRssHealthState = ""
-        if memoryRssMetricPercentValue.to_f < 80.0
-          #nodeCpuHealthState = 'Pass'
+        if memoryRssMetricPercentValue.to_f < @@memoryPassPercentage
           memoryRssHealthState = "Pass"
-        elsif memoryRssMetricPercentValue.to_f > 90.0
+        elsif memoryRssMetricPercentValue.to_f > @@memoryFailPercentage
           memoryRssHealthState = "Fail"
         else
           memoryRssHealthState = "Warning"
@@ -191,14 +215,12 @@ module Fluent
         @log.debug "processing memory metrics"
 
         if ((memoryRssHealthState != @@previousMemoryRssHealthStateSent &&
-             # @@previousMemoryRssHealthDetails["State"].nil? ||
              ((memoryRssHealthState == @@previousMemoryRssHealthDetails["State"]) && (memoryRssHealthState == @@previousPreviousMemoryRssHealthDetails["State"]))) ||
             timeDifferenceInMinutes > 50)
           @log.debug "memory conditions met"
           memRssHealthRecord["NodeMemoryRssHealthState"] = memoryRssHealthState
           memRssHealthRecord["NodeMemoryRssPercentage"] = memoryRssMetricPercentValue
           memRssHealthRecord["NodeMemoryRssBytes"] = memoryRssMetricValue
-          #healthRecord['TimeStateDetected'] = @@previousPreviousCpuHealthDetails['Time']
           memRssHealthRecord["CollectionTime"] = @@previousPreviousMemoryRssHealthDetails["Time"]
           memRssHealthRecord["PrevNodeMemoryRssDetails"] = {"Percent": @@previousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousMemoryRssHealthDetails["Time"], "Bytes": @@previousMemoryRssHealthDetails["memoryRssBytes"]}
           memRssHealthRecord["PrevPrevNodeMemoryRssDetails"] = {"Percent": @@previousPreviousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousPreviousMemoryRssHealthDetails["Time"], "Bytes": @@previousPreviousMemoryRssHealthDetails["memoryRssBytes"]}
@@ -209,7 +231,6 @@ module Fluent
         @@previousMemoryRssHealthDetails = currentMemoryRssHealthDetails.clone
         if updateMemoryRssHealthState
           @log.debug "memory health record: #{memRssHealthRecord}"
-          #   healthRecords.push(memRssHealthRecord)
           @@nodeMemoryRssDataTimeTracker = currentTime
           @log.debug "memory record sent"
           return memRssHealthRecord
@@ -220,29 +241,6 @@ module Fluent
         @log.debug "In processMemoryRssMetrics: exception: #{errorStr}"
       end
     end
-
-    # def processHealthMetrics()
-    #   healthRecords = []
-    #   cpuMetricPercentValue = @@currentHealthMetrics["cpuUsageNanoCoresPercentage"]
-    #   cpuMetricValue = @@currentHealthMetrics["cpuUsageNanoCores"]
-    #   memoryRssMetricPercentValue = @@currentHealthMetrics["memoryRssBytesPercentage"]
-    #   memoryRssMetricValue = @@currentHealthMetrics["memoryRssBytes"]
-    #   processCpuMetrics(cpuMetricValue, cpuMetricPercentValue, healthRecords)
-    #   processMemoryRssHealthMetrics(memoryRssMetricValue, memoryRssMetricPercentValue, healthRecords)
-    #   return healthRecords
-    # end
-
-    #def filter(tag, time, record)
-    # Reading all the records to populate a hash for CPU and memory utilization percentages and values
-    #    @@currentHealthMetrics[record['data']['baseData']['metric']] = record['data']['baseData']['series'][0]['min']
-    #    if !(@@currentHealthMetrics.has_key?("metricTime"))
-    #        @@currentHealthMetrics['metricTime'] = record['time']
-    #    end
-    #    if !(@@currentHealthMetrics.has_key?("computer"))
-    #        @@currentHealthMetrics['computer'] = record['data']['baseData']['series'][0]['dimValues'][0]
-    #    end
-    #    return nil
-    #end
 
     def filter(tag, time, record)
       object_name = record["DataItems"][0]["ObjectName"]
@@ -256,7 +254,6 @@ module Fluent
         begin
           metric_value = record["DataItems"][0]["Collections"][0]["Value"]
           if counter_name.downcase == @@cpu_usage_nano_cores
-            # metric_name = @@cpu_usage_milli_cores
             metric_value = metric_value / 1000000
             if @@cpu_limit != 0.0
               percentage_metric_value = (metric_value * 1000000) * 100 / @@cpu_limit
@@ -265,13 +262,11 @@ module Fluent
           end
 
           if counter_name.downcase == @@memory_rss_bytes
-            # metric_name = counter_name
             if @@memory_limit != 0.0
               percentage_metric_value = metric_value * 100 / @@memory_limit
             end
             return processMemoryRssHealthMetrics(metric_value, percentage_metric_value, host, timeStamp)
           end
-          #return get_metric_records(record, metric_name, metric_value, percentage_metric_value)
         rescue Exception => e
           @log.info "Error parsing cadvisor record Exception: #{e.class} Message: #{e.message}"
           ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
@@ -282,35 +277,12 @@ module Fluent
       end
     end
 
-    #def filter_stream(tag, es)
-    #health_es = MultiEventStream.new
-    #timeFromEventStream = DateTime.now.to_time.to_i
-    #begin
-    #es.each { |time, record|
-    #   filter(tag, time, record)
-    #  if !timeFromEventStream.nil?
-    #      timeFromEventStream = time
-    #  end
-    #}
-    #healthRecords = processHealthMetrics
-    #healthRecords.each {|healthRecord|
-    #    health_es.add(timeFromEventStream, healthRecord) if healthRecord
-    #    router.emit_stream('oms.rashmi', health_es) if health_es
-    #} if healthRecords
-    #rescue => e
-    #  @log.debug "exception: #{e}"
-    #end
-    # es
-    # end
-
     def filter_stream(tag, es)
       new_es = MultiEventStream.new
       es.each { |time, record|
         begin
           filtered_record = filter(tag, time, record)
-          #   filtered_records.each { |filtered_record|
           new_es.add(time, filtered_record) if filtered_record
-          #   } if filtered_records
         rescue => e
           router.emit_error_event(tag, time, record, e)
         end
