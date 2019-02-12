@@ -14,7 +14,7 @@ module Fluent
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log'
         config_param :custom_metrics_azure_regions, :string
         
-        @@node_count_metric_name = 'nodesReadyCount'
+        @@node_count_metric_name = 'nodesCount'
         @@pod_count_metric_name = 'podCount'
         @@pod_inventory_tag = 'mdm.kubepodinventory'
         @@node_inventory_tag = 'mdm.kubenodeinventory'
@@ -67,9 +67,9 @@ module Fluent
                             "%{nodeDimValue}", 
                             "%{controllerNameDimValue}"
                             ], 
-                            "min": 1,
-                            "max": 1, 
-                            "sum": 1, 
+                            "min": %{podCountMetricValue},
+                            "max": %{podCountMetricValue}, 
+                            "sum": %{podCountMetricValue}, 
                             "count": 1 
                         } 
                         ] 
@@ -142,8 +142,6 @@ module Fluent
                     begin
                         timestamp = record['DataItems'][0]['CollectionTime']
                         node_status = record['DataItems'][0]['Status']
-                        @log.info "Node Status: #{node_status}"
-                        @log.info "Node Name: #{record['DataItems'][0]['Computer']}"
                         if node_status.downcase == @@node_status_ready.downcase
                             node_ready_count = node_ready_count+1
                         else
@@ -152,10 +150,6 @@ module Fluent
                     rescue => e
                     end
                 }
-
-                @log.info "Node Ready Count : #{node_ready_count}"
-                @log.info "Node Not Ready Count : #{node_not_ready_count}"
-                @log.info "Timestamp for Node Metrics: #{timestamp}"
 
                 ready_record = @@node_inventory_custom_metrics_template % {
                     timestamp: timestamp,
@@ -182,6 +176,8 @@ module Fluent
 
         def process_pod_inventory_records(es)
             timestamp = DateTime.now
+            pod_count_hash = Hash.new
+
             begin
                 records = []
                 es.each{|time,record|
@@ -191,6 +187,32 @@ module Fluent
                     podNamespaceDimValue = record['DataItems'][0]['Namespace']
                     podControllerNameDimValue = record['DataItems'][0]['ControllerName']
                     podNodeDimValue = record['DataItems'][0]['Computer']
+                    
+                    # group by distinct dimension values
+                    pod_key = [podNodeDimValue, podNamespaceDimValue, podControllerNameDimValue, podPhaseDimValue].join('~~')
+                    
+                    if pod_count_hash.key?(pod_key) 
+                        pod_count = pod_count_hash[pod_key]
+                        pod_count = pod_count + 1
+                        pod_count_hash[pod_key] = pod_count
+                    else
+                        pod_count = 1
+                        pod_count_hash[pod_key] = pod_count
+                    end
+                }
+
+                pod_count_hash.each {|key, value|
+
+                    key_elements = key.split('~~')
+                    if key_elements.length != 4
+                        next
+                    end
+
+                    # get dimension values by key
+                    podNodeDimValue = key_elements[0]
+                    podNamespaceDimValue = key_elements[1]
+                    podControllerNameDimValue = key_elements[2]
+                    podPhaseDimValue = key_elements[3]
 
                     record = @@pod_inventory_custom_metrics_template % {
                         timestamp: timestamp,
@@ -198,7 +220,8 @@ module Fluent
                         phaseDimValue: podPhaseDimValue,
                         namespaceDimValue: podNamespaceDimValue, 
                         nodeDimValue: podNodeDimValue, 
-                        controllerNameDimValue: podControllerNameDimValue
+                        controllerNameDimValue: podControllerNameDimValue, 
+                        podCountMetricValue: value
                     }
                     records.push(JSON.parse(record))
                 }
