@@ -53,7 +53,7 @@ module Fluent
                 "data": { 
                     "baseData": { 
                         "metric": "%{metricName}", 
-                        "namespace": "insights.container/nodes", 
+                        "namespace": "insights.container/pods", 
                         "dimNames": [ 
                         "phase", 
                         "namespace", 
