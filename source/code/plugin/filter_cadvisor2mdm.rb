@@ -6,6 +6,7 @@ module Fluent
     require 'logger'
     require 'json'
     require_relative 'oms_common'
+    require_relative 'CustomMetricsUtils'
 
 	class CAdvisor2MdmFilter < Filter
 		Fluent::Plugin.register_filter('filter_cadvisor2mdm', self)
@@ -69,7 +70,7 @@ module Fluent
 
         def start
             super
-            @process_incoming_stream = check_custom_metrics_availability
+            @process_incoming_stream = CustomMetricsUtils.check_custom_metrics_availability(@custom_metrics_azure_regions)
             @metrics_to_collect_hash = build_metrics_hash
             @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
             
@@ -87,27 +88,6 @@ module Fluent
             metrics_hash = metrics_to_collect_arr.map {|x| [x.downcase,true]}.to_h
             @log.info "Metrics Collected : #{metrics_hash}"
             return metrics_hash
-        end
-
-        def check_custom_metrics_availability
-            aks_region = ENV['AKS_REGION']
-            aks_resource_id = ENV['AKS_RESOURCE_ID']
-            if aks_region.to_s.empty? && aks_resource_id.to_s.empty?
-                false # This will also take care of AKS-Engine Scenario. AKS_REGION/AKS_RESOURCE_ID is not set for AKS-Engine. Only ACS_RESOURCE_NAME is set
-            end
-            @log.debug "AKS_REGION #{aks_region}"
-            custom_metrics_regions_arr = @custom_metrics_azure_regions.split(',')
-            custom_metrics_regions_hash = custom_metrics_regions_arr.map {|x| [x.downcase,true]}.to_h
-
-            @log.debug "Custom Metrics Regions Hash #{custom_metrics_regions_hash}"
-
-            if custom_metrics_regions_hash.key?(aks_region.downcase)
-                @log.debug "Returning true for check_custom_metrics_availability"
-                true
-            else 
-                @log.debug "Returning false for check_custom_metrics_availability"
-                false
-            end
         end
 
 		def shutdown
