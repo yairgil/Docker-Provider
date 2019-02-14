@@ -17,7 +17,7 @@ module Fluent
 
       @@token_resource_url = 'https://monitoring.azure.com/'
       @@grant_type = 'client_credentials'
-      @@azure_json_path = '/etc/kubernetes/azure.json'
+      @@azure_json_path = '/etc/kubernetes/host/azure.json'
       @@post_request_url_template = "https://%{aks_region}.monitoring.azure.com%{aks_resource_id}/metrics"
       @@token_url_template = "https://login.microsoftonline.com/%{tenant_id}/oauth2/token"
       @@plugin_name = "AKSCustomMetricsMDM"
