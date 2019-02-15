@@ -85,17 +85,33 @@ module Fluent
                 conditionReason = condition["reason"]
 
                 if !(nodeState.casecmp("Fail") == 0)
-                  if (conditionStatus.casecmp("Unknown") ||
+                  if ((conditionType.casecmp("MemoryPressure") == 0) ||
+                    (conditionType.casecmp("DiskPressure") == 0) ||
+                    (conditionType.casecmp("PIDPressure") == 0))
+                    if (conditionStatus.casecmp("Unknown") ||
                       conditionStatus.casecmp("True"))
-                    if ((conditionType.casecmp("MemoryPressure") == 0) ||
-                        (conditionType.casecmp("DiskPressure") == 0) ||
-                        (conditionType.casecmp("PIDPressure") == 0))
                       nodeState = "Warning"
                     else
-                      nodeState = "Fail"
+                      if !(nodeState.casecmp("Warning") == 0)
+                        nodeState = "Pass"
+                      end
+                      # nodeState = (nodeState.casecmp("Warning") == 0)? nodeState : "Pass"
                     end
-                  elsif !(nodeState.casecmp("Warning") == 0)
-                    nodeState = "Pass"
+                  elsif ((conditionType.casecmp("NetworkUnavailable") == 0) ||
+                    (conditionType.casecmp("OutOfDisk") == 0))
+                    if (conditionStatus.casecmp("Unknown") ||
+                      conditionStatus.casecmp("True"))
+                      nodeState = "Fail"
+                    else
+                      nodeState = "Pass"
+                    end
+                  elsif (conditionType.casecmp("Ready") == 0)
+                    if (conditionStatus.casecmp("Unknown") ||
+                      conditionStatus.casecmp("False"))
+                      nodeState = "Fail"
+                    else
+                      nodeState = "Pass"
+                    end
                   end
                 end
 
