@@ -30,6 +30,7 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@previousNodeStatus = {}
+        @@previousNodeState = {}
         # Tracks the last time node health data sent for each node
         @@nodeHealthDataTimeTracker = {}
         @@clusterName = KubernetesApiClient.getClusterName
@@ -77,10 +78,46 @@ module Fluent
             end
             if item["status"].key?("conditions") && !item["status"]["conditions"].empty?
               allNodeConditions = ""
+              nodeState = ""
               item["status"]["conditions"].each do |condition|
                 conditionType = condition["type"]
                 conditionStatus = condition["status"]
                 conditionReason = condition["reason"]
+
+                if !(nodeState.casecmp("Fail") == 0)
+                  if (conditionStatus.casecmp("Unknown") ||
+                      conditionStatus.casecmp("True"))
+                    if ((conditionType.casecmp("MemoryPressure") == 0) ||
+                        (conditionType.casecmp("DiskPressure") == 0) ||
+                        (conditionType.casecmp("PIDPressure") == 0))
+                      nodeState = "Warning"
+                    else
+                      nodeState = "Fail"
+                    end
+                  elsif !(nodeState.casecmp("Warning") == 0)
+                    nodeState = "Pass"
+                  end
+                end
+
+                # if !(nodeState.casecmp("Fail") == 0)
+                #   if ((conditionType.casecmp("MemoryPressure") == 0) ||
+                #       (conditionType.casecmp("DiskPressure") == 0) ||
+                #       (conditionType.casecmp("PIDPressure") == 0))
+                #     if (conditionStatus.casecmp("Unknown") ||
+                #         conditionStatus.casecmp("True"))
+                #       nodeState = "Warning"
+                #     else
+                #       nodeState = "Pass"
+                #     end
+                #   else
+                #     if (conditionStatus.casecmp("Unknown") ||
+                #         conditionStatus.casecmp("True"))
+                #       nodeState = "Fail"
+                #     else
+                #       nodeState = "Pass"
+                #     end
+                #   end
+                # end
                 if @@previousNodeStatus[computerName + conditionType].nil? ||
                    !(conditionStatus.casecmp(@@previousNodeStatus[computerName + conditionType]) == 0) ||
                    timeDifferenceInMinutes >= 3
@@ -93,8 +130,11 @@ module Fluent
                     allNodeConditions = conditionType + ":" + conditionReason
                   end
                   #end
+                  record["NewState"] = nodeState
+                  record["OldState"] = @@previousNodeState[computerName]
+                  @@previousNodeState[computerName] = nodeState
                   if !allNodeConditions.empty?
-                    record["NodeStatusCondition"] = allNodeConditions
+                    record["Details"] = allNodeConditions
                   end
                 end
               end
@@ -102,10 +142,16 @@ module Fluent
 
             if flushRecord
               #Sending node health data the very first time without checking for state change and timeout
-              record["Computer"] = computerName
-              record["ClusterName"] = @@clusterName
-              record["ClusterId"] = @@clusterId
-              record["ClusterRegion"] = @@clusterRegion
+              labelsString = "NodeName:" + ((!computerName.nil?)? computerName : "") + 
+                "ClusterName:" + ((!@@clusterName.nil?)? @@clusterName : "") + 
+                "ClusterId:" + ((!@@clusterId.nil?)? @@clusterId : "") +
+                "ClusterRegion:" + ((!@@clusterRegion.nil?)? @@clusterRegion : "")
+              # record["Computer"] = computerName
+              # record["ClusterName"] = @@clusterName
+              # record["ClusterId"] = @@clusterId
+              # record["ClusterRegion"] = @@clusterRegion
+              record["MonitorId"] = "KubeletHealth"
+              record["Labels"] = labelsString
               eventStream.add(emitTime, record) if record
               @@nodeHealthDataTimeTracker[computerName] = currentTime
               timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
