@@ -66,7 +66,11 @@ module Fluent
             record = {}
             record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
             computerName = item["metadata"]["name"]
-            record["Computer"] = computerName
+            labels = {}
+            labels["ClusterName"] = @@clusterName
+            labels["ClusterId"] = @@clusterId
+            labels["ClusterRegion"] = @@clusterRegion
+            labels["NodeName"] = computerName
             # Tracking state change in order to send node health data only in case of state change or timeout
             flushRecord = false
 
@@ -77,7 +81,8 @@ module Fluent
               timeDifferenceInMinutes = timeDifference / 60
             end
             if item["status"].key?("conditions") && !item["status"]["conditions"].empty?
-              allNodeConditions = ""
+              # allNodeConditions = ""
+              allNodeConditions = {}
               nodeState = ""
               item["status"]["conditions"].each do |condition|
                 conditionType = condition["type"]
@@ -86,88 +91,53 @@ module Fluent
 
                 if !(nodeState.casecmp("Fail") == 0)
                   if ((conditionType.casecmp("MemoryPressure") == 0) ||
-                    (conditionType.casecmp("DiskPressure") == 0) ||
-                    (conditionType.casecmp("PIDPressure") == 0))
-                    if (conditionStatus.casecmp("Unknown") ||
-                      conditionStatus.casecmp("True"))
+                      (conditionType.casecmp("DiskPressure") == 0) ||
+                      (conditionType.casecmp("PIDPressure") == 0))
+                    if ((conditionStatus.casecmp("Unknown") == 0) ||
+                        (conditionStatus.casecmp("True") == 0))
                       nodeState = "Warning"
                     else
                       if !(nodeState.casecmp("Warning") == 0)
                         nodeState = "Pass"
                       end
-                      # nodeState = (nodeState.casecmp("Warning") == 0)? nodeState : "Pass"
                     end
                   elsif ((conditionType.casecmp("NetworkUnavailable") == 0) ||
-                    (conditionType.casecmp("OutOfDisk") == 0))
-                    if (conditionStatus.casecmp("Unknown") ||
-                      conditionStatus.casecmp("True"))
+                         (conditionType.casecmp("OutOfDisk") == 0))
+                    if ((conditionStatus.casecmp("Unknown") == 0) ||
+                        (conditionStatus.casecmp("True") == 0))
                       nodeState = "Fail"
                     else
                       nodeState = "Pass"
                     end
                   elsif (conditionType.casecmp("Ready") == 0)
-                    if (conditionStatus.casecmp("Unknown") ||
-                      conditionStatus.casecmp("False"))
+                    if ((conditionStatus.casecmp("Unknown") == 0) ||
+                        (conditionStatus.casecmp("False") == 0))
                       nodeState = "Fail"
                     else
                       nodeState = "Pass"
                     end
                   end
                 end
-
-                # if !(nodeState.casecmp("Fail") == 0)
-                #   if ((conditionType.casecmp("MemoryPressure") == 0) ||
-                #       (conditionType.casecmp("DiskPressure") == 0) ||
-                #       (conditionType.casecmp("PIDPressure") == 0))
-                #     if (conditionStatus.casecmp("Unknown") ||
-                #         conditionStatus.casecmp("True"))
-                #       nodeState = "Warning"
-                #     else
-                #       nodeState = "Pass"
-                #     end
-                #   else
-                #     if (conditionStatus.casecmp("Unknown") ||
-                #         conditionStatus.casecmp("True"))
-                #       nodeState = "Fail"
-                #     else
-                #       nodeState = "Pass"
-                #     end
-                #   end
-                # end
+                
                 if @@previousNodeStatus[computerName + conditionType].nil? ||
                    !(conditionStatus.casecmp(@@previousNodeStatus[computerName + conditionType]) == 0) ||
                    timeDifferenceInMinutes >= 3
                   # Comparing current status with previous status and setting state change as true
                   flushRecord = true
                   @@previousNodeStatus[computerName + conditionType] = conditionStatus
-                  if !allNodeConditions.empty?
-                    allNodeConditions = allNodeConditions + "," + conditionType + ":" + conditionReason
-                  else
-                    allNodeConditions = conditionType + ":" + conditionReason
-                  end
-                  #end
+                  allNodeConditions[conditionType] = conditionReason
                   record["NewState"] = nodeState
                   record["OldState"] = @@previousNodeState[computerName]
                   @@previousNodeState[computerName] = nodeState
-                  if !allNodeConditions.empty?
-                    record["Details"] = allNodeConditions
-                  end
+                  record["Details"] = allNodeConditions.to_json
                 end
               end
             end
 
             if flushRecord
               #Sending node health data the very first time without checking for state change and timeout
-              labelsString = "NodeName:" + ((!computerName.nil?)? computerName : "") + 
-                "ClusterName:" + ((!@@clusterName.nil?)? @@clusterName : "") + 
-                "ClusterId:" + ((!@@clusterId.nil?)? @@clusterId : "") +
-                "ClusterRegion:" + ((!@@clusterRegion.nil?)? @@clusterRegion : "")
-              # record["Computer"] = computerName
-              # record["ClusterName"] = @@clusterName
-              # record["ClusterId"] = @@clusterId
-              # record["ClusterRegion"] = @@clusterRegion
               record["MonitorId"] = "KubeletHealth"
-              record["Labels"] = labelsString
+              record["Labels"] = labels.to_json
               eventStream.add(emitTime, record) if record
               @@nodeHealthDataTimeTracker[computerName] = currentTime
               timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
@@ -176,7 +146,7 @@ module Fluent
                 @@telemetryTimeTracker = DateTime.now.to_time.to_i
                 telemetryProperties = {}
                 telemetryProperties["Computer"] = computerName
-                telemetryProperties["NodeStatusCondition"] = allNodeConditions
+                telemetryProperties["NodeStatusCondition"] = allNodeConditions.to_json
                 ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
               end
             end
