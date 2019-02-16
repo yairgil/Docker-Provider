@@ -56,7 +56,7 @@ module Fluent
                         "namespace": "insights.container/pods", 
                         "dimNames": [ 
                         "phase", 
-                        "namespace", 
+                        "Kubernetes namespace", 
                         "node", 
                         "controllerName"
                         ], 
