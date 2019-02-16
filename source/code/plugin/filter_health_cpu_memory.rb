@@ -14,13 +14,17 @@ module Fluent
     config_param :log_path, :string, :default => "/var/opt/microsoft/omsagent/log/filter_health_cpu_memory.log"
     config_param :metrics_to_collect, :string, :default => "cpuUsageNanoCores,memoryWorkingSetBytes,memoryRssBytes"
 
-    @@HealthConfigFile = "/var/opt/microsoft/docker-cimprov/healthConfig/CpuMemory/config"
+    @@HealthConfigFile = "/var/opt/microsoft/docker-cimprov/healthConfig/config"
     @@PluginName = "filter_health_cpu_memory"
+
     # Setting the memory and cpu pass and fail percentages to default values
     @@memoryPassPercentage = 80.0
     @@memoryFailPercentage = 90.0
     @@cpuPassPercentage = 80.0
     @@cpuFailPercentage = 90.0
+    @@cpuMonitorTimeOut = 50
+    @@memoryRssMonitorTimeOut = 50
+
     @@previousCpuHealthDetails = {}
     @@previousPreviousCpuHealthDetails = {}
     @@previousCpuHealthStateSent = ""
@@ -92,10 +96,16 @@ module Fluent
           healthConfigObject = JSON.parse(fileContents)
           file.close
           if !healthConfigObject.nil?
-            memPassPercent = healthConfigObject["memoryPassPercentage"]
-            memFailPercent = healthConfigObject["memoryFailPercentage"]
-            cpuPassPercent = healthConfigObject["cpuPassPercentage"]
-            cpuFailPercent = healthConfigObject["cpuFailPercentage"]
+            # memPassPercent = healthConfigObject["memoryPassPercentage"]
+            # memFailPercent = healthConfigObject["memoryFailPercentage"]
+            # cpuPassPercent = healthConfigObject["cpuPassPercentage"]
+            # cpuFailPercent = healthConfigObject["cpuFailPercentage"]
+            cpuPassPercent = healthConfigObject["NodeCpuMonitor"]["PassPercentage"]
+            cpuFailPercent = healthConfigObject["NodeCpuMonitor"]["FailPercentage"]
+            memPassPercent = healthConfigObject["NodeMemoryRssMonitor"]["PassPercentage"]
+            memFailPercent = healthConfigObject["NodeMemoryRssMonitor"]["FailPercentage"]
+            @@cpuMonitorTimeOut = healthConfigObject["NodeCpuMonitor"]["MonitorTimeOut"]
+            @@memoryRssMonitorTimeOut = healthConfigObject["NodeMemoryRssMonitor"]["MonitorTimeOut"]
 
             if !memPassPercent.nil? && memPassPercent.is_a?(Numeric)
               @@memoryPassPercentage = memPassPercent
@@ -140,10 +150,13 @@ module Fluent
         updateCpuHealthState = false
         cpuHealthRecord = {}
         currentCpuHealthDetails = {}
-        cpuHealthRecord["ClusterName"] = @@clusterName
-        cpuHealthRecord["ClusterId"] = @@clusterId
-        cpuHealthRecord["ClusterRegion"] = @@clusterRegion
-        cpuHealthRecord["Computer"] = host
+        labels = {}
+        labels["ClusterName"] = @@clusterName
+        labels["ClusterId"] = @@clusterId
+        labels["ClusterRegion"] = @@clusterRegion
+        labels["NodeName"] = host
+        cpuHealthRecord["Labels"] = labels.to_json
+        cpuHealthRecord["MonitorId"] = "NodeCpuMonitor"
         cpuHealthState = ""
         if cpuMetricPercentValue.to_f < @@cpuPassPercentage
           cpuHealthState = "Pass"
@@ -164,14 +177,20 @@ module Fluent
         @log.debug "processing cpu metrics"
         if ((cpuHealthState != @@previousCpuHealthStateSent &&
              ((cpuHealthState == @@previousCpuHealthDetails["State"]) && (cpuHealthState == @@previousPreviousCpuHealthDetails["State"]))) ||
-            timeDifferenceInMinutes > 50)
+            timeDifferenceInMinutes > @@cpuMonitorTimeOut)
           @log.debug "cpu conditions met."
-          cpuHealthRecord["NodeCpuHealthState"] = cpuHealthState
-          cpuHealthRecord["NodeCpuUsagePercentage"] = cpuMetricPercentValue
-          cpuHealthRecord["NodeCpuUsageMilliCores"] = cpuMetricValue
+          cpuHealthRecord["NewState"] = cpuHealthState
+          cpuHealthRecord["OldState"] = @@previousCpuHealthStateSent
+
+          details = {}
+          details["NodeCpuUsagePercentage"] = cpuMetricPercentValue
+          details["NodeCpuUsageMilliCores"] = cpuMetricValue
+          details["PrevNodeCpuUsageDetails"] = { "Percent": @@previousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousCpuHealthDetails["Time"], "Millicores": @@previousCpuHealthDetails["CPUUsageMillicores"] }
+          details["PrevPrevNodeCpuUsageDetails"] = { "Percent": @@previousPreviousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousPreviousCpuHealthDetails["Time"], "Millicores": @@previousPreviousCpuHealthDetails["CPUUsageMillicores"] }
+          cpuHealthRecord["Details"] = details.to_json
+
+          #Sendind this data as collection time because this is overridden in custom log type. This will be mapped to TimeGenerated with fixed type.
           cpuHealthRecord["CollectionTime"] = @@previousPreviousCpuHealthDetails["Time"]
-          cpuHealthRecord["PrevNodeCpuUsageDetails"] = {"Percent": @@previousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousCpuHealthDetails["Time"], "Millicores": @@previousCpuHealthDetails["CPUUsageMillicores"]}
-          cpuHealthRecord["PrevPrevNodeCpuUsageDetails"] = {"Percent": @@previousPreviousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousPreviousCpuHealthDetails["Time"], "Millicores": @@previousPreviousCpuHealthDetails["CPUUsageMillicores"]}
           updateCpuHealthState = true
           @@previousCpuHealthStateSent = cpuHealthState
         end
@@ -179,6 +198,7 @@ module Fluent
         @@previousCpuHealthDetails = currentCpuHealthDetails.clone
         if updateCpuHealthState
           @@nodeCpuHealthDataTimeTracker = currentTime
+          cpuHealthRecord["TimeObserved"] = Time.now.utc.iso8601
           telemetryProperties = {}
           telemetryProperties["Computer"] = host
           telemetryProperties["NodeCpuHealthState"] = cpuHealthState
@@ -202,10 +222,14 @@ module Fluent
         # Get node memory RSS health
         memRssHealthRecord = {}
         currentMemoryRssHealthDetails = {}
-        memRssHealthRecord["ClusterName"] = @@clusterName
-        memRssHealthRecord["ClusterId"] = @@clusterId
-        memRssHealthRecord["ClusterRegion"] = @@clusterRegion
-        memRssHealthRecord["Computer"] = host
+
+        labels = {}
+        labels["ClusterName"] = @@clusterName
+        labels["ClusterId"] = @@clusterId
+        labels["ClusterRegion"] = @@clusterRegion
+        labels["NodeName"] = host
+        memRssHealthRecord["Labels"] = labels.to_json
+        memRssHealthRecord["MonitorId"] = "NodeMemoryRssMonitor"
 
         memoryRssHealthState = ""
         if memoryRssMetricPercentValue.to_f < @@memoryPassPercentage
@@ -228,14 +252,18 @@ module Fluent
 
         if ((memoryRssHealthState != @@previousMemoryRssHealthStateSent &&
              ((memoryRssHealthState == @@previousMemoryRssHealthDetails["State"]) && (memoryRssHealthState == @@previousPreviousMemoryRssHealthDetails["State"]))) ||
-            timeDifferenceInMinutes > 50)
+            timeDifferenceInMinutes > @@memoryRssMonitorTimeOut)
           @log.debug "memory conditions met"
-          memRssHealthRecord["NodeMemoryRssHealthState"] = memoryRssHealthState
-          memRssHealthRecord["NodeMemoryRssPercentage"] = memoryRssMetricPercentValue
-          memRssHealthRecord["NodeMemoryRssBytes"] = memoryRssMetricValue
+          memRssHealthRecord["NewState"] = memoryRssHealthState
+          memRssHealthRecord["OldState"] = @@previousMemoryRssHealthStateSent
+          details = {}
+          details["NodeMemoryRssPercentage"] = memoryRssMetricPercentValue
+          details["NodeMemoryRssBytes"] = memoryRssMetricValue
+          details["PrevNodeMemoryRssDetails"] = { "Percent": @@previousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousMemoryRssHealthDetails["Time"], "Bytes": @@previousMemoryRssHealthDetails["memoryRssBytes"] }
+          details["PrevPrevNodeMemoryRssDetails"] = { "Percent": @@previousPreviousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousPreviousMemoryRssHealthDetails["Time"], "Bytes": @@previousPreviousMemoryRssHealthDetails["memoryRssBytes"] }
+          memRssHealthRecord["Details"] = details.to_json
+          #Sending this data as collection time because this is overridden in custom log type. This will be mapped to TimeGenerated with fixed type.
           memRssHealthRecord["CollectionTime"] = @@previousPreviousMemoryRssHealthDetails["Time"]
-          memRssHealthRecord["PrevNodeMemoryRssDetails"] = {"Percent": @@previousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousMemoryRssHealthDetails["Time"], "Bytes": @@previousMemoryRssHealthDetails["memoryRssBytes"]}
-          memRssHealthRecord["PrevPrevNodeMemoryRssDetails"] = {"Percent": @@previousPreviousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousPreviousMemoryRssHealthDetails["Time"], "Bytes": @@previousPreviousMemoryRssHealthDetails["memoryRssBytes"]}
           updateMemoryRssHealthState = true
           @@previousMemoryRssHealthStateSent = memoryRssHealthState
         end
@@ -243,6 +271,7 @@ module Fluent
         @@previousMemoryRssHealthDetails = currentMemoryRssHealthDetails.clone
         if updateMemoryRssHealthState
           @@nodeMemoryRssDataTimeTracker = currentTime
+          memRssHealthRecord["TimeObserved"] = Time.now.utc.iso8601
           telemetryProperties = {}
           telemetryProperties["Computer"] = host
           telemetryProperties["NodeMemoryRssHealthState"] = memoryRssHealthState
