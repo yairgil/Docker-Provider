@@ -88,6 +88,7 @@ module Fluent
                 conditionType = condition["type"]
                 conditionStatus = condition["status"]
                 conditionReason = condition["reason"]
+                conditionMessage = condition["message"]
 
                 if !(nodeState.casecmp("Fail") == 0)
                   if ((conditionType.casecmp("MemoryPressure") == 0) ||
@@ -118,14 +119,17 @@ module Fluent
                     end
                   end
                 end
-                
+
                 if @@previousNodeStatus[computerName + conditionType].nil? ||
                    !(conditionStatus.casecmp(@@previousNodeStatus[computerName + conditionType]) == 0) ||
                    timeDifferenceInMinutes >= 3
                   # Comparing current status with previous status and setting state change as true
                   flushRecord = true
                   @@previousNodeStatus[computerName + conditionType] = conditionStatus
-                  allNodeConditions[conditionType] = conditionReason
+                  conditionInformation = {}
+                  conditionInformation["Reason"] = conditionReason
+                  conditionInformation["Message"] = conditionMessage
+                  allNodeConditions[conditionType] = conditionInformation.to_json
                   record["NewState"] = nodeState
                   record["OldState"] = @@previousNodeState[computerName]
                   @@previousNodeState[computerName] = nodeState
