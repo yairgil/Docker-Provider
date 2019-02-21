@@ -91,7 +91,7 @@ module Fluent
 			@log = nil
 			
 			if @enable_log
-				@log = Logger.new(@log_path, 'weekly')
+				@log = Logger.new(@log_path, 0, 10000000) #don't save prior logs
 				@log.debug {'Starting filter_inventory2mdm plugin'}
 			end
 		end

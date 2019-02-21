@@ -63,7 +63,7 @@ module Fluent
 			@log = nil
 			
 			if @enable_log
-				@log = Logger.new(@log_path, 'weekly')
+				@log = Logger.new(@log_path, 0, 10000000) #dont save prior logs
 				@log.debug {'Starting filter_cadvisor2mdm plugin'}
 			end
 		end
