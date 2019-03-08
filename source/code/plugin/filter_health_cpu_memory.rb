@@ -96,10 +96,6 @@ module Fluent
           healthConfigObject = JSON.parse(fileContents)
           file.close
           if !healthConfigObject.nil?
-            # memPassPercent = healthConfigObject["memoryPassPercentage"]
-            # memFailPercent = healthConfigObject["memoryFailPercentage"]
-            # cpuPassPercent = healthConfigObject["cpuPassPercentage"]
-            # cpuFailPercent = healthConfigObject["cpuFailPercentage"]
             cpuPassPercent = healthConfigObject["NodeCpuMonitor"]["PassPercentage"]
             cpuFailPercent = healthConfigObject["NodeCpuMonitor"]["FailPercentage"]
             memPassPercent = healthConfigObject["NodeMemoryRssMonitor"]["PassPercentage"]

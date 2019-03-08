@@ -133,6 +133,8 @@ class KubernetesApiClient
       return @@ClusterId if !@@ClusterId.nil?
       #By default initialize ClusterId to ClusterName.
       #<TODO> In ACS/On-prem, we need to figure out how we can generate ClusterId
+      # Dilipr: Spoof the subid by generating md5 hash of cluster name, and taking some constant parts of it.
+      # e.g. md5 digest is 128 bits = 32 character in hex. Get first 16 and get a guid, and the next 16 to get resource id
       @@ClusterId = getClusterName
       begin
         cluster = ENV["AKS_RESOURCE_ID"]

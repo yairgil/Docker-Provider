@@ -1,0 +1,229 @@
+#!/usr/local/bin/ruby
+# frozen_string_literal: true
+
+module Fluent
+    require 'logger'
+    require 'json'
+    require_relative 'oms_common'
+    require_relative 'HealthEventUtils'
+    require_relative 'HealthMonitorState'
+
+
+    class CAdvisor2HealthFilter < Filter
+        Fluent::Plugin.register_filter('filter_cadvisor2health', self)
+
+        config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/health_monitors.log'
+        config_param :metrics_to_collect, :string, :default => 'cpuUsageNanoCores,memoryRssBytes'
+        config_param :container_resource_refresh_interval_minutes, :integer, :default => 5
+
+        @@object_name_k8s_node = 'K8SNode'
+        @@object_name_k8s_container = 'K8SContainer'
+
+        @@counter_name_cpu = 'cpuusagenanocores'
+        @@counter_name_memory_rss = 'memoryrssbytes'
+
+        @@health_monitor_config = {}
+
+        @@hostName = (OMS::Common.get_hostname)
+        @@clusterName = KubernetesApiClient.getClusterName
+        @@clusterId = KubernetesApiClient.getClusterId
+        @@clusterRegion = KubernetesApiClient.getClusterRegion
+
+
+        def initialize
+            super
+            @cpu_capacity = 0.0
+            @memory_capacity = 0.0
+            @last_resource_refresh = DateTime.now.to_time.to_i
+            @metrics_to_collect_hash = {}
+        end
+
+        def configure(conf)
+            super
+            @log = nil
+            @log = Logger.new(@log_path, 1, 5000000)
+            @log.debug {'Starting filter_cadvisor2health plugin'}
+        end
+
+        def start
+            super
+            @metrics_to_collect_hash = HealthEventUtils.build_metrics_hash(@metrics_to_collect)
+            @log.debug "Calling ensure_cpu_memory_capacity_set cpu_capacity #{@cpu_capacity} memory_capacity #{@memory_capacity}"
+            node_capacity = HealthEventUtils.ensure_cpu_memory_capacity_set(@cpu_capacity, @memory_capacity)
+            @cpu_capacity = node_capacity[0]
+            @memory_capacity = node_capacity[1]
+            @log.info "CPU Capacity #{@cpu_capacity} Memory Capacity #{@memory_capacity}"
+            HealthEventUtils.refreshKubernetesApiData(@log, @@hostName)
+            @@health_monitor_config = HealthEventUtils.getHealthMonitorConfig
+        end
+
+        def filter_stream(tag, es)
+            new_es = MultiEventStream.new
+            HealthEventUtils.refreshKubernetesApiData(@log, @hostName)
+            es.each { |time, record|
+              begin
+                filtered_records = filter(tag, time, record)
+                filtered_records.each {|filtered_record|
+                    new_es.add(time, filtered_record) if filtered_record
+                } if filtered_records
+              rescue => e
+                router.emit_error_event(tag, time, record, e)
+              end
+            }
+            new_es
+        end
+
+        def filter(tag, time, record)
+            begin
+                object_name = record['DataItems'][0]['ObjectName']
+
+                counter_name = record['DataItems'][0]['Collections'][0]['CounterName'].downcase
+
+                if @metrics_to_collect_hash.key?(counter_name.downcase)
+                    metric_value = record['DataItems'][0]['Collections'][0]['Value']
+                    case object_name
+                    when @@object_name_k8s_container
+                        case counter_name.downcase
+                        when @@counter_name_cpu
+                            # @log.debug "Object Name #{object_name}"
+                            # @log.debug "Counter Name #{counter_name}"
+                            # @log.debug "Metric Value #{metric_value}"
+                            return process_container_cpu_record(record, metric_value)
+                        when @@counter_name_memory_rss
+                            return process_container_memory_record(record, metric_value)
+                        end
+                    when @@object_name_k8s_node
+                        case counter_name.downcase
+                        when @@counter_name_cpu
+                            process_node_cpu_record(record, metric_value)
+                        when @@counter_name_memory_rss
+                            process_node_memory_record(record, metric_value)
+                        end
+                    end
+                end
+            rescue => e
+                @log.debug "Error in filter #{e}"
+                @log.debug "backtrace #{e.backtrace}"
+                return []
+            end
+        end
+
+        def process_container_cpu_record(record, metric_value)
+            # monitor_id = HealthEventsConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID
+            # @log.debug "processing container cpu record"
+            # if record.nil?
+            #     return []
+            # else
+            #     instance_name = record['DataItems'][0]['InstanceName']
+            #     key = HealthEventUtils.getContainerKeyFromInstanceName(instance_name)
+            #     cpu_limit = HealthEventUtils.getContainerCpuLimit(key)
+
+            #     if cpu_limit.to_s.empty?
+            #         @log.info "CPU Limit is nil"
+            #         cpu_limit = @cpu_capacity
+            #     end
+
+            #     @log.info "cpu limit #{cpu_limit}"
+
+            #     percent = (metric_value.to_f/cpu_limit*100).round(2)
+            #     @log.debug "Container #{key} | Percentage of CPU limit: #{percent}"
+            #     state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthEventsConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID])
+            #     @log.debug "Computed State : #{state}"
+            #     timestamp = record['DataItems'][0]['Timestamp']
+            #     health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent})
+            #     @log.info health_monitor_record
+
+            #     monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "container_key" => key})
+            #     @log.info "Monitor Instance Id: #{monitor_instance_id}"
+            #     HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
+            #     return HealthSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], key: key)
+            # end
+
+            return []
+        end
+
+        def process_container_memory_record(record, metric_value)
+            # monitor_id = HealthEventsConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID
+            # @log.debug "processing container memory record"
+            # if record.nil?
+            #     return []
+            # else
+            #     instance_name = record['DataItems'][0]['InstanceName']
+            #     key = HealthEventUtils.getContainerKeyFromInstanceName(instance_name)
+            #     memory_limit = HealthEventUtils.getContainerMemoryLimit(key)
+
+            #     if memory_limit.to_s.empty?
+            #         @log.info "Memory Limit is nil"
+            #         memory_limit = @memory_capacity
+            #     end
+
+            #     @log.info "memory limit #{memory_limit}"
+
+            #     percent = (metric_value.to_f/memory_limit*100).round(2)
+            #     @log.debug "Container #{key} | Percentage of Memory limit: #{percent}"
+            #     state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthEventsConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID])
+            #     @log.debug "Computed State : #{state}"
+            #     timestamp = record['DataItems'][0]['Timestamp']
+            #     health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent})
+            #     @log.info health_monitor_record
+
+            #     monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "container_key" => key})
+            #     @log.info "Monitor Instance Id: #{monitor_instance_id}"
+            #     HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
+            #     return HealthSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], key: key)
+            # end
+
+            return []
+        end
+
+        def process_node_cpu_record(record, metric_value)
+            monitor_id = HealthEventsConstants::NODE_CPU_MONITOR_ID
+            @log.debug "processing node cpu record"
+            if record.nil?
+                return []
+            else
+                instance_name = record['DataItems'][0]['InstanceName']
+                @log.info "CPU capacity #{@cpu_capacity}"
+
+                percent = (metric_value.to_f/@cpu_capacity*100).round(2)
+                @log.debug "Percentage of CPU limit: #{percent}"
+                state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthEventsConstants::NODE_CPU_MONITOR_ID])
+                @log.debug "Computed State : #{state}"
+                timestamp = record['DataItems'][0]['Timestamp']
+                health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent})
+                @log.info health_monitor_record
+
+                monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName})
+                @log.info "Monitor Instance Id: #{monitor_instance_id}"
+                HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
+                return HealthSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id])
+            end
+            return []
+        end
+
+        def process_node_memory_record(record, metric_value)
+            monitor_id = HealthEventsConstants::NODE_MEMORY_MONITOR_ID
+            @log.debug "processing node memory record"
+            if record.nil?
+                return []
+            else
+                instance_name = record['DataItems'][0]['InstanceName']
+                @log.info "Memory capacity #{@memory_capacity}"
+
+                percent = (metric_value.to_f/@memory_capacity*100).round(2)
+                @log.debug "Percentage of Memory limit: #{percent}"
+                state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthEventsConstants::NODE_MEMORY_MONITOR_ID])
+                @log.debug "Computed State : #{state}"
+                timestamp = record['DataItems'][0]['Timestamp']
+                health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value/1000000.to_f, "memoryUtilizationPercentage" => percent})
+                @log.info health_monitor_record
+
+                monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName})
+                @log.info "Monitor Instance Id: #{monitor_instance_id}"
+                HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
+                return HealthSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id])
+            end
+            return []
+        end
+    end
+end
