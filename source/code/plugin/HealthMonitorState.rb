@@ -56,7 +56,7 @@ class HealthMonitorState
         end
 
         def computeHealthMonitorState(log, monitor_id, value, config)
-            log.debug "computeHealthMonitorState"
+            #log.debug "computeHealthMonitorState"
             #log.info "id: #{monitor_id} value: #{value} config: #{config}"
             case monitor_id
             when HealthEventsConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthEventsConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthEventsConstants::NODE_CPU_MONITOR_ID, HealthEventsConstants::NODE_MEMORY_MONITOR_ID
@@ -67,7 +67,7 @@ class HealthMonitorState
         end
 
         def getStateForRangeMonitor(log, value, config)
-            log.debug "getStateForRangeMonitor"
+            #log.debug "getStateForRangeMonitor"
             pass_percentage = 0.0
             (config.nil? || config['PassPercentage'].nil?) ? pass_percentage = HealthEventsConstants::DEFAULT_PASS_PERCENTAGE : pass_percentage = config['PassPercentage'].to_f
             (config.nil? || config['FailPercentage'].nil?) ? fail_percentage = HealthEventsConstants::DEFAULT_FAIL_PERCENTAGE : fail_percentage = config['FailPercentage'].to_f

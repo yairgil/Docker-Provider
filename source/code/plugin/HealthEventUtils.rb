@@ -203,11 +203,11 @@ class HealthEventUtils
             @@lastRefreshTime = Time.now.utc.iso8601
         end
 
-        def getContainerCpuLimit(key)
+        def getContainerMetadata(key)
             if @@containerMetadata.has_key?(key)
-                return @@containerMetadata[key]['cpuLimit']
+                return @@containerMetadata[key]
             else
-                return ''
+                return nil
             end
         end
 
