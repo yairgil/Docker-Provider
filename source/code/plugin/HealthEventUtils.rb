@@ -86,7 +86,7 @@ class HealthEventUtils
         end
 
         def getMonitorInstanceId(log, monitor_id, args = {})
-            log.debug "getMonitorInstanceId"
+            #log.debug "getMonitorInstanceId"
             string_to_hash = ''
             # Container Level Monitor
             if args.key?("cluster_id") && args.key?("node_name") && args.key?("container_key")
@@ -98,7 +98,7 @@ class HealthEventUtils
             elsif args.key?("cluster_id") && !args.key?("namespace") && !args.key?("controller_name") && !args.key?("container_key")
                 string_to_hash = [args['cluster_id']].join("/")
             end
-            @log.info "String to Hash : #{string_to_hash}"
+            #@log.info "String to Hash : #{string_to_hash}"
             return "#{monitor_id}-#{Digest::MD5.hexdigest(string_to_hash)}"
         end
 
@@ -122,11 +122,11 @@ class HealthEventUtils
         end
 
         def getMonitorLabels(log, monitor_id, key, controller_name, node_name)
-            log.debug "key : #{key} controller_name #{controller_name} monitor_id #{monitor_id} node_name #{node_name}"
+            #log.debug "key : #{key} controller_name #{controller_name} monitor_id #{monitor_id} node_name #{node_name}"
             monitor_labels = {}
             case monitor_id
             when HealthEventsConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthEventsConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthEventsConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthEventsConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID
-                log.debug "Getting Monitor labels for Workload/ManagedInfra Monitors #{controller_name} #{@@controllerMapping}"
+                #log.debug "Getting Monitor labels for Workload/ManagedInfra Monitors #{controller_name} #{@@controllerMapping}"
                 if !key.nil? #container
                     monitor_labels['monitor.azure.com/ControllerName'] = getContainerControllerName(key)
                     monitor_labels['monitor.azure.com/Namespace'] = getContainerNamespace(key)
@@ -136,11 +136,11 @@ class HealthEventUtils
                 end
                 return monitor_labels
             when HealthEventsConstants::NODE_CPU_MONITOR_ID, HealthEventsConstants::NODE_MEMORY_MONITOR_ID, HealthEventsConstants::NODE_KUBELET_HEALTH_MONITOR_ID, HealthEventsConstants::NODE_CONDITION_MONITOR_ID, HealthEventsConstants::NODE_CONTAINER_RUNTIME_MONITOR_ID
-                log.debug "Getting Node Labels "
+                #log.debug "Getting Node Labels "
 
                 @@nodeInventory["items"].each do |node|
                     if !node_name.nil? && !node['metadata']['name'].nil? && node_name == node['metadata']['name']
-                        log.debug "Matched node name "
+                        #log.debug "Matched node name "
                         if !node["metadata"].nil? && !node["metadata"]["labels"].nil?
                             monitor_labels = node["metadata"]["labels"]
                         end
@@ -151,7 +151,7 @@ class HealthEventUtils
         end
 
         def refreshKubernetesApiData(log, hostName)
-            log.debug "refreshKubernetesApiData"
+            #log.debug "refreshKubernetesApiData"
             if ((Time.now.utc - Time.parse(@@lastRefreshTime)) / 60 ) < 5.0
                 log.debug "Less than 5 minutes since last refresh"
                 return
@@ -178,11 +178,12 @@ class HealthEventUtils
                             cpu_limit_value = KubernetesApiClient.getMetricNumericValue('cpu', container['resources']['limits']['cpu'])
                         else
                             @log.info "CPU limit not set for container : #{container['name']}. Using Node Capacity"
+                            #TODO: Send warning health event
                             cpu_limit_value = @cpu_capacity
                         end
 
                         if !container['resources']['limits'].nil? && !container['resources']['limits']['memory'].nil?
-                            @log.info "Raw Memory Value #{container['resources']['limits']['memory']}"
+                            #@log.info "Raw Memory Value #{container['resources']['limits']['memory']}"
                             memory_limit_value = KubernetesApiClient.getMetricNumericValue('memory', container['resources']['limits']['memory'])
                         else
                             @log.info "Memory limit not set for container : #{container['name']}. Using Node Capacity"
@@ -294,7 +295,7 @@ class HealthEventUtils
                     end
                 end
             end
-            @log.debug "#{metric_name} Subscription  #{subscription}"
+            #@log.debug "#{metric_name} Subscription  #{subscription}"
             return subscription
         end
 
@@ -339,7 +340,7 @@ class HealthEventUtils
                 pods_ready_percentage_hash[controller_name] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace}
             end
 
-            @log.debug "pods_ready_percentage_hash #{pods_ready_percentage_hash}"
+            #@log.debug "pods_ready_percentage_hash #{pods_ready_percentage_hash}"
             return pods_ready_percentage_hash
         end
 

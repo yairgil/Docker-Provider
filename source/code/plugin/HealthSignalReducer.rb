@@ -6,13 +6,15 @@ require 'json'
 require_relative 'HealthEventTemplates'
 
 class HealthSignalReducer
+
+    @@firstMonitorRecordSent = {}
     class << self
         def reduceSignal(log, monitor_id, monitor_instance_id, monitor_config, key: nil, controller_name: nil, node_name: nil)
-            log.debug "reduceSignal Key : #{key} controller_name: #{controller_name} node_name #{node_name}"
-            log.debug "monitorConfig #{monitor_config}"
+            #log.debug "reduceSignal Key : #{key} controller_name: #{controller_name} node_name #{node_name}"
+            #log.debug "monitorConfig #{monitor_config}"
 
             health_monitor_instance_state = HealthMonitorState.getHealthMonitorState(monitor_instance_id)
-            log.info "Health Monitor Instance state #{health_monitor_instance_state}"
+            #log.info "Health Monitor Instance state #{health_monitor_instance_state}"
             health_monitor_records = health_monitor_instance_state.prev_records
             prev_sent_status = health_monitor_instance_state.prev_sent_record_status
             prev_sent_time = health_monitor_instance_state.prev_sent_record_time
@@ -21,7 +23,29 @@ class HealthSignalReducer
 
 
             if (!monitor_config['NotifyInstantly'].nil? && monitor_config['NotifyInstantly'] == true)
-                return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, node_name: node_name)
+                latest_record = health_monitor_records[health_monitor_records.size-1] #since we push new records to the end, and remove oldest records from the beginning
+                latest_record_state = latest_record.state
+                latest_record_time = latest_record.timestamp #string representation of time
+                #log.info "Latest Record #{latest_record}"
+                if latest_record_state.downcase == prev_sent_status.downcase && @@firstMonitorRecordSent.key?(monitor_id)
+                    #log.info "latest_record_state.to_s.downcase == prev_sent_status.to_s.state"
+                    time_elapsed = (Time.parse(latest_record_time) - Time.parse(prev_sent_time)) / 60
+                    #log.info "time elapsed #{time_elapsed}"
+                    if time_elapsed > monitor_timeout # minutes
+                        # update record
+                        health_monitor_instance_state.prev_sent_record_time = latest_record_time
+                        health_monitor_instance_state.prev_sent_record_status = latest_record_state
+                        #log.info "After Updating Monitor State #{health_monitor_instance_state}"
+                        HealthMonitorState.setHealthMonitorState(monitor_instance_id, health_monitor_instance_state)
+                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, node_name: node_name)
+                    else
+                        #log.info "Monitor timeout not reached #{time_elapsed}"
+                        #log.info "Timeout not reached for #{monitor_id}"
+                        return nil# dont send anything
+                    end
+                else
+                    return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, node_name: node_name)
+                end
             end
 
             if health_monitor_instance_state.prev_records.size == 1
@@ -45,30 +69,33 @@ class HealthSignalReducer
                         return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name)
                     else
                         #log.info "Monitor timeout not reached #{time_elapsed}"
-                        return [] # dont send anything
+                        #log.info "Timeout not reached for #{monitor_id}"
+                        return nil# dont send anything
                     end
                 else # state change from previous sent state to latest record state
                     #check state of last n records to see if they are all in the same state
                     if (isStateChangeConsistent(log, health_monitor_records))
                         return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name, node_name: node_name)
                     else
-                        return []
+                        log.debug "No consistent state change for monitor #{monitor_id}"
+                        return nil
                     end
                 end
             end
-            return []
+            log.debug "No new information for monitor #{monitor_id}"
+            return nil
         end
 
         def formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: nil, controller_name: nil, node_name: nil)
-            log.debug "formatRecord key:#{key} controller_name: #{controller_name} node_name #{node_name}"
+            #log.debug "formatRecord key:#{key} controller_name: #{controller_name} node_name #{node_name}"
 
-            log.debug "Health Monitor Instance State #{health_monitor_instance_state}"
+            #log.debug "Health Monitor Instance State #{health_monitor_instance_state}"
 
             labels = HealthEventUtils.getClusterLabels
-            log.info "Labels : #{labels}"
+            #log.info "Labels : #{labels}"
 
             monitor_labels = HealthEventUtils.getMonitorLabels(log, monitor_id, key, controller_name, node_name)
-            log.info "Monitor Labels : #{monitor_labels}"
+            #log.info "Monitor Labels : #{monitor_labels}"
 
             if !monitor_labels.nil?
                 monitor_labels.keys.each do |key|
@@ -76,18 +103,18 @@ class HealthSignalReducer
                 end
             end
 
-            log.debug "Labels #{labels.to_json.to_s}"
+            #log.debug "Labels #{labels.to_json.to_s}"
             prev_records = health_monitor_instance_state.prev_records
             collection_time = prev_records[0].timestamp # the oldest collection time
             new_state = health_monitor_instance_state.prev_records[0].state
             old_state = health_monitor_instance_state.prev_sent_record_status
 
-            log.debug "monitor_config  #{monitor_config}"
+            #log.debug "monitor_config  #{monitor_config}"
             if monitor_config.nil?
                 monitor_config = ''
             end
             monitor_config = monitor_config.to_json.to_s
-            log.debug "monitor_config  #{monitor_config}"
+            #log.debug "monitor_config  #{monitor_config}"
             records = []
 
             details = prev_records.each do |record|
@@ -114,10 +141,15 @@ class HealthSignalReducer
                 monitor_config: monitor_config
             }
 
-            log.debug "HealthMonitor Record #{health_monitor_record}"
+            #log.debug "HealthMonitor Record #{health_monitor_record}"
             return_val = JSON.parse(health_monitor_record)
-            log.debug "Parsed Health Monitor Record"
-            return []
+            #log.debug "Parsed Health Monitor Record for #{monitor_id}"
+
+            if !@@firstMonitorRecordSent.key?(monitor_id)
+                @@firstMonitorRecordSent[monitor_id] = true
+            end
+
+            return return_val
         end
 
         def isStateChangeConsistent(log, health_monitor_records)

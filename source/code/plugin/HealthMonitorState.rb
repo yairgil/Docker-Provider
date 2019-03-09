@@ -16,7 +16,7 @@ class HealthMonitorState
 
     class << self
         def updateHealthMonitorState(log, monitor_instance_id, health_monitor_record, config)
-            log.debug "updateHealthMonitorState"
+            #log.debug "updateHealthMonitorState"
             samples_to_keep = 1
             if config.nil? || config['SamplesBeforeNotification'].nil?
                 samples_to_keep = HealthEventsConstants::DEFAULT_SAMPLES_BEFORE_NOTIFICATION
@@ -40,7 +40,7 @@ class HealthMonitorState
                 health_monitor_instance_state = HealthMonitorInstanceState.new(health_monitor_record.timestamp, health_monitor_record.state, [health_monitor_record])
                 @@instanceStates[monitor_instance_id] = health_monitor_instance_state
             end
-            log.debug "Health Records Count: #{health_monitor_instance_state.prev_records.size}"
+            #log.debug "Health Records Count: #{health_monitor_instance_state.prev_records.size}"
         end
 
         def getHealthMonitorState(monitor_instance_id)
@@ -82,11 +82,11 @@ class HealthMonitorState
         end
 
         def getStateForInfraPodsReadyPercentage(log, value, config)
-            log.debug "getStateForInfraPodsReadyPercentage"
-            log.debug "getStateForInfraPodsReadyPercentage #{config}"
+            # log.debug "getStateForInfraPodsReadyPercentage"
+            # log.debug "getStateForInfraPodsReadyPercentage #{config}"
             (config.nil? || config['PassPercentage'].nil?) ? pass_percentage = HealthEventsConstants::DEFAULT_PASS_PERCENTAGE : pass_percentage = config['PassPercentage'].to_f
             (config.nil? || config['FailPercentage'].nil?) ? fail_percentage = HealthEventsConstants::DEFAULT_FAIL_PERCENTAGE : fail_percentage = config['FailPercentage'].to_f
-            log.info " getStateForInfraPodsReadyPercentage Pass: #{pass_percentage} Fail: #{fail_percentage}"
+            # log.info " getStateForInfraPodsReadyPercentage Pass: #{pass_percentage} Fail: #{fail_percentage}"
             if value.to_f < pass_percentage.to_f
                 return HEALTH_MONITOR_STATE['FAIL']
             else
@@ -95,11 +95,11 @@ class HealthMonitorState
         end
 
         def getStateForWorkloadPodsReadyPercentage(log, value, config)
-            log.debug "getStateForWorkloadPodsReadyPercentage"
+            # log.debug "getStateForWorkloadPodsReadyPercentage"
             pass_percentage = 0.0
             (config.nil? || config['PassPercentage'].nil?) ? pass_percentage = HealthEventsConstants::DEFAULT_PASS_PERCENTAGE : pass_percentage = config['PassPercentage'].to_f
             (config.nil? || config['FailPercentage'].nil?) ? fail_percentage = HealthEventsConstants::DEFAULT_FAIL_PERCENTAGE : fail_percentage = config['FailPercentage'].to_f
-            log.info "getStateForWorkloadPodsReadyPercentage Pass: #{pass_percentage} Fail: #{fail_percentage}"
+            #log.info "getStateForWorkloadPodsReadyPercentage Pass: #{pass_percentage} Fail: #{fail_percentage}"
             if value.to_f > fail_percentage.to_f && value.to_f < pass_percentage.to_f
                 return HEALTH_MONITOR_STATE['WARNING']
             elsif value.to_f < fail_percentage.to_f
