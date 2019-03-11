@@ -23,7 +23,7 @@ module Fluent
     end
 
     config_param :run_interval, :time, :default => "1m"
-    config_param :tag, :string, :default => "oms.containerinsights.ContainerInsightsHealth"
+    config_param :tag, :string, :default => "oms.api.DiliprPerf"
 
     def configure(conf)
       super
@@ -117,7 +117,8 @@ module Fluent
         end
         router.emit_stream(@tag, eventStream) if eventStream
       rescue => errorStr
-        @@hmlog.warn("error : #{errorStr.to_s}")
+        @@hmlog.warn("error in_health_kubeapidata: #{errorStr.to_s}")
+        @log.debug "backtrace Input #{errorStr.backtrace}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
@@ -130,7 +131,8 @@ module Fluent
 
       #CPU
       monitor_id = HealthEventsConstants::WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID
-      health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f})
+      health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f}}
+      #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f})
       # @@hmlog.info health_monitor_record
 
       monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId})
@@ -149,7 +151,8 @@ module Fluent
 
       #CPU
       monitor_id = HealthEventsConstants::WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID
-      health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f})
+      health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f}}
+      #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f})
       hmlog = HealthEventUtils.getLogHandle
 
       monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId})
@@ -165,7 +168,8 @@ module Fluent
       monitor_id = HealthEventsConstants::MANAGEDINFRA_KUBEAPI_AVAILABLE_MONITOR_ID
       details = response.each_header.to_h
       details['ResponseCode'] = response.code
-      health_monitor_record = HealthMonitorRecord.new(timestamp, state, details)
+      health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
+      #health_monitor_record = HealthMonitorRecord.new(timestamp, state, details)
       hmlog = HealthEventUtils.getLogHandle
       #hmlog.info health_monitor_record
 
@@ -196,8 +200,8 @@ module Fluent
         elsif config_monitor_id.downcase.start_with?("workload")
           state = HealthMonitorState.getStateForWorkloadPodsReadyPercentage(@@hmlog, percent, monitor_config)
         end
-
-        health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"totalPods" => total_pods, "podsReady" => pods_ready, "controllerName" => controller_name})
+        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "controllerName" => controller_name}}
+        #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"totalPods" => total_pods, "podsReady" => pods_ready, "controllerName" => controller_name})
         #hmlog.info health_monitor_record
         monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId, "controller_name" => controller_name, "namespace" => namespace})
         HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
@@ -224,7 +228,8 @@ module Fluent
             conditions.each do |condition|
               details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message']}
             end
-            health_monitor_record = HealthMonitorRecord.new(timestamp, state, details)
+            health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
+            #health_monitor_record = HealthMonitorRecord.new(timestamp, state, details)
             monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId, "node_name" => node_name})
             HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
             record = HealthSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, node_name: node_name)

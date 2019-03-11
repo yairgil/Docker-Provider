@@ -24,8 +24,8 @@ class HealthSignalReducer
 
             if (!monitor_config['NotifyInstantly'].nil? && monitor_config['NotifyInstantly'] == true)
                 latest_record = health_monitor_records[health_monitor_records.size-1] #since we push new records to the end, and remove oldest records from the beginning
-                latest_record_state = latest_record.state
-                latest_record_time = latest_record.timestamp #string representation of time
+                latest_record_state = latest_record["state"]
+                latest_record_time = latest_record["timestamp"] #string representation of time
                 #log.info "Latest Record #{latest_record}"
                 if latest_record_state.downcase == prev_sent_status.downcase && @@firstMonitorRecordSent.key?(monitor_id)
                     #log.info "latest_record_state.to_s.downcase == prev_sent_status.to_s.state"
@@ -53,8 +53,8 @@ class HealthSignalReducer
                 return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name, node_name: node_name)
             else
                 latest_record = health_monitor_records[health_monitor_records.size-1] #since we push new records to the end, and remove oldest records from the beginning
-                latest_record_state = latest_record.state
-                latest_record_time = latest_record.timestamp #string representation of time
+                latest_record_state = latest_record["state"]
+                latest_record_time = latest_record["timestamp"] #string representation of time
                 #log.info "Latest Record #{latest_record}"
                 if latest_record_state.downcase == prev_sent_status.downcase
                     #log.info "latest_record_state.to_s.downcase == prev_sent_status.to_s.state"
@@ -105,51 +105,73 @@ class HealthSignalReducer
 
             #log.debug "Labels #{labels.to_json.to_s}"
             prev_records = health_monitor_instance_state.prev_records
-            collection_time = prev_records[0].timestamp # the oldest collection time
-            new_state = health_monitor_instance_state.prev_records[0].state
+            collection_time = prev_records[0]["timestamp"] # the oldest collection time
+            new_state = health_monitor_instance_state.prev_records[0]["state"]
             old_state = health_monitor_instance_state.prev_sent_record_status
 
             #log.debug "monitor_config  #{monitor_config}"
             if monitor_config.nil?
                 monitor_config = ''
             end
-            monitor_config = monitor_config.to_json.to_s
+            monitor_config = monitor_config
             #log.debug "monitor_config  #{monitor_config}"
             records = []
 
-            details = prev_records.each do |record|
+             details = prev_records #.each do |record|
 
-                hash_record =  { "timestamp" => record.timestamp, "state" => record.state, "details" => record.details}
-                #log.debug "Hash from Struct #{hash_record}"
-                #log.debug "monitor_config #{monitor_config}"
-                records.push(hash_record.to_json.to_s)
-            end
-            details = "[#{records.join(',')}]"
+            #     hash_record =  { "timestamp" => record.timestamp, "state" => record.state, "details" => record.details}
+            #     #log.debug "Hash from Struct #{hash_record}"
+            #     #log.debug "monitor_config #{monitor_config}"
+            #     records.push(hash_record.to_json.to_s)
+            # end
+            # details = "[#{records.join(',')}]"
             time_observed = Time.now.utc.iso8601
             #log.debug "Details: #{details}"
             #log.debug "collection_time #{collection_time} time_observed #{time_observed} new_state #{new_state} old_state #{old_state}"
 
-            health_monitor_record = HealthEventTemplates::HealthRecordTemplate % {
-                labels: labels.to_json.to_s,
-                monitor_id: monitor_id,
-                monitor_instance_id: monitor_instance_id,
-                new_state: new_state,
-                old_state: old_state,
-                monitor_details: details,
-                collection_time: collection_time,
-                time_observed: time_observed,
-                monitor_config: monitor_config
-            }
+            # health_monitor_record = HealthEventTemplates::HealthRecordTemplate % {
+            #     labels: labels,
+            #     monitor_id: monitor_id,
+            #     monitor_instance_id: monitor_instance_id,
+            #     new_state: new_state,
+            #     old_state: old_state,
+            #     monitor_details: details,
+            #     collection_time: collection_time,
+            #     time_observed: time_observed,
+            #     monitor_config: monitor_config
+            # }
+            # HealthRecordTemplate = '{
+            #     "Labels": %{labels},
+            #     "MonitorId": "%{monitor_id}",
+            #     "MonitorInstanceId": "%{monitor_instance_id}",
+            #     "NewState": "%{new_state}",
+            #     "OldState": "%{old_state}",
+            #     "Details": %{monitor_details},
+            #     "MonitorConfig": %{monitor_config},
+            #     "CollectionTime": "%{collection_time}",
+            #     "TimeObserved": "%{time_observed}"
+            # }'
+            health_monitor_record = {}
+            health_monitor_record["MonitorLabels"] = labels.to_json
+            health_monitor_record["MonitorId"] = monitor_id
+            health_monitor_record["MonitorInstanceId"] = monitor_instance_id
+            health_monitor_record["NewState"] = new_state
+            health_monitor_record["OldState"] = old_state
+            health_monitor_record["Details"] = details
+            health_monitor_record["MonitorConfig"] = monitor_config.to_json
+            health_monitor_record["CollectionTime"] = collection_time
+            health_monitor_record["TimeObserved"] = time_observed
+
 
             #log.debug "HealthMonitor Record #{health_monitor_record}"
-            return_val = JSON.parse(health_monitor_record)
+            #return_val = JSON.parse(health_monitor_record)
             #log.debug "Parsed Health Monitor Record for #{monitor_id}"
 
             if !@@firstMonitorRecordSent.key?(monitor_id)
                 @@firstMonitorRecordSent[monitor_id] = true
             end
 
-            return return_val
+            return health_monitor_record
         end
 
         def isStateChangeConsistent(log, health_monitor_records)
@@ -159,7 +181,7 @@ class HealthSignalReducer
             i = 0
             while i < health_monitor_records.size - 1
                 #log.info "Prev: #{health_monitor_records[i].state} Current: #{health_monitor_records[i + 1].state}"
-                if health_monitor_records[i].state != health_monitor_records[i + 1].state
+                if health_monitor_records[i]["state"] != health_monitor_records[i + 1]["state"]
                     return false
                 end
                 i += 1

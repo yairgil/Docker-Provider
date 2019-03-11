@@ -71,16 +71,17 @@ module Fluent
                 router.emit_error_event(tag, time, record, e)
               end
             }
-            @log.debug "Records Count #{records_count}"
+            @log.debug "Filter Records Count #{records_count}"
             new_es
         end
 
         def filter(tag, time, record)
             begin
+                if record.key?("Labels")
+                    return record
+                end
                 object_name = record['DataItems'][0]['ObjectName']
-
                 counter_name = record['DataItems'][0]['Collections'][0]['CounterName'].downcase
-
                 if @metrics_to_collect_hash.key?(counter_name.downcase)
                     metric_value = record['DataItems'][0]['Collections'][0]['Value']
                     case object_name
@@ -138,7 +139,8 @@ module Fluent
                 state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthEventsConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID])
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
-                health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent})
+                health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent}}
+                #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
                 monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "container_key" => key})
@@ -180,7 +182,8 @@ module Fluent
                 state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthEventsConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID])
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
-                health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent})
+                health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent}}
+                #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
                 monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "container_key" => key})
@@ -208,7 +211,8 @@ module Fluent
                 state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthEventsConstants::NODE_CPU_MONITOR_ID])
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
-                health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent})
+                health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent}}
+                #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
                 monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName})
@@ -236,7 +240,8 @@ module Fluent
                 state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthEventsConstants::NODE_MEMORY_MONITOR_ID])
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
-                health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value/1000000.to_f, "memoryUtilizationPercentage" => percent})
+                health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent}}
+                #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value/1000000.to_f, "memoryUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
                 monitor_instance_id = HealthEventUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName})

@@ -2,29 +2,29 @@
 # frozen_string_literal: true
 
 module Fluent
-    
+
     class CAdvisor_Perf_Input < Input
       Plugin.register_input('cadvisorperf', self)
-  
+
       def initialize
         super
         require 'yaml'
         require 'json'
-  
+
         require_relative 'CAdvisorMetricsAPIClient'
         require_relative 'oms_common'
         require_relative 'omslog'
       end
-  
+
       config_param :run_interval, :time, :default => '1m'
       config_param :tag, :string, :default => "oms.api.cadvisorperf"
       config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
-      config_param :healthtag, :string, :default => "oms.api.CIHealthPerf"
-  
+      config_param :healthtag, :string, :default => "oms.api.DiliprPerf"
+
       def configure (conf)
         super
       end
-  
+
       def start
         if @run_interval
           @finished = false
@@ -33,7 +33,7 @@ module Fluent
           @thread = Thread.new(&method(:run_periodic))
         end
       end
-  
+
       def shutdown
         if @run_interval
           @mutex.synchronize {
@@ -43,7 +43,7 @@ module Fluent
           @thread.join
         end
       end
-  
+
       def enumerate()
         time = Time.now.to_f
         begin
@@ -53,13 +53,13 @@ module Fluent
                     record['DataType'] = "LINUX_PERF_BLOB"
                     record['IPName'] = "LogManagement"
                     eventStream.add(time, record) if record
-                    #router.emit(@tag, time, record) if record    
-            end 
-            
+                    #router.emit(@tag, time, record) if record
+            end
+
             router.emit_stream(@tag, eventStream) if eventStream
             router.emit_stream(@mdmtag, eventStream) if eventStream
-	    router.emit_stream(@healthtag, eventStream) if eventStream
-	    
+            router.emit_stream(@healthtag, eventStream) if eventStream
+
             @@istestvar = ENV['ISTEST']
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp('true') == 0 && eventStream.count > 0)
               $log.info("cAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -69,7 +69,7 @@ module Fluent
             $log.debug_backtrace(errorStr.backtrace)
         end
       end
-  
+
       def run_periodic
         @mutex.lock
         done = @finished

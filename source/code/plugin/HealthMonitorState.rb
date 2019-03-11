@@ -37,7 +37,7 @@ class HealthMonitorState
                 health_monitor_instance_state.prev_records = health_monitor_records
                 @@instanceStates[monitor_instance_id] = health_monitor_instance_state
             else
-                health_monitor_instance_state = HealthMonitorInstanceState.new(health_monitor_record.timestamp, health_monitor_record.state, [health_monitor_record])
+                health_monitor_instance_state = HealthMonitorInstanceState.new(health_monitor_record["timestamp"], health_monitor_record["state"], [health_monitor_record])
                 @@instanceStates[monitor_instance_id] = health_monitor_instance_state
             end
             #log.debug "Health Records Count: #{health_monitor_instance_state.prev_records.size}"
