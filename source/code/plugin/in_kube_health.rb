@@ -3,7 +3,7 @@
 
 module Fluent
   class KubeHealthInput < Input
-    Plugin.register_input("kubeapidatahealth", self)
+    Plugin.register_input("kubehealth", self)
 
     @@clusterCpuCapacity = 0.0
     @@clusterMemoryCapacity = 0.0

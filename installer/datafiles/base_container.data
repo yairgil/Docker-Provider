@@ -50,12 +50,12 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/filter_cadvisor2mdm.rb;                                      source/code/plugin/filter_cadvisor2mdm.rb; 644; root; root
 
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health.rb;                                       source/code/plugin/filter_cadvisor_health.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/in_health_kubeapidata.rb;                                        source/code/plugin/in_health_kubeapidata.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/in_kube_health.rb;                                               source/code/plugin/in_kube_health.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/HealthMonitorConstants.rb;                                       source/code/plugin/HealthMonitorConstants.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/HealthMonitorSignalReducer.rb;                                   source/code/plugin/HealthMonitorSignalReducer.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/HealthMonitorState.rb;                                           source/code/plugin/HealthMonitorState.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/HealthMonitorUtils.rb;                                           source/code/plugin/HealthMonitorUtils.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/healthmonitorconfig.json						installer/conf/healthmonitorconfig.json
+/opt/microsoft/omsagent/plugin/healthmonitorconfig.json;					installer/conf/healthmonitorconfig.json; 644; root; root
 
 /opt/microsoft/omsagent/plugin/lib/application_insights/version.rb;								source/code/plugin/lib/application_insights/version.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/lib/application_insights/rack/track_request.rb;					source/code/plugin/lib/application_insights/rack/track_request.rb;      644; root; root

@@ -124,9 +124,6 @@ module Fluent
                 key = HealthMonitorUtils.getContainerKeyFromInstanceName(instance_name)
                 container_metadata = HealthMonitorUtils.getContainerMetadata(key)
                 if !container_metadata.nil?
-                    if container_metadata['namespace'] == 'kube-system'
-                        return nil
-                    end
                     cpu_limit = container_metadata['cpuLimit']
                 end
 
@@ -167,9 +164,6 @@ module Fluent
                 key = HealthMonitorUtils.getContainerKeyFromInstanceName(instance_name)
                 container_metadata = HealthMonitorUtils.getContainerMetadata(key)
                 if !container_metadata.nil?
-                    if container_metadata['namespace'] == 'kube-system'
-                        return nil
-                    end
                     memory_limit = container_metadata['memoryLimit']
                 end
 
