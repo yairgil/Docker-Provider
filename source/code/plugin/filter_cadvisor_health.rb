@@ -124,8 +124,6 @@ module Fluent
                 key = HealthMonitorUtils.getContainerKeyFromInstanceName(instance_name)
                 container_metadata = HealthMonitorUtils.getContainerMetadata(key)
                 if !container_metadata.nil?
-                    if container_metadata['namespace'] == 'kube-system'
-                        return nil
                     end
                     cpu_limit = container_metadata['cpuLimit']
                 end
@@ -149,7 +147,7 @@ module Fluent
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "container_key" => key})
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
                 HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
-                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id])
+                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], key: key)
                 temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 @log.info "Processed Container CPU #{temp}"
                 return record
@@ -167,9 +165,6 @@ module Fluent
                 key = HealthMonitorUtils.getContainerKeyFromInstanceName(instance_name)
                 container_metadata = HealthMonitorUtils.getContainerMetadata(key)
                 if !container_metadata.nil?
-                    if container_metadata['namespace'] == 'kube-system'
-                        return nil
-                    end
                     memory_limit = container_metadata['memoryLimit']
                 end
 
@@ -192,7 +187,7 @@ module Fluent
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "container_key" => key})
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
                 HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
-                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id])
+                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], key: key)
                 temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 @log.info "Processed Container Memory #{temp}"
                 return record
@@ -249,7 +244,7 @@ module Fluent
                 HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
                 record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id])
                 temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
-                @log.info "Processed Node Memory #{record}"
+                @log.info "Processed Node Memory #{temp}"
                 return record
             end
             return nil

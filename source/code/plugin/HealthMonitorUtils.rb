@@ -127,11 +127,11 @@ class HealthMonitorUtils
             when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID
                 #log.debug "Getting Monitor labels for Workload/ManagedInfra Monitors #{controller_name} #{@@controllerMapping}"
                 if !key.nil? #container
-                    monitor_labels['monitor.azure.com/ControllerName'] = getContainerControllerName(key)
-                    monitor_labels['monitor.azure.com/Namespace'] = getContainerNamespace(key)
+                    monitor_labels['monitor.azure.com/controller-name'] = getContainerControllerName(key)
+                    monitor_labels['monitor.azure.com/namespace'] = getContainerNamespace(key)
                 elsif !controller_name.nil?
-                    monitor_labels['monitor.azure.com/ControllerName'] = controller_name
-                    monitor_labels['monitor.azure.com/Namespace'] = getControllerNamespace(controller_name)
+                    monitor_labels['monitor.azure.com/controller-name'] = controller_name
+                    monitor_labels['monitor.azure.com/namespace'] = getControllerNamespace(controller_name)
                 end
                 return monitor_labels
             when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_KUBELET_HEALTH_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID, HealthMonitorConstants::NODE_CONTAINER_RUNTIME_MONITOR_ID
