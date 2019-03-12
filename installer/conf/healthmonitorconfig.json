@@ -1,14 +1,14 @@
 {
     "node_cpu_utilization_percentage": {
-        "PassPercentage": 2.0,
-        "FailPercentage": 2.0,
+        "PassPercentage": 80.0,
+        "FailPercentage": 90.0,
         "SamplesBeforeNotification": 3,
         "NotifyInstantly" : false,
         "MonitorTimeOut": 5
     },
     "node_memory_utilization_percentage": {
-        "PassPercentage": 2.0,
-        "FailPercentage": 2.0,
+        "PassPercentage": 80.0,
+        "FailPercentage": 90.0,
         "SamplesBeforeNotification": 3,
         "NotifyInstantly" : false,
         "MonitorTimeOut": 5
@@ -34,15 +34,15 @@
         "NotifyInstantly" : true
     },
     "container_cpu_utilization_percentage": {
-        "PassPercentage": 2.0,
-        "FailPercentage": 2.0,
+        "PassPercentage": 80.0,
+        "FailPercentage": 90.0,
         "SamplesBeforeNotification": 3,
         "NotifyInstantly" : false,
         "MonitorTimeOut": 5
     },
     "container_memory_utilization_percentage": {
-        "PassPercentage": 2.0,
-        "FailPercentage": 2.0,
+        "PassPercentage": 80.0,
+        "FailPercentage": 90.0,
         "SamplesBeforeNotification": 3,
         "NotifyInstantly" : false,
         "MonitorTimeOut": 5

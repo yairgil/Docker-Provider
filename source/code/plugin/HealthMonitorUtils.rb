@@ -2,10 +2,10 @@
 # frozen_string_literal: true
 
 require_relative 'KubernetesApiClient'
-require_relative 'HealthEventsConstants'
+require_relative 'HealthMonitorConstants'
 require 'time'
 
-class HealthEventUtils
+class HealthMonitorUtils
 
     @LogPath = "/var/opt/microsoft/docker-cimprov/log/health_monitors.log"
     @log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
@@ -16,6 +16,7 @@ class HealthEventUtils
     @@podInventory = {}
     @@lastRefreshTime = '2019-01-01T00:00:00Z'
     @@nodeInventory = []
+    @@clusterId = KubernetesApiClient.getClusterId
 
     def initialize
     end
@@ -103,20 +104,18 @@ class HealthEventUtils
         end
 
         def getClusterLabels
-
             labels = {}
-            cluster_id = KubernetesApiClient.getClusterId
+            cluster_id = @@clusterId
             region = KubernetesApiClient.getClusterRegion
-            labels['monitor.azure.com/ClusterId'] = cluster_id
-            labels['monitor.azure.com/ClusterRegion'] = region
+            labels['monitor.azure.com/cluster-region'] = region
             if !cluster_id.nil?
                 cluster_id_elements = cluster_id.split('/')
                 azure_sub_id =  cluster_id_elements[2]
                 resource_group = cluster_id_elements[4]
                 cluster_name = cluster_id_elements[8]
-                labels['monitor.azure.com/SubscriptionId'] = azure_sub_id
-                labels['monitor.azure.com/ResourceGroup'] = resource_group
-                labels['monitor.azure.com/ClusterName'] = cluster_name
+                labels['monitor.azure.com/cluster-subscription-id'] = azure_sub_id
+                labels['monitor.azure.com/cluster-resource-group'] = resource_group
+                labels['monitor.azure.com/cluster-name'] = cluster_name
             end
             return labels
         end
@@ -125,7 +124,7 @@ class HealthEventUtils
             #log.debug "key : #{key} controller_name #{controller_name} monitor_id #{monitor_id} node_name #{node_name}"
             monitor_labels = {}
             case monitor_id
-            when HealthEventsConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthEventsConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthEventsConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthEventsConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID
+            when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID
                 #log.debug "Getting Monitor labels for Workload/ManagedInfra Monitors #{controller_name} #{@@controllerMapping}"
                 if !key.nil? #container
                     monitor_labels['monitor.azure.com/ControllerName'] = getContainerControllerName(key)
@@ -135,7 +134,7 @@ class HealthEventUtils
                     monitor_labels['monitor.azure.com/Namespace'] = getControllerNamespace(controller_name)
                 end
                 return monitor_labels
-            when HealthEventsConstants::NODE_CPU_MONITOR_ID, HealthEventsConstants::NODE_MEMORY_MONITOR_ID, HealthEventsConstants::NODE_KUBELET_HEALTH_MONITOR_ID, HealthEventsConstants::NODE_CONDITION_MONITOR_ID, HealthEventsConstants::NODE_CONTAINER_RUNTIME_MONITOR_ID
+            when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_KUBELET_HEALTH_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID, HealthMonitorConstants::NODE_CONTAINER_RUNTIME_MONITOR_ID
                 #log.debug "Getting Node Labels "
 
                 @@nodeInventory["items"].each do |node|
@@ -153,7 +152,7 @@ class HealthEventUtils
         def refreshKubernetesApiData(log, hostName)
             #log.debug "refreshKubernetesApiData"
             if ((Time.now.utc - Time.parse(@@lastRefreshTime)) / 60 ) < 5.0
-                log.debug "Less than 5 minutes since last refresh"
+                log.debug "Less than 5 minutes since last refresh at #{@@lastRefreshTime}"
                 return
             end
 
@@ -302,7 +301,7 @@ class HealthEventUtils
         def getHealthMonitorConfig
             health_monitor_config = {}
             begin
-                file = File.open('/opt/microsoft/omsagent/plugin/healthconfig.json', "r")
+                file = File.open('/opt/microsoft/omsagent/plugin/healthmonitorconfig.json', "r")
                 if !file.nil?
                     fileContents = file.read
                     health_monitor_config = JSON.parse(fileContents)
@@ -351,18 +350,18 @@ class HealthEventUtils
                 status = condition['status']
 
                 if ((type == "NetworkUnavailable" || type == "OutOfDisk") && (status == 'True' || status == 'Unknown'))
-                    return "Fail"
+                    return "fail"
                 elsif ((type == "DiskPressure" || type == "MemoryPressure" || type == "PIDPressure") && (status == 'True' || status == 'Unknown'))
-                    return "Warn"
+                    return "warn"
                 elsif type == "Ready" &&  status == 'True'
                     pass = true
                 end
             end
 
             if pass
-                return "Pass"
+                return "pass"
             else
-                return "Fail"
+                return "fail"
             end
         end
     end

@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-class HealthEventsConstants
+class HealthMonitorConstants
     NODE_CPU_MONITOR_ID = "node_cpu_utilization_percentage"
     NODE_MEMORY_MONITOR_ID = "node_memory_utilization_percentage"
     NODE_KUBELET_HEALTH_MONITOR_ID = "kubelet_running"

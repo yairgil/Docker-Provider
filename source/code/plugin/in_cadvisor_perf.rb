@@ -19,7 +19,7 @@ module Fluent
       config_param :run_interval, :time, :default => '1m'
       config_param :tag, :string, :default => "oms.api.cadvisorperf"
       config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
-      config_param :healthtag, :string, :default => "oms.api.DiliprPerf"
+      config_param :healthtag, :string, :default => "oms.api.KubeHealth.AgentCollectionTime"
 
       def configure (conf)
         super
