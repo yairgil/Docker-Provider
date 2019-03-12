@@ -124,7 +124,6 @@ module Fluent
                 key = HealthMonitorUtils.getContainerKeyFromInstanceName(instance_name)
                 container_metadata = HealthMonitorUtils.getContainerMetadata(key)
                 if !container_metadata.nil?
-                    end
                     cpu_limit = container_metadata['cpuLimit']
                 end
 
