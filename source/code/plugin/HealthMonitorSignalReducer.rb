@@ -74,7 +74,7 @@ class HealthMonitorSignalReducer
                         health_monitor_instance_state.prev_sent_record_time = latest_record_time
                         #log.debug "After Updating Monitor State #{health_monitor_instance_state}"
                         HealthMonitorState.setHealthMonitorState(monitor_instance_id, health_monitor_instance_state)
-                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name)
+                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name, node_name: node_name)
                     else
                         #log.debug "Monitor timeout not reached #{time_elapsed}"
                         #log.debug "Timeout not reached for #{monitor_id}"

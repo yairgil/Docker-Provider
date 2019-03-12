@@ -212,7 +212,7 @@ module Fluent
 
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName})
                 HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
-                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id])
+                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], node_name: @@hostName)
                 temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 @log.info "Processed Node CPU #{temp}"
                 return record
@@ -241,7 +241,7 @@ module Fluent
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName})
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
                 HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
-                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id])
+                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], , node_name: @@hostName)
                 temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 @log.info "Processed Node Memory #{temp}"
                 return record
