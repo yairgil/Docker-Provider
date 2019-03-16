@@ -25,6 +25,11 @@ import (
 // DataType for Container Log
 const DataType = "CONTAINER_LOG_BLOB"
 
+//env varibale which has ResourceId for LA
+const ResourceIdEnv = "AKS_RESOURCE_ID"
+
+const CustomLogsAPIVersion = "api-version=2016-04-01"
+
 // ContainerLogPluginConfFilePath --> config file path for container log plugin
 const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
 const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms-rs.conf"
@@ -41,6 +46,8 @@ var (
 	HTTPClient http.Client
 	// OMSEndpoint ingestion endpoint
 	OMSEndpoint string
+	// Custom log ingestion endpoint for OMS
+	OMSCustomLogsEndpoint string
 	// Computer (Hostname) when ingesting into ContainerLog table
 	Computer string
 	// WorkspaceID log analytics workspace id
@@ -60,6 +67,8 @@ var (
 	ContainerLogTelemetryMutex = &sync.Mutex{}
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
+	//ResourceId for LA
+	ResourceId string
 )
 
 var (
@@ -87,6 +96,18 @@ type DataItem struct {
 	Name              string `json:"Name"`
 	SourceSystem      string `json:"SourceSystem"`
 	Computer          string `json:"Computer"`
+}
+
+// telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
+type laTelegrafMetric struct {
+	Namespace          		string `json:"Namespace"`
+	Name	          		string `json:"Name"`
+	Source    				string `json:"Source"`
+	TimeStamp 				string `json:"TimeStamp"`
+	Tags					string `json:"Tags"`
+	Value                	float64 `json:"Value"`
+	ResourceId	            string `json:"ResourceId"`
+	MetricType              string `json:"MetricType"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -199,6 +220,147 @@ func updateKubeSystemContainerIDs() {
 		DataUpdateMutex.Unlock()
 		Log("Unlocking after updating kube-system container IDs")
 	}
+}
+
+//Azure loganalytics metric values have to be numeric, so string values are dropped
+func convert(in interface{}) (float64, bool) {
+	Log ("got %v", in)
+	switch v := in.(type) {
+	case int64:
+		return float64(v), true
+	case uint64:
+		return float64(v), true
+	case float64:
+		return v, true
+	case bool:
+		if v {
+			return float64(1), true
+		}
+		return float64(0), true
+	default:
+		Log ("returning 0 for %v ", in)
+		return float64(0), false
+	}
+}
+
+//Translates telegraf time series to 1 or more Azure loganalytics metric
+func translate(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
+	
+	var laMetrics []*laTelegrafMetric
+	var tags map[interface{}]interface{}
+	tags = m["tags"].(map[interface{}]interface{})
+	tagMap := make(map[string]string)
+	for k, v := range tags {
+		key := fmt.Sprintf("%s",k)
+		if key == "" {
+			continue
+		}
+		tagMap[key] = fmt.Sprintf("%s",v)
+	}
+
+	var fieldMap map[interface{}]interface{}
+	fieldMap = m["fields"].(map[interface{}]interface{})
+
+	var metricType string = "unknown" 
+
+	tagJson, _ := json.Marshal(&tagMap)
+
+	for k, v := range fieldMap {
+		fv, ok := convert(v)
+		if !ok {
+			continue
+		}
+		i := m["timestamp"].(uint64)
+		laMetric := laTelegrafMetric{
+			Name:       fmt.Sprintf("%s",k),
+			Namespace:  fmt.Sprintf("%s",m["name"]),
+			Source:		"telegraf",
+			TimeStamp:  time.Unix(int64(i),0).Format(time.RFC3339),
+			Tags:     	fmt.Sprintf("%s", tagJson),
+			Value:		fv,
+			ResourceId:	ResourceId,
+			MetricType: metricType,
+		}
+
+		//Log ("la metric:%v", laMetric)
+		laMetrics = append(laMetrics, &laMetric)
+	}
+	return laMetrics, nil
+}
+
+//send metrics from Telegraf to LA
+func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int {
+	var laMetrics []*laTelegrafMetric
+	for _, record := range telegrafRecords {
+		//Log ("mymetric:%s", record)
+		translatedMetrics, err := translate(record)
+		if err != nil {
+			Log("PostTelegrafMetricsToLA::Error when translating telegraf metric to log analytics metric %q", err)
+		}
+		laMetrics = append(laMetrics, translatedMetrics...)
+	}
+
+	jsonBytes, err := json.Marshal(&laMetrics)
+	if err != nil {
+		Log("PostTelegrafMetricsToLA::Error when marshalling json %q", err)
+		//SendException(message)
+		return output.FLB_OK
+	}
+
+	Log ("got %s metrics", len(laMetrics))
+
+	//start
+	req, _ := http.NewRequest("POST", OMSCustomLogsEndpoint, bytes.NewBuffer(jsonBytes))
+	
+	//req.URL.Query().Add("api-version","2016-04-01")
+	
+	req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Log-Type", "telegrafMetricsV1");
+	req.Header.Set("time-generated-field", "timestamp");
+	req.Header.Set("x-ms-AzureResourceId", ResourceId)
+
+	start := time.Now()
+	resp, err := HTTPClient.Do(req)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error when sending request %s \n", err.Error())
+		Log(message)
+		//SendException(message)
+		Log("PostTelegrafMetricsToLA::Failed to flush %d records after %s", len(laMetrics), elapsed)
+
+		return output.FLB_RETRY
+	}
+
+	if resp == nil || resp.StatusCode != 200 {
+		if resp != nil {
+			Log("PostTelegrafMetricsToLA::Response Status %s Status Code %d", resp.Status, resp.StatusCode)
+		}
+		return output.FLB_RETRY
+	}
+
+	defer resp.Body.Close()
+
+	numRecords := len(laMetrics)
+	Log("PostTelegrafMetricsToLA::Successfully flushed %d records in %s", numRecords, elapsed)
+	//ContainerLogTelemetryMutex.Lock()
+	//FlushedRecordsCount += float64(numRecords)
+	//FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
+
+	//if maxLatency >= AgentLogProcessingMaxLatencyMs {
+	//	AgentLogProcessingMaxLatencyMs = maxLatency
+	//	AgentLogProcessingMaxLatencyMsContainer = maxLatencyContainer
+	//}
+
+	//ContainerLogTelemetryMutex.Unlock()
+//}
+
+	return output.FLB_OK
+
+
+	//end
+	
 }
 
 // PostDataHelper sends data to the OMS endpoint
@@ -317,6 +479,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			return output.FLB_RETRY
 		}
 
+		defer resp.Body.Close()
+
 		numRecords := len(dataItems)
 		Log("Successfully flushed %d records in %s", numRecords, elapsed)
 		ContainerLogTelemetryMutex.Lock()
@@ -358,6 +522,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	IgnoreIDSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
+	ResourceId = os.Getenv(ResourceIdEnv)
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
@@ -377,6 +542,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		log.Fatalln(message)
 	}
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
+	OMSCustomLogsEndpoint = OMSEndpoint + "?" + CustomLogsAPIVersion
 	WorkspaceID = omsadminConf["WORKSPACE_ID"]
 	Log("OMSEndpoint %s", OMSEndpoint)
 
