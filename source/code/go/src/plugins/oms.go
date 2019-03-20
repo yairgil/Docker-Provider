@@ -224,7 +224,6 @@ func updateKubeSystemContainerIDs() {
 
 //Azure loganalytics metric values have to be numeric, so string values are dropped
 func convert(in interface{}) (float64, bool) {
-	Log ("got %v", in)
 	switch v := in.(type) {
 	case int64:
 		return float64(v), true
@@ -244,7 +243,7 @@ func convert(in interface{}) (float64, bool) {
 }
 
 //Translates telegraf time series to 1 or more Azure loganalytics metric
-func translate(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
+func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
 	
 	var laMetrics []*laTelegrafMetric
 	var tags map[interface{}]interface{}
@@ -263,7 +262,11 @@ func translate(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
 
 	var metricType string = "unknown" 
 
-	tagJson, _ := json.Marshal(&tagMap)
+	tagJson, err := json.Marshal(&tagMap)
+
+	if err != nil {
+		return nil, err
+	}
 
 	for k, v := range fieldMap {
 		fv, ok := convert(v)
@@ -288,32 +291,49 @@ func translate(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
 	return laMetrics, nil
 }
 
-//send metrics from Telegraf to LA
+//send metrics from Telegraf to LA. 1) Translate telegraf timeseries to LA metric(s) 2) Send it to LA as 'ContainerMetrics' fixed type
 func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int {
 	var laMetrics []*laTelegrafMetric
+
+	if ( (telegrafRecords== nil) || ! (len(telegrafRecords) > 0) ) {
+		Log("PostTelegrafMetricsToLA::Error:no timeseries to derive")
+		return output.FLB_OK
+	}
+
 	for _, record := range telegrafRecords {
-		//Log ("mymetric:%s", record)
-		translatedMetrics, err := translate(record)
+		translatedMetrics, err := translateTelegrafMetrics(record)
 		if err != nil {
-			Log("PostTelegrafMetricsToLA::Error when translating telegraf metric to log analytics metric %q", err)
+			message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when translating telegraf metric to log analytics metric %q", err)
+			Log(message)
+			//SendException(message) //This will be too noisy
 		}
 		laMetrics = append(laMetrics, translatedMetrics...)
 	}
 
-	jsonBytes, err := json.Marshal(&laMetrics)
-	if err != nil {
-		Log("PostTelegrafMetricsToLA::Error when marshalling json %q", err)
-		//SendException(message)
+	if ( (laMetrics == nil) || !(len(laMetrics) > 0) ) {
+		Log("PostTelegrafMetricsToLA::Info:no metrics derived from timeseries data")
 		return output.FLB_OK
+	} else {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived %v metrics from %v timeseries", len(laMetrics), len(telegrafRecords))
+		Log(message)
 	}
 
-	Log ("got %s metrics", len(laMetrics))
 
-	//start
+	jsonBytes, err := json.Marshal(&laMetrics)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
+		Log(message)
+		SendException(message)
+		return output.FLB_OK
+	}
+	
+	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSCustomLogsEndpoint, bytes.NewBuffer(jsonBytes))
-	
+
 	//req.URL.Query().Add("api-version","2016-04-01")
-	
+
+	//set headers
 	req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Log-Type", "telegrafMetricsV1");
@@ -325,42 +345,35 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	elapsed := time.Since(start)
 
 	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error when sending request %s \n", err.Error())
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending %v metrics. duration:%v err:%q \n", len(laMetrics), elapsed, err.Error())
 		Log(message)
-		//SendException(message)
-		Log("PostTelegrafMetricsToLA::Failed to flush %d records after %s", len(laMetrics), elapsed)
-
+		SendException(message)
+		UpdateNumTelegrafMetricsSentTelemetry(0, 1)
 		return output.FLB_RETRY
 	}
 
 	if resp == nil || resp.StatusCode != 200 {
 		if resp != nil {
-			Log("PostTelegrafMetricsToLA::Response Status %s Status Code %d", resp.Status, resp.StatusCode)
+			Log("PostTelegrafMetricsToLA::Error:(retriable) Response Status %v Status Code %v", resp.Status, resp.StatusCode)
 		}
+		UpdateNumTelegrafMetricsSentTelemetry(0, 1)
 		return output.FLB_RETRY
 	}
 
 	defer resp.Body.Close()
 
-	numRecords := len(laMetrics)
-	Log("PostTelegrafMetricsToLA::Successfully flushed %d records in %s", numRecords, elapsed)
-	//ContainerLogTelemetryMutex.Lock()
-	//FlushedRecordsCount += float64(numRecords)
-	//FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
-
-	//if maxLatency >= AgentLogProcessingMaxLatencyMs {
-	//	AgentLogProcessingMaxLatencyMs = maxLatency
-	//	AgentLogProcessingMaxLatencyMsContainer = maxLatencyContainer
-	//}
-
-	//ContainerLogTelemetryMutex.Unlock()
-//}
+	numMetrics := len(laMetrics)
+	UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0)
+	Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
 
 	return output.FLB_OK
+}
 
-
-	//end
-	
+func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int) {
+	ContainerLogTelemetryMutex.Lock()
+	TelegrafMetricsSentCount += float64(numMetricsSent)
+	TelegrafMetricsSendErrorCount += float64(numSendErrors)
+	ContainerLogTelemetryMutex.Unlock()
 }
 
 // PostDataHelper sends data to the OMS endpoint

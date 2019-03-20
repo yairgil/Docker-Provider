@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	// FlushedRecordsCount indicates the number of flushed records in the current period
+	// FlushedRecordsCount indicates the number of flushed log records in the current period
 	FlushedRecordsCount float64
 	// FlushedRecordsTimeTaken indicates the cumulative time taken to flush the records for the current period
 	FlushedRecordsTimeTaken float64
@@ -28,6 +28,10 @@ var (
 	TelemetryClient appinsights.TelemetryClient
 	// ContainerLogTelemetryTicker sends telemetry periodically
 	ContainerLogTelemetryTicker *time.Ticker
+	//Tracks the number of telegraf metrics sent successfully between telemetry ticker periods (uses ContainerLogTelemetryTicker)
+	TelegrafMetricsSentCount float64
+	//Tracks the number of send errors between telemetry ticker periods (uses ContainerLogTelemetryTicker)
+	TelegrafMetricsSendErrorCount float64
 )
 
 const (
@@ -39,6 +43,8 @@ const (
 	metricNameAvgFlushRate              = "ContainerLogAvgRecordsFlushedPerSec"
 	metricNameAvgLogGenerationRate      = "ContainerLogsGeneratedPerSec"
 	metricNameAgentLogProcessingMaxLatencyMs = "ContainerLogsAgentSideLatencyMs"
+	metricNameNumberofTelegrafMetricsSentSuccessfully = "TelegrafMetricsSentCount"
+	metricNameNumberofSendErrorsTelegrafMetrics = "TelegrafMetricsSendErrorCount"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -62,9 +68,14 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 	for ; true; <-ContainerLogTelemetryTicker.C {
 		SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
 		elapsed := time.Since(start)
+
 		ContainerLogTelemetryMutex.Lock()
 		flushRate := FlushedRecordsCount / FlushedRecordsTimeTaken * 1000
 		logRate := FlushedRecordsCount / float64(elapsed/time.Second)
+		telegrafMetricsSentCount := TelegrafMetricsSentCount
+		telegrafMetricsSendErrorCount := TelegrafMetricsSendErrorCount
+		TelegrafMetricsSentCount = 0.0
+		TelegrafMetricsSendErrorCount = 0.0
 		FlushedRecordsCount = 0.0
 		FlushedRecordsTimeTaken = 0.0
 		logLatencyMs := AgentLogProcessingMaxLatencyMs
@@ -80,6 +91,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		logLatencyMetric := appinsights.NewMetricTelemetry(metricNameAgentLogProcessingMaxLatencyMs, logLatencyMs)
 		logLatencyMetric.Properties["Container"] = logLatencyMsContainer
 		TelemetryClient.Track(logLatencyMetric)
+		TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameNumberofTelegrafMetricsSentSuccessfully, telegrafMetricsSentCount))
+		TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameNumberofSendErrorsTelegrafMetrics, telegrafMetricsSendErrorCount))
 		start = time.Now()
 	}
 }
