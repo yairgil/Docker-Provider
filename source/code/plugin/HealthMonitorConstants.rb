@@ -14,6 +14,7 @@ class HealthMonitorConstants
     WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID = "container_memory_utilization_percentage"
     MANAGEDINFRA_KUBEAPI_AVAILABLE_MONITOR_ID = "kube_api_up"
     MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID = "pods_ready_percentage"
+    POD_STATUS = "pod_status"
     DEFAULT_PASS_PERCENTAGE = 80.0
     DEFAULT_FAIL_PERCENTAGE = 90.0
     DEFAULT_MONITOR_TIMEOUT = 240 #4 hours

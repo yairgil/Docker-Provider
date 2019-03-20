@@ -101,6 +101,10 @@ module Fluent
           workload_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
+          # pod_statuses = process_pod_statuses(hmlog, pod_inventory)
+          # pod_statuses.each do |pod_status|
+          #   health_monitor_records.push(pod_status) if pod_status
+          # end
         end
 
         if !node_inventory.nil?
@@ -158,7 +162,7 @@ module Fluent
       monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId})
       HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, @@healthMonitorConfig[monitor_id])
       record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, @@healthMonitorConfig[monitor_id])
-      @@hmlog.info "Successfully processed process_memory_oversubscribed_monitor #{record}"
+      @@hmlog.info "Successfully processed process_memory_oversubscribed_monitor"
       return record.nil? ? nil : record
     end
 
@@ -238,6 +242,42 @@ module Fluent
       end
       @@hmlog.info "Successfully processed process_node_condition_monitor #{node_condition_monitor_records.size}"
       return node_condition_monitor_records
+    end
+
+    def process_pod_statuses(log, pod_inventory)
+      monitor_id = HealthMonitorConstants::POD_STATUS
+      pods_ready_percentage_hash = {}
+      records = []
+      monitor_config = @@healthMonitorConfig[monitor_id]
+      pod_inventory['items'].each do |pod|
+          controller_name = pod['metadata']['ownerReferences'][0]['name']
+          namespace = pod['metadata']['namespace']
+          status = pod['status']['phase']
+          timestamp = Time.now.utc.iso8601
+          state = ''
+          podUid = pod['metadata']['uid']
+          conditions = pod['status']['conditions']
+          details = {}
+          if status == 'Running'
+            state = 'pass'
+          else
+            state = 'fail'
+          end
+          details['status'] = status
+          conditions.each do |condition|
+            details[condition['type']] = {"Status" => condition['status'], "LastTransitionTime" => condition['lastTransitionTime']}
+          end
+          health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
+
+          monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId, "controller_name" => controller_name, "namespace" => namespace, "key" => podUid})
+          HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
+          record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, controller_name: controller_name)
+          if !record.nil?
+            records.push(record)
+          end
+      end
+      log.debug "Pod Status Records #{records.size}"
+      return records
     end
 
     def run_periodic

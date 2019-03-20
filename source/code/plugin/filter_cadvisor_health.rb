@@ -92,9 +92,9 @@ module Fluent
                             # @log.debug "Object Name #{object_name}"
                             # @log.debug "Counter Name #{counter_name}"
                             # @log.debug "Metric Value #{metric_value}"
-                            return process_container_cpu_record(record, metric_value)
+                            #return process_container_cpu_record(record, metric_value)
                         when @@counter_name_memory_rss
-                            return process_container_memory_record(record, metric_value)
+                            #return process_container_memory_record(record, metric_value)
                         end
                     when @@object_name_k8s_node
                         case counter_name.downcase
@@ -143,7 +143,7 @@ module Fluent
                 #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
-                monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "container_key" => key})
+                monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "key" => key})
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
                 HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
                 record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], key: key)
@@ -183,7 +183,7 @@ module Fluent
                 #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
-                monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "container_key" => key})
+                monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName, "key" => key})
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
                 HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
                 record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], key: key)
@@ -241,7 +241,7 @@ module Fluent
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, {"cluster_id" => @@clusterId, "node_name" => @@hostName})
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
                 HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
-                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], , node_name: @@hostName)
+                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], node_name: @@hostName)
                 temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 @log.info "Processed Node Memory #{temp}"
                 return record

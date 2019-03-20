@@ -25,6 +25,10 @@
         "MonitorTimeOut": 240,
         "NotifyInstantly" : true
     },
+    "pod_status": {
+        "MonitorTimeOut": 5,
+        "NotifyInstantly" : true
+    },
     "is_oversubscribed_cpu": {
         "MonitorTimeOut": 240,
         "NotifyInstantly" : true

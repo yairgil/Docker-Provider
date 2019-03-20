@@ -90,13 +90,15 @@ class HealthMonitorUtils
             #log.debug "getMonitorInstanceId"
             string_to_hash = ''
             # Container Level Monitor
-            if args.key?("cluster_id") && args.key?("node_name") && args.key?("container_key")
-                string_to_hash = [args['cluster_id'], args['node_name'], args['container_key']].join("/")
+            if args.key?("cluster_id") && args.key?("node_name") && args.key?("key")
+                string_to_hash = [args['cluster_id'], args['node_name'], args['key']].join("/")
             elsif args.key?("cluster_id") && args.key?("node_name")
                 string_to_hash = [args['cluster_id'], args['node_name']].join("/")
-            elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name")
+            elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name") && args.key?("key")
+                string_to_hash = [args['cluster_id'], args['namespace'], args['controller_name'], args['key']].join("/")
+            elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name") && !args.key?("key")
                 string_to_hash = [args['cluster_id'], args['namespace'], args['controller_name']].join("/")
-            elsif args.key?("cluster_id") && !args.key?("namespace") && !args.key?("controller_name") && !args.key?("container_key")
+            elsif args.key?("cluster_id") && !args.key?("namespace") && !args.key?("controller_name") && !args.key?("key")
                 string_to_hash = [args['cluster_id']].join("/")
             end
             #@log.info "String to Hash : #{string_to_hash}"
@@ -124,7 +126,7 @@ class HealthMonitorUtils
             #log.debug "key : #{key} controller_name #{controller_name} monitor_id #{monitor_id} node_name #{node_name}"
             monitor_labels = {}
             case monitor_id
-            when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID
+            when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::POD_STATUS
                 #log.debug "Getting Monitor labels for Workload/ManagedInfra Monitors #{controller_name} #{@@controllerMapping}"
                 if !key.nil? #container
                     monitor_labels['monitor.azure.com/controller-name'] = getContainerControllerName(key)

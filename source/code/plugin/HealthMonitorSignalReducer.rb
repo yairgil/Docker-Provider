@@ -27,7 +27,7 @@ class HealthMonitorSignalReducer
                 latest_record_state = latest_record["state"]
                 latest_record_time = latest_record["timestamp"] #string representation of time
                 #log.debug "Latest Record #{latest_record}"
-                if latest_record_state.downcase == new_state.downcase && @@firstMonitorRecordSent.key?(monitor_id) #no state change
+                if latest_record_state.downcase == new_state.downcase && @@firstMonitorRecordSent.key?(monitor_instance_id) #no state change
                     #log.debug "latest_record_state.to_s.downcase == prev_sent_status.to_s.state"
                     time_elapsed = (Time.parse(latest_record_time) - Time.parse(prev_sent_time)) / 60
                     #log.debug "time elapsed #{time_elapsed}"
@@ -38,7 +38,7 @@ class HealthMonitorSignalReducer
                         health_monitor_instance_state.prev_sent_record_time = latest_record_time
                         #log.debug "After Updating Monitor State #{health_monitor_instance_state}"
                         HealthMonitorState.setHealthMonitorState(monitor_instance_id, health_monitor_instance_state)
-                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, node_name: node_name)
+                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, node_name: node_name, controller_name: controller_name)
                     else
                         #log.debug "Monitor timeout not reached #{time_elapsed}"
                         #log.debug "Timeout not reached for #{monitor_id}"
@@ -152,8 +152,8 @@ class HealthMonitorSignalReducer
             #log.debug "HealthMonitor Record #{health_monitor_record}"
             #log.debug "Parsed Health Monitor Record for #{monitor_id}"
 
-            if !@@firstMonitorRecordSent.key?(monitor_id)
-                @@firstMonitorRecordSent[monitor_id] = true
+            if !@@firstMonitorRecordSent.key?(monitor_instance_id)
+                @@firstMonitorRecordSent[monitor_instance_id] = true
             end
 
             return health_monitor_record
