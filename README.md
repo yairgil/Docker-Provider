@@ -10,6 +10,31 @@ additional questions or comments.
 ## Release History
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
+
+### 03/12/2019 - Version microsoft/oms:ciprod03122019
+- Fix for closing response.Body in outoms
+- Update Mem_Buf_Limit to 5m for fluentbit
+- Tail only files that were modified since 5 minutes
+- Remove some unwanted logs that are chatty in outoms
+- Fix for MDM disablement for AKS-Engine
+- Fix for Pod count metric (same as container count) in MDM
+  
+### 02/21/2019 - Version microsoft/oms:ciprod02212019
+- Container logs enrichment optimization
+  * Get container meta data only for containers in current node (vs cluster before)
+- Update fluent bit 0.13.7 => 0.14.4
+  * This fixes the escaping issue in the container logs
+- Mooncake cloud support for agent (AKS only)
+  * Ability to disable agent telemetry
+  * Ability to onboard and ingest to mooncake cloud
+- Add & populate 'ContainerStatusReason'  column to KubePodInventory
+- Alertable (custom) metrics (to AzureMonitor - only for AKS clusters)
+  * Cpuusagenanocores & % metric
+  * MemoryWorkingsetBytes & % metric
+  * MemoryRssBytes & % metric
+  * Podcount by node, phase & namespace metric
+  * Nodecount metric
+- ContainerNodeInventory_CL to fixed type
   
 ### 01/09/2018 - Version microsoft/oms:ciprod01092019
 - Omsagent - 1.8.1.256 (nov 2018 release)
