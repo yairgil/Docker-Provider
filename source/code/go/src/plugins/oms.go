@@ -385,7 +385,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
 	WorkspaceID = omsadminConf["WORKSPACE_ID"]
-	ResourceID = os.Getenv("custom-resourceId")
+	ResourceID = os.Getenv("customResourceId")
 	if len(ResourceID) > 0 {
 		ResourceCentric = true
 		Log("OMS ResourceId=%s",ResourceID)
