@@ -151,17 +151,19 @@ class HealthMonitorUtils
             end
         end
 
-        def refreshKubernetesApiData(log, hostName)
+        def refreshKubernetesApiData(log, hostName, force: false)
             #log.debug "refreshKubernetesApiData"
-            if ((Time.now.utc - Time.parse(@@lastRefreshTime)) / 60 ) < 5.0
+            if ( ((Time.now.utc - Time.parse(@@lastRefreshTime)) / 60 ) < 5.0 && !force)
                 log.debug "Less than 5 minutes since last refresh at #{@@lastRefreshTime}"
                 return
+            end
+            if force
+                @log.debug "Force Refresh"
             end
 
             begin
 
                 @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
-
                 if !hostName.nil?
                     podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("pods?fieldSelector=spec.nodeName%3D#{hostName}").body)
                 else
@@ -208,7 +210,14 @@ class HealthMonitorUtils
             if @@containerMetadata.has_key?(key)
                 return @@containerMetadata[key]
             else
-                return nil
+                # This is to handle new containers/controllers that might have come up since the last refresh
+                @log.info "Adhoc refresh getContainerMetadata"
+                HealthMonitorUtils.refreshKubernetesApiData(@log,nil, force: true)
+                if @@containerMetadata.has_key?(key)
+                    return @@containerMetadata[key]
+                else
+                    return nil
+                end
             end
         end
 
@@ -216,7 +225,14 @@ class HealthMonitorUtils
             if @@containerMetadata.has_key?(key)
                 return @@containerMetadata[key]['memoryLimit']
             else
-                return ''
+                @log.info "Adhoc refresh getContainerMemoryLimit"
+                # This is to handle new containers/controllers that might have come up since the last refresh
+                HealthMonitorUtils.refreshKubernetesApiData(@log,nil, force: true)
+                if @@containerMetadata.has_key?(key)
+                    return @@containerMetadata[key]['memoryLimit']
+                else
+                    return ''
+                end
             end
         end
 
@@ -224,7 +240,14 @@ class HealthMonitorUtils
             if @@containerMetadata.has_key?(key)
                 return @@containerMetadata[key]['controllerName']
             else
-                return ''
+                @log.info "Adhoc refresh getContainerControllerName"
+                # This is to handle new containers/controllers that might have come up since the last refresh
+                HealthMonitorUtils.refreshKubernetesApiData(@log,nil, force: true)
+                if @@containerMetadata.has_key?(key)
+                    return @@containerMetadata[key]['controllerName']
+                else
+                    return ''
+                end
             end
         end
 
@@ -232,7 +255,14 @@ class HealthMonitorUtils
             if @@containerMetadata.has_key?(key)
                 return @@containerMetadata[key]['namespace']
             else
-                return ''
+                @log.info "Adhoc refresh getContainerNamespace"
+                # This is to handle new containers/controllers that might have come up since the last refresh
+                HealthMonitorUtils.refreshKubernetesApiData(@log,nil, force: true)
+                if @@containerMetadata.has_key?(key)
+                    return @@containerMetadata[key]['namespace']
+                else
+                    return ''
+                end
             end
         end
 
@@ -240,7 +270,14 @@ class HealthMonitorUtils
             if @@controllerMapping.has_key?(controller_name)
                 return @@controllerMapping[controller_name]
             else
-                return ''
+                @log.info "Adhoc refresh getControllerNamespace"
+                # This is to handle new containers/controllers that might have come up since the last refresh
+                HealthMonitorUtils.refreshKubernetesApiData(@log,nil, force: true)
+                if @@controllerMapping.has_key?(controller_name)
+                    return @@controllerMapping[controller_name]
+                else
+                    return ''
+                end
             end
         end
 
@@ -283,7 +320,6 @@ class HealthMonitorUtils
                 @log.info e
             end
         end
-
 
         def getResourceSubscription(pod_inventory, metric_name, metric_capacity)
             subscription = 0.0
@@ -340,8 +376,6 @@ class HealthMonitorUtils
                 end
                 pods_ready_percentage_hash[controller_name] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace}
             end
-
-            #@log.debug "pods_ready_percentage_hash #{pods_ready_percentage_hash}"
             return pods_ready_percentage_hash
         end
 
