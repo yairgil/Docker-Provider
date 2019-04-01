@@ -52,6 +52,10 @@ var (
 	Computer string
 	// WorkspaceID log analytics workspace id
 	WorkspaceID string
+	// ResourceID for resource-centric log analytics data
+	ResourceID string
+	// Resource-centric flag (will be true if we determine if above RseourceID is non-empty - default is false)
+	ResourceCentric bool
 )
 
 var (
@@ -470,6 +474,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
+		//expensive to do string len for every request, so use a flag
+		if ResourceCentric == true {
+			req.Header.Set("x-ms-AzureResourceId", ResourceID)
+		}
 
 		resp, err := HTTPClient.Do(req)
 		elapsed := time.Since(start)
@@ -555,6 +563,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
 	OMSCustomLogsEndpoint = OMSEndpoint + "?" + CustomLogsAPIVersion
 	WorkspaceID = omsadminConf["WORKSPACE_ID"]
+	ResourceID = os.Getenv("customResourceId")
+	if len(ResourceID) > 0 {
+		ResourceCentric = true
+		Log("OMS ResourceId=%s",ResourceID)
+	}
 	Log("OMSEndpoint %s", OMSEndpoint)
 
 	// Initialize image,name map refresh ticker
