@@ -28,7 +28,21 @@ const DataType = "CONTAINER_LOG_BLOB"
 //env varibale which has ResourceId for LA
 const ResourceIdEnv = "AKS_RESOURCE_ID"
 
+//env variable which has ResourceName for NON-AKS
+const ResourceNameEnv = "ACS_RESOURCE_NAME"
+
+//Telegraf metrics collection specific constants
 const CustomLogsAPIVersion = "api-version=2016-04-01"
+// Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags)
+const TelegrafMetricOriginPrefix = "container.azm.ms"
+// Origin suffix for telegraf Metrics (used as suffix for origin field)
+const TelegrafMetricOriginSuffix = "telegraf"
+// Namespace prefix for telegraf Metrics (used as prefix for Namespace field)
+const TelegrafMetricNamespacePrefix = "plugin"
+// clusterName tag
+const TelegrafTagClusterName = "clusterName"
+// clusterId tag
+const TelegrafTagClusterID = "clusterId"
 
 // ContainerLogPluginConfFilePath --> config file path for container log plugin
 const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
@@ -52,10 +66,12 @@ var (
 	Computer string
 	// WorkspaceID log analytics workspace id
 	WorkspaceID string
-	// ResourceID for resource-centric log analytics data
+	// ResourceID for resource-centric log analytics data 
 	ResourceID string
 	// Resource-centric flag (will be true if we determine if above RseourceID is non-empty - default is false)
 	ResourceCentric bool
+	//ResourceName 
+	ResourceName string
 )
 
 var (
@@ -104,14 +120,15 @@ type DataItem struct {
 
 // telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
 type laTelegrafMetric struct {
+	// 'golden' fields
+	Origin          		string `json:"Origin"`
 	Namespace          		string `json:"Namespace"`
 	Name	          		string `json:"Name"`
-	Source    				string `json:"Source"`
-	TimeStamp 				string `json:"TimeStamp"`
-	Tags					string `json:"Tags"`
 	Value                	float64 `json:"Value"`
-	ResourceId	            string `json:"ResourceId"`
-	MetricType              string `json:"MetricType"`
+	Tags					string `json:"Tags"`
+	// specific required fields for LA
+	TimeStamp 				string `json:"TimeStamp"`
+	Computer				string `json:"Computer"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -249,7 +266,7 @@ func convert(in interface{}) (float64, bool) {
 	}
 }
 
-//Translates telegraf time series to 1 or more Azure loganalytics metric
+//Translates telegraf time series to one or more Azure loganalytics metric(s)
 func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
 	
 	var laMetrics []*laTelegrafMetric
@@ -264,10 +281,12 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		tagMap[key] = fmt.Sprintf("%s",v)
 	}
 
+	//add azure monitor tags
+	tagMap[fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafTagClusterID)] = ResourceID
+	tagMap[fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafTagClusterName)] = ResourceName
+
 	var fieldMap map[interface{}]interface{}
 	fieldMap = m["fields"].(map[interface{}]interface{})
-
-	var metricType string = "unknown" 
 
 	tagJson, err := json.Marshal(&tagMap)
 
@@ -282,14 +301,13 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		}
 		i := m["timestamp"].(uint64)
 		laMetric := laTelegrafMetric{
+			Origin: 	fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafMetricOriginSuffix),
+			Namespace:  fmt.Sprintf("%s/%s", TelegrafMetricNamespacePrefix, m["name"]),
 			Name:       fmt.Sprintf("%s",k),
-			Namespace:  fmt.Sprintf("%s",m["name"]),
-			Source:		"telegraf",
-			TimeStamp:  time.Unix(int64(i),0).Format(time.RFC3339),
-			Tags:     	fmt.Sprintf("%s", tagJson),
 			Value:		fv,
-			ResourceId:	ResourceId,
-			MetricType: metricType,
+			Tags:     	fmt.Sprintf("%s", tagJson),
+			TimeStamp:  time.Unix(int64(i),0).Format(time.RFC3339),
+			Computer: 	Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
 		}
 
 		//Log ("la metric:%v", laMetric)
@@ -343,7 +361,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	//set headers
 	req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Log-Type", "telegrafMetricsV1");
+	req.Header.Set("Log-Type", "AzureMonitorMetricsv1");
 	req.Header.Set("time-generated-field", "timestamp");
 	req.Header.Set("x-ms-AzureResourceId", ResourceId)
 
@@ -561,15 +579,31 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		log.Fatalln(message)
 	}
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
+	Log("OMSEndpoint %s", OMSEndpoint)
+
 	OMSCustomLogsEndpoint = OMSEndpoint + "?" + CustomLogsAPIVersion
 	WorkspaceID = omsadminConf["WORKSPACE_ID"]
 	ResourceID = os.Getenv("customResourceId")
-	if len(ResourceID) > 0 {
-		ResourceCentric = true
-		Log("OMS ResourceId=%s",ResourceID)
-	}
-	Log("OMSEndpoint %s", OMSEndpoint)
 
+	if len(ResourceID) > 0 {
+		//AKS Scenario
+		ResourceCentric = true
+		splitted := strings.Split(ResourceID, "/")
+		ResourceName = splitted[len(splitted)-1]
+		Log("ResourceCentric: True")
+		Log("ResourceID=%s",ResourceID)
+		Log("ResourceName=%s",ResourceID)
+	} 
+	
+	if ResourceCentric == false {
+		//AKS-Engine/hybrid scenario
+		ResourceName = os.Getenv(ResourceNameEnv)
+		ResourceID = ResourceName
+		Log("ResourceCentric: False")
+		Log("ResourceID=%s",ResourceID)
+		Log("ResourceName=%s",ResourceName)
+	}
+	
 	// Initialize image,name map refresh ticker
 	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
 	if err != nil {
