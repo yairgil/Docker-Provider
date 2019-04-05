@@ -164,16 +164,13 @@ module Fluent
           @log.info "Response Code #{response.code} Updating @last_post_attempt_time"
           @last_post_attempt_time = Time.now
           @first_post_attempt_made = true
-          ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
           # Not raising exception, as that will cause retries to happen
         elsif !response.code.empty? && response.code.start_with?("4")
           # Log 400 errors and continue
-          ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPostError-#{response.code} ", {})
           @log.info "Non-retryable HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
         else
           # raise if the response code is non-400
           @log.info "HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
-          ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPostError-#{response.code} ", {})
           raise e
         end
       rescue Errno::ETIMEDOUT => e

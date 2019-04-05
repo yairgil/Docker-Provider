@@ -83,7 +83,6 @@ module Fluent
                     end
             rescue => e
                 @log.info "Error initializing plugin #{e}"
-                ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
             end
         end
 
@@ -211,8 +210,7 @@ module Fluent
                     } if filtered_records
                 }
             rescue => e
-                ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
-        		@log.info "#{e}"
+                @log.info "Error in filter_stream #{e.message}"
             end
             new_es
         end
