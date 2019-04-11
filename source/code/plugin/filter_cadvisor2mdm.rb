@@ -70,15 +70,19 @@ module Fluent
 
         def start
             super
-            @process_incoming_stream = CustomMetricsUtils.check_custom_metrics_availability(@custom_metrics_azure_regions)
-            @metrics_to_collect_hash = build_metrics_hash
-            @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
+            begin
+                    @process_incoming_stream = CustomMetricsUtils.check_custom_metrics_availability(@custom_metrics_azure_regions)
+                    @metrics_to_collect_hash = build_metrics_hash
+                    @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
 
-            # initialize cpu and memory limit
-            if @process_incoming_stream
-                @cpu_capacity = 0.0
-                @memory_capacity = 0.0
-                ensure_cpu_memory_capacity_set
+                    # initialize cpu and memory limit
+                    if @process_incoming_stream
+                        @cpu_capacity = 0.0
+                        @memory_capacity = 0.0
+                        ensure_cpu_memory_capacity_set
+                    end
+            rescue => e
+                @log.info "Error initializing plugin #{e}"
             end
         end
 
@@ -197,17 +201,17 @@ module Fluent
 
         def filter_stream(tag, es)
             new_es = MultiEventStream.new
-            ensure_cpu_memory_capacity_set
-            es.each { |time, record|
-              begin
+            begin
+                ensure_cpu_memory_capacity_set
+                es.each { |time, record|
                 filtered_records = filter(tag, time, record)
                 filtered_records.each {|filtered_record|
                     new_es.add(time, filtered_record) if filtered_record
-                } if filtered_records
-              rescue => e
-                router.emit_error_event(tag, time, record, e)
-              end
-            }
+                    } if filtered_records
+                }
+            rescue => e
+                @log.info "Error in filter_stream #{e.message}"
+            end
             new_es
         end
 	end

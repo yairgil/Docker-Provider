@@ -44,6 +44,10 @@ var (
 	Computer string
 	// WorkspaceID log analytics workspace id
 	WorkspaceID string
+	// ResourceID for resource-centric log analytics data
+	ResourceID string
+	// Resource-centric flag (will be true if we determine if above RseourceID is non-empty - default is false)
+	ResourceCentric bool
 )
 
 var (
@@ -246,16 +250,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		if val, ok := imageIDMap[containerID]; ok {
 			stringMap["Image"] = val
-		} else {
-			Log("ContainerId %s not present in Name Map ", containerID)
-		}
+		} 
 
 		if val, ok := nameIDMap[containerID]; ok {
 			stringMap["Name"] = val
-		} else {
-			Log("ContainerId %s not present in Image Map ", containerID)
-		}
-
+		} 
 
 		dataItem := DataItem{
 			ID:                    stringMap["Id"],
@@ -299,6 +298,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
+		//expensive to do string len for every request, so use a flag
+		if ResourceCentric == true {
+			req.Header.Set("x-ms-AzureResourceId", ResourceID)
+		}
 
 		resp, err := HTTPClient.Do(req)
 		elapsed := time.Since(start)
@@ -318,6 +321,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			return output.FLB_RETRY
 		}
+
+		defer resp.Body.Close()
 
 		numRecords := len(dataItems)
 		Log("Successfully flushed %d records in %s", numRecords, elapsed)
@@ -380,6 +385,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
 	WorkspaceID = omsadminConf["WORKSPACE_ID"]
+	ResourceID = os.Getenv("customResourceId")
+	if len(ResourceID) > 0 {
+		ResourceCentric = true
+		Log("OMS ResourceId=%s",ResourceID)
+	}
 	Log("OMSEndpoint %s", OMSEndpoint)
 
 	// Initialize image,name map refresh ticker
