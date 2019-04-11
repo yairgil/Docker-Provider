@@ -23,7 +23,10 @@ import (
 )
 
 // DataType for Container Log
-const DataType = "CONTAINER_LOG_BLOB"
+const ContainerLogDataType = "CONTAINER_LOG_BLOB"
+
+// DataType for Insights metric
+const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
 
 //env varibale which has ResourceId for LA
 const ResourceIdEnv = "AKS_RESOURCE_ID"
@@ -31,14 +34,12 @@ const ResourceIdEnv = "AKS_RESOURCE_ID"
 //env variable which has ResourceName for NON-AKS
 const ResourceNameEnv = "ACS_RESOURCE_NAME"
 
-//Telegraf metrics collection specific constants
-const CustomLogsAPIVersion = "api-version=2016-04-01"
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags)
 const TelegrafMetricOriginPrefix = "container.azm.ms"
 // Origin suffix for telegraf Metrics (used as suffix for origin field)
 const TelegrafMetricOriginSuffix = "telegraf"
 // Namespace prefix for telegraf Metrics (used as prefix for Namespace field)
-const TelegrafMetricNamespacePrefix = "plugin"
+//const TelegrafMetricNamespacePrefix = "plugin"
 // clusterName tag
 const TelegrafTagClusterName = "clusterName"
 // clusterId tag
@@ -60,8 +61,6 @@ var (
 	HTTPClient http.Client
 	// OMSEndpoint ingestion endpoint
 	OMSEndpoint string
-	// Custom log ingestion endpoint for OMS
-	OMSCustomLogsEndpoint string
 	// Computer (Hostname) when ingesting into ContainerLog table
 	Computer string
 	// WorkspaceID log analytics workspace id
@@ -87,8 +86,6 @@ var (
 	ContainerLogTelemetryMutex = &sync.Mutex{}
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
-	//ResourceId for LA
-	ResourceId string
 )
 
 var (
@@ -127,8 +124,15 @@ type laTelegrafMetric struct {
 	Value                	float64 `json:"Value"`
 	Tags					string `json:"Tags"`
 	// specific required fields for LA
-	TimeStamp 				string `json:"TimeStamp"`
+	CollectionTime			string `json:"CollectionTime"` //mapped to TimeGenerated
 	Computer				string `json:"Computer"`
+}
+
+// ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
+type InsightsMetricsBlob struct {
+	DataType  string     			`json:"DataType"`
+	IPName    string     			`json:"IPName"`
+	DataItems []laTelegrafMetric 	`json:"DataItems"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -301,12 +305,13 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		}
 		i := m["timestamp"].(uint64)
 		laMetric := laTelegrafMetric{
-			Origin: 	fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafMetricOriginSuffix),
-			Namespace:  fmt.Sprintf("%s/%s", TelegrafMetricNamespacePrefix, m["name"]),
-			Name:       fmt.Sprintf("%s",k),
-			Value:		fv,
-			Tags:     	fmt.Sprintf("%s", tagJson),
-			TimeStamp:  time.Unix(int64(i),0).Format(time.RFC3339),
+			Origin: 		fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafMetricOriginSuffix),
+			//Namespace:  	fmt.Sprintf("%s/%s", TelegrafMetricNamespacePrefix, m["name"]),
+			Namespace:  	fmt.Sprintf("%s", m["name"]),
+			Name:       	fmt.Sprintf("%s",k),
+			Value:			fv,
+			Tags:     		fmt.Sprintf("%s", tagJson),
+			CollectionTime: time.Unix(int64(i),0).Format(time.RFC3339),
 			Computer: 	Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
 		}
 
@@ -343,8 +348,19 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		Log(message)
 	}
 
+	var metrics []laTelegrafMetric
+	var i int
 
-	jsonBytes, err := json.Marshal(&laMetrics)
+	for i=0; i < len(laMetrics); i++ {
+		metrics = append(metrics, *laMetrics[i])
+	}
+
+	laTelegrafMetrics := InsightsMetricsBlob{
+		DataType:  InsightsMetricsDataType,
+		IPName:    IPName,
+		DataItems: metrics}
+
+	jsonBytes, err := json.Marshal(laTelegrafMetrics)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
@@ -354,16 +370,17 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 	
 	//Post metrics data to LA
-	req, _ := http.NewRequest("POST", OMSCustomLogsEndpoint, bytes.NewBuffer(jsonBytes))
+	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
 
 	//req.URL.Query().Add("api-version","2016-04-01")
 
 	//set headers
 	req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Log-Type", "AzureMonitorMetricsv1");
-	req.Header.Set("time-generated-field", "timestamp");
-	req.Header.Set("x-ms-AzureResourceId", ResourceId)
+	
+	//expensive to do string len for every request, so use a flag
+	if ResourceCentric == true {
+		req.Header.Set("x-ms-AzureResourceId", ResourceID)
+	}
 
 	start := time.Now()
 	resp, err := HTTPClient.Do(req)
@@ -479,7 +496,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	if len(dataItems) > 0 {
 		logEntry := ContainerLogBlob{
-			DataType:  DataType,
+			DataType:  ContainerLogDataType,
 			IPName:    IPName,
 			DataItems: dataItems}
 
@@ -559,7 +576,6 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	IgnoreIDSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
-	ResourceId = os.Getenv(ResourceIdEnv)
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
@@ -581,7 +597,6 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
 	Log("OMSEndpoint %s", OMSEndpoint)
 
-	OMSCustomLogsEndpoint = OMSEndpoint + "?" + CustomLogsAPIVersion
 	WorkspaceID = omsadminConf["WORKSPACE_ID"]
 	ResourceID = os.Getenv("customResourceId")
 
