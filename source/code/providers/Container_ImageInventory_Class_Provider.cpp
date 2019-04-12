@@ -171,38 +171,40 @@ private:
 					if (objItem->valuestring != NULL)
 					{
 						string id = string(objItem->valuestring);
-
-						cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
-						if (runningItem != NULL && runningItem->valueint)
+						//make this check to ensure that the value at address is not null
+						if (idTable[id] > 0 && idTable[id] < instances.size())
 						{
-							// Running container
-							cJSON* pausedItem = cJSON_GetObjectItem(state, "Paused");
-							if (pausedItem != NULL && pausedItem->valueint)
+							cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
+							if (runningItem != NULL && runningItem->valueint)
 							{
-								// Paused container
-								instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
+								// Running container
+								cJSON* pausedItem = cJSON_GetObjectItem(state, "Paused");
+								if (pausedItem != NULL && pausedItem->valueint)
+								{
+									// Paused container
+									instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
+								}
+								else 
+								{
+									instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
+								}
 							}
 							else
 							{
-								instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
+								cJSON* exitCodeItem = cJSON_GetObjectItem(state, "ExitCode");
+								if (exitCodeItem != NULL && exitCodeItem->valueint)
+								{
+									// Container exited nonzero
+									instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
+								}
+								else 
+								{
+									// Container exited normally
+									instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
+								}
 							}
+							instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
 						}
-						else
-						{
-							cJSON* exitCodeItem = cJSON_GetObjectItem(state, "ExitCode");
-							if (exitCodeItem != NULL && exitCodeItem->valueint)
-							{
-								// Container exited nonzero
-								instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
-							}
-							else
-							{
-								// Container exited normally
-								instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
-							}
-						}
-
-						instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
 					}
 				}
 			}
