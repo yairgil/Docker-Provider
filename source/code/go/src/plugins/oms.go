@@ -321,7 +321,7 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 	return laMetrics, nil
 }
 
-//send metrics from Telegraf to LA. 1) Translate telegraf timeseries to LA metric(s) 2) Send it to LA as 'ContainerMetrics' fixed type
+//send metrics from Telegraf to LA. 1) Translate telegraf timeseries to LA metric(s) 2) Send it to LA as 'InsightsMetrics' fixed type
 func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int {
 	var laMetrics []*laTelegrafMetric
 
