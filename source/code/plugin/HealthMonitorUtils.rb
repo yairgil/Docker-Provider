@@ -358,23 +358,27 @@ class HealthMonitorUtils
         def getPodsReadyHash(pod_inventory)
             pods_ready_percentage_hash = {}
             pod_inventory['items'].each do |pod|
-                controller_name = pod['metadata']['ownerReferences'][0]['name']
-                namespace = pod['metadata']['namespace']
-                status = pod['status']['phase']
+                begin
+                    controller_name = pod['metadata']['ownerReferences'][0]['name']
+                    namespace = pod['metadata']['namespace']
+                    status = pod['status']['phase']
 
-                if pods_ready_percentage_hash.key?(controller_name)
-                    total_pods = pods_ready_percentage_hash[controller_name]['totalPods']
-                    pods_ready = pods_ready_percentage_hash[controller_name]['podsReady']
-                else
-                    total_pods = 0
-                    pods_ready = 0
-                end
+                    if pods_ready_percentage_hash.key?(controller_name)
+                        total_pods = pods_ready_percentage_hash[controller_name]['totalPods']
+                        pods_ready = pods_ready_percentage_hash[controller_name]['podsReady']
+                    else
+                        total_pods = 0
+                        pods_ready = 0
+                    end
 
-                total_pods += 1
-                if status == 'Running'
-                    pods_ready += 1
+                    total_pods += 1
+                    if status == 'Running'
+                        pods_ready += 1
+                    end
+                    pods_ready_percentage_hash[controller_name] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace}
+                rescue => e
+                    @log.info "Error when processing pod #{pod['metadata']['name']} #{e.message}"
                 end
-                pods_ready_percentage_hash[controller_name] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace}
             end
             return pods_ready_percentage_hash
         end
