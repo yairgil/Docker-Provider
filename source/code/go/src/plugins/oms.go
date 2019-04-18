@@ -121,7 +121,7 @@ type laTelegrafMetric struct {
 	Origin          		string `json:"Origin"`
 	Namespace          		string `json:"Namespace"`
 	Name	          		string `json:"Name"`
-	Value                	float64 `json:"Value"`
+	Val                 	float64 `json:"Val"`
 	Tags					string `json:"Tags"`
 	// specific required fields for LA
 	CollectionTime			string `json:"CollectionTime"` //mapped to TimeGenerated
@@ -309,7 +309,7 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 			//Namespace:  	fmt.Sprintf("%s/%s", TelegrafMetricNamespacePrefix, m["name"]),
 			Namespace:  	fmt.Sprintf("%s", m["name"]),
 			Name:       	fmt.Sprintf("%s",k),
-			Value:			fv,
+			Val:			fv,
 			Tags:     		fmt.Sprintf("%s", tagJson),
 			CollectionTime: time.Unix(int64(i),0).Format(time.RFC3339),
 			Computer: 	Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
