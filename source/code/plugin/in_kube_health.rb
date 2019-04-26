@@ -45,6 +45,7 @@ module Fluent
         @@healthMonitorConfig = HealthMonitorUtils.getHealthMonitorConfig
         @@hmlog = HealthMonitorUtils.getLogHandle
         @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
+        ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
       end
     end
 

@@ -55,6 +55,7 @@ module Fluent
             @log.info "CPU Capacity #{@cpu_capacity} Memory Capacity #{@memory_capacity}"
             HealthMonitorUtils.refreshKubernetesApiData(@log, @@hostName)
             @@health_monitor_config = HealthMonitorUtils.getHealthMonitorConfig
+            ApplicationInsightsUtility.sendCustomEvent("filter_cadvisor_health Plugin Start", {})
         end
 
         def filter_stream(tag, es)
