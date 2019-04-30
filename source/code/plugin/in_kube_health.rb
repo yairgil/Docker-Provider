@@ -140,7 +140,7 @@ module Fluent
       #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f})
       # @@hmlog.info health_monitor_record
 
-      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId})
+      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId])
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
       HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, @@healthMonitorConfig[monitor_id])
       record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, @@healthMonitorConfig[monitor_id])
@@ -160,7 +160,7 @@ module Fluent
       #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f})
       hmlog = HealthMonitorUtils.getLogHandle
 
-      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId})
+      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId])
       HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, @@healthMonitorConfig[monitor_id])
       record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, @@healthMonitorConfig[monitor_id])
       @@hmlog.info "Successfully processed process_memory_oversubscribed_monitor"
@@ -178,7 +178,7 @@ module Fluent
       hmlog = HealthMonitorUtils.getLogHandle
       #hmlog.info health_monitor_record
 
-      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId})
+      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId])
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
       HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, @@healthMonitorConfig[monitor_id])
       record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, @@healthMonitorConfig[monitor_id])
@@ -206,7 +206,7 @@ module Fluent
           state = HealthMonitorState.getStateForWorkloadPodsReadyPercentage(@@hmlog, percent, monitor_config)
         end
         health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "controllerName" => controller_name}}
-        monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId, "controller_name" => controller_name, "namespace" => namespace})
+        monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId, namespace, controller_name])
         HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
         record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, controller_name: controller_name)
         records.push(record)
@@ -233,7 +233,7 @@ module Fluent
             end
             health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
             #health_monitor_record = HealthMonitorRecord.new(timestamp, state, details)
-            monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId, "node_name" => node_name})
+            monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId, node_name])
             HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
             record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, node_name: node_name)
             node_condition_monitor_records.push(record)
@@ -268,7 +268,7 @@ module Fluent
           end
           health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
 
-          monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, {"cluster_id" => @@clusterId, "controller_name" => controller_name, "namespace" => namespace, "key" => podUid})
+          monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId, namespace, controller_name, podUid])
           HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
           record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, controller_name: controller_name)
           if !record.nil?

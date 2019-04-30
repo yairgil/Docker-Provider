@@ -86,22 +86,22 @@ class HealthMonitorUtils
             return key
         end
 
-        def getMonitorInstanceId(log, monitor_id, args = {})
+        def getMonitorInstanceId(log, monitor_id, args = [])
             #log.debug "getMonitorInstanceId"
-            string_to_hash = ''
-            # Container Level Monitor
-            if args.key?("cluster_id") && args.key?("node_name") && args.key?("key")
-                string_to_hash = [args['cluster_id'], args['node_name'], args['key']].join("/")
-            elsif args.key?("cluster_id") && args.key?("node_name")
-                string_to_hash = [args['cluster_id'], args['node_name']].join("/")
-            elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name") && args.key?("key")
-                string_to_hash = [args['cluster_id'], args['namespace'], args['controller_name'], args['key']].join("/")
-            elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name") && !args.key?("key")
-                string_to_hash = [args['cluster_id'], args['namespace'], args['controller_name']].join("/")
-            elsif args.key?("cluster_id") && !args.key?("namespace") && !args.key?("controller_name") && !args.key?("key")
-                string_to_hash = [args['cluster_id']].join("/")
-            end
-            #@log.info "String to Hash : #{string_to_hash}"
+            string_to_hash = args.join("/")
+            # # Container Level Monitor
+            # if args.key?("cluster_id") && args.key?("node_name") && args.key?("key")
+            #     string_to_hash = [args['cluster_id'], args['node_name'], args['key']].join("/")
+            # elsif args.key?("cluster_id") && args.key?("node_name")
+            #     string_to_hash = [args['cluster_id'], args['node_name']].join("/")
+            # elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name") && args.key?("key")
+            #     string_to_hash = [args['cluster_id'], args['namespace'], args['controller_name'], args['key']].join("/")
+            # elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name") && !args.key?("key")
+            #     string_to_hash = [args['cluster_id'], args['namespace'], args['controller_name']].join("/")
+            # elsif args.key?("cluster_id") && !args.key?("namespace") && !args.key?("controller_name") && !args.key?("key")
+            #     string_to_hash = [args['cluster_id']].join("/")
+            # end
+            @log.info "String to Hash : #{string_to_hash}"
             return "#{monitor_id}-#{Digest::MD5.hexdigest(string_to_hash)}"
         end
 
