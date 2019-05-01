@@ -141,7 +141,6 @@ module Fluent
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent}}
-                #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName, key])
@@ -181,7 +180,6 @@ module Fluent
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent}}
-                #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName, key])
@@ -236,7 +234,6 @@ module Fluent
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent}}
-                #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"memoryRssBytes" => metric_value/1000000.to_f, "memoryUtilizationPercentage" => percent})
                 #@log.info health_monitor_record
 
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName])

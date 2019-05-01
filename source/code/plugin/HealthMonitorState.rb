@@ -3,9 +3,6 @@
 
 require_relative 'HealthMonitorConstants'
 
-HealthMonitorRecord = Struct.new(:timestamp, :state, :details) do
-end
-
 HealthMonitorInstanceState = Struct.new(:prev_sent_record_time, :old_state, :new_state, :state_change_time, :prev_records) do
 end
 

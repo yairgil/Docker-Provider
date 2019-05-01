@@ -137,7 +137,6 @@ module Fluent
       #CPU
       monitor_id = HealthMonitorConstants::WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f}}
-      #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f})
       # @@hmlog.info health_monitor_record
 
       monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId])
@@ -157,7 +156,6 @@ module Fluent
       #CPU
       monitor_id = HealthMonitorConstants::WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f}}
-      #health_monitor_record = HealthMonitorRecord.new(timestamp, state, {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f})
       hmlog = HealthMonitorUtils.getLogHandle
 
       monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId])
@@ -174,7 +172,6 @@ module Fluent
       details = response.each_header.to_h
       details['ResponseCode'] = response.code
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
-      #health_monitor_record = HealthMonitorRecord.new(timestamp, state, details)
       hmlog = HealthMonitorUtils.getLogHandle
       #hmlog.info health_monitor_record
 
@@ -232,7 +229,6 @@ module Fluent
               details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message']}
             end
             health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
-            #health_monitor_record = HealthMonitorRecord.new(timestamp, state, details)
             monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId, node_name])
             HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
             record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, node_name: node_name)
