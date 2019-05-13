@@ -680,6 +680,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
-	go updateKubeSystemContainerIDs()
-	go updateContainerImageNameMaps()
+	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE"), "daemonset")) == 0 {
+		go updateKubeSystemContainerIDs()
+		go updateContainerImageNameMaps()
+	} else {
+		Log("Running in replicaset. Disabling kube-system container cache collection & updates \n")
+	}
 }
