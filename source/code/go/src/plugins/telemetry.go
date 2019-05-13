@@ -82,7 +82,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		AgentLogProcessingMaxLatencyMsContainer = ""
 		ContainerLogTelemetryMutex.Unlock()
 
-		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE"), "daemonset")) == 0 {
+		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 			SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
 			flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 			TelemetryClient.Track(flushRateMetric)

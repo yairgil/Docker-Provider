@@ -680,7 +680,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
-	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE"), "daemonset")) == 0 {
+	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 		go updateKubeSystemContainerIDs()
 		go updateContainerImageNameMaps()
 	} else {
