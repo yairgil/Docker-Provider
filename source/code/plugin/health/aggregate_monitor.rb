@@ -5,14 +5,15 @@ require 'json'
 
 module HealthModel
   class AggregateMonitor
-    attr_accessor :monitor_id, :monitor_instance_id, :state, :transition_time, :aggregation_algorithm, :aggregation_algorithm_params, :labels, :is_aggregate_monitor
+    attr_accessor :monitor_id, :monitor_instance_id, :old_state, :new_state, :transition_time, :aggregation_algorithm, :aggregation_algorithm_params, :labels, :is_aggregate_monitor
     attr_reader :member_monitors
 
     # constructor
     def initialize(
       monitor_id,
       monitor_instance_id,
-      state,
+      old_state,
+      new_state,
       transition_time,
       aggregation_algorithm,
       aggregation_algorithm_params,
@@ -20,7 +21,8 @@ module HealthModel
     )
       @monitor_id = monitor_id
       @monitor_instance_id = monitor_instance_id
-      @state = state
+      @old_state = old_state
+      @new_state = new_state
       @transition_time = transition_time
       @aggregation_algorithm = aggregation_algorithm || AggregationAlgorithm::WORSTOF
       @aggregation_algorithm_params = aggregation_algorithm_params
@@ -49,16 +51,17 @@ module HealthModel
     def calculate_state(monitor_set)
         case @aggregation_algorithm
         when AggregationAlgorithm::WORSTOF
-            @state = calculate_worst_of_state(monitor_set)
+            @old_state = calculate_worst_of_state(monitor_set, 'old_state')
+            @new_state = calculate_worst_of_state(monitor_set, 'new_state')
         when AggregationAlgorithm::PERCENTAGE
             @state = calculate_percentage_state(monitor_set)
         end
     end
 
     # calculates the worst of state, given the member monitors
-    def calculate_worst_of_state(monitor_set)
+    def calculate_worst_of_state(monitor_set, state_type)
 
-        member_state_counts = map_member_monitor_states(monitor_set)
+        member_state_counts = map_member_monitor_states(monitor_set, state_type)
 
         if member_state_counts.length === 0
             return MonitorState::NONE
@@ -85,7 +88,7 @@ module HealthModel
 
     end
 
-    def map_member_monitor_states(monitor_set)
+    def map_member_monitor_states(monitor_set, state_type)
         member_monitor_instance_ids = get_member_monitors
         if member_monitor_instance_ids.nil? || member_monitor_instance_ids.size == 0
             return {}
@@ -96,7 +99,7 @@ module HealthModel
         member_monitor_instance_ids.each {|monitor_instance_id|
 
             member_monitor = monitor_set.get_monitor(monitor_instance_id)
-            monitor_state = member_monitor.state;
+            monitor_state = member_monitor.send(state_type);
 
             if !state_counts.key?(monitor_state)
                 state_counts[monitor_state] = 1
@@ -108,6 +111,5 @@ module HealthModel
 
         return state_counts;
     end
-
   end
 end

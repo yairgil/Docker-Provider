@@ -51,14 +51,14 @@ module HealthModel
             # always send cluster monitor as a 'heartbeat'
             top_level_monitor = @monitor_set.get_monitor(MonitorId::CLUSTER)
             if top_level_monitor.nil?
-                top_level_monitor = AggregateMonitor.new(MonitorId::CLUSTER, MonitorId::CLUSTER, @last_sent_monitors[MonitorId::CLUSTER], Time.now.utc.iso8601, AggregationAlgorithm::WORSTOF, nil, {})
+                top_level_monitor = AggregateMonitor.new(MonitorId::CLUSTER, MonitorId::CLUSTER, @last_sent_monitors[MonitorId::CLUSTER].old_state, @last_sent_monitors[MonitorId::CLUSTER].new_state, @last_sent_monitors[MonitorId::CLUSTER].transition_time, AggregationAlgorithm::WORSTOF, nil, {})
             end
             changed_monitors[MonitorId::CLUSTER] = top_level_monitor
 
             @monitor_set.get_map.each{|monitor_instance_id, monitor|
                 if @last_sent_monitors.key?(monitor_instance_id)
-                    last_sent_monitor_state = @last_sent_monitors[monitor_instance_id]
-                    if last_sent_monitor_state.downcase != monitor.state.downcase
+                    last_sent_monitor_state = @last_sent_monitors[monitor_instance_id].new_state
+                    if last_sent_monitor_state.downcase != monitor.new_state.downcase
                         changed_monitors[monitor_instance_id] = monitor
                     end
                 else
@@ -70,7 +70,7 @@ module HealthModel
 
         def update_last_sent_monitors
             @monitor_set.get_map.map{|instance_id, monitor|
-                @last_sent_monitors[instance_id] = monitor.state
+                @last_sent_monitors[instance_id] = monitor
             }
         end
 
