@@ -9,14 +9,37 @@ class HealthMonitorConstants
     NODE_CONTAINER_RUNTIME_MONITOR_ID = "container_manager_runtime_running"
     WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID = "is_oversubscribed_cpu"
     WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID = "is_oversubscribed_memory"
-    WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID = "pods_ready_percentage"
+    WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID = "workload_pods_ready_percentage"
     WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID = "container_cpu_utilization_percentage"
     WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID = "container_memory_utilization_percentage"
     MANAGEDINFRA_KUBEAPI_AVAILABLE_MONITOR_ID = "kube_api_up"
-    MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID = "pods_ready_percentage"
+    MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID = "system_pods_ready_percentage"
     POD_STATUS = "pod_status"
     DEFAULT_PASS_PERCENTAGE = 80.0
     DEFAULT_FAIL_PERCENTAGE = 90.0
     DEFAULT_MONITOR_TIMEOUT = 240 #4 hours
     DEFAULT_SAMPLES_BEFORE_NOTIFICATION = 3
+end
+
+class HealthMonitorRecordFields
+    CLUSTER_ID = "ClusterId"
+    MONITOR_ID = "MonitorId"
+    MONITOR_INSTANCE_ID = "MonitorInstanceId"
+    MONITOR_LABELS = "MonitorLabels"
+    DETAILS = "Details"
+    MONITOR_CONFIG = "MonitorConfig"
+    OLD_STATE = "OldState"
+    NEW_STATE = "NewState"
+    AGENT_COLLECTION_TIME = "AgentCollectionTime"
+    TIME_FIRST_OBSERVED = "TimeFirstObserved"
+    NODE_NAME = "NodeName"
+	CONTROLLER_NAME = "ControllerName"
+    HEALTH_ASPECT = "HealthAspect"
+    CONTAINER_ID = "ContainerID"
+end
+
+class HealthAspect
+    NODES = "Nodes"
+    KUBERNETES_INFRASTRUCTURE = "Kubernetes infrastructure"
+    WORKLOAD = "Workload"
 end

@@ -122,8 +122,8 @@ class HealthMonitorUtils
             return labels
         end
 
-        def getMonitorLabels(log, monitor_id, key, controller_name, node_name)
-            #log.debug "key : #{key} controller_name #{controller_name} monitor_id #{monitor_id} node_name #{node_name}"
+        def getMonitorLabels(log, monitor_id, key: nil, controller_name: nil, node_name: nil)
+            #log.debug "get MonitorLabels key : #{key} controller_name #{controller_name} monitor_id #{monitor_id} node_name #{node_name}"
             monitor_labels = {}
             case monitor_id
             when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::POD_STATUS
@@ -181,7 +181,7 @@ class HealthMonitorUtils
                             cpu_limit_value = KubernetesApiClient.getMetricNumericValue('cpu', container['resources']['limits']['cpu'])
                         else
                             @log.info "CPU limit not set for container : #{container['name']}. Using Node Capacity"
-                            #TODO: Send warning health event
+                            #TODO: Send warning health event #bestpractices
                             cpu_limit_value = @cpu_capacity
                         end
 

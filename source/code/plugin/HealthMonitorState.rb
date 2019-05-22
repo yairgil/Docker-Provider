@@ -9,9 +9,12 @@ end
 class HealthMonitorState
     @@instanceStates = {} #hash of monitor_instance_id --> health monitor instance state
     @@firstMonitorRecordSent = {}
-    HEALTH_MONITOR_STATE = {"PASS" => "pass", "FAIL" => "fail", "WARNING" => "warn"}
+    #FIXME: use lookup for health_monitor_constants.rb from health folder
+    HEALTH_MONITOR_STATE = {"PASS" => "pass", "FAIL" => "fail", "WARNING" => "warn", "NONE" => "none"}
 
     class << self
+        #set new_state to be the latest ONLY if the state change is consistent for monitors that are not configured to be notified instantly, i.e. For NotifyInstantly Monitors, set new state to be the latest
+        # record state. For others, set it to be none, if there is no state information present in the lookup table
         def updateHealthMonitorState(log, monitor_instance_id, health_monitor_record, config)
             #log.debug "updateHealthMonitorState"
             samples_to_keep = 1
@@ -36,7 +39,13 @@ class HealthMonitorState
                 health_monitor_instance_state.prev_records = health_monitor_records
                 @@instanceStates[monitor_instance_id] = health_monitor_instance_state
             else
-                health_monitor_instance_state = HealthMonitorInstanceState.new(health_monitor_record["timestamp"], health_monitor_record["state"], health_monitor_record["state"], health_monitor_record["timestamp"], [health_monitor_record])
+                # if samples_to_keep == 1, then set new state to be the health_monitor_record state, else set it as none
+                old_state = HEALTH_MONITOR_STATE["NONE"]
+                new_state = HEALTH_MONITOR_STATE["NONE"]
+                if samples_to_keep == 1
+                    new_state = health_monitor_record["state"]
+                end
+                health_monitor_instance_state = HealthMonitorInstanceState.new(health_monitor_record["timestamp"], old_state, new_state, health_monitor_record["timestamp"], [health_monitor_record])
                 @@instanceStates[monitor_instance_id] = health_monitor_instance_state
             end
             #log.debug "Health Records Count: #{health_monitor_instance_state.prev_records.size}"

@@ -10,8 +10,8 @@ module Fluent
     require_relative "ApplicationInsightsUtility"
 
 
-    class CAdvisor2HealthFilter < Filter
-        Fluent::Plugin.register_filter('filter_cadvisor2health', self)
+    class CAdvisor2ContainerHealthFilter < Filter
+        Fluent::Plugin.register_filter('filter_cadvisor_health_container', self)
 
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/health_monitors.log'
         config_param :metrics_to_collect, :string, :default => 'cpuUsageNanoCores,memoryRssBytes'
@@ -100,9 +100,9 @@ module Fluent
                     when @@object_name_k8s_node
                         case counter_name.downcase
                         when @@counter_name_cpu
-                            process_node_cpu_record(record, metric_value)
+                            #process_node_cpu_record(record, metric_value)
                         when @@counter_name_memory_rss
-                            process_node_memory_record(record, metric_value)
+                            #process_node_memory_record(record, metric_value)
                         end
                     end
                 end
@@ -210,7 +210,7 @@ module Fluent
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent}}
 
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName])
-                # HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
+                HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
                 # record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], node_name: @@hostName)
                 # temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 health_record = {}
@@ -221,7 +221,6 @@ module Fluent
                 health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
                 health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
                 health_record[HealthMonitorRecordFields::NODE_NAME] =  @@hostName
-                health_record[HealthMonitorRecordFields::HEALTH_ASPECT] = HealthAspect.NODES
                 @log.info "Processed Node CPU"
                 return health_record
             end

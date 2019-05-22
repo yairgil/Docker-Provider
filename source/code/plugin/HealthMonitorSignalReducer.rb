@@ -10,11 +10,10 @@ class HealthMonitorSignalReducer
     @@firstMonitorRecordSent = {}
     class << self
         def reduceSignal(log, monitor_id, monitor_instance_id, monitor_config, key: nil, controller_name: nil, node_name: nil)
-            #log.debug "reduceSignal Key : #{key} controller_name: #{controller_name} node_name #{node_name}"
-            #log.debug "monitorConfig #{monitor_config}"
+            #log.debug "reduceSignal MonitorId: #{monitor_id} Key : #{key} controller_name: #{controller_name} node_name #{node_name}"
+            #log.debug "monitorConfig #{monitor_config} monitor_id #{monitor_id}"
 
             health_monitor_instance_state = HealthMonitorState.getHealthMonitorState(monitor_instance_id)
-            #log.debug "Health Monitor Instance state #{health_monitor_instance_state}"
             health_monitor_records = health_monitor_instance_state.prev_records
             new_state = health_monitor_instance_state.new_state
             prev_sent_time = health_monitor_instance_state.prev_sent_record_time
@@ -22,6 +21,7 @@ class HealthMonitorSignalReducer
             monitor_config['MonitorTimeOut'].nil? ? monitor_timeout = HealthMonitorConstants::DEFAULT_MONITOR_TIMEOUT : monitor_timeout = monitor_config['MonitorTimeOut'] #minutes
             #log.debug monitor_timeout
 
+            # Notify Instantly sends a signal immediately on a state change
             if (!monitor_config['NotifyInstantly'].nil? && monitor_config['NotifyInstantly'] == true)
                 latest_record = health_monitor_records[health_monitor_records.size-1] #since we push new records to the end, and remove oldest records from the beginning
                 latest_record_state = latest_record["state"]
@@ -38,7 +38,7 @@ class HealthMonitorSignalReducer
                         health_monitor_instance_state.prev_sent_record_time = latest_record_time
                         #log.debug "After Updating Monitor State #{health_monitor_instance_state}"
                         HealthMonitorState.setHealthMonitorState(monitor_instance_id, health_monitor_instance_state)
-                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, node_name: node_name, controller_name: controller_name)
+                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, node_name: node_name, controller_name: controller_name)
                     else
                         #log.debug "Monitor timeout not reached #{time_elapsed}"
                         #log.debug "Timeout not reached for #{monitor_id}"
@@ -54,9 +54,13 @@ class HealthMonitorSignalReducer
                 end
             end
 
+            #FIXME: if record count = 1, then send it, if it is greater than 1 and less than SamplesBeforeNotification, NO-OP. If equal to SamplesBeforeNotification, then check for consistency in state change
             if health_monitor_instance_state.prev_records.size == 1
                 #log.debug "Only One Record"
                 return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name, node_name: node_name)
+            elsif health_monitor_instance_state.prev_records.size < monitor_config["SamplesBeforeNotification"].to_i
+                log.debug "Prev records size < SamplesBeforeNotification for #{monitor_instance_id}"
+                return nil
             else
                 first_record = health_monitor_records[0]
                 latest_record = health_monitor_records[health_monitor_records.size-1] #since we push new records to the end, and remove oldest records from the beginning
@@ -107,7 +111,7 @@ class HealthMonitorSignalReducer
             labels = HealthMonitorUtils.getClusterLabels
             #log.debug "Labels : #{labels}"
 
-            monitor_labels = HealthMonitorUtils.getMonitorLabels(log, monitor_id, key, controller_name, node_name)
+            monitor_labels = HealthMonitorUtils.getMonitorLabels(log, monitor_id, key: key, controller_name: controller_name, node_name: node_name)
             #log.debug "Monitor Labels : #{monitor_labels}"
 
             if !monitor_labels.nil?
@@ -148,7 +152,6 @@ class HealthMonitorSignalReducer
             health_monitor_record["AgentCollectionTime"] = Time.now.utc.iso8601
             health_monitor_record["TimeFirstObserved"] = time_first_observed
 
-
             #log.debug "HealthMonitor Record #{health_monitor_record}"
             #log.debug "Parsed Health Monitor Record for #{monitor_id}"
 
@@ -159,6 +162,7 @@ class HealthMonitorSignalReducer
             return health_monitor_record
         end
 
+        #FIXME: check for consistency for "SamplesBeforeNotification" records
         def isStateChangeConsistent(log, health_monitor_records)
             if health_monitor_records.nil? || health_monitor_records.size == 0
                 return false

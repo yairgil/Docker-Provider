@@ -1,0 +1,138 @@
+[
+    {
+        "monitor_id": "workload_pods_ready_percentage",
+        "parent_monitor_id": "controller",
+        "labels": [
+            "monitor.azure.com/namespace",
+            "monitor.azure.com/controller-name"
+        ]
+    },
+    {
+        "monitor_id": "controller",
+        "parent_monitor_id": "namespace",
+        "labels": [
+            "monitor.azure.com/namespace"
+        ]
+    },
+    {
+        "monitor_id": "system_pods_ready_percentage",
+        "parent_monitor_id": "system_controllers",
+        "labels": [
+            "monitor.azure.com/namespace",
+            "monitor.azure.com/controller-name"
+        ]
+    },
+    {
+        "monitor_id": "system_controllers",
+        "parent_monitor_id": "k8s_infrastructure"
+    },
+    {
+        "monitor_id": "kube_api_up",
+        "parent_monitor_id": "k8s_infrastructure"
+    },
+    {
+        "monitor_id": "namespace",
+        "labels": [
+            "monitor.azure.com/namespace"
+        ],
+        "parent_monitor_id": "namespaces"
+    },
+    {
+        "monitor_id": "k8s_infrastructure",
+        "parent_monitor_id": "cluster"
+    },
+    {
+        "monitor_id": "namespaces",
+        "parent_monitor_id": "workload"
+    },
+    {
+        "monitor_id": "workload",
+        "parent_monitor_id": "cluster"
+    },
+    {
+        "monitor_id": "node_cpu_utilization_percentage",
+        "parent_monitor_id": "node",
+        "labels": [
+            "kubernetes.io/hostname",
+            "agentpool",
+            "kubernetes.io/role"
+        ]
+    },
+    {
+        "monitor_id": "node_memory_utilization_percentage",
+        "parent_monitor_id": "node",
+        "labels": [
+            "kubernetes.io/hostname",
+            "agentpool",
+            "kubernetes.io/role"
+        ]
+    },
+    {
+        "monitor_id": "node_condition",
+        "parent_monitor_id": "node",
+        "labels": [
+            "kubernetes.io/hostname",
+            "agentpool",
+            "kubernetes.io/role"
+        ]
+    },
+    {
+        "monitor_id": "node",
+        "aggregation_algorithm": "worstOf",
+        "labels": [
+            "kubernetes.io/hostname",
+            "agentpool",
+            "kubernetes.io/role"
+        ],
+        "parent_monitor_id": [
+            {
+                "label": "kubernetes.io/role",
+                "operator": "==",
+                "value": "master",
+                "id": "master_node_pool"
+            },
+            {
+                "label": "kubernetes.io/role",
+                "operator": "==",
+                "value": "agent",
+                "id": "agent_node_pool"
+            }
+        ]
+    },
+    {
+        "monitor_id": "master_node_pool",
+        "aggregation_algorithm": "percentage",
+        "parent_monitor_id": "all_nodes"
+    },
+    {
+        "monitor_id": "agent_node_pool",
+        "aggregation_algorithm": "worstOf",
+        "labels": [
+            "agentpool"
+        ],
+        "parent_monitor_id": "all_agent_node_pools"
+    },
+    {
+        "monitor_id": "all_agent_node_pools",
+        "aggregation_algorithm": "worstOf",
+        "parent_monitor_id": "all_nodes"
+    },
+    {
+        "monitor_id": "all_nodes",
+        "aggregation_algorithm": "worstOf",
+        "parent_monitor_id": "cluster"
+    },
+    {
+        "monitor_id": "cluster",
+        "aggregation_algorithm": "worstOf",
+        "parent_monitor_id": null
+    },
+    {
+        "monitor_id": "is_oversubscribed_cpu",
+        "parent_monitor_id": "workload"
+    },
+    {
+        "monitor_id": "is_oversubscribed_memory",
+        "parent_monitor_id": "workload"
+    }
+]
