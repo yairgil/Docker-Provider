@@ -31,12 +31,14 @@ module HealthModel
       @is_aggregate_monitor = true
     end
 
+    # adds a member monitor as a child
     def add_member_monitor(member_monitor_instance_id)
       unless @member_monitors.key?(member_monitor_instance_id)
         @member_monitors[member_monitor_instance_id] = true
       end
     end
 
+    #removes a member monitor
     def remove_member_monitor(member_monitor_instance_id)
         if @member_monitors.key?(member_monitor_instance_id)
             @member_monitors.delete(member_monitor_instance_id)
@@ -48,6 +50,7 @@ module HealthModel
       @member_monitors.map(&:first)
     end
 
+    # calculates the state of the aggregate monitor based on aggregation algorithm and child monitor states
     def calculate_state(monitor_set)
         case @aggregation_algorithm
         when AggregationAlgorithm::WORSTOF
@@ -84,10 +87,12 @@ module HealthModel
         return MonitorState::HEALTHY
     end
 
+    # calculates a percentage state, given the aggregation algorithm parameters
     def calculate_percentage_state
 
     end
 
+    # maps states of member monitors to counts
     def map_member_monitor_states(monitor_set, state_type)
         member_monitor_instance_ids = get_member_monitors
         if member_monitor_instance_ids.nil? || member_monitor_instance_ids.size == 0

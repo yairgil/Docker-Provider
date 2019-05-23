@@ -4,14 +4,13 @@
 require 'time'
 require 'json'
 require_relative 'KubernetesApiClient'
+require_relative 'health/health_model_constants'
 
 class HealthMonitorSignalReducer
 
     @@firstMonitorRecordSent = {}
     class << self
-        def reduceSignal(log, monitor_id, monitor_instance_id, monitor_config, key: nil, controller_name: nil, node_name: nil)
-            #log.debug "reduceSignal MonitorId: #{monitor_id} Key : #{key} controller_name: #{controller_name} node_name #{node_name}"
-            #log.debug "monitorConfig #{monitor_config} monitor_id #{monitor_id}"
+        def reduceSignal(log, monitor_id, monitor_instance_id, monitor_config, key: nil, node_name: nil)
 
             health_monitor_instance_state = HealthMonitorState.getHealthMonitorState(monitor_instance_id)
             health_monitor_records = health_monitor_instance_state.prev_records
@@ -38,7 +37,7 @@ class HealthMonitorSignalReducer
                         health_monitor_instance_state.prev_sent_record_time = latest_record_time
                         #log.debug "After Updating Monitor State #{health_monitor_instance_state}"
                         HealthMonitorState.setHealthMonitorState(monitor_instance_id, health_monitor_instance_state)
-                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, node_name: node_name, controller_name: controller_name)
+                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, node_name: node_name)
                     else
                         #log.debug "Monitor timeout not reached #{time_elapsed}"
                         #log.debug "Timeout not reached for #{monitor_id}"
@@ -57,7 +56,7 @@ class HealthMonitorSignalReducer
             #FIXME: if record count = 1, then send it, if it is greater than 1 and less than SamplesBeforeNotification, NO-OP. If equal to SamplesBeforeNotification, then check for consistency in state change
             if health_monitor_instance_state.prev_records.size == 1
                 #log.debug "Only One Record"
-                return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name, node_name: node_name)
+                return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, node_name: node_name)
             elsif health_monitor_instance_state.prev_records.size < monitor_config["SamplesBeforeNotification"].to_i
                 log.debug "Prev records size < SamplesBeforeNotification for #{monitor_instance_id}"
                 return nil
@@ -78,7 +77,7 @@ class HealthMonitorSignalReducer
                         health_monitor_instance_state.prev_sent_record_time = latest_record_time
                         #log.debug "After Updating Monitor State #{health_monitor_instance_state}"
                         HealthMonitorState.setHealthMonitorState(monitor_instance_id, health_monitor_instance_state)
-                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name, node_name: node_name)
+                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, node_name: node_name)
                     else
                         #log.debug "Monitor timeout not reached #{time_elapsed}"
                         #log.debug "Timeout not reached for #{monitor_id}"
@@ -92,7 +91,7 @@ class HealthMonitorSignalReducer
                         health_monitor_instance_state.prev_sent_record_time = latest_record_time
                         health_monitor_instance_state.state_change_time = first_record["timestamp"]
                         HealthMonitorState.setHealthMonitorState(monitor_instance_id, health_monitor_instance_state)
-                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, controller_name: controller_name, node_name: node_name)
+                        return formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: key, node_name: node_name)
                     else
                         log.debug "No consistent state change for monitor #{monitor_id}"
                         return nil
@@ -103,15 +102,17 @@ class HealthMonitorSignalReducer
             return nil
         end
 
-        def formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: nil, controller_name: nil, node_name: nil)
-            #log.debug "formatRecord key:#{key} controller_name: #{controller_name} node_name #{node_name}"
-
-            #log.debug "Health Monitor Instance State #{health_monitor_instance_state}"
+        def formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: nil, node_name: nil)
+            log.debug "Health Monitor Instance State #{health_monitor_instance_state}"
 
             labels = HealthMonitorUtils.getClusterLabels
             #log.debug "Labels : #{labels}"
 
-            monitor_labels = HealthMonitorUtils.getMonitorLabels(log, monitor_id, key: key, controller_name: controller_name, node_name: node_name)
+            namespace = health_monitor_instance_state.prev_records[0]['details']['namespace']
+            pod_aggregator = health_monitor_instance_state.prev_records[0]['details']['podAggregator']
+            pod_aggregator_kind = health_monitor_instance_state.prev_records[0]['details']['podAggregatorKind']
+
+            monitor_labels = HealthMonitorUtils.getMonitorLabels(log, monitor_id, key: key, pod_aggregator: pod_aggregator, node_name: node_name, namespace: namespace, pod_aggregator_kind: pod_aggregator_kind)
             #log.debug "Monitor Labels : #{monitor_labels}"
 
             if !monitor_labels.nil?
@@ -142,6 +143,7 @@ class HealthMonitorSignalReducer
 
             health_monitor_record = {}
             health_monitor_record["ClusterId"] = KubernetesApiClient.getClusterId
+            health_monitor_record["ClusterName"] = KubernetesApiClient.getClusterName
             health_monitor_record["MonitorLabels"] = labels.to_json
             health_monitor_record["MonitorId"] = monitor_id
             health_monitor_record["MonitorInstanceId"] = monitor_instance_id

@@ -28,13 +28,15 @@ module HealthModel
         MANAGED_INFRA = 'managed_infra'
         CAPACITY = 'capacity';
 
-        CONTROLLER = 'controller';
+        POD_AGGREGATOR = 'pod_aggregator';
+        SYSTEM_POD_AGGREGATOR = 'system_pod_aggregator'
         NAMESPACE = 'namespace';
         NAMESPACES = 'namespaces';
     end
 
     class HealthMonitorRecordFields
         CLUSTER_ID = "ClusterId"
+        CLUSTER_NAME = "ClusterName"
         MONITOR_ID = "MonitorId"
         MONITOR_INSTANCE_ID = "MonitorInstanceId"
         MONITOR_LABELS = "MonitorLabels"
@@ -45,8 +47,8 @@ module HealthModel
         AGENT_COLLECTION_TIME = "AgentCollectionTime"
         TIME_FIRST_OBSERVED = "TimeFirstObserved"
         NODE_NAME = "NodeName"
-        CONTROLLER_NAME = "ControllerName"
-        HEALTH_ASPECT = "HealthAspect"
+        POD_AGGREGATOR = "PodAggregator"
+        NAMESPACE = "Namespace"
         CONTAINER_ID = "ContainerID"
     end
 

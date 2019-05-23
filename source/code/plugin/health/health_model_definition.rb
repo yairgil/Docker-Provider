@@ -33,10 +33,6 @@ module HealthModel
                             end
 
                         }
-                        # record = {"namespace" => "kube-system", "controller-name" => "kube-dns-jhdf21374d"}
-                        # value = 'kube-system'
-                        # left, op, right = "#{record['namespace']}  == #{value}".split
-                        # cond = left.send(op.to_sym, right)
                     end
                 end
             else

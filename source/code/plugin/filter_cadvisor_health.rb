@@ -221,7 +221,6 @@ module Fluent
                 health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
                 health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
                 health_record[HealthMonitorRecordFields::NODE_NAME] =  @@hostName
-                health_record[HealthMonitorRecordFields::HEALTH_ASPECT] = HealthAspect.NODES
                 @log.info "Processed Node CPU"
                 return health_record
             end

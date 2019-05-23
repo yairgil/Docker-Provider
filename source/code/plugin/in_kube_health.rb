@@ -1,6 +1,9 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
+require_relative 'health/health_model_constants'
+include HealthModel
+
 module Fluent
   class KubeHealthInput < Input
     Plugin.register_input("kubehealth", self)
@@ -76,6 +79,8 @@ module Fluent
         pod_inventory_response = KubernetesApiClient.getKubeResourceInfo("pods")
         pod_inventory = JSON.parse(pod_inventory_response.body)
 
+        deployment_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("deployments", api_version: "extensions/v1beta1").body)
+
         if node_inventory_response.code.to_i != 200
           record = process_kube_api_up_monitor("fail", node_inventory_response)
           health_monitor_records.push(record) if record
@@ -89,7 +94,7 @@ module Fluent
           health_monitor_records.push(record) if record
           record = process_memory_oversubscribed_monitor(pod_inventory)
           health_monitor_records.push(record) if record
-          pods_ready_hash = HealthMonitorUtils.getPodsReadyHash(pod_inventory)
+          pods_ready_hash = HealthMonitorUtils.getPodsReadyHash(pod_inventory, deployment_inventory)
 
           system_pods = pods_ready_hash.select{|k,v| v['namespace'] == 'kube-system'}
           workload_pods = pods_ready_hash.select{|k,v| v['namespace'] != 'kube-system'}
@@ -103,6 +108,8 @@ module Fluent
           workload_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
+        else
+            hmlog.info "POD INVENTORY IS NIL"
         end
 
         if !node_inventory.nil?
@@ -110,6 +117,8 @@ module Fluent
           node_condition_records.each do |record|
             health_monitor_records.push(record) if record
           end
+        else
+            hmlog.info "NODE INVENTORY IS NIL"
         end
 
         #@@hmlog.debug "Health Monitor Records Size #{health_monitor_records.size}"
@@ -147,7 +156,6 @@ module Fluent
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-      health_record[HealthMonitorRecordFields::HEALTH_ASPECT] = HealthAspect::WORKLOAD
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
       @@hmlog.info "Successfully processed process_cpu_oversubscribed_monitor"
       return health_record
@@ -174,7 +182,6 @@ module Fluent
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-      health_record[HealthMonitorRecordFields::HEALTH_ASPECT] = HealthAspect::WORKLOAD
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
       @@hmlog.info "Successfully processed process_memory_oversubscribed_monitor"
       return health_record
@@ -201,7 +208,6 @@ module Fluent
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-      health_record[HealthMonitorRecordFields::HEALTH_ASPECT] = HealthAspect::WORKLOAD
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
       @@hmlog.info "Successfully processed process_kube_api_up_monitor"
       return health_record
@@ -213,10 +219,11 @@ module Fluent
 
       records = []
       pods_hash.keys.each do |key|
-        controller_name = key
-        total_pods = pods_hash[controller_name]['totalPods']
-        pods_ready = pods_hash[controller_name]['podsReady']
-        namespace = pods_hash[controller_name]['namespace']
+        pod_aggregator = key
+        total_pods = pods_hash[pod_aggregator]['totalPods']
+        pods_ready = pods_hash[pod_aggregator]['podsReady']
+        namespace = pods_hash[pod_aggregator]['namespace']
+        pod_aggregator_kind = pods_hash[pod_aggregator]['kind']
         percent = pods_ready / total_pods * 100
         timestamp = Time.now.utc.iso8601
 
@@ -225,10 +232,10 @@ module Fluent
         elsif config_monitor_id.downcase.start_with?("workload")
           state = HealthMonitorState.getStateForWorkloadPodsReadyPercentage(@@hmlog, percent, monitor_config)
         end
-        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "controllerName" => controller_name}}
-        monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, config_monitor_id, [@@clusterId, namespace, controller_name])
+        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "podAggregator" => pod_aggregator, "namespace" => namespace, "podAggregatorKind" => pod_aggregator_kind}}
+        monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, config_monitor_id, [@@clusterId, namespace, pod_aggregator])
         HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
-        #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, controller_name: controller_name)
+        #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, pod_aggregator: pod_aggregator)
         health_record = {}
         time_now = Time.now.utc.iso8601
         health_record[HealthMonitorRecordFields::MONITOR_ID] = config_monitor_id
@@ -236,9 +243,7 @@ module Fluent
         health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
         health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
         health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-        health_record[HealthMonitorRecordFields::HEALTH_ASPECT] = HealthAspect::WORKLOAD
         health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
-        health_record[HealthMonitorRecordFields::CONTROLLER_NAME] = controller_name
         records.push(health_record)
       end
       @@hmlog.info "Successfully processed pods_ready_percentage for #{config_monitor_id} #{records.size}"
@@ -272,7 +277,6 @@ module Fluent
             health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
             health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
             health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-            health_record[HealthMonitorRecordFields::HEALTH_ASPECT] = HealthAspect::WORKLOAD
             health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
             health_record[HealthMonitorRecordFields::NODE_NAME] = node_name
             node_condition_monitor_records.push(health_record)
@@ -280,42 +284,6 @@ module Fluent
       end
       @@hmlog.info "Successfully processed process_node_condition_monitor #{node_condition_monitor_records.size}"
       return node_condition_monitor_records
-    end
-
-    def process_pod_statuses(log, pod_inventory)
-      monitor_id = HealthMonitorConstants::POD_STATUS
-      pods_ready_percentage_hash = {}
-      records = []
-      monitor_config = @@healthMonitorConfig[monitor_id]
-      pod_inventory['items'].each do |pod|
-          controller_name = pod['metadata']['ownerReferences'][0]['name']
-          namespace = pod['metadata']['namespace']
-          status = pod['status']['phase']
-          timestamp = Time.now.utc.iso8601
-          state = ''
-          podUid = pod['metadata']['uid']
-          conditions = pod['status']['conditions']
-          details = {}
-          if status == 'Running'
-            state = 'pass'
-          else
-            state = 'fail'
-          end
-          details['status'] = status
-          conditions.each do |condition|
-            details[condition['type']] = {"Status" => condition['status'], "LastTransitionTime" => condition['lastTransitionTime']}
-          end
-          health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
-
-          monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId, namespace, controller_name, podUid])
-          HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
-          #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, controller_name: controller_name)
-          if !record.nil?
-            records.push(record)
-          end
-      end
-      log.debug "Pod Status Records #{records.size}"
-      return records
     end
 
     def run_periodic

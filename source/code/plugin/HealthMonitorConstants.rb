@@ -20,26 +20,3 @@ class HealthMonitorConstants
     DEFAULT_MONITOR_TIMEOUT = 240 #4 hours
     DEFAULT_SAMPLES_BEFORE_NOTIFICATION = 3
 end
-
-class HealthMonitorRecordFields
-    CLUSTER_ID = "ClusterId"
-    MONITOR_ID = "MonitorId"
-    MONITOR_INSTANCE_ID = "MonitorInstanceId"
-    MONITOR_LABELS = "MonitorLabels"
-    DETAILS = "Details"
-    MONITOR_CONFIG = "MonitorConfig"
-    OLD_STATE = "OldState"
-    NEW_STATE = "NewState"
-    AGENT_COLLECTION_TIME = "AgentCollectionTime"
-    TIME_FIRST_OBSERVED = "TimeFirstObserved"
-    NODE_NAME = "NodeName"
-	CONTROLLER_NAME = "ControllerName"
-    HEALTH_ASPECT = "HealthAspect"
-    CONTAINER_ID = "ContainerID"
-end
-
-class HealthAspect
-    NODES = "Nodes"
-    KUBERNETES_INFRASTRUCTURE = "Kubernetes infrastructure"
-    WORKLOAD = "Workload"
-end

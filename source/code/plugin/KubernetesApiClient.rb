@@ -30,13 +30,13 @@ class KubernetesApiClient
   end
 
   class << self
-    def getKubeResourceInfo(resource)
+    def getKubeResourceInfo(resource, api_version: nil)
       headers = {}
       response = nil
-      @Log.info "Getting Kube resource"
+      @Log.info "Getting Kube resource api_version #{api_version}"
       @Log.info resource
       begin
-        resourceUri = getResourceUri(resource)
+        resourceUri = getResourceUri(resource, api_version: api_version)
         if !resourceUri.nil?
           uri = URI.parse(resourceUri)
           http = Net::HTTP.new(uri.host, uri.port)
@@ -85,10 +85,14 @@ class KubernetesApiClient
       end
     end
 
-    def getResourceUri(resource)
+    def getResourceUri(resource, api_version: nil)
       begin
         if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
-          return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/" + @@ApiVersion + "/" + resource
+            if !api_version.nil?
+                return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/apis/" + api_version + "/" + resource
+            end
+            api_version = @@ApiVersion
+            return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/" + api_version + "/" + resource
         else
           @Log.warn ("Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{ENV["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{ENV["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri")
           return nil

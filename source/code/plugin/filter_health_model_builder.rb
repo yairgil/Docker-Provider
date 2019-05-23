@@ -7,6 +7,7 @@ module Fluent
     require 'json'
     Dir[File.join(__dir__, './health', '*.rb')].each { |file| require file }
 
+
     class FilterHealthModelBuilder < Filter
         Fluent::Plugin.register_filter('filter_health_model_builder', self)
 
@@ -16,6 +17,7 @@ module Fluent
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_transition_processor, :state_finalizers, :monitor_set, :model_builder
 
         @@healthMonitorConfig = HealthMonitorUtils.getHealthMonitorConfig
+        @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
 
         def initialize
             super
@@ -47,6 +49,8 @@ module Fluent
         end
 
         def filter_stream(tag, es)
+            new_es = MultiEventStream.new
+            time = Time.now
             begin
                 if tag.start_with?("oms.api.KubeHealth.DaemonSet")
                     records = []
@@ -77,7 +81,6 @@ module Fluent
                             record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
                             @@healthMonitorConfig[monitor_id],
                             key: record[HealthMonitorRecordFields::CONTAINER_ID],
-                            controller_name: record[HealthMonitorRecordFields::CONTROLLER_NAME],
                             node_name: record[HealthMonitorRecordFields::NODE_NAME]
                             )
                             filtered_records.push(MonitorStateTransition.new(
@@ -96,36 +99,46 @@ module Fluent
 
                     @log.info "Filtered Records size = #{filtered_records.size}"
 
-
-                    # if raw_records.size > 0
-
-                    #     raw_records.each{|record|
-                    #         @log.debug "#{record}"
-                    #     }
-
-                    #     File.open("/tmp/mock_data-#{Time.now.to_i}.json", "w") do |f|
-                    #         f.write(JSON.pretty_generate(raw_records))
-                    #     end
-                    # end
-
+                    File.open("/tmp/mock_data-#{Time.now.to_i}.json", "w") do |f|
+                        f.write(JSON.pretty_generate(raw_records))
+                    end
 
                     @model_builder.process_state_transitions(filtered_records)
-                    monitors_map = @model_builder.finalize_model
-                    @log.debug "monitors map size = #{monitors_map.size}"
-                    # monitors_map.each{|key, value|
-                    #     @log.debug "#{key} ==> #{value.state}"
-                    # }
+                    monitors = @model_builder.finalize_model
+                    @log.debug "monitors map size = #{monitors.size}"
 
+                    monitors.map {|monitor_instance_id, monitor|
+                        record = {}
 
+                        record[HealthMonitorRecordFields::MONITOR_ID] = monitor.monitor_id
+                        record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor.monitor_instance_id
+                        record[HealthMonitorRecordFields::MONITOR_LABELS] = monitor.labels
+                        record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
+                        record[HealthMonitorRecordFields::CLUSTER_NAME] = KubernetesApiClient.getClusterName
+                        record[HealthMonitorRecordFields::OLD_STATE] = monitor.old_state
+                        record[HealthMonitorRecordFields::NEW_STATE] = monitor.new_state
+                        record[HealthMonitorRecordFields::DETAILS] = monitor.details if monitor.methods.include? :details
+                        record[HealthMonitorRecordFields::MONITOR_CONFIG] = monitor.config if monitor.methods.include? :config
+                        record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] = Time.now.utc.iso8601
+                        record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = monitor.transition_time
+
+                        new_es.add(time, record)
+                    }
+
+                    router.emit_stream(@@rewrite_tag, new_es)
+                    # return an empty event stream, else the match will throw a NoMethodError
                     return []
+                elsif tag.start_with?("oms.api.KubeHealth.AgentCollectionTime")
+                    # this filter also acts as a pass through as we are rewriting the tag and emitting to the fluent stream
+                    es
                 else
-                    raise "Invalid tag #{tag} received"
+                    raise 'Invalid tag #{tag} received'
                 end
+
             rescue => e
                  @log.warn "Message: #{e.message} Backtrace: #{e.backtrace}"
                  return nil
             end
-            es
         end
     end
 end

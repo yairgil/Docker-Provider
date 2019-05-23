@@ -4,6 +4,7 @@
 require_relative 'KubernetesApiClient'
 require_relative 'HealthMonitorConstants'
 require 'time'
+require 'json'
 
 class HealthMonitorUtils
 
@@ -89,19 +90,6 @@ class HealthMonitorUtils
         def getMonitorInstanceId(log, monitor_id, args = [])
             #log.debug "getMonitorInstanceId"
             string_to_hash = args.join("/")
-            # # Container Level Monitor
-            # if args.key?("cluster_id") && args.key?("node_name") && args.key?("key")
-            #     string_to_hash = [args['cluster_id'], args['node_name'], args['key']].join("/")
-            # elsif args.key?("cluster_id") && args.key?("node_name")
-            #     string_to_hash = [args['cluster_id'], args['node_name']].join("/")
-            # elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name") && args.key?("key")
-            #     string_to_hash = [args['cluster_id'], args['namespace'], args['controller_name'], args['key']].join("/")
-            # elsif args.key?("cluster_id") && args.key?("namespace") && args.key?("controller_name") && !args.key?("key")
-            #     string_to_hash = [args['cluster_id'], args['namespace'], args['controller_name']].join("/")
-            # elsif args.key?("cluster_id") && !args.key?("namespace") && !args.key?("controller_name") && !args.key?("key")
-            #     string_to_hash = [args['cluster_id']].join("/")
-            # end
-            @log.info "String to Hash : #{string_to_hash}"
             return "#{monitor_id}-#{Digest::MD5.hexdigest(string_to_hash)}"
         end
 
@@ -122,22 +110,21 @@ class HealthMonitorUtils
             return labels
         end
 
-        def getMonitorLabels(log, monitor_id, key: nil, controller_name: nil, node_name: nil)
-            #log.debug "get MonitorLabels key : #{key} controller_name #{controller_name} monitor_id #{monitor_id} node_name #{node_name}"
+        def getMonitorLabels(log, monitor_id, key: nil, pod_aggregator: nil, node_name: nil, namespace: nil, pod_aggregator_kind: nil)
+            log.debug "monitor_id #{monitor_id} pod_aggregator #{pod_aggregator} pod_aggregator_kind #{pod_aggregator_kind} namespace #{namespace}"
             monitor_labels = {}
             case monitor_id
             when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::POD_STATUS
-                #log.debug "Getting Monitor labels for Workload/ManagedInfra Monitors #{controller_name} #{@@controllerMapping}"
                 if !key.nil? #container
-                    monitor_labels['monitor.azure.com/controller-name'] = getContainerControllerName(key)
+                    monitor_labels['monitor.azure.com/pod-aggregator'] = getContainerControllerName(key)
                     monitor_labels['monitor.azure.com/namespace'] = getContainerNamespace(key)
-                elsif !controller_name.nil?
-                    monitor_labels['monitor.azure.com/controller-name'] = controller_name
-                    monitor_labels['monitor.azure.com/namespace'] = getControllerNamespace(controller_name)
+                else
+                    monitor_labels['monitor.azure.com/pod-aggregator'] = pod_aggregator.split('~~')[1]
+                    monitor_labels['monitor.azure.com/pod-aggregator-kind'] = pod_aggregator_kind
+                    monitor_labels['monitor.azure.com/namespace'] = namespace
                 end
                 return monitor_labels
             when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_KUBELET_HEALTH_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID, HealthMonitorConstants::NODE_CONTAINER_RUNTIME_MONITOR_ID
-                #log.debug "Getting Node Labels "
 
                 @@nodeInventory["items"].each do |node|
                     if !node_name.nil? && !node['metadata']['name'].nil? && node_name == node['metadata']['name']
@@ -170,14 +157,19 @@ class HealthMonitorUtils
                     podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("pods").body)
                 end
                 podInventory['items'].each do |pod|
-                    controller_name = pod['metadata']['ownerReferences'][0]['name']
+                    has_owner = !pod['metadata']['ownerReferences'].nil?
+                    if !has_owner
+                        pod_aggregator = pod['metadata']['name']
+                    else
+                        pod_aggregator = pod['metadata']['ownerReferences'][0]['name']
+                    end
                     namespace = pod['metadata']['namespace']
-                    @@controllerMapping[controller_name] = namespace
-                    #log.debug "controller_name #{controller_name} namespace #{namespace}"
+                    @@controllerMapping[pod_aggregator] = namespace
+                    #log.debug "pod_aggregator #{pod_aggregator} namespace #{namespace}"
                     pod['spec']['containers'].each do |container|
                         key = [pod['metadata']['uid'], container['name']].join('/')
 
-                        if !container['resources']['limits'].nil? && !container['resources']['limits']['cpu'].nil?
+                        if !container['resources'].empty? && !container['resources']['limits'].nil? && !container['resources']['limits']['cpu'].nil?
                             cpu_limit_value = KubernetesApiClient.getMetricNumericValue('cpu', container['resources']['limits']['cpu'])
                         else
                             @log.info "CPU limit not set for container : #{container['name']}. Using Node Capacity"
@@ -185,7 +177,7 @@ class HealthMonitorUtils
                             cpu_limit_value = @cpu_capacity
                         end
 
-                        if !container['resources']['limits'].nil? && !container['resources']['limits']['memory'].nil?
+                        if !container['resources'].empty? && !container['resources']['limits'].nil? && !container['resources']['limits']['memory'].nil?
                             #@log.info "Raw Memory Value #{container['resources']['limits']['memory']}"
                             memory_limit_value = KubernetesApiClient.getMetricNumericValue('memory', container['resources']['limits']['memory'])
                         else
@@ -193,11 +185,11 @@ class HealthMonitorUtils
                             memory_limit_value = @memory_capacity
                         end
 
-                        @@containerMetadata[key] = {"cpuLimit" => cpu_limit_value, "memoryLimit" => memory_limit_value, "controllerName" => controller_name, "namespace" => namespace}
+                        @@containerMetadata[key] = {"cpuLimit" => cpu_limit_value, "memoryLimit" => memory_limit_value, "controllerName" => pod_aggregator, "namespace" => namespace}
                     end
                 end
             rescue => e
-                @log.info "Error Refreshing Container Resource Limits #{e}"
+                @log.info "Error Refreshing Container Resource Limits #{e.backtrace}"
             end
             # log.info "Controller Mapping #{@@controllerMapping}"
             # log.info "Node Inventory #{@@nodeInventory}"
@@ -212,7 +204,7 @@ class HealthMonitorUtils
             else
                 # This is to handle new containers/controllers that might have come up since the last refresh
                 @log.info "Adhoc refresh getContainerMetadata"
-                HealthMonitorUtils.refreshKubernetesApiData(@log,nil, force: true)
+                HealthMonitorUtils.refreshKubernetesApiData(@log, nil, force: true)
                 if @@containerMetadata.has_key?(key)
                     return @@containerMetadata[key]
                 else
@@ -266,20 +258,20 @@ class HealthMonitorUtils
             end
         end
 
-        def getControllerNamespace(controller_name)
-            if @@controllerMapping.has_key?(controller_name)
-                return @@controllerMapping[controller_name]
-            else
-                @log.info "Adhoc refresh getControllerNamespace"
-                # This is to handle new containers/controllers that might have come up since the last refresh
-                HealthMonitorUtils.refreshKubernetesApiData(@log,nil, force: true)
-                if @@controllerMapping.has_key?(controller_name)
-                    return @@controllerMapping[controller_name]
-                else
-                    return ''
-                end
-            end
-        end
+        # def getControllerNamespace(controller_name)
+        #     if @@controllerMapping.has_key?(controller_name)
+        #         return @@controllerMapping[controller_name]
+        #     else
+        #         @log.info "Adhoc refresh getControllerNamespace"
+        #         # This is to handle new containers/controllers that might have come up since the last refresh
+        #         HealthMonitorUtils.refreshKubernetesApiData(@log,nil, force: true)
+        #         if @@controllerMapping.has_key?(controller_name)
+        #             return @@controllerMapping[controller_name]
+        #         else
+        #             return ''
+        #         end
+        #     end
+        # end
 
         def getClusterCpuMemoryCapacity
             begin
@@ -355,17 +347,79 @@ class HealthMonitorUtils
             return @log
         end
 
-        def getPodsReadyHash(pod_inventory)
+        def getPodsReadyHash(pod_inventory, deployment_inventory)
             pods_ready_percentage_hash = {}
+            deployment_lookup = {}
+            deployment_inventory['items'].each do |deployment|
+                match_labels = deployment['spec']['selector']['matchLabels'].to_h
+                namespace = deployment['metadata']['namespace']
+                match_labels.each{|k,v|
+                    deployment_lookup["#{namespace}-#{k}=#{v}"] = "#{deployment['metadata']['namespace']}~~#{deployment['metadata']['name']}"
+                }
+            end
             pod_inventory['items'].each do |pod|
                 begin
-                    controller_name = pod['metadata']['ownerReferences'][0]['name']
+                    # controller_name = pod['metadata']['ownerReferences'][0]['name']
+                    # namespace = pod['metadata']['namespace']
+                    # status = pod['status']['phase']
+
+                    # if pods_ready_percentage_hash.key?(controller_name)
+                    #     total_pods = pods_ready_percentage_hash[controller_name]['totalPods']
+                    #     pods_ready = pods_ready_percentage_hash[controller_name]['podsReady']
+                    # else
+                    #     total_pods = 0
+                    #     pods_ready = 0
+                    # end
+
+                    # total_pods += 1
+                    # if status == 'Running'
+                    #     pods_ready += 1
+                    # end
+                    # pods_ready_percentage_hash[controller_name] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace}
+                    has_owner = !pod['metadata']['ownerReferences'].nil?
+                    owner_kind = ''
+                    if has_owner
+                        owner_kind = pod['metadata']['ownerReferences'][0]['kind']
+                        controller_name = pod['metadata']['ownerReferences'][0]['name']
+                    else
+                        owner_kind = pod['kind']
+                        controller_name = pod['metadata']['name']
+                        #@log.info "#{JSON.pretty_generate(pod)}"
+                    end
+
                     namespace = pod['metadata']['namespace']
                     status = pod['status']['phase']
 
-                    if pods_ready_percentage_hash.key?(controller_name)
-                        total_pods = pods_ready_percentage_hash[controller_name]['totalPods']
-                        pods_ready = pods_ready_percentage_hash[controller_name]['podsReady']
+                    pod_aggregator = ''
+                    if owner_kind.nil?
+                        owner_kind = 'Pod'
+                    end
+                    case owner_kind.downcase
+                    when 'job'
+                        # we are excluding jobs
+                        next
+                    when 'replicaset'
+                        # get the labels, and see if there is a match. If there is, it is the deployment. If not, use replica set name/controller name
+                        labels = pod['metadata']['labels'].to_h
+                        labels.each {|k,v|
+                            lookup_key = "#{namespace}-#{k}=#{v}"
+                            if deployment_lookup.key?(lookup_key)
+                                pod_aggregator = deployment_lookup[lookup_key]
+                                break
+                            end
+                        }
+                        if pod_aggregator.empty?
+                            pod_aggregator = "#{namespace}~~#{controller_name}"
+                        end
+                    when 'daemonset'
+                        pod_aggregator = "#{namespace}~~#{controller_name}"
+                    else
+                        pod_aggregator = "#{namespace}~~#{pod['metadata']['name']}"
+                    end
+
+                    if pods_ready_percentage_hash.key?(pod_aggregator)
+                        total_pods = pods_ready_percentage_hash[pod_aggregator]['totalPods']
+                        pods_ready = pods_ready_percentage_hash[pod_aggregator]['podsReady']
                     else
                         total_pods = 0
                         pods_ready = 0
@@ -375,7 +429,8 @@ class HealthMonitorUtils
                     if status == 'Running'
                         pods_ready += 1
                     end
-                    pods_ready_percentage_hash[controller_name] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace}
+
+                    pods_ready_percentage_hash[pod_aggregator] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace, 'pod_aggregator' => pod_aggregator, 'kind' => owner_kind}
                 rescue => e
                     @log.info "Error when processing pod #{pod['metadata']['name']} #{e.message}"
                 end

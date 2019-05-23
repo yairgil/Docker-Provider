@@ -1,14 +1,15 @@
 [
     {
         "monitor_id": "workload_pods_ready_percentage",
-        "parent_monitor_id": "controller",
+        "parent_monitor_id": "pod_aggregator",
         "labels": [
             "monitor.azure.com/namespace",
-            "monitor.azure.com/controller-name"
+            "monitor.azure.com/pod-aggregator",
+            "monitor.azure.com/pod-aggregator-kind"
         ]
     },
     {
-        "monitor_id": "controller",
+        "monitor_id": "pod_aggregator",
         "parent_monitor_id": "namespace",
         "labels": [
             "monitor.azure.com/namespace"
@@ -16,14 +17,15 @@
     },
     {
         "monitor_id": "system_pods_ready_percentage",
-        "parent_monitor_id": "system_controllers",
+        "parent_monitor_id": "system_pod_aggregator",
         "labels": [
             "monitor.azure.com/namespace",
-            "monitor.azure.com/controller-name"
+            "monitor.azure.com/pod-aggregator",
+            "monitor.azure.com/pod-aggregator-kind"
         ]
     },
     {
-        "monitor_id": "system_controllers",
+        "monitor_id": "system_pod_aggregator",
         "parent_monitor_id": "k8s_infrastructure"
     },
     {

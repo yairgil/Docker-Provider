@@ -195,7 +195,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"heapster-fc665dc4b\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"heapster-fc665dc4b\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-57b4bbef6e083416b8d347d4da8de7a6",
         "NewState": "pass",
@@ -226,7 +226,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"kube-dns-autoscaler-746998ccf6\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"kube-dns-autoscaler-746998ccf6\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-21832207f4e82c39f198f11abc39d104",
         "NewState": "pass",
@@ -257,7 +257,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"kube-dns-v20-659876bf8d\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"kube-dns-v20-659876bf8d\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-8433c768b2f76a7978eb7317e9bb2f4e",
         "NewState": "pass",
@@ -288,7 +288,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"kube-proxy\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"kube-proxy\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-29464dc11987eb670b82529ef4f5e094",
         "NewState": "pass",
@@ -319,7 +319,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"kube-svc-redirect\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"kube-svc-redirect\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-62a5128950e4ad0d13a4163f85fbf7b3",
         "NewState": "pass",
@@ -350,7 +350,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"kubernetes-dashboard-6d48dd4779\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"kubernetes-dashboard-6d48dd4779\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-d34ec2ade900ae62a713b2a8a6d1ce74",
         "NewState": "pass",
@@ -381,7 +381,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"metrics-server-5cbc77f79f\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"metrics-server-5cbc77f79f\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-2f6c4157408ce6f9dc13da2fd684e716",
         "NewState": "pass",
@@ -412,7 +412,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"omsagent\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"omsagent\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-930e07ceb1ea2e952e5578b3f1557fbe",
         "NewState": "pass",
@@ -443,7 +443,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"omsagent-rs-6dc57b8544\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"omsagent-rs-6dc57b8544\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-7d42f06622dee87b682d3b03a1e348fa",
         "NewState": "pass",
@@ -474,7 +474,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"tunnelfront-66dd5cfc6b\",\"monitor.azure.com/namespace\":\"kube-system\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"tunnelfront-66dd5cfc6b\",\"monitor.azure.com/namespace\":\"kube-system\"}",
         "MonitorId": "system_pods_ready_percentage",
         "MonitorInstanceId": "system_pods_ready_percentage-544c7f310f41ab8fc1196ae9f210fc83",
         "NewState": "pass",
@@ -505,7 +505,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"diliprdeploymentnodeapps-c4fdfb446\",\"monitor.azure.com/namespace\":\"default\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"diliprdeploymentnodeapps-c4fdfb446\",\"monitor.azure.com/namespace\":\"default\"}",
         "MonitorId": "workload_pods_ready_percentage",
         "MonitorInstanceId": "workload_pods_ready_percentage-5d1f09e9b9c40718528d87cdb9ec0285",
         "NewState": "pass",
@@ -536,7 +536,7 @@
     },
     {
         "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
-        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/controller-name\":\"vishwadeploymentnodeapps-8686cf54db\",\"monitor.azure.com/namespace\":\"default\"}",
+        "MonitorLabels": "{\"monitor.azure.com/cluster-region\":\"eastus\",\"monitor.azure.com/cluster-subscription-id\":\"72c8e8ca-dc16-47dc-b65c-6b5875eb600a\",\"monitor.azure.com/cluster-resource-group\":\"dilipr-health-test\",\"monitor.azure.com/cluster-name\":\"dilipr-health-test\",\"monitor.azure.com/pod-aggregator\":\"vishwadeploymentnodeapps-8686cf54db\",\"monitor.azure.com/namespace\":\"default\"}",
         "MonitorId": "workload_pods_ready_percentage",
         "MonitorInstanceId": "workload_pods_ready_percentage-56b719128d6ea1353fb2489afd8d8ed5",
         "NewState": "pass",
