@@ -156,7 +156,7 @@ module Fluent
         response = @http_client.request(request)
         response.value # this throws for non 200 HTTP response code
         @log.info "HTTP Post Response Code : #{response.code}"
-        ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
+        #ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
       rescue Net::HTTPServerException => e
         @log.info "Failed to Post Metrics to MDM : #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
