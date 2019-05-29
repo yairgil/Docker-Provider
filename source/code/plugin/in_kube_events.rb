@@ -65,11 +65,11 @@ module Fluent
                 record = {}
                 #<BUGBUG> - Not sure if ingestion has the below mapping for this custom type. Fix it as part of fixed type conversion
                 record['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
-                eventId = items['metadata']['uid'] + "/" + items['count'].to_s  
+                eventId = items['metadata']['uid'] + "/" + items['count'].to_s
                 newEventQueryState.push(eventId)
                 if !eventQueryState.empty? && eventQueryState.include?(eventId)
                   next
-                end  
+                end
                 record['ObjectKind']= items['involvedObject']['kind']
                 record['Namespace'] = items['involvedObject']['namespace']
                 record['Name'] = items['involvedObject']['name']
@@ -86,7 +86,6 @@ module Fluent
                 else
                         record['Computer'] = (OMS::Common.get_hostname)
                 end
-                record['ClusterName'] = KubernetesApiClient.getClusterName
                 record['ClusterId'] = KubernetesApiClient.getClusterId
                 wrapper = {
                   "DataType"=>"KUBE_EVENTS_BLOB",
@@ -96,13 +95,13 @@ module Fluent
                 eventStream.add(emitTime, wrapper) if wrapper
               end
               router.emit_stream(@tag, eventStream) if eventStream
-            end  
+            end
             writeEventQueryState(newEventQueryState)
           rescue  => errorStr
             $log.warn line.dump, error: errorStr.to_s
             $log.debug_backtrace(errorStr.backtrace)
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-          end   
+          end
     end
 
     def run_periodic

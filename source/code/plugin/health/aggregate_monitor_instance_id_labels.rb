@@ -1,10 +1,10 @@
 module HealthModel
     class AggregateMonitorInstanceIdLabels
         @@id_labels_mapping = {
-            MonitorId::SYSTEM_POD_AGGREGATOR => ["monitor.azure.com/namespace", "monitor.azure.com/pod-aggregator"],
-            MonitorId::POD_AGGREGATOR => ["monitor.azure.com/namespace", "monitor.azure.com/pod-aggregator"],
+            MonitorId::SYSTEM_POD_AGGREGATOR => ["container.azm.ms/namespace", "container.azm.ms/pod-aggregator"],
+            MonitorId::POD_AGGREGATOR => ["container.azm.ms/namespace", "container.azm.ms/pod-aggregator"],
             MonitorId::NODE => ["agentpool", "kubernetes.io/role", "kubernetes.io/hostname"],
-            MonitorId::NAMESPACE => ["monitor.azure.com/namespace"],
+            MonitorId::NAMESPACE => ["container.azm.ms/namespace"],
             MonitorId::AGENT_NODE_POOL => ["agentpool"],
             # MonitorId::ALL_AGENT_NODE_POOLS => [],
             # MonitorId::ALL_NODE_POOLS => [],

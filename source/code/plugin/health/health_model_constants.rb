@@ -36,7 +36,6 @@ module HealthModel
 
     class HealthMonitorRecordFields
         CLUSTER_ID = "ClusterId"
-        CLUSTER_NAME = "ClusterName"
         MONITOR_ID = "MonitorId"
         MONITOR_INSTANCE_ID = "MonitorInstanceId"
         MONITOR_LABELS = "MonitorLabels"

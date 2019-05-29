@@ -97,31 +97,31 @@ class HealthMonitorUtils
             labels = {}
             cluster_id = @@clusterId
             region = KubernetesApiClient.getClusterRegion
-            labels['monitor.azure.com/cluster-region'] = region
+            labels['container.azm.ms/cluster-region'] = region
             if !cluster_id.nil?
                 cluster_id_elements = cluster_id.split('/')
                 azure_sub_id =  cluster_id_elements[2]
                 resource_group = cluster_id_elements[4]
                 cluster_name = cluster_id_elements[8]
-                labels['monitor.azure.com/cluster-subscription-id'] = azure_sub_id
-                labels['monitor.azure.com/cluster-resource-group'] = resource_group
-                labels['monitor.azure.com/cluster-name'] = cluster_name
+                labels['container.azm.ms/cluster-subscription-id'] = azure_sub_id
+                labels['container.azm.ms/cluster-resource-group'] = resource_group
+                labels['container.azm.ms/cluster-name'] = cluster_name
             end
             return labels
         end
 
         def getMonitorLabels(log, monitor_id, key: nil, pod_aggregator: nil, node_name: nil, namespace: nil, pod_aggregator_kind: nil)
-            log.debug "monitor_id #{monitor_id} pod_aggregator #{pod_aggregator} pod_aggregator_kind #{pod_aggregator_kind} namespace #{namespace}"
+            #log.debug "monitor_id #{monitor_id} pod_aggregator #{pod_aggregator} pod_aggregator_kind #{pod_aggregator_kind} namespace #{namespace}"
             monitor_labels = {}
             case monitor_id
             when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::POD_STATUS
                 if !key.nil? #container
-                    monitor_labels['monitor.azure.com/pod-aggregator'] = getContainerControllerName(key)
-                    monitor_labels['monitor.azure.com/namespace'] = getContainerNamespace(key)
+                    monitor_labels['container.azm.ms/pod-aggregator'] = getContainerControllerName(key)
+                    monitor_labels['container.azm.ms/namespace'] = getContainerNamespace(key)
                 else
-                    monitor_labels['monitor.azure.com/pod-aggregator'] = pod_aggregator.split('~~')[1]
-                    monitor_labels['monitor.azure.com/pod-aggregator-kind'] = pod_aggregator_kind
-                    monitor_labels['monitor.azure.com/namespace'] = namespace
+                    monitor_labels['container.azm.ms/pod-aggregator'] = pod_aggregator.split('~~')[1]
+                    monitor_labels['container.azm.ms/pod-aggregator-kind'] = pod_aggregator_kind
+                    monitor_labels['container.azm.ms/namespace'] = namespace
                 end
                 return monitor_labels
             when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_KUBELET_HEALTH_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID, HealthMonitorConstants::NODE_CONTAINER_RUNTIME_MONITOR_ID

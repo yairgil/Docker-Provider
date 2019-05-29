@@ -103,7 +103,7 @@ class HealthMonitorSignalReducer
         end
 
         def formatRecord(log, monitor_id, monitor_instance_id, health_monitor_instance_state, monitor_config, key: nil, node_name: nil)
-            log.debug "Health Monitor Instance State #{health_monitor_instance_state}"
+            #log.debug "Health Monitor Instance State #{health_monitor_instance_state}"
 
             labels = HealthMonitorUtils.getClusterLabels
             #log.debug "Labels : #{labels}"
@@ -135,7 +135,12 @@ class HealthMonitorSignalReducer
             #log.debug "monitor_config  #{monitor_config}"
             records = []
 
-            details = prev_records #.each do |record|
+
+            if prev_records.size == 1
+                details = prev_records[0]
+            else
+                details = prev_records #.each do |record|
+            end
 
             time_observed = Time.now.utc.iso8601
             #log.debug "Details: #{details}"
@@ -143,7 +148,6 @@ class HealthMonitorSignalReducer
 
             health_monitor_record = {}
             health_monitor_record["ClusterId"] = KubernetesApiClient.getClusterId
-            health_monitor_record["ClusterName"] = KubernetesApiClient.getClusterName
             health_monitor_record["MonitorLabels"] = labels.to_json
             health_monitor_record["MonitorId"] = monitor_id
             health_monitor_record["MonitorInstanceId"] = monitor_instance_id

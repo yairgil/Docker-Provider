@@ -95,13 +95,14 @@ module Fluent
                             )) if filtered_record
 
                             raw_records.push(filtered_record) if filtered_record
+                            @log.info "#{filtered_record["MonitorInstanceId"]}" if filtered_record
                     }
 
                     @log.info "Filtered Records size = #{filtered_records.size}"
 
-                    File.open("/tmp/mock_data-#{Time.now.to_i}.json", "w") do |f|
-                        f.write(JSON.pretty_generate(raw_records))
-                    end
+                    # File.open("/tmp/mock_data-#{Time.now.to_i}.json", "w") do |f|
+                    #     f.write(JSON.pretty_generate(raw_records))
+                    # end
 
                     @model_builder.process_state_transitions(filtered_records)
                     monitors = @model_builder.finalize_model
@@ -114,7 +115,6 @@ module Fluent
                         record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor.monitor_instance_id
                         record[HealthMonitorRecordFields::MONITOR_LABELS] = monitor.labels
                         record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
-                        record[HealthMonitorRecordFields::CLUSTER_NAME] = KubernetesApiClient.getClusterName
                         record[HealthMonitorRecordFields::OLD_STATE] = monitor.old_state
                         record[HealthMonitorRecordFields::NEW_STATE] = monitor.new_state
                         record[HealthMonitorRecordFields::DETAILS] = monitor.details if monitor.methods.include? :details

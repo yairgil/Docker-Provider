@@ -2,71 +2,26 @@
     "node_cpu_utilization_percentage": {
         "PassPercentage": 80.0,
         "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 3,
-        "NotifyInstantly" : false,
-        "MonitorTimeOut": 240
+        "SamplesBeforeNotification": 3
     },
     "node_memory_utilization_percentage": {
         "PassPercentage": 80.0,
         "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 3,
-        "NotifyInstantly" : false,
-        "MonitorTimeOut": 240
-    },
-    "container_manager_runtime_running": {
-        "MonitorTimeOut": 240,
-        "NotifyInstantly" : true
-    },
-    "kubelet_running": {
-        "MonitorTimeOut": 240,
-        "NotifyInstantly" : true
-    },
-    "node_condition": {
-        "MonitorTimeOut": 240,
-        "NotifyInstantly" : true
-    },
-    "pod_status": {
-        "MonitorTimeOut": 5,
-        "NotifyInstantly" : true
-    },
-    "is_oversubscribed_cpu": {
-        "MonitorTimeOut": 240,
-        "NotifyInstantly" : true
-    },
-    "is_oversubscribed_memory": {
-        "MonitorTimeOut": 240,
-        "NotifyInstantly" : true
+        "SamplesBeforeNotification": 3
     },
     "container_cpu_utilization_percentage": {
         "PassPercentage": 80.0,
         "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 3,
-        "NotifyInstantly" : false,
-        "MonitorTimeOut": 240
+        "SamplesBeforeNotification": 3
     },
     "container_memory_utilization_percentage": {
         "PassPercentage": 80.0,
         "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 3,
-        "NotifyInstantly" : false,
-        "MonitorTimeOut": 240
+        "SamplesBeforeNotification": 3
     },
-    "workload_pods_ready_percentage" : {
+    "workload_pods_ready_percentage": {
         "PassPercentage": 100.0,
         "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 2,
-        "NotifyInstantly" : false,
-        "MonitorTimeOut": 240
-    },
-    "system_pods_ready_percentage" : {
-        "PassPercentage": 100.0,
-        "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 2,
-        "NotifyInstantly" : false,
-        "MonitorTimeOut": 240
-    },
-    "kube_api_up": {
-        "MonitorTimeOut": 240,
-        "NotifyInstantly" : true
+        "SamplesBeforeNotification": 2
     }
 }

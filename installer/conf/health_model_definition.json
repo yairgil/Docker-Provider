@@ -3,25 +3,25 @@
         "monitor_id": "workload_pods_ready_percentage",
         "parent_monitor_id": "pod_aggregator",
         "labels": [
-            "monitor.azure.com/namespace",
-            "monitor.azure.com/pod-aggregator",
-            "monitor.azure.com/pod-aggregator-kind"
+            "container.azm.ms/namespace",
+            "container.azm.ms/pod-aggregator",
+            "container.azm.ms/pod-aggregator-kind"
         ]
     },
     {
         "monitor_id": "pod_aggregator",
         "parent_monitor_id": "namespace",
         "labels": [
-            "monitor.azure.com/namespace"
+            "container.azm.ms/namespace"
         ]
     },
     {
         "monitor_id": "system_pods_ready_percentage",
         "parent_monitor_id": "system_pod_aggregator",
         "labels": [
-            "monitor.azure.com/namespace",
-            "monitor.azure.com/pod-aggregator",
-            "monitor.azure.com/pod-aggregator-kind"
+            "container.azm.ms/namespace",
+            "container.azm.ms/pod-aggregator",
+            "container.azm.ms/pod-aggregator-kind"
         ]
     },
     {
@@ -35,7 +35,7 @@
     {
         "monitor_id": "namespace",
         "labels": [
-            "monitor.azure.com/namespace"
+            "container.azm.ms/namespace"
         ],
         "parent_monitor_id": "namespaces"
     },
