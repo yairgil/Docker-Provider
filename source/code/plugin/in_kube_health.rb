@@ -227,15 +227,10 @@ module Fluent
         percent = pods_ready / total_pods * 100
         timestamp = Time.now.utc.iso8601
 
-        if config_monitor_id.downcase.start_with?("system")
-          state = HealthMonitorState.getStateForInfraPodsReadyPercentage(@@hmlog, percent, monitor_config)
-        elsif config_monitor_id.downcase.start_with?("workload")
-          state = HealthMonitorState.getStateForWorkloadPodsReadyPercentage(@@hmlog, percent, monitor_config)
-        end
+        state = HealthMonitorState.getState(@@hmlog, (100-percent), monitor_config)
         health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "podAggregator" => pod_aggregator, "namespace" => namespace, "podAggregatorKind" => pod_aggregator_kind}}
         monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, config_monitor_id, [@@clusterId, namespace, pod_aggregator])
         HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
-        #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, pod_aggregator: pod_aggregator)
         health_record = {}
         time_now = Time.now.utc.iso8601
         health_record[HealthMonitorRecordFields::MONITOR_ID] = config_monitor_id

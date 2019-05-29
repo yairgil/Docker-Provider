@@ -14,6 +14,7 @@ module Fluent
         config_param :enable_log, :integer, :default => 0
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_health_model_builder.log'
         config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health_model_definition.json'
+        config_param :health_signal_timeout, :default => 240
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_transition_processor, :state_finalizers, :monitor_set, :model_builder
 
         @@healthMonitorConfig = HealthMonitorUtils.getHealthMonitorConfig
@@ -80,6 +81,7 @@ module Fluent
                         filtered_record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id,
                             record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
                             @@healthMonitorConfig[monitor_id],
+                            @health_signal_timeout,
                             key: record[HealthMonitorRecordFields::CONTAINER_ID],
                             node_name: record[HealthMonitorRecordFields::NODE_NAME]
                             )
@@ -95,7 +97,6 @@ module Fluent
                             )) if filtered_record
 
                             raw_records.push(filtered_record) if filtered_record
-                            @log.info "#{filtered_record["MonitorInstanceId"]}" if filtered_record
                     }
 
                     @log.info "Filtered Records size = #{filtered_records.size}"
@@ -113,11 +114,11 @@ module Fluent
 
                         record[HealthMonitorRecordFields::MONITOR_ID] = monitor.monitor_id
                         record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor.monitor_instance_id
-                        record[HealthMonitorRecordFields::MONITOR_LABELS] = monitor.labels
+                        record[HealthMonitorRecordFields::MONITOR_LABELS] = monitor.labels.to_json
                         record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
                         record[HealthMonitorRecordFields::OLD_STATE] = monitor.old_state
                         record[HealthMonitorRecordFields::NEW_STATE] = monitor.new_state
-                        record[HealthMonitorRecordFields::DETAILS] = monitor.details if monitor.methods.include? :details
+                        record[HealthMonitorRecordFields::DETAILS] = monitor.details.to_json if monitor.methods.include? :details
                         record[HealthMonitorRecordFields::MONITOR_CONFIG] = monitor.config if monitor.methods.include? :config
                         record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] = Time.now.utc.iso8601
                         record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = monitor.transition_time

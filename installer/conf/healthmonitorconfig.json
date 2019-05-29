@@ -1,27 +1,43 @@
 {
+    "node_condition": {
+        "ConsecutiveSamplesForStateTransition": 1
+    },
+    "is_oversubscribed_cpu": {
+        "ConsecutiveSamplesForStateTransition": 1
+    },
+    "is_oversubscribed_memory": {
+        "ConsecutiveSamplesForStateTransition": 1
+    },
+    "kube_api_up": {
+        "ConsecutiveSamplesForStateTransition": 1
+    },
     "node_cpu_utilization_percentage": {
-        "PassPercentage": 80.0,
-        "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 3
+        "WarnThresholdPercentage": 80.0,
+        "FailThresholdPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 3
     },
     "node_memory_utilization_percentage": {
-        "PassPercentage": 80.0,
-        "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 3
+        "WarnThresholdPercentage": 80.0,
+        "FailThresholdPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 3
     },
     "container_cpu_utilization_percentage": {
-        "PassPercentage": 80.0,
-        "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 3
+        "WarnThresholdPercentage": 80.0,
+        "FailThresholdPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 3
     },
     "container_memory_utilization_percentage": {
-        "PassPercentage": 80.0,
-        "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 3
+        "WarnThresholdPercentage": 80.0,
+        "FailThresholdPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 3
     },
     "workload_pods_ready_percentage": {
-        "PassPercentage": 100.0,
-        "FailPercentage": 90.0,
-        "SamplesBeforeNotification": 2
+        "WarnThresholdPercentage": 0.0,
+        "FailThresholdPercentage": 10.0,
+        "ConsecutiveSamplesForStateTransition": 2
+    },
+    "system_pods_ready_percentage": {
+        "FailThresholdPercentage": 0.0,
+        "ConsecutiveSamplesForStateTransition": 2
     }
 }

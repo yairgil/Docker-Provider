@@ -111,7 +111,6 @@ class HealthMonitorUtils
         end
 
         def getMonitorLabels(log, monitor_id, key: nil, pod_aggregator: nil, node_name: nil, namespace: nil, pod_aggregator_kind: nil)
-            #log.debug "monitor_id #{monitor_id} pod_aggregator #{pod_aggregator} pod_aggregator_kind #{pod_aggregator_kind} namespace #{namespace}"
             monitor_labels = {}
             case monitor_id
             when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::POD_STATUS
@@ -123,9 +122,7 @@ class HealthMonitorUtils
                     monitor_labels['container.azm.ms/pod-aggregator-kind'] = pod_aggregator_kind
                     monitor_labels['container.azm.ms/namespace'] = namespace
                 end
-                return monitor_labels
             when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_KUBELET_HEALTH_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID, HealthMonitorConstants::NODE_CONTAINER_RUNTIME_MONITOR_ID
-
                 @@nodeInventory["items"].each do |node|
                     if !node_name.nil? && !node['metadata']['name'].nil? && node_name == node['metadata']['name']
                         #log.debug "Matched node name "
@@ -134,8 +131,9 @@ class HealthMonitorUtils
                         end
                     end
                 end
-                return monitor_labels
             end
+            #log.debug "Labels #{monitor_labels}"
+            return monitor_labels
         end
 
         def refreshKubernetesApiData(log, hostName, force: false)
