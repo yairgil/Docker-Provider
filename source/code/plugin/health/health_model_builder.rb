@@ -34,14 +34,8 @@ module HealthModel
 
             # return only those monitors whose state has changed, ALWAYS including the cluster level monitor
             monitors_map = get_changed_monitors
-
-            # monitors_map.each{|key, value|
-            #     puts "#{key} ==> #{value.state}"
-            # }
-            # puts "*****************************************************"
-
             update_last_sent_monitors
-            clear_monitors
+            clear_monitors(monitors_map.size)
             return monitors_map
         end
 
@@ -74,8 +68,11 @@ module HealthModel
             }
         end
 
-        def clear_monitors
+        def clear_monitors(size)
             @monitor_set = MonitorSet.new
+            if size == 1
+                @last_sent_monitors =  @last_sent_monitors.select {|k,v| k.downcase ==  MonitorId::CLUSTER}
+            end
         end
 
     end

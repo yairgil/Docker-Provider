@@ -105,14 +105,14 @@ class HealthMonitorSignalReducer
             # log.debug "Health Monitor Instance State #{health_monitor_instance_state}"
 
             labels = HealthMonitorUtils.getClusterLabels
-            log.debug "Cluster Labels : #{labels}"
+            #log.debug "Cluster Labels : #{labels}"
 
             namespace = health_monitor_instance_state.prev_records[0]['details']['namespace']
             pod_aggregator = health_monitor_instance_state.prev_records[0]['details']['podAggregator']
             pod_aggregator_kind = health_monitor_instance_state.prev_records[0]['details']['podAggregatorKind']
 
             monitor_labels = HealthMonitorUtils.getMonitorLabels(log, monitor_id, key: key, pod_aggregator: pod_aggregator, node_name: node_name, namespace: namespace, pod_aggregator_kind: pod_aggregator_kind)
-            # log.debug "Monitor Labels : #{monitor_labels}"
+            #log.debug "Monitor Labels : #{monitor_labels}"
 
             if !monitor_labels.empty?
                 monitor_labels.keys.each do |key|
@@ -120,7 +120,7 @@ class HealthMonitorSignalReducer
                 end
             end
 
-            # log.debug "Labels after adding Monitor Labels #{labels}"
+            #log.debug "Labels after adding Monitor Labels #{labels}"
             prev_records = health_monitor_instance_state.prev_records
             time_first_observed = health_monitor_instance_state.state_change_time # the oldest collection time
             new_state = health_monitor_instance_state.new_state # this is updated before formatRecord is called
@@ -138,7 +138,7 @@ class HealthMonitorSignalReducer
             if prev_records.size == 1
                 details = prev_records[0]
             else
-                details = prev_records #.each do |record|
+                details = prev_records
             end
 
             time_observed = Time.now.utc.iso8601

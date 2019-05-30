@@ -41,8 +41,11 @@ class FilterHealthModelBuilderTest < Test::Unit::TestCase
 
         model_builder.process_state_transitions(state_transitions)
         changed_monitors = model_builder.finalize_model
+        changed_monitors.keys.each{|key|
+            puts key
+        }
         i = i + 1
-        if i == 5
+        if i == 6
             break
         end
     end
