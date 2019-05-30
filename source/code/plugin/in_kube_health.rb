@@ -1,7 +1,6 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require_relative 'health/health_model_constants'
 include HealthModel
 
 module Fluent
@@ -20,10 +19,9 @@ module Fluent
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "ApplicationInsightsUtility"
-      require_relative "DockerApiClient"
       require_relative 'HealthMonitorUtils'
       require_relative 'HealthMonitorState'
-      require_relative 'HealthMonitorConstants'
+      require_relative 'health/health_model_constants'
     end
 
     config_param :run_interval, :time, :default => "1m"
@@ -99,12 +97,12 @@ module Fluent
           system_pods = pods_ready_hash.select{|k,v| v['namespace'] == 'kube-system'}
           workload_pods = pods_ready_hash.select{|k,v| v['namespace'] != 'kube-system'}
 
-          system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID)
+          system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID)
           system_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
 
-          workload_pods_ready_percentage_records = process_pods_ready_percentage(workload_pods, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID)
+          workload_pods_ready_percentage_records = process_pods_ready_percentage(workload_pods, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
           workload_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
@@ -190,7 +188,7 @@ module Fluent
     def process_kube_api_up_monitor(state, response)
       timestamp = Time.now.utc.iso8601
 
-      monitor_id = HealthMonitorConstants::MANAGEDINFRA_KUBEAPI_AVAILABLE_MONITOR_ID
+      monitor_id = HealthMonitorConstants::KUBE_API_STATUS
       details = response.each_header.to_h
       details['ResponseCode'] = response.code
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}

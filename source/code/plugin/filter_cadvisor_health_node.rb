@@ -116,7 +116,7 @@ module Fluent
         end
 
         def process_container_cpu_record(record, metric_value)
-            monitor_id = HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID
+            monitor_id = HealthMonitorConstants::CONTAINER_CPU_MONITOR_ID
             @log.debug "processing container cpu record"
             if record.nil?
                 return nil
@@ -137,7 +137,7 @@ module Fluent
 
                 percent = (metric_value.to_f/cpu_limit*100).round(2)
                 #@log.debug "Container #{key} | Percentage of CPU limit: #{percent}"
-                state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID])
+                state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthMonitorConstants::CONTAINER_CPU_MONITOR_ID])
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent}}
@@ -155,7 +155,7 @@ module Fluent
         end
 
         def process_container_memory_record(record, metric_value)
-            monitor_id = HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID
+            monitor_id = HealthMonitorConstants::CONTAINER_MEMORY_MONITOR_ID
             #@log.debug "processing container memory record"
             if record.nil?
                 return nil
@@ -176,7 +176,7 @@ module Fluent
 
                 percent = (metric_value.to_f/memory_limit*100).round(2)
                 #@log.debug "Container #{key} | Percentage of Memory limit: #{percent}"
-                state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID])
+                state = HealthMonitorState.computeHealthMonitorState(@log, monitor_id, percent, @@health_monitor_config[HealthMonitorConstants::CONTAINER_MEMORY_MONITOR_ID])
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent}}

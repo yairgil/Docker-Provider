@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require_relative 'KubernetesApiClient'
-require_relative 'HealthMonitorConstants'
+require_relative 'health/health_model_constants'
 require 'time'
 require 'json'
 
@@ -113,7 +113,7 @@ class HealthMonitorUtils
         def getMonitorLabels(log, monitor_id, key: nil, pod_aggregator: nil, node_name: nil, namespace: nil, pod_aggregator_kind: nil)
             monitor_labels = {}
             case monitor_id
-            when HealthMonitorConstants::WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::WORKLOAD_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::MANAGEDINFRA_PODS_READY_PERCENTAGE_MONITOR_ID, HealthMonitorConstants::POD_STATUS
+            when HealthMonitorConstants::CONTAINER_CPU_MONITOR_ID, HealthMonitorConstants::CONTAINER_MEMORY_MONITOR_ID, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID
                 if !key.nil? #container
                     monitor_labels['container.azm.ms/pod-aggregator'] = getContainerControllerName(key)
                     monitor_labels['container.azm.ms/namespace'] = getContainerNamespace(key)
@@ -122,7 +122,7 @@ class HealthMonitorUtils
                     monitor_labels['container.azm.ms/pod-aggregator-kind'] = pod_aggregator_kind
                     monitor_labels['container.azm.ms/namespace'] = namespace
                 end
-            when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_KUBELET_HEALTH_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID, HealthMonitorConstants::NODE_CONTAINER_RUNTIME_MONITOR_ID
+            when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID
                 @@nodeInventory["items"].each do |node|
                     if !node_name.nil? && !node['metadata']['name'].nil? && node_name == node['metadata']['name']
                         #log.debug "Matched node name "
