@@ -23,7 +23,7 @@ class HealthMonitorUtils
     end
 
     class << self
-
+        include HealthModel
         def build_metrics_hash(metrics_to_collect)
             @log.debug "Building Hash of Metrics to Collect #{metrics_to_collect}"
             metrics_to_collect_arr = metrics_to_collect.split(',').map(&:strip)

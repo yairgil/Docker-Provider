@@ -13,6 +13,7 @@ class HealthMonitorState
     HEALTH_MONITOR_STATE = {"PASS" => "pass", "FAIL" => "fail", "WARNING" => "warn", "NONE" => "none"}
 
     class << self
+        include HealthModel
         #set new_state to be the latest ONLY if the state change is consistent for monitors that are not configured to be notified instantly, i.e. For monitors which should have a state transition if the prev and current state are different, set new state to be the latest
         # record state. For others, set it to be none, if there is no state information present in the lookup table
         def updateHealthMonitorState(log, monitor_instance_id, health_monitor_record, config)

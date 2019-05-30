@@ -49,6 +49,8 @@ module HealthModel
     class HealthMonitorConstants
         NODE_CPU_MONITOR_ID = "node_cpu_utilization"
         NODE_MEMORY_MONITOR_ID = "node_memory_utilization"
+        CONTAINER_CPU_MONITOR_ID = "container_cpu_utilization"
+        CONTAINER_MEMORY_MONITOR_ID = "container_memory_utilization"
         NODE_CONDITION_MONITOR_ID = "node_condition"
         WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID = "subscribed_capacity_cpu"
         WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID = "subscribed_capacity_memory"

@@ -145,8 +145,6 @@ module Fluent
 
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName, key])
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
-                HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
-                record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], key: key)
                 temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 @log.info "Processed Container CPU #{temp}"
                 return record
@@ -184,7 +182,6 @@ module Fluent
 
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName, key])
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
-                HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
                 record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], key: key)
                 temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 @log.info "Processed Container Memory #{temp}"
@@ -209,8 +206,7 @@ module Fluent
                 timestamp = record['DataItems'][0]['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent}}
 
-                monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName])
-                HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
+                monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName])                
                 # record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], node_name: @@hostName)
                 # temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 health_record = {}
@@ -246,7 +242,6 @@ module Fluent
 
                 monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@log, monitor_id, [@@clusterId, @@hostName])
                 #@log.info "Monitor Instance Id: #{monitor_instance_id}"
-                HealthMonitorState.updateHealthMonitorState(@log, monitor_instance_id, health_monitor_record, @@health_monitor_config[monitor_id])
                 # record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id, monitor_instance_id, @@health_monitor_config[monitor_id], node_name: @@hostName)
                 # temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
                 health_record = {}

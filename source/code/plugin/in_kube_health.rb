@@ -23,7 +23,7 @@ module Fluent
       require_relative 'HealthMonitorState'
       require_relative 'health/health_model_constants'
     end
-
+    include HealthModel
     config_param :run_interval, :time, :default => "1m"
     config_param :tag, :string, :default => "oms.api.KubeHealth.ReplicaSet"
 

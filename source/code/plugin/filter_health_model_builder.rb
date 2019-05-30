@@ -14,8 +14,9 @@ module Fluent
         config_param :enable_log, :integer, :default => 0
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_health_model_builder.log'
         config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health_model_definition.json'
-        config_param :health_signal_timeout, :default => 5
+        config_param :health_signal_timeout, :default => 240
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_transition_processor, :state_finalizers, :monitor_set, :model_builder
+        include HealthModel
 
         @@healthMonitorConfig = HealthMonitorUtils.getHealthMonitorConfig
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
@@ -60,7 +61,7 @@ module Fluent
                             HealthMonitorState.updateHealthMonitorState(@log,
                                 record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
                                 record[HealthMonitorRecordFields::DETAILS],
-                                @@healthMonitorConfig[record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID]])
+                                @@healthMonitorConfig[record[HealthMonitorRecordFields::MONITOR_ID]])
                             records.push(record)
                         }
                         @buffer.add_to_buffer(records)
@@ -82,7 +83,6 @@ module Fluent
                             record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
                             @@healthMonitorConfig[monitor_id],
                             @health_signal_timeout,
-                            key: record[HealthMonitorRecordFields::CONTAINER_ID],
                             node_name: record[HealthMonitorRecordFields::NODE_NAME]
                             )
                             filtered_records.push(MonitorStateTransition.new(
