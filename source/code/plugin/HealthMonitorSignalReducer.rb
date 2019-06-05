@@ -108,10 +108,10 @@ class HealthMonitorSignalReducer
             #log.debug "Cluster Labels : #{labels}"
 
             namespace = health_monitor_instance_state.prev_records[0]['details']['namespace']
-            pod_aggregator = health_monitor_instance_state.prev_records[0]['details']['podAggregator']
-            pod_aggregator_kind = health_monitor_instance_state.prev_records[0]['details']['podAggregatorKind']
+            workload_name = health_monitor_instance_state.prev_records[0]['details']['workloadName']
+            workload_kind = health_monitor_instance_state.prev_records[0]['details']['workloadKind']
 
-            monitor_labels = HealthMonitorUtils.getMonitorLabels(log, monitor_id, key: key, pod_aggregator: pod_aggregator, node_name: node_name, namespace: namespace, pod_aggregator_kind: pod_aggregator_kind)
+            monitor_labels = HealthMonitorUtils.getMonitorLabels(log, monitor_id, key: key, workload_name: workload_name, node_name: node_name, namespace: namespace, workload_kind: workload_kind)
             #log.debug "Monitor Labels : #{monitor_labels}"
 
             if !monitor_labels.empty?

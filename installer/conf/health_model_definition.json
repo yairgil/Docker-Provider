@@ -4,15 +4,23 @@
         "parent_monitor_id": "user_workload",
         "labels": [
             "container.azm.ms/namespace",
-            "container.azm.ms/pod-aggregator",
-            "container.azm.ms/pod-aggregator-kind"
+            "container.azm.ms/workload-name",
+            "container.azm.ms/workload-kind",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ]
     },
     {
         "monitor_id": "user_workload",
         "parent_monitor_id": "namespace",
         "labels": [
-            "container.azm.ms/namespace"
+            "container.azm.ms/namespace",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ]
     },
     {
@@ -20,36 +28,74 @@
         "parent_monitor_id": "system_workload",
         "labels": [
             "container.azm.ms/namespace",
-            "container.azm.ms/pod-aggregator",
-            "container.azm.ms/pod-aggregator-kind"
+            "container.azm.ms/workload-name",
+            "container.azm.ms/workload-kind",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ]
     },
     {
         "monitor_id": "system_workload",
-        "parent_monitor_id": "k8s_infrastructure"
+        "parent_monitor_id": "k8s_infrastructure",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "kube_api_status",
-        "parent_monitor_id": "k8s_infrastructure"
+        "parent_monitor_id": "k8s_infrastructure",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "namespace",
         "labels": [
-            "container.azm.ms/namespace"
+            "container.azm.ms/namespace",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ],
         "parent_monitor_id": "all_namespaces"
     },
     {
         "monitor_id": "k8s_infrastructure",
-        "parent_monitor_id": "cluster"
+        "parent_monitor_id": "cluster",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "all_namespaces",
-        "parent_monitor_id": "all_workloads"
+        "parent_monitor_id": "all_workloads",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "all_workloads",
-        "parent_monitor_id": "cluster"
+        "parent_monitor_id": "cluster",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "node_cpu_utilization",
@@ -57,7 +103,11 @@
         "labels": [
             "kubernetes.io/hostname",
             "agentpool",
-            "kubernetes.io/role"
+            "kubernetes.io/role",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ]
     },
     {
@@ -66,7 +116,11 @@
         "labels": [
             "kubernetes.io/hostname",
             "agentpool",
-            "kubernetes.io/role"
+            "kubernetes.io/role",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ]
     },
     {
@@ -75,7 +129,11 @@
         "labels": [
             "kubernetes.io/hostname",
             "agentpool",
-            "kubernetes.io/role"
+            "kubernetes.io/role",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ]
     },
     {
@@ -84,7 +142,11 @@
         "labels": [
             "kubernetes.io/hostname",
             "agentpool",
-            "kubernetes.io/role"
+            "kubernetes.io/role",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ],
         "parent_monitor_id": [
             {
@@ -104,41 +166,76 @@
     {
         "monitor_id": "master_node_pool",
         "aggregation_algorithm": "percentage",
-        "parent_monitor_id": "all_nodes"
+        "parent_monitor_id": "all_nodes",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "agent_node_pool",
         "aggregation_algorithm": "worstOf",
         "labels": [
-            "agentpool"
+            "agentpool",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
         ],
-        "parent_monitor_id": "all_agent_node_pools"
-    },
-    {
-        "monitor_id": "all_agent_node_pools",
-        "aggregation_algorithm": "worstOf",
         "parent_monitor_id": "all_nodes"
     },
     {
         "monitor_id": "all_nodes",
         "aggregation_algorithm": "worstOf",
-        "parent_monitor_id": "cluster"
+        "parent_monitor_id": "cluster",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "cluster",
         "aggregation_algorithm": "worstOf",
-        "parent_monitor_id": null
+        "parent_monitor_id": null,
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "subscribed_capacity_cpu",
-        "parent_monitor_id": "capacity"
+        "parent_monitor_id": "capacity",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "subscribed_capacity_memory",
-        "parent_monitor_id": "capacity"
+        "parent_monitor_id": "capacity",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     },
     {
         "monitor_id": "capacity",
-        "parent_monitor_id": "all_workloads"
+        "parent_monitor_id": "all_workloads",
+        "labels": [
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
     }
 ]

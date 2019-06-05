@@ -27,7 +27,8 @@ module Fluent
             @health_model_definition = HealthModel::HealthModelDefinition.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
             @monitor_factory = HealthModel::MonitorFactory.new
             @state_transition_processor = HealthModel::StateTransitionProcessor.new(@health_model_definition, @monitor_factory)
-            @state_finalizers = [HealthModel::NodeMonitorHierarchyReducer.new, HealthModel::AggregateMonitorStateFinalizer.new]
+            # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
+            @state_finalizers = [HealthModel::AggregateMonitorStateFinalizer.new]
             @monitor_set = HealthModel::MonitorSet.new
             @model_builder = HealthModel::HealthModelBuilder.new(@state_transition_processor, @state_finalizers, @monitor_set)
         end

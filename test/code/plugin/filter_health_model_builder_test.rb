@@ -14,7 +14,8 @@ class FilterHealthModelBuilderTest < Test::Unit::TestCase
     health_model_definition = HealthModelDefinition.new(HealthModelDefinitionParser.new(health_definition_path).parse_file)
     monitor_factory = MonitorFactory.new
     state_transition_processor = StateTransitionProcessor.new(health_model_definition, monitor_factory)
-    state_finalizers = [NodeMonitorHierarchyReducer.new, AggregateMonitorStateFinalizer.new]
+    # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
+    state_finalizers = [AggregateMonitorStateFinalizer.new]
     monitor_set = MonitorSet.new
     model_builder = HealthModelBuilder.new(state_transition_processor, state_finalizers, monitor_set)
 

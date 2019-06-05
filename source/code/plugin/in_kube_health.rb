@@ -97,12 +97,12 @@ module Fluent
           system_pods = pods_ready_hash.select{|k,v| v['namespace'] == 'kube-system'}
           workload_pods = pods_ready_hash.select{|k,v| v['namespace'] != 'kube-system'}
 
-          system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID)
+          system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
           system_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
 
-          workload_pods_ready_percentage_records = process_pods_ready_percentage(workload_pods, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
+          workload_pods_ready_percentage_records = process_pods_ready_percentage(workload_pods, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID)
           workload_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
@@ -217,17 +217,17 @@ module Fluent
 
       records = []
       pods_hash.keys.each do |key|
-        pod_aggregator = key
-        total_pods = pods_hash[pod_aggregator]['totalPods']
-        pods_ready = pods_hash[pod_aggregator]['podsReady']
-        namespace = pods_hash[pod_aggregator]['namespace']
-        pod_aggregator_kind = pods_hash[pod_aggregator]['kind']
+        workload_name = key
+        total_pods = pods_hash[workload_name]['totalPods']
+        pods_ready = pods_hash[workload_name]['podsReady']
+        namespace = pods_hash[workload_name]['namespace']
+        workload_kind = pods_hash[workload_name]['kind']
         percent = pods_ready / total_pods * 100
         timestamp = Time.now.utc.iso8601
 
         state = HealthMonitorState.getState(@@hmlog, (100-percent), monitor_config)
-        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "podAggregator" => pod_aggregator, "namespace" => namespace, "podAggregatorKind" => pod_aggregator_kind}}
-        monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, config_monitor_id, [@@clusterId, namespace, pod_aggregator])
+        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workloadName" => workload_name, "namespace" => namespace, "workloadKind" => workload_kind}}
+        monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, config_monitor_id, [@@clusterId, namespace, workload_name])
         HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
         health_record = {}
         time_now = Time.now.utc.iso8601

@@ -110,16 +110,16 @@ class HealthMonitorUtils
             return labels
         end
 
-        def getMonitorLabels(log, monitor_id, key: nil, pod_aggregator: nil, node_name: nil, namespace: nil, pod_aggregator_kind: nil)
+        def getMonitorLabels(log, monitor_id, key: nil, workload_name: nil, node_name: nil, namespace: nil, workload_kind: nil)
             monitor_labels = {}
             case monitor_id
             when HealthMonitorConstants::CONTAINER_CPU_MONITOR_ID, HealthMonitorConstants::CONTAINER_MEMORY_MONITOR_ID, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID
                 if !key.nil? #container
-                    monitor_labels['container.azm.ms/pod-aggregator'] = getContainerControllerName(key)
+                    monitor_labels['container.azm.ms/workload-name'] = getContainerControllerName(key)
                     monitor_labels['container.azm.ms/namespace'] = getContainerNamespace(key)
                 else
-                    monitor_labels['container.azm.ms/pod-aggregator'] = pod_aggregator.split('~~')[1]
-                    monitor_labels['container.azm.ms/pod-aggregator-kind'] = pod_aggregator_kind
+                    monitor_labels['container.azm.ms/workload-name'] = workload_name.split('~~')[1]
+                    monitor_labels['container.azm.ms/workload-kind'] = workload_kind
                     monitor_labels['container.azm.ms/namespace'] = namespace
                 end
             when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID
@@ -157,13 +157,13 @@ class HealthMonitorUtils
                 podInventory['items'].each do |pod|
                     has_owner = !pod['metadata']['ownerReferences'].nil?
                     if !has_owner
-                        pod_aggregator = pod['metadata']['name']
+                        workload_name = pod['metadata']['name']
                     else
-                        pod_aggregator = pod['metadata']['ownerReferences'][0]['name']
+                        workload_name = pod['metadata']['ownerReferences'][0]['name']
                     end
                     namespace = pod['metadata']['namespace']
-                    @@controllerMapping[pod_aggregator] = namespace
-                    #log.debug "pod_aggregator #{pod_aggregator} namespace #{namespace}"
+                    @@controllerMapping[workload_name] = namespace
+                    #log.debug "workload_name #{workload_name} namespace #{namespace}"
                     pod['spec']['containers'].each do |container|
                         key = [pod['metadata']['uid'], container['name']].join('/')
 
@@ -183,7 +183,7 @@ class HealthMonitorUtils
                             memory_limit_value = @memory_capacity
                         end
 
-                        @@containerMetadata[key] = {"cpuLimit" => cpu_limit_value, "memoryLimit" => memory_limit_value, "controllerName" => pod_aggregator, "namespace" => namespace}
+                        @@containerMetadata[key] = {"cpuLimit" => cpu_limit_value, "memoryLimit" => memory_limit_value, "controllerName" => workload_name, "namespace" => namespace}
                     end
                 end
             rescue => e
@@ -388,7 +388,7 @@ class HealthMonitorUtils
                     namespace = pod['metadata']['namespace']
                     status = pod['status']['phase']
 
-                    pod_aggregator = ''
+                    workload_name = ''
                     if owner_kind.nil?
                         owner_kind = 'Pod'
                     end
@@ -402,22 +402,22 @@ class HealthMonitorUtils
                         labels.each {|k,v|
                             lookup_key = "#{namespace}-#{k}=#{v}"
                             if deployment_lookup.key?(lookup_key)
-                                pod_aggregator = deployment_lookup[lookup_key]
+                                workload_name = deployment_lookup[lookup_key]
                                 break
                             end
                         }
-                        if pod_aggregator.empty?
-                            pod_aggregator = "#{namespace}~~#{controller_name}"
+                        if workload_name.empty?
+                            workload_name = "#{namespace}~~#{controller_name}"
                         end
                     when 'daemonset'
-                        pod_aggregator = "#{namespace}~~#{controller_name}"
+                        workload_name = "#{namespace}~~#{controller_name}"
                     else
-                        pod_aggregator = "#{namespace}~~#{pod['metadata']['name']}"
+                        workload_name = "#{namespace}~~#{pod['metadata']['name']}"
                     end
 
-                    if pods_ready_percentage_hash.key?(pod_aggregator)
-                        total_pods = pods_ready_percentage_hash[pod_aggregator]['totalPods']
-                        pods_ready = pods_ready_percentage_hash[pod_aggregator]['podsReady']
+                    if pods_ready_percentage_hash.key?(workload_name)
+                        total_pods = pods_ready_percentage_hash[workload_name]['totalPods']
+                        pods_ready = pods_ready_percentage_hash[workload_name]['podsReady']
                     else
                         total_pods = 0
                         pods_ready = 0
@@ -428,7 +428,7 @@ class HealthMonitorUtils
                         pods_ready += 1
                     end
 
-                    pods_ready_percentage_hash[pod_aggregator] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace, 'pod_aggregator' => pod_aggregator, 'kind' => owner_kind}
+                    pods_ready_percentage_hash[workload_name] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace, 'workload_name' => workload_name, 'kind' => owner_kind}
                 rescue => e
                     @log.info "Error when processing pod #{pod['metadata']['name']} #{e.message}"
                 end

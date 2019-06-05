@@ -17,12 +17,15 @@ module HealthModel
                 #copy the children of member monitor as children of parent
                 member_monitor_instance_id = monitor.get_member_monitors[0] #gets the only member monitor instance id
                 member_monitor = monitor_set.get_monitor(member_monitor_instance_id)
-                member_monitor.get_member_monitors.each{|grandchild_monitor|
-                    monitor.add_member_monitor(grandchild_monitor)
-                }
-                monitor.remove_member_monitor(member_monitor_instance_id)
-                # delete the member monitor from the monitor_set
-                monitor_set.delete(member_monitor_instance_id)
+                #reduce only if the aggregation algorithms are the same
+                if !member_monitor.aggregation_algorithm.nil? && member_monitor.aggregation_algorithm == AggregationAlgorithm::WORSTOF && monitor.aggregation_algorithm == member_monitor.aggregation_algorithm
+                    member_monitor.get_member_monitors.each{|grandchild_monitor|
+                        monitor.add_member_monitor(grandchild_monitor)
+                    }
+                    monitor.remove_member_monitor(member_monitor_instance_id)
+                    # delete the member monitor from the monitor_set
+                    monitor_set.delete(member_monitor_instance_id)
+                end
                 puts "After Deleting #{monitor_set.get_size}"
             end
         end
