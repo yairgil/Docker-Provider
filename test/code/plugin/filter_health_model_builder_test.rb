@@ -13,11 +13,11 @@ class FilterHealthModelBuilderTest < Test::Unit::TestCase
     health_definition_path = 'C:\AzureMonitor\ContainerInsights\Docker-Provider\installer\conf\health_model_definition.json'
     health_model_definition = HealthModelDefinition.new(HealthModelDefinitionParser.new(health_definition_path).parse_file)
     monitor_factory = MonitorFactory.new
-    state_transition_processor = StateTransitionProcessor.new(health_model_definition, monitor_factory)
+    hierarchy_builder = HealthHierarchyBuilder.new(health_model_definition, monitor_factory)
     # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
     state_finalizers = [AggregateMonitorStateFinalizer.new]
     monitor_set = MonitorSet.new
-    model_builder = HealthModelBuilder.new(state_transition_processor, state_finalizers, monitor_set)
+    model_builder = HealthModelBuilder.new(hierarchy_builder, state_finalizers, monitor_set)
 
     i = 1
     loop do
@@ -25,14 +25,13 @@ class FilterHealthModelBuilderTest < Test::Unit::TestCase
         file = File.read(mock_data_path)
         data = JSON.parse(file)
 
-        state_transitions = []
+        health_monitor_records = []
         data.each do |record|
-        state_transition = MonitorStateTransition.new(
+        health_monitor_record = HealthMonitorRecord.new(
             record[HealthMonitorRecordFields::MONITOR_ID],
             record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
             record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED],
-            record[HealthMonitorRecordFields::OLD_STATE],
-            record[HealthMonitorRecordFields::NEW_STATE],
+            record[HealthMonitorRecordFields::DETAILS]["state"],
             record[HealthMonitorRecordFields::MONITOR_LABELS],
             record[HealthMonitorRecordFields::MONITOR_CONFIG],
             record[HealthMonitorRecordFields::DETAILS]

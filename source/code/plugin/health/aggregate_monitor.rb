@@ -5,25 +5,23 @@ require 'json'
 
 module HealthModel
   class AggregateMonitor
-    attr_accessor :monitor_id, :monitor_instance_id, :old_state, :new_state, :transition_time, :aggregation_algorithm, :aggregation_algorithm_params, :labels, :is_aggregate_monitor
+    attr_accessor :monitor_id, :monitor_instance_id, :operational_state, :transition_date_time, :aggregation_algorithm, :aggregation_algorithm_params, :labels, :is_aggregate_monitor, :details
     attr_reader :member_monitors
 
     # constructor
     def initialize(
       monitor_id,
       monitor_instance_id,
-      old_state,
-      new_state,
-      transition_time,
+      operational_state,
+      transition_date_time,
       aggregation_algorithm,
       aggregation_algorithm_params,
       labels
     )
       @monitor_id = monitor_id
       @monitor_instance_id = monitor_instance_id
-      @old_state = old_state
-      @new_state = new_state
-      @transition_time = transition_time
+      @operational_state = operational_state
+      @transition_date_time = transition_date_time
       @aggregation_algorithm = aggregation_algorithm || AggregationAlgorithm::WORSTOF
       @aggregation_algorithm_params = aggregation_algorithm_params
       @labels = labels
@@ -54,17 +52,38 @@ module HealthModel
     def calculate_state(monitor_set)
         case @aggregation_algorithm
         when AggregationAlgorithm::WORSTOF
-            @old_state = calculate_worst_of_state(monitor_set, 'old_state')
-            @new_state = calculate_worst_of_state(monitor_set, 'new_state')
+            @operational_state = calculate_worst_of_state(monitor_set)
         when AggregationAlgorithm::PERCENTAGE
             @state = calculate_percentage_state(monitor_set)
         end
     end
 
-    # calculates the worst of state, given the member monitors
-    def calculate_worst_of_state(monitor_set, state_type)
+    def calculate_details(monitor_set)
+        @details = {}
+        @details['details'] = {}
+        @details['state'] = operational_state
+        @details['timestamp'] = transition_date_time
+        ids = []
+        member_monitor_instance_ids = get_member_monitors
+        member_monitor_instance_ids.each{|member_monitor_id|
+            member_monitor = monitor_set.get_monitor(member_monitor_id)
+            member_state = member_monitor.operational_state
+            if @details.key?(member_state)
+                ids = details[member_state]
+                if !ids.include?(member_monitor.monitor_instance_id)
+                    ids.push(member_monitor.monitor_instance_id)
+                end
+                @details['details'][member_state] = ids
+            else
+                @details['details'][member_state] = [member_monitor.monitor_instance_id]
+            end
+        }
+    end
 
-        member_state_counts = map_member_monitor_states(monitor_set, state_type)
+    # calculates the worst of state, given the member monitors
+    def calculate_worst_of_state(monitor_set)
+
+        member_state_counts = map_member_monitor_states(monitor_set)
 
         if member_state_counts.length === 0
             return MonitorState::NONE
@@ -93,7 +112,7 @@ module HealthModel
     end
 
     # maps states of member monitors to counts
-    def map_member_monitor_states(monitor_set, state_type)
+    def map_member_monitor_states(monitor_set)
         member_monitor_instance_ids = get_member_monitors
         if member_monitor_instance_ids.nil? || member_monitor_instance_ids.size == 0
             return {}
@@ -104,7 +123,7 @@ module HealthModel
         member_monitor_instance_ids.each {|monitor_instance_id|
 
             member_monitor = monitor_set.get_monitor(monitor_instance_id)
-            monitor_state = member_monitor.send(state_type);
+            monitor_state = member_monitor.operational_state
 
             if !state_counts.key?(monitor_state)
                 state_counts[monitor_state] = 1

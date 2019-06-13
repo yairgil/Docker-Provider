@@ -6,6 +6,11 @@ module HealthModel
             if !top_level_monitor.nil?
                 calculate_subtree_state(top_level_monitor, monitor_set)
             end
+            monitor_set.get_map.each{|k,v|
+                if v.is_aggregate_monitor
+                    v.calculate_details(monitor_set)
+                end
+            }
         end
 
         private

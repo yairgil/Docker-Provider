@@ -1,9 +1,8 @@
-MonitorStateTransition = Struct.new(
+HealthMonitorRecord = Struct.new(
     :monitor_id,
     :monitor_instance_id,
     :transition_date_time,
-    :old_state,
-    :new_state,
+    :operational_state,
     :labels,
     :config,
     :details

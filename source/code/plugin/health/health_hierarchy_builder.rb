@@ -1,6 +1,6 @@
 require 'json'
 module HealthModel
-    class StateTransitionProcessor
+    class HealthHierarchyBuilder
 
         attr_accessor :health_model_definition, :monitor_factory
 
@@ -17,15 +17,13 @@ module HealthModel
             @monitor_factory = monitor_factory
         end
 
-        def process_state_transition(monitor_state_transition, monitor_set)
-            if !monitor_state_transition.is_a?(MonitorStateTransition)
-                raise "Unexpected Type #{monitor_state_transition.class}"
+        def process_record(health_monitor_record, monitor_set)
+            if !health_monitor_record.is_a?(HealthMonitorRecord)
+                raise "Unexpected Type #{health_monitor_record.class}"
             end
 
-            puts "process_state_transition for #{monitor_state_transition.monitor_id}"
-
             # monitor state transition will always be on a unit monitor
-            child_monitor = @monitor_factory.create_unit_monitor(monitor_state_transition)
+            child_monitor = @monitor_factory.create_unit_monitor(health_monitor_record)
             monitor_set.add_or_update(child_monitor)
             parent_monitor_id = @health_model_definition.get_parent_monitor_id(child_monitor)
             monitor_labels = child_monitor.labels
@@ -57,8 +55,8 @@ module HealthModel
                     # required to calculate the rollup state
                     parent_monitor.add_member_monitor(child_monitor.monitor_instance_id)
                     # update to the earliest of the transition times of child monitors
-                    if child_monitor.transition_time < parent_monitor.transition_time
-                        parent_monitor.transition_time = child_monitor.transition_time
+                    if child_monitor.transition_date_time < parent_monitor.transition_date_time
+                        parent_monitor.transition_date_time = child_monitor.transition_date_time
                     end
                 end
 

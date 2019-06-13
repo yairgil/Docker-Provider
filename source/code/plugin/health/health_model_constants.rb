@@ -5,6 +5,7 @@ module HealthModel
         WARNING = "warn"
         NONE = "none"
         HEALTHY = "pass"
+        UNKNOWN = "unknown"
     end
 
     class AggregationAlgorithm
@@ -59,5 +60,13 @@ module HealthModel
         KUBE_API_STATUS = "kube_api_status"
         USER_WORKLOAD_PODS_READY_MONITOR_ID = "user_workload_pods_ready"
         SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID = "system_workload_pods_ready"
+    end
+
+    class HealthMonitorStates
+        PASS = "pass"
+        FAIL = "fail"
+        WARNING = "warn"
+        NONE = "none"
+        UNKNOWN = "unknown"
     end
 end

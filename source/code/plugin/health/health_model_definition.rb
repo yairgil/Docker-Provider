@@ -20,7 +20,6 @@ module HealthModel
                 if parent_monitor_id.nil?
                     conditions = @health_model_definition[monitor_id]['conditions']
                     if !conditions.nil? && conditions.is_a?(Array)
-                        puts "Conditions"
                         labels = monitor.labels
                         conditions.each{|condition|
                             left = "#{labels[condition['key']]}"

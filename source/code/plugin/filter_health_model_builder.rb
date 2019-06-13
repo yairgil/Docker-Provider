@@ -86,7 +86,7 @@ module Fluent
                             @health_signal_timeout,
                             node_name: record[HealthMonitorRecordFields::NODE_NAME]
                             )
-                            filtered_records.push(MonitorStateTransition.new(
+                            filtered_records.push(HealthMonitorRecord.new(
                                 filtered_record[HealthMonitorRecordFields::MONITOR_ID],
                                 filtered_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
                                 filtered_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED],
@@ -117,12 +117,12 @@ module Fluent
                         record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor.monitor_instance_id
                         record[HealthMonitorRecordFields::MONITOR_LABELS] = monitor.labels.to_json
                         record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
-                        record[HealthMonitorRecordFields::OLD_STATE] = monitor.old_state
-                        record[HealthMonitorRecordFields::NEW_STATE] = monitor.new_state
+                        #record[HealthMonitorRecordFields::OLD_STATE] = monitor.old_state
+                        #record[HealthMonitorRecordFields::NEW_STATE] = monitor.new_state
                         record[HealthMonitorRecordFields::DETAILS] = monitor.details.to_json if monitor.methods.include? :details
                         record[HealthMonitorRecordFields::MONITOR_CONFIG] = monitor.config if monitor.methods.include? :config
                         record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] = Time.now.utc.iso8601
-                        record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = monitor.transition_time
+                        record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = monitor.transition_date_time
 
                         new_es.add(time, record)
                     }
