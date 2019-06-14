@@ -10,7 +10,6 @@ module HealthModel
     # set_state -- sets the last health monitor state
     class HealthMonitorState
 
-
         def initialize
             @@monitor_states = {}
             @@first_record_sent = {}
@@ -25,6 +24,17 @@ module HealthModel
 
         def set_state(monitor_instance_id, health_monitor_instance_state)
             @@monitor_states[monitor_instance_id] = health_monitor_instance_state
+        end
+
+        def to_h
+            return @@monitor_states
+        end
+
+        def initialize_state(deserialized_state)
+            @@monitor_states = {}
+            deserialized_state.each{|k,v|
+                @@monitor_states[k] = v
+            }
         end
 =begin
 
