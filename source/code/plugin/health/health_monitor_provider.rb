@@ -26,20 +26,18 @@ module HealthModel
 
             labels = Hash.new
             @cluster_labels.each{|k,v| labels[k] = v}
-            monitor_id = health_monitor_record[HealthMonitorRecordFields::MONITOR_ID]
-            monitor_instance_id = health_monitor_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID]
+            monitor_id = health_monitor_record.monitor_id
+            monitor_instance_id = health_monitor_record.monitor_instance_id
             health_monitor_instance_state = health_monitor_state.get_state(monitor_instance_id)
 
-            monitor_labels = get_labels(health_monitor_record, health_monitor_instance_state)
-            #log.debug "Monitor Labels : #{monitor_labels}"
 
+            monitor_labels = health_monitor_record.labels
             if !monitor_labels.empty?
                 monitor_labels.keys.each do |key|
                     labels[key] = monitor_labels[key]
                 end
             end
 
-            #log.debug "Labels after adding Monitor Labels #{labels}"
             prev_records = health_monitor_instance_state.prev_records
             time_first_observed = health_monitor_instance_state.state_change_time # the oldest collection time
             new_state = health_monitor_instance_state.new_state # this is updated before formatRecord is called
@@ -56,18 +54,16 @@ module HealthModel
             time_observed = Time.now.utc.iso8601
 
             monitor_record = {}
-            monitor_record["ClusterId"] = 'fake_cluster_id' #KubernetesApiClient.getClusterId
-            monitor_record["MonitorLabels"] = labels.to_json
-            monitor_record["MonitorId"] = monitor_id
-            monitor_record["MonitorInstanceId"] = monitor_instance_id
-            monitor_record["NewState"] = new_state
-            monitor_record["OldState"] = old_state
-            monitor_record["Details"] = details
-            monitor_record["MonitorConfig"] = config.to_json
-            monitor_record["AgentCollectionTime"] = Time.now.utc.iso8601
-            monitor_record["TimeFirstObserved"] = time_first_observed
-
-            #log.debug "HealthMonitor Record #{monitor_record}"
+            monitor_record[HealthMonitorRecordFields::CLUSTER_ID] = 'fake_cluster_id' #KubernetesApiClient.getClusterId
+            monitor_record[HealthMonitorRecordFields::MONITOR_LABELS] = labels.to_json
+            monitor_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
+            monitor_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
+            monitor_record[HealthMonitorRecordFields::NEW_STATE] = new_state
+            monitor_record[HealthMonitorRecordFields::OLD_STATE] = old_state
+            monitor_record[HealthMonitorRecordFields::DETAILS] = details
+            monitor_record[HealthMonitorRecordFields::MONITOR_CONFIG] = config.to_json
+            monitor_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] = Time.now.utc.iso8601
+            monitor_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = time_first_observed
 
             return monitor_record
         end
@@ -80,7 +76,7 @@ module HealthModel
             end
         end
 
-        def get_labels(health_monitor_record, health_monitor_instance_state)
+        def get_labels(health_monitor_record)
             monitor_labels = {}
             monitor_id = health_monitor_record[HealthMonitorRecordFields::MONITOR_ID]
             case monitor_id

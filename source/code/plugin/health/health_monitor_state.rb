@@ -67,7 +67,7 @@ when do u send?
                 old_state = HealthMonitorStates::NONE
                 new_state = HealthMonitorStates::NONE
                 if samples_to_keep == 1
-                    new_state = monitor.operational_state
+                    new_state = monitor.state
                 end
 
                 health_monitor_instance_state = HealthMonitorInstanceState.new(
@@ -97,7 +97,7 @@ when do u send?
             prev_sent_time = health_monitor_instance_state.prev_sent_record_time
             time_first_observed = health_monitor_instance_state.state_change_time
 
-            # if the last sent state (news_state is different from latest monitor operational_state)
+            # if the last sent state (news_state is different from latest monitor state)
             if latest_record_state.downcase == new_state.downcase
                 time_elapsed = (Time.parse(latest_record_time) - Time.parse(prev_sent_time)) / 60
                 # check if health signal has "timed out"

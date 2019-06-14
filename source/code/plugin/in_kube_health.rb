@@ -195,7 +195,7 @@ module Fluent
       hmlog = HealthMonitorUtils.getLogHandle
       #hmlog.info health_monitor_record
 
-      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId])
+      monitor_instance_id = HealthMonitorConstants::KUBE_API_STATUS
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
       HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, @@healthMonitorConfig[monitor_id])
       #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, @@healthMonitorConfig[monitor_id])

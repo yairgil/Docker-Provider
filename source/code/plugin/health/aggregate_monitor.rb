@@ -5,14 +5,14 @@ require 'json'
 
 module HealthModel
   class AggregateMonitor
-    attr_accessor :monitor_id, :monitor_instance_id, :operational_state, :transition_date_time, :aggregation_algorithm, :aggregation_algorithm_params, :labels, :is_aggregate_monitor, :details
+    attr_accessor :monitor_id, :monitor_instance_id, :state, :transition_date_time, :aggregation_algorithm, :aggregation_algorithm_params, :labels, :is_aggregate_monitor, :details
     attr_reader :member_monitors
 
     # constructor
     def initialize(
       monitor_id,
       monitor_instance_id,
-      operational_state,
+      state,
       transition_date_time,
       aggregation_algorithm,
       aggregation_algorithm_params,
@@ -20,7 +20,7 @@ module HealthModel
     )
       @monitor_id = monitor_id
       @monitor_instance_id = monitor_instance_id
-      @operational_state = operational_state
+      @state = state
       @transition_date_time = transition_date_time
       @aggregation_algorithm = aggregation_algorithm || AggregationAlgorithm::WORSTOF
       @aggregation_algorithm_params = aggregation_algorithm_params
@@ -52,7 +52,7 @@ module HealthModel
     def calculate_state(monitor_set)
         case @aggregation_algorithm
         when AggregationAlgorithm::WORSTOF
-            @operational_state = calculate_worst_of_state(monitor_set)
+            @state = calculate_worst_of_state(monitor_set)
         when AggregationAlgorithm::PERCENTAGE
             @state = calculate_percentage_state(monitor_set)
         end
@@ -61,13 +61,13 @@ module HealthModel
     def calculate_details(monitor_set)
         @details = {}
         @details['details'] = {}
-        @details['state'] = operational_state
+        @details['state'] = state
         @details['timestamp'] = transition_date_time
         ids = []
         member_monitor_instance_ids = get_member_monitors
         member_monitor_instance_ids.each{|member_monitor_id|
             member_monitor = monitor_set.get_monitor(member_monitor_id)
-            member_state = member_monitor.operational_state
+            member_state = member_monitor.state
             if @details.key?(member_state)
                 ids = details[member_state]
                 if !ids.include?(member_monitor.monitor_instance_id)
@@ -123,7 +123,7 @@ module HealthModel
         member_monitor_instance_ids.each {|monitor_instance_id|
 
             member_monitor = monitor_set.get_monitor(monitor_instance_id)
-            monitor_state = member_monitor.operational_state
+            monitor_state = member_monitor.state
 
             if !state_counts.key?(monitor_state)
                 state_counts[monitor_state] = 1
