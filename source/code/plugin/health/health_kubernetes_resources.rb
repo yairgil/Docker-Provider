@@ -1,20 +1,19 @@
+require 'singleton'
+
 module HealthModel
     class HealthKubernetesResources
 
-        attr_accessor :node_inventory, :pod_inventory
-        attr_reader :nodes, :pods
+        include Singleton
+        attr_accessor :node_inventory, :pod_inventory, :deployment_inventory
+        attr_reader :nodes, :pods, :workloads
 
-        def initialize(node_inventory, pod_inventory, deployment_inventory)
-            @node_inventory = node_inventory || []
-            @pod_inventory = pod_inventory || []
-            @deployment_inventory = deployment_inventory || []
+        def initialize
+            @node_inventory = []
+            @pod_inventory =  []
+            @deployment_inventory =  []
             @nodes = []
             @pods = []
-            @workloads = get_workload_names
-
-            @node_inventory['items'].each {|node|
-                @nodes.push(node['metadata']['name'])
-            }
+            @workloads = []
         end
 
         def get_node_inventory
@@ -22,6 +21,9 @@ module HealthModel
         end
 
         def get_nodes
+            @node_inventory['items'].each {|node|
+                @nodes.push(node['metadata']['name'])
+            }
             return @nodes
         end
 

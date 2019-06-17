@@ -2,7 +2,20 @@ module HealthModel
     # static class that provides a bunch of utility methods
     class HealthMonitorUtils
 
+        begin
+
+            if !Gem.win_platform?
+                require_relative '../KubernetesApiClient'
+            end
+        rescue => e
+            puts "#{e.message}"
+        end
+
         @@node_inventory = []
+
+        @log_path = "/var/opt/microsoft/docker-cimprov/log/health_monitors.log"
+        @log = Logger.new(@log_path, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
+        @@last_refresh_time = '2019-01-01T00:00:00Z'
 
         class << self
             # compute the percentage state given a value and a monitor configuration
@@ -11,11 +24,11 @@ module HealthModel
                 fail_percentage = config['FailThresholdPercentage'].to_f
 
                 if value > fail_percentage
-                    return HealthMonitorState::FAIL
+                    return HealthMonitorStates::FAIL
                 elsif !warn_percentage.nil? && value > warn_percentage
-                    return HealthMonitorState::WARNING
+                    return HealthMonitorStates::WARNING
                 else
-                    return HealthMonitorStatePASS
+                    return HealthMonitorStates::PASS
                 end
             end
 
@@ -34,7 +47,6 @@ module HealthModel
             def is_workload_monitor
 
             end
-
 
             def get_pods_ready_hash(pod_inventory, deployment_inventory)
                 pods_ready_percentage_hash = {}
@@ -56,7 +68,7 @@ module HealthModel
                         else
                             owner_kind = pod['kind']
                             controller_name = pod['metadata']['name']
-                            #@log.info "#{JSON.pretty_generate(pod)}"
+                            #log.info "#{JSON.pretty_generate(pod)}"
                         end
 
                         namespace = pod['metadata']['namespace']
@@ -104,12 +116,11 @@ module HealthModel
 
                         pods_ready_percentage_hash[workload_name] = {'totalPods' => total_pods, 'podsReady' => pods_ready, 'namespace' => namespace, 'workload_name' => workload_name, 'kind' => owner_kind}
                     rescue => e
-                        @log.info "Error when processing pod #{pod['metadata']['name']} #{e.message}"
+                        log.info "Error when processing pod #{pod['metadata']['name']} #{e.message}"
                     end
                 end
                 return pods_ready_percentage_hash
             end
-
 
             def get_node_state_from_node_conditions(node_conditions)
                 pass = false
@@ -144,11 +155,11 @@ module HealthModel
                         end
                     end
                 end
-                #@log.debug "#{metric_name} Subscription  #{subscription}"
+                #log.debug "#{metric_name} Subscription  #{subscription}"
                 return subscription
             end
 
-            def get_cluster_cpu_memory_capacity
+            def get_cluster_cpu_memory_capacity(log)
                 begin
                     node_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
                     cluster_cpu_capacity = 0.0
@@ -162,9 +173,9 @@ module HealthModel
                                         cluster_cpu_capacity += cpu_capacity_node['DataItems'][0]['Collections'][0]['Value']
                                     end
                                 end
-                                @log.info "Cluster CPU Limit #{cluster_cpu_capacity}"
+                                log.info "Cluster CPU Limit #{cluster_cpu_capacity}"
                             else
-                                @log.info "Error getting cpu_capacity"
+                                log.info "Error getting cpu_capacity"
                             end
                             memory_capacity_json = KubernetesApiClient.parseNodeLimits(node_inventory, "capacity", "memory", "memoryCapacityBytes")
                             if !memory_capacity_json.nil?
@@ -173,34 +184,32 @@ module HealthModel
                                         cluster_memory_capacity += memory_capacity_node['DataItems'][0]['Collections'][0]['Value']
                                     end
                                 end
-                                @log.info "Cluster Memory Limit #{cluster_memory_capacity}"
+                                log.info "Cluster Memory Limit #{cluster_memory_capacity}"
                             else
-                                @log.info "Error getting memory_capacity"
+                                log.info "Error getting memory_capacity"
                             end
                         end
                     else
-                        @log.info "Unable to get cpu and memory capacity"
+                        log.info "Unable to get cpu and memory capacity"
                         return [0.0, 0.0]
                     end
                     return [cluster_cpu_capacity, cluster_memory_capacity]
                 rescue => e
-                    @log.info e
+                    log.info e
                 end
             end
 
-
             def refresh_kubernetes_api_data(log, hostName, force: false)
-                #log.debug "refreshKubernetesApiData"
-                if ( ((Time.now.utc - Time.parse(@@lastRefreshTime)) / 60 ) < 5.0 && !force)
-                    log.debug "Less than 5 minutes since last refresh at #{@@lastRefreshTime}"
+                #log.debug "refresh_kubernetes_api_data"
+                if ( ((Time.now.utc - Time.parse(@@last_refresh_time)) / 60 ) < 5.0 && !force)
+                    log.debug "Less than 5 minutes since last refresh at #{@@last_refresh_time}"
                     return
                 end
                 if force
-                    @log.debug "Force Refresh"
+                    log.debug "Force Refresh"
                 end
 
                 begin
-
                     @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
                     if !hostName.nil?
                         podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("pods?fieldSelector=spec.nodeName%3D#{hostName}").body)
@@ -215,7 +224,8 @@ module HealthModel
                             workload_name = pod['metadata']['ownerReferences'][0]['name']
                         end
                         namespace = pod['metadata']['namespace']
-                        @@controllerMapping[workload_name] = namespace
+                        #TODO: Figure this out for container cpu/memory
+                        #@@controllerMapping[workload_name] = namespace
                         #log.debug "workload_name #{workload_name} namespace #{namespace}"
                         pod['spec']['containers'].each do |container|
                             key = [pod['metadata']['uid'], container['name']].join('/')
@@ -223,107 +233,128 @@ module HealthModel
                             if !container['resources'].empty? && !container['resources']['limits'].nil? && !container['resources']['limits']['cpu'].nil?
                                 cpu_limit_value = KubernetesApiClient.getMetricNumericValue('cpu', container['resources']['limits']['cpu'])
                             else
-                                @log.info "CPU limit not set for container : #{container['name']}. Using Node Capacity"
+                                log.info "CPU limit not set for container : #{container['name']}. Using Node Capacity"
                                 #TODO: Send warning health event #bestpractices
                                 cpu_limit_value = @cpu_capacity
                             end
 
                             if !container['resources'].empty? && !container['resources']['limits'].nil? && !container['resources']['limits']['memory'].nil?
-                                #@log.info "Raw Memory Value #{container['resources']['limits']['memory']}"
+                                #log.info "Raw Memory Value #{container['resources']['limits']['memory']}"
                                 memory_limit_value = KubernetesApiClient.getMetricNumericValue('memory', container['resources']['limits']['memory'])
                             else
-                                @log.info "Memory limit not set for container : #{container['name']}. Using Node Capacity"
+                                log.info "Memory limit not set for container : #{container['name']}. Using Node Capacity"
                                 memory_limit_value = @memory_capacity
                             end
 
-                            @@containerMetadata[key] = {"cpuLimit" => cpu_limit_value, "memoryLimit" => memory_limit_value, "controllerName" => workload_name, "namespace" => namespace}
+                            #TODO: Figure this out for container cpu/memory
+                            #@@containerMetadata[key] = {"cpuLimit" => cpu_limit_value, "memoryLimit" => memory_limit_value, "controllerName" => workload_name, "namespace" => namespace}
                         end
                     end
                 rescue => e
-                    @log.info "Error Refreshing Container Resource Limits #{e.backtrace}"
+                    log.info "Error Refreshing Container Resource Limits #{e.backtrace}"
                 end
                 # log.info "Controller Mapping #{@@controllerMapping}"
                 # log.info "Node Inventory #{@@nodeInventory}"
                 # log.info "Container Metadata #{@@containerMetadata}"
                 # log.info "------------------------------------"
-                @@lastRefreshTime = Time.now.utc.iso8601
+                @@last_refresh_time = Time.now.utc.iso8601
             end
-
 
             def get_monitor_instance_id(monitor_id, args = [])
                 string_to_hash = args.join("/")
                 return "#{monitor_id}-#{Digest::MD5.hexdigest(string_to_hash)}"
             end
 
+            def ensure_cpu_memory_capacity_set(log, cpu_capacity, memory_capacity, hostname)
 
-            def ensure_cpu_memory_capacity_set(cpu_capacity, memory_capacity, hostname)
-
-                @log.info "ensure_cpu_memory_capacity_set cpu_capacity #{cpu_capacity} memory_capacity #{memory_capacity}"
+                log.info "ensure_cpu_memory_capacity_set cpu_capacity #{cpu_capacity} memory_capacity #{memory_capacity}"
                 if cpu_capacity != 0.0 && memory_capacity != 0.0
-                    @log.info "CPU And Memory Capacity are already set"
+                    log.info "CPU And Memory Capacity are already set"
                     return [cpu_capacity, memory_capacity]
                 end
 
                 begin
                     @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
                 rescue Exception => e
-                    @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
+                    log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
                     ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
                 end
                 if !@@nodeInventory.nil?
                     cpu_capacity_json = KubernetesApiClient.parseNodeLimits(@@nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
                     if !cpu_capacity_json.nil?
                         cpu_capacity_json.each do |cpu_info_node|
-                            if !cpu_info_node['DataItems'][0]['Host'].nil? && cpu_info_node['DataItems'][0]['Host'] == @@hostName
+                            if !cpu_info_node['DataItems'][0]['Host'].nil? && cpu_info_node['DataItems'][0]['Host'] == hostname
                                 if !cpu_info_node['DataItems'][0]['Collections'][0]['Value'].nil?
                                     cpu_capacity = cpu_info_node['DataItems'][0]['Collections'][0]['Value']
                                 end
                             end
                         end
-                        @log.info "CPU Limit #{cpu_capacity}"
+                        log.info "CPU Limit #{cpu_capacity}"
                     else
-                        @log.info "Error getting cpu_capacity"
+                        log.info "Error getting cpu_capacity"
                     end
                     memory_capacity_json = KubernetesApiClient.parseNodeLimits(@@nodeInventory, "capacity", "memory", "memoryCapacityBytes")
                     if !memory_capacity_json.nil?
                         memory_capacity_json.each do |memory_info_node|
-                            if !memory_info_node['DataItems'][0]['Host'].nil? && memory_info_node['DataItems'][0]['Host'] == @@hostName
+                            if !memory_info_node['DataItems'][0]['Host'].nil? && memory_info_node['DataItems'][0]['Host'] == hostname
                                 if !memory_info_node['DataItems'][0]['Collections'][0]['Value'].nil?
                                     memory_capacity = memory_info_node['DataItems'][0]['Collections'][0]['Value']
                                 end
                             end
                         end
-                        @log.info "memory Limit #{memory_capacity}"
+                        log.info "memory Limit #{memory_capacity}"
                     else
-                        @log.info "Error getting memory_capacity"
+                        log.info "Error getting memory_capacity"
                     end
                     return [cpu_capacity, memory_capacity]
                 end
             end
-        end
 
-        def build_metrics_hash(metrics_to_collect)
-            @log.debug "Building Hash of Metrics to Collect #{metrics_to_collect}"
-            metrics_to_collect_arr = metrics_to_collect.split(',').map(&:strip)
-            metrics_hash = metrics_to_collect_arr.map {|x| [x.downcase,true]}.to_h
-            @log.info "Metrics Collected : #{metrics_hash}"
-            return metrics_hash
-        end
-
-        def get_health_monitor_config
-            health_monitor_config = {}
-            begin
-                file = File.open('/opt/microsoft/omsagent/plugin/healthmonitorconfig.json', "r")
-                if !file.nil?
-                    fileContents = file.read
-                    health_monitor_config = JSON.parse(fileContents)
-                    file.close
-                end
-            rescue => e
-                @log.info "Error when opening health config file #{e}"
+            def build_metrics_hash(metrics_to_collect)
+                metrics_to_collect_arr = metrics_to_collect.split(',').map(&:strip)
+                metrics_hash = metrics_to_collect_arr.map {|x| [x.downcase,true]}.to_h
+                return metrics_hash
             end
-            return health_monitor_config
-        end
 
+            def get_health_monitor_config
+                health_monitor_config = {}
+                begin
+                    file = File.open('/opt/microsoft/omsagent/plugin/healthmonitorconfig.json', "r")
+                    if !file.nil?
+                        fileContents = file.read
+                        health_monitor_config = JSON.parse(fileContents)
+                        file.close
+                    end
+                rescue => e
+                    log.info "Error when opening health config file #{e}"
+                end
+                return health_monitor_config
+            end
+
+            def get_cluster_labels
+                labels = {}
+                cluster_id = KubernetesApiClient.getClusterId
+                region = KubernetesApiClient.getClusterRegion
+                labels['container.azm.ms/cluster-region'] = region
+                if !cluster_id.nil?
+                    cluster_id_elements = cluster_id.split('/')
+                    azure_sub_id =  cluster_id_elements[2]
+                    resource_group = cluster_id_elements[4]
+                    cluster_name = cluster_id_elements[8]
+                    labels['container.azm.ms/cluster-subscription-id'] = azure_sub_id
+                    labels['container.azm.ms/cluster-resource-group'] = resource_group
+                    labels['container.azm.ms/cluster-name'] = cluster_name
+                end
+                return labels
+            end
+
+            def get_log_handle
+                if Gem.win_platform?
+                    log_path = "C:\Temp\health_monitors.log"
+                    @log = Logger.new(@log_path, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
+                end
+                return @log
+            end
+        end
     end
 end

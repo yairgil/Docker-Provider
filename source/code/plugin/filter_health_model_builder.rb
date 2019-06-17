@@ -13,12 +13,13 @@ module Fluent
 
         config_param :enable_log, :integer, :default => 0
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_health_model_builder.log'
-        config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health_model_definition.json'
+        config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health/health_model_definition.json'
+        config_param :health_monitor_config_path, :default => '/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json'
+        config_param :health_state_serialized_path, :default => '/mnt/azure/health_state.json'
         config_param :health_signal_timeout, :default => 240
-        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_transition_processor, :state_finalizers, :monitor_set, :model_builder
+        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :serializer, :deserializer
         include HealthModel
 
-        @@healthMonitorConfig = HealthMonitorUtils.getHealthMonitorConfig
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
 
         def initialize
@@ -26,11 +27,29 @@ module Fluent
             @buffer = HealthModel::HealthModelBuffer.new
             @health_model_definition = HealthModel::HealthModelDefinition.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
             @monitor_factory = HealthModel::MonitorFactory.new
-            @state_transition_processor = HealthModel::StateTransitionProcessor.new(@health_model_definition, @monitor_factory)
+            @hierarchy_builder = HealthHierarchyBuilder.new(@health_model_definition, @monitor_factory)
             # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
             @state_finalizers = [HealthModel::AggregateMonitorStateFinalizer.new]
             @monitor_set = HealthModel::MonitorSet.new
-            @model_builder = HealthModel::HealthModelBuilder.new(@state_transition_processor, @state_finalizers, @monitor_set)
+            @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
+            @kube_api_down_handler = HealthKubeApiDownHandler.new
+            @resources = HealthKubernetesResources.instance
+            @reducer = HealthSignalReducer.new
+            @state = HealthMonitorState.new
+            @generator = HealthMissingSignalGenerator.new
+            #TODO: cluster_labels needs to be initialized
+            @provider = HealthMonitorProvider.new(HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+            @serializer = HealthStateSerializer.new(@health_state_serialized_path)
+            @deserializer = HealthStateDeserializer.new(@health_state_serialized_path)
+            # TODO: in_kube_api_health should set these values
+            # resources.node_inventory = node_inventory
+            # resources.pod_inventory = pod_inventory
+            # resources.deployment_inventory = deployment_inventory
+            #TODO: check if the path exists
+            deserialized_state_info = @deserializer.deserialize
+            @state = HealthMonitorState.new
+            @state.initialize_state(deserialized_state_info)
+
         end
 
         def configure(conf)
@@ -59,10 +78,6 @@ module Fluent
                     records = []
                     if !es.nil?
                         es.each{|time, record|
-                            HealthMonitorState.updateHealthMonitorState(@log,
-                                record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
-                                record[HealthMonitorRecordFields::DETAILS],
-                                @@healthMonitorConfig[record[HealthMonitorRecordFields::MONITOR_ID]])
                             records.push(record)
                         }
                         @buffer.add_to_buffer(records)
@@ -76,56 +91,81 @@ module Fluent
                     @buffer.add_to_buffer(records)
                     records_to_process = @buffer.get_buffer
                     @buffer.reset_buffer
-                    filtered_records = []
-                    raw_records = []
-                    records_to_process.each{|record|
-                        monitor_id = record[HealthMonitorRecordFields::MONITOR_ID]
-                        filtered_record = HealthMonitorSignalReducer.reduceSignal(@log, monitor_id,
-                            record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
-                            @@healthMonitorConfig[monitor_id],
-                            @health_signal_timeout,
-                            node_name: record[HealthMonitorRecordFields::NODE_NAME]
-                            )
-                            filtered_records.push(HealthMonitorRecord.new(
-                                filtered_record[HealthMonitorRecordFields::MONITOR_ID],
-                                filtered_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
-                                filtered_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED],
-                                filtered_record[HealthMonitorRecordFields::OLD_STATE],
-                                filtered_record[HealthMonitorRecordFields::NEW_STATE],
-                                filtered_record[HealthMonitorRecordFields::MONITOR_LABELS],
-                                filtered_record[HealthMonitorRecordFields::MONITOR_CONFIG],
-                                filtered_record[HealthMonitorRecordFields::DETAILS]
-                            )) if filtered_record
 
-                            raw_records.push(filtered_record) if filtered_record
+                    health_monitor_records = []
+                    records_to_process.each do |record|
+                        monitor_instance_id = record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID]
+                        monitor_id = record[HealthMonitorRecordFields::MONITOR_ID]
+                        health_monitor_record = HealthMonitorRecord.new(
+                            record[HealthMonitorRecordFields::MONITOR_ID],
+                            record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
+                            record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED],
+                            record[HealthMonitorRecordFields::DETAILS]["state"],
+                            @provider.get_labels(record),
+                            @provider.get_config(monitor_id),
+                            record[HealthMonitorRecordFields::DETAILS]
+                        )
+
+                        @state.update_state(health_monitor_record,
+                            @provider.get_config(health_monitor_record.monitor_id)
+                            )
+
+                        # get the health state based on the monitor's operational state
+                        # update state calls updates the state of the monitor based on configuration and history of the the monitor records
+                        health_monitor_record.state = @state.get_state(monitor_instance_id).new_state
+                        health_monitor_records.push(health_monitor_record)
+                        instance_state = @state.get_state(monitor_instance_id)
+                        #puts "#{monitor_instance_id} #{instance_state.new_state} #{instance_state.old_state} #{instance_state.should_send}"
+                    end
+
+                    health_monitor_records = @kube_api_down_handler.handle_kube_api_down(health_monitor_records)
+                    # Dedupe daemonset signals
+                    # Remove unit monitor signals for “gone” objects
+                    reduced_records = @reducer.reduce_signals(health_monitor_records, resources)
+
+                    #get the list of  'none' and 'unknown' signals
+                    missing_signals = @generator.get_missing_signals(reduced_records, resources)
+                    #update state for missing signals
+                    missing_signals.each{|signal|
+                        @state.update_state(signal,
+                            @provider.get_config(signal.monitor_id)
+                            )
+                    }
+                    @generator.update_last_received_records(reduced_records)
+                    reduced_records.push(*missing_signals)
+
+                    # build the health model
+                    all_records = reduced_records
+                    @model_builder.process_records(all_records)
+                    all_monitors = @model_builder.finalize_model
+
+                    # update the state for aggregate monitors (unit monitors are updated above)
+                    all_monitors.each{|monitor_instance_id, monitor|
+                        if monitor.is_aggregate_monitor
+                            @state.update_state(monitor,
+                                @provider.get_config(monitor.monitor_id)
+                                )
+                        end
+
+                        instance_state = @state.get_state(monitor_instance_id)
+                        #puts "#{monitor_instance_id} #{instance_state.new_state} #{instance_state.old_state} #{instance_state.should_send}"
+                        should_send = instance_state.should_send
+
+                        # always send cluster monitor as a heartbeat
+                        if !should_send && monitor_instance_id != MonitorId::CLUSTER
+                            all_monitors.delete(monitor_instance_id)
+                        end
                     }
 
-                    @log.info "Filtered Records size = #{filtered_records.size}"
-
-                    # File.open("/tmp/mock_data-#{Time.now.to_i}.json", "w") do |f|
-                    #     f.write(JSON.pretty_generate(raw_records))
-                    # end
-
-                    @model_builder.process_state_transitions(filtered_records)
-                    monitors = @model_builder.finalize_model
-                    @log.debug "monitors map size = #{monitors.size}"
-
-                    monitors.map {|monitor_instance_id, monitor|
-                        record = {}
-
-                        record[HealthMonitorRecordFields::MONITOR_ID] = monitor.monitor_id
-                        record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor.monitor_instance_id
-                        record[HealthMonitorRecordFields::MONITOR_LABELS] = monitor.labels.to_json
-                        record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
-                        #record[HealthMonitorRecordFields::OLD_STATE] = monitor.old_state
-                        #record[HealthMonitorRecordFields::NEW_STATE] = monitor.new_state
-                        record[HealthMonitorRecordFields::DETAILS] = monitor.details.to_json if monitor.methods.include? :details
-                        record[HealthMonitorRecordFields::MONITOR_CONFIG] = monitor.config if monitor.methods.include? :config
-                        record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] = Time.now.utc.iso8601
-                        record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = monitor.transition_date_time
-
+                    # for each key in monitor.keys,
+                    # get the state from health_monitor_state
+                    # generate the record to send
+                    all_monitors.keys.each{|key|
+                        record = @provider.get_record(all_monitors[key], state)
+                        puts "#{record["MonitorInstanceId"]} #{record["OldState"]} #{record["NewState"]}"
                         new_es.add(time, record)
                     }
+                    @serializer.serialize(@state)
 
                     router.emit_stream(@@rewrite_tag, new_es)
                     # return an empty event stream, else the match will throw a NoMethodError

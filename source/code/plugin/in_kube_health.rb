@@ -1,11 +1,18 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-include HealthModel
+require_relative "KubernetesApiClient"
+require_relative "oms_common"
+require_relative "omslog"
+require_relative "ApplicationInsightsUtility"
 
 module Fluent
+
+  Dir[File.join(__dir__, './health', '*.rb')].each { |file| require file }
   class KubeHealthInput < Input
     Plugin.register_input("kubehealth", self)
+
+    config_param :health_monitor_config_path, :default => '/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json'
 
     @@clusterCpuCapacity = 0.0
     @@clusterMemoryCapacity = 0.0
@@ -15,14 +22,10 @@ module Fluent
       require "yaml"
       require "json"
 
-      require_relative "KubernetesApiClient"
-      require_relative "oms_common"
-      require_relative "omslog"
-      require_relative "ApplicationInsightsUtility"
-      require_relative 'HealthMonitorUtils'
-      require_relative 'HealthMonitorState'
-      require_relative 'health/health_model_constants'
+      @resources = HealthKubernetesResources.instance
+      @provider = HealthMonitorProvider.new(HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
     end
+
     include HealthModel
     config_param :run_interval, :time, :default => "1m"
     config_param :tag, :string, :default => "oms.api.KubeHealth.ReplicaSet"
@@ -38,14 +41,13 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
 
+        @@hmlog = HealthMonitorUtils.get_log_handle
         @@clusterName = KubernetesApiClient.getClusterName
         @@clusterId = KubernetesApiClient.getClusterId
         @@clusterRegion = KubernetesApiClient.getClusterRegion
-        cluster_capacity = HealthMonitorUtils.getClusterCpuMemoryCapacity
+        cluster_capacity = HealthMonitorUtils.get_cluster_cpu_memory_capacity(@@hmlog)
         @@clusterCpuCapacity = cluster_capacity[0]
         @@clusterMemoryCapacity = cluster_capacity[1]
-        @@healthMonitorConfig = HealthMonitorUtils.getHealthMonitorConfig
-        @@hmlog = HealthMonitorUtils.getLogHandle
         @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
         ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
       end
@@ -70,14 +72,17 @@ module Fluent
         eventStream = MultiEventStream.new
 
         hmlog = HealthMonitorUtils.getLogHandle
-        HealthMonitorUtils.refreshKubernetesApiData(@@hmlog, nil)
+        HealthMonitorUtils.refresh_kubernetes_api_data(@@hmlog, nil)
         # we do this so that if the call fails, we get a response code/header etc.
         node_inventory_response = KubernetesApiClient.getKubeResourceInfo("nodes")
         node_inventory = JSON.parse(node_inventory_response.body)
         pod_inventory_response = KubernetesApiClient.getKubeResourceInfo("pods")
         pod_inventory = JSON.parse(pod_inventory_response.body)
-
         deployment_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("deployments", api_version: "extensions/v1beta1").body)
+
+        @resources.node_inventory = node_inventory
+        @resources.pod_inventory = pod_inventory
+        @resources.deployment_inventory = deployment_inventory
 
         if node_inventory_response.code.to_i != 200
           record = process_kube_api_up_monitor("fail", node_inventory_response)
@@ -92,7 +97,7 @@ module Fluent
           health_monitor_records.push(record) if record
           record = process_memory_oversubscribed_monitor(pod_inventory)
           health_monitor_records.push(record) if record
-          pods_ready_hash = HealthMonitorUtils.getPodsReadyHash(pod_inventory, deployment_inventory)
+          pods_ready_hash = HealthMonitorUtils.get_pods_ready_hash(pod_inventory, deployment_inventory)
 
           system_pods = pods_ready_hash.select{|k,v| v['namespace'] == 'kube-system'}
           workload_pods = pods_ready_hash.select{|k,v| v['namespace'] != 'kube-system'}
@@ -119,8 +124,6 @@ module Fluent
             hmlog.info "NODE INVENTORY IS NIL"
         end
 
-        #@@hmlog.debug "Health Monitor Records Size #{health_monitor_records.size}"
-
         health_monitor_records.each do |record|
           eventStream.add(emitTime, record)
         end
@@ -134,7 +137,7 @@ module Fluent
 
     def process_cpu_oversubscribed_monitor(pod_inventory)
       timestamp = Time.now.utc.iso8601
-      subscription = HealthMonitorUtils.getResourceSubscription(pod_inventory,"cpu", @@clusterCpuCapacity)
+      subscription = HealthMonitorUtils.get_resource_subscription(pod_inventory,"cpu", @@clusterCpuCapacity)
       state =  subscription > @@clusterCpuCapacity ? "fail" : "pass"
       #@@hmlog.debug "CPU Oversubscribed Monitor State : #{state}"
 
@@ -143,10 +146,8 @@ module Fluent
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f}}
       # @@hmlog.info health_monitor_record
 
-      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId])
+      monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(@@hmlog, monitor_id, [@@clusterId])
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
-      HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, @@healthMonitorConfig[monitor_id])
-      #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, @@healthMonitorConfig[monitor_id])
       health_record = {}
       time_now = Time.now.utc.iso8601
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
@@ -161,18 +162,16 @@ module Fluent
 
     def process_memory_oversubscribed_monitor(pod_inventory)
       timestamp = Time.now.utc.iso8601
-      subscription = HealthMonitorUtils.getResourceSubscription(pod_inventory,"memory", @@clusterMemoryCapacity)
+      subscription = HealthMonitorUtils.get_resource_subscription(pod_inventory,"memory", @@clusterMemoryCapacity)
       state =  subscription > @@clusterMemoryCapacity ? "fail" : "pass"
       #@@hmlog.debug "Memory Oversubscribed Monitor State : #{state}"
 
       #CPU
       monitor_id = HealthMonitorConstants::WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f}}
-      hmlog = HealthMonitorUtils.getLogHandle
+      hmlog = HealthMonitorUtils.get_log_handle
 
-      monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId])
-      HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, @@healthMonitorConfig[monitor_id])
-      #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, @@healthMonitorConfig[monitor_id])
+      monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId])
       health_record = {}
       time_now = Time.now.utc.iso8601
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
@@ -192,13 +191,11 @@ module Fluent
       details = response.each_header.to_h
       details['ResponseCode'] = response.code
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
-      hmlog = HealthMonitorUtils.getLogHandle
+      hmlog = HealthMonitorUtils.get_log_handle
       #hmlog.info health_monitor_record
 
       monitor_instance_id = HealthMonitorConstants::KUBE_API_STATUS
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
-      HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, @@healthMonitorConfig[monitor_id])
-      #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, @@healthMonitorConfig[monitor_id])
       health_record = {}
       time_now = Time.now.utc.iso8601
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
@@ -212,8 +209,8 @@ module Fluent
     end
 
     def process_pods_ready_percentage(pods_hash, config_monitor_id)
-      monitor_config = @@healthMonitorConfig[config_monitor_id]
-      hmlog = HealthMonitorUtils.getLogHandle
+      monitor_config = @@provider.get_config(config_monitor_id)
+      hmlog = HealthMonitorUtils.get_log_handle
 
       records = []
       pods_hash.keys.each do |key|
@@ -225,10 +222,9 @@ module Fluent
         percent = pods_ready / total_pods * 100
         timestamp = Time.now.utc.iso8601
 
-        state = HealthMonitorState.getState(@@hmlog, (100-percent), monitor_config)
+        state = HealthMonitorUtils.compute_percentage_state((100-percent), monitor_config)
         health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workloadName" => workload_name, "namespace" => namespace, "workloadKind" => workload_kind}}
-        monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, config_monitor_id, [@@clusterId, namespace, workload_name])
-        HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
+        monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(config_monitor_id, [@@clusterId, namespace, workload_name])
         health_record = {}
         time_now = Time.now.utc.iso8601
         health_record[HealthMonitorRecordFields::MONITOR_ID] = config_monitor_id
@@ -244,7 +240,6 @@ module Fluent
     end
 
     def process_node_condition_monitor(node_inventory)
-      hmlog = HealthMonitorUtils.getLogHandle
       monitor_id = HealthMonitorConstants::NODE_CONDITION_MONITOR_ID
       timestamp = Time.now.utc.iso8601
       monitor_config = @@healthMonitorConfig[monitor_id]
@@ -253,16 +248,14 @@ module Fluent
           node_inventory['items'].each do |node|
             node_name = node['metadata']['name']
             conditions = node['status']['conditions']
-            state = HealthMonitorUtils.getNodeStateFromNodeConditions(conditions)
+            state = HealthMonitorUtils.get_node_state_from_node_conditions(conditions)
             #hmlog.debug "Node Name = #{node_name} State = #{state}"
             details = {}
             conditions.each do |condition|
               details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message']}
             end
             health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
-            monitor_instance_id = HealthMonitorUtils.getMonitorInstanceId(@@hmlog, monitor_id, [@@clusterId, node_name])
-            HealthMonitorState.updateHealthMonitorState(@@hmlog, monitor_instance_id, health_monitor_record, monitor_config)
-            #record = HealthMonitorSignalReducer.reduceSignal(@@hmlog, monitor_id, monitor_instance_id, monitor_config, node_name: node_name)
+            monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(@@hmlog, monitor_id, [@@clusterId, node_name])
             health_record = {}
             time_now = Time.now.utc.iso8601
             health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
