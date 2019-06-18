@@ -71,7 +71,6 @@ module Fluent
         health_monitor_records = []
         eventStream = MultiEventStream.new
 
-        hmlog = HealthMonitorUtils.getLogHandle
         HealthMonitorUtils.refresh_kubernetes_api_data(@@hmlog, nil)
         # we do this so that if the call fails, we get a response code/header etc.
         node_inventory_response = KubernetesApiClient.getKubeResourceInfo("nodes")
@@ -146,7 +145,7 @@ module Fluent
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f}}
       # @@hmlog.info health_monitor_record
 
-      monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(@@hmlog, monitor_id, [@@clusterId])
+      monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId])
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
       health_record = {}
       time_now = Time.now.utc.iso8601
@@ -209,7 +208,7 @@ module Fluent
     end
 
     def process_pods_ready_percentage(pods_hash, config_monitor_id)
-      monitor_config = @@provider.get_config(config_monitor_id)
+      monitor_config = @provider.get_config(config_monitor_id)
       hmlog = HealthMonitorUtils.get_log_handle
 
       records = []
@@ -242,7 +241,7 @@ module Fluent
     def process_node_condition_monitor(node_inventory)
       monitor_id = HealthMonitorConstants::NODE_CONDITION_MONITOR_ID
       timestamp = Time.now.utc.iso8601
-      monitor_config = @@healthMonitorConfig[monitor_id]
+      monitor_config = @provider.get_config(monitor_id)
       node_condition_monitor_records = []
       if !node_inventory.nil?
           node_inventory['items'].each do |node|
@@ -255,7 +254,7 @@ module Fluent
               details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message']}
             end
             health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
-            monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(@@hmlog, monitor_id, [@@clusterId, node_name])
+            monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId, node_name])
             health_record = {}
             time_now = Time.now.utc.iso8601
             health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id

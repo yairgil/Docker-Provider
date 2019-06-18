@@ -1,3 +1,6 @@
+require 'logger'
+require 'digest'
+
 module HealthModel
     # static class that provides a bunch of utility methods
     class HealthMonitorUtils
@@ -14,6 +17,11 @@ module HealthModel
         @@node_inventory = []
 
         @log_path = "/var/opt/microsoft/docker-cimprov/log/health_monitors.log"
+
+        if Gem.win_platform?
+            @log_path = "C:\Temp\health_monitors.log"
+        end
+
         @log = Logger.new(@log_path, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
         @@last_refresh_time = '2019-01-01T00:00:00Z'
 
@@ -349,10 +357,6 @@ module HealthModel
             end
 
             def get_log_handle
-                if Gem.win_platform?
-                    log_path = "C:\Temp\health_monitors.log"
-                    @log = Logger.new(@log_path, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
-                end
                 return @log
             end
         end

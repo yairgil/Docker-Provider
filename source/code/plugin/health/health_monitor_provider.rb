@@ -102,5 +102,17 @@ module HealthModel
             end
             return monitor_labels
         end
+
+        def get_node_labels(node_name)
+            monitor_labels = {}
+            @health_kubernetes_resources.get_node_inventory['items'].each do |node|
+                if !node_name.nil? && !node['metadata']['name'].nil? && node_name == node['metadata']['name']
+                    if !node["metadata"].nil? && !node["metadata"]["labels"].nil?
+                        monitor_labels = node["metadata"]["labels"]
+                    end
+                end
+            end
+            return monitor_labels
+        end
     end
 end

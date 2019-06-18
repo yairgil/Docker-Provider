@@ -15,8 +15,7 @@ module Fluent
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_health_model_builder.log'
         config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health/health_model_definition.json'
         config_param :health_monitor_config_path, :default => '/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json'
-        config_param :health_state_serialized_path, :default => '/mnt/azure/health_state.json'
-        config_param :health_signal_timeout, :default => 240
+        config_param :health_state_serialized_path, :default => '/mnt/azure/health_model_state.json'
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :serializer, :deserializer
         include HealthModel
 
@@ -48,8 +47,7 @@ module Fluent
             #TODO: check if the path exists
             deserialized_state_info = @deserializer.deserialize
             @state = HealthMonitorState.new
-            @state.initialize_state(deserialized_state_info)
-
+            #@state.initialize_state(deserialized_state_info)
         end
 
         def configure(conf)
@@ -84,6 +82,7 @@ module Fluent
                     end
                     return []
                 elsif tag.start_with?("oms.api.KubeHealth.ReplicaSet")
+                    @log.info "TAG #{tag}"
                     records = []
                     es.each{|time, record|
                         records.push(record)
@@ -118,13 +117,19 @@ module Fluent
                         #puts "#{monitor_instance_id} #{instance_state.new_state} #{instance_state.old_state} #{instance_state.should_send}"
                     end
 
+                    @log.info "health_monitor_records.size #{health_monitor_records.size}"
+
                     health_monitor_records = @kube_api_down_handler.handle_kube_api_down(health_monitor_records)
+                    @log.info " after kube api down handler health_monitor_records.size #{health_monitor_records.size}"
                     # Dedupe daemonset signals
                     # Remove unit monitor signals for “gone” objects
-                    reduced_records = @reducer.reduce_signals(health_monitor_records, resources)
+                    reduced_records = @reducer.reduce_signals(health_monitor_records, @resources)
+                    @log.info "after deduping and removing gone objects reduced_records.size #{reduced_records.size}"
 
                     #get the list of  'none' and 'unknown' signals
-                    missing_signals = @generator.get_missing_signals(reduced_records, resources)
+                    missing_signals = @generator.get_missing_signals(KubernetesApiClient.getClusterId, reduced_records, @resources, @provider)
+
+                    @log.info "after getting missing signals missing_signals.size #{missing_signals.size}"
                     #update state for missing signals
                     missing_signals.each{|signal|
                         @state.update_state(signal,
@@ -134,10 +139,14 @@ module Fluent
                     @generator.update_last_received_records(reduced_records)
                     reduced_records.push(*missing_signals)
 
+                    @log.info "after Adding missing signals reduced_records.size #{reduced_records.size}"
+
                     # build the health model
                     all_records = reduced_records
                     @model_builder.process_records(all_records)
                     all_monitors = @model_builder.finalize_model
+
+                    @log.info "after building health_model #{all_monitors.size}"
 
                     # update the state for aggregate monitors (unit monitors are updated above)
                     all_monitors.each{|monitor_instance_id, monitor|
@@ -157,6 +166,8 @@ module Fluent
                         end
                     }
 
+                    @log.info "after optimizing health signals all_monitors.size #{all_monitors.size}"
+
                     # for each key in monitor.keys,
                     # get the state from health_monitor_state
                     # generate the record to send
@@ -165,6 +176,7 @@ module Fluent
                         puts "#{record["MonitorInstanceId"]} #{record["OldState"]} #{record["NewState"]}"
                         new_es.add(time, record)
                     }
+
                     @serializer.serialize(@state)
 
                     router.emit_stream(@@rewrite_tag, new_es)

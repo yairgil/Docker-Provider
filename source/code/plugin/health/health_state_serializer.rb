@@ -7,8 +7,13 @@ module HealthModel
         end
 
         def serialize(state)
-            File.open("C:/AzureMonitor/ContainerInsights/Docker-Provider/inventory/state.json", 'w') do |f| #File.open(@serialized_path, 'w')
-            f.write(JSON.pretty_generate(state.to_h.to_json))
+            File.open(@serialized_path, 'w') do |f| #File.open(@serialized_path, 'w')
+                states = state.to_h
+                states_hash = {}
+                states.each{|id, value|
+                    states_hash[id] = value.to_h
+                }
+                f.write(JSON.pretty_generate(states_hash))
            end
         end
     end
