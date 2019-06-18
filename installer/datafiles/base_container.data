@@ -230,6 +230,14 @@ touch /var/opt/microsoft/docker-cimprov/log/health_monitors.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/health_monitors.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/health_monitors.log
 
+touch /var/opt/microsoft/docker-cimprov/log/filter_health_model_builder.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_health_model_builder.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_health_model_builder.log
+
+touch /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
+
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 
