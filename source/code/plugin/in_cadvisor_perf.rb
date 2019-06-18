@@ -21,7 +21,6 @@ module Fluent
     config_param :nodehealthtag, :string, :default => "oms.api.KubeHealth.DaemonSet.Node"
     #config_param :containerhealthtag, :string, :default => "oms.api.KubeHealth.DaemonSet.Container"
 
-
     def configure(conf)
       super
     end
