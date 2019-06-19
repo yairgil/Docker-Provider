@@ -1,16 +1,4 @@
 {
-    "node_condition": {
-        "ConsecutiveSamplesForStateTransition": 1
-    },
-    "subscribed_capacity_cpu": {
-        "ConsecutiveSamplesForStateTransition": 1
-    },
-    "subscribed_capacity_memory": {
-        "ConsecutiveSamplesForStateTransition": 1
-    },
-    "kube_api_status": {
-        "ConsecutiveSamplesForStateTransition": 1
-    },
     "node_cpu_utilization": {
         "WarnThresholdPercentage": 80.0,
         "FailThresholdPercentage": 90.0,

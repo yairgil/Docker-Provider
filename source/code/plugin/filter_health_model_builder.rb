@@ -20,6 +20,7 @@ module Fluent
         include HealthModel
 
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
+        @@cluster_id = KubernetesApiClient.getClusterId
 
         def initialize
             super
@@ -37,7 +38,7 @@ module Fluent
             @state = HealthMonitorState.new
             @generator = HealthMissingSignalGenerator.new
             #TODO: cluster_labels needs to be initialized
-            @provider = HealthMonitorProvider.new(HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+            @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
             @serializer = HealthStateSerializer.new(@health_state_serialized_path)
             @deserializer = HealthStateDeserializer.new(@health_state_serialized_path)
             # TODO: in_kube_api_health should set these values
@@ -127,7 +128,7 @@ module Fluent
                     @log.info "after deduping and removing gone objects reduced_records.size #{reduced_records.size}"
 
                     #get the list of  'none' and 'unknown' signals
-                    missing_signals = @generator.get_missing_signals(KubernetesApiClient.getClusterId, reduced_records, @resources, @provider)
+                    missing_signals = @generator.get_missing_signals(@@cluster_id, reduced_records, @resources, @provider)
 
                     @log.info "after getting missing signals missing_signals.size #{missing_signals.size}"
                     #update state for missing signals
@@ -173,7 +174,7 @@ module Fluent
                     # generate the record to send
                     all_monitors.keys.each{|key|
                         record = @provider.get_record(all_monitors[key], state)
-                        puts "#{record["MonitorInstanceId"]} #{record["OldState"]} #{record["NewState"]}"
+                        #@log.info "#{record["Details"]} #{record["MonitorInstanceId"]} #{record["OldState"]} #{record["NewState"]}"
                         new_es.add(time, record)
                     }
 

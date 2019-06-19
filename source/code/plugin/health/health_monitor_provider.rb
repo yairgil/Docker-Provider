@@ -1,12 +1,13 @@
 module HealthModel
     class HealthMonitorProvider
 
-        attr_accessor :cluster_labels, :health_kubernetes_resources, :monitor_configuration_path
+        attr_accessor :cluster_labels, :health_kubernetes_resources, :monitor_configuration_path, :cluster_id
         attr_reader :monitor_configuration
 
-        def initialize(cluster_labels, health_kubernetes_resources, monitor_configuration_path)
+        def initialize(cluster_id, cluster_labels, health_kubernetes_resources, monitor_configuration_path)
             @cluster_labels = Hash.new
             cluster_labels.each{|k,v| @cluster_labels[k] = v}
+            @cluster_id = cluster_id
             @health_kubernetes_resources = health_kubernetes_resources
             @monitor_configuration_path = monitor_configuration_path
             begin
@@ -54,13 +55,14 @@ module HealthModel
             time_observed = Time.now.utc.iso8601
 
             monitor_record = {}
-            monitor_record[HealthMonitorRecordFields::CLUSTER_ID] = 'fake_cluster_id' #KubernetesApiClient.getClusterId
+
+            monitor_record[HealthMonitorRecordFields::CLUSTER_ID] = @cluster_id
             monitor_record[HealthMonitorRecordFields::MONITOR_LABELS] = labels.to_json
             monitor_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
             monitor_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
             monitor_record[HealthMonitorRecordFields::NEW_STATE] = new_state
             monitor_record[HealthMonitorRecordFields::OLD_STATE] = old_state
-            monitor_record[HealthMonitorRecordFields::DETAILS] = details
+            monitor_record[HealthMonitorRecordFields::DETAILS] = details.to_json
             monitor_record[HealthMonitorRecordFields::MONITOR_CONFIG] = config.to_json
             monitor_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] = Time.now.utc.iso8601
             monitor_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = time_first_observed
@@ -77,7 +79,10 @@ module HealthModel
         end
 
         def get_labels(health_monitor_record)
-            monitor_labels = {}
+            monitor_labels = Hash.new
+            @cluster_labels.keys.each{|key|
+                monitor_labels[key] = @cluster_labels[key]
+            }
             monitor_id = health_monitor_record[HealthMonitorRecordFields::MONITOR_ID]
             case monitor_id
             when HealthMonitorConstants::CONTAINER_CPU_MONITOR_ID, HealthMonitorConstants::CONTAINER_MEMORY_MONITOR_ID, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID
@@ -95,7 +100,7 @@ module HealthModel
                 @health_kubernetes_resources.get_node_inventory['items'].each do |node|
                     if !node_name.nil? && !node['metadata']['name'].nil? && node_name == node['metadata']['name']
                         if !node["metadata"].nil? && !node["metadata"]["labels"].nil?
-                            monitor_labels = node["metadata"]["labels"]
+                            monitor_labels = monitor_labels.merge(node["metadata"]["labels"])
                         end
                     end
                 end

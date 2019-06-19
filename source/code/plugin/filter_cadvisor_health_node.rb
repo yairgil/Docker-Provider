@@ -39,7 +39,7 @@ module Fluent
             @last_resource_refresh = DateTime.now.to_time.to_i
             @metrics_to_collect_hash = {}
             @resources = HealthKubernetesResources.instance # this doesnt require node and pod inventory. So no need to populate them
-            @provider = HealthMonitorProvider.new(HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+            @provider = HealthMonitorProvider.new(@@clusterId, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
         end
 
         def configure(conf)

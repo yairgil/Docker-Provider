@@ -22,8 +22,9 @@ module Fluent
       require "yaml"
       require "json"
 
+      @@cluster_id = KubernetesApiClient.getClusterId
       @resources = HealthKubernetesResources.instance
-      @provider = HealthMonitorProvider.new(HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+      @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
     end
 
     include HealthModel
@@ -43,7 +44,6 @@ module Fluent
 
         @@hmlog = HealthMonitorUtils.get_log_handle
         @@clusterName = KubernetesApiClient.getClusterName
-        @@clusterId = KubernetesApiClient.getClusterId
         @@clusterRegion = KubernetesApiClient.getClusterRegion
         cluster_capacity = HealthMonitorUtils.get_cluster_cpu_memory_capacity(@@hmlog)
         @@clusterCpuCapacity = cluster_capacity[0]
@@ -145,7 +145,7 @@ module Fluent
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f}}
       # @@hmlog.info health_monitor_record
 
-      monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId])
+      monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id])
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
       health_record = {}
       time_now = Time.now.utc.iso8601
@@ -154,7 +154,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-      health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
+      health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       @@hmlog.info "Successfully processed process_cpu_oversubscribed_monitor"
       return health_record
     end
@@ -170,7 +170,7 @@ module Fluent
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f}}
       hmlog = HealthMonitorUtils.get_log_handle
 
-      monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId])
+      monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id])
       health_record = {}
       time_now = Time.now.utc.iso8601
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
@@ -178,7 +178,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-      health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
+      health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       @@hmlog.info "Successfully processed process_memory_oversubscribed_monitor"
       return health_record
     end
@@ -202,7 +202,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-      health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
+      health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       @@hmlog.info "Successfully processed process_kube_api_up_monitor"
       return health_record
     end
@@ -223,7 +223,7 @@ module Fluent
 
         state = HealthMonitorUtils.compute_percentage_state((100-percent), monitor_config)
         health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workloadName" => workload_name, "namespace" => namespace, "workloadKind" => workload_kind}}
-        monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(config_monitor_id, [@@clusterId, namespace, workload_name])
+        monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(config_monitor_id, [@@cluster_id, namespace, workload_name])
         health_record = {}
         time_now = Time.now.utc.iso8601
         health_record[HealthMonitorRecordFields::MONITOR_ID] = config_monitor_id
@@ -231,7 +231,7 @@ module Fluent
         health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
         health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
         health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-        health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
+        health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
         records.push(health_record)
       end
       @@hmlog.info "Successfully processed pods_ready_percentage for #{config_monitor_id} #{records.size}"
@@ -254,7 +254,7 @@ module Fluent
               details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message']}
             end
             health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
-            monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId, node_name])
+            monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id, node_name])
             health_record = {}
             time_now = Time.now.utc.iso8601
             health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
@@ -262,7 +262,7 @@ module Fluent
             health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
             health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
             health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
-            health_record[HealthMonitorRecordFields::CLUSTER_ID] = KubernetesApiClient.getClusterId
+            health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
             health_record[HealthMonitorRecordFields::NODE_NAME] = node_name
             node_condition_monitor_records.push(health_record)
           end

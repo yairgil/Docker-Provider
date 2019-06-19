@@ -11,7 +11,7 @@ module HealthModel
                 require_relative '../KubernetesApiClient'
             end
         rescue => e
-            puts "#{e.message}"
+            $log.info "Error loading KubernetesApiClient #{e.message}"
         end
 
         @@node_inventory = []

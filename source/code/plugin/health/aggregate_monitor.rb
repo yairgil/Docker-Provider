@@ -68,8 +68,8 @@ module HealthModel
         member_monitor_instance_ids.each{|member_monitor_id|
             member_monitor = monitor_set.get_monitor(member_monitor_id)
             member_state = member_monitor.state
-            if @details.key?(member_state)
-                ids = details[member_state]
+            if @details['details'].key?(member_state)
+                ids = @details['details'][member_state]
                 if !ids.include?(member_monitor.monitor_instance_id)
                     ids.push(member_monitor.monitor_instance_id)
                 end
