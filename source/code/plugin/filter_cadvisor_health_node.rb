@@ -68,7 +68,6 @@ module Fluent
               begin
                 filtered_record = filter(tag, time, record)
                 if !filtered_record.nil?
-                    @@hm_log.debug "#{JSON.pretty_generate(filtered_record)}"
                     new_es.add(time, filtered_record)
                     records_count += 1
                 end
