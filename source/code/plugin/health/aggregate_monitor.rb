@@ -6,7 +6,7 @@ require 'json'
 module HealthModel
   class AggregateMonitor
     attr_accessor :monitor_id, :monitor_instance_id, :state, :transition_date_time, :aggregation_algorithm, :aggregation_algorithm_params, :labels, :is_aggregate_monitor, :details
-    attr_reader :member_monitors
+    attr_reader :member_monitors, :member_state_counts
 
     # constructor
     def initialize(
@@ -26,6 +26,7 @@ module HealthModel
       @aggregation_algorithm_params = aggregation_algorithm_params
       @labels = labels
       @member_monitors = {}
+      @member_state_counts = {}
       @is_aggregate_monitor = true
     end
 
@@ -83,7 +84,7 @@ module HealthModel
     # calculates the worst of state, given the member monitors
     def calculate_worst_of_state(monitor_set)
 
-        member_state_counts = map_member_monitor_states(monitor_set)
+        @member_state_counts = map_member_monitor_states(monitor_set)
 
         if member_state_counts.length === 0
             return MonitorState::NONE
@@ -100,15 +101,30 @@ module HealthModel
         end
 
         if member_state_counts.key?(MonitorState::NONE) && member_state_counts[MonitorState::NONE] > 0
-            return MonitorState::NONE
+            return MonitorState::HEALTHY #none should win over healthy in aggregation
         end
 
         return MonitorState::HEALTHY
     end
 
     # calculates a percentage state, given the aggregation algorithm parameters
-    def calculate_percentage_state
+    def calculate_percentage_state(monitor_set)
 
+        if @member_state_counts.nil? || @member_state_counts.empty?
+            @member_state_counts = map_member_monitor_states(monitor_set)
+        end
+        member_state_counts_percentage = {}
+        @member_state_counts.map{|k,v| member_state_counts_percentage[k] = @member_state_counts[k] / @member_monitors.size * 100 }
+
+        healthy = (member_state_counts_percentage[MonitorState::HEALTHY] || 0) + (member_state_counts_percentage[MonitorState::NONE] || 0)
+
+        if healthy > @aggregation_algorithm_params['warning_threshold']
+            @state = MonitorState::HEALTHY
+        elsif healthy > @aggregation_algorithm_params['critical_threshold']
+            @state = MonitorState::WARNING
+        else
+            @state = MonitorState::CRITICAL
+        end
     end
 
     # maps states of member monitors to counts

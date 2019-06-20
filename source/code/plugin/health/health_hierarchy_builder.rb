@@ -48,7 +48,7 @@ module HealthModel
                 # if present, update the state based on the aggregation algorithm
                 parent_monitor = nil
                 if !monitor_set.contains?(parent_monitor_instance_id)
-                    parent_monitor = @monitor_factory.create_aggregate_monitor(parent_monitor_id, parent_monitor_instance_id, parent_monitor_labels, parent_monitor_configuration['aggregation_algorithm'], nil, child_monitor)
+                    parent_monitor = @monitor_factory.create_aggregate_monitor(parent_monitor_id, parent_monitor_instance_id, parent_monitor_labels, parent_monitor_configuration['aggregation_algorithm'], parent_monitor_configuration['aggregation_algorithm_params'], child_monitor)
                     parent_monitor.add_member_monitor(child_monitor.monitor_instance_id)
                 else
                     parent_monitor = monitor_set.get_monitor(parent_monitor_instance_id)

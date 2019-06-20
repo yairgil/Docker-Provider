@@ -166,6 +166,10 @@
     {
         "monitor_id": "master_node_pool",
         "aggregation_algorithm": "percentage",
+        "aggregation_algorithm_params": {
+            "critical_threshold": 80.0,
+            "warning_threshold": 90.0
+        },
         "parent_monitor_id": "all_nodes",
         "labels": [
             "container.azm.ms/cluster-region",
@@ -176,7 +180,11 @@
     },
     {
         "monitor_id": "agent_node_pool",
-        "aggregation_algorithm": "worstOf",
+        "aggregation_algorithm": "percentage",
+        "aggregation_algorithm_params": {
+            "critical_threshold": 80.0,
+            "warning_threshold": 90.0
+        },
         "labels": [
             "agentpool",
             "container.azm.ms/cluster-region",
