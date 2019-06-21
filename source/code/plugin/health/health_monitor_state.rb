@@ -34,6 +34,7 @@ module HealthModel
             @@monitor_states = {}
             deserialized_state.each{|k,v|
                 @@monitor_states[k] = v
+                @@first_record_sent[k] = true
             }
         end
 

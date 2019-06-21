@@ -48,7 +48,7 @@ module Fluent
             #TODO: check if the path exists
             deserialized_state_info = @deserializer.deserialize
             @state = HealthMonitorState.new
-            #@state.initialize_state(deserialized_state_info)
+            @state.initialize_state(deserialized_state_info)
         end
 
         def configure(conf)
@@ -133,7 +133,7 @@ module Fluent
                     @log.info "after getting missing signals missing_signals.size #{missing_signals.size}"
                     #update state for missing signals
                     missing_signals.each{|signal|
-                        
+
                         @state.update_state(signal, @provider.get_config(signal.monitor_id))
                         @log.info "After Updating #{@state.get_state(signal.monitor_instance_id)} #{@state.get_state(signal.monitor_instance_id).new_state}"
                     }
