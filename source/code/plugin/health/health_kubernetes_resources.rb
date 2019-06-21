@@ -21,8 +21,12 @@ module HealthModel
         end
 
         def get_nodes
+            @nodes = []
             @node_inventory['items'].each {|node|
-                @nodes.push(node['metadata']['name'])
+                if !@nodes.include?(node['metadata']['name'])
+                    @nodes.push(node['metadata']['name'])
+                end
+
             }
             return @nodes
         end
@@ -36,6 +40,7 @@ module HealthModel
         end
 
         def get_workload_names
+            @pods = []
             workload_names = {}
             deployment_lookup = {}
             @deployment_inventory['items'].each do |deployment|

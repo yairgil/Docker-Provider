@@ -100,11 +100,16 @@ module HealthModel
             return MonitorState::WARNING
         end
 
-        if member_state_counts.key?(MonitorState::NONE) && member_state_counts[MonitorState::NONE] > 0
-            return MonitorState::HEALTHY #none should win over healthy in aggregation
+        if member_state_counts.key?(MonitorState::UNKNOWN) &&  member_state_counts[MonitorState::UNKNOWN] > 0
+            return MonitorState::UNKNOWN
         end
 
-        return MonitorState::HEALTHY
+        if member_state_counts.key?(MonitorState::HEALTHY) && member_state_counts[MonitorState::HEALTHY] > 0
+            return MonitorState::HEALTHY #healthy should win over none in aggregation
+        end
+
+        return MonitorState::NONE
+
     end
 
     # calculates a percentage state, given the aggregation algorithm parameters

@@ -42,7 +42,7 @@ module HealthModel
                 # get the parent monitor configuration
                 parent_monitor_configuration = @health_model_definition.get_parent_monitor_config(parent_monitor_id)
                 #get monitor instance id for parent monitor. Does this belong in HealthModelDefinition?
-                parent_monitor_instance_id = @health_model_definition.get_parent_monitor_instance_id(parent_monitor_id, parent_monitor_labels)
+                parent_monitor_instance_id = @health_model_definition.get_parent_monitor_instance_id(child_monitor.monitor_instance_id, parent_monitor_id, parent_monitor_labels)
                 # check if monitor set has the parent monitor id
                 # if not present, add
                 # if present, update the state based on the aggregation algorithm

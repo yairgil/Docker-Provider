@@ -133,17 +133,17 @@ module Fluent
                     @log.info "after getting missing signals missing_signals.size #{missing_signals.size}"
                     #update state for missing signals
                     missing_signals.each{|signal|
-                        @state.update_state(signal,
-                            @provider.get_config(signal.monitor_id)
-                            )
+                        
+                        @state.update_state(signal, @provider.get_config(signal.monitor_id))
+                        @log.info "After Updating #{@state.get_state(signal.monitor_instance_id)} #{@state.get_state(signal.monitor_instance_id).new_state}"
                     }
                     @generator.update_last_received_records(reduced_records)
-                    reduced_records.push(*missing_signals)
+                    all_records = reduced_records.clone
+                    all_records.push(*missing_signals)
 
-                    @log.info "after Adding missing signals reduced_records.size #{reduced_records.size}"
+                    @log.info "after Adding missing signals all_records.size #{all_records.size}"
 
                     # build the health model
-                    all_records = reduced_records
                     @model_builder.process_records(all_records)
                     all_monitors = @model_builder.finalize_model
 
@@ -179,6 +179,8 @@ module Fluent
                     }
 
                     @serializer.serialize(@state)
+                    @monitor_set = HealthModel::MonitorSet.new
+                    @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
 
                     router.emit_stream(@@rewrite_tag, new_es)
                     # return an empty event stream, else the match will throw a NoMethodError

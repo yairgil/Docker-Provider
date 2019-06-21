@@ -4,13 +4,11 @@ require 'time'
 module HealthModel
     class HealthModelBuilder
         attr_accessor :hierarchy_builder, :state_finalizers, :monitor_set
-        attr_reader :last_sent_monitors
 
         def initialize(hierarchy_builder, state_finalizers, monitor_set)
             @hierarchy_builder = hierarchy_builder
             @state_finalizers = state_finalizers
             @monitor_set = monitor_set
-            @last_sent_monitors = {}
         end
 
         def process_records(health_records)

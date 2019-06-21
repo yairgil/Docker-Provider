@@ -36,13 +36,14 @@ module HealthModel
                 @@monitor_states[k] = v
             }
         end
-=begin
 
+=begin
 when do u send?
 ---------------
 1. if the signal hasnt been sent before
 2. if there is a "consistent" state change for monitors
 3. if the signal is stale (> 4hrs)
+4. If the latest state is none
 =end
         def update_state(monitor, #UnitMonitor/AggregateMonitor
             monitor_config #Hash
@@ -127,9 +128,20 @@ when do u send?
                 end
             # latest state is different that last sent state
             else
+                #if latest_record_state is none, send
+                if latest_record_state.downcase == HealthMonitorStates::NONE
+                    health_monitor_instance_state.old_state = health_monitor_instance_state.new_state #initially old = new, so when state change occurs, assign old to be new, and set new to be the latest record state
+                    health_monitor_instance_state.new_state = latest_record_state
+                    health_monitor_instance_state.state_change_time = latest_record_time
+                    health_monitor_instance_state.prev_sent_record_time = latest_record_time
+                    health_monitor_instance_state.should_send = true
+                    if !@@first_record_sent.key?(monitor_instance_id)
+                        @@first_record_sent[monitor_instance_id] = true
+                    end
+                    set_state(monitor_instance_id, health_monitor_instance_state)
                 # if it is a monitor that needs to instantly notify on state change, update the state
                 # mark the monitor to be sent
-                if samples_to_check == 1
+                elsif samples_to_check == 1
                     health_monitor_instance_state.old_state = health_monitor_instance_state.new_state #initially old = new, so when state change occurs, assign old to be new, and set new to be the latest record state
                     health_monitor_instance_state.new_state = latest_record_state
                     health_monitor_instance_state.state_change_time = latest_record_time
