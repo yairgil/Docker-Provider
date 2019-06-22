@@ -28,7 +28,11 @@ module HealthModel
         class << self
             # compute the percentage state given a value and a monitor configuration
             def compute_percentage_state(value, config)
-                (config.nil? || config['WarnThresholdPercentage'].nil?) ? warn_percentage = nil : config['WarnThresholdPercentage'].to_f
+                if config.nil? || config['WarnThresholdPercentage'].nil?
+                    warn_percentage = nil
+                else
+                    warn_percentage = config['WarnThresholdPercentage'].to_f
+                end
                 fail_percentage = config['FailThresholdPercentage'].to_f
 
                 if value > fail_percentage
