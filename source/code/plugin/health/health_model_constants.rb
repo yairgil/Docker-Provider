@@ -1,7 +1,7 @@
 module HealthModel
     class MonitorState
         CRITICAL = "fail"
-        ERROR = "fail"
+        ERROR = "err"
         WARNING = "warn"
         NONE = "none"
         HEALTHY = "pass"

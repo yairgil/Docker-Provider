@@ -8,6 +8,14 @@ module HealthModel
     attr_accessor :monitor_id, :monitor_instance_id, :state, :transition_date_time, :aggregation_algorithm, :aggregation_algorithm_params, :labels, :is_aggregate_monitor, :details
     attr_reader :member_monitors, :member_state_counts
 
+    @@sort_key_order = {
+        MonitorState::UNKNOWN => 1,
+        MonitorState::CRITICAL => 2,
+        MonitorState::WARNING => 3,
+        MonitorState::HEALTHY => 4,
+        MonitorState::NONE => 5
+    }
+
     # constructor
     def initialize(
       monitor_id,
@@ -115,20 +123,19 @@ module HealthModel
     # calculates a percentage state, given the aggregation algorithm parameters
     def calculate_percentage_state(monitor_set)
 
-        if @member_state_counts.nil? || @member_state_counts.empty?
-            @member_state_counts = map_member_monitor_states(monitor_set)
-        end
-        member_state_counts_percentage = {}
-        @member_state_counts.map{|k,v| member_state_counts_percentage[k] = @member_state_counts[k] / @member_monitors.size * 100 }
+        #sort
+        #TODO: What if sorted_filtered is empty? is that even possible?
+        sorted_filtered = sort_filter_member_monitors(monitor_set)
 
-        healthy = (member_state_counts_percentage[MonitorState::HEALTHY] || 0) + (member_state_counts_percentage[MonitorState::NONE] || 0)
+        state_threshold = @aggregation_algorithm_params['state_threshold'].to_f
 
-        if healthy > @aggregation_algorithm_params['warning_threshold']
-            @state = MonitorState::HEALTHY
-        elsif healthy > @aggregation_algorithm_params['critical_threshold']
-            @state = MonitorState::WARNING
+        size = sorted_filtered.size
+        if size == 1
+            @state =  sorted_filtered[0].state
         else
-            @state = MonitorState::CRITICAL
+            count = ((state_threshold*size)/100).ceil
+            index = size - count
+            @state = sorted_filtered[index].state
         end
     end
 
@@ -155,6 +162,30 @@ module HealthModel
         }
 
         return state_counts;
+    end
+
+    # Sort the member monitors in the following order
+=begin
+    1. Error
+    2. Unknown
+    3. Critical
+    4. Warning
+    5. Healthy
+    Remove 'none' state monitors
+=end
+    def sort_filter_member_monitors(monitor_set)
+        member_monitor_instance_ids = get_member_monitors
+        member_monitors = []
+
+        member_monitor_instance_ids.each {|monitor_instance_id|
+            member_monitor = monitor_set.get_monitor(monitor_instance_id)
+            member_monitors.push(member_monitor)
+        }
+
+	filtered = member_monitors.select{|monitor| monitor.state != MonitorState::NONE}
+        sorted = filtered.sort_by{ |monitor| [@@sort_key_order[monitor.state]] }
+        
+        return sorted
     end
   end
 end
