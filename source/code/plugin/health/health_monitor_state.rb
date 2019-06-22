@@ -52,6 +52,7 @@ when do u send?
             samples_to_keep = 1
             monitor_instance_id = monitor.monitor_instance_id
 
+            current_time = Time.now.utc.iso8601
             health_monitor_instance_state = get_state(monitor_instance_id)
             if !health_monitor_instance_state.nil?
                 health_monitor_instance_state.is_state_change_consistent = false
@@ -107,7 +108,6 @@ when do u send?
 
             new_state = health_monitor_instance_state.new_state
             prev_sent_time = health_monitor_instance_state.prev_sent_record_time
-            time_first_observed = health_monitor_instance_state.state_change_time
 
             # if the last sent state (news_state is different from latest monitor state)
             if latest_record_state.downcase == new_state.downcase
@@ -117,7 +117,7 @@ when do u send?
                     # update record for last sent record time
                     health_monitor_instance_state.old_state = health_monitor_instance_state.new_state
                     health_monitor_instance_state.new_state = latest_record_state
-                    health_monitor_instance_state.prev_sent_record_time = latest_record_time
+                    health_monitor_instance_state.prev_sent_record_time = current_time
                     health_monitor_instance_state.should_send = true
                     #log.debug "After Updating Monitor State #{health_monitor_instance_state}"
                     set_state(monitor_instance_id, health_monitor_instance_state)
@@ -133,8 +133,8 @@ when do u send?
                 if latest_record_state.downcase == HealthMonitorStates::NONE
                     health_monitor_instance_state.old_state = health_monitor_instance_state.new_state #initially old = new, so when state change occurs, assign old to be new, and set new to be the latest record state
                     health_monitor_instance_state.new_state = latest_record_state
-                    health_monitor_instance_state.state_change_time = latest_record_time
-                    health_monitor_instance_state.prev_sent_record_time = latest_record_time
+                    health_monitor_instance_state.state_change_time = current_time
+                    health_monitor_instance_state.prev_sent_record_time = current_time
                     health_monitor_instance_state.should_send = true
                     if !@@first_record_sent.key?(monitor_instance_id)
                         @@first_record_sent[monitor_instance_id] = true
@@ -145,8 +145,8 @@ when do u send?
                 elsif samples_to_check == 1
                     health_monitor_instance_state.old_state = health_monitor_instance_state.new_state #initially old = new, so when state change occurs, assign old to be new, and set new to be the latest record state
                     health_monitor_instance_state.new_state = latest_record_state
-                    health_monitor_instance_state.state_change_time = latest_record_time
-                    health_monitor_instance_state.prev_sent_record_time = latest_record_time
+                    health_monitor_instance_state.state_change_time = current_time
+                    health_monitor_instance_state.prev_sent_record_time = current_time
                     health_monitor_instance_state.should_send = true
                     if !@@first_record_sent.key?(monitor_instance_id)
                         @@first_record_sent[monitor_instance_id] = true
@@ -165,8 +165,8 @@ when do u send?
                         health_monitor_instance_state.is_state_change_consistent = true # This way it wont be recomputed in the optimizer.
                         health_monitor_instance_state.should_send = true
                         health_monitor_instance_state.new_state = latest_record_state
-                        health_monitor_instance_state.prev_sent_record_time = latest_record_time
-                        health_monitor_instance_state.state_change_time = first_record["timestamp"]
+                        health_monitor_instance_state.prev_sent_record_time = current_time
+                        health_monitor_instance_state.state_change_time = current_time
 
                         set_state(monitor_instance_id, health_monitor_instance_state)
 
