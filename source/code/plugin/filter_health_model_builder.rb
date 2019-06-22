@@ -96,6 +96,7 @@ module Fluent
                     records_to_process.each do |record|
                         monitor_instance_id = record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID]
                         monitor_id = record[HealthMonitorRecordFields::MONITOR_ID]
+                        #HealthMonitorRecord
                         health_monitor_record = HealthMonitorRecord.new(
                             record[HealthMonitorRecordFields::MONITOR_ID],
                             record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
@@ -114,7 +115,6 @@ module Fluent
                         # update state calls updates the state of the monitor based on configuration and history of the the monitor records
                         health_monitor_record.state = @state.get_state(monitor_instance_id).new_state
                         health_monitor_records.push(health_monitor_record)
-                        instance_state = @state.get_state(monitor_instance_id)
                         #puts "#{monitor_instance_id} #{instance_state.new_state} #{instance_state.old_state} #{instance_state.should_send}"
                     end
 
@@ -136,7 +136,10 @@ module Fluent
 
                         @state.update_state(signal, @provider.get_config(signal.monitor_id))
                         @log.info "After Updating #{@state.get_state(signal.monitor_instance_id)} #{@state.get_state(signal.monitor_instance_id).new_state}"
+                        # for unknown/none records, update the "monitor state" to be the latest state (new_state) of the monitor instance from the state
+                        signal.state = @state.get_state(monitor_instance_id).new_state
                     }
+
                     @generator.update_last_received_records(reduced_records)
                     all_records = reduced_records.clone
                     all_records.push(*missing_signals)
