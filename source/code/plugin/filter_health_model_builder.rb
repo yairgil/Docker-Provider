@@ -137,7 +137,7 @@ module Fluent
                         @state.update_state(signal, @provider.get_config(signal.monitor_id))
                         @log.info "After Updating #{@state.get_state(signal.monitor_instance_id)} #{@state.get_state(signal.monitor_instance_id).new_state}"
                         # for unknown/none records, update the "monitor state" to be the latest state (new_state) of the monitor instance from the state
-                        signal.state = @state.get_state(monitor_instance_id).new_state
+                        signal.state = @state.get_state(signal.monitor_instance_id).new_state
                     }
 
                     @generator.update_last_received_records(reduced_records)
