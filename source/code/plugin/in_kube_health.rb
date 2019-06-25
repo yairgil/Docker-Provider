@@ -71,7 +71,7 @@ module Fluent
         health_monitor_records = []
         eventStream = MultiEventStream.new
 
-        HealthMonitorUtils.refresh_kubernetes_api_data(@@hmlog, nil)
+        #HealthMonitorUtils.refresh_kubernetes_api_data(@@hmlog, nil)
         # we do this so that if the call fails, we get a response code/header etc.
         node_inventory_response = KubernetesApiClient.getKubeResourceInfo("nodes")
         node_inventory = JSON.parse(node_inventory_response.body)

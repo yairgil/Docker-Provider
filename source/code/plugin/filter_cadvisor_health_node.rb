@@ -56,13 +56,13 @@ module Fluent
             @cpu_capacity = node_capacity[0]
             @memory_capacity = node_capacity[1]
             @log.info "CPU Capacity #{@cpu_capacity} Memory Capacity #{@memory_capacity}"
-            HealthMonitorUtils.refresh_kubernetes_api_data(@log, @@hostName)
+            #HealthMonitorUtils.refresh_kubernetes_api_data(@log, @@hostName)
             ApplicationInsightsUtility.sendCustomEvent("filter_cadvisor_health Plugin Start", {})
         end
 
         def filter_stream(tag, es)
             new_es = MultiEventStream.new
-            HealthMonitorUtils.refresh_kubernetes_api_data(@log, @hostName)
+            #HealthMonitorUtils.refresh_kubernetes_api_data(@log, @hostName)
             records_count = 0
             es.each { |time, record|
               begin
