@@ -51,7 +51,7 @@ when do u send?
             )
             samples_to_keep = 1
             monitor_instance_id = monitor.monitor_instance_id
-
+            log = HealthMonitorUtils.get_log_handle
             current_time = Time.now.utc.iso8601
             health_monitor_instance_state = get_state(monitor_instance_id)
             if !health_monitor_instance_state.nil?
@@ -98,9 +98,12 @@ when do u send?
             # update old and new state based on the history and latest record.
             # TODO: this is a little hairy. Simplify
 
-
             health_monitor_records = health_monitor_instance_state.prev_records
-            monitor_config['ConsecutiveSamplesForStateTransition'].nil? ? samples_to_check = 1 : samples_to_check = monitor_config['ConsecutiveSamplesForStateTransition'].to_i
+            if monitor_config['ConsecutiveSamplesForStateTransition'].nil?
+                samples_to_check = 1
+            else
+                samples_to_check = monitor_config['ConsecutiveSamplesForStateTransition'].to_i
+            end
 
             latest_record = health_monitor_records[health_monitor_records.size-1] #since we push new records to the end, and remove oldest records from the beginning
             latest_record_state = latest_record["state"]
@@ -121,6 +124,7 @@ when do u send?
                     health_monitor_instance_state.should_send = true
                     #log.debug "After Updating Monitor State #{health_monitor_instance_state}"
                     set_state(monitor_instance_id, health_monitor_instance_state)
+                    log.debug "#{monitor_instance_id} condition: signal timeout should_send #{health_monitor_instance_state.should_send} #{health_monitor_instance_state.old_state} --> #{health_monitor_instance_state.new_state}"
                 # check if the first record has been sent
                 elsif !@@first_record_sent.key?(monitor_instance_id)
                     @@first_record_sent[monitor_instance_id] = true
@@ -140,6 +144,7 @@ when do u send?
                         @@first_record_sent[monitor_instance_id] = true
                     end
                     set_state(monitor_instance_id, health_monitor_instance_state)
+                    log.debug "#{monitor_instance_id} condition: NONE state should_send #{health_monitor_instance_state.should_send} #{health_monitor_instance_state.old_state} --> #{health_monitor_instance_state.new_state}"
                 # if it is a monitor that needs to instantly notify on state change, update the state
                 # mark the monitor to be sent
                 elsif samples_to_check == 1
@@ -152,6 +157,7 @@ when do u send?
                         @@first_record_sent[monitor_instance_id] = true
                     end
                     set_state(monitor_instance_id, health_monitor_instance_state)
+                    log.debug "#{monitor_instance_id} condition: state change, samples_to_check = #{samples_to_check} should_send #{health_monitor_instance_state.should_send} #{health_monitor_instance_state.old_state} --> #{health_monitor_instance_state.new_state}"
                 else
                     # state change from previous sent state to latest record state
                     #check state of last n records to see if they are all in the same state
@@ -173,6 +179,7 @@ when do u send?
                         if !@@first_record_sent.key?(monitor_instance_id)
                             @@first_record_sent[monitor_instance_id] = true
                         end
+                        log.debug "#{monitor_instance_id} condition: consistent state change, samples_to_check = #{samples_to_check} should_send #{health_monitor_instance_state.should_send} #{health_monitor_instance_state.old_state} --> #{health_monitor_instance_state.new_state}"
                     end
                 end
             end

@@ -155,7 +155,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
-      @@hmlog.info "Successfully processed process_cpu_oversubscribed_monitor"
+      #@@hmlog.info "Successfully processed process_cpu_oversubscribed_monitor"
       return health_record
     end
 
@@ -179,7 +179,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
-      @@hmlog.info "Successfully processed process_memory_oversubscribed_monitor"
+      #@@hmlog.info "Successfully processed process_memory_oversubscribed_monitor"
       return health_record
     end
 
@@ -203,7 +203,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
-      @@hmlog.info "Successfully processed process_kube_api_up_monitor"
+      #@@hmlog.info "Successfully processed process_kube_api_up_monitor"
       return health_record
     end
 
@@ -234,7 +234,7 @@ module Fluent
         health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
         records.push(health_record)
       end
-      @@hmlog.info "Successfully processed pods_ready_percentage for #{config_monitor_id} #{records.size}"
+      #@@hmlog.info "Successfully processed pods_ready_percentage for #{config_monitor_id} #{records.size}"
       return records
     end
 
@@ -267,7 +267,7 @@ module Fluent
             node_condition_monitor_records.push(health_record)
           end
       end
-      @@hmlog.info "Successfully processed process_node_condition_monitor #{node_condition_monitor_records.size}"
+      #@@hmlog.info "Successfully processed process_node_condition_monitor #{node_condition_monitor_records.size}"
       return node_condition_monitor_records
     end
 

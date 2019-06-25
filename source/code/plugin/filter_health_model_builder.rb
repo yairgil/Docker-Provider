@@ -107,25 +107,27 @@ module Fluent
                             record[HealthMonitorRecordFields::DETAILS]
                         )
 
-                        @state.update_state(health_monitor_record,
-                            @provider.get_config(health_monitor_record.monitor_id)
-                            )
-
-                        # get the health state based on the monitor's operational state
-                        # update state calls updates the state of the monitor based on configuration and history of the the monitor records
-                        health_monitor_record.state = @state.get_state(monitor_instance_id).new_state
                         health_monitor_records.push(health_monitor_record)
                         #puts "#{monitor_instance_id} #{instance_state.new_state} #{instance_state.old_state} #{instance_state.should_send}"
                     end
 
                     @log.info "health_monitor_records.size #{health_monitor_records.size}"
-
-                    health_monitor_records = @kube_api_down_handler.handle_kube_api_down(health_monitor_records)
-                    @log.info " after kube api down handler health_monitor_records.size #{health_monitor_records.size}"
                     # Dedupe daemonset signals
                     # Remove unit monitor signals for “gone” objects
+                    # update state for the reduced set of signals
                     reduced_records = @reducer.reduce_signals(health_monitor_records, @resources)
+                    reduced_records.each{|record|
+                        @state.update_state(record,
+                            @provider.get_config(record.monitor_id)
+                            )
+                        # get the health state based on the monitor's operational state
+                        # update state calls updates the state of the monitor based on configuration and history of the the monitor records
+                        record.state = @state.get_state(record.monitor_instance_id).new_state
+                    }
                     @log.info "after deduping and removing gone objects reduced_records.size #{reduced_records.size}"
+
+                    reduced_records = @kube_api_down_handler.handle_kube_api_down(reduced_records)
+                    @log.info "after kube api down handler health_monitor_records.size #{health_monitor_records.size}"
 
                     #get the list of  'none' and 'unknown' signals
                     missing_signals = @generator.get_missing_signals(@@cluster_id, reduced_records, @resources, @provider)
