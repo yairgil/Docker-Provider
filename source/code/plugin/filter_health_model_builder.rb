@@ -49,6 +49,8 @@ module Fluent
             deserialized_state_info = @deserializer.deserialize
             @state = HealthMonitorState.new
             @state.initialize_state(deserialized_state_info)
+            @cluster_old_state = 'none'
+            @cluster_new_state = 'none'
         end
 
         def configure(conf)
@@ -179,6 +181,16 @@ module Fluent
                     # generate the record to send
                     all_monitors.keys.each{|key|
                         record = @provider.get_record(all_monitors[key], state)
+                        if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER && all_monitors.size > 1
+                            old_state = record[HealthMonitorRecordFields::OLD_STATE]
+                            new_state = record[HealthMonitorRecordFields::NEW_STATE]
+                            if old_state != new_state && @cluster_old_state != old_state && @cluster_new_state != new_state
+                                    ApplicationInsightsUtility.sendCustomEvent("HealthModel_ClusterStateChanged",{"old_state" => old_state , "new_state" => new_state, "monitor_count" => all_monitors.size})
+                                    @log.info "sent telemetry for cluster state change from #{record['OldState']} to #{record['NewState']}"
+                                    @cluster_old_state = old_state
+                                    @cluster_new_state = new_state
+                            end
+                        end
                         #@log.info "#{record["Details"]} #{record["MonitorInstanceId"]} #{record["OldState"]} #{record["NewState"]}"
                         new_es.add(time, record)
                     }
