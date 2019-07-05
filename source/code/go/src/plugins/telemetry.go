@@ -93,10 +93,10 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 			flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 			TelemetryClient.Track(flushRateMetric)
 			logRateMetric := appinsights.NewMetricTelemetry(metricNameAvgLogGenerationRate, logRate)
-			// logSizeMetric := appinsights.NewMetricTelemetry(metricNameLogSize, logSizeRate)
+			logSizeMetric := appinsights.NewMetricTelemetry(metricNameLogSize, logSizeRate)
 			TelemetryClient.Track(logRateMetric)
 			Log("Log Size Rate: %f\n", logSizeRate)
-			//TelemetryClient.Track(logSizeMetric)
+			TelemetryClient.Track(logSizeMetric)
 			logLatencyMetric := appinsights.NewMetricTelemetry(metricNameAgentLogProcessingMaxLatencyMs, logLatencyMs)
 			logLatencyMetric.Properties["Container"] = logLatencyMsContainer
 			TelemetryClient.Track(logLatencyMetric)
