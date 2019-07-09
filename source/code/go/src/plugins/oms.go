@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/fluent/fluent-bit-go/output"
 
@@ -477,7 +476,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Name:                  stringMap["Name"],
 		}
 
-		FlushedRecordsSize += float64(unsafe.Sizeof(stringMap["LogEntry"]))
+		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
 
 		dataItems = append(dataItems, dataItem)
 		loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
