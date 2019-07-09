@@ -477,7 +477,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Name:                  stringMap["Name"],
 		}
 
+<<<<<<< Updated upstream
 		FlushedRecordsSize += float64(unsafe.Sizeof(stringMap["LogEntry"]))
+=======
+		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
+>>>>>>> Stashed changes
 
 		dataItems = append(dataItems, dataItem)
 		loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
