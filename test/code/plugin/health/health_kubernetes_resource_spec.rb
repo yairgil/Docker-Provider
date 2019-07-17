@@ -1,5 +1,5 @@
 require_relative '../test_helpers'
-Dir[File.join(__dir__, '../../../../source/code/plugin/health', '*.rb')].each { |file| require_relative file }
+Dir[File.join(File.expand_path(File.dirname(__FILE__)), "../../../../source/code/plugin/health/*.rb")].reject{|f| f.include?('health_monitor_utils')}.each { |file| puts "Requiring file #{file}"; require file }
 include HealthModel
 
 describe "HealthKubernetesResources spec" do
