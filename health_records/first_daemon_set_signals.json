@@ -1,0 +1,456 @@
+[
+  {
+    "MonitorId": "node_memory_utilization",
+    "MonitorInstanceId": "node_memory_utilization-af2f3c986ea63b47fc7d59b71abb37b8",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:03Z",
+      "state": "pass",
+      "details": {
+        "memoryRssBytes": 953540608.0,
+        "memoryUtilizationPercentage": 26.42
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:05Z",
+    "TimeFirstObserved": "2019-06-08T00:31:05Z",
+    "NodeName": "aks-nodepool1-19574989-1"
+  },
+  {
+    "MonitorId": "node_cpu_utilization",
+    "MonitorInstanceId": "node_cpu_utilization-af2f3c986ea63b47fc7d59b71abb37b8",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:03Z",
+      "state": "pass",
+      "details": {
+        "cpuUsageMillicores": 253.0181856885246,
+        "cpuUtilizationPercentage": 25.3
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:05Z",
+    "TimeFirstObserved": "2019-06-08T00:31:05Z",
+    "NodeName": "aks-nodepool1-19574989-1"
+  },
+  {
+    "MonitorId": "node_memory_utilization",
+    "MonitorInstanceId": "node_memory_utilization-2b129a9a5633c0cf8f621601c6f8bb32",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:36Z",
+      "state": "pass",
+      "details": {
+        "memoryRssBytes": 786239488.0,
+        "memoryUtilizationPercentage": 21.78
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:42Z",
+    "TimeFirstObserved": "2019-06-08T00:31:42Z",
+    "NodeName": "aks-nodepool1-19574989-0"
+  },
+  {
+    "MonitorId": "node_cpu_utilization",
+    "MonitorInstanceId": "node_cpu_utilization-2b129a9a5633c0cf8f621601c6f8bb32",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:36Z",
+      "state": "pass",
+      "details": {
+        "cpuUsageMillicores": 216.61802946666666,
+        "cpuUtilizationPercentage": 21.66
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:42Z",
+    "TimeFirstObserved": "2019-06-08T00:31:42Z",
+    "NodeName": "aks-nodepool1-19574989-0"
+  },
+  {
+    "MonitorId": "kube_api_status",
+    "MonitorInstanceId": "kube_api_status",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "content-type": "application/json",
+        "date": "Sat, 08 Jun 2019 00:31:49 GMT",
+        "connection": "close",
+        "transfer-encoding": "chunked",
+        "ResponseCode": "200"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "subscribed_capacity_cpu",
+    "MonitorInstanceId": "subscribed_capacity_cpu-bef5af9d919a51c49ba49d07f5784471",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "clusterCpuCapacity": 4000.0,
+        "clusterCpuRequests": 878.0
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "subscribed_capacity_memory",
+    "MonitorInstanceId": "subscribed_capacity_memory-bef5af9d919a51c49ba49d07f5784471",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "clusterMemoryCapacity": 14436810752.0,
+        "clusterMemoryRequests": 1379926016.0
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-1cab3e34a98cbb58a619846d017333e6",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 1,
+        "podsReady": 1,
+        "workloadName": "kube-system~~heapster",
+        "namespace": "kube-system",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-a0ed056caebdc40d1c78a49e87306eb8",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 1,
+        "podsReady": 1,
+        "workloadName": "kube-system~~kube-dns-autoscaler",
+        "namespace": "kube-system",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-2fa184d5953cc675f553f22e673a3112",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 2,
+        "podsReady": 2,
+        "workloadName": "kube-system~~kube-dns-v20",
+        "namespace": "kube-system",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-3a08ca7a85c5f7b2eb912692aa0fe576",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 2,
+        "podsReady": 2,
+        "workloadName": "kube-system~~kube-proxy",
+        "namespace": "kube-system",
+        "workloadKind": "DaemonSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-b187658b280129d5d55e778e90bc76e7",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 2,
+        "podsReady": 2,
+        "workloadName": "kube-system~~kube-svc-redirect",
+        "namespace": "kube-system",
+        "workloadKind": "DaemonSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-3cd871884683b44eaf3d4bcbac980fa9",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 1,
+        "podsReady": 1,
+        "workloadName": "kube-system~~kubernetes-dashboard",
+        "namespace": "kube-system",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-e22a2867e6f46868e1ff14b04d05400a",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 1,
+        "podsReady": 1,
+        "workloadName": "kube-system~~metrics-server",
+        "namespace": "kube-system",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-e1a23f69ff6f2d20614f3253f1be61c6",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 2,
+        "podsReady": 2,
+        "workloadName": "kube-system~~omsagent",
+        "namespace": "kube-system",
+        "workloadKind": "DaemonSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-b6bdfa57cc73499c0163debad116ea9e",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 1,
+        "podsReady": 1,
+        "workloadName": "kube-system~~omsagent-rs",
+        "namespace": "kube-system",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "system_workload_pods_ready",
+    "MonitorInstanceId": "system_workload_pods_ready-a69167a8c8a128025d2a1b7adbbbf251",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 1,
+        "podsReady": 1,
+        "workloadName": "kube-system~~tunnelfront",
+        "namespace": "kube-system",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "user_workload_pods_ready",
+    "MonitorInstanceId": "user_workload_pods_ready-18c49e512366cd770ea58fa6f2fbb72e",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 1,
+        "podsReady": 1,
+        "workloadName": "default~~diliprdeploymentnodeapps",
+        "namespace": "default",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "user_workload_pods_ready",
+    "MonitorInstanceId": "user_workload_pods_ready-c36b41dc3ddfd8830e5cef31b5c2738b",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 3,
+        "podsReady": 3,
+        "workloadName": "default~~nginx-deployment",
+        "namespace": "default",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "user_workload_pods_ready",
+    "MonitorInstanceId": "user_workload_pods_ready-8be6589a87324bd8010f0583b6e3c0a1",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 1,
+        "podsReady": 1,
+        "workloadName": "default~~rss-site",
+        "namespace": "default",
+        "workloadKind": "Pod"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "user_workload_pods_ready",
+    "MonitorInstanceId": "user_workload_pods_ready-d8ce32d942df13b9f4b96ed0fef8efd9",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 10,
+        "podsReady": 10,
+        "workloadName": "default~~vishwadeploymentnodeapps",
+        "namespace": "default",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "user_workload_pods_ready",
+    "MonitorInstanceId": "user_workload_pods_ready-ea6e90712222c453f12f326f9a382e8e",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "totalPods": 2,
+        "podsReady": 2,
+        "workloadName": "test~~nginx-deployment",
+        "namespace": "test",
+        "workloadKind": "ReplicaSet"
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test"
+  },
+  {
+    "MonitorId": "node_condition",
+    "MonitorInstanceId": "node_condition-2b129a9a5633c0cf8f621601c6f8bb32",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "NetworkUnavailable": {
+          "Reason": "RouteCreated",
+          "Message": "RouteController created a route"
+        },
+        "OutOfDisk": {
+          "Reason": "KubeletHasSufficientDisk",
+          "Message": "kubelet has sufficient disk space available"
+        },
+        "MemoryPressure": {
+          "Reason": "KubeletHasSufficientMemory",
+          "Message": "kubelet has sufficient memory available"
+        },
+        "DiskPressure": {
+          "Reason": "KubeletHasNoDiskPressure",
+          "Message": "kubelet has no disk pressure"
+        },
+        "PIDPressure": {
+          "Reason": "KubeletHasSufficientPID",
+          "Message": "kubelet has sufficient PID available"
+        },
+        "Ready": {
+          "Reason": "KubeletReady",
+          "Message": "kubelet is posting ready status. AppArmor enabled"
+        }
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
+    "NodeName": "aks-nodepool1-19574989-0"
+  },
+  {
+    "MonitorId": "node_condition",
+    "MonitorInstanceId": "node_condition-af2f3c986ea63b47fc7d59b71abb37b8",
+    "Details": {
+      "timestamp": "2019-06-08T00:31:49Z",
+      "state": "pass",
+      "details": {
+        "NetworkUnavailable": {
+          "Reason": "RouteCreated",
+          "Message": "RouteController created a route"
+        },
+        "OutOfDisk": {
+          "Reason": "KubeletHasSufficientDisk",
+          "Message": "kubelet has sufficient disk space available"
+        },
+        "MemoryPressure": {
+          "Reason": "KubeletHasSufficientMemory",
+          "Message": "kubelet has sufficient memory available"
+        },
+        "DiskPressure": {
+          "Reason": "KubeletHasNoDiskPressure",
+          "Message": "kubelet has no disk pressure"
+        },
+        "PIDPressure": {
+          "Reason": "KubeletHasSufficientPID",
+          "Message": "kubelet has sufficient PID available"
+        },
+        "Ready": {
+          "Reason": "KubeletReady",
+          "Message": "kubelet is posting ready status. AppArmor enabled"
+        }
+      }
+    },
+    "AgentCollectionTime": "2019-06-08T00:31:49Z",
+    "TimeFirstObserved": "2019-06-08T00:31:49Z",
+    "ClusterId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test",
+    "NodeName": "aks-nodepool1-19574989-1"
+  }
+]
