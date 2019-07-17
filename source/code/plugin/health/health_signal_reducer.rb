@@ -21,13 +21,13 @@ module HealthModel
                         puts 'Duplicate Daemon Set signal'
                         reduced_signals_map[monitor_instance_id] = health_monitor_record
                     end
-                elsif HealthMonitorUtils.is_node_monitor(monitor_id)
+                elsif HealthMonitorHelpers.is_node_monitor(monitor_id)
                     node_name = health_monitor_record.labels['kubernetes.io/hostname']
                     if (node_name.nil? || !nodes.include?(node_name)) # only add daemon set records if node is present in the inventory
                         next
                     end
                     reduced_signals_map[monitor_instance_id] = health_monitor_record
-                elsif HealthMonitorUtils.is_pods_ready_monitor(monitor_id)
+                elsif HealthMonitorHelpers.is_pods_ready_monitor(monitor_id)
                     workload_name = health_monitor_record.labels['container.azm.ms/workload-name']
                     namespace = health_monitor_record.labels['container.azm.ms/namespace']
                     lookup = "#{namespace}~~#{workload_name}"

@@ -51,7 +51,7 @@ when do u send?
             )
             samples_to_keep = 1
             monitor_instance_id = monitor.monitor_instance_id
-            log = HealthMonitorUtils.get_log_handle
+            log = HealthMonitorHelpers.get_log_handle
             current_time = Time.now.utc.iso8601
             health_monitor_instance_state = get_state(monitor_instance_id)
             if !health_monitor_instance_state.nil?
