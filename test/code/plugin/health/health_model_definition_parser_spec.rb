@@ -1,6 +1,6 @@
 require_relative '../test_helpers'
 # consider doing this in test_helpers.rb so that this code is common
-Dir[File.join(File.expand_path(File.dirname(__FILE__)), "../../../../source/code/plugin/health/*.rb")].each { |file| require file }
+Dir[File.join(File.expand_path(File.dirname(__FILE__)), "../../../../source/code/plugin/health/*.rb")].reject{|f| f.include?('health_monitor_utils')}.each { |file| require file }
 include HealthModel
 
 describe "HealthModelDefinitionParser spec " do
