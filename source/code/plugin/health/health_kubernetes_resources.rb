@@ -14,6 +14,7 @@ module HealthModel
             @nodes = []
             @pods = []
             @workloads = []
+            @log = HealthMonitorHelpers.get_log_handle
         end
 
         def get_node_inventory
