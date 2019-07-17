@@ -1,16 +1,20 @@
 require_relative '../../../../source/code/plugin/health/unit_monitor'
 require_relative '../test_helpers'
 
-class UnitMonitorTest < Minitest::Test
-    include HealthModel
+include HealthModel
 
-    def test_is_aggregate_monitor_false
+describe "UnitMonitor Spec" do
+    it "is_aggregate_monitor is false for UnitMonitor" do
+        # Arrange/Act
         monitor = UnitMonitor.new(:monitor_id, :monitor_instance_id, :pass, :time, {}, {}, {})
+        # Assert
         assert_equal monitor.is_aggregate_monitor, false
     end
 
-    def test_get_member_monitors_nil
+    it "get_member_monitors is nil for UnitMonitor" do
+        # Arrange/Act
         monitor = UnitMonitor.new(:monitor_id, :monitor_instance_id, :pass, :time, {}, {}, {})
+        #Assert
         assert_nil monitor.get_member_monitors
     end
 end

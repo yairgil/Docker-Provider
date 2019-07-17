@@ -7,7 +7,7 @@ module HealthModel
         end
 
         def serialize(state)
-            File.open(@serialized_path, 'w') do |f| #File.open(@serialized_path, 'w')
+            File.open(@serialized_path, 'w') do |f|
                 states = state.to_h
                 states_hash = {}
                 states.each{|id, value|

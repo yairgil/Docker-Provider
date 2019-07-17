@@ -11,7 +11,7 @@ class FilterHealthModelBuilderTest < Test::Unit::TestCase
 
   def test_event_stream
     health_definition_path = 'C:\AzureMonitor\ContainerInsights\Docker-Provider\installer\conf\health_model_definition.json'
-    health_model_definition = HealthModelDefinition.new(HealthModelDefinitionParser.new(health_definition_path).parse_file)
+    health_model_definition = ParentMonitorProvider.new(HealthModelDefinitionParser.new(health_definition_path).parse_file)
     monitor_factory = MonitorFactory.new
     hierarchy_builder = HealthHierarchyBuilder.new(health_model_definition, monitor_factory)
     # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side

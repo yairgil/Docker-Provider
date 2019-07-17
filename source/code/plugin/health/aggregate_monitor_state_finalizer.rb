@@ -14,14 +14,12 @@ module HealthModel
         end
 
         private
-
         def calculate_subtree_state(monitor, monitor_set)
             if monitor.nil? || !monitor.is_aggregate_monitor
                 raise 'AggregateMonitorStateFinalizer:calculateSubtreeState Parameter monitor must be non-null AggregateMonitor'
             end
 
             member_monitor_instance_ids = monitor.get_member_monitors # monitor_instance_ids
-
             member_monitor_instance_ids.each{|member_monitor_instance_id|
                 member_monitor = monitor_set.get_monitor(member_monitor_instance_id)
 
@@ -29,9 +27,7 @@ module HealthModel
                     calculate_subtree_state(member_monitor, monitor_set)
                 end
             }
-
             monitor.calculate_state(monitor_set)
         end
-
     end
 end

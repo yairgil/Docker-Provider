@@ -25,7 +25,7 @@ module Fluent
         def initialize
             super
             @buffer = HealthModel::HealthModelBuffer.new
-            @health_model_definition = HealthModel::HealthModelDefinition.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
+            @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
             @monitor_factory = HealthModel::MonitorFactory.new
             @hierarchy_builder = HealthHierarchyBuilder.new(@health_model_definition, @monitor_factory)
             # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side

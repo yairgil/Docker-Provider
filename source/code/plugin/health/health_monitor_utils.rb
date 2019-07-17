@@ -6,7 +6,6 @@ module HealthModel
     class HealthMonitorUtils
 
         begin
-
             if !Gem.win_platform?
                 require_relative '../KubernetesApiClient'
             end

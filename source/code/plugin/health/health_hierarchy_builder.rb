@@ -6,13 +6,13 @@ module HealthModel
 
         def initialize(health_model_definition, monitor_factory)
 
-            if !health_model_definition.is_a?(HealthModelDefinition)
-                raise 'Invalid Type Expected: HealthModelDefinition Actual: #{@health_model_definition.class.name}'
+            if !health_model_definition.is_a?(ParentMonitorProvider)
+                raise 'Invalid Type Expected: ParentMonitorProvider Actual: #{@health_model_definition.class.name}'
             end
             @health_model_definition = health_model_definition
 
             if !monitor_factory.is_a?(MonitorFactory)
-                raise 'Invalid Type Expected: HealthModelDefinition Actual: #{@monitor_factory.class.name}'
+                raise 'Invalid Type Expected: ParentMonitorProvider Actual: #{@monitor_factory.class.name}'
             end
             @monitor_factory = monitor_factory
         end
@@ -41,7 +41,7 @@ module HealthModel
                 parent_monitor_labels = @health_model_definition.get_parent_monitor_labels(monitor_id, monitor_labels, parent_monitor_id)
                 # get the parent monitor configuration
                 parent_monitor_configuration = @health_model_definition.get_parent_monitor_config(parent_monitor_id)
-                #get monitor instance id for parent monitor. Does this belong in HealthModelDefinition?
+                #get monitor instance id for parent monitor. Does this belong in ParentMonitorProvider?
                 parent_monitor_instance_id = @health_model_definition.get_parent_monitor_instance_id(child_monitor.monitor_instance_id, parent_monitor_id, parent_monitor_labels)
                 # check if monitor set has the parent monitor id
                 # if not present, add

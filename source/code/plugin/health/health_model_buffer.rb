@@ -25,14 +25,5 @@ module HealthModel
         def reset_buffer
             @records_buffer = []
         end
-
-        # prints the buffer
-        def print_buffer
-        end
-
-        # gets the number of records in the buffer
-        def get_buffer_length
-            @records_buffer.length
-        end
     end
 end

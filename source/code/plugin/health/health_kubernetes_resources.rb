@@ -63,7 +63,6 @@ module HealthModel
                     end
 
                     namespace = pod['metadata']['namespace']
-                    status = pod['status']['phase']
 
                     workload_name = ''
                     if owner_kind.nil?

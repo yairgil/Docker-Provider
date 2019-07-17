@@ -64,6 +64,8 @@ module HealthModel
             @state = calculate_worst_of_state(monitor_set)
         when AggregationAlgorithm::PERCENTAGE
             @state = calculate_percentage_state(monitor_set)
+        else
+            raise 'No aggregation algorithm specified'
         end
     end
 
@@ -184,7 +186,7 @@ module HealthModel
 
 	filtered = member_monitors.select{|monitor| monitor.state != MonitorState::NONE}
         sorted = filtered.sort_by{ |monitor| [@@sort_key_order[monitor.state]] }
-        
+
         return sorted
     end
   end

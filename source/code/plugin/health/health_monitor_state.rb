@@ -112,7 +112,7 @@ when do u send?
             new_state = health_monitor_instance_state.new_state
             prev_sent_time = health_monitor_instance_state.prev_sent_record_time
 
-            # if the last sent state (news_state is different from latest monitor state)
+            # if the last sent state (new_state is different from latest monitor state)
             if latest_record_state.downcase == new_state.downcase
                 time_elapsed = (Time.parse(latest_record_time) - Time.parse(prev_sent_time)) / 60
                 # check if health signal has "timed out"
