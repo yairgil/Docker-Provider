@@ -66,7 +66,7 @@ module Fluent
 
     def enumerate
       if !@@cluster_health_model_enabled
-        @log.info "Cluster Health Model disabled in in_kube_health"
+        @@hmlog.info "Cluster Health Model disabled in in_kube_health"
         return
       end
 
