@@ -25,6 +25,7 @@ module Fluent
       @@cluster_id = KubernetesApiClient.getClusterId
       @resources = HealthKubernetesResources.instance
       @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+      @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
     end
 
     include HealthModel
@@ -64,6 +65,11 @@ module Fluent
     end
 
     def enumerate
+      if !@@cluster_health_model_enabled
+        @log.info "Cluster Health Model disabled in in_kube_health"
+        return
+      end
+
       begin
         currentTime = Time.now
         emitTime = currentTime.to_f

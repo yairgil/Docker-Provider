@@ -52,6 +52,15 @@ module HealthModel
                 return (monitor_id == HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID || monitor_id == HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
             end
 
+            def is_cluster_health_model_enabled
+                enabled = ENV["AZMON_CLUSTER_ENABLE_HEALTH_MODEL"]
+                if !enabled.nil? && enabled.casecmp("true") == 0
+                    return true
+                else
+                    return false
+                end
+            end
+
             def get_pods_ready_hash(pod_inventory, deployment_inventory)
                 pods_ready_percentage_hash = {}
                 deployment_lookup = {}

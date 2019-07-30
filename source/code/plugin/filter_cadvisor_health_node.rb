@@ -30,7 +30,7 @@ module Fluent
         @@clusterName = KubernetesApiClient.getClusterName
         @@clusterId = KubernetesApiClient.getClusterId
         @@clusterRegion = KubernetesApiClient.getClusterRegion
-
+        @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
             super
@@ -61,6 +61,10 @@ module Fluent
         end
 
         def filter_stream(tag, es)
+            if !@@cluster_health_model_enabled
+                @log.info "Cluster Health Model disabled in filter_cadvisor_health_node"
+                return []
+            end
             new_es = MultiEventStream.new
             #HealthMonitorUtils.refresh_kubernetes_api_data(@log, @hostName)
             records_count = 0

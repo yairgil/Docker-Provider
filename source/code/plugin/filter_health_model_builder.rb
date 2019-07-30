@@ -21,6 +21,7 @@ module Fluent
 
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
         @@cluster_id = KubernetesApiClient.getClusterId
+        @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
             super
@@ -72,6 +73,10 @@ module Fluent
         end
 
         def filter_stream(tag, es)
+            if !@@cluster_health_model_enabled
+                @log.info "Cluster Health Model disabled in filter_health_model_builder"
+                return []
+            end
             new_es = MultiEventStream.new
             time = Time.now
             begin
