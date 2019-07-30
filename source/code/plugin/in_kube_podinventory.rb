@@ -152,8 +152,10 @@ module Fluent
                 containerEnvArray.each do |envVarHash|
                   envName = envVarHash["name"]
                   envValue = envVarHash["value"]
-                  envArrayElement = envName + "=" + envValue
-                  envVarsArray.push(envArrayElement)
+                  if !envName.nil? && !envValue.nil?
+                    envArrayElement = envName + "=" + envValue
+                    envVarsArray.push(envArrayElement)
+                  end
                 end
               end
               # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
@@ -201,7 +203,11 @@ module Fluent
             # instead of the actual poduid. Since this uid is not being surface into the UX
             # its ok to use this.
             # Use kubernetes.io/config.hash to be able to correlate with cadvisor data
-            podUid = items["metadata"]["annotations"]["kubernetes.io/config.hash"]
+            if items["metadata"]["annotations"].nil?
+              next
+            else
+              podUid = items["metadata"]["annotations"]["kubernetes.io/config.hash"]
+            end
           else
             podUid = items["metadata"]["uid"]
           end
@@ -287,7 +293,11 @@ module Fluent
                 record["ContainerID"] = ""
               end
               #keeping this as <PodUid/container_name> which is same as InstanceName in perf table
-              record["ContainerName"] = podUid + "/" + container["name"]
+              if podUid.nil? || container["name"].nil?
+                next
+              else
+                record["ContainerName"] = podUid + "/" + container["name"]
+              end
               #Pod restart count is a sumtotal of restart counts of individual containers
               #within the pod. The restart count of a container is maintained by kubernetes
               #itself in the form of a container label.
@@ -317,6 +327,38 @@ module Fluent
                   record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
                 end
               end
+
+              # Record the last state of the container. This may have information on why a container was killed.
+              begin 
+                if !container["lastState"].nil? && container["lastState"].keys.length == 1
+                  lastStateName = container["lastState"].keys[0]
+                  lastStateObject = container["lastState"][lastStateName]
+                  if !lastStateObject.is_a?(Hash)
+                    raise "expected a hash object. This could signify a bug or a kubernetes API change"
+                  end
+
+                  if lastStateObject.key?("reason") && lastStateObject.key?("startedAt") && lastStateObject.key?("finishedAt")
+                    newRecord  = Hash.new
+                    newRecord["lastState"] = lastStateName  # get the name of the last state (ex: terminated)
+                    newRecord["reason"] = lastStateObject["reason"]  # (ex: OOMKilled)
+                    newRecord["startedAt"] = lastStateObject["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
+                    newRecord["finishedAt"] = lastStateObject["finishedAt"]  # (ex: 2019-07-02T14:58:52Z)
+
+                    # only write to the output field if everything previously ran without error
+                    record["ContainerLastStatus"] = newRecord
+                  else
+                    record["ContainerLastStatus"] = Hash.new
+                  end
+                else
+                  record["ContainerLastStatus"] = Hash.new
+                end
+              rescue => errorStr
+                $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"
+                $log.debug_backtrace(errorStr.backtrace)
+                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+                record["ContainerLastStatus"] = Hash.new
+              end
+
               podRestartCount += containerRestartCount
               records.push(record.dup)
 

@@ -57,7 +57,7 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.iso8601}")
       end
-      if (response.body.empty?)
+      if (!response.nil? && !response.body.nil? && response.body.empty?)
         @Log.warn("KubernetesAPIClient::getKubeResourceInfo : Got empty response from Kube API for #{resource} @ #{Time.now.utc.iso8601}")
       end
       return response
@@ -348,7 +348,11 @@ class KubernetesApiClient
             # instead of the actual poduid. Since this uid is not being surface into the UX
             # its ok to use this.
             # Use kubernetes.io/config.hash to be able to correlate with cadvisor data
-            podUid = pod["metadata"]["annotations"]["kubernetes.io/config.hash"]
+            if pod["metadata"]["annotations"].nil?
+              next
+            else
+              podUid = pod["metadata"]["annotations"]["kubernetes.io/config.hash"]
+            end
           else
             podUid = pod["metadata"]["uid"]
           end
