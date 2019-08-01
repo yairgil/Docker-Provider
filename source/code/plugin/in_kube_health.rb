@@ -50,7 +50,9 @@ module Fluent
         @@clusterCpuCapacity = cluster_capacity[0]
         @@clusterMemoryCapacity = cluster_capacity[1]
         @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
-        ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
+        if @@cluster_health_model_enabled
+            ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
+        end
       end
     end
 
