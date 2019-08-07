@@ -145,7 +145,6 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/health/health_state_serializer.rb;                                   source/code/plugin/health/health_state_serializer.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/monitor_factory.rb;                                           source/code/plugin/health/monitor_factory.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/monitor_set.rb;                                               source/code/plugin/health/monitor_set.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/health/node_missing_signal_state.rb;                                 source/code/plugin/health/node_missing_signal_state.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/unit_monitor.rb;                                              source/code/plugin/health/unit_monitor.rb; 644; root; root
 
 
