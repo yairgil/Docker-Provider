@@ -37,23 +37,27 @@ module Fluent
     end
 
     def start
-      if @run_interval
-        @finished = false
-        @condition = ConditionVariable.new
-        @mutex = Mutex.new
-        @thread = Thread.new(&method(:run_periodic))
+        begin
+            if @run_interval
+                @finished = false
+                @condition = ConditionVariable.new
+                @mutex = Mutex.new
+                @thread = Thread.new(&method(:run_periodic))
 
-        @@hmlog = HealthMonitorUtils.get_log_handle
-        @@clusterName = KubernetesApiClient.getClusterName
-        @@clusterRegion = KubernetesApiClient.getClusterRegion
-        cluster_capacity = HealthMonitorUtils.get_cluster_cpu_memory_capacity(@@hmlog)
-        @@clusterCpuCapacity = cluster_capacity[0]
-        @@clusterMemoryCapacity = cluster_capacity[1]
-        @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
-        if @@cluster_health_model_enabled
-            ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
+                @@hmlog = HealthMonitorUtils.get_log_handle
+                @@clusterName = KubernetesApiClient.getClusterName
+                @@clusterRegion = KubernetesApiClient.getClusterRegion
+                cluster_capacity = HealthMonitorUtils.get_cluster_cpu_memory_capacity(@@hmlog)
+                @@clusterCpuCapacity = cluster_capacity[0]
+                @@clusterMemoryCapacity = cluster_capacity[1]
+                @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
+                if @@cluster_health_model_enabled
+                    ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
+                end
+            end
+        rescue => e
+            ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
         end
-      end
     end
 
     def shutdown
@@ -67,12 +71,12 @@ module Fluent
     end
 
     def enumerate
-      if !@@cluster_health_model_enabled
-        @@hmlog.info "Cluster Health Model disabled in in_kube_health"
-        return
-      end
-
       begin
+        if !@@cluster_health_model_enabled
+            @@hmlog.info "Cluster Health Model disabled in in_kube_health"
+            return
+        end
+
         currentTime = Time.now
         emitTime = currentTime.to_f
         batchTime = currentTime.utc.iso8601

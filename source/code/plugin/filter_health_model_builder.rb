@@ -24,43 +24,50 @@ module Fluent
         @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
-            super
-            @buffer = HealthModel::HealthModelBuffer.new
-            @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
-            @monitor_factory = HealthModel::MonitorFactory.new
-            @hierarchy_builder = HealthHierarchyBuilder.new(@health_model_definition, @monitor_factory)
-            # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
-            @state_finalizers = [HealthModel::AggregateMonitorStateFinalizer.new]
-            @monitor_set = HealthModel::MonitorSet.new
-            @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
-            @kube_api_down_handler = HealthKubeApiDownHandler.new
-            @resources = HealthKubernetesResources.instance
-            @reducer = HealthSignalReducer.new
-            @state = HealthMonitorState.new
-            @generator = HealthMissingSignalGenerator.new
-            #TODO: cluster_labels needs to be initialized
-            @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
-            @serializer = HealthStateSerializer.new(@health_state_serialized_path)
-            @deserializer = HealthStateDeserializer.new(@health_state_serialized_path)
-            # TODO: in_kube_api_health should set these values
-            # resources.node_inventory = node_inventory
-            # resources.pod_inventory = pod_inventory
-            # resources.deployment_inventory = deployment_inventory
-            #TODO: check if the path exists
-            deserialized_state_info = @deserializer.deserialize
-            @state = HealthMonitorState.new
-            @state.initialize_state(deserialized_state_info)
-            @cluster_old_state = 'none'
-            @cluster_new_state = 'none'
+            begin
+                super
+                @buffer = HealthModel::HealthModelBuffer.new
+                @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
+                @monitor_factory = HealthModel::MonitorFactory.new
+                @hierarchy_builder = HealthHierarchyBuilder.new(@health_model_definition, @monitor_factory)
+                # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
+                @state_finalizers = [HealthModel::AggregateMonitorStateFinalizer.new]
+                @monitor_set = HealthModel::MonitorSet.new
+                @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
+                @kube_api_down_handler = HealthKubeApiDownHandler.new
+                @resources = HealthKubernetesResources.instance
+                @reducer = HealthSignalReducer.new
+                @state = HealthMonitorState.new
+                @generator = HealthMissingSignalGenerator.new
+                #TODO: cluster_labels needs to be initialized
+                @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+                @serializer = HealthStateSerializer.new(@health_state_serialized_path)
+                @deserializer = HealthStateDeserializer.new(@health_state_serialized_path)
+                # TODO: in_kube_api_health should set these values
+                # resources.node_inventory = node_inventory
+                # resources.pod_inventory = pod_inventory
+                # resources.deployment_inventory = deployment_inventory
+                #TODO: check if the path exists
+                deserialized_state_info = @deserializer.deserialize
+                @state = HealthMonitorState.new
+                @state.initialize_state(deserialized_state_info)
+                @cluster_old_state = 'none'
+                @cluster_new_state = 'none'
+            rescue => e
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+            end
         end
 
         def configure(conf)
-            super
-            @log = nil
-
-            if @enable_log
-                @log = Logger.new(@log_path, 'weekly')
-                @log.info 'Starting filter_health_model_builder plugin'
+            begin
+                super
+                @log = nil
+                if @enable_log
+                    @log = Logger.new(@log_path, 'weekly')
+                    @log.info 'Starting filter_health_model_builder plugin'
+                end
+            rescue => e
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
             end
         end
 
@@ -73,13 +80,14 @@ module Fluent
         end
 
         def filter_stream(tag, es)
-            if !@@cluster_health_model_enabled
-                @log.info "Cluster Health Model disabled in filter_health_model_builder"
-                return []
-            end
-            new_es = MultiEventStream.new
-            time = Time.now
             begin
+                if !@@cluster_health_model_enabled
+                    @log.info "Cluster Health Model disabled in filter_health_model_builder"
+                    return []
+                end
+                new_es = MultiEventStream.new
+                time = Time.now
+
                 if tag.start_with?("oms.api.KubeHealth.DaemonSet")
                     records = []
                     if !es.nil?

@@ -33,13 +33,17 @@ module Fluent
         @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
-            super
-            @cpu_capacity = 0.0
-            @memory_capacity = 0.0
-            @last_resource_refresh = DateTime.now.to_time.to_i
-            @metrics_to_collect_hash = {}
-            @resources = HealthKubernetesResources.instance # this doesnt require node and pod inventory. So no need to populate them
-            @provider = HealthMonitorProvider.new(@@clusterId, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+            begin
+                super
+                @cpu_capacity = 0.0
+                @memory_capacity = 0.0
+                @last_resource_refresh = DateTime.now.to_time.to_i
+                @metrics_to_collect_hash = {}
+                @resources = HealthKubernetesResources.instance # this doesnt require node and pod inventory. So no need to populate them
+                @provider = HealthMonitorProvider.new(@@clusterId, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+            rescue => e
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+            end
         end
 
         def configure(conf)
@@ -76,7 +80,8 @@ module Fluent
                     records_count += 1
                 end
               rescue => e
-                router.emit_error_event(tag, time, record, e)
+                @log.info "Error in filter_stream for filter_cadvisor_health_node #{e.message}"
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
               end
             }
             @log.debug "Filter Records Count #{records_count}"

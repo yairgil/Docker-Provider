@@ -12,7 +12,6 @@ module HealthModel
       monitors_to_reduce.each do |monitor_to_reduce|
         monitor = monitor_set.get_monitor(monitor_to_reduce)
         if !monitor.nil?
-            puts "Before Deleting #{monitor_set.get_size}"
             if monitor.is_aggregate_monitor && monitor.get_member_monitors.size == 1
                 #copy the children of member monitor as children of parent
                 member_monitor_instance_id = monitor.get_member_monitors[0] #gets the only member monitor instance id
@@ -26,7 +25,6 @@ module HealthModel
                     # delete the member monitor from the monitor_set
                     monitor_set.delete(member_monitor_instance_id)
                 end
-                puts "After Deleting #{monitor_set.get_size}"
             end
         end
       end
