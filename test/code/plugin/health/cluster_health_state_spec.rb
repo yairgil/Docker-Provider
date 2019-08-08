@@ -29,7 +29,7 @@ describe "Cluster Health State Spec" do
             }
         }
         token_file_path = 'token'
-        cert_file_path = 'ca.crt'
+        cert_file_path = File.join(File.expand_path(File.dirname(__FILE__)), "ca.crt")
 
         chs = ClusterHealthState.new(token_file_path, cert_file_path)
         chs.token.must_be_nil
