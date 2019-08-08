@@ -7,15 +7,6 @@ module HealthModel
 
         attr_reader :token_file_path, :cert_file_path, :log, :http_client, :uri, :token
         @@resource_uri_template = "%{kube_api_server_url}/apis/azmon.container.insights/v1/namespaces/kube-system/healthstates/chs"
-        @@post_body_template = '{
-                "state": %{health_state},
-                "apiVersion": "azmon.container.insights/v1",
-                "kind": "HealthState",
-                "metadata": {
-                "name": "chs",
-                "namespace": "kube-system"
-                }
-            }'
 
         def initialize(token_file_path, cert_file_path)
             @token_file_path = token_file_path
