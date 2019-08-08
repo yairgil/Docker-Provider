@@ -43,7 +43,6 @@ module HealthModel
             @log.debug "Making an update request with #{update_request.method} "
             update_response = @http_client.request(update_request)
             @log.info "Got a response of #{update_response.code}"
-            puts JSON.pretty_generate(JSON.parse(JSON.parse(update_response.body)["state"]))
         end
 
         def get_state

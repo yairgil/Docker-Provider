@@ -204,11 +204,16 @@ module Fluent
                         new_es.add(time, record)
                     }
 
-                    @cluster_health_state.update_state(@state.to_h)
+                    #emit the stream
+                    router.emit_stream(@@rewrite_tag, new_es)
+
+                    #initialize monitor_set and model_builder
                     @monitor_set = HealthModel::MonitorSet.new
                     @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
 
-                    router.emit_stream(@@rewrite_tag, new_es)
+                    #update cluster state custom resource
+                    @cluster_health_state.update_state(@state.to_h)
+
                     # return an empty event stream, else the match will throw a NoMethodError
                     return []
                 elsif tag.start_with?("oms.api.KubeHealth.AgentCollectionTime")
