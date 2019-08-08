@@ -127,6 +127,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/health/aggregate_monitor.rb;                                         source/code/plugin/health/aggregate_monitor.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/agg_monitor_id_labels.rb;                      		    source/code/plugin/health/agg_monitor_id_labels.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/aggregate_monitor_state_finalizer.rb;                         source/code/plugin/health/aggregate_monitor_state_finalizer.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/health/cluster_health_state.rb;                                     source/code/plugin/health/health_signal_reducer.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_hierarchy_builder.rb;                                  source/code/plugin/health/health_hierarchy_builder.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_kubernetes_resources.rb;                               source/code/plugin/health/health_kubernetes_resources.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_kube_api_down_handler.rb;                              source/code/plugin/health/health_kube_api_down_handler.rb; 644; root; root
@@ -145,8 +146,6 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/health/health_monitor_helpers.rb;                                    source/code/plugin/health/health_monitor_helpers.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_monitor_utils.rb;                                      source/code/plugin/health/health_monitor_utils.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_signal_reducer.rb;                                     source/code/plugin/health/health_signal_reducer.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/health/health_state_deserializer.rb;                                 source/code/plugin/health/health_state_deserializer.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/health/health_state_serializer.rb;                                   source/code/plugin/health/health_state_serializer.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/monitor_factory.rb;                                           source/code/plugin/health/monitor_factory.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/monitor_set.rb;                                               source/code/plugin/health/monitor_set.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/unit_monitor.rb;                                              source/code/plugin/health/unit_monitor.rb; 644; root; root
