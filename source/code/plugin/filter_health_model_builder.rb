@@ -21,12 +21,15 @@ module Fluent
 
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
         @@cluster_id = KubernetesApiClient.getClusterId
+        @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
             begin
                 super
                 @buffer = HealthModel::HealthModelBuffer.new
+                @cluster_health_state = ClusterHealthState.new(@@token_file_path, @@cert_file_path)
                 @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
                 @monitor_factory = HealthModel::MonitorFactory.new
                 @hierarchy_builder = HealthHierarchyBuilder.new(@health_model_definition, @monitor_factory)
@@ -48,7 +51,7 @@ module Fluent
                 # resources.pod_inventory = pod_inventory
                 # resources.deployment_inventory = deployment_inventory
                 #TODO: check if the path exists
-                deserialized_state_info = @deserializer.deserialize
+                deserialized_state_info = @cluster_health_state.get_state
                 @state = HealthMonitorState.new
                 @state.initialize_state(deserialized_state_info)
                 @cluster_old_state = 'none'
@@ -208,7 +211,7 @@ module Fluent
                         new_es.add(time, record)
                     }
 
-                    @serializer.serialize(@state)
+                    @cluster_health_state.update_state(@state.to_h)
                     @monitor_set = HealthModel::MonitorSet.new
                     @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
 
