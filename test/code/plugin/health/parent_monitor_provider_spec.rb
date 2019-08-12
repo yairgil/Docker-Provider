@@ -89,7 +89,7 @@ describe "ParentMonitorProvider spec" do
         monitor = Mock.new
         def monitor.monitor_id; "conditional_monitor_id"; end
         def monitor.monitor_instance_id; "conditional_monitor_instance_id"; end
-        def monitor.labels; {"kubernetes.io/role" => "master"}; end
+        def monitor.labels; {HealthMonitorLabels::ROLE => "master"}; end
 
         #act
         parent_id = health_model_definition.get_parent_monitor_id(monitor)
@@ -134,7 +134,7 @@ describe "ParentMonitorProvider spec" do
         monitor = Mock.new
         def monitor.monitor_id; "conditional_monitor_id"; end
         def monitor.monitor_instance_id; "conditional_monitor_instance_id"; end
-        def monitor.labels; {"kubernetes.io/role" => "master1"}; end
+        def monitor.labels; {HealthMonitorLabels::ROLE => "master1"}; end
 
         #act and assert
         assert_raises do

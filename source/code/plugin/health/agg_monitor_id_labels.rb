@@ -1,11 +1,11 @@
 module HealthModel
     class AggregateMonitorInstanceIdLabels
         @@id_labels_mapping = {
-            MonitorId::SYSTEM_WORKLOAD => ["container.azm.ms/namespace", "container.azm.ms/workload-name"],
-            MonitorId::USER_WORKLOAD => ["container.azm.ms/namespace", "container.azm.ms/workload-name"],
-            MonitorId::NODE => ["agentpool", "kubernetes.io/role", "kubernetes.io/hostname"],
-            MonitorId::NAMESPACE => ["container.azm.ms/namespace"],
-            MonitorId::AGENT_NODE_POOL => ["agentpool"],
+            MonitorId::SYSTEM_WORKLOAD => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME],
+            MonitorId::USER_WORKLOAD => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME],
+            MonitorId::NODE => [HealthMonitorLabels::AGENTPOOL, HealthMonitorLabels::ROLE, HealthMonitorLabels::HOSTNAME],
+            MonitorId::NAMESPACE => [HealthMonitorLabels::NAMESPACE],
+            MonitorId::AGENT_NODE_POOL => [HealthMonitorLabels::AGENTPOOL],
             # MonitorId::ALL_AGENT_NODE_POOLS => [],
             # MonitorId::ALL_NODE_POOLS => [],
             # MonitorId::ALL_NODES => [],
