@@ -6,7 +6,7 @@ module HealthModel
     class ClusterHealthState
 
         attr_reader :token_file_path, :cert_file_path, :log, :http_client, :uri, :token
-        @@resource_uri_template = "%{kube_api_server_url}/apis/azmon.container.insights/v1/namespaces/kube-system/healthstates/chs"
+        @@resource_uri_template = "%{kube_api_server_url}/apis/azmon.container.insights/v1/namespaces/kube-system/healthstates/cluster-health-state"
 
         def initialize(token_file_path, cert_file_path)
             @token_file_path = token_file_path
@@ -97,8 +97,7 @@ module HealthModel
                 if Gem.win_platform? #unit testing on windows dev machine
                     value = %x( kubectl -n default get endpoints kubernetes --no-headers)
                     url = "https://#{value.split(' ')[1]}"
-                    #return "https://dilipr-hea-dilipr-health-te-72c8e8-d3ccfd8f.hcp.eastus.azmk8s.io:443" # This is NEVER used. this is just to return SOME value
-                    return "https://localhost:8080"
+                    return "https://localhost:8080"  # This is NEVER used. this is just to return SOME value
                 end
                 return nil
             end
@@ -109,7 +108,7 @@ module HealthModel
             body["apiVersion"] = "azmon.container.insights/v1"
             body["kind"] = "HealthState"
             body["metadata"] = {}
-            body["metadata"]["name"] = "chs"
+            body["metadata"]["name"] = "cluster-health-state"
             body["metadata"]["namespace"]  = "kube-system"
             return body
         end
