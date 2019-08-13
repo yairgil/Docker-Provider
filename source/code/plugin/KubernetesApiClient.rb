@@ -370,6 +370,8 @@ class KubernetesApiClient
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
                 metricProps["Host"] = nodeName
+                # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
+                metricProps["Computer"] = nodeName
                 metricProps["ObjectName"] = "K8SContainer"
                 metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
@@ -393,6 +395,8 @@ class KubernetesApiClient
                   metricProps = {}
                   metricProps["Timestamp"] = metricTime
                   metricProps["Host"] = nodeName
+                  # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
+                  metricProps["Computer"] = nodeName
                   metricProps["ObjectName"] = "K8SContainer"
                   metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
@@ -435,6 +439,8 @@ class KubernetesApiClient
             metricProps = {}
             metricProps["Timestamp"] = metricTime
             metricProps["Host"] = node["metadata"]["name"]
+            # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
+            metricProps["Computer"] = node["metadata"]["name"]
             metricProps["ObjectName"] = "K8SNode"
             metricProps["InstanceName"] = clusterId + "/" + node["metadata"]["name"]
             metricProps["Collections"] = []
