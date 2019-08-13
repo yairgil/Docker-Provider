@@ -28,8 +28,8 @@ module HealthModel
                     end
                     reduced_signals_map[monitor_instance_id] = health_monitor_record
                 elsif HealthMonitorHelpers.is_pods_ready_monitor(monitor_id)
-                    workload_name = health_monitor_record.labels['container.azm.ms/workload-name']
-                    namespace = health_monitor_record.labels['container.azm.ms/namespace']
+                    workload_name = health_monitor_record.labels[HealthMonitorLabels::WORKLOAD_NAME]
+                    namespace = health_monitor_record.labels[HealthMonitorLabels::NAMESPACE]
                     lookup = "#{namespace}~~#{workload_name}"
                     if (workload_name.nil? || !workload_names.include?(lookup)) #only add pod record if present in the inventory
                         next
