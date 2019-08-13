@@ -10,7 +10,7 @@ describe "HealthSignalReducer spec" do
         record1 = Mock.new
         def record1.monitor_id; "node_cpu_utilization"; end
         def record1.monitor_instance_id; "node_cpu_utilization-node1"; end
-        def record1.labels; {"kubernetes.io/hostname" => "node1"}; end
+        def record1.labels; {HealthMonitorLabels::HOSTNAME => "node1"}; end
         inventory = Mock.new
         def inventory.get_nodes; ["node1"]; end
         def inventory.get_workload_names; []; end
@@ -26,14 +26,14 @@ describe "HealthSignalReducer spec" do
         record1 = Mock.new
         def record1.monitor_id; "node_cpu_utilization"; end
         def record1.monitor_instance_id; "node_cpu_utilization-node1"; end
-        def record1.labels; {"kubernetes.io/hostname" => "node1"}; end
+        def record1.labels; {HealthMonitorLabels::HOSTNAME => "node1"}; end
         def record1.transition_date_time; Time.now.utc.iso8601 ; end
 
 
         record2 = Mock.new
         def record2.monitor_id; "node_cpu_utilization"; end
         def record2.monitor_instance_id; "node_cpu_utilization-node1"; end
-        def record2.labels; {"kubernetes.io/hostname" => "node1"}; end
+        def record2.labels; {HealthMonitorLabels::HOSTNAME => "node1"}; end
         def record2.transition_date_time; "#{Time.now.utc.iso8601}"  ; end
 
         inventory = Mock.new
@@ -51,7 +51,7 @@ describe "HealthSignalReducer spec" do
         record1 = Mock.new
         def record1.monitor_id; "node_cpu_utilization"; end
         def record1.monitor_instance_id; "node_cpu_utilization-node1"; end
-        def record1.labels; {"kubernetes.io/hostname" => "node1"}; end
+        def record1.labels; {HealthMonitorLabels::HOSTNAME => "node1"}; end
         inventory = Mock.new
         def inventory.get_nodes; ["node2"]; end
         def inventory.get_workload_names; []; end
@@ -67,7 +67,7 @@ describe "HealthSignalReducer spec" do
         record1 = Mock.new
         def record1.monitor_id; "user_workload_pods_ready"; end
         def record1.monitor_instance_id; "user_workload_pods_ready-workload1"; end
-        def record1.labels; {"container.azm.ms/namespace" => "default", "container.azm.ms/workload-name" => "workload1"}; end
+        def record1.labels; {HealthMonitorLabels::NAMESPACE => "default", HealthMonitorLabels::WORKLOAD_NAME => "workload1"}; end
         def record1.transition_date_time; Time.now.utc.iso8601 ; end
 
         inventory = Mock.new
@@ -85,7 +85,7 @@ describe "HealthSignalReducer spec" do
         record2 = Mock.new
         def record2.monitor_id; "user_workload_pods_ready"; end
         def record2.monitor_instance_id; "user_workload_pods_ready-workload2"; end
-        def record2.labels; {"container.azm.ms/namespace" => "default1", "container.azm.ms/workload-name" => "workload2"}; end
+        def record2.labels; {HealthMonitorLabels::NAMESPACE => "default1", HealthMonitorLabels::WORKLOAD_NAME => "workload2"}; end
         def record1.transition_date_time; Time.now.utc.iso8601 ; end
         #act
         reduced = reducer.reduce_signals([record1, record2], inventory)

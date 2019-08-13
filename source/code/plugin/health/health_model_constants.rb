@@ -69,4 +69,13 @@ module HealthModel
         NONE = "none"
         UNKNOWN = "unknown"
     end
+
+    class HealthMonitorLabels
+        WORKLOAD_NAME = "container.azm.ms/workload-name"
+        WORKLOAD_KIND = "container.azm.ms/workload-kind"
+        NAMESPACE = "container.azm.ms/namespace"
+        AGENTPOOL = "agentpool"
+        ROLE = "kubernetes.io/role"
+        HOSTNAME = "kubernetes.io/hostname"
+    end
 end

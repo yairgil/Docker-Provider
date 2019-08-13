@@ -16,17 +16,20 @@ module Fluent
         config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health/health_model_definition.json'
         config_param :health_monitor_config_path, :default => '/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json'
         config_param :health_state_serialized_path, :default => '/mnt/azure/health_model_state.json'
-        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :serializer, :deserializer
+        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator
         include HealthModel
 
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
         @@cluster_id = KubernetesApiClient.getClusterId
+        @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
             begin
                 super
                 @buffer = HealthModel::HealthModelBuffer.new
+                @cluster_health_state = ClusterHealthState.new(@@token_file_path, @@cert_file_path)
                 @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
                 @monitor_factory = HealthModel::MonitorFactory.new
                 @hierarchy_builder = HealthHierarchyBuilder.new(@health_model_definition, @monitor_factory)
@@ -41,14 +44,7 @@ module Fluent
                 @generator = HealthMissingSignalGenerator.new
                 #TODO: cluster_labels needs to be initialized
                 @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
-                @serializer = HealthStateSerializer.new(@health_state_serialized_path)
-                @deserializer = HealthStateDeserializer.new(@health_state_serialized_path)
-                # TODO: in_kube_api_health should set these values
-                # resources.node_inventory = node_inventory
-                # resources.pod_inventory = pod_inventory
-                # resources.deployment_inventory = deployment_inventory
-                #TODO: check if the path exists
-                deserialized_state_info = @deserializer.deserialize
+                deserialized_state_info = @cluster_health_state.get_state
                 @state = HealthMonitorState.new
                 @state.initialize_state(deserialized_state_info)
                 @cluster_old_state = 'none'
@@ -208,11 +204,16 @@ module Fluent
                         new_es.add(time, record)
                     }
 
-                    @serializer.serialize(@state)
+                    #emit the stream
+                    router.emit_stream(@@rewrite_tag, new_es)
+
+                    #initialize monitor_set and model_builder
                     @monitor_set = HealthModel::MonitorSet.new
                     @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
 
-                    router.emit_stream(@@rewrite_tag, new_es)
+                    #update cluster state custom resource
+                    @cluster_health_state.update_state(@state.to_h)
+
                     # return an empty event stream, else the match will throw a NoMethodError
                     return []
                 elsif tag.start_with?("oms.api.KubeHealth.AgentCollectionTime")
@@ -223,6 +224,7 @@ module Fluent
                 end
 
             rescue => e
+                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
                  @log.warn "Message: #{e.message} Backtrace: #{e.backtrace}"
                  return nil
             end
