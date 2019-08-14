@@ -40,9 +40,8 @@ module HealthModel
             update_request_body["state"] = state.to_json
             update_request.body = update_request_body.to_json
 
-            @log.debug "Making an update request with #{update_request.method} "
             update_response = @http_client.request(update_request)
-            @log.info "Got a response of #{update_response.code}"
+            @log.info "Got a response of #{update_response.code} for #{update_request.method}"
         end
 
         def get_state
