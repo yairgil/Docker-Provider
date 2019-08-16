@@ -180,27 +180,25 @@ module HealthModel
                     cluster_cpu_capacity = 0.0
                     cluster_memory_capacity = 0.0
                     if !node_inventory.empty?
-                        node_inventory['items'].each do |node|
-                            cpu_capacity_json = KubernetesApiClient.parseNodeLimits(node_inventory, "capacity", "cpu", "cpuCapacityNanoCores")
-                            if !cpu_capacity_json.nil?
-                                cpu_capacity_json.each do |cpu_capacity_node|
-                                    if !cpu_capacity_node['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
-                                        cluster_cpu_capacity += cpu_capacity_node['DataItems'][0]['Collections'][0]['Value']
-                                    end
+                        cpu_capacity_json = KubernetesApiClient.parseNodeLimits(node_inventory, "capacity", "cpu", "cpuCapacityNanoCores")
+                        if !cpu_capacity_json.nil?
+                            cpu_capacity_json.each do |cpu_capacity_node|
+                                if !cpu_capacity_node['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
+                                    cluster_cpu_capacity += cpu_capacity_node['DataItems'][0]['Collections'][0]['Value']
                                 end
-                            else
-                                log.info "Error getting cpu_capacity"
                             end
-                            memory_capacity_json = KubernetesApiClient.parseNodeLimits(node_inventory, "capacity", "memory", "memoryCapacityBytes")
-                            if !memory_capacity_json.nil?
-                                memory_capacity_json.each do |memory_capacity_node|
-                                    if !memory_capacity_node['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
-                                        cluster_memory_capacity += memory_capacity_node['DataItems'][0]['Collections'][0]['Value']
-                                    end
+                        else
+                            log.info "Error getting cpu_capacity"
+                        end
+                        memory_capacity_json = KubernetesApiClient.parseNodeLimits(node_inventory, "capacity", "memory", "memoryCapacityBytes")
+                        if !memory_capacity_json.nil?
+                            memory_capacity_json.each do |memory_capacity_node|
+                                if !memory_capacity_node['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
+                                    cluster_memory_capacity += memory_capacity_node['DataItems'][0]['Collections'][0]['Value']
                                 end
-                            else
-                                log.info "Error getting memory_capacity"
                             end
+                        else
+                            log.info "Error getting memory_capacity"
                         end
                     else
                         log.info "Unable to get cpu and memory capacity"
