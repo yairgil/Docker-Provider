@@ -1,3 +1,5 @@
+Dir[File.join(__dir__, '*.rb')].each { |file| require file }
+
 module HealthModel
     # this class
     # 1. dedupes daemonset signals and takes only the latest

@@ -1,5 +1,6 @@
 require 'logger'
 require 'digest'
+Dir[File.join(__dir__, '*.rb')].each { |file| require file }
 
 module HealthModel
     # static class that provides a bunch of utility methods

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'health_model_constants'
+Dir[File.join(__dir__, '*.rb')].each { |file| require file }
 require 'json'
 
 module HealthModel

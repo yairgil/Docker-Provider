@@ -1,3 +1,4 @@
+Dir[File.join(__dir__, '*.rb')].each { |file| require file }
 module HealthModel
     class AggregateMonitorStateFinalizer
 
