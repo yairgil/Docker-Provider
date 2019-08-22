@@ -1,4 +1,5 @@
-Dir[File.join(__dir__, '*.rb')].each { |file| require file }
+require_relative 'aggregate_monitor'
+require_relative 'unit_monitor'
 
 module HealthModel
     class MonitorFactory

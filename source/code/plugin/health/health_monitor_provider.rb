@@ -1,4 +1,5 @@
-Dir[File.join(__dir__, '*.rb')].each { |file| require file }
+require_relative 'health_model_constants'
+
 module HealthModel
     class HealthMonitorProvider
 

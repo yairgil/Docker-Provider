@@ -1,4 +1,6 @@
-Dir[File.join(__dir__, '*.rb')].each { |file| require file }
+require_relative 'health_model_constants'
+require_relative 'health_monitor_record'
+
 module HealthModel
     class HealthMissingSignalGenerator
         attr_accessor :last_received_records, :current_received_records
