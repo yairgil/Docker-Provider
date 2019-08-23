@@ -20,7 +20,7 @@ module Fluent
     config_param :tag, :string, :default => "oms.api.cadvisorperf"
     config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
     config_param :nodehealthtag, :string, :default => "oms.api.KubeHealth.DaemonSet.Node"
-    #config_param :containerhealthtag, :string, :default => "oms.api.KubeHealth.DaemonSet.Container"
+    config_param :containerhealthtag, :string, :default => "oms.api.KubeHealth.DaemonSet.Container"
 
     def configure(conf)
       super
@@ -59,7 +59,7 @@ module Fluent
 
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@mdmtag, eventStream) if eventStream
-        #router.emit_stream(@containerhealthtag, eventStream) if eventStream
+        router.emit_stream(@containerhealthtag, eventStream) if eventStream
         router.emit_stream(@nodehealthtag, eventStream) if eventStream
 
         @@istestvar = ENV["ISTEST"]

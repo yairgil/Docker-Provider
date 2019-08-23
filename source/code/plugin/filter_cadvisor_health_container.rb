@@ -8,9 +8,11 @@ module Fluent
     require_relative 'HealthMonitorUtils'
     require_relative 'HealthMonitorState'
     require_relative "ApplicationInsightsUtility"
+    Dir[File.join(__dir__, './health', '*.rb')].each { |file| require file }
 
 
     class CAdvisor2ContainerHealthFilter < Filter
+        include HealthModel
         Fluent::Plugin.register_filter('filter_cadvisor_health_container', self)
 
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/health_monitors.log'
@@ -41,7 +43,7 @@ module Fluent
 
         def configure(conf)
             super
-            @log = HealthMonitorUtils.getLogHandle
+            @log = HealthMonitorUtils.get_log_handle
             @log.debug {'Starting filter_cadvisor2health plugin'}
         end
 
@@ -55,7 +57,7 @@ module Fluent
             @log.info "CPU Capacity #{@cpu_capacity} Memory Capacity #{@memory_capacity}"
             #HealthMonitorUtils.refresh_kubernetes_api_data(@log, @@hostName)
             @@health_monitor_config = HealthMonitorUtils.getHealthMonitorConfig
-            ApplicationInsightsUtility.sendCustomEvent("filter_cadvisor_health Plugin Start", {})
+            ApplicationInsightsUtility.sendCustomEvent("filter_cadvisor_health_container Plugin Start", {})
         end
 
         def filter_stream(tag, es)

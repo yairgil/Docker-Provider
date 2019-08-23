@@ -18,14 +18,18 @@ module Fluent
     @@clusterMemoryCapacity = 0.0
 
     def initialize
-      super
-      require "yaml"
-      require "json"
+      begin
+        super
+        require "yaml"
+        require "json"
 
-      @@cluster_id = KubernetesApiClient.getClusterId
-      @resources = HealthKubernetesResources.instance
-      @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
-      @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
+        @@cluster_id = KubernetesApiClient.getClusterId
+        @resources = HealthKubernetesResources.instance
+        @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+        @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
+      rescue => e
+        ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+      end
     end
 
     include HealthModel
@@ -37,23 +41,27 @@ module Fluent
     end
 
     def start
-      if @run_interval
-        @finished = false
-        @condition = ConditionVariable.new
-        @mutex = Mutex.new
-        @thread = Thread.new(&method(:run_periodic))
+        begin
+            if @run_interval
+                @finished = false
+                @condition = ConditionVariable.new
+                @mutex = Mutex.new
+                @thread = Thread.new(&method(:run_periodic))
 
-        @@hmlog = HealthMonitorUtils.get_log_handle
-        @@clusterName = KubernetesApiClient.getClusterName
-        @@clusterRegion = KubernetesApiClient.getClusterRegion
-        cluster_capacity = HealthMonitorUtils.get_cluster_cpu_memory_capacity(@@hmlog)
-        @@clusterCpuCapacity = cluster_capacity[0]
-        @@clusterMemoryCapacity = cluster_capacity[1]
-        @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
-        if @@cluster_health_model_enabled
-            ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
+                @@hmlog = HealthMonitorUtils.get_log_handle
+                @@clusterName = KubernetesApiClient.getClusterName
+                @@clusterRegion = KubernetesApiClient.getClusterRegion
+                cluster_capacity = HealthMonitorUtils.get_cluster_cpu_memory_capacity(@@hmlog)
+                @@clusterCpuCapacity = cluster_capacity[0]
+                @@clusterMemoryCapacity = cluster_capacity[1]
+                @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
+                if @@cluster_health_model_enabled
+                    ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
+                end
+            end
+        rescue => e
+            ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
         end
-      end
     end
 
     def shutdown
@@ -67,12 +75,12 @@ module Fluent
     end
 
     def enumerate
-      if !@@cluster_health_model_enabled
-        @@hmlog.info "Cluster Health Model disabled in in_kube_health"
-        return
-      end
-
       begin
+        if !@@cluster_health_model_enabled
+            @@hmlog.info "Cluster Health Model disabled in in_kube_health"
+            return
+        end
+
         currentTime = Time.now
         emitTime = currentTime.to_f
         batchTime = currentTime.utc.iso8601
@@ -89,7 +97,7 @@ module Fluent
 
         @resources.node_inventory = node_inventory
         @resources.pod_inventory = pod_inventory
-        @resources.deployment_inventory = deployment_inventory
+        @resources.set_deployment_inventory(deployment_inventory)
 
         if node_inventory_response.code.to_i != 200
           record = process_kube_api_up_monitor("fail", node_inventory_response)
@@ -100,9 +108,9 @@ module Fluent
         end
 
         if !pod_inventory.nil?
-          record = process_cpu_oversubscribed_monitor(pod_inventory)
+          record = process_cpu_oversubscribed_monitor(pod_inventory, node_inventory)
           health_monitor_records.push(record) if record
-          record = process_memory_oversubscribed_monitor(pod_inventory)
+          record = process_memory_oversubscribed_monitor(pod_inventory, node_inventory)
           health_monitor_records.push(record) if record
           pods_ready_hash = HealthMonitorUtils.get_pods_ready_hash(pod_inventory, deployment_inventory)
 
@@ -142,11 +150,12 @@ module Fluent
       end
     end
 
-    def process_cpu_oversubscribed_monitor(pod_inventory)
+    def process_cpu_oversubscribed_monitor(pod_inventory, node_inventory)
       timestamp = Time.now.utc.iso8601
+      @@clusterCpuCapacity = HealthMonitorUtils.get_cluster_cpu_memory_capacity(@@hmlog, node_inventory: node_inventory)[0]
       subscription = HealthMonitorUtils.get_resource_subscription(pod_inventory,"cpu", @@clusterCpuCapacity)
+      @@hmlog.info "Refreshed Cluster CPU Capacity #{@@clusterCpuCapacity}"
       state =  subscription > @@clusterCpuCapacity ? "fail" : "pass"
-      #@@hmlog.debug "CPU Oversubscribed Monitor State : #{state}"
 
       #CPU
       monitor_id = HealthMonitorConstants::WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID
@@ -167,8 +176,10 @@ module Fluent
       return health_record
     end
 
-    def process_memory_oversubscribed_monitor(pod_inventory)
+    def process_memory_oversubscribed_monitor(pod_inventory, node_inventory)
       timestamp = Time.now.utc.iso8601
+      @@clusterMemoryCapacity = HealthMonitorUtils.get_cluster_cpu_memory_capacity(@@hmlog,node_inventory: node_inventory)[1]
+      @@hmlog.info "Refreshed Cluster Memory Capacity #{@@clusterMemoryCapacity}"
       subscription = HealthMonitorUtils.get_resource_subscription(pod_inventory,"memory", @@clusterMemoryCapacity)
       state =  subscription > @@clusterMemoryCapacity ? "fail" : "pass"
       #@@hmlog.debug "Memory Oversubscribed Monitor State : #{state}"

@@ -1,3 +1,5 @@
+require_relative 'health_model_constants'
+
 module HealthModel
 
     HealthMonitorInstanceState = Struct.new(:prev_sent_record_time, :old_state, :new_state, :state_change_time, :prev_records, :is_state_change_consistent, :should_send) do
@@ -33,8 +35,18 @@ module HealthModel
         def initialize_state(deserialized_state)
             @@monitor_states = {}
             deserialized_state.each{|k,v|
-                @@monitor_states[k] = v
+                health_monitor_instance_state_hash = v
+                state = HealthMonitorInstanceState.new(*health_monitor_instance_state_hash.values_at(*HealthMonitorInstanceState.members))
+                state.prev_sent_record_time = health_monitor_instance_state_hash["prev_sent_record_time"]
+                state.old_state = health_monitor_instance_state_hash["old_state"]
+                state.new_state = health_monitor_instance_state_hash["new_state"]
+                state.state_change_time = health_monitor_instance_state_hash["state_change_time"]
+                state.prev_records = health_monitor_instance_state_hash["prev_records"]
+                state.is_state_change_consistent = health_monitor_instance_state_hash["is_state_change_consistent"] || false
+                state.should_send = health_monitor_instance_state_hash["should_send"]
+                @@monitor_states[k] = state
                 @@first_record_sent[k] = true
+
             }
         end
 

@@ -7,12 +7,12 @@ module HealthModel
         def initialize(health_model_definition, monitor_factory)
 
             if !health_model_definition.is_a?(ParentMonitorProvider)
-                raise 'Invalid Type Expected: ParentMonitorProvider Actual: #{@health_model_definition.class.name}'
+                raise "Invalid Type Expected: ParentMonitorProvider Actual: #{@health_model_definition.class.name}"
             end
             @health_model_definition = health_model_definition
 
             if !monitor_factory.is_a?(MonitorFactory)
-                raise 'Invalid Type Expected: ParentMonitorProvider Actual: #{@monitor_factory.class.name}'
+                raise "Invalid Type Expected: MonitorFactory Actual: #{@monitor_factory.class.name}"
             end
             @monitor_factory = monitor_factory
         end

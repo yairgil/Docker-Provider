@@ -1,3 +1,5 @@
+require_relative 'health_model_constants'
+
 module HealthModel
     class HealthMonitorProvider
 
@@ -91,9 +93,9 @@ module HealthModel
                 workload_name = health_monitor_record[HealthMonitorRecordFields::DETAILS]['details']['workloadName']
                 workload_kind = health_monitor_record[HealthMonitorRecordFields::DETAILS]['details']['workloadKind']
 
-                monitor_labels['container.azm.ms/workload-name'] = workload_name.split('~~')[1]
-                monitor_labels['container.azm.ms/workload-kind'] = workload_kind
-                monitor_labels['container.azm.ms/namespace'] = namespace
+                monitor_labels[HealthMonitorLabels::WORKLOAD_NAME] = workload_name.split('~~')[1]
+                monitor_labels[HealthMonitorLabels::WORKLOAD_KIND] = workload_kind
+                monitor_labels[HealthMonitorLabels::NAMESPACE] = namespace
 
             when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID
                 node_name = health_monitor_record[HealthMonitorRecordFields::NODE_NAME]

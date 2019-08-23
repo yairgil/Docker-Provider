@@ -64,7 +64,7 @@ class FilterHealthModelBuilderTest < Test::Unit::TestCase
             resources = HealthKubernetesResources.instance
             resources.node_inventory = node_inventory
             resources.pod_inventory = pod_inventory
-            resources.deployment_inventory = deployment_inventory
+            resources.set_deployment_inventory(deployment_inventory)
 
             workload_names = resources.get_workload_names
             provider = HealthMonitorProvider.new(cluster_id, cluster_labels, resources, File.join(__dir__, "../../../..//installer/conf/healthmonitorconfig.json"))

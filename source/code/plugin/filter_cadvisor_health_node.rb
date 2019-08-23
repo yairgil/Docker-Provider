@@ -33,37 +33,49 @@ module Fluent
         @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
-            super
-            @cpu_capacity = 0.0
-            @memory_capacity = 0.0
-            @last_resource_refresh = DateTime.now.to_time.to_i
-            @metrics_to_collect_hash = {}
-            @resources = HealthKubernetesResources.instance # this doesnt require node and pod inventory. So no need to populate them
-            @provider = HealthMonitorProvider.new(@@clusterId, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+            begin
+                super
+                @cpu_capacity = 0.0
+                @memory_capacity = 0.0
+                @last_resource_refresh = DateTime.now.to_time.to_i
+                @metrics_to_collect_hash = {}
+                @resources = HealthKubernetesResources.instance # this doesnt require node and pod inventory. So no need to populate them
+                @provider = HealthMonitorProvider.new(@@clusterId, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+            rescue => e
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+            end
         end
 
         def configure(conf)
-            super
-            @log = HealthMonitorUtils.get_log_handle
-            @log.debug {'Starting filter_cadvisor2health plugin'}
+            begin
+                super
+                @log = HealthMonitorUtils.get_log_handle
+                @log.debug {'Starting filter_cadvisor2health plugin'}
+            rescue => e
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+            end
         end
 
         def start
-            super
-            @metrics_to_collect_hash = HealthMonitorUtils.build_metrics_hash(@metrics_to_collect)
-            @log.debug "Calling ensure_cpu_memory_capacity_set cpu_capacity #{@cpu_capacity} memory_capacity #{@memory_capacity}"
-            node_capacity = HealthMonitorUtils.ensure_cpu_memory_capacity_set(@@hm_log, @cpu_capacity, @memory_capacity, @@hostName)
-            @cpu_capacity = node_capacity[0]
-            @memory_capacity = node_capacity[1]
-            @log.info "CPU Capacity #{@cpu_capacity} Memory Capacity #{@memory_capacity}"
-            #HealthMonitorUtils.refresh_kubernetes_api_data(@log, @@hostName)
-            ApplicationInsightsUtility.sendCustomEvent("filter_cadvisor_health Plugin Start", {})
+            begin
+                super
+                @metrics_to_collect_hash = HealthMonitorUtils.build_metrics_hash(@metrics_to_collect)
+                @log.debug "Calling ensure_cpu_memory_capacity_set cpu_capacity #{@cpu_capacity} memory_capacity #{@memory_capacity}"
+                node_capacity = HealthMonitorUtils.ensure_cpu_memory_capacity_set(@@hm_log, @cpu_capacity, @memory_capacity, @@hostName)
+                @cpu_capacity = node_capacity[0]
+                @memory_capacity = node_capacity[1]
+                @log.info "CPU Capacity #{@cpu_capacity} Memory Capacity #{@memory_capacity}"
+                #HealthMonitorUtils.refresh_kubernetes_api_data(@log, @@hostName)
+                ApplicationInsightsUtility.sendCustomEvent("filter_cadvisor_health Plugin Start", {})
+            rescue => e
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+            end
         end
 
         def filter_stream(tag, es)
             if !@@cluster_health_model_enabled
                 @log.info "Cluster Health Model disabled in filter_cadvisor_health_node"
-                return []
+                return MultiEventStream.new
             end
             new_es = MultiEventStream.new
             #HealthMonitorUtils.refresh_kubernetes_api_data(@log, @hostName)
@@ -76,7 +88,8 @@ module Fluent
                     records_count += 1
                 end
               rescue => e
-                router.emit_error_event(tag, time, record, e)
+                @log.info "Error in filter_stream for filter_cadvisor_health_node #{e.message}"
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
               end
             }
             @log.debug "Filter Records Count #{records_count}"

@@ -16,51 +16,54 @@ module Fluent
         config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health/health_model_definition.json'
         config_param :health_monitor_config_path, :default => '/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json'
         config_param :health_state_serialized_path, :default => '/mnt/azure/health_model_state.json'
-        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :serializer, :deserializer
+        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator
         include HealthModel
 
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
         @@cluster_id = KubernetesApiClient.getClusterId
+        @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
-            super
-            @buffer = HealthModel::HealthModelBuffer.new
-            @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
-            @monitor_factory = HealthModel::MonitorFactory.new
-            @hierarchy_builder = HealthHierarchyBuilder.new(@health_model_definition, @monitor_factory)
-            # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
-            @state_finalizers = [HealthModel::AggregateMonitorStateFinalizer.new]
-            @monitor_set = HealthModel::MonitorSet.new
-            @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
-            @kube_api_down_handler = HealthKubeApiDownHandler.new
-            @resources = HealthKubernetesResources.instance
-            @reducer = HealthSignalReducer.new
-            @state = HealthMonitorState.new
-            @generator = HealthMissingSignalGenerator.new
-            #TODO: cluster_labels needs to be initialized
-            @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
-            @serializer = HealthStateSerializer.new(@health_state_serialized_path)
-            @deserializer = HealthStateDeserializer.new(@health_state_serialized_path)
-            # TODO: in_kube_api_health should set these values
-            # resources.node_inventory = node_inventory
-            # resources.pod_inventory = pod_inventory
-            # resources.deployment_inventory = deployment_inventory
-            #TODO: check if the path exists
-            deserialized_state_info = @deserializer.deserialize
-            @state = HealthMonitorState.new
-            @state.initialize_state(deserialized_state_info)
-            @cluster_old_state = 'none'
-            @cluster_new_state = 'none'
+            begin
+                super
+                @buffer = HealthModel::HealthModelBuffer.new
+                @cluster_health_state = ClusterHealthState.new(@@token_file_path, @@cert_file_path)
+                @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
+                @monitor_factory = HealthModel::MonitorFactory.new
+                @hierarchy_builder = HealthHierarchyBuilder.new(@health_model_definition, @monitor_factory)
+                # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
+                @state_finalizers = [HealthModel::AggregateMonitorStateFinalizer.new]
+                @monitor_set = HealthModel::MonitorSet.new
+                @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
+                @kube_api_down_handler = HealthKubeApiDownHandler.new
+                @resources = HealthKubernetesResources.instance
+                @reducer = HealthSignalReducer.new
+                @state = HealthMonitorState.new
+                @generator = HealthMissingSignalGenerator.new
+                #TODO: cluster_labels needs to be initialized
+                @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+                deserialized_state_info = @cluster_health_state.get_state
+                @state = HealthMonitorState.new
+                @state.initialize_state(deserialized_state_info)
+                @cluster_old_state = 'none'
+                @cluster_new_state = 'none'
+            rescue => e
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+            end
         end
 
         def configure(conf)
-            super
-            @log = nil
-
-            if @enable_log
-                @log = Logger.new(@log_path, 'weekly')
-                @log.info 'Starting filter_health_model_builder plugin'
+            begin
+                super
+                @log = nil
+                if @enable_log
+                    @log = Logger.new(@log_path, 'weekly')
+                    @log.info 'Starting filter_health_model_builder plugin'
+                end
+            rescue => e
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
             end
         end
 
@@ -73,13 +76,14 @@ module Fluent
         end
 
         def filter_stream(tag, es)
-            if !@@cluster_health_model_enabled
-                @log.info "Cluster Health Model disabled in filter_health_model_builder"
-                return []
-            end
-            new_es = MultiEventStream.new
-            time = Time.now
             begin
+                if !@@cluster_health_model_enabled
+                    @log.info "Cluster Health Model disabled in filter_health_model_builder"
+                    return []
+                end
+                new_es = MultiEventStream.new
+                time = Time.now
+
                 if tag.start_with?("oms.api.KubeHealth.DaemonSet")
                     records = []
                     if !es.nil?
@@ -90,7 +94,7 @@ module Fluent
                     end
                     return []
                 elsif tag.start_with?("oms.api.KubeHealth.ReplicaSet")
-                    @log.info "TAG #{tag}"
+                    #@log.info "TAG #{tag}"
                     records = []
                     es.each{|time, record|
                         records.push(record)
@@ -200,11 +204,16 @@ module Fluent
                         new_es.add(time, record)
                     }
 
-                    @serializer.serialize(@state)
+                    #emit the stream
+                    router.emit_stream(@@rewrite_tag, new_es)
+
+                    #initialize monitor_set and model_builder
                     @monitor_set = HealthModel::MonitorSet.new
                     @model_builder = HealthModel::HealthModelBuilder.new(@hierarchy_builder, @state_finalizers, @monitor_set)
 
-                    router.emit_stream(@@rewrite_tag, new_es)
+                    #update cluster state custom resource
+                    @cluster_health_state.update_state(@state.to_h)
+
                     # return an empty event stream, else the match will throw a NoMethodError
                     return []
                 elsif tag.start_with?("oms.api.KubeHealth.AgentCollectionTime")
@@ -215,6 +224,7 @@ module Fluent
                 end
 
             rescue => e
+                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
                  @log.warn "Message: #{e.message} Backtrace: #{e.backtrace}"
                  return nil
             end

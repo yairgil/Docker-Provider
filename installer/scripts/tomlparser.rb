@@ -27,7 +27,7 @@ def parseConfigMap(path)
       puts "config::Successfully parsed mounted config map from #{path}"
       return parsedConfig
     else
-      puts "config::configmap container-azm-ms-agentconfig for settings not mounted, using defaults"
+      puts "config::configmap container-azm-ms-agentconfig for settings not mounted, using defaults for #{path}"
       @excludePath = "*_kube-system_*.log"
       return nil
     end
