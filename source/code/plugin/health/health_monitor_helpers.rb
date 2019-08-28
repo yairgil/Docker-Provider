@@ -16,11 +16,11 @@ module HealthModel
 
         class << self
             def is_node_monitor(monitor_id)
-                return (monitor_id == HealthMonitorConstants::NODE_CPU_MONITOR_ID || monitor_id == HealthMonitorConstants::NODE_MEMORY_MONITOR_ID || monitor_id == HealthMonitorConstants::NODE_CONDITION_MONITOR_ID)
+                return (monitor_id == MonitorId::NODE_CPU_MONITOR_ID || monitor_id == MonitorId::NODE_MEMORY_MONITOR_ID || monitor_id == MonitorId::NODE_CONDITION_MONITOR_ID)
             end
 
             def is_pods_ready_monitor(monitor_id)
-                return (monitor_id == HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID || monitor_id == HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
+                return (monitor_id == MonitorId::USER_WORKLOAD_PODS_READY_MONITOR_ID || monitor_id == MonitorId::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
             end
 
             def get_log_handle
@@ -28,10 +28,8 @@ module HealthModel
             end
 
             def get_monitor_instance_id(monitor_id, args = [])
-                string_to_hash = args.join("/")
-                return "#{monitor_id}-#{Digest::MD5.hexdigest(string_to_hash)}"
+                return "#{monitor_id}-#{args.join("-")}"
             end
         end
-
     end
 end

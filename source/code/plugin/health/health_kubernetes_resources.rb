@@ -5,7 +5,7 @@ module HealthModel
     class HealthKubernetesResources
 
         include Singleton
-        attr_accessor :node_inventory, :pod_inventory, :deployment_inventory, :poduid_lookup, :workload_container_count
+        attr_accessor :node_inventory, :pod_inventory, :deployment_inventory, :pod_uid_lookup, :workload_container_count
         attr_reader :nodes, :pods, :workloads, :deployment_lookup
 
         def initialize
@@ -58,29 +58,34 @@ module HealthModel
             return workload_names.keys
         end
 
-        def build_poduid_lookup
+        def build_pod_uid_lookup
             @workload_container_count = {}
             @pod_inventory['items'].each do |pod|
                 begin
                     namespace = pod['metadata']['namespace']
                     poduid = pod['metadata']['uid']
                     workload_name = get_workload_name(pod)
+                    workload_kind = get_workload_kind(pod)
                     pod['spec']['containers'].each do |container|
                         cname = container['name']
                         key = "#{poduid}/#{cname}"
+                        cpu_limit_set = true
+                        memory_limit_set = true
                         begin
                             cpu_limit = get_numeric_value('cpu', container['resources']['limits']['cpu'])
                         rescue => exception
                             @log.info "Exception getting container cpu limit #{container['resources']}"
                             cpu_limit = get_node_capacity(pod['spec']['nodeName'], 'cpu')
+                            cpu_limit_set = false
                         end
                         begin
                             memory_limit = get_numeric_value('memory', container['resources']['limits']['memory'])
                         rescue => exception
                             @log.info "Exception getting container memory limit #{container['resources']}"
                             memory_limit = get_node_capacity(pod['spec']['nodeName'], 'memory')
+                            memory_limit_set = false
                         end
-                        @pod_uid_lookup[key] = {"workload_name" => workload_name, "namespace" => namespace, "cpu_limit" => cpu_limit, "memory_limit" => memory_limit}
+                        @pod_uid_lookup[key] = {"workload_kind" => workload_kind, "workload_name" => workload_name, "namespace" => namespace, "cpu_limit" => cpu_limit, "memory_limit" => memory_limit, "cpu_limit_set" => cpu_limit_set, "memory_limit_set" => memory_limit_set, "container" => cname}
                         container_count_key = "#{namespace}_#{workload_name.split('~~')[1]}_#{cname}"
                         if !@workload_container_count.key?(container_count_key)
                             @workload_container_count[container_count_key] = 1
@@ -95,8 +100,8 @@ module HealthModel
             end
         end
 
-        def get_poduid_lookup
-            return @poduid_lookup
+        def get_pod_uid_lookup
+            return @pod_uid_lookup
         end
 
         def get_workload_container_count
@@ -157,6 +162,36 @@ module HealthModel
                 return workload_name
             rescue => e
                 @log.info "Error in get_workload_name(pod) #{e.message}"
+                return nil
+            end
+        end
+
+        def get_workload_kind(pod)
+            if @deployment_lookup.empty?
+                @deployment_inventory['items'].each do |deployment|
+                    match_labels = deployment['spec']['selector']['matchLabels'].to_h
+                    namespace = deployment['metadata']['namespace']
+                    match_labels.each{|k,v|
+                        @deployment_lookup["#{namespace}-#{k}=#{v}"] = "#{deployment['metadata']['namespace']}~~#{deployment['metadata']['name']}"
+                    }
+                end
+            end
+
+            begin
+                has_owner = !pod['metadata']['ownerReferences'].nil?
+                owner_kind = ''
+                if has_owner
+                    owner_kind = pod['metadata']['ownerReferences'][0]['kind']
+                else
+                    owner_kind = pod['kind']
+                end
+
+                if owner_kind.nil?
+                    owner_kind = 'Pod'
+                end
+                return owner_kind
+            rescue => e
+                @log.info "Error in get_workload_kind(pod) #{e.message}"
                 return nil
             end
         end

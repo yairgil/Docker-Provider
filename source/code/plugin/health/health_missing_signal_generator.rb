@@ -24,7 +24,7 @@ module HealthModel
 
             node_signals_hash = {}
             nodes.each{|node|
-                node_signals_hash[node] = [HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID]
+                node_signals_hash[node] = [MonitorId::NODE_CPU_MONITOR_ID, MonitorId::NODE_MEMORY_MONITOR_ID, MonitorId::NODE_CONDITION_MONITOR_ID]
             }
             log = HealthMonitorHelpers.get_log_handle
             log.info "last_received_records #{@last_received_records.size} nodes #{nodes}"
