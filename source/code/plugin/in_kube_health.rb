@@ -118,12 +118,12 @@ module Fluent
           system_pods = pods_ready_hash.select{|k,v| v['namespace'] == 'kube-system'}
           workload_pods = pods_ready_hash.select{|k,v| v['namespace'] != 'kube-system'}
 
-          system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
+          system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, MonitorId::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
           system_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
 
-          workload_pods_ready_percentage_records = process_pods_ready_percentage(workload_pods, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID)
+          workload_pods_ready_percentage_records = process_pods_ready_percentage(workload_pods, MonitorId::USER_WORKLOAD_PODS_READY_MONITOR_ID)
           workload_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
@@ -159,7 +159,7 @@ module Fluent
       state =  subscription > @@clusterCpuCapacity ? "fail" : "pass"
 
       #CPU
-      monitor_id = HealthMonitorConstants::WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID
+      monitor_id = MonitorId::WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f}}
       # @@hmlog.info health_monitor_record
 
@@ -186,7 +186,7 @@ module Fluent
       #@@hmlog.debug "Memory Oversubscribed Monitor State : #{state}"
 
       #CPU
-      monitor_id = HealthMonitorConstants::WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID
+      monitor_id = MonitorId::WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f}}
       hmlog = HealthMonitorUtils.get_log_handle
 
@@ -206,14 +206,14 @@ module Fluent
     def process_kube_api_up_monitor(state, response)
       timestamp = Time.now.utc.iso8601
 
-      monitor_id = HealthMonitorConstants::KUBE_API_STATUS
+      monitor_id = MonitorId::KUBE_API_STATUS
       details = response.each_header.to_h
       details['ResponseCode'] = response.code
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
       hmlog = HealthMonitorUtils.get_log_handle
       #hmlog.info health_monitor_record
 
-      monitor_instance_id = HealthMonitorConstants::KUBE_API_STATUS
+      monitor_instance_id = MonitorId::KUBE_API_STATUS
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
       health_record = {}
       time_now = Time.now.utc.iso8601
@@ -242,7 +242,7 @@ module Fluent
         timestamp = Time.now.utc.iso8601
 
         state = HealthMonitorUtils.compute_percentage_state((100-percent), monitor_config)
-        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workloadName" => workload_name, "namespace" => namespace, "workloadKind" => workload_kind}}
+        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workload_name" => workload_name, "namespace" => namespace, "workload_kind" => workload_kind}}
         monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(config_monitor_id, [@@cluster_id, namespace, workload_name])
         health_record = {}
         time_now = Time.now.utc.iso8601
@@ -259,7 +259,7 @@ module Fluent
     end
 
     def process_node_condition_monitor(node_inventory)
-      monitor_id = HealthMonitorConstants::NODE_CONDITION_MONITOR_ID
+      monitor_id = MonitorId::NODE_CONDITION_MONITOR_ID
       timestamp = Time.now.utc.iso8601
       monitor_config = @provider.get_config(monitor_id)
       node_condition_monitor_records = []

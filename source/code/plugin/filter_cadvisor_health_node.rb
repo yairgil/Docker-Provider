@@ -73,27 +73,27 @@ module Fluent
         end
 
         def filter_stream(tag, es)
-            if !@@cluster_health_model_enabled
-                @log.info "Cluster Health Model disabled in filter_cadvisor_health_node"
-                return MultiEventStream.new
-            end
-            new_es = MultiEventStream.new
-            #HealthMonitorUtils.refresh_kubernetes_api_data(@log, @hostName)
-            records_count = 0
-            es.each { |time, record|
-              begin
+            begin
+                if !@@cluster_health_model_enabled
+                    @log.info "Cluster Health Model disabled in filter_cadvisor_health_node"
+                    return MultiEventStream.new
+                end
+                new_es = MultiEventStream.new
+                records_count = 0
+                es.each { |time, record|
                 filtered_record = filter(tag, time, record)
                 if !filtered_record.nil?
                     new_es.add(time, filtered_record)
                     records_count += 1
                 end
-              rescue => e
-                @log.info "Error in filter_stream for filter_cadvisor_health_node #{e.message}"
+                }
+                @log.debug "Filter Records Count #{records_count}"
+                return new_es
+            rescue => e
+                @log.info "Error in filter_cadvisor_health_node filter_stream #{e.backtrace}"
                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
-              end
-            }
-            @log.debug "Filter Records Count #{records_count}"
-            new_es
+                return MultiEventStream.new
+            end
         end
 
         def filter(tag, time, record)
@@ -106,16 +106,6 @@ module Fluent
                 if @metrics_to_collect_hash.key?(counter_name.downcase)
                     metric_value = record['DataItems'][0]['Collections'][0]['Value']
                     case object_name
-                    when @@object_name_k8s_container
-                        case counter_name.downcase
-                        when @@counter_name_cpu
-                            # @log.debug "Object Name #{object_name}"
-                            # @log.debug "Counter Name #{counter_name}"
-                            # @log.debug "Metric Value #{metric_value}"
-                            #return process_container_cpu_record(record, metric_value)
-                        when @@counter_name_memory_rss
-                            #return process_container_memory_record(record, metric_value)
-                        end
                     when @@object_name_k8s_node
                         case counter_name.downcase
                         when @@counter_name_cpu
@@ -134,82 +124,8 @@ module Fluent
             end
         end
 
-        def process_container_cpu_record(record, metric_value)
-            monitor_id = HealthMonitorConstants::CONTAINER_CPU_MONITOR_ID
-            @log.debug "processing container cpu record"
-            if record.nil?
-                return nil
-            else
-                instance_name = record['DataItems'][0]['InstanceName']
-                key = HealthMonitorUtils.getContainerKeyFromInstanceName(instance_name)
-                container_metadata = HealthMonitorUtils.getContainerMetadata(key)
-                if !container_metadata.nil?
-                    cpu_limit = container_metadata['cpuLimit']
-                end
-
-                if cpu_limit.to_s.empty?
-                    #@log.info "CPU Limit is nil"
-                    cpu_limit = @cpu_capacity
-                end
-
-                #@log.info "cpu limit #{cpu_limit}"
-
-                percent = (metric_value.to_f/cpu_limit*100).round(2)
-                #@log.debug "Container #{key} | Percentage of CPU limit: #{percent}"
-                state = HealthMonitorUtils.compute_percentage_state(percent, @provider.get_config(monitor_id))
-                #@log.debug "Computed State : #{state}"
-                timestamp = record['DataItems'][0]['Timestamp']
-                health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent}}
-                #@log.info health_monitor_record
-
-                monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId, @@hostName, key])
-                #@log.info "Monitor Instance Id: #{monitor_instance_id}"
-                temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
-                @log.info "Processed Container CPU #{temp}"
-                return record
-            end
-            return nil
-        end
-
-        def process_container_memory_record(record, metric_value)
-            monitor_id = HealthMonitorConstants::CONTAINER_MEMORY_MONITOR_ID
-            #@log.debug "processing container memory record"
-            if record.nil?
-                return nil
-            else
-                instance_name = record['DataItems'][0]['InstanceName']
-                key = HealthMonitorUtils.getContainerKeyFromInstanceName(instance_name)
-                container_metadata = HealthMonitorUtils.getContainerMetadata(key)
-                if !container_metadata.nil?
-                    memory_limit = container_metadata['memoryLimit']
-                end
-
-                if memory_limit.to_s.empty?
-                    #@log.info "Memory Limit is nil"
-                    memory_limit = @memory_capacity
-                end
-
-                #@log.info "memory limit #{memory_limit}"
-
-                percent = (metric_value.to_f/memory_limit*100).round(2)
-                #@log.debug "Container #{key} | Percentage of Memory limit: #{percent}"
-                state = HealthMonitorUtils.compute_percentage_state(percent, @provider.get_config(HealthMonitorConstants::CONTAINER_MEMORY_MONITOR_ID))
-                #@log.debug "Computed State : #{state}"
-                timestamp = record['DataItems'][0]['Timestamp']
-                health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent}}
-                #@log.info health_monitor_record
-
-                monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId, @@hostName, key])
-                #@log.info "Monitor Instance Id: #{monitor_instance_id}"
-                temp = record.nil? ? "Nil" : record["MonitorInstanceId"]
-                @log.info "Processed Container Memory #{temp}"
-                return record
-            end
-            return nil
-        end
-
         def process_node_cpu_record(record, metric_value)
-            monitor_id = HealthMonitorConstants::NODE_CPU_MONITOR_ID
+            monitor_id = MonitorId::NODE_CPU_MONITOR_ID
             #@log.debug "processing node cpu record"
             if record.nil?
                 return nil
@@ -219,7 +135,7 @@ module Fluent
 
                 percent = (metric_value.to_f/@cpu_capacity*100).round(2)
                 #@log.debug "Percentage of CPU limit: #{percent}"
-                state = HealthMonitorUtils.compute_percentage_state(percent, @provider.get_config(HealthMonitorConstants::NODE_CPU_MONITOR_ID))
+                state = HealthMonitorUtils.compute_percentage_state(percent, @provider.get_config(MonitorId::NODE_CPU_MONITOR_ID))
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value/1000000.to_f, "cpuUtilizationPercentage" => percent}}
@@ -241,7 +157,7 @@ module Fluent
         end
 
         def process_node_memory_record(record, metric_value)
-            monitor_id = HealthMonitorConstants::NODE_MEMORY_MONITOR_ID
+            monitor_id = MonitorId::NODE_MEMORY_MONITOR_ID
             #@log.debug "processing node memory record"
             if record.nil?
                 return nil
@@ -251,7 +167,7 @@ module Fluent
 
                 percent = (metric_value.to_f/@memory_capacity*100).round(2)
                 #@log.debug "Percentage of Memory limit: #{percent}"
-                state = HealthMonitorUtils.compute_percentage_state(percent, @provider.get_config(HealthMonitorConstants::NODE_MEMORY_MONITOR_ID))
+                state = HealthMonitorUtils.compute_percentage_state(percent, @provider.get_config(MonitorId::NODE_MEMORY_MONITOR_ID))
                 #@log.debug "Computed State : #{state}"
                 timestamp = record['DataItems'][0]['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent}}

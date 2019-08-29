@@ -5,8 +5,6 @@ module Fluent
     require 'logger'
     require 'json'
     require_relative 'oms_common'
-    require_relative 'HealthMonitorUtils'
-    require_relative 'HealthMonitorState'
     require_relative "ApplicationInsightsUtility"
     Dir[File.join(__dir__, './health', '*.rb')].each { |file| require file }
 
@@ -72,7 +70,8 @@ module Fluent
                     records_count += 1
                 end
               rescue => e
-                router.emit_error_event(tag, time, record, e)
+                @log.info "Error in filter_cadvisor_health_container filter_stream #{e.backtrace}"
+                ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
               end
             }
             @log.debug "filter_cadvisor_health_container Records Count #{records_count}"

@@ -117,7 +117,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/td-agent-bit-conf-customizer.rb;                               installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
 
 
-
+/opt/microsoft/omsagent/plugin/filter_cadvisor_health_container.rb;                                 source/code/plugin/filter_cadvisor_health_container.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_node.rb;                                      source/code/plugin/filter_cadvisor_health_node.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_health_model_builder.rb;                                      source/code/plugin/filter_health_model_builder.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_health.rb;                                                   source/code/plugin/in_kube_health.rb; 644; root; root

@@ -16,7 +16,7 @@ module Fluent
         config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health/health_model_definition.json'
         config_param :health_monitor_config_path, :default => '/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json'
         config_param :health_state_serialized_path, :default => '/mnt/azure/health_model_state.json'
-        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :container_records_aggregator
+        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator
         include HealthModel
 
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
@@ -44,7 +44,6 @@ module Fluent
                 @generator = HealthMissingSignalGenerator.new
                 #TODO: cluster_labels needs to be initialized
                 @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
-                @container_records_aggregator = HealthContainerCpuMemoryAggregator.new(@resources, @provider)
                 deserialized_state_info = @cluster_health_state.get_state
                 @state = HealthMonitorState.new
                 @state.initialize_state(deserialized_state_info)
@@ -101,10 +100,11 @@ module Fluent
                             container_records.push(record)
                         }
                     end
-                    deduped_records = @container_records_aggregator.dedupe_records(container_records)
-                    @container_records_aggregator.aggregate(deduped_records)
-                    @container_records_aggregator.compute_state
-                    container_cpu_memory_records = @container_records_aggregator.get_records
+                    container_records_aggregator = HealthContainerCpuMemoryAggregator.new(@resources, @provider)
+                    deduped_records = container_records_aggregator.dedupe_records(container_records)
+                    container_records_aggregator.aggregate(deduped_records)
+                    container_records_aggregator.compute_state
+                    container_cpu_memory_records = container_records_aggregator.get_records
                     @buffer.add_to_buffer(container_cpu_memory_records)
                     return MultiEventStream.new
                 elsif tag.start_with?("oms.api.KubeHealth.ReplicaSet")
