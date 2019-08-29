@@ -94,7 +94,6 @@ module Fluent
                     end
                     return []
                 elsif tag.start_with?("oms.api.KubeHealth.ReplicaSet")
-                    #@log.info "TAG #{tag}"
                     records = []
                     es.each{|time, record|
                         records.push(record)

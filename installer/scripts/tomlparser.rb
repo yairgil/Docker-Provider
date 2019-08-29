@@ -143,7 +143,6 @@ if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVe
         configMapSettings = configMapSettings.merge(settings)
     }
 
-    puts "#{JSON.pretty_generate(configMapSettings)}"
   if !configMapSettings.nil?
     populateSettingValuesFromConfigMap(configMapSettings)
   end

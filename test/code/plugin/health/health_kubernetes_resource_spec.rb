@@ -220,25 +220,25 @@ describe "HealthKubernetesResources spec" do
         parsed_workloads.sort.must_equal ['default~~diliprdeploymentnodeapps', 'default~~rss-site', 'kube-system~~kube-proxy'].sort
     end
 
-    it 'builds the pod_uid lookup correctly' do
-        #arrange
-        f = File.read('C:/AzureMonitor/ContainerInsights/Docker-Provider/inventory/nodes.json')
-        nodes = JSON.parse(f)
-        f = File.read('C:/AzureMonitor/ContainerInsights/Docker-Provider/inventory/pods.json')
-        pods = JSON.parse(f)
-        f = File.read('C:/AzureMonitor/ContainerInsights/Docker-Provider/inventory/deployments.json')
-        deployments = JSON.parse(f)
+    # it 'builds the pod_uid lookup correctly' do
+    #     #arrange
+    #     f = File.read('C:/Users/dilipr/desktop/health/container_cpu_memory/nodes.json')
+    #     nodes = JSON.parse(f)
+    #     f = File.read('C:/Users/dilipr/desktop/health/container_cpu_memory/pods.json')
+    #     pods = JSON.parse(f)
+    #     f = File.read('C:/Users/dilipr/desktop/health/container_cpu_memory/deployments.json')
+    #     deployments = JSON.parse(f)
 
-        resources = HealthKubernetesResources.instance
+    #     resources = HealthKubernetesResources.instance
 
-        resources.node_inventory = nodes
-        resources.pod_inventory = pods
-        resources.set_deployment_inventory(deployments) #resets deployment_lookup -- this was causing Unit test failures
+    #     resources.node_inventory = nodes
+    #     resources.pod_inventory = pods
+    #     resources.set_deployment_inventory(deployments) #resets deployment_lookup -- this was causing Unit test failures
 
-        resources.build_poduid_lookup
+    #     resources.build_pod_uid_lookup
 
-        resources.poduid_lookup
-        resources.workload_container_count
-        
-    end
+    #     resources.pod_uid_lookup
+    #     resources.workload_container_count
+
+    # end
 end

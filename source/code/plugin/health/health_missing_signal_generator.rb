@@ -54,6 +54,7 @@ module HealthModel
                         missing_signals_map[monitor_instance_id] = new_monitor
                         log.info "Added missing signal #{new_monitor.monitor_instance_id} #{new_monitor.state}"
                     elsif HealthMonitorHelpers.is_pods_ready_monitor(monitor.monitor_id)
+                        lookup = "#{monitor.labels[HealthMonitorLabels::NAMESPACE]}~~#{monitor.labels[HealthMonitorLabels::WORKLOAD_NAME]}"
                         new_monitor = HealthMonitorRecord.new(
                             monitor.monitor_id,
                             monitor.monitor_instance_id,

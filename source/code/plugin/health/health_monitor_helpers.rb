@@ -28,8 +28,10 @@ module HealthModel
             end
 
             def get_monitor_instance_id(monitor_id, args = [])
-                return "#{monitor_id}-#{args.join("-")}"
+                string_to_hash = args.join("/")
+                return "#{monitor_id}-#{Digest::MD5.hexdigest(string_to_hash)}"
             end
         end
+
     end
 end

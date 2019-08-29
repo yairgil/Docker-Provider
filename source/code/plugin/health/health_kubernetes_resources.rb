@@ -36,14 +36,6 @@ module HealthModel
             return @nodes
         end
 
-        # def get_pod_inventory
-        #     return @pod_inventory
-        # end
-
-        # def get_pods
-        #     return @pods
-        # end
-
         def set_deployment_inventory(deployments)
             @deployment_inventory = deployments
             @deployment_lookup = {}
