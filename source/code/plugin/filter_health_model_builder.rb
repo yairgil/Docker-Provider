@@ -16,7 +16,7 @@ module Fluent
         config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health/health_model_definition.json'
         config_param :health_monitor_config_path, :default => '/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json'
         config_param :health_state_serialized_path, :default => '/mnt/azure/health_model_state.json'
-        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator
+        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :container_records_aggregator
         include HealthModel
 
         @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
@@ -44,6 +44,7 @@ module Fluent
                 @generator = HealthMissingSignalGenerator.new
                 #TODO: cluster_labels needs to be initialized
                 @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+                @container_records_aggregator = HealthContainerCpuMemoryAggregator.new(@resources, @provider)
                 deserialized_state_info = @cluster_health_state.get_state
                 @state = HealthMonitorState.new
                 @state.initialize_state(deserialized_state_info)
@@ -79,20 +80,33 @@ module Fluent
             begin
                 if !@@cluster_health_model_enabled
                     @log.info "Cluster Health Model disabled in filter_health_model_builder"
-                    return []
+                    MultiEventStream.new
                 end
                 new_es = MultiEventStream.new
                 time = Time.now
 
-                if tag.start_with?("oms.api.KubeHealth.DaemonSet")
-                    records = []
+                if tag.start_with?("oms.api.KubeHealth.DaemonSet.Node")
+                    node_records = []
                     if !es.nil?
                         es.each{|time, record|
-                            records.push(record)
+                            node_records.push(record)
                         }
-                        @buffer.add_to_buffer(records)
+                        @buffer.add_to_buffer(node_records)
                     end
-                    return []
+                    return MultiEventStream.new
+                elsif tag.start_with?("oms.api.KubeHealth.DaemonSet.Container")
+                    container_records = []
+                    if !es.nil?
+                        es.each{|time, record|
+                            container_records.push(record)
+                        }
+                    end
+                    deduped_records = @container_records_aggregator.dedupe_records(container_records)
+                    @container_records_aggregator.aggregate(deduped_records)
+                    @container_records_aggregator.compute_state
+                    container_cpu_memory_records = @container_records_aggregator.get_records
+                    @buffer.add_to_buffer(container_cpu_memory_records)
+                    return MultiEventStream.new
                 elsif tag.start_with?("oms.api.KubeHealth.ReplicaSet")
                     records = []
                     es.each{|time, record|
@@ -116,7 +130,6 @@ module Fluent
                             @provider.get_config(monitor_id),
                             record[HealthMonitorRecordFields::DETAILS]
                         )
-
                         health_monitor_records.push(health_monitor_record)
                         #puts "#{monitor_instance_id} #{instance_state.new_state} #{instance_state.old_state} #{instance_state.should_send}"
                     end

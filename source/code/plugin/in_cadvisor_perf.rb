@@ -54,8 +54,7 @@ module Fluent
           record["DataType"] = "LINUX_PERF_BLOB"
           record["IPName"] = "LogManagement"
           eventStream.add(time, record) if record
-                    #router.emit(@tag, time, record) if record
-            end
+        end
 
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@mdmtag, eventStream) if eventStream

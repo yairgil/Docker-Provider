@@ -98,6 +98,7 @@ module Fluent
         @resources.node_inventory = node_inventory
         @resources.pod_inventory = pod_inventory
         @resources.set_deployment_inventory(deployment_inventory)
+        @resources.build_pod_uid_lookup
 
         if node_inventory_response.code.to_i != 200
           record = process_kube_api_up_monitor("fail", node_inventory_response)
