@@ -57,6 +57,7 @@ module Fluent
                 @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
                 if @@cluster_health_model_enabled
                     ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
+                    initialize_inventory
                 end
             end
         rescue => e
@@ -267,11 +268,12 @@ module Fluent
           node_inventory['items'].each do |node|
             node_name = node['metadata']['name']
             conditions = node['status']['conditions']
-            state = HealthMonitorUtils.get_node_state_from_node_conditions(conditions)
-            #hmlog.debug "Node Name = #{node_name} State = #{state}"
+            state = HealthMonitorUtils.get_node_state_from_node_conditions(monitor_config, conditions)
             details = {}
             conditions.each do |condition|
-              details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message']}
+                state = !(condition['status'].downcase == 'true' && condition['type'].downcase != 'ready') ? HealthMonitorStates::PASS : HealthMonitorStates::FAIL
+                details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message'], "State" => state}
+                #@@hmlog.info "Node Condition details: #{JSON.pretty_generate(details)}"
             end
             health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
             monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id, node_name])
@@ -289,6 +291,20 @@ module Fluent
       end
       #@@hmlog.info "Successfully processed process_node_condition_monitor #{node_condition_monitor_records.size}"
       return node_condition_monitor_records
+    end
+
+    def initialize_inventory
+        #this is required because there are other components, like the container cpu memory aggregator, that depends on the mapping being initialized
+        node_inventory_response = KubernetesApiClient.getKubeResourceInfo("nodes")
+        node_inventory = JSON.parse(node_inventory_response.body)
+        pod_inventory_response = KubernetesApiClient.getKubeResourceInfo("pods")
+        pod_inventory = JSON.parse(pod_inventory_response.body)
+        deployment_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("deployments", api_version: "extensions/v1beta1").body)
+
+        @resources.node_inventory = node_inventory
+        @resources.pod_inventory = pod_inventory
+        @resources.set_deployment_inventory(deployment_inventory)
+        @resources.build_pod_uid_lookup
     end
 
     def run_periodic

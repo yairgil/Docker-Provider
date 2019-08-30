@@ -66,14 +66,14 @@ module HealthModel
                         begin
                             cpu_limit = get_numeric_value('cpu', container['resources']['limits']['cpu'])
                         rescue => exception
-                            @log.info "Exception getting container cpu limit #{container['resources']}"
+                            #@log.info "Exception getting container cpu limit #{container['resources']}"
                             cpu_limit = get_node_capacity(pod['spec']['nodeName'], 'cpu')
                             cpu_limit_set = false
                         end
                         begin
                             memory_limit = get_numeric_value('memory', container['resources']['limits']['memory'])
                         rescue => exception
-                            @log.info "Exception getting container memory limit #{container['resources']}"
+                            #@log.info "Exception getting container memory limit #{container['resources']}"
                             memory_limit = get_node_capacity(pod['spec']['nodeName'], 'memory')
                             memory_limit_set = false
                         end
@@ -201,6 +201,7 @@ module HealthModel
             end
         end
 
+        #Cannot reuse the code from KubernetesApiClient, for unit testing reasons. KubernetesApiClient has a dependency on oms_common.rb etc.
         def get_numeric_value(metricName, metricVal)
             metricValue = metricVal.downcase
             begin
