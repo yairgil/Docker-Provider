@@ -113,11 +113,9 @@ module HealthModel
             }
 
             @log.info "Finished computing state"
-
         end
 
         def get_records
-
             time_now = Time.now.utc.iso8601
             container_cpu_memory_records = []
 
@@ -176,7 +174,7 @@ module HealthModel
         private
         def calculate_state(v, config)
             if !v['limit_set']
-                v["state"] = "warning"
+                v["state"] = HealthMonitorStates::WARNING
             else
                 # sort records by descending order of metric
                 v["records"] = v["records"].sort.reverse
@@ -198,15 +196,15 @@ module HealthModel
                 value = v["records"][state_index]
 
                 if value == -1 #
-                    v["state"] = "unknown"
+                    v["state"] = HealthMonitorStates::UNKNOWN
                 else
                     percent_value = value * 100  / v["limit"]
                     if percent_value > config['FailThresholdPercentage']
-                        v["state"] =  "fail"
+                        v["state"] =  HealthMonitorStates::FAIL
                     elsif percent_value > config['WarnThresholdPercentage']
-                        v["state"] =  "warn"
+                        v["state"] =  HealthMonitorStates::WARN
                     else
-                        v["state"] =  "pass"
+                        v["state"] =  HealthMonitorStates::PASS
                     end
                 end
             end
