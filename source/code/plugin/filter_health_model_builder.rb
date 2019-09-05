@@ -202,17 +202,23 @@ module Fluent
                     # generate the record to send
                     all_monitors.keys.each{|key|
                         record = @provider.get_record(all_monitors[key], state)
-                        if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER && all_monitors.size > 1
-                            old_state = record[HealthMonitorRecordFields::OLD_STATE]
-                            new_state = record[HealthMonitorRecordFields::NEW_STATE]
-                            if old_state != new_state && @cluster_old_state != old_state && @cluster_new_state != new_state
-                                    ApplicationInsightsUtility.sendCustomEvent("HealthModel_ClusterStateChanged",{"old_state" => old_state , "new_state" => new_state, "monitor_count" => all_monitors.size})
-                                    @log.info "sent telemetry for cluster state change from #{record['OldState']} to #{record['NewState']}"
-                                    @cluster_old_state = old_state
-                                    @cluster_new_state = new_state
+                        if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER
+                            if !record[HealthMonitorRecordFields::DETAILS].nil?
+                                details = JSON.parse(record[HealthMonitorRecordFields::DETAILS])
+                                details[HealthMonitorRecordFields::HEALTH_MODEL_DEFINITION_VERSION] = "#{ENV['HEALTH_MODEL_DEFINITION_VERSION']}"
+                                record[HealthMonitorRecordFields::DETAILS] = details.to_json
+                            end
+                            if all_monitors.size > 1
+                                old_state = record[HealthMonitorRecordFields::OLD_STATE]
+                                new_state = record[HealthMonitorRecordFields::NEW_STATE]
+                                if old_state != new_state && @cluster_old_state != old_state && @cluster_new_state != new_state
+                                        ApplicationInsightsUtility.sendCustomEvent("HealthModel_ClusterStateChanged",{"old_state" => old_state , "new_state" => new_state, "monitor_count" => all_monitors.size})
+                                        @log.info "sent telemetry for cluster state change from #{record['OldState']} to #{record['NewState']}"
+                                        @cluster_old_state = old_state
+                                        @cluster_new_state = new_state
+                                end
                             end
                         end
-                        #@log.info "#{record["Details"]} #{record["MonitorInstanceId"]} #{record["OldState"]} #{record["NewState"]}"
                         new_es.add(time, record)
                     }
 

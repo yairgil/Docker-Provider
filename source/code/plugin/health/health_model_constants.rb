@@ -55,6 +55,7 @@ module HealthModel
         NODE_NAME = "NodeName"
         OLD_STATE = "OldState"
         TIME_FIRST_OBSERVED = "TimeFirstObserved"
+        HEALTH_MODEL_DEFINITION_VERSION = "HealthModelDefinitionVersion"
     end
 
     class HealthMonitorStates
