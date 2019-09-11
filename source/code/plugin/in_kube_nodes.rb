@@ -83,6 +83,7 @@ module Fluent
               record["CreationTimeStamp"] = items["metadata"]["creationTimestamp"]
               record["Labels"] = [items["metadata"]["labels"]]
               record["Status"] = ""
+              record["ProviderID"] = items["spec"]["providerID"]
 
               # Refer to https://kubernetes.io/docs/concepts/architecture/nodes/#condition for possible node conditions.
               # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
@@ -139,6 +140,9 @@ module Fluent
                 properties["KubeletVersion"] = record["KubeletVersion"]
                 properties["OperatingSystem"] = nodeInfo["operatingSystem"]
                 properties["DockerVersion"] = dockerVersion
+                properties["ProviderID"] = record["ProviderID"]
+                properties["KernelVersion"] = nodeInfo["kernelVersion"]
+                properties["OSImage"] = nodeInfo["osImage"]
 
                 capacityInfo = items["status"]["capacity"]
                 ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
