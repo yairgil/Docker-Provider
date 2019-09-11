@@ -36,7 +36,7 @@ module Fluent
   class ForwardOutputACKTimeoutError < ForwardOutputResponseError
   end
 
-  class ForwardOutput < ObjectBufferedOutput
+  class HealthForwardOutput < ObjectBufferedOutput
     Plugin.register_output('health_forward', self)
 
     def initialize
@@ -140,7 +140,7 @@ module Fluent
 
         failure = FailureDetector.new(@heartbeat_interval, @hard_timeout, Time.now.to_i.to_f)
 
-        node_conf = NodeConfig.new(name, host, port, weight, standby, failure,
+        node_conf = NodeConfig2.new(name, host, port, weight, standby, failure,
           @phi_threshold, recover_sample_size, @expire_dns_cache, @phi_failure_detector, @dns_round_robin, @skip_network_error_at_init)
 
         if @heartbeat_type == :none
@@ -446,7 +446,7 @@ module Fluent
       end
     end
 
-    NodeConfig = Struct.new("NodeConfig", :name, :host, :port, :weight, :standby, :failure,
+    NodeConfig2 = Struct.new("NodeConfig2", :name, :host, :port, :weight, :standby, :failure,
       :phi_threshold, :recover_sample_size, :expire_dns_cache, :phi_failure_detector, :dns_round_robin, :skip_network_error)
 
     class Node
