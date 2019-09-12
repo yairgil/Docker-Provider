@@ -116,14 +116,13 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser-prom-customconfig.rb;                               installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
 /opt/td-agent-bit-conf-customizer.rb;                               installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
 
-
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_container.rb;                                 source/code/plugin/filter_cadvisor_health_container.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_node.rb;                                      source/code/plugin/filter_cadvisor_health_node.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_health_model_builder.rb;                                      source/code/plugin/filter_health_model_builder.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_health.rb;                                                   source/code/plugin/in_kube_health.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/out_health_forward.rb;                                               source/code/plugin/out_health_forward.rb; 644; root; root
 /etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json;					                installer/conf/healthmonitorconfig.json; 644; root; root
 /etc/opt/microsoft/docker-cimprov/health/health_model_definition.json;					            installer/conf/health_model_definition.json; 644; root; root
-
 
 /opt/microsoft/omsagent/plugin/health/aggregate_monitor.rb;                                         source/code/plugin/health/aggregate_monitor.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/agg_monitor_id_labels.rb;                                     source/code/plugin/health/agg_monitor_id_labels.rb; 644; root; root
