@@ -83,7 +83,13 @@ module Fluent
               record["CreationTimeStamp"] = items["metadata"]["creationTimestamp"]
               record["Labels"] = [items["metadata"]["labels"]]
               record["Status"] = ""
-              record["ProviderID"] = items["spec"]["providerID"]
+
+              if !items["spec"]["providerID"].nil? && !items["spec"]["providerID"].empty?
+                record["ProviderID"] = items["spec"]["providerID"]
+              else
+                record["ProviderID"] = "onprem"
+              end
+
 
               # Refer to https://kubernetes.io/docs/concepts/architecture/nodes/#condition for possible node conditions.
               # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
