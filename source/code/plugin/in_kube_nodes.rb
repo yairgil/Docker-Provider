@@ -8,6 +8,7 @@ module Fluent
     @@ContainerNodeInventoryTag = "oms.containerinsights.ContainerNodeInventory"
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
+    @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
 
     @@rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
     @@rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
@@ -85,7 +86,11 @@ module Fluent
               record["Status"] = ""
 
               if !items["spec"]["providerID"].nil? && !items["spec"]["providerID"].empty?
-                record["ProviderID"] = items["spec"]["providerID"]
+                if File.file?(@@AzStackCloudFileName) # existence of this file indicates agent running on azstack
+                  record["ProviderID"] = "azurestack"
+                else
+                  record["ProviderID"] = items["spec"]["providerID"]
+                end
               else
                 record["ProviderID"] = "onprem"
               end
