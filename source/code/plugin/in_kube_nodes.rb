@@ -87,12 +87,12 @@ module Fluent
 
               if !items["spec"]["providerID"].nil? && !items["spec"]["providerID"].empty?
                 if File.file?(@@AzStackCloudFileName) # existence of this file indicates agent running on azstack
-                  record["ProviderID"] = "azurestack"
+                  record["KubernetesProviderID"] = "azurestack"
                 else
-                  record["ProviderID"] = items["spec"]["providerID"]
+                  record["KubernetesProviderID"] = items["spec"]["providerID"]
                 end
               else
-                record["ProviderID"] = "onprem"
+                record["KubernetesProviderID"] = "onprem"
               end
 
 
@@ -151,7 +151,7 @@ module Fluent
                 properties["KubeletVersion"] = record["KubeletVersion"]
                 properties["OperatingSystem"] = nodeInfo["operatingSystem"]
                 properties["DockerVersion"] = dockerVersion
-                properties["ProviderID"] = record["ProviderID"]
+                properties["KubernetesProviderID"] = record["KubernetesProviderID"]
                 properties["KernelVersion"] = nodeInfo["kernelVersion"]
                 properties["OSImage"] = nodeInfo["osImage"]
 
