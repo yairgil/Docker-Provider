@@ -19,7 +19,7 @@ module Fluent
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator
         include HealthModel
 
-        @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
+        @@rewrite_tag = 'oms.api.KubeHealth.Signals'
         @@cluster_id = KubernetesApiClient.getClusterId
         @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
         @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
@@ -197,6 +197,8 @@ module Fluent
 
                     @log.info "after optimizing health signals all_monitors.size #{all_monitors.size}"
 
+                    current_time = Time.now
+                    emit_time = current_time.to_f
                     # for each key in monitor.keys,
                     # get the state from health_monitor_state
                     # generate the record to send
@@ -219,7 +221,12 @@ module Fluent
                                 end
                             end
                         end
-                        new_es.add(time, record)
+                        record_wrapper = {
+                            "DataType" => "KUBE_HEALTH_BLOB",
+                            "IPName" => "ContainerInsights",
+                            "DataItems" => [record.each { |k, v| record[k] = v }],
+                        }
+                        new_es.add(emit_time, record_wrapper)
                     }
 
                     #emit the stream
@@ -233,8 +240,8 @@ module Fluent
                     @cluster_health_state.update_state(@state.to_h)
 
                     # return an empty event stream, else the match will throw a NoMethodError
-                    return []
-                elsif tag.start_with?("oms.api.KubeHealth.AgentCollectionTime")
+                    return MultiEventStream.new
+                elsif tag.start_with?("oms.api.KubeHealth.Signals")
                     # this filter also acts as a pass through as we are rewriting the tag and emitting to the fluent stream
                     es
                 else

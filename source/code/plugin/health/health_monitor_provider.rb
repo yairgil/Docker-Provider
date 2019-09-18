@@ -66,8 +66,9 @@ module HealthModel
             monitor_record[HealthMonitorRecordFields::OLD_STATE] = old_state
             monitor_record[HealthMonitorRecordFields::DETAILS] = details.to_json
             monitor_record[HealthMonitorRecordFields::MONITOR_CONFIG] = config.to_json
-            monitor_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] = Time.now.utc.iso8601
+            monitor_record[HealthMonitorRecordFields::TIME_GENERATED] = Time.now.utc.iso8601
             monitor_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = time_first_observed
+            monitor_record[HealthMonitorRecordFields::PARENT_MONITOR_INSTANCE_ID] = ''
 
             return monitor_record
         end

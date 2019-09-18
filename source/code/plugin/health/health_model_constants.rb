@@ -43,19 +43,19 @@ module HealthModel
     end
 
     class HealthMonitorRecordFields
-        AGENT_COLLECTION_TIME = "AgentCollectionTime"
         CLUSTER_ID = "ClusterId"
         DETAILS = "Details"
+        HEALTH_MODEL_DEFINITION_VERSION = "HealthModelDefinitionVersion"
         MONITOR_CONFIG = "MonitorConfig"
-        MONITOR_ID = "MonitorId"
+        MONITOR_ID = "MonitorTypeId"
         MONITOR_INSTANCE_ID = "MonitorInstanceId"
         MONITOR_LABELS = "MonitorLabels"
-        NAMESPACE = "Namespace"
         NEW_STATE = "NewState"
         NODE_NAME = "NodeName"
         OLD_STATE = "OldState"
+        PARENT_MONITOR_INSTANCE_ID = "ParentMonitorInstanceId"
         TIME_FIRST_OBSERVED = "TimeFirstObserved"
-        HEALTH_MODEL_DEFINITION_VERSION = "HealthModelDefinitionVersion"
+        TIME_GENERATED = "TimeGenerated"
     end
 
     class HealthMonitorStates
