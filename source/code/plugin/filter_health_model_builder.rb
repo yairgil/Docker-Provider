@@ -49,6 +49,7 @@ module Fluent
                 @state.initialize_state(deserialized_state_info)
                 @cluster_old_state = 'none'
                 @cluster_new_state = 'none'
+                @container_cpu_memory_records = []
             rescue => e
                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
             end
@@ -102,10 +103,7 @@ module Fluent
                     end
                     container_records_aggregator = HealthContainerCpuMemoryAggregator.new(@resources, @provider)
                     deduped_records = container_records_aggregator.dedupe_records(container_records)
-                    container_records_aggregator.aggregate(deduped_records)
-                    container_records_aggregator.compute_state
-                    container_cpu_memory_records = container_records_aggregator.get_records
-                    @buffer.add_to_buffer(container_cpu_memory_records)
+                    @container_cpu_memory_records.push(*deduped_records) # push the records for aggregation later
                     return MultiEventStream.new
                 elsif tag.start_with?("oms.api.KubeHealth.ReplicaSet")
                     records = []
@@ -113,8 +111,16 @@ module Fluent
                         records.push(record)
                     }
                     @buffer.add_to_buffer(records)
+
+                    container_records_aggregator = HealthContainerCpuMemoryAggregator.new(@resources, @provider)
+                    container_records_aggregator.aggregate(@container_cpu_memory_records)
+                    container_records_aggregator.compute_state
+                    aggregated_container_records = container_records_aggregator.get_records
+                    @buffer.add_to_buffer(aggregated_container_records)
+
                     records_to_process = @buffer.get_buffer
                     @buffer.reset_buffer
+                    @container_cpu_memory_records = []
 
                     health_monitor_records = []
                     records_to_process.each do |record|
