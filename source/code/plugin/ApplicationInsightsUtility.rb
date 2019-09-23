@@ -240,15 +240,15 @@ class ApplicationInsightsUtility
           splitStrings = line.split("=")
           adminConf[splitStrings[0]] = splitStrings[1]
         end
-        workspaceDomain = adminConf["URL_TLD"]
+        workspaceDomain = adminConf["URL_TLD"].strip
         workspaceCloud = "AzureCloud"
         if workspaceDomain.casecmp("opinsights.azure.com") == 0
           workspaceCloud = "AzureCloud"
-        elsif wokrspaceDomain.casecmp("opinsights.azure.cn") == 0
+        elsif workspaceDomain.casecmp("opinsights.azure.cn") == 0
           workspaceCloud = "AzureChinaCloud"
-        elsif wokrspaceDomain.casecmp("opinsights.azure.us") == 0
+        elsif workspaceDomain.casecmp("opinsights.azure.us") == 0
           workspaceCloud = "AzureUSGovernment"
-        elsif wokrspaceDomain.casecmp("opinsights.azure.de") == 0
+        elsif workspaceDomain.casecmp("opinsights.azure.de") == 0
           workspaceCloud = "AzureGermanCloud"
         else
           workspaceCloud = "Unknown"
