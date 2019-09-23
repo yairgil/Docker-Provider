@@ -1,0 +1,42 @@
+[agent_settings.health_model]
+  # In the absence of this configmap, default value for enabled is false
+  enabled = true
+[agent_settings.health_model.configurations]
+  [agent_settings.health_model.configurations.node_memory_utilization]
+    enabled = true
+    warn_percentage = 80
+    fail_percentage = 90
+    samples_to_evaluate = 3
+  [agent_settings.health_model.configurations.node_cpu_utilization]
+    enabled = true
+    warn_percentage = 80
+    fail_percentage = 90
+    samples_to_evaluate = 3
+  [agent_settings.health_model.configurations.container_memory_utilization]
+    enabled = true
+    warn_percentage = 80
+    fail_percentage = 90
+    samples_to_evaluate = 3
+  [agent_settings.health_model.configurations.container_cpu_utilization]
+    enabled = true
+    warn_percentage = 80
+    fail_percentage = 90
+    samples_to_evaluate = 3
+  [agent_settings.health_model.configurations.user_workload_pods_ready]
+    enabled = true
+    pods_not_ready_warn_percentage = 0
+    pods_not_ready_fail_percentage = 10
+    samples_to_evaluate = 2
+  [agent_settings.health_model.configurations.system_workload_pods_ready]
+    enabled = true
+    pods_not_ready_fail_percentage = 0
+    samples_to_evaluate = 2
+  [agent_settings.health_model.configurations.node_condition]
+    enabled = true
+    failure_node_conditions = "outofdisk,networkunavailable"
+  [agent_settings.health_model.configurations.kube_api_status]
+    enabled = true
+  [agent_settings.health_model.configurations.subscribed_capacity_cpu]
+    enabled = true
+  [agent_settings.health_model.configurations.subscribed_capacity_memory]
+    enabled = true

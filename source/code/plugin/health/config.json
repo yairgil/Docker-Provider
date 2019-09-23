@@ -1,0 +1,9 @@
+{
+	"monitor_id_1": {
+		"key1=value1,key2=value2": {
+			"warn_percentage": 90,
+			"fail_percentage": 95,
+			"samples_to_check": 2
+		}
+	}
+}

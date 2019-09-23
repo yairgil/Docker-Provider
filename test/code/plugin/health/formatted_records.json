@@ -1,0 +1,752 @@
+[
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 14061568,
+		"Timestamp": "2019-08-23T22:13:39Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 7249920,
+		"Timestamp": "2019-08-23T22:13:44Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/kubedns",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 14442496,
+		"Timestamp": "2019-08-23T22:13:45Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/healthz",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 5988352,
+		"Timestamp": "2019-08-23T22:13:49Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/f65e6a62-c5c8-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 40284160,
+		"Timestamp": "2019-08-23T22:13:43Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/69e68b21-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 101965824,
+		"Timestamp": "2019-08-23T22:13:41Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 3203072,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 9658368,
+		"Timestamp": "2019-08-23T22:13:42Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9543dbb7-a1f2-11e9-8b08-d602e29755d5/metrics-server",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 21491712,
+		"Timestamp": "2019-08-23T22:13:42Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639906,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639899,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/kubedns",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639895,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/healthz",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639903,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/f65e6a62-c5c8-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566580259,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/69e68b21-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566589936,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1563224142,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1563224144,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9543dbb7-a1f2-11e9-8b08-d602e29755d5/metrics-server",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639893,
+		"Timestamp": "2019-08-23T22:13:50Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 349987,
+		"Timestamp": "2019-08-23T22:13:39Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 773186,
+		"Timestamp": "2019-08-23T22:13:44Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/kubedns",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 2718196,
+		"Timestamp": "2019-08-23T22:13:45Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/healthz",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 2007695,
+		"Timestamp": "2019-08-23T22:13:49Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/f65e6a62-c5c8-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 674463,
+		"Timestamp": "2019-08-23T22:13:43Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/69e68b21-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 2159553,
+		"Timestamp": "2019-08-23T22:13:41Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 3575667,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 0,
+		"Timestamp": "2019-08-23T22:13:42Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9543dbb7-a1f2-11e9-8b08-d602e29755d5/metrics-server",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 633968,
+		"Timestamp": "2019-08-23T22:13:42Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 11546624,
+		"Timestamp": "2019-08-23T22:13:39Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 11546624,
+		"Timestamp": "2019-08-23T22:14:39Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 5652480,
+		"Timestamp": "2019-08-23T22:13:44Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/kubedns",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 10981376,
+		"Timestamp": "2019-08-23T22:13:45Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/healthz",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 2875392,
+		"Timestamp": "2019-08-23T22:13:49Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/f65e6a62-c5c8-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 20627456,
+		"Timestamp": "2019-08-23T22:13:43Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/69e68b21-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 69353472,
+		"Timestamp": "2019-08-23T22:13:41Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 462848,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 8212480,
+		"Timestamp": "2019-08-23T22:13:42Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9543dbb7-a1f2-11e9-8b08-d602e29755d5/metrics-server",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 16543744,
+		"Timestamp": "2019-08-23T22:13:42Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b1e04e1c-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 85528576,
+		"Timestamp": "2019-08-23T22:12:56Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/49e373c8-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 25415680,
+		"Timestamp": "2019-08-23T22:12:54Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/65a6f978-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 111738880,
+		"Timestamp": "2019-08-23T22:12:53Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster-nanny",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 8417280,
+		"Timestamp": "2019-08-23T22:12:55Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 19492864,
+		"Timestamp": "2019-08-23T22:13:01Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9583b2ab-a1f2-11e9-8b08-d602e29755d5/main",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 12918784,
+		"Timestamp": "2019-08-23T22:12:57Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 3379200,
+		"Timestamp": "2019-08-23T22:12:46Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 9818112,
+		"Timestamp": "2019-08-23T22:12:57Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b1e04e1c-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566590024,
+		"Timestamp": "2019-08-23T22:13:03Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/49e373c8-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566580398,
+		"Timestamp": "2019-08-23T22:13:03Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/65a6f978-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566589942,
+		"Timestamp": "2019-08-23T22:13:03Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster-nanny",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566580342,
+		"Timestamp": "2019-08-23T22:13:03Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566580337,
+		"Timestamp": "2019-08-23T22:13:03Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9583b2ab-a1f2-11e9-8b08-d602e29755d5/main",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639936,
+		"Timestamp": "2019-08-23T22:13:03Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1563224072,
+		"Timestamp": "2019-08-23T22:13:03Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1563224077,
+		"Timestamp": "2019-08-23T22:13:03Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b1e04e1c-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 4447595,
+		"Timestamp": "2019-08-23T22:12:56Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/49e373c8-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 2765529,
+		"Timestamp": "2019-08-23T22:12:54Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/65a6f978-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 5565414,
+		"Timestamp": "2019-08-23T22:12:53Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster-nanny",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 863810,
+		"Timestamp": "2019-08-23T22:12:55Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 886196,
+		"Timestamp": "2019-08-23T22:13:01Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9583b2ab-a1f2-11e9-8b08-d602e29755d5/main",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 855014,
+		"Timestamp": "2019-08-23T22:12:57Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 1794634,
+		"Timestamp": "2019-08-23T22:12:46Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 0,
+		"Timestamp": "2019-08-23T22:12:57Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b1e04e1c-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 76308480,
+		"Timestamp": "2019-08-23T22:12:56Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/49e373c8-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 21319680,
+		"Timestamp": "2019-08-23T22:12:54Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/65a6f978-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 78180352,
+		"Timestamp": "2019-08-23T22:12:53Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster-nanny",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 7909376,
+		"Timestamp": "2019-08-23T22:12:55Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 18968576,
+		"Timestamp": "2019-08-23T22:13:01Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9583b2ab-a1f2-11e9-8b08-d602e29755d5/main",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 9871360,
+		"Timestamp": "2019-08-23T22:12:57Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 462848,
+		"Timestamp": "2019-08-23T22:12:46Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 8212480,
+		"Timestamp": "2019-08-23T22:12:57Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b2a0e1b3-bd3f-11e9-b2a7-d61658c73830/tunnel-front",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 17743872,
+		"Timestamp": "2019-08-23T22:14:07Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/114f7246-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 24162304,
+		"Timestamp": "2019-08-23T22:14:12Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/azureproxy",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 11472896,
+		"Timestamp": "2019-08-23T22:14:07Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/redirector",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 3821568,
+		"Timestamp": "2019-08-23T22:14:06Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/8dbd5e8b-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 92057600,
+		"Timestamp": "2019-08-23T22:14:15Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b2a0e1b3-bd3f-11e9-b2a7-d61658c73830/tunnel-front",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1565641691,
+		"Timestamp": "2019-08-23T22:14:15Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/114f7246-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566580300,
+		"Timestamp": "2019-08-23T22:14:15Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/azureproxy",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1565204288,
+		"Timestamp": "2019-08-23T22:14:15Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/redirector",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1565204284,
+		"Timestamp": "2019-08-23T22:14:15Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/8dbd5e8b-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566589995,
+		"Timestamp": "2019-08-23T22:14:15Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b2a0e1b3-bd3f-11e9-b2a7-d61658c73830/tunnel-front",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 35140951,
+		"Timestamp": "2019-08-23T22:14:07Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/114f7246-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 983407,
+		"Timestamp": "2019-08-23T22:14:12Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/azureproxy",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 0,
+		"Timestamp": "2019-08-23T22:14:07Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/redirector",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 4221562,
+		"Timestamp": "2019-08-23T22:14:06Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/8dbd5e8b-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 1881274,
+		"Timestamp": "2019-08-23T22:14:15Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b2a0e1b3-bd3f-11e9-b2a7-d61658c73830/tunnel-front",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 4161536,
+		"Timestamp": "2019-08-23T22:14:07Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/114f7246-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 18952192,
+		"Timestamp": "2019-08-23T22:14:12Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/azureproxy",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 8224768,
+		"Timestamp": "2019-08-23T22:14:07Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/redirector",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 483328,
+		"Timestamp": "2019-08-23T22:14:06Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/8dbd5e8b-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 74915840,
+		"Timestamp": "2019-08-23T22:14:15Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/be78d7f6-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 92954624,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 7446528,
+		"Timestamp": "2019-08-23T22:13:33Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 14811136,
+		"Timestamp": "2019-08-23T22:13:22Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/kubedns",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 15114240,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/healthz",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 5406720,
+		"Timestamp": "2019-08-23T22:13:35Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/94e52ab1-a1f2-11e9-8b08-d602e29755d5/autoscaler",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 10043392,
+		"Timestamp": "2019-08-23T22:13:32Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/2c3de48d-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 58052608,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 9904128,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "memoryWorkingSetBytes",
+		"CounterValue": 3645440,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/be78d7f6-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566590079,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639920,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639940,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/kubedns",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639904,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/healthz",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639932,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/94e52ab1-a1f2-11e9-8b08-d602e29755d5/autoscaler",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1562639909,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/2c3de48d-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1566580349,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1563224204,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "restartTimeEpoch",
+		"CounterValue": 1563224199,
+		"Timestamp": "2019-08-23T22:13:40Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/be78d7f6-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 3004849,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 796842,
+		"Timestamp": "2019-08-23T22:13:33Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 708906,
+		"Timestamp": "2019-08-23T22:13:22Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/kubedns",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 3451625,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/healthz",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 2572419,
+		"Timestamp": "2019-08-23T22:13:35Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/94e52ab1-a1f2-11e9-8b08-d602e29755d5/autoscaler",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 548275,
+		"Timestamp": "2019-08-23T22:13:32Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/2c3de48d-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 1740316,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 0,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "cpuUsageNanoCores",
+		"CounterValue": 3156661,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/be78d7f6-c5df-11e9-8736-86290fd7dd1f/omsagent",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 66428928,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 5611520,
+		"Timestamp": "2019-08-23T22:13:33Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/sidecar",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 11833344,
+		"Timestamp": "2019-08-23T22:13:22Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/kubedns",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 11063296,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/healthz",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 2551808,
+		"Timestamp": "2019-08-23T22:13:35Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/94e52ab1-a1f2-11e9-8b08-d602e29755d5/autoscaler",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 9244672,
+		"Timestamp": "2019-08-23T22:13:32Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/2c3de48d-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 20402176,
+		"Timestamp": "2019-08-23T22:13:37Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/azureproxy",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 8216576,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	},
+	{
+		"InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/redirector",
+		"CounterName": "memoryRssBytes",
+		"CounterValue": 462848,
+		"Timestamp": "2019-08-23T22:13:31Z"
+	}
+]
