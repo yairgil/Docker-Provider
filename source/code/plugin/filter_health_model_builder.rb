@@ -216,11 +216,11 @@ module Fluent
 
                     # return an empty event stream, else the match will throw a NoMethodError
                     return []
-                elsif tag.start_with?("kubehealth.AgentCollectionTime")
+                elsif tag.start_with?("oms.api.KubeHealth.AgentCollectionTime")
                     # this filter also acts as a pass through as we are rewriting the tag and emitting to the fluent stream
                     es
                 else
-                    raise 'Invalid tag #{tag} received'
+                    raise "Invalid tag #{tag} received"
                 end
 
             rescue => e
