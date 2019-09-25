@@ -84,7 +84,7 @@ module Fluent
                 new_es = MultiEventStream.new
                 time = Time.now
 
-                if tag.start_with?("oms.api.KubeHealth.DaemonSet")
+                if tag.start_with?("kubehealth.DaemonSet")
                     records = []
                     if !es.nil?
                         es.each{|time, record|
@@ -93,7 +93,7 @@ module Fluent
                         @buffer.add_to_buffer(records)
                     end
                     return []
-                elsif tag.start_with?("oms.api.KubeHealth.ReplicaSet")
+                elsif tag.start_with?("kubehealth.ReplicaSet")
                     @log.info "TAG #{tag}"
                     records = []
                     es.each{|time, record|
@@ -216,7 +216,7 @@ module Fluent
 
                     # return an empty event stream, else the match will throw a NoMethodError
                     return []
-                elsif tag.start_with?("oms.api.KubeHealth.AgentCollectionTime")
+                elsif tag.start_with?("kubehealth.AgentCollectionTime")
                     # this filter also acts as a pass through as we are rewriting the tag and emitting to the fluent stream
                     es
                 else
