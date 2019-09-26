@@ -147,7 +147,7 @@ module Fluent
                 health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
                 health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
                 health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-                health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+                health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
                 health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
                 health_record[HealthMonitorRecordFields::NODE_NAME] =  @@hostName
                 @log.info "Processed Node CPU"
@@ -179,7 +179,7 @@ module Fluent
                 health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
                 health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
                 health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-                health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+                health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
                 health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
                 health_record[HealthMonitorRecordFields::NODE_NAME] =  @@hostName
                 @log.info "Processed Node Memory"

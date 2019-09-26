@@ -171,7 +171,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
       health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-      health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+      health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       #@@hmlog.info "Successfully processed process_cpu_oversubscribed_monitor"
@@ -197,7 +197,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
       health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-      health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+      health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       #@@hmlog.info "Successfully processed process_memory_oversubscribed_monitor"
@@ -221,7 +221,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
       health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-      health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+      health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       #@@hmlog.info "Successfully processed process_kube_api_up_monitor"
@@ -250,7 +250,7 @@ module Fluent
         health_record[HealthMonitorRecordFields::MONITOR_ID] = config_monitor_id
         health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
         health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-        health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+        health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
         health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
         health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
         records.push(health_record)
@@ -282,7 +282,7 @@ module Fluent
             health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
             health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
             health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-            health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+            health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
             health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
             health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
             health_record[HealthMonitorRecordFields::NODE_NAME] = node_name

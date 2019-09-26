@@ -88,10 +88,10 @@ describe 'HealthContainerCpuMemoryAggregator spec' do
             record["Details"]["details"]["namespace"].wont_be_nil
             record["Details"]["timestamp"].wont_be_nil
             record["Details"]["state"].wont_be_nil
-            record["MonitorId"].wont_be_nil
+            record["MonitorTypeId"].wont_be_nil
             record["MonitorInstanceId"].wont_be_nil
             record["TimeFirstObserved"].wont_be_nil
-            record["AgentCollectionTime"].wont_be_nil
+            record["TimeGenerated"].wont_be_nil
         }
     end
 
@@ -135,8 +135,8 @@ describe 'HealthContainerCpuMemoryAggregator spec' do
 
         #omsagent has limit set. So its state should be set to pass.
         #sidecar has no limit set. its state should be set to warning
-        omsagent_record = records.select{|r| r["MonitorId"] == MonitorId::CONTAINER_CPU_MONITOR_ID && r["Details"]["details"]["container"] == "omsagent"}[0]
-        sidecar_record = records.select{|r| r["MonitorId"] == MonitorId::CONTAINER_CPU_MONITOR_ID && r["Details"]["details"]["container"] == "sidecar"}[0]
+        omsagent_record = records.select{|r| r["MonitorTypeId"] == MonitorId::CONTAINER_CPU_MONITOR_ID && r["Details"]["details"]["container"] == "omsagent"}[0]
+        sidecar_record = records.select{|r| r["MonitorTypeId"] == MonitorId::CONTAINER_CPU_MONITOR_ID && r["Details"]["details"]["container"] == "sidecar"}[0]
         omsagent_record['Details']['state'].must_equal HealthMonitorStates::PASS #limit is set
         sidecar_record['Details']['state'].must_equal HealthMonitorStates::WARNING #limit is NOT set
     end
@@ -184,7 +184,7 @@ describe 'HealthContainerCpuMemoryAggregator spec' do
         records = aggregator.get_records
 
         #removed(missed) omsagent records should result in state being unknown
-        omsagent_record = records.select{|r| r["MonitorId"] == MonitorId::CONTAINER_CPU_MONITOR_ID && r["Details"]["details"]["container"] == "omsagent" && !r["Details"]["details"]["workload_name"].include?("omsagent-rs") }[0]
+        omsagent_record = records.select{|r| r["MonitorTypeId"] == MonitorId::CONTAINER_CPU_MONITOR_ID && r["Details"]["details"]["container"] == "omsagent" && !r["Details"]["details"]["workload_name"].include?("omsagent-rs") }[0]
         omsagent_record['Details']['state'].must_equal HealthMonitorStates::UNKNOWN #limit is set
     end
 end

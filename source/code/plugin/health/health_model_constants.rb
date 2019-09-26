@@ -43,18 +43,19 @@ module HealthModel
     end
 
     class HealthMonitorRecordFields
-        AGENT_COLLECTION_TIME = "AgentCollectionTime"
         CLUSTER_ID = "ClusterId"
         DETAILS = "Details"
+        HEALTH_MODEL_DEFINITION_VERSION = "HealthModelDefinitionVersion"
         MONITOR_CONFIG = "MonitorConfig"
-        MONITOR_ID = "MonitorId"
+        MONITOR_ID = "MonitorTypeId"
         MONITOR_INSTANCE_ID = "MonitorInstanceId"
         MONITOR_LABELS = "MonitorLabels"
-        NAMESPACE = "Namespace"
         NEW_STATE = "NewState"
         NODE_NAME = "NodeName"
         OLD_STATE = "OldState"
+        PARENT_MONITOR_INSTANCE_ID = "ParentMonitorInstanceId"
         TIME_FIRST_OBSERVED = "TimeFirstObserved"
+        TIME_GENERATED = "TimeGenerated"
     end
 
     class HealthMonitorStates
@@ -73,5 +74,8 @@ module HealthModel
         ROLE = "kubernetes.io/role"
         WORKLOAD_KIND = "container.azm.ms/workload-kind"
         WORKLOAD_NAME = "container.azm.ms/workload-name"
+        MASTERROLE = "node-role.kubernetes.io/master"
+        COMPUTEROLE = "node-role.kubernetes.io/compute"
+        INFRAROLE = "node-role.kubernetes.io/infra"
     end
 end

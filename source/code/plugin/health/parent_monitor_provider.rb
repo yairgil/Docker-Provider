@@ -35,14 +35,13 @@ module HealthModel
                             op = "#{condition['operator']}"
                             right = "#{condition['value']}"
                             cond = left.send(op.to_sym, right)
-
                             if cond
                                 @parent_monitor_mapping[monitor.monitor_instance_id] = condition['parent_id']
                                 return condition['parent_id']
                             end
                         }
                     end
-                    raise "Conditions were not met to determine the parent monitor id" if monitor_id != MonitorId::CLUSTER
+                    return @health_model_definition[monitor_id]['default_parent_monitor_id']
                 end
             else
                 raise "Invalid Monitor Id #{monitor_id} in get_parent_monitor_id"
@@ -81,6 +80,7 @@ module HealthModel
             end
             parent_monitor_instance_id = "#{parent_monitor_id}-#{values.join('-')}"
             @parent_monitor_instance_mapping[monitor_instance_id] = parent_monitor_instance_id
+            @log.info "parent_monitor_instance_id for #{monitor_instance_id} => #{parent_monitor_instance_id}"
             return parent_monitor_instance_id
         end
     end

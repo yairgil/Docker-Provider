@@ -19,7 +19,7 @@ module Fluent
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator
         include HealthModel
 
-        @@rewrite_tag = 'oms.api.KubeHealth.AgentCollectionTime'
+        @@rewrite_tag = 'oms.api.KubeHealth.Signals'
         @@cluster_id = KubernetesApiClient.getClusterId
         @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
         @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
@@ -177,6 +177,8 @@ module Fluent
 
                     @log.info "after Adding missing signals all_records.size #{all_records.size}"
 
+                    HealthMonitorHelpers.add_agentpool_node_label_if_not_present(all_records)
+
                     # build the health model
                     @model_builder.process_records(all_records)
                     all_monitors = @model_builder.finalize_model
@@ -203,23 +205,36 @@ module Fluent
 
                     @log.info "after optimizing health signals all_monitors.size #{all_monitors.size}"
 
+                    current_time = Time.now
+                    emit_time = current_time.to_f
                     # for each key in monitor.keys,
                     # get the state from health_monitor_state
                     # generate the record to send
                     all_monitors.keys.each{|key|
                         record = @provider.get_record(all_monitors[key], state)
-                        if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER && all_monitors.size > 1
-                            old_state = record[HealthMonitorRecordFields::OLD_STATE]
-                            new_state = record[HealthMonitorRecordFields::NEW_STATE]
-                            if old_state != new_state && @cluster_old_state != old_state && @cluster_new_state != new_state
-                                    ApplicationInsightsUtility.sendCustomEvent("HealthModel_ClusterStateChanged",{"old_state" => old_state , "new_state" => new_state, "monitor_count" => all_monitors.size})
-                                    @log.info "sent telemetry for cluster state change from #{record['OldState']} to #{record['NewState']}"
-                                    @cluster_old_state = old_state
-                                    @cluster_new_state = new_state
+                        if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER
+                            if !record[HealthMonitorRecordFields::DETAILS].nil?
+                                details = JSON.parse(record[HealthMonitorRecordFields::DETAILS])
+                                details[HealthMonitorRecordFields::HEALTH_MODEL_DEFINITION_VERSION] = "#{ENV['HEALTH_MODEL_DEFINITION_VERSION']}"
+                                record[HealthMonitorRecordFields::DETAILS] = details.to_json
+                            end
+                            if all_monitors.size > 1
+                                old_state = record[HealthMonitorRecordFields::OLD_STATE]
+                                new_state = record[HealthMonitorRecordFields::NEW_STATE]
+                                if old_state != new_state && @cluster_old_state != old_state && @cluster_new_state != new_state
+                                        ApplicationInsightsUtility.sendCustomEvent("HealthModel_ClusterStateChanged",{"old_state" => old_state , "new_state" => new_state, "monitor_count" => all_monitors.size})
+                                        @log.info "sent telemetry for cluster state change from #{record['OldState']} to #{record['NewState']}"
+                                        @cluster_old_state = old_state
+                                        @cluster_new_state = new_state
+                                end
                             end
                         end
-                        #@log.info "#{record["Details"]} #{record["MonitorInstanceId"]} #{record["OldState"]} #{record["NewState"]}"
-                        new_es.add(time, record)
+                        record_wrapper = {
+                            "DataType" => "KUBE_HEALTH_BLOB",
+                            "IPName" => "ContainerInsights",
+                            "DataItems" => [record.each { |k, v| record[k] = v }],
+                        }
+                        new_es.add(emit_time, record_wrapper)
                     }
 
                     #emit the stream
@@ -233,8 +248,8 @@ module Fluent
                     @cluster_health_state.update_state(@state.to_h)
 
                     # return an empty event stream, else the match will throw a NoMethodError
-                    return []
-                elsif tag.start_with?("oms.api.KubeHealth.AgentCollectionTime")
+                    return MultiEventStream.new
+                elsif tag.start_with?("oms.api.KubeHealth.Signals")
                     # this filter also acts as a pass through as we are rewriting the tag and emitting to the fluent stream
                     es
                 else
