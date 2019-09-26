@@ -8,6 +8,7 @@ module Fluent
     @@ContainerNodeInventoryTag = "oms.containerinsights.ContainerNodeInventory"
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
+    @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
 
     @@rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
     @@rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
@@ -15,6 +16,7 @@ module Fluent
     @@rsPromK8sServiceCount = ENV["TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH"]
     @@rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
     @@rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
+    @@rsPromMonitorPodsNamespaceLength = ENV["TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH"]
 
     def initialize
       super
@@ -83,6 +85,17 @@ module Fluent
               record["Labels"] = [items["metadata"]["labels"]]
               record["Status"] = ""
 
+              if !items["spec"]["providerID"].nil? && !items["spec"]["providerID"].empty?
+                if File.file?(@@AzStackCloudFileName) # existence of this file indicates agent running on azstack
+                  record["KubernetesProviderID"] = "azurestack"
+                else
+                  record["KubernetesProviderID"] = items["spec"]["providerID"]
+                end
+              else
+                record["KubernetesProviderID"] = "onprem"
+              end
+
+
               # Refer to https://kubernetes.io/docs/concepts/architecture/nodes/#condition for possible node conditions.
               # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
               # populate the KubeNodeInventory Status field. A possible value for this field could be "Ready OutofDisk"
@@ -138,6 +151,9 @@ module Fluent
                 properties["KubeletVersion"] = record["KubeletVersion"]
                 properties["OperatingSystem"] = nodeInfo["operatingSystem"]
                 properties["DockerVersion"] = dockerVersion
+                properties["KubernetesProviderID"] = record["KubernetesProviderID"]
+                properties["KernelVersion"] = nodeInfo["kernelVersion"]
+                properties["OSImage"] = nodeInfo["osImage"]
 
                 capacityInfo = items["status"]["capacity"]
                 ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
@@ -150,6 +166,7 @@ module Fluent
                   properties["rsPromServ"] = @@rsPromK8sServiceCount
                   properties["rsPromUrl"] = @@rsPromUrlCount
                   properties["rsPromMonPods"] = @@rsPromMonitorPods
+                  properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
                 end
                 ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
                 telemetrySent = true
