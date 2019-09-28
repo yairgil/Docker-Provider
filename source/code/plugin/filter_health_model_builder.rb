@@ -19,7 +19,7 @@ module Fluent
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator
         include HealthModel
 
-        @@rewrite_tag = 'oms.api.KubeHealth.Signals'
+        @@rewrite_tag = 'kubehealth.Signals'
         @@cluster_id = KubernetesApiClient.getClusterId
         @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
         @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
@@ -85,7 +85,7 @@ module Fluent
                 new_es = MultiEventStream.new
                 time = Time.now
 
-                if tag.start_with?("oms.api.KubeHealth.DaemonSet.Node")
+                if tag.start_with?("kubehealth.DaemonSet.Node")
                     node_records = []
                     if !es.nil?
                         es.each{|time, record|
@@ -94,7 +94,7 @@ module Fluent
                         @buffer.add_to_buffer(node_records)
                     end
                     return MultiEventStream.new
-                elsif tag.start_with?("oms.api.KubeHealth.DaemonSet.Container")
+                elsif tag.start_with?("kubehealth.DaemonSet.Container")
                     container_records = []
                     if !es.nil?
                         es.each{|time, record|
@@ -105,7 +105,7 @@ module Fluent
                     deduped_records = container_records_aggregator.dedupe_records(container_records)
                     @container_cpu_memory_records.push(*deduped_records) # push the records for aggregation later
                     return MultiEventStream.new
-                elsif tag.start_with?("oms.api.KubeHealth.ReplicaSet")
+                elsif tag.start_with?("kubehealth.ReplicaSet")
                     records = []
                     es.each{|time, record|
                         records.push(record)
@@ -249,11 +249,11 @@ module Fluent
 
                     # return an empty event stream, else the match will throw a NoMethodError
                     return MultiEventStream.new
-                elsif tag.start_with?("oms.api.KubeHealth.Signals")
+                elsif tag.start_with?("kubehealth.Signals")
                     # this filter also acts as a pass through as we are rewriting the tag and emitting to the fluent stream
                     es
                 else
-                    raise 'Invalid tag #{tag} received'
+                    raise "Invalid tag #{tag} received"
                 end
 
             rescue => e
