@@ -8,6 +8,7 @@ module HealthModel
             @health_model_definition = definition
             @parent_monitor_mapping = {} #monitorId --> parent_monitor_id mapping
             @parent_monitor_instance_mapping = {} #child monitor id -- > parent monitor instance mapping. Used in instances when the node no longer exists and impossible to compute from kube api results
+            @log = HealthMonitorHelpers.get_log_handle
         end
 
         # gets the parent monitor id given the state transition. It requires the monitor id and labels to determine the parent id
