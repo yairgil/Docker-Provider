@@ -26,7 +26,6 @@ module Fluent
         @@cluster_id = KubernetesApiClient.getClusterId
         @resources = HealthKubernetesResources.instance
         @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
-        @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
       rescue => e
         ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
       end
@@ -55,10 +54,7 @@ module Fluent
                 @@clusterCpuCapacity = cluster_capacity[0]
                 @@clusterMemoryCapacity = cluster_capacity[1]
                 @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
-                if @@cluster_health_model_enabled
-                    ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
-                    initialize_inventory
-                end
+                initialize_inventory
             end
         rescue => e
             ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
@@ -77,10 +73,6 @@ module Fluent
 
     def enumerate
       begin
-        if !@@cluster_health_model_enabled
-            @@hmlog.info "Cluster Health Model disabled in in_kube_health"
-            return
-        end
 
         currentTime = Time.now
         emitTime = currentTime.to_f
