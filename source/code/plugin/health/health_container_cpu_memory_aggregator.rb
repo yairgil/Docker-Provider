@@ -1,5 +1,34 @@
 require_relative 'health_model_constants'
-
+=begin
+    @cpu_records/@memory_records
+        [
+            {
+            "namespace_workload_container_name" : {
+                "limit" : limit, #number
+                "limit_set" : limit_set, #bool
+                "record_count" : record_count, #number
+                "workload_name": workload_name,
+                "workload_kind": workload_kind,
+                "namespace" : namespace,
+                "container": container,
+                records:[
+                    {
+                        "counter_value": counter_value,
+                        "pod_name": pod_name,
+                        "container": container,
+                        "state" : state
+                    },
+                    {
+                        "counter_value": counter_value,
+                        "pod_name": pod_name,
+                        "container": container,
+                        "state" : state
+                    }
+                ]
+            }
+        }
+    ]
+=end
 module HealthModel
     # this class aggregates the records at the container level
     class HealthContainerCpuMemoryAggregator
@@ -91,9 +120,20 @@ module HealthModel
                         resource_hash[resource_hash_key]["container"] = @pod_uid_lookup[lookup_key]["container"]
                         resource_hash[resource_hash_key]["records"] = []
                     end
-                    #append the record to the array
+
+                    container_instance_record = {}
+
+                    pod_name = @pod_uid_lookup[lookup_key]["pod_name"]
+                    #append the record to the hash
                     # append only if the record is not a duplicate record
-                    resource_hash[resource_hash_key]["records"].push(record["CounterValue"])
+                    container_instance_record["pod_name"] = pod_name
+                    container_instance_record["counter_value"] = record["CounterValue"]
+                    container_instance_record["container"] = @pod_uid_lookup[lookup_key]["container"]
+                    container_instance_record["state"] = calculate_container_instance_state(
+                        container_instance_record["counter_value"],
+                        resource_hash[resource_hash_key]["limit"],
+                        @provider.get_config(MonitorId::CONTAINER_MEMORY_MONITOR_ID))
+                    resource_hash[resource_hash_key]["records"].push(container_instance_record)
                 rescue => e
                     @log.info "Error in HealthContainerCpuMemoryAggregator aggregate #{e.backtrace} #{record}"
                 end
@@ -105,11 +145,11 @@ module HealthModel
             # if limits not set, set state to warning
             # if all records present, sort in descending order of metric, compute index based on StateThresholdPercentage, get the state (pass/fail/warn) based on monitor state (Using [Fail/Warn]ThresholdPercentage, and set the state)
             @memory_records.each{|k,v|
-                calculate_state(v, @provider.get_config(MonitorId::CONTAINER_MEMORY_MONITOR_ID))
+                calculate_monitor_state(v, @provider.get_config(MonitorId::CONTAINER_MEMORY_MONITOR_ID))
             }
 
             @cpu_records.each{|k,v|
-                calculate_state(v, @provider.get_config(MonitorId::CONTAINER_CPU_MONITOR_ID))
+                calculate_monitor_state(v, @provider.get_config(MonitorId::CONTAINER_CPU_MONITOR_ID))
             }
 
             @log.info "Finished computing state"
@@ -125,11 +165,14 @@ module HealthModel
                     "state" => record["state"],
                     "details" => {
                         "cpu_limit_millicores" => record["limit"]/1000000.to_f,
-                        "cpu_usage_instances" => record["records"].map{|r| r / 1000000.to_f},
+                        "cpu_usage_instances" => record["records"].map{|r| r.each {|k,v|
+                            k == "counter_value" ? r[k] = r[k] / 1000000.to_f : r[k]
+                        }},
                         "workload_name" => record["workload_name"],
                         "workload_kind" => record["workload_kind"],
                         "namespace" => record["namespace"],
-                        "container" => record["container"]
+                        "container" => record["container"],
+                        "limit_set" => record["limit_set"]
                         }
                     }
 
@@ -172,17 +215,18 @@ module HealthModel
         end
 
         private
-        def calculate_state(v, config)
-            if !v['limit_set']
+        def calculate_monitor_state(v, config)
+            if !v['limit_set'] && v['namespace'] != 'kube-system'
                 v["state"] = HealthMonitorStates::WARNING
             else
                 # sort records by descending order of metric
-                v["records"] = v["records"].sort.reverse
+                v["records"] = v["records"].sort_by{|record| record["counter_value"]}.reverse
                 size = v["records"].size
                 if size < v["record_count"]
-                    unknown = v["record_count"] - size
-                    for i in unknown.downto(1)
-                        v["records"].insert(0, -1) #insert 0 for unknown records
+                    unknown_count = v["record_count"] - size
+                    for i in unknown_count.downto(1)
+                        # it requires a lot of computation to figure out which actual pod is not sending the signal
+                        v["records"].insert(0, {"counter_value" => -1, "container" => v["container"], "pod_name" =>  "???", "state" => HealthMonitorStates::UNKNOWN }) #insert -1 for unknown records
                     end
                 end
 
@@ -193,20 +237,18 @@ module HealthModel
                     count = ((state_threshold*size)/100).ceil
                     state_index = size - count
                 end
-                value = v["records"][state_index]
+                v["state"] = v["records"][state_index]["state"]
+            end
+        end
 
-                if value == -1 #
-                    v["state"] = HealthMonitorStates::UNKNOWN
-                else
-                    percent_value = value * 100  / v["limit"]
-                    if percent_value > config['FailThresholdPercentage']
-                        v["state"] =  HealthMonitorStates::FAIL
-                    elsif percent_value > config['WarnThresholdPercentage']
-                        v["state"] =  HealthMonitorStates::WARN
-                    else
-                        v["state"] =  HealthMonitorStates::PASS
-                    end
-                end
+        def calculate_container_instance_state(counter_value, limit, config)
+            percent_value = counter_value * 100  / limit
+            if percent_value > config['FailThresholdPercentage']
+                return HealthMonitorStates::FAIL
+            elsif percent_value > config['WarnThresholdPercentage']
+                return HealthMonitorStates::WARN
+            else
+                return HealthMonitorStates::PASS
             end
         end
     end

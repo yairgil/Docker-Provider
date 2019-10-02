@@ -254,7 +254,8 @@
         "aggregation_algorithm": "percentage",
         "aggregation_algorithm_params": {
             "critical_threshold": 80.0,
-            "warning_threshold": 90.0
+            "warning_threshold": 90.0,
+            "state_threshold": 80.0
         },
         "parent_monitor_id": "all_nodes",
         "labels": [

@@ -138,7 +138,7 @@ describe 'HealthContainerCpuMemoryAggregator spec' do
         omsagent_record = records.select{|r| r["MonitorTypeId"] == MonitorId::CONTAINER_CPU_MONITOR_ID && r["Details"]["details"]["container"] == "omsagent"}[0]
         sidecar_record = records.select{|r| r["MonitorTypeId"] == MonitorId::CONTAINER_CPU_MONITOR_ID && r["Details"]["details"]["container"] == "sidecar"}[0]
         omsagent_record['Details']['state'].must_equal HealthMonitorStates::PASS #limit is set
-        sidecar_record['Details']['state'].must_equal HealthMonitorStates::WARNING #limit is NOT set
+        sidecar_record['Details']['state'].must_equal HealthMonitorStates::PASS
     end
 
 

@@ -56,6 +56,7 @@ module HealthModel
                 begin
                     namespace = pod['metadata']['namespace']
                     poduid = pod['metadata']['uid']
+                    pod_name = pod['metadata']['name']
                     workload_name = get_workload_name(pod)
                     workload_kind = get_workload_kind(pod)
                     pod['spec']['containers'].each do |container|
@@ -77,7 +78,7 @@ module HealthModel
                             memory_limit = get_node_capacity(pod['spec']['nodeName'], 'memory')
                             memory_limit_set = false
                         end
-                        @pod_uid_lookup[key] = {"workload_kind" => workload_kind, "workload_name" => workload_name, "namespace" => namespace, "cpu_limit" => cpu_limit, "memory_limit" => memory_limit, "cpu_limit_set" => cpu_limit_set, "memory_limit_set" => memory_limit_set, "container" => cname}
+                        @pod_uid_lookup[key] = {"workload_kind" => workload_kind, "workload_name" => workload_name, "namespace" => namespace, "cpu_limit" => cpu_limit, "memory_limit" => memory_limit, "cpu_limit_set" => cpu_limit_set, "memory_limit_set" => memory_limit_set, "container" => cname, "pod_name" => pod_name}
                         container_count_key = "#{namespace}_#{workload_name.split('~~')[1]}_#{cname}"
                         if !@workload_container_count.key?(container_count_key)
                             @workload_container_count[container_count_key] = 1
