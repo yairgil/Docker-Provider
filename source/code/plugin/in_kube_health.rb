@@ -234,7 +234,7 @@ module Fluent
         percent = pods_ready / total_pods * 100
         timestamp = Time.now.utc.iso8601
 
-        state = HealthMonitorUtils.compute_percentage_state((100-percent), monitor_config)
+        state = HealthMonitorUtils.compute_percentage_state(percent, monitor_config)
         health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workload_name" => workload_name, "namespace" => namespace, "workload_kind" => workload_kind}}
         monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(config_monitor_id, [@@cluster_id, namespace, workload_name])
         health_record = {}

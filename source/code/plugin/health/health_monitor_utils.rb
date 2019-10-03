@@ -36,12 +36,22 @@ module HealthModel
                 end
                 fail_percentage = config['FailThresholdPercentage'].to_f
 
-                if value > fail_percentage
-                    return HealthMonitorStates::FAIL
-                elsif !warn_percentage.nil? && value > warn_percentage
-                    return HealthMonitorStates::WARNING
+                if !config.nil? && !config['Operator'].nil? && config['Operator'] == '<'
+                    if value < fail_percentage
+                        return HealthMonitorStates::FAIL
+                    elsif !warn_percentage.nil? && value < warn_percentage
+                        return HealthMonitorStates::WARNING
+                    else
+                        return HealthMonitorStates::PASS
+                    end
                 else
-                    return HealthMonitorStates::PASS
+                    if value > fail_percentage
+                        return HealthMonitorStates::FAIL
+                    elsif !warn_percentage.nil? && value > warn_percentage
+                        return HealthMonitorStates::WARNING
+                    else
+                        return HealthMonitorStates::PASS
+                    end
                 end
             end
 
@@ -143,7 +153,7 @@ module HealthModel
                     failtypes = monitor_config["NodeConditionTypesForFailedState"]
 		    if !failtypes.nil?
 		    	failtypes = failtypes.split(',').map{|x| x.downcase}.map{|x| x.gsub(" ","")}.to_set
-		    end 
+		    end
                 end
 		log = get_log_handle
 		#log.info "Fail Types #{failtypes.inspect}"
@@ -290,11 +300,12 @@ module HealthModel
             def ensure_cpu_memory_capacity_set(log, cpu_capacity, memory_capacity, hostname)
 
                 log.info "ensure_cpu_memory_capacity_set cpu_capacity #{cpu_capacity} memory_capacity #{memory_capacity}"
-                if cpu_capacity != 0.0 && memory_capacity != 0.0
+                if cpu_capacity != 1.0 && memory_capacity != 1.0
                     log.info "CPU And Memory Capacity are already set"
                     return [cpu_capacity, memory_capacity]
                 end
 
+                log.info "CPU and Memory Capacity Not set"
                 begin
                     @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
                 rescue Exception => e

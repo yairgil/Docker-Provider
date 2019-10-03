@@ -34,8 +34,6 @@ module Fluent
         def initialize
             begin
                 super
-                @cpu_capacity = 1.0 #avoid divide by zero error in case of network issues accessing kube-api
-                @memory_capacity = 1.0
                 @last_resource_refresh = DateTime.now.to_time.to_i
                 @metrics_to_collect_hash = {}
                 @resources = HealthKubernetesResources.instance # this doesnt require node and pod inventory. So no need to populate them
@@ -58,6 +56,8 @@ module Fluent
         def start
             begin
                 super
+                @cpu_capacity = 1.0 #avoid divide by zero error in case of network issues accessing kube-api
+                @memory_capacity = 1.0
                 @metrics_to_collect_hash = HealthMonitorUtils.build_metrics_hash(@metrics_to_collect)
                 @log.debug "Calling ensure_cpu_memory_capacity_set cpu_capacity #{@cpu_capacity} memory_capacity #{@memory_capacity}"
                 node_capacity = HealthMonitorUtils.ensure_cpu_memory_capacity_set(@@hm_log, @cpu_capacity, @memory_capacity, @@hostName)
@@ -73,6 +73,9 @@ module Fluent
 
         def filter_stream(tag, es)
             begin
+                node_capacity = HealthMonitorUtils.ensure_cpu_memory_capacity_set(@@hm_log, @cpu_capacity, @memory_capacity, @@hostName)
+                @cpu_capacity = node_capacity[0]
+                @memory_capacity = node_capacity[1]
                 new_es = MultiEventStream.new
                 records_count = 0
                 es.each { |time, record|
@@ -96,6 +99,7 @@ module Fluent
                 if record.key?("MonitorLabels")
                     return record
                 end
+
                 object_name = record['DataItems'][0]['ObjectName']
                 counter_name = record['DataItems'][0]['Collections'][0]['CounterName'].downcase
                 if @metrics_to_collect_hash.key?(counter_name.downcase)
