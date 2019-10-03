@@ -34,8 +34,8 @@ module Fluent
         def initialize
             begin
                 super
-                @cpu_capacity = 0.0
-                @memory_capacity = 0.0
+                @cpu_capacity = 1.0 #avoid divide by zero error in case of network issues accessing kube-api
+                @memory_capacity = 1.0
                 @last_resource_refresh = DateTime.now.to_time.to_i
                 @metrics_to_collect_hash = {}
                 @resources = HealthKubernetesResources.instance # this doesnt require node and pod inventory. So no need to populate them

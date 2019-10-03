@@ -89,6 +89,9 @@ module HealthModel
                 begin
                     instance_name = record["InstanceName"]
                     lookup_key = instance_name.split('/').last(2).join('/')
+                    if !@pod_uid_lookup.key?(lookup_key)
+                        next
+                    end
                     namespace = @pod_uid_lookup[lookup_key]['namespace']
                     workload_name = @pod_uid_lookup[lookup_key]['workload_name']
                     cname = lookup_key.split('/')[1]
@@ -135,7 +138,7 @@ module HealthModel
                         @provider.get_config(MonitorId::CONTAINER_MEMORY_MONITOR_ID))
                     resource_hash[resource_hash_key]["records"].push(container_instance_record)
                 rescue => e
-                    @log.info "Error in HealthContainerCpuMemoryAggregator aggregate #{e.backtrace} #{record}"
+                    @log.info "Error in HealthContainerCpuMemoryAggregator aggregate #{e.backtrace} #{e.message} #{record}"
                 end
             end
         end

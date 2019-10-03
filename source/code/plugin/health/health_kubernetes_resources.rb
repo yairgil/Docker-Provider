@@ -59,6 +59,10 @@ module HealthModel
                     pod_name = pod['metadata']['name']
                     workload_name = get_workload_name(pod)
                     workload_kind = get_workload_kind(pod)
+                    # we don't show jobs in container health
+                    if workload_kind.casecmp('job') == 0
+                        next
+                    end
                     pod['spec']['containers'].each do |container|
                         cname = container['name']
                         key = "#{poduid}/#{cname}"
@@ -190,6 +194,9 @@ module HealthModel
         end
 
         def get_node_capacity(node_name, type)
+            if node_name.nil? #unscheduled pods will not have a node name
+                return -1
+            end
             begin
                 @node_inventory["items"].each do |node|
                     if (!node["status"]["capacity"].nil?) && node["metadata"]["name"].casecmp(node_name.downcase) == 0
@@ -197,7 +204,7 @@ module HealthModel
                     end
                 end
             rescue => e
-                @log.info "Error in get_node_capacity(pod, type) #{e.backtrace}"
+                @log.info "Error in get_node_capacity(pod, #{type}) #{e.backtrace} #{e.message}"
                 return -1
             end
         end
