@@ -115,6 +115,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser.rb;                                                 installer/scripts/tomlparser.rb;     755; root; root
 /opt/tomlparser-prom-customconfig.rb;                               installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
 /opt/td-agent-bit-conf-customizer.rb;                               installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
+/opt/ConfigParseErrorLogger.rb;                                     installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 
 
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_container.rb;                                 source/code/plugin/filter_cadvisor_health_container.rb; 644; root; root

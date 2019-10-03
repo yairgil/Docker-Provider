@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 
 require_relative "tomlrb"
+require_relative "ConfigParseErrorLogger"
 
 @configMapMountPath = "/etc/config/settings/log-data-collection-settings"
 @configVersion = ""
@@ -30,7 +31,7 @@ def parseConfigMap
       return nil
     end
   rescue => errorStr
-    puts "config::error::Exception while parsing toml config file: #{errorStr}, using defaults"
+    ConfigParseErrorLogger.logError("Exception while parsing config map for log collection/env variable settings: #{errorStr}, using defaults, please check config map for errors")
     @excludePath = "*_kube-system_*.log"
     return nil
   end
@@ -67,7 +68,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
     rescue => errorStr
-      puts "config::error::Exception while reading config settings for stdout log collection - #{errorStr}, using defaults"
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for stdout log collection - #{errorStr}, using defaults, please check config map for errors")
     end
 
     #Get stderr log config settings
@@ -104,7 +105,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
     rescue => errorStr
-      puts "config::error:Exception while reading config settings for stderr log collection - #{errorStr}, using defaults"
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for stderr log collection - #{errorStr}, using defaults, please check config map for errors")
     end
 
     #Get environment variables log config settings
@@ -114,7 +115,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         puts "config::Using config map setting for cluster level environment variable collection"
       end
     rescue => errorStr
-      puts "config::error::Exception while reading config settings for cluster level environment variable collection - #{errorStr}, using defaults"
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for cluster level environment variable collection - #{errorStr}, using defaults, please check config map for errors")
     end
   end
 end
@@ -128,7 +129,7 @@ if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVe
   end
 else
   if (File.file?(@configMapMountPath))
-    puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
+    ConfigParseErrorLogger.logError("config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults, please use supported schema version")
   end
   @excludePath = "*_kube-system_*.log"
 end
@@ -160,6 +161,6 @@ if !file.nil?
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
   puts "****************End Config Processing********************"
 else
-  puts "config::error::Exception while opening file for writing config environment variables"
+  puts "Exception while opening file for writing config environment variables"
   puts "****************End Config Processing********************"
 end
