@@ -26,6 +26,7 @@ module Fluent
         @@cluster_id = KubernetesApiClient.getClusterId
         @resources = HealthKubernetesResources.instance
         @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
+        @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
       rescue => e
         ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
       end
@@ -73,6 +74,10 @@ module Fluent
 
     def enumerate
       begin
+        if !@@cluster_health_model_enabled
+            @@hmlog.info "Cluster Health Model disabled in in_kube_health"
+            return
+        end
 
         currentTime = Time.now
         emitTime = currentTime.to_f
@@ -252,7 +257,6 @@ module Fluent
     end
 
     def process_node_condition_monitor(node_inventory)
-      monitor_id = MonitorId::NODE_CONDITION_MONITOR_ID
       timestamp = Time.now.utc.iso8601
       monitor_config = @provider.get_config(monitor_id)
       node_condition_monitor_records = []
