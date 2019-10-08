@@ -200,14 +200,14 @@ when do u send?
                         health_monitor_instance_state.old_state = health_monitor_instance_state.new_state
                         health_monitor_instance_state.is_state_change_consistent = true # This way it wont be recomputed in the optimizer.
                         health_monitor_instance_state.should_send = true
+                        health_monitor_instance_state.new_state = latest_record_state
+                        health_monitor_instance_state.prev_sent_record_time = current_time
+                        health_monitor_instance_state.state_change_time = current_time
                         if !is_aggregate_monitor
                             if !telemetry.nil?
                                 telemetry.add_monitor_to_telemetry(monitor_id, health_monitor_instance_state.old_state, health_monitor_instance_state.new_state)
                             end
                         end
-                        health_monitor_instance_state.new_state = latest_record_state
-                        health_monitor_instance_state.prev_sent_record_time = current_time
-                        health_monitor_instance_state.state_change_time = current_time
 
                         set_state(monitor_instance_id, health_monitor_instance_state)
 
