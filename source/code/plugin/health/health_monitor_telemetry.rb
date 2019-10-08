@@ -1,5 +1,9 @@
 require_relative 'health_model_constants'
-require_relative '../ApplicationInsightsUtility'
+require 'socket'
+if Socket.gethostname.start_with?('omsagent-rs')
+    require_relative '../ApplicationInsightsUtility'
+end
+
 
 module HealthModel
     class HealthMonitorTelemetry

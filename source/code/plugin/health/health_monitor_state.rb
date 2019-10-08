@@ -108,12 +108,6 @@ when do u send?
                     [monitor.details])
 
                 health_monitor_instance_state.should_send = true
-                if !is_aggregate_monitor
-                    if !telemetry.nil?
-                        telemetry.add_monitor_to_telemetry(monitor_id, health_monitor_instance_state.old_state, health_monitor_instance_state.new_state)
-                    end
-                end
-
                 @@monitor_states[monitor_instance_id] = health_monitor_instance_state
             end
 
