@@ -37,8 +37,6 @@ module HealthModel
                 fail_percentage = config['FailIfGreaterThanPercentage'].to_f || config['FailIfLesserThanPercentage'].to_f # nil.to_f = 0.0, 90 || 0 = 90
                 is_less_than_comparer = config['FailIfGreaterThanPercentage'].nil? ? true : false # Fail percentage config always present for percentage computation monitors
 
-                @log.info "compute_percentage_state : #{value} -- #{is_less_than_comparer} -- #{warn_percentage} -- #{fail_percentage}"
-
                 if !config.nil? && is_less_than_comparer
                     if value < fail_percentage
                         return HealthMonitorStates::FAIL
