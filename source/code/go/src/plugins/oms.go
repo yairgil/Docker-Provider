@@ -681,7 +681,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 		populateExcludedStdoutNamespaces()
 		populateExcludedStderrNamespaces()
-		go updateContainerImageNameMaps()
+		if ( 1 == 2) {
+			go updateContainerImageNameMaps()
+		}
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}

@@ -8,6 +8,7 @@ module Fluent
     @@ContainerNodeInventoryTag = "oms.containerinsights.ContainerNodeInventory"
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
+    @@kubeperfTag = "oms.api.KubePerf"
 
     @@rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
     @@rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
@@ -167,6 +168,32 @@ module Fluent
             $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
         end
+        #:opt:kubeperf merge
+        begin
+          #if(!nodeInventory.empty?)
+            nodeMetricDataItems = []
+            #allocatable metrics @ node level
+            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores"))
+            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes"))
+            #capacity metrics @ node level
+            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores"))
+            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes"))
+
+            eventStream2 = MultiEventStream.new
+
+            nodeMetricDataItems.each do |record|
+              record['DataType'] = "LINUX_PERF_BLOB"
+              record['IPName'] = "LogManagement"
+              eventStream2.add(time, record) if record
+              #router.emit(@tag, time, record) if record 
+            end 
+          #end
+          router.emit_stream(@@kubeperfTag, eventStream2) if eventStream2
+        rescue => errorStr
+          $log.warn "Failed in parse_and_emit_record for KubePerf from node inventory : #{errorStr}"
+          $log.debug_backtrace(errorStr.backtrace)
+        end
+        #:opt:end kubeperf merge
       rescue => errorStr
         $log.warn "Failed to retrieve node inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)

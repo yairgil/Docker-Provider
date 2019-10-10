@@ -7,6 +7,7 @@ module Fluent
 
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
+    @@kubeperfTag = "oms.api.KubePerf"
 
     def initialize
       super
@@ -406,6 +407,32 @@ module Fluent
 
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@@MDMKubePodInventoryTag, eventStream) if eventStream
+        #:opt:kubeperf merge
+        begin
+          #if(!podInventory.empty?) 
+          containerMetricDataItems = []
+          #hostName = (OMS::Common.get_hostname)
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "cpu","cpuRequestNanoCores"))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "memory","memoryRequestBytes"))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu","cpuLimitNanoCores"))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory","memoryLimitBytes"))
+
+          eventStream2 = MultiEventStream.new
+
+          containerMetricDataItems.each do |record|
+            record['DataType'] = "LINUX_PERF_BLOB"
+            record['IPName'] = "LogManagement"
+            eventStream2.add(emitTime, record) if record
+            #router.emit(@tag, time, record) if record  
+          end
+          #end
+          router.emit_stream(@@kubeperfTag, eventStream2) if eventStream2
+          
+        rescue => errorStr
+          $log.warn "Failed in parse_and_emit_record for KubePerf from pod inventory : #{errorStr}"
+          $log.debug_backtrace(errorStr.backtrace)
+        end
+        #:opt:end kubeperf merge
         if telemetryFlush == true
           telemetryProperties = {}
           telemetryProperties["Computer"] = @@hostName
