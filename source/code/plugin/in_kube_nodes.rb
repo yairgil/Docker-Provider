@@ -184,7 +184,7 @@ module Fluent
             nodeMetricDataItems.each do |record|
               record['DataType'] = "LINUX_PERF_BLOB"
               record['IPName'] = "LogManagement"
-              eventStream2.add(time, record) if record
+              eventStream2.add(emitTime, record) if record
               #router.emit(@tag, time, record) if record 
             end 
           #end
