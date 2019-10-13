@@ -258,8 +258,7 @@ touch /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 
-chmod 666 /var/opt/microsoft/docker-cimprov/log
-chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log
+chmod 777 /var/opt/microsoft/docker-cimprov/log/
 
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
