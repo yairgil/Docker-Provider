@@ -87,6 +87,7 @@ class ApplicationInsightsUtility
 
     def sendHeartBeatEvent(pluginName)
       begin
+        return
         eventName = pluginName + @@HeartBeat
         if !(@@Tc.nil?)
           @@Tc.track_event eventName, :properties => @@CustomProperties
@@ -100,6 +101,7 @@ class ApplicationInsightsUtility
 
     def sendLastProcessedContainerInventoryCountMetric(pluginName, properties)
       begin
+        return
         if !(@@Tc.nil?)
           @@Tc.track_metric "LastProcessedContainerInventoryCount", properties["ContainerCount"],
                             :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT,
@@ -114,6 +116,7 @@ class ApplicationInsightsUtility
 
     def sendCustomEvent(eventName, properties)
       begin
+        return
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
         end
@@ -136,6 +139,7 @@ class ApplicationInsightsUtility
 
     def sendExceptionTelemetry(errorStr, properties = nil)
       begin
+        return
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
         elsif @@CustomProperties["DockerVersion"].nil?
@@ -161,6 +165,7 @@ class ApplicationInsightsUtility
     #Method to send heartbeat and container inventory count
     def sendTelemetry(pluginName, properties)
       begin
+        return
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
         elsif @@CustomProperties["DockerVersion"].nil?
@@ -177,6 +182,7 @@ class ApplicationInsightsUtility
     #Method to send metric. It will merge passed-in properties with common custom properties
     def sendMetricTelemetry(metricName, metricValue, properties)
       begin
+        return
         if (metricName.empty? || metricName.nil?)
           $log.warn("SendMetricTelemetry: metricName is missing")
           return
