@@ -191,7 +191,7 @@ MAINTAINER:              'Microsoft Corporation'
 /var/opt/microsoft/docker-cimprov;                      755; root; root
 /var/opt/microsoft/docker-cimprov/state;                755; root; root
 /var/opt/microsoft/docker-cimprov/state/ContainerInventory; 755; root; root
-/var/opt/microsoft/docker-cimprov/log;                  755; root; root
+/var/opt/microsoft/docker-cimprov/log;                  757; root; root
 
 /opt/td-agent-bit;                          755; root; root;sysdir
 /opt/td-agent-bit/bin;                      755; root; root;sysdir
@@ -257,8 +257,6 @@ chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_health_mode
 touch /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
-
-chmod 777 /var/opt/microsoft/docker-cimprov/log/
 
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
