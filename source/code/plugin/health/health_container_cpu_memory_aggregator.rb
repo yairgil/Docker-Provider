@@ -219,29 +219,25 @@ module HealthModel
 
         private
         def calculate_monitor_state(v, config)
-            if !v['limit_set'] && v['namespace'] != 'kube-system'
-                v["state"] = HealthMonitorStates::WARNING
-            else
-                # sort records by descending order of metric
-                v["records"] = v["records"].sort_by{|record| record["counter_value"]}.reverse
-                size = v["records"].size
-                if size < v["record_count"]
-                    unknown_count = v["record_count"] - size
-                    for i in unknown_count.downto(1)
-                        # it requires a lot of computation to figure out which actual pod is not sending the signal
-                        v["records"].insert(0, {"counter_value" => -1, "container" => v["container"], "pod_name" =>  "???", "state" => HealthMonitorStates::UNKNOWN }) #insert -1 for unknown records
-                    end
+            # sort records by descending order of metric
+            v["records"] = v["records"].sort_by{|record| record["counter_value"]}.reverse
+            size = v["records"].size
+            if size < v["record_count"]
+                unknown_count = v["record_count"] - size
+                for i in unknown_count.downto(1)
+                    # it requires a lot of computation to figure out which actual pod is not sending the signal
+                    v["records"].insert(0, {"counter_value" => -1, "container" => v["container"], "pod_name" =>  "???", "state" => HealthMonitorStates::UNKNOWN }) #insert -1 for unknown records
                 end
-
-                if size == 1
-                    state_index = 0
-                else
-                    state_threshold = config['StateThresholdPercentage'].to_f
-                    count = ((state_threshold*size)/100).ceil
-                    state_index = size - count
-                end
-                v["state"] = v["records"][state_index]["state"]
             end
+
+            if size == 1
+                state_index = 0
+            else
+                state_threshold = config['StateThresholdPercentage'].to_f
+                count = ((state_threshold*size)/100).ceil
+                state_index = size - count
+            end
+            v["state"] = v["records"][state_index]["state"]
         end
 
         def calculate_container_instance_state(counter_value, limit, config)
