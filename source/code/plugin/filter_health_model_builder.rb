@@ -106,14 +106,16 @@ module Fluent
                     es.each{|time, record|
                         records.push(record)
                     }
-                    @buffer.add_to_buffer(records)
+                    @buffer.add_to_buffer(records) # in_kube_health records
 
-                    container_records_aggregator = HealthContainerCpuMemoryAggregator.new(@resources, @provider)
-                    container_records_aggregator.aggregate(@container_cpu_memory_records)
-                    container_records_aggregator.compute_state
-                    aggregated_container_records = container_records_aggregator.get_records
-                    @buffer.add_to_buffer(aggregated_container_records)
-
+                    aggregated_container_records = []
+                    if !@container_cpu_memory_records.nil? && !@container_cpu_memory_records.empty?
+                        container_records_aggregator = HealthContainerCpuMemoryAggregator.new(@resources, @provider)
+                        container_records_aggregator.aggregate(@container_cpu_memory_records)
+                        container_records_aggregator.compute_state
+                        aggregated_container_records = container_records_aggregator.get_records
+                    end
+                    @buffer.add_to_buffer(aggregated_container_records) #container cpu/memory records
                     records_to_process = @buffer.get_buffer
                     @buffer.reset_buffer
                     @container_cpu_memory_records = []

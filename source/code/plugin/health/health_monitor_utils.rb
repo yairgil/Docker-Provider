@@ -149,33 +149,33 @@ module HealthModel
 
             def get_node_state_from_node_conditions(monitor_config, node_conditions)
                 pass = false
-                failtypes = ['outofdisk', 'networkunavailable'].to_set #default fail types
+                failtypes = ['diskpressure', 'networkunavailable'].to_set #default fail types
                 if !monitor_config.nil? && !monitor_config["NodeConditionTypesForFailedState"].nil?
                     failtypes = monitor_config["NodeConditionTypesForFailedState"]
-		    if !failtypes.nil?
-		    	failtypes = failtypes.split(',').map{|x| x.downcase}.map{|x| x.gsub(" ","")}.to_set
-		    end
+                    if !failtypes.nil?
+                        failtypes = failtypes.split(',').map{|x| x.downcase}.map{|x| x.gsub(" ","")}.to_set
+                    end
                 end
-		log = get_log_handle
-		#log.info "Fail Types #{failtypes.inspect}"
+		        log = get_log_handle
+		        #log.info "Fail Types #{failtypes.inspect}"
                 node_conditions.each do |condition|
                     type = condition['type']
                     status = condition['status']
 
                     #for each condition in the configuration, check if the type is not false. If yes, update state to fail
                     if (failtypes.include?(type.downcase) && (status == 'True' || status == 'Unknown'))
-                        return "fail"
-                    elsif ((type == "DiskPressure" || type == "MemoryPressure" || type == "PIDPressure") && (status == 'True' || status == 'Unknown'))
-                        return "warn"
+                        return HealthMonitorStates::FAIL
+                    elsif ((type == "MemoryPressure" || type == "PIDPressure") && (status == 'True' || status == 'Unknown'))
+                        return HealthMonitorStates::WARNING
                     elsif type == "Ready" &&  status == 'True'
                         pass = true
                     end
                 end
 
                 if pass
-                    return "pass"
+                    return HealthMonitorStates::PASS
                 else
-                    return "fail"
+                    return HealthMonitorStates::FAIL
                 end
             end
 
