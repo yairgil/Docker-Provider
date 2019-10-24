@@ -99,6 +99,10 @@ module Fluent
                     end
                     container_records_aggregator = HealthContainerCpuMemoryAggregator.new(@resources, @provider)
                     deduped_records = container_records_aggregator.dedupe_records(container_records)
+                    if @container_cpu_memory_records.nil?
+                        @log.info "@container_cpu_memory_records was not initialized"
+                        @container_cpu_memory_records = [] #in some clusters, this is null, so initialize it again.
+                    end
                     @container_cpu_memory_records.push(*deduped_records) # push the records for aggregation later
                     return MultiEventStream.new
                 elsif tag.start_with?("kubehealth.ReplicaSet")
