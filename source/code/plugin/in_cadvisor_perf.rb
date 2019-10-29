@@ -58,7 +58,7 @@ module Fluent
 
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@mdmtag, eventStream) if eventStream
-        router.emit_stream(@containerhealthtag, eventStream) if eventStream
+        #router.emit_stream(@containerhealthtag, eventStream) if eventStream
         router.emit_stream(@nodehealthtag, eventStream) if eventStream
 
         @@istestvar = ENV["ISTEST"]
