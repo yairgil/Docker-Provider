@@ -1,5 +1,6 @@
 require_relative 'health_model_constants'
 
+# Require only when running inside container.
 # otherwise unit tests will fail due to ApplicationInsightsUtility dependency on base omsagent ruby files. If you have your dev machine starting with omsagent-rs, then GOOD LUCK!
 if Socket.gethostname.start_with?('omsagent-rs')
     require_relative '../ApplicationInsightsUtility'
