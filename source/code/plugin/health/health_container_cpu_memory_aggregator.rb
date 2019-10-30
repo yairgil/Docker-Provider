@@ -1,5 +1,9 @@
 require_relative 'health_model_constants'
-require_relative '../ApplicationInsightsUtility'
+
+# otherwise unit tests will fail due to ApplicationInsightsUtility dependency on base omsagent ruby files. If you have your dev machine starting with omsagent-rs, then GOOD LUCK!
+if Socket.gethostname.start_with?('omsagent-rs')
+    require_relative '../ApplicationInsightsUtility'
+end
 =begin
     @cpu_records/@memory_records
         [
