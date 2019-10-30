@@ -39,17 +39,16 @@ module Fluent
                 @kube_api_down_handler = HealthKubeApiDownHandler.new
                 @resources = HealthKubernetesResources.instance
                 @reducer = HealthSignalReducer.new
-                @state = HealthMonitorState.new
                 @generator = HealthMissingSignalGenerator.new
-                #TODO: cluster_labels needs to be initialized
                 @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
-                deserialized_state_info = @cluster_health_state.get_state
-                @state = HealthMonitorState.new
-                @state.initialize_state(deserialized_state_info)
                 @cluster_old_state = 'none'
                 @cluster_new_state = 'none'
                 @container_cpu_memory_records = []
                 @telemetry = HealthMonitorTelemetry.new
+                @state = HealthMonitorState.new
+                # move network calls to the end. This will ensure all the instance variables get initialized
+                deserialized_state_info = @cluster_health_state.get_state
+                @state.initialize_state(deserialized_state_info)
             rescue => e
                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
             end
