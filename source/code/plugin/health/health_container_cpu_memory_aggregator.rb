@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative 'health_model_constants'
 
 # Require only when running inside container.
