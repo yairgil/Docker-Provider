@@ -121,7 +121,7 @@ module Fluent
             health_monitor_records.push(record) if record
           end
         else
-            hmlog.info "POD INVENTORY IS NIL"
+            @@hmlog.info "POD INVENTORY IS NIL"
         end
 
         if !node_inventory.nil?
@@ -130,7 +130,7 @@ module Fluent
             health_monitor_records.push(record) if record
           end
         else
-            hmlog.info "NODE INVENTORY IS NIL"
+            @@hmlog.info "NODE INVENTORY IS NIL"
         end
 
         health_monitor_records.each do |record|
