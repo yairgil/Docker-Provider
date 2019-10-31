@@ -45,8 +45,8 @@ module HealthModel
 
         @@memory_counter_name = 'memoryRssBytes'
         @@cpu_counter_name = 'cpuUsageNanoCores'
-        @@workload_container_count_empty_event_sent = false
-        @@limit_is_array_event_sent = false
+        @@workload_container_count_empty_event_sent = {}
+        @@limit_is_array_event_sent = {}
         @@WORKLOAD_CONTAINER_COUNT_EMPTY_EVENT = "WorkloadContainerCountEmptyEvent"
         @@LIMIT_IS_ARRAY_EVENT = "ResourceLimitIsAnArrayEvent"
         def initialize(resources, provider)
@@ -181,10 +181,16 @@ module HealthModel
                     cpu_limit_mc = record["limit"]/1000000.to_f
                 else
                     @log.info "CPU Limit is not a number #{record['limit']}"
-                    if !@@limit_is_array_event_sent
+		            if !@@limit_is_array_event_sent.key?(resource_key)
                         custom_properties = {}
                         custom_properties['limit'] = record['limit']
-                        @@limit_is_array_event_sent = true
+                        if record['limit'].is_a?(Array)
+                            record['limit'].each_index{|i|
+                                custom_properties[i] = record['limit'][i]
+                            }
+                        end
+                        @@limit_is_array_event_sent[resource_key] = true
+                        #send once per resource key
                         ApplicationInsightsUtility.sendCustomEvent(@@LIMIT_IS_ARRAY_EVENT, custom_properties)
                     end
                 end
@@ -257,14 +263,16 @@ module HealthModel
                 end
             else
                 v["state"] = HealthMonitorStates::UNKNOWN
-                @log.info "Records Size: #{size} Records: #{v['records']} Record Count: #{v['record_count']} #{@workload_container_count}"
+                container_key = "#{v['workload_name']}~~#{v['container']}"
+                @log.info "ContainerKey: #{container_key} Records Size: #{size} Records: #{v['records']} Record Count: #{v['record_count']} #{@workload_container_count}"
 
-                if !@@workload_container_count_empty_event_sent
+                if !@@workload_container_count_empty_event_sent.key?(container_key)
                     custom_properties = {}
-                    custom_properties.merge(v)
-                    custom_properties.merge(@workload_container_count)
-                    @@workload_container_count_empty_event_sent = true
-                    ApplicationInsightsUtility.sendCustomEvent(WORKLOAD_CONTAINER_COUNT_EMPTY_EVENT, custom_properties)
+                    custom_properties = custom_properties.merge(v)
+                    custom_properties = custom_properties.merge(@workload_container_count)
+                    @log.info "Custom Properties : #{custom_properties}"
+                    @@workload_container_count_empty_event_sent[container_key] = true
+                    ApplicationInsightsUtility.sendCustomEvent(@@WORKLOAD_CONTAINER_COUNT_EMPTY_EVENT, custom_properties)
                 end
                 return #simply return the state as unknown here
             end

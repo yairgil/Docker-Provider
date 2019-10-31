@@ -31,6 +31,6 @@
         "ConsecutiveSamplesForStateTransition": 2
     },
     "node_condition": {
-        "NodeConditionTypesForFailedState": "diskpressure,networkunavailable"
+        "NodeConditionTypesForFailedState": "outofdisk,networkunavailable"
     }
 }

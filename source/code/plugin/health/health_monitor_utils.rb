@@ -150,7 +150,7 @@ module HealthModel
 
             def get_node_state_from_node_conditions(monitor_config, node_conditions)
                 pass = false
-                failtypes = ['diskpressure', 'networkunavailable'].to_set #default fail types
+                failtypes = ['outofdisk', 'networkunavailable'].to_set #default fail types
                 if !monitor_config.nil? && !monitor_config["NodeConditionTypesForFailedState"].nil?
                     failtypes = monitor_config["NodeConditionTypesForFailedState"]
                     if !failtypes.nil?
@@ -166,7 +166,7 @@ module HealthModel
                     #for each condition in the configuration, check if the type is not false. If yes, update state to fail
                     if (failtypes.include?(type.downcase) && (status == 'True' || status == 'Unknown'))
                         return HealthMonitorStates::FAIL
-                    elsif ((type == "MemoryPressure" || type == "PIDPressure") && (status == 'True' || status == 'Unknown'))
+                    elsif ((type == "DiskPressure" || type == "MemoryPressure" || type == "PIDPressure") && (status == 'True' || status == 'Unknown'))
                         return HealthMonitorStates::WARNING
                     elsif type == "Ready" &&  status == 'True'
                         pass = true

@@ -53,7 +53,12 @@ module HealthModel
         end
 
         def build_pod_uid_lookup
+            if @pod_inventory.nil? || @pod_inventory['items'].nil? || @pod_inventory['items'].empty? || @pod_inventory['items'].size == 0
+                @log.info "Not Clearing pod_uid_lookup and workload_container_count since pod inventory is nil"
+                return
+            end
             @workload_container_count = {}
+            @pod_uid_lookup = {}
             @pod_inventory['items'].each do |pod|
                 begin
                     namespace = pod['metadata']['namespace']
