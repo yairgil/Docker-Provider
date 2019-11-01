@@ -172,18 +172,23 @@ module HealthModel
             if @workload_name_cache.key?(controller_name)
                 return @workload_name_cache[controller_name]
             end
-            owner_ref = controller_name
-            @replicaset_inventory['items'].each{|rs|
-                rs_name = rs['metadata']['name']
-                if controller_name.casecmp(rs_name) == 0
-                    if !rs['metadata']['ownerReferences'].nil?
-                        owner_ref = rs['metadata']['ownerReferences'][0]['name'] if rs['metadata']['ownerReferences'][0]['name']
+            begin
+                owner_ref = controller_name
+                @replicaset_inventory['items'].each{|rs|
+                    rs_name = rs['metadata']['name']
+                    if controller_name.casecmp(rs_name) == 0
+                        if !rs['metadata']['ownerReferences'].nil?
+                            owner_ref = rs['metadata']['ownerReferences'][0]['name'] if rs['metadata']['ownerReferences'][0]['name']
+                        end
+                        break
                     end
-                    break
-                end
-            }
-            @workload_name_cache[controller_name] = owner_ref
-            return owner_ref
+                }
+                @workload_name_cache[controller_name] = owner_ref
+                return owner_ref
+            rescue => e
+                @log.info "Error in get_replica_set_owner_ref(controller_name) #{e.message}"
+                return controller_name
+            end
         end
 
         def get_node_capacity(node_name, type)

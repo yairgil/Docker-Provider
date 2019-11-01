@@ -260,14 +260,14 @@ module Fluent
           node_inventory['items'].each do |node|
             node_name = node['metadata']['name']
             conditions = node['status']['conditions']
-            state = HealthMonitorUtils.get_node_state_from_node_conditions(monitor_config, conditions)
+            node_state = HealthMonitorUtils.get_node_state_from_node_conditions(monitor_config, conditions)
             details = {}
             conditions.each do |condition|
-                state = !(condition['status'].downcase == 'true' && condition['type'].downcase != 'ready') ? HealthMonitorStates::PASS : HealthMonitorStates::FAIL
-                details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message'], "State" => state}
+                condition_state = !(condition['status'].downcase == 'true' && condition['type'].downcase != 'ready') ? HealthMonitorStates::PASS : HealthMonitorStates::FAIL
+                details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message'], "State" => condition_state}
                 #@@hmlog.info "Node Condition details: #{JSON.pretty_generate(details)}"
             end
-            health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
+            health_monitor_record = {"timestamp" => timestamp, "state" => node_state, "details" => details}
             monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id, node_name])
             health_record = {}
             time_now = Time.now.utc.iso8601
