@@ -86,11 +86,11 @@ module Fluent
         node_inventory = JSON.parse(node_inventory_response.body)
         pod_inventory_response = KubernetesApiClient.getKubeResourceInfo("pods")
         pod_inventory = JSON.parse(pod_inventory_response.body)
-        deployment_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("deployments", api_version: "extensions/v1beta1").body)
+        replicaset_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("replicasets", api_version: "extensions/v1beta1").body)
 
         @resources.node_inventory = node_inventory
         @resources.pod_inventory = pod_inventory
-        @resources.set_deployment_inventory(deployment_inventory)
+        @resources.set_replicaset_inventory(replicaset_inventory)
         @resources.build_pod_uid_lookup
 
         if node_inventory_response.code.to_i != 200
@@ -106,7 +106,7 @@ module Fluent
           health_monitor_records.push(record) if record
           record = process_memory_oversubscribed_monitor(pod_inventory, node_inventory)
           health_monitor_records.push(record) if record
-          pods_ready_hash = HealthMonitorUtils.get_pods_ready_hash(pod_inventory, deployment_inventory)
+          pods_ready_hash = HealthMonitorUtils.get_pods_ready_hash(@resources)
 
           system_pods = pods_ready_hash.select{|k,v| v['namespace'] == 'kube-system'}
           workload_pods = pods_ready_hash.select{|k,v| v['namespace'] != 'kube-system'}
@@ -291,11 +291,11 @@ module Fluent
         node_inventory = JSON.parse(node_inventory_response.body)
         pod_inventory_response = KubernetesApiClient.getKubeResourceInfo("pods")
         pod_inventory = JSON.parse(pod_inventory_response.body)
-        deployment_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("deployments", api_version: "extensions/v1beta1").body)
+        replicaset_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("replicasets", api_version: "extensions/v1beta1").body)
 
         @resources.node_inventory = node_inventory
         @resources.pod_inventory = pod_inventory
-        @resources.set_deployment_inventory(deployment_inventory)
+        @resources.set_replicaset_inventory(replicaset_inventory)
         @resources.build_pod_uid_lookup
     end
 
