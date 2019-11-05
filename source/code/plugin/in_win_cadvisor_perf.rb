@@ -60,7 +60,7 @@ module Fluent
           $log.info "in_win_cadvisor_perf: Getting windows nodes"
           nodes = KubernetesApiClient.getWindowsNodes()
           if !nodes.nil?
-            @@winNodes = KubernetesApiClient.getWindowsNodes()
+            @@winNodes = nodes
           end
           $log.info "in_win_cadvisor_perf : Successuly got windows nodes after 5 minute interval"
           @@winNodeQueryTimeTracker = DateTime.now.to_time.to_i

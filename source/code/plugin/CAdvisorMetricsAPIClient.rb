@@ -21,6 +21,7 @@ class CAdvisorMetricsAPIClient
   @clusterLogTailExcludPath = ENV["AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH"]
   @clusterLogTailPath = ENV["AZMON_LOG_TAIL_PATH"]
   @clusterAgentSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
+  @clusterContainerLogEnrich = ENV["AZMON_CLUSTER_CONTAINER_LOG_ENRICH"]
 
   @dsPromInterval = ENV["TELEMETRY_DS_PROM_INTERVAL"]
   @dsPromFieldPassCount = ENV["TELEMETRY_DS_PROM_FIELDPASS_LENGTH"]
@@ -66,6 +67,8 @@ class CAdvisorMetricsAPIClient
           uri = URI.parse(cAdvisorUri)
           http = Net::HTTP.new(uri.host, uri.port)
           http.use_ssl = false
+          http.open_timeout = 20
+          http.read_timeout = 40
 
           cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
           response = http.request(cAdvisorApiRequest)
@@ -219,6 +222,7 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
                       telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
                       telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
+                      telemetryProps["clusterCLEnrich"] = @clusterContainerLogEnrich
                     end
                     #telemetry about prometheus metric collections settings for daemonset
                     if (File.file?(@promConfigMountPath))

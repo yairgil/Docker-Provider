@@ -41,6 +41,9 @@ class KubernetesApiClient
           uri = URI.parse(resourceUri)
           http = Net::HTTP.new(uri.host, uri.port)
           http.use_ssl = true
+          http.open_timeout = 20
+          http.read_timeout = 40
+          
           if !File.exist?(@@CaFile)
             raise "#{@@CaFile} doesnt exist"
           else
@@ -335,7 +338,7 @@ class KubernetesApiClient
       return containerLogs
     end
 
-    def getContainerResourceRequestsAndLimits(metricJSON, metricCategory, metricNameToCollect, metricNametoReturn)
+    def getContainerResourceRequestsAndLimits(metricJSON, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601 )
       metricItems = []
       begin
         clusterId = getClusterId
@@ -370,7 +373,7 @@ class KubernetesApiClient
             nodeName = pod["spec"]["nodeName"]
             podContainers.each do |container|
               containerName = container["name"]
-              metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
+              #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
               if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
                 metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
 
@@ -430,14 +433,14 @@ class KubernetesApiClient
       return metricItems
     end #getContainerResourceRequestAndLimits
 
-    def parseNodeLimits(metricJSON, metricCategory, metricNameToCollect, metricNametoReturn)
+    def parseNodeLimits(metricJSON, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
       metricItems = []
       begin
         metricInfo = metricJSON
         clusterId = getClusterId
         #Since we are getting all node data at the same time and kubernetes doesnt specify a timestamp for the capacity and allocation metrics,
         #if we are coming up with the time it should be same for all nodes
-        metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
+        #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
         metricInfo["items"].each do |node|
           if (!node["status"][metricCategory].nil?)
 

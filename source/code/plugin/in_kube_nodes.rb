@@ -9,6 +9,7 @@ module Fluent
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
     @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
+    @@kubeperfTag = "oms.api.KubePerf"
 
     @@rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
     @@rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
@@ -22,6 +23,7 @@ module Fluent
       super
       require "yaml"
       require "json"
+      require "time"
 
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
@@ -29,7 +31,7 @@ module Fluent
       require_relative "omslog"
     end
 
-    config_param :run_interval, :time, :default => "1m"
+    config_param :run_interval, :time, :default => "60"
     config_param :tag, :string, :default => "oms.containerinsights.KubeNodeInventory"
 
     def configure(conf)
@@ -191,6 +193,32 @@ module Fluent
             $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
         end
+        #:optimize:kubeperf merge
+        begin
+          #if(!nodeInventory.empty?)
+            nodeMetricDataItems = []
+            #allocatable metrics @ node level
+            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
+            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime))
+            #capacity metrics @ node level
+            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime))
+            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime))
+
+            eventStream2 = MultiEventStream.new
+
+            nodeMetricDataItems.each do |record|
+              record['DataType'] = "LINUX_PERF_BLOB"
+              record['IPName'] = "LogManagement"
+              eventStream2.add(emitTime, record) if record
+              #router.emit(@tag, time, record) if record 
+            end 
+          #end
+          router.emit_stream(@@kubeperfTag, eventStream2) if eventStream2
+        rescue => errorStr
+          $log.warn "Failed in enumerate for KubePerf from node inventory : #{errorStr}"
+          $log.debug_backtrace(errorStr.backtrace)
+        end
+        #:optimize:end kubeperf merge
       rescue => errorStr
         $log.warn "Failed to retrieve node inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
@@ -201,14 +229,31 @@ module Fluent
     def run_periodic
       @mutex.lock
       done = @finished
+      #@lastTimeRan = Time.now
+      @nextTimeToRun = Time.now
+      @waitTimeout = @run_interval
       until done
-        @condition.wait(@mutex, @run_interval)
+         #@nextTimeToRun = @lastTimeRan + @run_interval
+         @nextTimeToRun = @nextTimeToRun + @run_interval
+         @now = Time.now
+         if @nextTimeToRun <= @now
+           @waitTimeout = 1
+           @nextTimeToRun = @now
+         else
+           @waitTimeout = @nextTimeToRun - @now
+         end
+         #@lastTimeRan = @now
+         #@lastTimeRan = @nextTimeToRun
+         @condition.wait(@mutex, @waitTimeout)
         done = @finished
         @mutex.unlock
         if !done
           begin
-            $log.info("in_kube_nodes::run_periodic @ #{Time.now.utc.iso8601}")
-            enumerate
+             #$log.info("in_kube_podinventory::run_periodic @ #{Time.now.utc.iso8601}")
+             $log.info("in_kube_nodes::starttime #{Time.now.utc.iso8601}")
+             enumerate
+             #sleep (rand() * 50).to_i
+             $log.info("in_kube_nodes::endtime #{Time.now.utc.iso8601}")
           rescue => errorStr
             $log.warn "in_kube_nodes::run_periodic: enumerate Failed to retrieve node inventory: #{errorStr}"
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)

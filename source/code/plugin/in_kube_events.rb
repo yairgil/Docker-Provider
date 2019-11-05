@@ -50,7 +50,7 @@ module Fluent
 
       events = eventList
       $log.info("in_kube_events::enumerate : Getting events from Kube API @ #{Time.now.utc.iso8601}")
-      eventInfo = KubernetesApiClient.getKubeResourceInfo("events")
+      eventInfo = KubernetesApiClient.getKubeResourceInfo("events?fieldSelector=type!=Normal")
       $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
 
       if !eventInfo.nil?
