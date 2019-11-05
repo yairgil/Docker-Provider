@@ -907,8 +907,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	// Initilizing this to true to skip the first kubemonagentevent flush since the errors are not populated at this time
 	skipKubeMonEventsFlush = true
 
-	enrichContainerLogs = os.Getenv("AZMON_CLUSTER_CONTAINER_LOG_ENRICH")
-		if (strings.Compare(enrichContainerLogs, "true") == 0) {
+	enrichContainerLogsSetting := os.Getenv("AZMON_CLUSTER_CONTAINER_LOG_ENRICH")
+		if (strings.Compare(enrichContainerLogsSetting, "true") == 0) {
 			enrichContainerLogs = true
 			Log("ContainerLogEnrichment=true \n")
 		} else {
