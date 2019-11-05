@@ -192,33 +192,34 @@ module Fluent
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
-        end
-        #:optimize:kubeperf merge
-        begin
-          #if(!nodeInventory.empty?)
-            nodeMetricDataItems = []
-            #allocatable metrics @ node level
-            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
-            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime))
-            #capacity metrics @ node level
-            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime))
-            nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime))
+            #:optimize:kubeperf merge
+            begin
+              #if(!nodeInventory.empty?)
+                nodeMetricDataItems = []
+                #allocatable metrics @ node level
+                nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
+                nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime))
+                #capacity metrics @ node level
+                nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime))
+                nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime))
 
-            eventStream2 = MultiEventStream.new
+                kubePerfEventStream = MultiEventStream.new
 
-            nodeMetricDataItems.each do |record|
-              record['DataType'] = "LINUX_PERF_BLOB"
-              record['IPName'] = "LogManagement"
-              eventStream2.add(emitTime, record) if record
-              #router.emit(@tag, time, record) if record 
-            end 
-          #end
-          router.emit_stream(@@kubeperfTag, eventStream2) if eventStream2
-        rescue => errorStr
-          $log.warn "Failed in enumerate for KubePerf from node inventory : #{errorStr}"
-          $log.debug_backtrace(errorStr.backtrace)
+                nodeMetricDataItems.each do |record|
+                  record['DataType'] = "LINUX_PERF_BLOB"
+                  record['IPName'] = "LogManagement"
+                  kubePerfEventStream.add(emitTime, record) if record
+                  #router.emit(@tag, time, record) if record 
+                end 
+              #end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            rescue => errorStr
+              $log.warn "Failed in enumerate for KubePerf from node inventory : #{errorStr}"
+              $log.debug_backtrace(errorStr.backtrace)
+            end
+            #:optimize:end kubeperf merge
         end
-        #:optimize:end kubeperf merge
+      
       rescue => errorStr
         $log.warn "Failed to retrieve node inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)

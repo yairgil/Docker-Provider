@@ -188,7 +188,7 @@ module Fluent
       end
     end
 
-    def parse_and_emit_records(podInventory, serviceList, batchTime = currentTime.utc.iso8601)
+    def parse_and_emit_records(podInventory, serviceList,  batchTime = Time.utc.iso8601)
       currentTime = Time.now
       emitTime = currentTime.to_f
       #batchTime = currentTime.utc.iso8601
@@ -439,16 +439,16 @@ module Fluent
           containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu","cpuLimitNanoCores", batchTime))
           containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory","memoryLimitBytes", batchTime))
 
-          eventStream2 = MultiEventStream.new
+          kubePerfEventStream = MultiEventStream.new
 
           containerMetricDataItems.each do |record|
             record['DataType'] = "LINUX_PERF_BLOB"
             record['IPName'] = "LogManagement"
-            eventStream2.add(emitTime, record) if record
+            kubePerfEventStream.add(emitTime, record) if record
             #router.emit(@tag, time, record) if record  
           end
           #end
-          router.emit_stream(@@kubeperfTag, eventStream2) if eventStream2
+          router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
           
         rescue => errorStr
           $log.warn "Failed in parse_and_emit_record for KubePerf from pod inventory : #{errorStr}"
