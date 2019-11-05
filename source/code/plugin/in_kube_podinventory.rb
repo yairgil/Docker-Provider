@@ -50,6 +50,7 @@ module Fluent
 
     def enumerate(podList = nil)
       podInventory = podList
+      currentTime = Time.now
       $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
       podInfo = KubernetesApiClient.getKubeResourceInfo("pods")
       $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
