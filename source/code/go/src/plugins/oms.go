@@ -748,8 +748,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			stringMap["Name"] = val
 		}
 
+		var dataItem
 		if enrichContainerLogs == true {
-			dataItem := DataItem{
+			dataItem = DataItem{
 				ID:                    stringMap["Id"],
 				LogEntry:              stringMap["LogEntry"],
 				LogEntrySource:        stringMap["LogEntrySource"],
@@ -761,7 +762,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Name:                  stringMap["Name"],
 			}
 		} else { // dont collect timeofcommand field as its part of container log enrivhment
-			dataItem := DataItem{
+			dataItem = DataItem{
 				ID:                    stringMap["Id"],
 				LogEntry:              stringMap["LogEntry"],
 				LogEntrySource:        stringMap["LogEntrySource"],
