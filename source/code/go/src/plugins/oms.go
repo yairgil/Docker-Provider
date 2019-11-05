@@ -748,7 +748,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			stringMap["Name"] = val
 		}
 
-		var dataItem
+		var dataItem DataItem
 		if enrichContainerLogs == true {
 			dataItem = DataItem{
 				ID:                    stringMap["Id"],
