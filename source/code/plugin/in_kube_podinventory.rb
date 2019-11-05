@@ -7,6 +7,7 @@ module Fluent
 
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
+    @@kubeperfTag = "oms.api.KubePerf"
 
     def initialize
       super
