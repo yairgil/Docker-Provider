@@ -6,7 +6,7 @@ class ApplicationInsightsUtility
   require_relative "omslog"
   require_relative "DockerApiClient"
   require_relative "oms_common"
-  require "json"
+  require 'yajl/json_gem'
   require "base64"
 
   @@HeartBeat = "HeartBeatEvent"

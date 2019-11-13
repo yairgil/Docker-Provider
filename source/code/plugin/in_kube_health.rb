@@ -21,7 +21,8 @@ module Fluent
       begin
         super
         require "yaml"
-        require "json"
+        require 'yajl/json_gem'
+        require "time"
 
         @@cluster_id = KubernetesApiClient.getClusterId
         @resources = HealthKubernetesResources.instance
@@ -32,7 +33,7 @@ module Fluent
     end
 
     include HealthModel
-    config_param :run_interval, :time, :default => "1m"
+    config_param :run_interval, :time, :default => 60
     config_param :tag, :string, :default => "kubehealth.ReplicaSet"
 
     def configure(conf)
@@ -302,14 +303,25 @@ module Fluent
     def run_periodic
       @mutex.lock
       done = @finished
+      @nextTimeToRun = Time.now
+      @waitTimeout = @run_interval
       until done
-        @condition.wait(@mutex, @run_interval)
+        @nextTimeToRun = @nextTimeToRun + @run_interval
+        @now = Time.now
+        if @nextTimeToRun <= @now
+          @waitTimeout = 1
+          @nextTimeToRun = @now
+        else
+          @waitTimeout = @nextTimeToRun - @now
+        end
+        @condition.wait(@mutex, @waitTimeout)
         done = @finished
         @mutex.unlock
         if !done
           begin
-            @@hmlog.info("in_kube_health::run_periodic @ #{Time.now.utc.iso8601}")
+            @@hmlog.info("in_kube_health::run_periodic.enumerate.start @ #{Time.now.utc.iso8601}")
             enumerate
+            @@hmlog.info("in_kube_health::run_periodic.enumerate.end @ #{Time.now.utc.iso8601}")
           rescue => errorStr
             @@hmlog.warn "in_kube_health::run_periodic: enumerate Failed for kubeapi sourced data health: #{errorStr}"
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)

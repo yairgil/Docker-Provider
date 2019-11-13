@@ -8,11 +8,12 @@ module Fluent
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
     @@kubeperfTag = "oms.api.KubePerf"
+    @@kubeservicesTag = "oms.containerinsights.KubeServices"
 
     def initialize
       super
       require "yaml"
-      require "json"
+      require 'yajl/json_gem'
       require "set"
       require "time"
 
@@ -71,6 +72,8 @@ module Fluent
         else
           $log.warn "Received empty podInventory"
         end
+        podInfo = nil
+        podInventory = nil
       rescue => errorStr
         $log.warn "Failed in enumerate pod inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
@@ -453,10 +456,43 @@ module Fluent
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
           
         rescue => errorStr
-          $log.warn "Failed in parse_and_emit_record for KubePerf from pod inventory : #{errorStr}"
+          $log.warn "Failed in parse_and_emit_record for KubePerf from in_kube_podinventory : #{errorStr}"
           $log.debug_backtrace(errorStr.backtrace)
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
         end
         #:optimize:end kubeperf merge
+
+        #:optimize:start kubeservices merge
+        begin
+          if (!serviceList.nil? && !serviceList.empty?)
+            kubeServicesEventStream = MultiEventStream.new
+            serviceList["items"].each do |items|
+              kubeServiceRecord = {}
+              kubeServiceRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+              kubeServiceRecord["ServiceName"] = items["metadata"]["name"]
+              kubeServiceRecord["Namespace"] = items["metadata"]["namespace"]
+              kubeServiceRecord["SelectorLabels"] = [items["spec"]["selector"]]
+              kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+              kubeServiceRecord["ClusterIP"] = items["spec"]["clusterIP"]
+              kubeServiceRecord["ServiceType"] = items["spec"]["type"]
+              #<TODO> : Add ports and status fields
+              kubeServicewrapper = {
+                "DataType" => "KUBE_SERVICES_BLOB",
+                "IPName" => "ContainerInsights",
+                "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
+              }
+              kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+            end
+            router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+          end
+        rescue => errorStr
+          $log.warn "Failed in parse_and_emit_record for KubeServices from in_kube_podinventory : #{errorStr}"
+          $log.debug_backtrace(errorStr.backtrace)
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        end
+        #:optimize:end kubeservices merge
+
         if telemetryFlush == true
           telemetryProperties = {}
           telemetryProperties["Computer"] = @@hostName
@@ -484,11 +520,9 @@ module Fluent
     def run_periodic
       @mutex.lock
       done = @finished
-      #@lastTimeRan = Time.now
       @nextTimeToRun = Time.now
       @waitTimeout = @run_interval
       until done
-        #@nextTimeToRun = @lastTimeRan + @run_interval
         @nextTimeToRun = @nextTimeToRun + @run_interval
         @now = Time.now
         if @nextTimeToRun <= @now
@@ -497,18 +531,14 @@ module Fluent
         else
           @waitTimeout = @nextTimeToRun - @now
         end
-        #@lastTimeRan = @now
-        #@lastTimeRan = @nextTimeToRun
         @condition.wait(@mutex, @waitTimeout)
         done = @finished
         @mutex.unlock
         if !done
           begin
-            #$log.info("in_kube_podinventory::run_periodic @ #{Time.now.utc.iso8601}")
-            $log.info("in_kube_podinventory::starttime #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::run_periodic.enumerate.start #{Time.now.utc.iso8601}")
             enumerate
-            #sleep (rand() * 50).to_i
-            $log.info("in_kube_podinventory::endtime #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::run_periodic.enumerate.end #{Time.now.utc.iso8601}")
           rescue => errorStr
             $log.warn "in_kube_podinventory::run_periodic: enumerate Failed to retrieve pod inventory: #{errorStr}"
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)

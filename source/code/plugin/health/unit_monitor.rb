@@ -1,5 +1,5 @@
 require_relative 'health_model_constants'
-require 'json'
+require 'yajl/json_gem'
 
 module HealthModel
     class UnitMonitor

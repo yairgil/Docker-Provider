@@ -1,6 +1,7 @@
 require "net/http"
 require "net/https"
 require "uri"
+require 'yajl/json_gem'
 
 module HealthModel
     class ClusterHealthState

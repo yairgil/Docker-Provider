@@ -15,7 +15,7 @@ require_relative "ConfigParseErrorLogger"
 @logTailPath = "/var/log/containers/*.log"
 @logExclusionRegexPattern = "(^((?!stdout|stderr).)*$)"
 @excludePath = "*.csv2" #some invalid path
-@enrichContainerLogs = true
+@enrichContainerLogs = false
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap

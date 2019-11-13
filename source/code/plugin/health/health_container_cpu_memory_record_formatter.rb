@@ -1,3 +1,5 @@
+require 'yajl/json_gem'
+
 module HealthModel
     class HealthContainerCpuMemoryRecordFormatter
 

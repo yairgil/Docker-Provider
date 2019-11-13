@@ -3,7 +3,7 @@
 
 class DockerApiClient
   require "socket"
-  require "json"
+  require 'yajl/json_gem'
   require "timeout"
   require_relative "omslog"
   require_relative "DockerApiRestHelper"

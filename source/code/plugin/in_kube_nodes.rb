@@ -22,7 +22,7 @@ module Fluent
     def initialize
       super
       require "yaml"
-      require "json"
+      require 'yajl/json_gem'
       require "time"
 
       require_relative "KubernetesApiClient"
@@ -31,7 +31,7 @@ module Fluent
       require_relative "omslog"
     end
 
-    config_param :run_interval, :time, :default => "60"
+    config_param :run_interval, :time, :default => 60
     config_param :tag, :string, :default => "oms.containerinsights.KubeNodeInventory"
 
     def configure(conf)
@@ -214,8 +214,9 @@ module Fluent
               #end
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
             rescue => errorStr
-              $log.warn "Failed in enumerate for KubePerf from node inventory : #{errorStr}"
+              $log.warn "Failed in enumerate for KubePerf from in_kube_nodes : #{errorStr}"
               $log.debug_backtrace(errorStr.backtrace)
+              ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
             end
             #:optimize:end kubeperf merge
         end
@@ -230,11 +231,9 @@ module Fluent
     def run_periodic
       @mutex.lock
       done = @finished
-      #@lastTimeRan = Time.now
       @nextTimeToRun = Time.now
       @waitTimeout = @run_interval
       until done
-         #@nextTimeToRun = @lastTimeRan + @run_interval
          @nextTimeToRun = @nextTimeToRun + @run_interval
          @now = Time.now
          if @nextTimeToRun <= @now
@@ -243,18 +242,14 @@ module Fluent
          else
            @waitTimeout = @nextTimeToRun - @now
          end
-         #@lastTimeRan = @now
-         #@lastTimeRan = @nextTimeToRun
          @condition.wait(@mutex, @waitTimeout)
         done = @finished
         @mutex.unlock
         if !done
           begin
-             #$log.info("in_kube_podinventory::run_periodic @ #{Time.now.utc.iso8601}")
-             $log.info("in_kube_nodes::starttime #{Time.now.utc.iso8601}")
+             $log.info("in_kube_nodes::run_periodic.enumerate.start #{Time.now.utc.iso8601}")
              enumerate
-             #sleep (rand() * 50).to_i
-             $log.info("in_kube_nodes::endtime #{Time.now.utc.iso8601}")
+             $log.info("in_kube_nodes::run_periodic.enumerate.end #{Time.now.utc.iso8601}")
           rescue => errorStr
             $log.warn "in_kube_nodes::run_periodic: enumerate Failed to retrieve node inventory: #{errorStr}"
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)

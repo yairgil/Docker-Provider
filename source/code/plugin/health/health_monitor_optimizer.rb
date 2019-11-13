@@ -1,3 +1,4 @@
+require 'yajl/json_gem'
 module HealthModel
     class HealthMonitorOptimizer
         #ctor
