@@ -8,6 +8,7 @@ class CAdvisorMetricsAPIClient
   require "net/https"
   require "uri"
   require "date"
+  require "time"
 
   require_relative "oms_common"
   require_relative "KubernetesApiClient"
@@ -103,7 +104,7 @@ class CAdvisorMetricsAPIClient
       end
     end
 
-    def getMetrics(winNode = nil)
+    def getMetrics(winNode: nil, metricTime: Time.now.utc.iso8601 )
       metricDataItems = []
       begin
         cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
@@ -122,27 +123,27 @@ class CAdvisorMetricsAPIClient
           operatingSystem = "Linux"
         end
         if !metricInfo.nil?
-          metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes"))
-          metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch"))
+          metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime))
+          metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch", metricTime))
 
           if operatingSystem == "Linux"
-            metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores"))
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes"))
-            metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", "memoryRssBytes"))
+            metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores", metricTime))
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes", metricTime))
+            metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", "memoryRssBytes", metricTime))
           elsif operatingSystem == "Windows"
-            containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", "cpuUsageNanoCores")
+            containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", "cpuUsageNanoCores", metricTime)
             if containerCpuUsageNanoSecondsRate && !containerCpuUsageNanoSecondsRate.empty? && !containerCpuUsageNanoSecondsRate.nil?
               metricDataItems.concat(containerCpuUsageNanoSecondsRate)
             end
           end
 
-          cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", "cpuUsageNanoCores", operatingSystem)
+          cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", "cpuUsageNanoCores", operatingSystem, metricTime)
           if cpuUsageNanoSecondsRate && !cpuUsageNanoSecondsRate.empty? && !cpuUsageNanoSecondsRate.nil?
             metricDataItems.push(cpuUsageNanoSecondsRate)
           end
-          metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "workingSetBytes", "memoryWorkingSetBytes"))
+          metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "workingSetBytes", "memoryWorkingSetBytes", metricTime))
 
-          metricDataItems.push(getNodeLastRebootTimeMetric(metricInfo, hostName, "restartTimeEpoch"))
+          metricDataItems.push(getNodeLastRebootTimeMetric(metricInfo, hostName, "restartTimeEpoch", metricTime))
 
           # Disabling networkRxRate and networkTxRate since we dont use it as of now.
           #metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "network", "rxBytes", "networkRxBytes"))
@@ -165,7 +166,7 @@ class CAdvisorMetricsAPIClient
       return metricDataItems
     end
 
-    def getContainerCpuMetricItems(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn)
+    def getContainerCpuMetricItems(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn, metricPollTime)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryCpuMetricTimeTracker).abs
@@ -182,7 +183,7 @@ class CAdvisorMetricsAPIClient
               #cpu metric
               containerName = container["name"]
               metricValue = container["cpu"][cpuMetricNameToCollect]
-              metricTime = container["cpu"]["time"]
+              metricTime = metricPollTime #container["cpu"]["time"]
               metricItem = {}
               metricItem["DataItems"] = []
 
@@ -273,7 +274,7 @@ class CAdvisorMetricsAPIClient
     end
 
     # usageNanoCores doesnt exist for windows nodes. Hence need to compute this from usageCoreNanoSeconds
-    def getContainerCpuMetricItemRate(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn)
+    def getContainerCpuMetricItemRate(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn, metricPollTime)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryCpuMetricTimeTracker).abs
@@ -293,7 +294,7 @@ class CAdvisorMetricsAPIClient
               containerCount += 1
               containerName = container["name"]
               metricValue = container["cpu"][cpuMetricNameToCollect]
-              metricTime = container["cpu"]["time"]
+              metricTime = metricPollTime #container["cpu"]["time"]
               metricItem = {}
               metricItem["DataItems"] = []
 
@@ -367,7 +368,7 @@ class CAdvisorMetricsAPIClient
       return metricItems
     end
 
-    def getContainerMemoryMetricItems(metricJSON, hostName, memoryMetricNameToCollect, metricNametoReturn)
+    def getContainerMemoryMetricItems(metricJSON, hostName, memoryMetricNameToCollect, metricNametoReturn, metricPollTime)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryMemoryMetricTimeTracker).abs
@@ -382,7 +383,7 @@ class CAdvisorMetricsAPIClient
             pod["containers"].each do |container|
               containerName = container["name"]
               metricValue = container["memory"][memoryMetricNameToCollect]
-              metricTime = container["memory"]["time"]
+              metricTime = metricPollTime #container["memory"]["time"]
 
               metricItem = {}
               metricItem["DataItems"] = []
@@ -432,7 +433,7 @@ class CAdvisorMetricsAPIClient
       return metricItems
     end
 
-    def getNodeMetricItem(metricJSON, hostName, metricCategory, metricNameToCollect, metricNametoReturn)
+    def getNodeMetricItem(metricJSON, hostName, metricCategory, metricNameToCollect, metricNametoReturn, metricPollTime)
       metricItem = {}
       clusterId = KubernetesApiClient.getClusterId
       begin
@@ -442,7 +443,7 @@ class CAdvisorMetricsAPIClient
 
         if !node[metricCategory].nil?
           metricValue = node[metricCategory][metricNameToCollect]
-          metricTime = node[metricCategory]["time"]
+          metricTime = metricPollTime #node[metricCategory]["time"]
 
           metricItem["DataItems"] = []
 
@@ -468,7 +469,7 @@ class CAdvisorMetricsAPIClient
       return metricItem
     end
 
-    def getNodeMetricItemRate(metricJSON, hostName, metricCategory, metricNameToCollect, metricNametoReturn, operatingSystem)
+    def getNodeMetricItemRate(metricJSON, hostName, metricCategory, metricNameToCollect, metricNametoReturn, operatingSystem, metricPollTime)
       metricItem = {}
       clusterId = KubernetesApiClient.getClusterId
       begin
@@ -478,7 +479,7 @@ class CAdvisorMetricsAPIClient
 
         if !node[metricCategory].nil?
           metricValue = node[metricCategory][metricNameToCollect]
-          metricTime = node[metricCategory]["time"]
+          metricTime = metricPollTime #node[metricCategory]["time"]
 
           #   if !(metricNameToCollect == "rxBytes" || metricNameToCollect == "txBytes" || metricNameToCollect == "usageCoreNanoSeconds")
           #     @Log.warn("getNodeMetricItemRate : rateMetric is supported only for rxBytes, txBytes & usageCoreNanoSeconds and not for #{metricNameToCollect}")
@@ -585,7 +586,7 @@ class CAdvisorMetricsAPIClient
       return metricItem
     end
 
-    def getNodeLastRebootTimeMetric(metricJSON, hostName, metricNametoReturn)
+    def getNodeLastRebootTimeMetric(metricJSON, hostName, metricNametoReturn, metricPollTime)
       metricItem = {}
       clusterId = KubernetesApiClient.getClusterId
 
@@ -595,7 +596,7 @@ class CAdvisorMetricsAPIClient
         nodeName = node["nodeName"]
 
         metricValue = node["startTime"]
-        metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
+        metricTime = metricPollTime #Time.now.utc.iso8601 #2018-01-30T19:36:14Z
 
         metricItem["DataItems"] = []
 
@@ -621,10 +622,10 @@ class CAdvisorMetricsAPIClient
       return metricItem
     end
 
-    def getContainerStartTimeMetricItems(metricJSON, hostName, metricNametoReturn)
+    def getContainerStartTimeMetricItems(metricJSON, hostName, metricNametoReturn, metricPollTime)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
-      currentTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
+      #currentTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
       begin
         metricInfo = metricJSON
         metricInfo["pods"].each do |pod|
@@ -633,7 +634,7 @@ class CAdvisorMetricsAPIClient
             pod["containers"].each do |container|
               containerName = container["name"]
               metricValue = container["startTime"]
-              metricTime = currentTime
+              metricTime = metricPollTime #currentTime
 
               metricItem = {}
               metricItem["DataItems"] = []

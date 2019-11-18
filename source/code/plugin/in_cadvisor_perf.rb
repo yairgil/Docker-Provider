@@ -47,10 +47,12 @@ module Fluent
     end
 
     def enumerate()
-      time = Time.now.to_f
+      currentTime = Time.now
+      time = currentTime.to_f
+      batchTime = currentTime.utc.iso8601
       begin
         eventStream = MultiEventStream.new
-        metricData = CAdvisorMetricsAPIClient.getMetrics()
+        metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime )
         metricData.each do |record|
           record["DataType"] = "LINUX_PERF_BLOB"
           record["IPName"] = "LogManagement"

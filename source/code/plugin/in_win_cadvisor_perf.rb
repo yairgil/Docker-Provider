@@ -67,7 +67,7 @@ module Fluent
           @@winNodeQueryTimeTracker = DateTime.now.to_time.to_i
         end
         @@winNodes.each do |winNode|
-          metricData = CAdvisorMetricsAPIClient.getMetrics(winNode)
+          metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601)
           metricData.each do |record|
             if !record.empty?
               record["DataType"] = "LINUX_PERF_BLOB"
