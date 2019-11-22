@@ -123,7 +123,6 @@ class ApplicationInsightsUtility
         eventName = pluginName + @@HeartBeat
         if !(@@Tc.nil?)
           @@Tc.track_event eventName, :properties => @@CustomProperties
-          #@@Tc.flush
           $log.info("AppInsights Heartbeat Telemetry put successfully into the queue")
         end
       rescue => errorStr
@@ -137,7 +136,6 @@ class ApplicationInsightsUtility
           @@Tc.track_metric "LastProcessedContainerInventoryCount", properties["ContainerCount"],
                             :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT,
                             :properties => @@CustomProperties
-          #@@Tc.flush
           $log.info("AppInsights Container Count Telemetry sput successfully into the queue")
         end
       rescue => errorStr
@@ -159,7 +157,6 @@ class ApplicationInsightsUtility
         end
         if !(@@Tc.nil?)
           @@Tc.track_event eventName, :properties => telemetryProps
-          #@@Tc.flush
           $log.info("AppInsights Custom Event #{eventName} sent successfully")
         end
       rescue => errorStr
@@ -183,7 +180,6 @@ class ApplicationInsightsUtility
         end
         if !(@@Tc.nil?)
           @@Tc.track_exception errorStr, :properties => telemetryProps
-          #@@Tc.flush
           $log.info("AppInsights Exception Telemetry put successfully into the queue")
         end
       rescue => errorStr
@@ -230,7 +226,6 @@ class ApplicationInsightsUtility
           @@Tc.track_metric metricName, metricValue,
                             :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT,
                             :properties => telemetryProps
-          #@@Tc.flush
           $log.info("AppInsights metric Telemetry #{metricName} put successfully into the queue")
         end
       rescue => errorStr
