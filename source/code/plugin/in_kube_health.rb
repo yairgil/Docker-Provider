@@ -113,7 +113,7 @@ module Fluent
           pods_ready_hash = HealthMonitorUtils.get_pods_ready_hash(@resources)
 
           system_pods = pods_ready_hash.keep_if { |k, v| v["namespace"] == @@KubeInfraNamespace }
-          workload_pods = Hash.new # { |k, v| v["namespace"] != @@KubeInfraNamespace }
+          workload_pods = Hash.new # pods_ready_hash.select{ |k, v| v["namespace"] != @@KubeInfraNamespace }
 
           system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, MonitorId::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
           system_pods_ready_percentage_records.each do |record|

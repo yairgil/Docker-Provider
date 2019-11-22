@@ -49,8 +49,6 @@ class DockerApiClient
         end
         return nil
       ensure
-        ## REMOVE LOG BEFORE MERGE
-        $log.warn "Closing docker socket connection"
         if !socket.nil?
           socket.close
         end

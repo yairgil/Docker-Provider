@@ -499,7 +499,6 @@ module Fluent
             record["DataType"] = "LINUX_PERF_BLOB"
             record["IPName"] = "LogManagement"
             kubePerfEventStream.add(emitTime, record) if record
-            #router.emit(@tag, time, record) if record
           end
           #end
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
