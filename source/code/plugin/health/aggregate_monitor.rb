@@ -184,7 +184,7 @@ module HealthModel
             member_monitors.push(member_monitor)
         }
 
-	filtered = member_monitors.select{|monitor| monitor.state != MonitorState::NONE}
+        filtered = member_monitors.keep_if{|monitor| monitor.state != MonitorState::NONE}
         sorted = filtered.sort_by{ |monitor| [@@sort_key_order[monitor.state]] }
 
         return sorted
