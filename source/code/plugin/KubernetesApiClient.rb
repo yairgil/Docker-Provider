@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class KubernetesApiClient
-  require 'yajl/json_gem'
+  require "yajl/json_gem"
   require "logger"
   require "net/http"
   require "net/https"
@@ -43,7 +43,7 @@ class KubernetesApiClient
           if !File.exist?(@@CaFile)
             raise "#{@@CaFile} doesnt exist"
           else
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER ) do |http|
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
               kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
               kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
               @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
@@ -333,7 +333,7 @@ class KubernetesApiClient
       return containerLogs
     end
 
-    def getContainerResourceRequestsAndLimits(metricJSON, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601 )
+    def getContainerResourceRequestsAndLimits(metricJSON, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
       metricItems = []
       begin
         clusterId = getClusterId
@@ -546,5 +546,29 @@ class KubernetesApiClient
       end
       return metricValue
     end # getMetricNumericValue
+
+    def getResourcesAndContinuationToken(uri)
+      continuationToken = nil
+      resourceInventory = nil
+      begin
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
+        resourceInfo = getKubeResourceInfo(uri)
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
+        if !resourceInfo.nil?
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          resourceInfo = nil
+        end
+        if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
+          continuationToken = resourceInventory["metadata"]["continue"]
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getResourcesAndContinuationToken:Failed in get resources for #{uri} and continuation token: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        resourceInventory = nil
+      end
+      return continuationToken, resourceInventory
+    end #getResourcesAndContinuationToken
   end
 end
