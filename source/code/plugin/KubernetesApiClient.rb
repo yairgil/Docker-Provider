@@ -18,6 +18,7 @@ class KubernetesApiClient
   @@ClusterName = nil
   @@ClusterId = nil
   @@IsNodeMaster = nil
+  @@IsAROCluster = nil
   #@@IsValidRunningNode = nil
   #@@IsLinuxCluster = nil
   @@KubeSystemNamespace = "kube-system"
@@ -152,6 +153,20 @@ class KubernetesApiClient
       return @@ClusterId
     end
 
+    def isAROCluster
+      return @@IsAROCluster if !@@IsAROCluster.nil?
+      @@IsAROCluster = false
+      begin
+        cluster = getClusterId
+        if cluster && !cluster.nil? && !cluster.empty? && cluster.downcase.include?("/microsoft.containerservice/openshiftmanagedclusters")
+          @@IsAROCluster = true        
+        end
+      rescue => error
+        @Log.warn("KubernetesApiClient::isAROCluster : isAROCluster failed #{error}")
+      end
+      return @@IsAROCluster
+    end
+
     def isNodeMaster
       return @@IsNodeMaster if !@@IsNodeMaster.nil?
       @@IsNodeMaster = false
@@ -240,7 +255,8 @@ class KubernetesApiClient
     def getWindowsNodes
       winNodes = []
       begin
-        nodeInventory = JSON.parse(getKubeResourceInfo("nodes").body)
+        resourceUri = isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue": "nodes"   
+        nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
         @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
         # Resetting the windows node cache
         @@WinNodeArray.clear
