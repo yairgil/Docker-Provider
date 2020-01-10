@@ -74,7 +74,7 @@ module Fluent
           # only get the compute nodes for ARO cluster
           resourceUri = resourceUri + "&labelSelector=node-role.kubernetes.io/compute%3Dtrue"
         end
-        continuationToken, nodeInventory = KubernetesApiClient.KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)        
+        continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)        
         
         $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
