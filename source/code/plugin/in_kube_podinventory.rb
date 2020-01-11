@@ -266,9 +266,11 @@ module Fluent
           podNameSpace = items["metadata"]["namespace"]
 
           # For ARO, skip the pods scheduled on to master or infra nodes
-          if KubernetesApiClient.isAROCluster && !items["spec"]["nodeName"].nil? && ( items["spec"]["nodeName"].downcase.include?("infra-") || items["spec"]["nodeName"].downcase.include?("master-") )
+          if KubernetesApiClient.isAROCluster && !items["spec"]["nodeName"].nil? &&
+             ( items["spec"]["nodeName"].downcase.include?("infra-") ||
+              items["spec"]["nodeName"].downcase.include?("master-") )
             next
-          end  
+          end
 
           if podNameSpace.eql?("kube-system") && !items["metadata"].key?("ownerReferences")
             # The above case seems to be the only case where you have horizontal scaling of pods

@@ -159,7 +159,7 @@ class KubernetesApiClient
       begin
         cluster = getClusterId
         if cluster && !cluster.nil? && !cluster.empty? && cluster.downcase.include?("/microsoft.containerservice/openshiftmanagedclusters")
-          @@IsAROCluster = true        
+          @@IsAROCluster = true
         end
       rescue => error
         @Log.warn("KubernetesApiClient::isAROCluster : isAROCluster failed #{error}")
@@ -255,7 +255,7 @@ class KubernetesApiClient
     def getWindowsNodes
       winNodes = []
       begin
-        resourceUri = isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue": "nodes"   
+        resourceUri = isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue": "nodes"
         nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
         @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
         # Resetting the windows node cache
@@ -374,9 +374,11 @@ class KubernetesApiClient
           end
 
           # For ARO, skip the pods scheduled on to master or infra nodes
-          if KubernetesApiClient.isAROCluster && !pods["spec"]["nodeName"].nil? && ( pods["spec"]["nodeName"].downcase.include?("infra-") || pods["spec"]["nodeName"].downcase.include?("master-") )
+          if KubernetesApiClient.isAROCluster && !pods["spec"]["nodeName"].nil? &&
+            ( pods["spec"]["nodeName"].downcase.include?("infra-") ||
+             pods["spec"]["nodeName"].downcase.include?("master-") )
             next
-          end  
+          end
 
 
           podContainers = []
