@@ -374,9 +374,9 @@ class KubernetesApiClient
           end
 
           # For ARO, skip the pods scheduled on to master or infra nodes
-          if KubernetesApiClient.isAROCluster && !pods["spec"]["nodeName"].nil? &&
-            ( pods["spec"]["nodeName"].downcase.include?("infra-") ||
-             pods["spec"]["nodeName"].downcase.include?("master-") )
+          if isAROCluster && !pod["spec"]["nodeName"].nil? &&
+            ( pod["spec"]["nodeName"].downcase.include?("infra-") ||
+            pod["spec"]["nodeName"].downcase.include?("master-") )
             next
           end
 
