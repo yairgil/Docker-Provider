@@ -161,6 +161,7 @@ module HealthModel
             def get_cluster_cpu_memory_capacity(log, node_inventory: nil)
                 begin
                     if node_inventory.nil?
+                        # For ARO, filter out all other node roles other than compute
                         resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue": "nodes"                       
                         node_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                     end
@@ -208,6 +209,7 @@ module HealthModel
                 end
 
                 begin
+                    # For ARO, filter out all other node roles other than compute
                     resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue": "nodes"                       
                     @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                     if !hostName.nil?
@@ -274,7 +276,7 @@ module HealthModel
 
                 log.info "CPU and Memory Capacity Not set"
                 begin
-                    # only get for compute nodes for ARO cluster
+                    # For ARO, filter out all other node roles other than compute
                     resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue" : "nodes"                   
                     @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                 rescue Exception => e

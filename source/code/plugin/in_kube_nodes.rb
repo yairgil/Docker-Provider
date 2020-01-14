@@ -70,8 +70,8 @@ module Fluent
         continuationToken = nil
         $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         resourceUri = "nodes?limit=#{@NODES_CHUNK_SIZE}"
-        if KubernetesApiClient.isAROCluster 
-          # only get the compute nodes for ARO cluster
+        # For ARO, filter out all other node roles other than compute
+        if KubernetesApiClient.isAROCluster         
           resourceUri = resourceUri + "&labelSelector=node-role.kubernetes.io/compute%3Dtrue"
         end
         continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)        
@@ -84,7 +84,7 @@ module Fluent
         end
 
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        while (!continuationToken.nil? && !continuationToken.empty?)         
+        while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
           if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
             parse_and_emit_records(nodeInventory, batchTime)

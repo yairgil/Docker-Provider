@@ -158,7 +158,8 @@ class KubernetesApiClient
       @@IsAROCluster = false
       begin
         cluster = getClusterId
-        if cluster && !cluster.nil? && !cluster.empty? && cluster.downcase.include?("/microsoft.containerservice/openshiftmanagedclusters")
+        if cluster && !cluster.nil? && !cluster.empty? && 
+          cluster.downcase.include?("/microsoft.containerservice/openshiftmanagedclusters")
           @@IsAROCluster = true
         end
       rescue => error
@@ -373,7 +374,7 @@ class KubernetesApiClient
             podUid = pod["metadata"]["uid"]
           end
 
-          # For ARO, skip the pods scheduled on to master or infra nodes
+          # For ARO, skip the pods scheduled on to master or infra nodes to ingest
           if isAROCluster && !pod["spec"]["nodeName"].nil? &&
             ( pod["spec"]["nodeName"].downcase.include?("infra-") ||
             pod["spec"]["nodeName"].downcase.include?("master-") )
