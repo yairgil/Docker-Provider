@@ -141,7 +141,6 @@ class Inventory2MdmConvertor
     end
 
     def process_pod_inventory_record(record)
-        @log.info "Processing POD Inventory Record"
         if @process_incoming_stream
             begin
                 records = []
