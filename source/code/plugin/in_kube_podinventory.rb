@@ -2,6 +2,9 @@
 # frozen_string_literal: true
 
 module Fluent
+
+  require_relative "podinventory_to_mdm"
+
   class Kube_PodInventory_Input < Input
     Plugin.register_input("kubepodinventory", self)
 
@@ -22,22 +25,22 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
       require_relative "omslog"
-      require_relative "podinventory_to_mdm"
 
       @PODS_CHUNK_SIZE = "1500"
       @podCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
-      @inventoryToMdmConvertor = Inventory2MdmConvertor.new(@custom_metrics_azure_regions)
     end
 
     config_param :run_interval, :time, :default => 60
     config_param :tag, :string, :default => "oms.containerinsights.KubePodInventory"
     config_param :custom_metrics_azure_regions, :string
 
+
     def configure(conf)
       super
+      @inventoryToMdmConvertor = Inventory2MdmConvertor.new(@custom_metrics_azure_regions)
     end
 
     def start
@@ -462,6 +465,7 @@ module Fluent
                           "DataItems" => [record.each { |k, v| record[k] = v }],
                         }
               eventStream.add(emitTime, wrapper) if wrapper
+              @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
             end
           end
           # Send container inventory records for containers on windows nodes
@@ -479,16 +483,16 @@ module Fluent
         end  #podInventory block end
 
         router.emit_stream(@tag, eventStream) if eventStream
-        # optimize inventory to mdm conversion. Move to input plugin for pod and node inventory from filter
-        begin
-          converted_records = @inventoryToMdmConvertor.process_pod_inventory_records(eventStream, batchTime)
-          mdm_pod_inventory_es = MultiEventStream.new
-          converted_records.each {|converted_record|
-            mdm_pod_inventory_es.add(batchTime, converted_record) if converted_record
-          } if converted_records
-          router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es          
-        rescue Exception => e
-          $log.info "Error converting inventory records to mdm custom metrics format #{e.class} Message: #{e.message}"
+
+        if continuationToken.nil?  #no more chunks in this batch to be sent, get all pod inventory records to send
+            @log.info "Sending pod inventory mdm records to out_mdm"
+            pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
+            @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
+            mdm_pod_inventory_es = MultiEventStream.new
+            pod_inventory_mdm_records.each {|pod_inventory_mdm_record|
+                mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
+            } if pod_inventory_mdm_records
+            router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
         end
 
         #:optimize:kubeperf merge
