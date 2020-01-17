@@ -7,6 +7,7 @@ module Fluent
     require 'yajl/json_gem'
     require_relative 'oms_common'
     require_relative 'CustomMetricsUtils'
+    require_relative 'kubelet_utils'
 
 	class CAdvisor2MdmFilter < Filter
 		Fluent::Plugin.register_filter('filter_cadvisor2mdm', self)
@@ -138,33 +139,41 @@ module Fluent
 
         def ensure_cpu_memory_capacity_set
 
-            @log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
             if @cpu_capacity != 0.0 && @memory_capacity != 0.0
                 @log.info "CPU And Memory Capacity are already set"
                 return
             end
 
-            begin
-                nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes?fieldSelector=metadata.name%3D#{@@hostName}").body)
-            rescue Exception => e
-                @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
-                ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
-            end
-            if !nodeInventory.nil?
-                cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
-                if !cpu_capacity_json.nil? && !cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
-                    @cpu_capacity = cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
-                    @log.info "CPU Limit #{@cpu_capacity}"
-                else
-                    @log.info "Error getting cpu_capacity"
+            controller_type = ENV["CONTROLLER_TYPE"]
+            if controller_type.nil? || controller_type.downcase == 'replicaset'
+                @log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
+
+                begin
+                    nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes?fieldSelector=metadata.name%3D#{@@hostName}").body)
+                rescue Exception => e
+                    @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
+                    ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
                 end
-                memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
-                if !memory_capacity_json.nil? && !memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
-                    @memory_capacity = memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
-                    @log.info "Memory Limit #{@memory_capacity}"
-                else
-                    @log.info "Error getting memory_capacity"
+                if !nodeInventory.nil?
+                    cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
+                    if !cpu_capacity_json.nil? && !cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
+                        @cpu_capacity = cpu_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
+                        @log.info "CPU Limit #{@cpu_capacity}"
+                    else
+                        @log.info "Error getting cpu_capacity"
+                    end
+                    memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
+                    if !memory_capacity_json.nil? && !memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value'].to_s.nil?
+                        @memory_capacity = memory_capacity_json[0]['DataItems'][0]['Collections'][0]['Value']
+                        @log.info "Memory Limit #{@memory_capacity}"
+                    else
+                        @log.info "Error getting memory_capacity"
+                    end
                 end
+            elsif controller_type.downcase == 'daemonset'
+                capacity_from_kubelet = KubeletUtils.get_node_capacity
+                @cpu_capacity = capacity_from_kubelet[0]
+                @memory_capacity = capacity_from_kubelet[1]
             end
         end
 

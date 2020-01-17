@@ -22,16 +22,19 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
       require_relative "omslog"
+      require_relative "podinventory_to_mdm"
 
       @PODS_CHUNK_SIZE = "1500"
       @podCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
+      @inventoryToMdmConvertor = Inventory2MdmConvertor.new(@custom_metrics_azure_regions)
     end
 
     config_param :run_interval, :time, :default => 60
     config_param :tag, :string, :default => "oms.containerinsights.KubePodInventory"
+    config_param :custom_metrics_azure_regions, :string
 
     def configure(conf)
       super
@@ -87,7 +90,7 @@ module Fluent
         continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
         if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-          parse_and_emit_records(podInventory, serviceList, batchTime)
+          parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
         else
           $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
         end
@@ -96,7 +99,7 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-            parse_and_emit_records(podInventory, serviceList, batchTime)
+            parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
           else
             $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
           end
@@ -246,7 +249,7 @@ module Fluent
       end
     end
 
-    def parse_and_emit_records(podInventory, serviceList, batchTime = Time.utc.iso8601)
+    def parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
       currentTime = Time.now
       emitTime = currentTime.to_f
       #batchTime = currentTime.utc.iso8601
@@ -476,7 +479,18 @@ module Fluent
         end  #podInventory block end
 
         router.emit_stream(@tag, eventStream) if eventStream
-        router.emit_stream(@@MDMKubePodInventoryTag, eventStream) if eventStream
+        # optimize inventory to mdm conversion. Move to input plugin for pod and node inventory from filter
+        begin
+          converted_records = @inventoryToMdmConvertor.process_pod_inventory_records(eventStream, batchTime)
+          mdm_pod_inventory_es = MultiEventStream.new
+          converted_records.each {|converted_record|
+            mdm_pod_inventory_es.add(batchTime, converted_record) if converted_record
+          } if converted_records
+          router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es          
+        rescue Exception => e
+          $log.info "Error converting inventory records to mdm custom metrics format #{e.class} Message: #{e.message}"
+        end
+
         #:optimize:kubeperf merge
         begin
           #if(!podInventory.empty?)
