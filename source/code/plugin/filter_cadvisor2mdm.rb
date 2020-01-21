@@ -111,8 +111,9 @@ module Fluent
                         metric_value = record['DataItems'][0]['Collections'][0]['Value']
                         if counter_name.downcase == @@cpu_usage_nano_cores
                             metric_name = @@cpu_usage_milli_cores
+                            metric_value /= 1000000 #cadvisor record is in nanocores. Convert to mc
                             if @cpu_capacity != 0.0
-                                percentage_metric_value = (metric_value*1000000)*100/@cpu_capacity
+                                percentage_metric_value = (metric_value)*100/@cpu_capacity
                             end
                         end
 
