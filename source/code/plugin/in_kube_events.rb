@@ -104,9 +104,8 @@ module Fluent
 
           nodeName = items["source"].key?("host") ? items["source"]["host"] : (OMS::Common.get_hostname)
           # For ARO, drop the master and infra node sourced events to ingest
-          if KubernetesApiClient.isAROCluster && (
-             nodeName.downcase.include?("infra-") ||
-             nodeName.downcase.include?("master-") )
+          if KubernetesApiClient.isAROCluster && !nodeName.nil? && !nodeName.empty? &&
+             ( nodeName.downcase.include?("infra-") || nodeName.downcase.include?("master-") )
             next
           end
 
