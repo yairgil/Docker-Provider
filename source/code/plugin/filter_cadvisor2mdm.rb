@@ -147,7 +147,7 @@ module Fluent
             begin
                 resourceUri = "nodes?fieldSelector=metadata.name%3D#{@@hostName}"
                 # For ARO, filter out all other node roles other than compute
-                if KubernetesApiClient.isAROCluster                    
+                if KubernetesApiClient.isAROCluster
                     resourceUri = resourceUri + "&labelSelector=node-role.kubernetes.io/compute%3Dtrue"
                 end
                 nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
