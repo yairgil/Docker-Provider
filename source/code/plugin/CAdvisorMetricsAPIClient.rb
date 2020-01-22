@@ -63,51 +63,17 @@ class CAdvisorMetricsAPIClient
 
   class << self
     def getSummaryStatsFromCAdvisor(winNode)
-      headers = {}
-      response = nil
-      @Log.info "Getting CAdvisor Uri"
-      begin
-
-        cAdvisorUri = getCAdvisorUri(winNode)
-        bearerToken = File.read("/var/run/secrets/kubernetes.io/serviceaccount/token")
-        @Log.info "cAdvisorUri: #{cAdvisorUri}"
-
-        if !cAdvisorUri.nil?
-          uri = URI.parse(cAdvisorUri)
-          if !!cAdvisorSecurePort == true
-            Net::HTTP.start(uri.host, uri.port,
-                            :use_ssl => true, :open_timeout => 20, :read_timeout => 40,
-                            :ca_file => "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-                            :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
-              cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
-              cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
-              response = http.request(cAdvisorApiRequest)
-              @Log.info "Got response code #{response.code} from #{uri.request_uri}"
-            end
-          else
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => false, :open_timeout => 20, :read_timeout => 40) do |http|
-              cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
-              response = http.request(cAdvisorApiRequest)
-              @Log.info "Got response code #{response.code} from #{uri.request_uri}"
-            end
-          end
-        end
-      rescue => error
-        @Log.warn("CAdvisor api request failed: #{error}")
-        telemetryProps = {}
-        telemetryProps["Computer"] = winNode["Hostname"]
-        ApplicationInsightsUtility.sendExceptionTelemetry(error, telemetryProps)
-      end
-      return response
+      relativeUri = "/stats/summary"
+      return getResponse(winNode, relativeUri)
     end
 
-    def getBaseCAdvisorUri(winNode: nil)
+    def getNodeCapacityFromCAdvisor(winNode: nil)
+      relativeUri = "/spec/"
+      return getResponse(winNode, relativeUri)
+    end
 
-        cAdvisorSecurePort = false
-        # Check to see if omsagent needs to use 10255(insecure) port or 10250(secure) port
-        if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
-          cAdvisorSecurePort = true
-        end
+    def getBaseCAdvisorUri(winNode)
+        cAdvisorSecurePort = isCAdvisorOnSecurePort()
 
         if !!cAdvisorSecurePort == true
             defaultHost = "https://localhost:#{@@CADVISOR_SECURE_PORT}"
@@ -122,14 +88,14 @@ class CAdvisorMetricsAPIClient
         end
 
         if !nodeIP.nil?
-            @Log.info("Using #{nodeIP} for CAdvisor Base Uri")
+            @Log.info("Using #{nodeIP} for CAdvisor Host")
             if !!cAdvisorSecurePort == true
                 return "https://#{nodeIP}:#{@@CADVISOR_SECURE_PORT}"
             else
                 return "http://#{nodeIP}:#{@@CADVISOR_NON_SECURE_PORT}"
             end
         else
-            @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost} ")
+            @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost}")
             if !winNode.nil?
                 return nil
             else
@@ -138,7 +104,7 @@ class CAdvisorMetricsAPIClient
         end
     end
 
-    def getCAdvisorUri(winNode: nil, relativeUri)
+    def getCAdvisorUri(winNode, relativeUri)
         baseUri = getBaseCAdvisorUri(winNode)
         return baseUri + relativeUri
     end
@@ -704,9 +670,50 @@ class CAdvisorMetricsAPIClient
       return metricItems
     end
 
-    def getResponse(winNode: nil, relativeUri)
-        cadvisorUri = getCAdvisorUri(winNode, relativeUri)
+    def getResponse(winNode, relativeUri)
+      response = nil
+      @Log.info "Getting CAdvisor Uri Response"
+      bearerToken = File.read("/var/run/secrets/kubernetes.io/serviceaccount/token")
+      begin
+        cAdvisorUri = getCAdvisorUri(winNode, relativeUri)
+        @Log.info "cAdvisorUri: #{cAdvisorUri}"
 
+        if !cAdvisorUri.nil?
+          uri = URI.parse(cAdvisorUri)
+          if isCAdvisorOnSecurePort()
+            Net::HTTP.start(uri.host, uri.port,
+              :use_ssl => true, :open_timeout => 20, :read_timeout => 40,
+              :ca_file => "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+              :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
+            cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
+            response = http.request(cAdvisorApiRequest)
+            @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+            end
+          else
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => false, :open_timeout => 20, :read_timeout => 40) do |http|
+              cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
+              response = http.request(cAdvisorApiRequest)
+              @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+            end
+          end
+        end
+      rescue => error
+        @Log.warn("CAdvisor api request failed: #{error}")
+        telemetryProps = {}
+        telemetryProps["Computer"] = winNode["Hostname"]
+        ApplicationInsightsUtility.sendExceptionTelemetry(error, telemetryProps)
+      end
+      return response
+    end
+
+    def isCAdvisorOnSecurePort
+        cAdvisorSecurePort = false
+        # Check to see whether omsagent needs to use 10255(insecure) port or 10250(secure) port
+        if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
+          cAdvisorSecurePort = true
+        end
+        return cAdvisorSecurePort
     end
   end
 end
