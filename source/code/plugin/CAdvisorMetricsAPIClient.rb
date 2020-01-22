@@ -55,7 +55,9 @@ class CAdvisorMetricsAPIClient
   # Keeping track of containers so that can delete the container from the container cpu cache when the container is deleted
   # as a part of the cleanup routine
   @@winContainerIdCache = []
-
+  #cadvisor ports
+  @@CADVISOR_SECURE_PORT = "10250"
+  @@CADVISOR_NON_SECURE_PORT = "10255"
   def initialize
   end
 
@@ -65,13 +67,8 @@ class CAdvisorMetricsAPIClient
       response = nil
       @Log.info "Getting CAdvisor Uri"
       begin
-        cAdvisorSecurePort = false
-        # Check to see if omsagent needs to use 10255(insecure) port or 10250(secure) port
-        if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
-          cAdvisorSecurePort = true
-        end
 
-        cAdvisorUri = getCAdvisorUri(winNode, cAdvisorSecurePort)
+        cAdvisorUri = getCAdvisorUri(winNode)
         bearerToken = File.read("/var/run/secrets/kubernetes.io/serviceaccount/token")
         @Log.info "cAdvisorUri: #{cAdvisorUri}"
 
@@ -104,36 +101,46 @@ class CAdvisorMetricsAPIClient
       return response
     end
 
-    def getCAdvisorUri(winNode, cAdvisorSecurePort)
-      begin
-        if !!cAdvisorSecurePort == true
-          defaultHost = "https://localhost:10250"
-        else
-          defaultHost = "http://localhost:10255"
+    def getBaseCAdvisorUri(winNode: nil)
+
+        cAdvisorSecurePort = false
+        # Check to see if omsagent needs to use 10255(insecure) port or 10250(secure) port
+        if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
+          cAdvisorSecurePort = true
         end
 
-        relativeUri = "/stats/summary"
+        if !!cAdvisorSecurePort == true
+            defaultHost = "https://localhost:#{@@CADVISOR_SECURE_PORT}"
+        else
+            defaultHost = "http://localhost:#{@@CADVISOR_NON_SECURE_PORT}"
+        end
+
         if !winNode.nil?
-          nodeIP = winNode["InternalIP"]
+            nodeIP = winNode["InternalIP"]
         else
-          nodeIP = ENV["NODE_IP"]
+            nodeIP = ENV["NODE_IP"]
         end
+
         if !nodeIP.nil?
-          @Log.info("Using #{nodeIP + relativeUri} for CAdvisor Uri")
-          if !!cAdvisorSecurePort == true
-            return "https://#{nodeIP}:10250" + relativeUri
-          else
-            return "http://#{nodeIP}:10255" + relativeUri
-          end
+            @Log.info("Using #{nodeIP} for CAdvisor Base Uri")
+            if !!cAdvisorSecurePort == true
+                return "https://#{nodeIP}:#{@@CADVISOR_SECURE_PORT}"
+            else
+                return "http://#{nodeIP}:#{@@CADVISOR_NON_SECURE_PORT}"
+            end
         else
-          @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost + relativeUri} ")
-          if !winNode.nil?
-            return nil
-          else
-            return defaultHost + relativeUri
-          end
+            @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost} ")
+            if !winNode.nil?
+                return nil
+            else
+                return defaultHost
+            end
         end
-      end
+    end
+
+    def getCAdvisorUri(winNode: nil, relativeUri)
+        baseUri = getBaseCAdvisorUri(winNode)
+        return baseUri + relativeUri
     end
 
     def getMetrics(winNode: nil, metricTime: Time.now.utc.iso8601)
@@ -695,6 +702,11 @@ class CAdvisorMetricsAPIClient
         return metricItems
       end
       return metricItems
+    end
+
+    def getResponse(winNode: nil, relativeUri)
+        cadvisorUri = getCAdvisorUri(winNode, relativeUri)
+
     end
   end
 end

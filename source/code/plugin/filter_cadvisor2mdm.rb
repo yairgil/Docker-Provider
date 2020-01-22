@@ -112,6 +112,7 @@ module Fluent
                         if counter_name.downcase == @@cpu_usage_nano_cores
                             metric_name = @@cpu_usage_milli_cores
                             metric_value /= 1000000 #cadvisor record is in nanocores. Convert to mc
+                            @log.info "Metric_value: #{metric_value} CPU Capacity #{@cpu_capacity}"
                             if @cpu_capacity != 0.0
                                 percentage_metric_value = (metric_value)*100/@cpu_capacity
                             end
