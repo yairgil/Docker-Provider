@@ -69,11 +69,7 @@ module Fluent
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-        resourceUri = "nodes?limit=#{@NODES_CHUNK_SIZE}"
-        # For ARO, filter out all other node roles other than compute
-        if KubernetesApiClient.isAROCluster
-          resourceUri = resourceUri + "&labelSelector=node-role.kubernetes.io%2Fcompute%3Dtrue"
-        end
+        resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
         continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
 
         $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")

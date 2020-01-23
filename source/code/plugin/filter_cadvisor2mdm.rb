@@ -145,11 +145,7 @@ module Fluent
             end
 
             begin
-                resourceUri = "nodes?fieldSelector=metadata.name%3D#{@@hostName}"
-                # For ARO, filter out all other node roles other than compute
-                if KubernetesApiClient.isAROCluster
-                    resourceUri = resourceUri + "&labelSelector=node-role.kubernetes.io%2Fcompute%3Dtrue"
-                end
+                resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?fieldSelector=metadata.name%3D#{@@hostName}")
                 nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
             rescue Exception => e
                 @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "

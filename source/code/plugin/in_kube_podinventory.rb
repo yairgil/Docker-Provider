@@ -265,8 +265,8 @@ module Fluent
           record["Name"] = items["metadata"]["name"]
           podNameSpace = items["metadata"]["namespace"]
 
-          # For ARO, skip the pods scheduled on to master or infra nodes
-          if KubernetesApiClient.isAROCluster && !items["spec"].nil? && !items["spec"]["nodeName"].nil? &&
+          # For ARO v3 cluster, skip the pods scheduled on to master or infra nodes
+          if KubernetesApiClient.isAROV3Cluster && !items["spec"].nil? && !items["spec"]["nodeName"].nil? &&
              ( items["spec"]["nodeName"].downcase.start_with?("infra-") ||
               items["spec"]["nodeName"].downcase.start_with?("master-") )
             next
