@@ -71,11 +71,11 @@ module Fluent
         $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         resourceUri = "nodes?limit=#{@NODES_CHUNK_SIZE}"
         # For ARO, filter out all other node roles other than compute
-        if KubernetesApiClient.isAROCluster         
-          resourceUri = resourceUri + "&labelSelector=node-role.kubernetes.io/compute%3Dtrue"
+        if KubernetesApiClient.isAROCluster
+          resourceUri = resourceUri + "&labelSelector=node-role.kubernetes.io%2Fcompute%3Dtrue"
         end
-        continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)        
-        
+        continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
+
         $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
           parse_and_emit_records(nodeInventory, batchTime)

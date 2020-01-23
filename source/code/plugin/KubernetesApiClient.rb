@@ -255,7 +255,7 @@ class KubernetesApiClient
     def getWindowsNodes
       winNodes = []
       begin
-        resourceUri = isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue": "nodes"
+        resourceUri = isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io%2Fcompute%3Dtrue": "nodes"
         nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
         @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
         # Resetting the windows node cache

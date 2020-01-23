@@ -162,7 +162,7 @@ module HealthModel
                 begin
                     if node_inventory.nil?
                         # For ARO, filter out all other node roles other than compute
-                        resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue": "nodes"                       
+                        resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io%2Fcompute%3Dtrue": "nodes"
                         node_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                     end
                     cluster_cpu_capacity = 0.0
@@ -210,7 +210,7 @@ module HealthModel
 
                 begin
                     # For ARO, filter out all other node roles other than compute
-                    resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue": "nodes"                       
+                    resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io%2Fcompute%3Dtrue": "nodes"
                     @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                     if !hostName.nil?
                         podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("pods?fieldSelector=spec.nodeName%3D#{hostName}").body)
@@ -277,7 +277,7 @@ module HealthModel
                 log.info "CPU and Memory Capacity Not set"
                 begin
                     # For ARO, filter out all other node roles other than compute
-                    resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io/compute%3Dtrue" : "nodes"                   
+                    resourceUri = KubernetesApiClient.isAROCluster ? "nodes?labelSelector=node-role.kubernetes.io%2Fcompute%3Dtrue" : "nodes"
                     @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                 rescue Exception => e
                     log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
