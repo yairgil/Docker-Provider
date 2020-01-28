@@ -9,7 +9,11 @@ class DockerApiClient
   require_relative "DockerApiRestHelper"
   require_relative "ApplicationInsightsUtility"
 
-  @@SocketPath = "/var/run/host/docker.sock"
+  # socket path for docker
+  ## @@SocketPath = "/var/run/host/docker.sock"
+  # socket path for CRIO
+  @@SocketPath = "/var/run/crio/host/crio.sock"
+
   @@ChunkSize = 4096
   @@TimeoutInSeconds = 5
   @@PluginName = "ContainerInventory"
