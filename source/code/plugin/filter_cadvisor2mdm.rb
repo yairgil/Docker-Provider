@@ -146,11 +146,12 @@ module Fluent
             end
 
             controller_type = ENV["CONTROLLER_TYPE"]
-            if controller_type.nil? || controller_type.downcase == 'replicaset'
+            if controller_type.downcase == 'replicaset'
                 @log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
 
                 begin
-                    nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes?fieldSelector=metadata.name%3D#{@@hostName}").body)
+                resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?fieldSelector=metadata.name%3D#{@@hostName}")
+                nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                 rescue Exception => e
                     @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
                     ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)

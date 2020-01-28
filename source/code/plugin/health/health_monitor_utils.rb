@@ -162,7 +162,8 @@ module HealthModel
             def get_cluster_cpu_memory_capacity(log, node_inventory: nil)
                 begin
                     if node_inventory.nil?
-                        node_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
+                        resourceUri = KubernetesApiClient.getNodesResourceUri("nodes")
+                        node_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                     end
                     cluster_cpu_capacity = 0.0
                     cluster_memory_capacity = 0.0
@@ -208,7 +209,8 @@ module HealthModel
                 end
 
                 begin
-                    @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
+                    resourceUri = KubernetesApiClient.getNodesResourceUri("nodes")
+                    @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
                     if !hostName.nil?
                         podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("pods?fieldSelector=spec.nodeName%3D#{hostName}").body)
                     else
