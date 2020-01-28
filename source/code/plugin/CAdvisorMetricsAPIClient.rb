@@ -699,7 +699,7 @@ class CAdvisorMetricsAPIClient
           end
         end
       rescue => error
-        @Log.warn("CAdvisor api request failed: #{error}")
+        @Log.warn("CAdvisor api request for #{cAdvisorUri} failed: #{error}")
         telemetryProps = {}
         telemetryProps["Computer"] = winNode["Hostname"]
         ApplicationInsightsUtility.sendExceptionTelemetry(error, telemetryProps)
