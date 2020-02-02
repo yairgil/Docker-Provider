@@ -66,7 +66,7 @@ class DockerApiClient
       begin
         $log.info("before regx response: #{dockerResponse}, isMultiJson: #{isMultiJson}")
         jsonResponse = isMultiJson ? dockerResponse[/\[{.+}\]/] : dockerResponse[/{.+}/]
-        $log.info("after regx response: #{jsonResponse})
+        $log.info("after regx response: #{jsonResponse}")
       rescue => errorStr
         $log.warn("Regex match for docker response failed: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
       end
