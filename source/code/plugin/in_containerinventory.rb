@@ -10,6 +10,9 @@ module Fluent
     @@FailedState = "Failed"
     @@StoppedState = "Stopped"
     @@PausedState = "Paused"
+    @@UnknownState = "Unknown"
+    @@CreatedState = "Created"
+    @@ExitedState = "Exited"
 
     def initialize
       super
@@ -96,38 +99,31 @@ module Fluent
     end
 
     def obtainContainerState(instance, container)
-      begin
-        stateValue = container["State"]
+      begin        
+        exitCodeValue = container["exitCode"]      
+        instance["StartedTime"] = container["startedAt"]
+        instance["FinishedTime"] = container["finishedAt"]
+        # Exit codes less than 0 are not supported by the engine
+        if exitCodeValue < 0
+          exitCodeValue = 128
+          $log.info("obtainContainerState::Container: #{container["Id"]} returned negative exit code")
+        end
+        instance["ExitCode"] = exitCodeValue
+        stateValue = container["state"]
         if !stateValue.nil?
-          exitCodeValue = stateValue["ExitCode"]
-          # Exit codes less than 0 are not supported by the engine
-          if exitCodeValue < 0
-            exitCodeValue = 128
-            $log.info("obtainContainerState::Container: #{container["Id"]} returned negative exit code")
-          end
-          instance["ExitCode"] = exitCodeValue
           if exitCodeValue > 0
             instance["State"] = @@FailedState
           else
-            # Set the Container status : Running/Paused/Stopped
-            runningValue = stateValue["Running"]
-            if runningValue
-              pausedValue = stateValue["Paused"]
-              # Checking for paused within running is true state because docker returns true for both Running and Paused fields when the container is paused
-              if pausedValue
-                instance["State"] = @@PausedState
-              else
-                instance["State"] = @@RunningState
-              end
-            else
-              instance["State"] = @@StoppedState
-            end
-          end
-          instance["StartedTime"] = stateValue["StartedAt"]
-          instance["FinishedTime"] = stateValue["FinishedAt"]
-        else
-          $log.info("Attempt in ObtainContainerState to get container: #{container["Id"]} state information returned null")
-        end
+            if stateValue.upcase == "CONTAINER_CREATED"
+              instance["State"] = @@CreatedState                        
+            elsif stateValue.upcase = "CONTAINER_RUNNING"
+              instance["State"] = @@RunningState
+            elsif stateValue.upcase = "CONTAINER_EXITED"
+              instance["State"] = @@ExitedState                   
+            elsif stateValue.upcase = "CONTAINER_UNKNOWN"  
+               instance["State"] = @@UnknownState                 
+            end  
+        end      
       rescue => errorStr
         $log.warn("Exception in obtainContainerState: #{errorStr}")
       end
@@ -135,19 +131,19 @@ module Fluent
 
     def obtainContainerHostConfig(instance, container)
       begin
-        hostConfig = container["HostConfig"]
+        hostConfig = container["hostConfig"]
         if !hostConfig.nil?
-          links = hostConfig["Links"]
-          instance["Links"] = ""
+          links = hostConfig["links"]
+          instance["links"] = ""
           if !links.nil?
             linksString = links.to_s
-            instance["Links"] = (linksString == "null") ? "" : linksString
+            instance["links"] = (linksString == "null") ? "" : linksString
           end
-          portBindings = hostConfig["PortBindings"]
-          instance["Ports"] = ""
+          portBindings = hostConfig["portBindings"]
+          instance["ports"] = ""
           if !portBindings.nil?
             portBindingsString = portBindings.to_s
-            instance["Ports"] = (portBindingsString == "null") ? "" : portBindingsString
+            instance["ports"] = (portBindingsString == "null") ? "" : portBindingsString
           end
         else
           $log.info("Attempt in ObtainContainerHostConfig to get container: #{container["Id"]} host config information returned null")
@@ -159,17 +155,19 @@ module Fluent
 
     def inspectContainer(id, nameMap, clusterCollectEnvironmentVar)
       containerInstance = {}
-      begin
+      begin        
         container = DockerApiClient.dockerInspectContainer(id)
         if !container.nil? && !container.empty?
-          containerInstance["InstanceID"] = container["Id"]
-          containerInstance["CreatedTime"] = container["Created"]
-          containerName = container["Name"]
+          containerInstance["InstanceID"] = container["id"]
+          containerInstance["CreatedTime"] = container["createdAt"]
+          containerMetaData = !container["metadata"].nil? && !container["metadata"].empty? container["metadata"] : ""
+          containerName = !containerMetaData.empty? ? containerMetaData["name"]: "unknown"
           if !containerName.nil? && !containerName.empty?
             # Remove the leading / from the name if it exists (this is an API issue)
             containerInstance["ElementName"] = (containerName[0] == "/") ? containerName[1..-1] : containerName
           end
-          imageValue = container["Image"]
+          image = container["image"]
+          imageValue = !image.nil? && !image.empty? ? image["image"] : ""
           if !imageValue.nil? && !imageValue.empty?
             repoImageTagArray = nameMap[imageValue]
             if nameMap.has_key? imageValue
@@ -196,7 +194,10 @@ module Fluent
       batchTime = currentTime.utc.iso8601
       containerInventory = Array.new
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
-      hostname = DockerApiClient.getDockerHostName
+      # none of the CRIO API calls has the hostname in the response
+      # hostname = DockerApiClient.getDockerHostName
+      # probably node name can be set env in the main.sh
+      hostname = "openshiftnode"
       begin
         containerIds = DockerApiClient.listContainers
         if !containerIds.nil? && !containerIds.empty?

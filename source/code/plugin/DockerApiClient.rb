@@ -64,13 +64,17 @@ class DockerApiClient
       # Need to do a regex match to extract the json part of the response - Anything between [{}] in response
       parsedJsonResponse = nil
       begin
+        $log.info("before regx response: #{dockerResponse}, isMultiJson: #{isMultiJson}")
         jsonResponse = isMultiJson ? dockerResponse[/\[{.+}\]/] : dockerResponse[/{.+}/]
+        $log.info("after regx response: #{jsonResponse})
       rescue => errorStr
         $log.warn("Regex match for docker response failed: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
       end
       begin
         if jsonResponse != nil
+          $log.info("before JSON Parse")
           parsedJsonResponse = JSON.parse(jsonResponse)
+          $log.info("parsedJsonResponse: #{parsedJsonResponse}")
         end
       rescue => errorStr
         $log.warn("Json parsing for docker response failed: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
@@ -94,25 +98,10 @@ class DockerApiClient
       begin
         request = DockerApiRestHelper.restDockerPs
         containers = getResponse(request, true, false)
+        # crio doesnt support pause containers
         if !containers.nil? && !containers.empty?
           containers.each do |container|
-            labels = (!container["Labels"].nil?) ? container["Labels"] : container["labels"]
-            if !labels.nil?
-              labelKeys = labels.keys
-              dockerTypeLabel = labelKeys.find { |k| "io.kubernetes.docker.type".downcase == k.downcase }
-              if !dockerTypeLabel.nil?
-                dockerTypeLabelValue = labels[dockerTypeLabel]
-                # Checking for 'io.kubernetes.docker.type' label for docker containers to exclude the pause-amd64 containers
-                if !(dockerTypeLabelValue.downcase == "podsandbox".downcase)
-                  # Case insensitive lookup for pod uid label - This is to exclude containers created using docker run and only include containers that
-                  # are created in the pods for ContainerInventory
-                  keyValue = labelKeys.find { |k| "io.kubernetes.pod.uid".downcase == k.downcase }
-                  if !labels[keyValue].nil?
-                    ids.push(container["Id"])
-                  end
-                end
-              end
-            end
+            ids.push(container["id"])               
           end
         end
       rescue => errorStr
@@ -171,16 +160,16 @@ class DockerApiClient
           result = {}
           images.each do |image|
             tagValue = ""
-            tags = image["RepoTags"]
+            tags = image["repoTags"]
             if !tags.nil? && tags.kind_of?(Array) && tags.length > 0
               tagValue = tags[0]
             end
             digestValue = ""
-            digests = image["RepoDigests"]
+            digests = image["repoDigests"]
             if !digests.nil? && digests.kind_of?(Array) && digests.length > 0
               digestValue = digests[0]
             end
-            idValue = image["Id"]
+            idValue = image["id"]
             if !idValue.nil?
               result[idValue] = getImageRepositoryImageTag(tagValue, digestValue)
             end

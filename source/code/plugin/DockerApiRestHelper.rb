@@ -11,7 +11,7 @@ class DockerApiRestHelper
         # returns Request in string format
         def restDockerImages()
             begin
-                return "GET /images/json?all=0 HTTP/1.1\r\nHost: localhost\r\n\r\n";
+                return "GET /images/json HTTP/1.1\r\nHost: localhost\r\n\r\n";
             end
         end
 
