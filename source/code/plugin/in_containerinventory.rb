@@ -160,7 +160,7 @@ module Fluent
         if !container.nil? && !container.empty?
           containerInstance["InstanceID"] = container["id"]
           containerInstance["CreatedTime"] = container["createdAt"]
-          containerMetaData = !container["metadata"].nil? && !container["metadata"].empty? container["metadata"] : ""
+          containerMetaData = !container["metadata"].nil? && !container["metadata"].empty? ? container["metadata"] : ""
           containerName = !containerMetaData.empty? ? containerMetaData["name"]: "unknown"
           if !containerName.nil? && !containerName.empty?
             # Remove the leading / from the name if it exists (this is an API issue)
