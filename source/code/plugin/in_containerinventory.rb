@@ -53,14 +53,14 @@ module Fluent
 
     def obtainContainerConfig(instance, container, clusterCollectEnvironmentVar)
       begin
-        configValue = container["Config"]
+        configValue = container["config"]
         if !configValue.nil?
-          instance["ContainerHostname"] = configValue["Hostname"]
+          instance["ContainerHostname"] = configValue["hostName"]
           # Check to see if the environment variable collection is disabled at the cluster level - This disables env variable collection for all containers.
           if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
             instance["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
           else
-            envValue = configValue["Env"]
+            envValue = configValue["env"]
             envValueString = (envValue.nil?) ? "" : envValue.to_s
             # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
             # Check to see if the environment variable collection is disabled for this container.
@@ -81,12 +81,12 @@ module Fluent
             end
           end
 
-          cmdValue = configValue["Cmd"]
+          cmdValue = configValue["cmd"]
           cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
           instance["Command"] = cmdValueString
 
           instance["ComposeGroup"] = ""
-          labelsValue = configValue["Labels"]
+          labelsValue = configValue["labels"]
           if !labelsValue.nil? && !labelsValue.empty?
             instance["ComposeGroup"] = labelsValue["com.docker.compose.project"]
           end
@@ -122,7 +122,8 @@ module Fluent
               instance["State"] = @@ExitedState                   
             elsif stateValue.upcase = "CONTAINER_UNKNOWN"  
                instance["State"] = @@UnknownState                 
-            end  
+            end 
+          end   
         end      
       rescue => errorStr
         $log.warn("Exception in obtainContainerState: #{errorStr}")
@@ -161,7 +162,7 @@ module Fluent
           containerInstance["InstanceID"] = container["id"]
           containerInstance["CreatedTime"] = container["createdAt"]
           containerMetaData = !container["metadata"].nil? && !container["metadata"].empty? ? container["metadata"] : ""
-          containerName = !containerMetaData.empty? ? containerMetaData["name"]: "unknown"
+          containerName = !containerMetaData.empty? ? containerMetaData["name"] : "unknown"
           if !containerName.nil? && !containerName.empty?
             # Remove the leading / from the name if it exists (this is an API issue)
             containerInstance["ElementName"] = (containerName[0] == "/") ? containerName[1..-1] : containerName
