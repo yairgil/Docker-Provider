@@ -971,7 +971,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("ResourceName=%s", ResourceName)
 	}
 	
-	containerRuntime = os.Getenv(ContainerRuntimeEnv)
+	containerRuntime := os.Getenv(ContainerRuntimeEnv)
 	isDockerContainerRuntimeEngine = false
 	if strings.EqualFold(containerRuntime, "docker") {
 		isDockerContainerRuntimeEngine = true
