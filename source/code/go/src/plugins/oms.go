@@ -37,6 +37,9 @@ const ResourceIdEnv = "AKS_RESOURCE_ID"
 //env variable which has ResourceName for NON-AKS
 const ResourceNameEnv = "ACS_RESOURCE_NAME"
 
+//env variable which has container run time name
+const ContainerRuntimeEnv = "CONTAINER_RUN_TIME"
+
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags and also for custom-metrics telemetry )
 const TelegrafMetricOriginPrefix = "container.azm.ms"
 
@@ -94,6 +97,8 @@ var (
 	skipKubeMonEventsFlush bool
 	// enrich container logs (when true this will add the fields - timeofcommand, containername & containerimage)
 	enrichContainerLogs bool
+	// container runtime engine configured on the kubelet (true indicates docker else K8s CRI compatiable runtime)
+	isDockerContainerRuntimeEngine bool
 )
 
 var (
@@ -734,7 +739,14 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		stringMap := make(map[string]string)
 
-		stringMap["LogEntry"] = ToString(record["log"])
+		logEntry := ToString(record["log"])
+		if isDockerContainerRuntimeEngine == false {
+			//CRI compatiable runtimes uses the CRIO parser which has logtag followed space and then log line
+			// so trimming the log tag (P or F) followed space
+			logEntry = strings.TrimPrefix(logEntry, "P ")
+			logEntry = strings.TrimPrefix(logEntry, "F ")
+		}
+		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
 		stringMap["LogEntryTimeStamp"] = ToString(record["time"])
 		stringMap["SourceSystem"] = "Containers"
@@ -957,6 +969,12 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("ResourceCentric: False")
 		Log("ResourceID=%s", ResourceID)
 		Log("ResourceName=%s", ResourceName)
+	}
+	
+	containerRuntime = os.Getenv(ContainerRuntimeEnv)
+	isDockerContainerRuntimeEngine = false
+	if strings.EqualFold(containerRuntime, "docker") {
+		isDockerContainerRuntimeEngine = true
 	}
 
 	// Initialize image,name map refresh ticker
