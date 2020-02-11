@@ -746,9 +746,13 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			//CRI compatiable runtimes uses the CRIO parser which has logtag followed space and then log line
 			// so trimming the log tag (P or F) followed space
 			Log("Container Runtime engine %s isDockerContainerRuntimeEngine %t", containerRuntime, isDockerContainerRuntimeEngine)
-			logEntry = strings.TrimPrefix(logEntry, "P ")
-			logEntry = strings.TrimPrefix(logEntry, "F ")
-			Log("After trimming LogEntry %s", logEntry)
+			logEntry = strings.TrimSpace(logEntry)
+			if strings.HasPrefix(logEntry, "P ") {
+			   logEntry = strings.TrimPrefix(logEntry, "P ")
+		    } else {
+			   logEntry = strings.TrimPrefix(logEntry, "F ") 
+		    }
+			Log("After trimming LogEntry:%s", logEntry)
 		}
 		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
