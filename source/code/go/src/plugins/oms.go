@@ -99,6 +99,8 @@ var (
 	enrichContainerLogs bool
 	// container runtime engine configured on the kubelet (true indicates docker else K8s CRI compatiable runtime)
 	isDockerContainerRuntimeEngine bool
+	// container runtime engine configured on the kubelet (true indicates docker else K8s CRI compatiable runtime)
+	containerRuntime string
 )
 
 var (
@@ -743,8 +745,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if isDockerContainerRuntimeEngine == false {
 			//CRI compatiable runtimes uses the CRIO parser which has logtag followed space and then log line
 			// so trimming the log tag (P or F) followed space
+			Log("Container Runtime engine %s isDockerContainerRuntimeEngine %t", containerRuntime, isDockerContainerRuntimeEngine)
 			logEntry = strings.TrimPrefix(logEntry, "P ")
 			logEntry = strings.TrimPrefix(logEntry, "F ")
+			Log("After trimming LogEntry %s", logEntry)
 		}
 		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
@@ -793,7 +797,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if dataItem.LogEntryTimeStamp != "" {
 			loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
 			if e != nil {
-				message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
+				message := fmt.Sprintf("containerId: %s Error while converting LogEntryTimeStamp for telemetry purposes: %s", dataItem.ID, e.Error())
 				Log(message)
 				SendException(message)
 			} else {
@@ -971,7 +975,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("ResourceName=%s", ResourceName)
 	}
 	
-	containerRuntime := os.Getenv(ContainerRuntimeEnv)
+	containerRuntime = os.Getenv(ContainerRuntimeEnv)
+	Log("Container Runtime engine %s", containerRuntime)
 	isDockerContainerRuntimeEngine = false
 	if strings.EqualFold(containerRuntime, "docker") {
 		isDockerContainerRuntimeEngine = true
