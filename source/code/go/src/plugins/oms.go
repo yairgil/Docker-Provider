@@ -752,7 +752,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		    } else {
 			   logEntry = strings.TrimPrefix(logEntry, "F ") 
 			}
-			logEntryTimeStamp = strings.Trimspace(logEntryTimeStamp)			
+			logEntryTimeStamp = strings.TrimSpace(logEntryTimeStamp)			
 		}
 		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
