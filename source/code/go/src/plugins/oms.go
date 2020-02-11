@@ -742,21 +742,21 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap := make(map[string]string)
 
 		logEntry := ToString(record["log"])
+		logEntryTimeStamp := ToString(record["time"])
 		if isDockerContainerRuntimeEngine == false {
 			//CRI compatiable runtimes uses the CRIO parser which has logtag followed space and then log line
-			// so trimming the log tag (P or F) followed space
-			Log("Container Runtime engine %s isDockerContainerRuntimeEngine %t", containerRuntime, isDockerContainerRuntimeEngine)
+			// so trimming the log tag (P or F) 
 			logEntry = strings.TrimSpace(logEntry)
 			if strings.HasPrefix(logEntry, "P ") {
 			   logEntry = strings.TrimPrefix(logEntry, "P ")
 		    } else {
 			   logEntry = strings.TrimPrefix(logEntry, "F ") 
-		    }
-			Log("After trimming LogEntry:%s", logEntry)
+			}
+			logEntryTimeStamp = strings.Trimspace(logEntryTimeStamp)			
 		}
 		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
-		stringMap["LogEntryTimeStamp"] = ToString(record["time"])
+		stringMap["LogEntryTimeStamp"] = logEntryTimeStamp
 		stringMap["SourceSystem"] = "Containers"
 		stringMap["Id"] = containerID
 
