@@ -203,7 +203,7 @@ module Fluent
         $log.info("in_container_inventory::enumerate : container runtime #{containerRuntimeEnv}")      
 
         clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
-        if !containerRuntimeEnv.nil? && !containerRuntimeEnv.empty? && containerRuntimeEnv.casecmp("docker")
+        if !containerRuntimeEnv.nil? && !containerRuntimeEnv.empty? && containerRuntimeEnv.casecmp("docker") == 0
           $log.info("in_container_inventory::enumerate : using docker sock since container runtime is docker")      
           hostname = DockerApiClient.getDockerHostName
           containerIds = DockerApiClient.listContainers
