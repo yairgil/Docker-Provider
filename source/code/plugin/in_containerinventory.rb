@@ -272,8 +272,7 @@ module Fluent
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("containerInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
-        $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")
-        end
+        $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")        
         timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= 5)
