@@ -19,6 +19,7 @@ module Fluent
       require_relative "ContainerInventoryState"
       require_relative "ApplicationInsightsUtility"
       require_relative "omslog"
+      require_relative "kubelet_utils"
     end
 
     config_param :run_interval, :time, :default => 60
@@ -195,37 +196,69 @@ module Fluent
       emitTime = currentTime.to_f
       batchTime = currentTime.utc.iso8601
       containerInventory = Array.new
-      $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
-      hostname = DockerApiClient.getDockerHostName
+      hostname = ""
+      $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")      
       begin
-        containerIds = DockerApiClient.listContainers
-        if !containerIds.nil? && !containerIds.empty?
-          eventStream = MultiEventStream.new
-          nameMap = DockerApiClient.getImageIdMap
-          clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
-          if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
-            $log.warn("Environment Variable collection disabled for cluster")
-          end
-          containerIds.each do |containerId|
-            inspectedContainer = {}
-            inspectedContainer = inspectContainer(containerId, nameMap, clusterCollectEnvironmentVar)
-            inspectedContainer["Computer"] = hostname
-            inspectedContainer["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-            containerInventory.push inspectedContainer
-            ContainerInventoryState.writeContainerState(inspectedContainer)
-          end
-          # Update the state for deleted containers
-          deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
-          if !deletedContainers.nil? && !deletedContainers.empty?
-            deletedContainers.each do |deletedContainer|
-              container = ContainerInventoryState.readContainerState(deletedContainer)
-              if !container.nil?
-                container.each { |k, v| container[k] = v }
-                container["State"] = "Deleted"
-                containerInventory.push container
+        containerRuntimeEnv = ENV["CONTAINER_RUN_TIME"]
+        $log.info("in_container_inventory::enumerate : container runtime #{containerRuntimeEnv}")      
+
+        clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
+        if !containerRuntimeEnv.nil? && !containerRuntimeEnv.empty? && containerRuntimeEnv.casecmp("docker")
+          $log.info("in_container_inventory::enumerate : using docker sock since container runtime is docker")      
+          hostname = DockerApiClient.getDockerHostName
+          containerIds = DockerApiClient.listContainers
+          if !containerIds.nil? && !containerIds.empty?
+            eventStream = MultiEventStream.new
+            nameMap = DockerApiClient.getImageIdMap          
+            if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
+              $log.warn("Environment Variable collection disabled for cluster")
+            end
+            containerIds.each do |containerId|
+              inspectedContainer = {}
+              inspectedContainer = inspectContainer(containerId, nameMap, clusterCollectEnvironmentVar)
+              inspectedContainer["Computer"] = hostname
+              inspectedContainer["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+              containerInventory.push inspectedContainer
+              ContainerInventoryState.writeContainerState(inspectedContainer)
+            end
+            # Update the state for deleted containers
+            deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
+            if !deletedContainers.nil? && !deletedContainers.empty?
+              deletedContainers.each do |deletedContainer|
+                container = ContainerInventoryState.readContainerState(deletedContainer)
+                if !container.nil?
+                  container.each { |k, v| container[k] = v }
+                  container["State"] = "Deleted"
+                  containerInventory.push container
+                end
               end
             end
-          end
+          else
+            $log.info("in_container_inventory::enumerate : using kubelet apis since CRI compatiable runtime")      
+            containerInventoryRecords = kubelet_utils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)            
+            containerIds = Array.new
+            containerInventoryRecords.each do |containerRecord|            
+              ContainerInventoryState.writeContainerState(containerRecord)
+              if !hostName.empty? && !containerRecord["Computer"].empty?
+                hostName = containerRecord["Computer"]
+              end 
+              containerIds.push containerRecord["ContainerID"]
+              containerInventory.push containerRecord
+            end            
+            # Update the state for deleted containers
+            deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
+            if !deletedContainers.nil? && !deletedContainers.empty?
+              deletedContainers.each do |deletedContainer|
+                container = ContainerInventoryState.readContainerState(deletedContainer)
+                if !container.nil?
+                  container.each { |k, v| container[k] = v }
+                  container["State"] = "Deleted"
+                  containerInventory.push container
+                end
+              end
+            end
+
+          end 
 
           containerInventory.each do |record|
             wrapper = {

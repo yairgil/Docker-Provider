@@ -43,6 +43,21 @@ class KubeletUtils
                                      containerInventoryRecord["ImageTag"] = imageTagArray[1]
                                      # Setting the image id to the id in the remote repository
                                      containerInventoryRecord["ImageId"] = containerStatus["imageID"].split("@")[1]
+                                     containerInventoryRecord["ExitCode"] = 0
+                                     if !containerStatus["state"].nil? && !containerStatus["state"].empty? 
+                                        containerState = containerStatus["state"]
+                                        if containerState.key?("running")
+                                            containerInventoryRecord["State"] = "Running"
+                                            containerInventoryRecord["StartedTime"] = containerState["running"]["startedAt"]
+                                        elsif containerState.key?("terminated")
+                                            containerInventoryRecord["State"] = "Terminated"
+                                            containerInventoryRecord["StartedTime"] = containerState["terminated"]["startedAt"]
+                                            containerInventoryRecord["FinishedTime"] = containerState["terminated"]["finishedAt"]
+                                            containerInventoryRecord["ExitCode"] = containerState["terminated"]["exitCode"]
+                                        elsif containerState.key?("waiting")
+                                            containerInventoryRecord["State"] = "Waiting"
+                                        end 
+                                     end
                                      containerInfoMap = containersInfoMap[containerName]  
                                      containerInventoryRecord["ElementName"] = containerInfoMap["ElementName"]
                                      containerInventoryRecord["Computer"] = containerInfoMap["Computer"]
