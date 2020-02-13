@@ -19,5 +19,36 @@ class KubeletUtils
                 return [cpu_capacity, memory_capacity]
             end
         end
+
+        def getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)    
+            containerInventoryRecords = Array.new        
+            response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
+            if !response.nil? && !response.body.nil?
+                podList = JSON.parse(response.body)
+                if !podList.nil? && !podList.empty? 
+                    podList["items"].each do |item| 
+                        nodeName = item["spec"]["nodeName"]
+                        containerInstance = {}                      
+                        status = item.status                        
+                        if !status.nil? && !status.empty?
+                            containerStatuses = status.containerStatuses
+                            if !containerStatuses.nil? && !containerStatuses.empty?
+                               containerStatuses.each do |item| 
+                                 containerInstance["ElementName"] = containerStatuses["name"]
+                                 containerInstance["InstanceID"] = container["containerID"]
+                                 containerInstance["Computer"] = nodeName
+                                 containerInstance["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+                               end
+                            end 
+                        end   
+                        containerSpec = item.spec
+                        containerInventoryRecords.push containerInstance
+                    end    
+                end
+            end
+
+            return containerInventoryRecords
+        end
+
     end
 end
