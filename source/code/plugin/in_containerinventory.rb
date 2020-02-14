@@ -198,17 +198,17 @@ module Fluent
       containerInventory = Array.new
       eventStream = MultiEventStream.new
       hostName = ""
-      $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")      
+      $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
       begin
         containerRuntimeEnv = ENV["CONTAINER_RUN_TIME"]
-        $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")   
+        $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")
         clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
         if !containerRuntimeEnv.nil? && !containerRuntimeEnv.empty? && containerRuntimeEnv.casecmp("docker") == 0
-            $log.info("in_container_inventory::enumerate : using docker apis since container runtime is docker")      
+            $log.info("in_container_inventory::enumerate : using docker apis since container runtime is docker")
             hostName = DockerApiClient.getDockerHostName
             containerIds = DockerApiClient.listContainers
-            if !containerIds.nil? && !containerIds.empty?             
-              nameMap = DockerApiClient.getImageIdMap          
+            if !containerIds.nil? && !containerIds.empty?
+              nameMap = DockerApiClient.getImageIdMap
               if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                 $log.warn("Environment Variable collection disabled for cluster")
               end
@@ -232,19 +232,19 @@ module Fluent
                   end
                 end
               end
-            end   
+            end
         else
-            $log.info("in_container_inventory::enumerate : using cadvisor apis since container runtime is non docker")      
-            containerInventoryRecords = KubeletUtils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)            
+            $log.info("in_container_inventory::enumerate : using cadvisor apis since container runtime is non docker")
+            containerInventoryRecords = KubeletUtils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)
             containerIds = Array.new
-            containerInventoryRecords.each do |containerRecord|            
+            containerInventoryRecords.each do |containerRecord|
               ContainerInventoryState.writeContainerState(containerRecord)
               if hostName.empty? && !containerRecord["Computer"].empty?
                   hostName = containerRecord["Computer"]
-              end 
+              end
               containerIds.push containerRecord["ContainerID"]
               containerInventory.push containerRecord
-            end            
+            end
             # Update the state for deleted containers
             deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
               if !deletedContainers.nil? && !deletedContainers.empty?
@@ -257,7 +257,7 @@ module Fluent
                     end
                 end
               end
-        end 
+        end
 
         containerInventory.each do |record|
           wrapper = {
@@ -272,7 +272,7 @@ module Fluent
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("containerInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
-        $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")        
+        $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")
         timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= 5)
