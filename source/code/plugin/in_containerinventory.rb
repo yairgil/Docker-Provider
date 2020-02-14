@@ -196,7 +196,8 @@ module Fluent
       emitTime = currentTime.to_f
       batchTime = currentTime.utc.iso8601
       containerInventory = Array.new
-      hostname = ""
+      eventStream = MultiEventStream.new
+      hostName = ""
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")      
       begin
         containerRuntimeEnv = ENV["CONTAINER_RUN_TIME"]
@@ -204,10 +205,9 @@ module Fluent
         clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
         if !containerRuntimeEnv.nil? && !containerRuntimeEnv.empty? && containerRuntimeEnv.casecmp("docker") == 0
             $log.info("in_container_inventory::enumerate : using docker sock since container runtime is docker")      
-            hostname = DockerApiClient.getDockerHostName
+            hostName = DockerApiClient.getDockerHostName
             containerIds = DockerApiClient.listContainers
-            if !containerIds.nil? && !containerIds.empty?
-              eventStream = MultiEventStream.new
+            if !containerIds.nil? && !containerIds.empty?             
               nameMap = DockerApiClient.getImageIdMap          
               if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                 $log.warn("Environment Variable collection disabled for cluster")
@@ -215,7 +215,7 @@ module Fluent
               containerIds.each do |containerId|
                 inspectedContainer = {}
                 inspectedContainer = inspectContainer(containerId, nameMap, clusterCollectEnvironmentVar)
-                inspectedContainer["Computer"] = hostname
+                inspectedContainer["Computer"] = hostName
                 inspectedContainer["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
                 containerInventory.push inspectedContainer
                 ContainerInventoryState.writeContainerState(inspectedContainer)
@@ -278,7 +278,7 @@ module Fluent
         if (timeDifferenceInMinutes >= 5)
           @@telemetryTimeTracker = DateTime.now.to_time.to_i
           telemetryProperties = {}
-          telemetryProperties["Computer"] = hostname
+          telemetryProperties["Computer"] = hostName
           telemetryProperties["ContainerCount"] = containerInventory.length
           ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
         end
