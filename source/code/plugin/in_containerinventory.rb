@@ -235,7 +235,7 @@ module Fluent
             end   
         else
             $log.info("in_container_inventory::enumerate : using kubelet apis since CRI compatiable runtime")      
-            containerInventoryRecords = kubelet_utils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)            
+            containerInventoryRecords = KubeletUtils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)            
             containerIds = Array.new
             containerInventoryRecords.each do |containerRecord|            
               ContainerInventoryState.writeContainerState(containerRecord)
