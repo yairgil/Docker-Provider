@@ -160,9 +160,10 @@ module Fluent
           record["KubeletVersion"] = nodeInfo["kubeletVersion"]
           record["KubeProxyVersion"] = nodeInfo["kubeProxyVersion"]
           containerNodeInventoryRecord["OperatingSystem"] = nodeInfo["osImage"]
-          dockerVersion = nodeInfo["containerRuntimeVersion"]
-          dockerVersion.slice! "docker://"
-          containerNodeInventoryRecord["DockerVersion"] = dockerVersion
+          containerRuntimeVersion = nodeInfo["containerRuntimeVersion"] 
+          if containerRuntimeVersion.downcase.start_with?("docker://")                    
+            containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion.split("//")[1]
+          end
           # ContainerNodeInventory data for docker version and operating system.
           containerNodeInventoryWrapper = {
             "DataType" => "CONTAINER_NODE_INVENTORY_BLOB",
@@ -185,7 +186,10 @@ module Fluent
             properties["Computer"] = record["Computer"]
             properties["KubeletVersion"] = record["KubeletVersion"]
             properties["OperatingSystem"] = nodeInfo["operatingSystem"]
-            properties["DockerVersion"] = dockerVersion
+            properties["ContainerRuntimeVersion"] = containerRuntimeVersion
+            if containerRuntimeVersion.downcase.start_with?("docker://")                    
+              properties["DockerVersion"] = containerRuntimeVersion.split("//")[1]
+            end           
             properties["KubernetesProviderID"] = record["KubernetesProviderID"]
             properties["KernelVersion"] = nodeInfo["kernelVersion"]
             properties["OSImage"] = nodeInfo["osImage"]

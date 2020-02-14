@@ -201,10 +201,10 @@ module Fluent
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")      
       begin
         containerRuntimeEnv = ENV["CONTAINER_RUN_TIME"]
-        $log.info("in_container_inventory::enumerate : container runtime #{containerRuntimeEnv}")   
+        $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")   
         clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
         if !containerRuntimeEnv.nil? && !containerRuntimeEnv.empty? && containerRuntimeEnv.casecmp("docker") == 0
-            $log.info("in_container_inventory::enumerate : using docker sock since container runtime is docker")      
+            $log.info("in_container_inventory::enumerate : using docker apis since container runtime is docker")      
             hostName = DockerApiClient.getDockerHostName
             containerIds = DockerApiClient.listContainers
             if !containerIds.nil? && !containerIds.empty?             
@@ -234,7 +234,7 @@ module Fluent
               end
             end   
         else
-            $log.info("in_container_inventory::enumerate : using kubelet apis since CRI compatiable runtime")      
+            $log.info("in_container_inventory::enumerate : using cadvisor apis since container runtime is non docker")      
             containerInventoryRecords = KubeletUtils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)            
             containerIds = Array.new
             containerInventoryRecords.each do |containerRecord|            

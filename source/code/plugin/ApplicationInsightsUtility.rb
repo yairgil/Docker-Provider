@@ -20,6 +20,7 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsKey = "APPLICATIONINSIGHTS_AUTH"
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
+  @@EnvContainerRuntime = "CONTAINER_RUN_TIME"
 
   @@CustomProperties = {}
   @@Tc = nil
@@ -64,7 +65,7 @@ class ApplicationInsightsUtility
         @@CustomProperties["ControllerType"] = ENV[@@EnvControllerType]
         encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
-        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud
+        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud       
 
         #Check if telemetry is turned off
         telemetryOffSwitch = ENV["DISABLE_TELEMETRY"]
@@ -108,15 +109,21 @@ class ApplicationInsightsUtility
       rescue => errorStr
         $log.warn("Exception in AppInsightsUtility: initilizeUtility - error: #{errorStr}")
       end
-    end
+    end   
 
-    def getDockerInfo()
-      dockerInfo = DockerApiClient.dockerInfo
-      if (!dockerInfo.nil? && !dockerInfo.empty?)
-        @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
-        #@@CustomProperties["DockerApiVersion"] = dockerInfo["ApiVersion"]
+    def getContainerRuntimeInfo()
+      containerRuntime = ENV[@@EnvContainerRuntime]
+      if !containerRuntime.nil? && !containerRuntime.empty?
+        @@CustomProperties["ContainerRunTime"] = containerRuntime
+         if containerRuntime.casecmp("docker") == 0
+           dockerInfo = DockerApiClient.dockerInfo
+           if (!dockerInfo.nil? && !dockerInfo.empty?)
+              @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
+              #@@CustomProperties["DockerApiVersion"] = dockerInfo["ApiVersion"]
+           end
+          end     
       end
-    end
+    end 
 
     def sendHeartBeatEvent(pluginName)
       begin
@@ -168,8 +175,8 @@ class ApplicationInsightsUtility
       begin
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
-        elsif @@CustomProperties["DockerVersion"].nil?
-          getDockerInfo()
+        elsif @@CustomProperties["ContainerRunTime"].nil?
+          getContainerRuntimeInfo()
         end
         telemetryProps = {}
         # add common dimensions
@@ -192,8 +199,8 @@ class ApplicationInsightsUtility
       begin
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
-        elsif @@CustomProperties["DockerVersion"].nil?
-          getDockerInfo()
+        elsif @@CustomProperties["ContainerRunTime"].nil?
+          getContainerRuntimeInfo()
         end
         @@CustomProperties["Computer"] = properties["Computer"]
         sendHeartBeatEvent(pluginName)
@@ -212,8 +219,8 @@ class ApplicationInsightsUtility
         end
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
-        elsif @@CustomProperties["DockerVersion"].nil?
-          getDockerInfo()
+        elsif @@CustomProperties["ContainerRunTime"].nil?
+          getContainerRuntimeInfo()
         end
         telemetryProps = {}
         # add common dimensions
