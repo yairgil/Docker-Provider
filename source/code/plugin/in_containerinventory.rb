@@ -242,7 +242,7 @@ module Fluent
               if hostName.empty? && !containerRecord["Computer"].empty?
                   hostName = containerRecord["Computer"]
               end
-              containerIds.push containerRecord["ContainerID"]
+              containerIds.push containerRecord["InstanceID"]
               containerInventory.push containerRecord
             end
             # Update the state for deleted containers

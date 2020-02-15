@@ -35,7 +35,7 @@ class KubeletUtils
                                     item["status"]["containerStatuses"].each do |containerStatus|
                                      containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
                                      containerName = containerStatus["name"]
-                                     containerInventoryRecord["ContainerID"] = containerStatus["containerID"].split('//')[1]
+                                     containerInventoryRecord["InstanceID"] = containerStatus["containerID"].split('//')[1]
                                     # imagedId is of the format - repo@sha256:imageid
                                     imageIdValue =  containerStatus["imageID"]
                                     if !imageIdValue.nil? && !imageIdValue.empty?
