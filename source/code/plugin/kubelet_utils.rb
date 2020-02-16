@@ -120,27 +120,44 @@ class KubeletUtils
 
                             if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                                 containerInfoMap["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
-                            else
-                                envValue = container["env"]
-                                envValueString = (envValue.nil?) ? "" : envValue.to_s
+                            else        
+                                envVarsJSON = container["env"]
+                                envValueString = ""
+                                envVars = []
+                                if !envVarsJSON.nil? && !envVarsJSON.empty?
+                                    envVarsJSON.each do |envVar|
+                                        key = envVar["name"]
+                                        if !envVar["value"].nil?
+                                            value = envVar["value"]
+                                        elsif !envVar["ValueFrom"].nil?
+                                            value = env["valueFrom"].to_s
+                                        else
+                                            value = ""
+                                        end 
+                                        envVars.push("#{key}=#{value}")
+                                    end
+                                    envValueString = envVars.to_s
+                               end 
                                 # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
                                 # Check to see if the environment variable collection is disabled for this container.
                                 if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
                                     envValueString = ["AZMON_COLLECT_ENV=FALSE"]
                                     $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
+                                else                                                                                                      
+                                    # Restricting the ENV string value to 200kb since the size of this string can go very high
+                                    if envValueString.length > 200000
+                                        envValueStringTruncated = envValueString.slice(0..200000)
+                                        lastIndex = envValueStringTruncated.rindex("\", ")
+                                        if !lastIndex.nil?
+                                            envValueStringTruncated = envValueStringTruncated.slice(0..lastIndex) + "]"
+                                        end
+                                           containerInfoMap["EnvironmentVar"] = envValueStringTruncated
+                                        else
+                                            containerInfoMap["EnvironmentVar"] = envValueString
+                                        end     
+                                    end                             
                                 end
-                                # Restricting the ENV string value to 200kb since the size of this string can go very high
-                                if envValueString.length > 200000
-                                    envValueStringTruncated = envValueString.slice(0..200000)
-                                    lastIndex = envValueStringTruncated.rindex("\", ")
-                                    if !lastIndex.nil?
-                                        envValueStringTruncated = envValueStringTruncated.slice(0..lastIndex) + "]"
-                                    end
-                                    containerInfoMap["EnvironmentVar"] = envValueStringTruncated
-                                else
-                                    containerInfoMap["EnvironmentVar"] = envValueString
-                                end
-                            end
+                            end                             
                             portsValue = container["ports"]
                             portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
                             containerInfoMap["Ports"] = portsValueString
