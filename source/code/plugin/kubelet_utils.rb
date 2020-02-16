@@ -129,8 +129,18 @@ class KubeletUtils
                                         key = envVar["name"]
                                         if !envVar["value"].nil?
                                             value = envVar["value"]
-                                        elsif !envVar["ValueFrom"].nil?
-                                            value = env["valueFrom"].to_s
+                                        elsif !envVar["valueFrom"].nil?                                         
+                                            valueFrom = envVar["valueFrom"]
+                                            value = ""
+                                            if valueFrom.key?("fieldRef") && !valueFrom["fieldRef"]["fieldPath"].nil? && !valueFrom["fieldRef"]["fieldPath"].empty?
+                                               fieldPath = valueFrom["fieldRef"]["fieldPath"]
+                                               fields = fieldPath.split('.')
+                                               if fields.length() == 2
+                                                  value = item[fields[0]][fields[1]] 
+                                               end                                        
+                                            else 
+                                               value = envVar["valueFrom"].to_s
+                                            end                   
                                         else
                                             value = ""
                                         end 
@@ -157,13 +167,13 @@ class KubeletUtils
                                     end                                                                    
                                 end
                             end    
-                                                     
+
                             portsValue = container["ports"]
                             portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
                             containerInfoMap["Ports"] = portsValueString
-                            argsValue = container["args"]
-                            argsValueString = (argsValue.nil?) ? "" : argsValue.to_s
-                            containerInfoMap["Command"] = argsValueString
+                            cmdValue = container["command"]
+                            cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
+                            containerInfoMap["Command"] = cmdValueString
 
                             containersInfoMap[containerName] = containerInfoMap
                         end
