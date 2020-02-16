@@ -137,7 +137,7 @@ class KubeletUtils
                                         envVars.push("#{key}=#{value}")
                                     end
                                     envValueString = envVars.to_s
-                               end 
+                                end 
                                 # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
                                 # Check to see if the environment variable collection is disabled for this container.
                                 if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
@@ -150,12 +150,11 @@ class KubeletUtils
                                         lastIndex = envValueStringTruncated.rindex("\", ")
                                         if !lastIndex.nil?
                                             envValueStringTruncated = envValueStringTruncated.slice(0..lastIndex) + "]"
-                                        end
-                                           containerInfoMap["EnvironmentVar"] = envValueStringTruncated
-                                        else
-                                            containerInfoMap["EnvironmentVar"] = envValueString
-                                        end     
-                                    end                             
+                                        end                                        
+                                        containerInfoMap["EnvironmentVar"] = envValueStringTruncated
+                                    else
+                                        containerInfoMap["EnvironmentVar"] = envValueString
+                                    end                                                                    
                                 end
                             end                             
                             portsValue = container["ports"]
