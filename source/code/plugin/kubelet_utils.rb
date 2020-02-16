@@ -156,7 +156,8 @@ class KubeletUtils
                                         containerInfoMap["EnvironmentVar"] = envValueString
                                     end                                                                    
                                 end
-                            end                             
+                            end    
+                                                     
                             portsValue = container["ports"]
                             portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
                             containerInfoMap["Ports"] = portsValueString
