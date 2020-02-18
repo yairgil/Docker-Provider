@@ -127,22 +127,29 @@ class KubeletUtils
                                 if !envVarsJSON.nil? && !envVarsJSON.empty?
                                     envVarsJSON.each do |envVar|
                                         key = envVar["name"]
+                                        value = ""
                                         if !envVar["value"].nil?
                                             value = envVar["value"]
                                         elsif !envVar["valueFrom"].nil?                                         
-                                            valueFrom = envVar["valueFrom"]
-                                            value = ""
+                                            valueFrom = envVar["valueFrom"]                                            
                                             if valueFrom.key?("fieldRef") && !valueFrom["fieldRef"]["fieldPath"].nil? && !valueFrom["fieldRef"]["fieldPath"].empty?
                                                fieldPath = valueFrom["fieldRef"]["fieldPath"]
                                                fields = fieldPath.split('.')
                                                if fields.length() == 2
-                                                  value = item[fields[0]][fields[1]] 
+                                                   if !fields[1].nil? && !fields[1].empty? & fields[1].end_with?(']')
+                                                      indexFields = fields[1].split('[')                                      
+                                                      hashMapValue = item[fields[0]][indexFields[0]]                                           
+                                                      if !hashMapValue.nil? && !hashMapValue.empty? 
+                                                         subField = indexFields[1].delete_suffix("]").delete("\\'")                                             
+                                                         value = hashMapValue[subField]                                            
+                                                      end
+                                                    else 
+                                                      value = item[fields[0]][fields[1]] 
+                                                    end
                                                end                                        
                                             else 
                                                value = envVar["valueFrom"].to_s
-                                            end                   
-                                        else
-                                            value = ""
+                                            end                                                          
                                         end 
                                         envVars.push("#{key}=#{value}")
                                     end
