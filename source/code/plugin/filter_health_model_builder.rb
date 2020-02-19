@@ -46,6 +46,7 @@ module Fluent
                 @container_cpu_memory_records = []
                 @telemetry = HealthMonitorTelemetry.new
                 @state = HealthMonitorState.new
+                @versions = HealthMonitorVersions.new
                 # move network calls to the end. This will ensure all the instance variables get initialized
                 deserialized_state_info = @cluster_health_state.get_state
                 @state.initialize_state(deserialized_state_info)
@@ -188,6 +189,7 @@ module Fluent
 
                     @log.info "after building health_model #{all_monitors.size}"
 
+                    monitor_version = DateTime.now.strftime('%Q').to_i
                     # update the state for aggregate monitors (unit monitors are updated above)
                     all_monitors.each{|monitor_instance_id, monitor|
                         if monitor.is_aggregate_monitor
@@ -205,6 +207,8 @@ module Fluent
                         # always send cluster monitor as a heartbeat
                         if !should_send && monitor_instance_id != MonitorId::CLUSTER
                             all_monitors.delete(monitor_instance_id)
+                        else
+                            @versions.set_monitor_version(monitor_instance_id, monitor_version)
                         end
                     }
 
@@ -212,15 +216,17 @@ module Fluent
 
                     current_time = Time.now
                     emit_time = current_time.to_f
+
                     # for each key in monitor.keys,
                     # get the state from health_monitor_state
                     # generate the record to send
                     all_monitors.keys.each{|key|
-                        record = @provider.get_record(all_monitors[key], state)
+                        record = @provider.get_record(all_monitors[key], state, monitor_version)
                         if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER
                             if !record[HealthMonitorRecordFields::DETAILS].nil?
                                 details = JSON.parse(record[HealthMonitorRecordFields::DETAILS])
                                 details[HealthMonitorRecordFields::HEALTH_MODEL_DEFINITION_VERSION] = "#{ENV['HEALTH_MODEL_DEFINITION_VERSION']}"
+                                details[HealthMonitorRecordFields::VERSIONS_HASH] = @versions.get_current_monitor_versions_hash
                                 record[HealthMonitorRecordFields::DETAILS] = details.to_json
                             end
                             if all_monitors.size > 1

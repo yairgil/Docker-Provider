@@ -27,7 +27,7 @@ module HealthModel
             end
         end
 
-        def get_record(health_monitor_record, health_monitor_state)
+        def get_record(health_monitor_record, health_monitor_state, monitor_version)
 
             labels = Hash.new
             @cluster_labels.each{|k,v| labels[k] = v}
@@ -55,9 +55,9 @@ module HealthModel
             else
                 details = prev_records
             end
-
+            $log.info "DETAILS IN PROVIDER: #{details.class} #{monitor_version.class} #{details.keys} #{HealthMonitorRecordFields::MONITOR_VERSION}"
+            details[HealthMonitorRecordFields::MONITOR_VERSION] = monitor_version
             time_observed = Time.now.utc.iso8601
-
             monitor_record = {}
 
             monitor_record[HealthMonitorRecordFields::CLUSTER_ID] = @cluster_id
@@ -71,6 +71,7 @@ module HealthModel
             monitor_record[HealthMonitorRecordFields::TIME_GENERATED] = Time.now.utc.iso8601
             monitor_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = time_first_observed
             monitor_record[HealthMonitorRecordFields::PARENT_MONITOR_INSTANCE_ID] = ''
+
 
             return monitor_record
         end

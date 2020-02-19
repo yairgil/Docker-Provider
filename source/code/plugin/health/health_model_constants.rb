@@ -51,12 +51,14 @@ module HealthModel
         MONITOR_ID = "MonitorTypeId"
         MONITOR_INSTANCE_ID = "MonitorInstanceId"
         MONITOR_LABELS = "MonitorLabels"
+        MONITOR_VERSION = "MonitorVersion"
         NEW_STATE = "NewState"
         NODE_NAME = "NodeName"
         OLD_STATE = "OldState"
         PARENT_MONITOR_INSTANCE_ID = "ParentMonitorInstanceId"
         TIME_FIRST_OBSERVED = "TimeFirstObserved"
         TIME_GENERATED = "TimeGenerated"
+        VERSIONS_HASH = "VersionsHash"
     end
 
     class HealthMonitorStates
