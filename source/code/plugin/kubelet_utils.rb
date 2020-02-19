@@ -120,7 +120,7 @@ class KubeletUtils
 
                             if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                                 containerInfoMap["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
-                            else        
+                            else
                                 envVarsJSON = container["env"]
                                 envValueString = ""
                                 envVars = []
@@ -130,50 +130,50 @@ class KubeletUtils
                                         value = ""
                                         if !envVar["value"].nil?
                                             value = envVar["value"]
-                                        elsif !envVar["valueFrom"].nil?                                         
-                                            valueFrom = envVar["valueFrom"]                                            
+                                        elsif !envVar["valueFrom"].nil?
+                                            valueFrom = envVar["valueFrom"]
                                             if valueFrom.key?("fieldRef") && !valueFrom["fieldRef"]["fieldPath"].nil? && !valueFrom["fieldRef"]["fieldPath"].empty?
                                                fieldPath = valueFrom["fieldRef"]["fieldPath"]
                                                fields = fieldPath.split('.')
                                                if fields.length() == 2
                                                    if !fields[1].nil? && !fields[1].empty? & fields[1].end_with?(']')
-                                                      indexFields = fields[1].split('[')                                      
-                                                      hashMapValue = item[fields[0]][indexFields[0]]                                           
-                                                      if !hashMapValue.nil? && !hashMapValue.empty? 
-                                                         subField = indexFields[1].delete_suffix("]").delete("\\'")                                             
-                                                         value = hashMapValue[subField]                                            
+                                                      indexFields = fields[1].split('[')
+                                                      hashMapValue = item[fields[0]][indexFields[0]]
+                                                      if !hashMapValue.nil? && !hashMapValue.empty?
+                                                         subField = indexFields[1].delete_suffix("]").delete("\\'")
+                                                         value = hashMapValue[subField]
                                                       end
-                                                    else 
-                                                      value = item[fields[0]][fields[1]] 
+                                                    else
+                                                      value = item[fields[0]][fields[1]]
                                                     end
-                                               end                                        
-                                            else 
+                                               end
+                                            else
                                                value = envVar["valueFrom"].to_s
-                                            end                                                          
-                                        end 
+                                            end
+                                        end
                                         envVars.push("#{key}=#{value}")
                                     end
                                     envValueString = envVars.to_s
-                                end 
+                                end
                                 # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
                                 # Check to see if the environment variable collection is disabled for this container.
                                 if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
                                     envValueString = ["AZMON_COLLECT_ENV=FALSE"]
                                     $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
-                                else                                                                                                      
+                                else
                                     # Restricting the ENV string value to 200kb since the size of this string can go very high
                                     if envValueString.length > 200000
                                         envValueStringTruncated = envValueString.slice(0..200000)
                                         lastIndex = envValueStringTruncated.rindex("\", ")
                                         if !lastIndex.nil?
                                             envValueStringTruncated = envValueStringTruncated.slice(0..lastIndex) + "]"
-                                        end                                        
+                                        end
                                         containerInfoMap["EnvironmentVar"] = envValueStringTruncated
                                     else
                                         containerInfoMap["EnvironmentVar"] = envValueString
-                                    end                                                                    
+                                    end
                                 end
-                            end    
+                            end
 
                             portsValue = container["ports"]
                             portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
@@ -191,5 +191,52 @@ class KubeletUtils
             end
             return containersInfoMap
         end
+        def getContainerEnvironmentVars(containerId, containerCgroupCache)
+
+            begin
+                unless containerCgroupCache.has_key?(containerId)
+                    Dir["/hostfs/proc/*/cgroup"].each do| filename|
+                        if  File.file?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
+                            # file full path is /hostfs/proc/<cGroupPid>/cgroup
+                            cGroupPid = filename.split("/")[3]
+                            if containerCgroupCache.has_key?(containerId)
+                                temCGroupPid = containerCgroupCache[containerId]
+                                if temCGroupPid > cGroupPid
+                                   containerCgroupCache[containerId] = cGroupPid
+                                end
+                            else
+                                containerCgroupCache[containerId] = cGroupPid
+                            end
+                        end
+                    end
+                end
+                cGroupPid = containerCgroupCache[containerId]
+                environFilePath = "/hostfs/proc/#{cGroupPid}/environ"
+                envVars = File.read(environFilePath).split(" ")
+                envValueString = envVars.to_s
+                 # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
+                 # Check to see if the environment variable collection is disabled for this container.
+                  if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
+                     envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+                     $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
+                  else
+                   # Restricting the ENV string value to 200kb since the size of this string can go very high
+                     if envValueString.length > 200000
+                        envValueStringTruncated = envValueString.slice(0..200000)
+                        lastIndex = envValueStringTruncated.rindex("\", ")
+                        if !lastIndex.nil?
+                           envValueStringTruncated = envValueStringTruncated.slice(0..lastIndex) + "]"
+                        end
+                        containerInfoMap["EnvironmentVar"] = envValueStringTruncated
+                      else
+                        containerInfoMap["EnvironmentVar"] = envValueString
+                      end
+                 end
+
+             rescue => error
+                 @Log.warn("kubelet_utils::getContainerInventoryRecords : Get Container Inventory Records failed: #{error}")
+             end
+         end
+
     end
 end

@@ -36,6 +36,8 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@telemetryTimeTracker = DateTime.now.to_time.to_i
+        # cache the container and cgroup parent process
+        @containerCGroupCache = Hash.new
       end
     end
 
