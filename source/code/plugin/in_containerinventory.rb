@@ -197,7 +197,7 @@ module Fluent
       containerInventoryRecords = Array.new
       begin
           response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
-          if !response.nil? && !response.empty? && !response.body.nil? && !response.body.empty?
+          if !response.nil? && !response.body.nil?
               podList = JSON.parse(response.body)
               if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
                   podList["items"].each do |item|
