@@ -237,9 +237,9 @@ module Fluent
             end
         else
             $log.info("in_container_inventory::enumerate : using cadvisor apis since container runtime is non docker")
-            containerInventoryRecords = KubeletUtils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)
+            containerInventoryRecords = KubeletUtils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar, @containerCGroupCache)
             containerIds = Array.new
-            containerInventoryRecords.each do |containerRecord|
+            containerInventoryRecords.each do |containerRecord|             
               ContainerInventoryState.writeContainerState(containerRecord)
               if hostName.empty? && !containerRecord["Computer"].empty?
                   hostName = containerRecord["Computer"]
@@ -255,6 +255,7 @@ module Fluent
                     if !container.nil?
                       container.each { |k, v| container[k] = v }
                       container["State"] = "Deleted"
+                      @containerCGroupCache.delete(container["InstanceID"])                      
                       containerInventory.push container
                     end
                 end
