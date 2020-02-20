@@ -210,37 +210,37 @@ module Fluent
                                containerName = containerStatus["name"]
                                containerId = containerStatus["containerID"].split('//')[1]
                                containerInventoryRecord["InstanceID"] = containerId
-                              # imagedId is of the format - repo@sha256:imageid
-                              imageIdValue =  containerStatus["imageID"]
-                              if !imageIdValue.nil? && !imageIdValue.empty?
-                                  atLocation = imageIdValue.index("@")
-                                  if !atLocation.nil?
-                                    containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
-                                  end
-                              end
-                              # image is of the format - repository/image:imagetag
-                              imageValue = containerStatus["image"]
-                              if !imageValue.nil? && !imageValue.empty?
-                                  # Find delimiters in the string of format repository/image:imagetag
-                                  slashLocation = imageValue.index("/")
-                                  colonLocation = imageValue.index(":")
-                                  if !colonLocation.nil?
-                                    if slashLocation.nil?
-                                      # image:imagetag
-                                      containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
-                                    else
-                                      # repository/image:imagetag
-                                      containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
-                                      containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
+                               # imagedId is of the format - repo@sha256:imageid
+                               imageIdValue =  containerStatus["imageID"]
+                               if !imageIdValue.nil? && !imageIdValue.empty?
+                                    atLocation = imageIdValue.index("@")
+                                    if !atLocation.nil?
+                                      containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
                                     end
-                                    containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
-                                  end
-                              elsif !imageIdValue.nil? && !imageIdValue.empty?
-                                  # Getting repo information from imageIdValue when no tag in ImageId
-                                  if !atLocation.nil?
-                                     containerInventoryRecord["Repository"] = imageIdValue[0..(atLocation - 1)]
-                                  end
-                              end
+                               end
+                               # image is of the format - repository/image:imagetag
+                               imageValue = containerStatus["image"]
+                               if !imageValue.nil? && !imageValue.empty?
+                                    # Find delimiters in the string of format repository/image:imagetag
+                                    slashLocation = imageValue.index("/")
+                                    colonLocation = imageValue.index(":")
+                                    if !colonLocation.nil?
+                                      if slashLocation.nil?
+                                        # image:imagetag
+                                        containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
+                                      else
+                                        # repository/image:imagetag
+                                        containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+                                        containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
+                                      end
+                                      containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
+                                    end
+                                elsif !imageIdValue.nil? && !imageIdValue.empty?
+                                    # Getting repo information from imageIdValue when no tag in ImageId
+                                    if !atLocation.nil?
+                                      containerInventoryRecord["Repository"] = imageIdValue[0..(atLocation - 1)]
+                                    end
+                                end
                                containerInventoryRecord["ExitCode"] = 0
                                if !containerStatus["state"].nil? && !containerStatus["state"].empty?
                                   containerState = containerStatus["state"]
@@ -265,9 +265,9 @@ module Fluent
                                containerInventoryRecord["Ports"] = containerInfoMap["Ports"]
                                containerInventoryRecord["Command"] = containerInfoMap["Command"]
                                if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
-                                    containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
+                                  containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
                                else
-                                    containerInventoryRecord["EnvironmentVar"]  = obtainContainerEnvironmentVars(containerId)
+                                  containerInventoryRecord["EnvironmentVar"]  = obtainContainerEnvironmentVars(containerId)
                                end
                                containerInventoryRecords.push containerInventoryRecord
                               end
@@ -277,7 +277,7 @@ module Fluent
               end
           end
       rescue => error
-          @Log.warn("in_container_inventory::getContainerInventoryRecords : Get Container Inventory Records failed: #{error}")
+          @log.warn("in_container_inventory::getContainerInventoryRecords : Get Container Inventory Records failed: #{error}")
       end
       return containerInventoryRecords
   end
@@ -308,7 +308,7 @@ module Fluent
               end
           end
       rescue => error
-          @Log.warn("in_container_inventory::getContainersInfoMap : Get Container Info Maps failed: #{error}")
+          @log.warn("in_container_inventory::getContainersInfoMap : Get Container Info Maps failed: #{error}")
       end
       return containersInfoMap
   end
@@ -357,7 +357,7 @@ module Fluent
               end
           end
       rescue => error
-           @Log.warn("in_container_inventory::obtainContainerEnvironmentVars : obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
+           @log.warn("in_container_inventory::obtainContainerEnvironmentVars : obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
       end
       return envValueString
   end
