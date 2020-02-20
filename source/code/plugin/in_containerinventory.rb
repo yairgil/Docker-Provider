@@ -314,12 +314,15 @@ module Fluent
   end
 
   def obtainContainerEnvironmentVars(containerId)
+      $log.info("in_container_inventory::obtainContainerEnvironmentVars @ #{Time.now.utc.iso8601}")
       envValueString = ""
       begin
           unless @containerCGroupCache.has_key?(containerId)
+              $log.info("in_container_inventory::fetching cGroup parent pid @ #{Time.now.utc.iso8601}")
               Dir["/hostfs/proc/*/cgroup"].each do| filename|
                   if  File.file?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
                       # file full path is /hostfs/proc/<cGroupPid>/cgroup
+                      $log.info("in_container_inventory::fetching cGroup parent  filename @ #{filename}")
                       cGroupPid = filename.split("/")[3]
                       if @containerCGroupCache.has_key?(containerId)
                           tempCGroupPid = containerCgroupCache[containerId]
@@ -343,6 +346,7 @@ module Fluent
                       $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
                   else
                       fileSize = File.size(environFilePath)
+                      $log.info("in_container_inventory::environment vars filename @ #{filename} filesize @ #{fileSize}")
                       # Restricting the ENV string value to 200kb since the size of this string can go very high
                       envVars = File.read(environFilePath, 200000).split(" ")
                       envValueString = envVars.to_s
@@ -411,14 +415,14 @@ module Fluent
             containerInventoryRecords.each do |containerRecord|
               ContainerInventoryState.writeContainerState(containerRecord)
               if hostName.empty? && !containerRecord["Computer"].empty?
-                  hostName = containerRecord["Computer"]
+                 hostName = containerRecord["Computer"]
               end
               containerIds.push containerRecord["InstanceID"]
               containerInventory.push containerRecord
             end
             # Update the state for deleted containers
             deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
-              if !deletedContainers.nil? && !deletedContainers.empty?
+            if !deletedContainers.nil? && !deletedContainers.empty?
                 deletedContainers.each do |deletedContainer|
                   container = ContainerInventoryState.readContainerState(deletedContainer)
                     if !container.nil?
@@ -428,7 +432,7 @@ module Fluent
                       containerInventory.push container
                     end
                 end
-              end
+            end
         end
 
         containerInventory.each do |record|
