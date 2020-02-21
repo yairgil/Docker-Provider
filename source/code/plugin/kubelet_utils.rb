@@ -91,7 +91,7 @@ class KubeletUtils
                                      containerInventoryRecord["CreatedTime"] = containerInfoMap["CreatedTime"]
                                      containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
                                      containerInventoryRecord["Ports"] = containerInfoMap["Ports"]
-                                     containerInventoryRecord["Command"] = containerInfoMap["Command"]                                    
+                                     containerInventoryRecord["Command"] = containerInfoMap["Command"]
                                      containerInventoryRecords.push containerInventoryRecord
                                     end
                                 end
@@ -104,7 +104,7 @@ class KubeletUtils
             end
             return containerInventoryRecords
         end
-      
+
         def getContainersInfoMap(item, clusterCollectEnvironmentVar)
             containersInfoMap = {}
             begin
@@ -121,16 +121,16 @@ class KubeletUtils
                             containerInfoMap["CreatedTime"] = createdTime
                             if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                                 containerInfoMap["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
-                            else        
+                            else
                                 containerInfoMap["EnvironmentVar"] = parseContainerEnvironmentVarsJSON(containerName, container["env"])
-                            end    
+                            end
                             portsValue = container["ports"]
                             portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
                             containerInfoMap["Ports"] = portsValueString
                             cmdValue = container["command"]
                             cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
                             containerInfoMap["Command"] = cmdValueString
-      
+
                             containersInfoMap[containerName] = containerInfoMap
                         end
                     end
@@ -151,52 +151,52 @@ class KubeletUtils
                         value = ""
                         if !envVar["value"].nil?
                             value = envVar["value"]
-                        elsif !envVar["valueFrom"].nil?                                         
-                            valueFrom = envVar["valueFrom"]                                            
-                            if valueFrom.key?("fieldRef") && !valueFrom["fieldRef"]["fieldPath"].nil? && !valueFrom["fieldRef"]["fieldPath"].empty?
-                               fieldPath = valueFrom["fieldRef"]["fieldPath"]
-                               fields = fieldPath.split('.')
-                               if fields.length() == 2
-                                   if !fields[1].nil? && !fields[1].empty? & fields[1].end_with?(']')
-                                      indexFields = fields[1].split('[')                                      
-                                      hashMapValue = item[fields[0]][indexFields[0]]                                           
-                                      if !hashMapValue.nil? && !hashMapValue.empty? 
-                                         subField = indexFields[1].delete_suffix("]").delete("\\'")                                             
-                                         value = hashMapValue[subField]                                            
-                                      end
-                                    else 
-                                      value = item[fields[0]][fields[1]] 
-                                    end
-                               end                                        
-                            else 
-                               value = envVar["valueFrom"].to_s
-                            end                                                          
-                        end 
-                        envVars.push("#{key}=#{value}")                                               
-                    end                  
+                        # elsif !envVar["valueFrom"].nil?
+                        #     valueFrom = envVar["valueFrom"]
+                        #     if valueFrom.key?("fieldRef") && !valueFrom["fieldRef"]["fieldPath"].nil? && !valueFrom["fieldRef"]["fieldPath"].empty?
+                        #        fieldPath = valueFrom["fieldRef"]["fieldPath"]
+                        #        fields = fieldPath.split('.')
+                        #        if fields.length() == 2
+                        #            if !fields[1].nil? && !fields[1].empty? & fields[1].end_with?(']')
+                        #               indexFields = fields[1].split('[')
+                        #               hashMapValue = item[fields[0]][indexFields[0]]
+                        #               if !hashMapValue.nil? && !hashMapValue.empty?
+                        #                  subField = indexFields[1].delete_suffix("]").delete("\\'")
+                        #                  value = hashMapValue[subField]
+                        #               end
+                        #             else
+                        #               value = item[fields[0]][fields[1]]
+                        #             end
+                        #        end
+                        #     else
+                        #        value = envVar["valueFrom"].to_s
+                        #     end
+                        end
+                        envVars.push("#{key}=#{value}")
+                    end
                     envValueString = envVars.to_s
                     # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
                     # Check to see if the environment variable collection is disabled for this container.
                     if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
                         envValueString = ["AZMON_COLLECT_ENV=FALSE"]
                         $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
-                    else                                                                                                      
+                    else
                         # Restricting the ENV string value to 200kb since the size of this string can go very high
                         if envValueString.length > 200000
                             envValueStringTruncated = envValueString.slice(0..200000)
                             lastIndex = envValueStringTruncated.rindex("\", ")
                             if !lastIndex.nil?
                                 envValueString = envValueStringTruncated.slice(0..lastIndex) + "]"
-                            else                                        
+                            else
                                 envValueString = envValueStringTruncated
                             end
                         end
-                    end  
-                end               
+                    end
+                end
             rescue => error
                 @log.warn("KubeletUtils::parseContainerEnvironmentVarsJSON : parsing of EnvVars JSON failed: #{error}")
             end
           return envValueString
-        end        
+        end
     end
 end
