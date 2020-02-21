@@ -122,7 +122,7 @@ class KubeletUtils
                             if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                                 containerInfoMap["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
                             else        
-                                containerInfoMap["EnvironmentVar"] = obtainContainerEnvironmentVariable(container["env"])
+                                containerInfoMap["EnvironmentVar"] = parseContainerEnvironmentVarsJSON(containerName, container["env"])
                             end    
                             portsValue = container["ports"]
                             portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
@@ -141,7 +141,7 @@ class KubeletUtils
             return containersInfoMap
         end
 
-        def obtainContainerEnvironmentVariable(envVarsJSON)
+        def parseContainerEnvironmentVarsJSON(containerName, envVarsJSON)
             envValueString = ""
             begin
                 envVars = []
@@ -194,7 +194,7 @@ class KubeletUtils
                     end  
                 end               
             rescue => error
-                @log.warn("in_container_inventory::getContainersInfoMap : Get Container Info Maps failed: #{error}")
+                @log.warn("KubeletUtils::parseContainerEnvironmentVarsJSON : parsing of EnvVars JSON failed: #{error}")
             end
           return envValueString
         end        
