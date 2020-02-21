@@ -157,23 +157,22 @@ class KubeletUtils
                                fieldPath = valueFrom["fieldRef"]["fieldPath"]
                                fields = fieldPath.split('.')
                                if fields.length() == 2
-                                    # handle fieldRef of labels and annotations
-                                    if !fields[1].nil? && !fields[1].empty? & fields[1].end_with?(']')
-                                        indexFields = fields[1].split('[')                                      
-                                        hashMapValue = item[fields[0]][indexFields[0]]                                           
-                                        if !hashMapValue.nil? && !hashMapValue.empty? 
-                                            subField = indexFields[1].delete_suffix("]").delete("\\'")                                             
-                                            value = hashMapValue[subField]                                            
-                                        end
+                                   if !fields[1].nil? && !fields[1].empty? & fields[1].end_with?(']')
+                                      indexFields = fields[1].split('[')                                      
+                                      hashMapValue = item[fields[0]][indexFields[0]]                                           
+                                      if !hashMapValue.nil? && !hashMapValue.empty? 
+                                         subField = indexFields[1].delete_suffix("]").delete("\\'")                                             
+                                         value = hashMapValue[subField]                                            
+                                      end
                                     else 
-                                       value = item[fields[0]][fields[1]] 
+                                      value = item[fields[0]][fields[1]] 
                                     end
-                                end   
-                            end                                     
-                        else 
-                          value = envVar["valueFrom"].to_s
-                        end      
-                        envVars.push("#{key}=#{value}")                                                    
+                               end                                        
+                            else 
+                               value = envVar["valueFrom"].to_s
+                            end                                                          
+                        end 
+                        envVars.push("#{key}=#{value}")                                               
                     end                  
                     envValueString = envVars.to_s
                     # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
@@ -188,8 +187,9 @@ class KubeletUtils
                             lastIndex = envValueStringTruncated.rindex("\", ")
                             if !lastIndex.nil?
                                 envValueString = envValueStringTruncated.slice(0..lastIndex) + "]"
-                            end                                        
-                            envValueString = envValueStringTruncated
+                            else                                        
+                                envValueString = envValueStringTruncated
+                            end
                         end
                     end  
                 end               
