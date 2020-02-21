@@ -19,5 +19,184 @@ class KubeletUtils
                 return [cpu_capacity, memory_capacity]
             end
         end
+
+        def getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)
+            containerInventoryRecords = Array.new
+            begin
+                response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
+                if !response.nil? && !response.body.nil?
+                    podList = JSON.parse(response.body)
+                    if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
+                        podList["items"].each do |item|
+                            containersInfoMap = getContainersInfoMap(item, clusterCollectEnvironmentVar)
+                            containerInventoryRecord = {}
+                            if !item["status"].nil? && !item["status"].empty?
+                                if !item["status"]["containerStatuses"].nil? && !item["status"]["containerStatuses"].empty?
+                                    item["status"]["containerStatuses"].each do |containerStatus|
+                                     containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+                                     containerName = containerStatus["name"]
+                                     # containeId format is <containerRuntime>://<containerId>
+                                     containerId = containerStatus["containerID"].split('//')[1]
+                                     containerInventoryRecord["InstanceID"] = containerId
+                                     # imagedId is of the format - repo@sha256:imageid
+                                     imageIdValue =  containerStatus["imageID"]
+                                     if !imageIdValue.nil? && !imageIdValue.empty?
+                                          atLocation = imageIdValue.index("@")
+                                          if !atLocation.nil?
+                                            containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
+                                          end
+                                     end
+                                     # image is of the format - repository/image:imagetag
+                                     imageValue = containerStatus["image"]
+                                     if !imageValue.nil? && !imageValue.empty?
+                                          # Find delimiters in the string of format repository/image:imagetag
+                                          slashLocation = imageValue.index("/")
+                                          colonLocation = imageValue.index(":")
+                                          if !colonLocation.nil?
+                                            if slashLocation.nil?
+                                              # image:imagetag
+                                              containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
+                                            else
+                                              # repository/image:imagetag
+                                              containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+                                              containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
+                                            end
+                                            containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
+                                          end
+                                      elsif !imageIdValue.nil? && !imageIdValue.empty?
+                                          # Getting repo information from imageIdValue when no tag in ImageId
+                                          if !atLocation.nil?
+                                            containerInventoryRecord["Repository"] = imageIdValue[0..(atLocation - 1)]
+                                          end
+                                      end
+                                     containerInventoryRecord["ExitCode"] = 0
+                                     if !containerStatus["state"].nil? && !containerStatus["state"].empty?
+                                        containerState = containerStatus["state"]
+                                        if containerState.key?("running")
+                                            containerInventoryRecord["State"] = "Running"
+                                            containerInventoryRecord["StartedTime"] = containerState["running"]["startedAt"]
+                                        elsif containerState.key?("terminated")
+                                            containerInventoryRecord["State"] = "Terminated"
+                                            containerInventoryRecord["StartedTime"] = containerState["terminated"]["startedAt"]
+                                            containerInventoryRecord["FinishedTime"] = containerState["terminated"]["finishedAt"]
+                                            containerInventoryRecord["ExitCode"] = containerState["terminated"]["exitCode"]
+                                        elsif containerState.key?("waiting")
+                                            containerInventoryRecord["State"] = "Waiting"
+                                        end
+                                     end
+                                     containerInfoMap = containersInfoMap[containerName]
+                                     containerInventoryRecord["ElementName"] = containerInfoMap["ElementName"]
+                                     containerInventoryRecord["Computer"] = containerInfoMap["Computer"]
+                                     containerInventoryRecord["ContainerHostname"] = containerInfoMap["ContainerHostname"]
+                                     containerInventoryRecord["CreatedTime"] = containerInfoMap["CreatedTime"]
+                                     containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
+                                     containerInventoryRecord["Ports"] = containerInfoMap["Ports"]
+                                     containerInventoryRecord["Command"] = containerInfoMap["Command"]                                    
+                                     containerInventoryRecords.push containerInventoryRecord
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            rescue => error
+                @log.warn("KubeletUtils::getContainerInventoryRecords : Get Container Inventory Records failed: #{error}")
+            end
+            return containerInventoryRecords
+        end
+      
+        def getContainersInfoMap(item, clusterCollectEnvironmentVar)
+            containersInfoMap = {}
+            begin
+                nodeName = (!item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
+                createdTime = item["metadata"]["creationTimestamp"]
+                if !item.nil? && !item.empty? && item.key?("spec") && !item["spec"].nil? && !item["spec"].empty?
+                    if !item["spec"]["containers"].nil? && !item["spec"]["containers"].empty?
+                        item["spec"]["containers"].each do |container|
+                            containerInfoMap = {}
+                            containerName = container["name"]
+                            containerInfoMap["ElementName"] = containerName
+                            containerInfoMap["Computer"] = nodeName
+                            containerInfoMap["ContainerHostname"] = nodeName
+                            containerInfoMap["CreatedTime"] = createdTime
+                            if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
+                                containerInfoMap["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
+                            else        
+                                containerInfoMap["EnvironmentVar"] = obtainContainerEnvironmentVariable(container["env"])
+                            end    
+                            portsValue = container["ports"]
+                            portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
+                            containerInfoMap["Ports"] = portsValueString
+                            cmdValue = container["command"]
+                            cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
+                            containerInfoMap["Command"] = cmdValueString
+      
+                            containersInfoMap[containerName] = containerInfoMap
+                        end
+                    end
+                end
+            rescue => error
+                @log.warn("KubeletUtils::getContainersInfoMap : Get Container Info Maps failed: #{error}")
+            end
+            return containersInfoMap
+        end
+
+        def obtainContainerEnvironmentVariable(envVarsJSON)
+            envValueString = ""
+            begin
+                envVars = []
+                if !envVarsJSON.nil? && !envVarsJSON.empty?
+                    envVarsJSON.each do |envVar|
+                        key = envVar["name"]
+                        value = ""
+                        if !envVar["value"].nil?
+                            value = envVar["value"]
+                        elsif !envVar["valueFrom"].nil?                                         
+                            valueFrom = envVar["valueFrom"]                                            
+                            if valueFrom.key?("fieldRef") && !valueFrom["fieldRef"]["fieldPath"].nil? && !valueFrom["fieldRef"]["fieldPath"].empty?
+                               fieldPath = valueFrom["fieldRef"]["fieldPath"]
+                               fields = fieldPath.split('.')
+                               if fields.length() == 2
+                                    # handle fieldRef of labels and annotations
+                                    if !fields[1].nil? && !fields[1].empty? & fields[1].end_with?(']')
+                                        indexFields = fields[1].split('[')                                      
+                                        hashMapValue = item[fields[0]][indexFields[0]]                                           
+                                        if !hashMapValue.nil? && !hashMapValue.empty? 
+                                            subField = indexFields[1].delete_suffix("]").delete("\\'")                                             
+                                            value = hashMapValue[subField]                                            
+                                        end
+                                    else 
+                                       value = item[fields[0]][fields[1]] 
+                                    end
+                                end   
+                            end                                     
+                        else 
+                          value = envVar["valueFrom"].to_s
+                        end      
+                        envVars.push("#{key}=#{value}")                                                    
+                    end                  
+                    envValueString = envVars.to_s
+                    # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
+                    # Check to see if the environment variable collection is disabled for this container.
+                    if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
+                        envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+                        $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
+                    else                                                                                                      
+                        # Restricting the ENV string value to 200kb since the size of this string can go very high
+                        if envValueString.length > 200000
+                            envValueStringTruncated = envValueString.slice(0..200000)
+                            lastIndex = envValueStringTruncated.rindex("\", ")
+                            if !lastIndex.nil?
+                                envValueString = envValueStringTruncated.slice(0..lastIndex) + "]"
+                            end                                        
+                            envValueString = envValueStringTruncated
+                        end
+                    end  
+                end               
+            rescue => error
+                @log.warn("in_container_inventory::getContainersInfoMap : Get Container Info Maps failed: #{error}")
+            end
+          return envValueString
+        end        
     end
 end
