@@ -17,6 +17,7 @@ module Fluent
       require_relative "KubernetesApiClient"
       require_relative "oms_common"
       require_relative "omslog"
+      require_relative "constants"
     end
 
     config_param :run_interval, :time, :default => 60
@@ -52,6 +53,7 @@ module Fluent
       time = Time.now.to_f
       begin
         eventStream = MultiEventStream.new
+        insightsMetricsEventStream = MultiEventStream.new
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
 
@@ -82,6 +84,30 @@ module Fluent
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
+
+          #start GPU InsightsMetrics items
+          begin
+            containerGPUusageInsightsMetricsDataItems = []
+            containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601))
+
+            containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
+              wrapper = {
+                "DataType" => "INSIGHTS_METRICS_BLOB",
+                "IPName" => "ContainerInsights",
+                "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
+              }
+              insightsMetricsEventStream.add(time, wrapper) if wrapper
+            end
+
+            router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+            $log.info("winCAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          rescue => errorStr
+            $log.warn "Failed when processing GPU Usage metrics in_win_cadvisor_perf : #{errorStr}"
+            $log.debug_backtrace(errorStr.backtrace)
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+          end 
+          #end GPU InsightsMetrics items
+
         end
 
         # Cleanup routine to clear deleted containers from cache

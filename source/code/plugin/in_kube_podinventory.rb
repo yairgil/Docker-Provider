@@ -22,6 +22,7 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
       require_relative "omslog"
+      require_relative "constants"
 
       @PODS_CHUNK_SIZE = "1500"
       @podCount = 0
@@ -488,6 +489,7 @@ module Fluent
           containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory", "memoryLimitBytes", batchTime))
 
           kubePerfEventStream = MultiEventStream.new
+          insightsMetricsEventStream = MultiEventStream.new
 
           containerMetricDataItems.each do |record|
             record["DataType"] = "LINUX_PERF_BLOB"
@@ -496,6 +498,33 @@ module Fluent
           end
           #end
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+          begin 
+            #start GPU InsightsMetrics items
+            
+            containerGPUInsightsMetricsDataItems = []
+            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
+            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
+
+            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
+            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
+
+            containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
+              wrapper = {
+                "DataType" => "INSIGHTS_METRICS_BLOB",
+                "IPName" => "ContainerInsights",
+                "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
+              }
+              insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
+            end
+
+            router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+            #end GPU InsightsMetrics items
+          rescue => errorStr
+            $log.warn "Failed when processing GPU metrics in_kube_podinventory : #{errorStr}"
+            $log.debug_backtrace(errorStr.backtrace)
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+          end
         rescue => errorStr
           $log.warn "Failed in parse_and_emit_record for KubePerf from in_kube_podinventory : #{errorStr}"
           $log.debug_backtrace(errorStr.backtrace)

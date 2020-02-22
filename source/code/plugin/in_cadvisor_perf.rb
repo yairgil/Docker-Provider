@@ -15,6 +15,7 @@ module Fluent
       require_relative "CAdvisorMetricsAPIClient"
       require_relative "oms_common"
       require_relative "omslog"
+      require_relative "constants"
     end
 
     config_param :run_interval, :time, :default => 60
@@ -52,6 +53,7 @@ module Fluent
       batchTime = currentTime.utc.iso8601
       begin
         eventStream = MultiEventStream.new
+        insightsMetricsEventStream = MultiEventStream.new
         metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime )
         metricData.each do |record|
           record["DataType"] = "LINUX_PERF_BLOB"
@@ -68,6 +70,31 @@ module Fluent
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("cAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
+
+        #start GPU InsightsMetrics items
+        begin
+          containerGPUusageInsightsMetricsDataItems = []
+          containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))
+          
+
+          containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
+            wrapper = {
+              "DataType" => "INSIGHTS_METRICS_BLOB",
+              "IPName" => "ContainerInsights",
+              "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
+            }
+            insightsMetricsEventStream.add(time, wrapper) if wrapper
+          end
+
+          router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+          $log.info("cAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+        rescue => errorStr
+          $log.warn "Failed when processing GPU Usage metrics in_cadvisor_perf : #{errorStr}"
+          $log.debug_backtrace(errorStr.backtrace)
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        end 
+        #end GPU InsightsMetrics items
+
       rescue => errorStr
         $log.warn "Failed to retrieve cadvisor metric data: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
