@@ -121,7 +121,7 @@ class KubeletUtils
               if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                 containerInfoMap["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
               else
-                containerInfoMap["EnvironmentVar"] = parseContainerEnvironmentVarsJSON(containerName, container["env"])
+                containerInfoMap["EnvironmentVar"] = parseContainerEnvironmentVarsJSON(item, containerName, container["env"])
               end
               portsValue = container["ports"]
               portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
@@ -140,11 +140,11 @@ class KubeletUtils
       return containersInfoMap
     end
 
-    def parseContainerEnvironmentVarsJSON(containerName, envVarsJSON)
+    def parseContainerEnvironmentVarsJSON(item, containerName, envVarsJSON)
       envValueString = ""
       begin
         envVars = []
-        if !envVarsJSON.nil? && !envVarsJSON.empty?
+        if !item.nil? && !item.empty? && !envVarsJSON.nil? && !envVarsJSON.empty?
           envVarsJSON.each do |envVar|
             key = envVar["name"]
             value = ""
@@ -156,7 +156,7 @@ class KubeletUtils
                 fieldPath = valueFrom["fieldRef"]["fieldPath"]
                 fields = fieldPath.split(".")
                 if fields.length() == 2
-                  if !fields[1].nil? && !fields[1].empty? & fields[1].end_with?("]")
+                  if !fields[1].nil? && !fields[1].empty? && fields[1].end_with?("]")
                     indexFields = fields[1].split("[")
                     hashMapValue = item[fields[0]][indexFields[0]]
                     if !hashMapValue.nil? && !hashMapValue.empty?
