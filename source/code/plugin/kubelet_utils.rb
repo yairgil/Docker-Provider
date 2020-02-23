@@ -36,8 +36,8 @@ class KubeletUtils
                 podContainersStatuses = podContainersStatuses + item["status"]["initContainerStatuses"]
               end
               containerInventoryRecord = {}
-              if !PodContainersStatuses.empty?
-                PodContainersStatuses.each do |containerStatus|
+              if !podContainersStatuses.empty?
+                podContainersStatuses.each do |containerStatus|
                   containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
                   containerName = containerStatus["name"]
                   # containeId format is <containerRuntime>://<containerId>
