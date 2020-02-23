@@ -121,7 +121,7 @@ class KubeletUtils
               if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                 containerInfoMap["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
               else
-                containerInfoMap["EnvironmentVar"] = parseContainerEnvironmentVarsJSON(item, containerName, container["env"])
+                containerInfoMap["EnvironmentVar"] = parseContainerEnvironmentVarsJSON(item, container)
               end
               portsValue = container["ports"]
               portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
@@ -140,11 +140,12 @@ class KubeletUtils
       return containersInfoMap
     end
 
-    def parseContainerEnvironmentVarsJSON(item, containerName, envVarsJSON)
+    def parseContainerEnvironmentVarsJSON(pod, container)
       envValueString = ""
       begin
         envVars = []
-        if !item.nil? && !item.empty? && !envVarsJSON.nil? && !envVarsJSON.empty?
+        envVarsJSON = container["env"]
+        if !pod.nil? && !pod.empty? && !envVarsJSON.nil? && !envVarsJSON.empty?
           envVarsJSON.each do |envVar|
             key = envVar["name"]
             value = ""
@@ -152,20 +153,29 @@ class KubeletUtils
               value = envVar["value"]
             elsif !envVar["valueFrom"].nil?
               valueFrom = envVar["valueFrom"]
+              # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-pod-fields-as-values-for-environment-variables
               if valueFrom.key?("fieldRef") && !valueFrom["fieldRef"]["fieldPath"].nil? && !valueFrom["fieldRef"]["fieldPath"].empty?
                 fieldPath = valueFrom["fieldRef"]["fieldPath"]
                 fields = fieldPath.split(".")
                 if fields.length() == 2
                   if !fields[1].nil? && !fields[1].empty? && fields[1].end_with?("]")
                     indexFields = fields[1].split("[")
-                    hashMapValue = item[fields[0]][indexFields[0]]
+                    hashMapValue = pod[fields[0]][indexFields[0]]
                     if !hashMapValue.nil? && !hashMapValue.empty?
                       subField = indexFields[1].delete_suffix("]").delete("\\'")
                       value = hashMapValue[subField]
                     end
                   else
-                    value = item[fields[0]][fields[1]]
+                    value = pod[fields[0]][fields[1]]
                   end
+                end
+                # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-container-fields-as-values-for-environment-variables
+              elsif valueFrom.key?("resourceFieldRef") && !valueFrom["resourceFieldRef"]["resource"].nil? && !valueFrom["resourceFieldRef"]["resource"].empty?
+                resource = valueFrom["resourceFieldRef"]["resource"]
+                resourceFileds = resource.split(".")
+                containerResources = container["resources"]
+                if !containerResources.nil? && !containerResources.empty? && resourceFileds.length() == 2
+                  value = containerResources[resourceFileds[0]][resourceFileds[1]]
                 end
               else
                 value = envVar["valueFrom"].to_s
@@ -174,6 +184,7 @@ class KubeletUtils
             envVars.push("#{key}=#{value}")
           end
           envValueString = envVars.to_s
+          containerName = container["name"]
           # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
           # Check to see if the environment variable collection is disabled for this container.
           if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
@@ -193,7 +204,7 @@ class KubeletUtils
           end
         end
       rescue => error
-        @log.warn("KubeletUtils::parseContainerEnvironmentVarsJSON : parsing of EnvVars JSON failed: #{error}")
+        @log.warn("KubeletUtils::parseContainerEnvironmentVarsJSON : parsing of EnvVars failed: #{error}")
       end
       return envValueString
     end
