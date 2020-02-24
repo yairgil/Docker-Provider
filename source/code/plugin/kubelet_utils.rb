@@ -193,8 +193,8 @@ class KubeletUtils
               elsif valueFrom.key?("secretKeyRef")
                 secretName = valueFrom["secretKeyRef"]["name"]
                 secretKey = valueFrom["secretKeyRef"]["key"]
-                # This is just secret not the plaintext. Flatten value so that Ux can show that
-                if !secretName.nil && !secretName.empty && !secretKey.nil? && !secretKey.empty?
+                # This is still secret not the plaintext. Flatten value so that CI Ux can show that
+                if !secretName.nil? && !secretName.empty? && !secretKey.nil? && !secretKey.empty?
                    value = "secretKeyRef_#{secretName}_#{secretKey}"
                 end
               else
