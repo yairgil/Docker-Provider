@@ -174,7 +174,7 @@ class KubeletUtils
                     indexFields = fields[1].split("[")
                     hashMapValue = pod[fields[0]][indexFields[0]]
                     if !hashMapValue.nil? && !hashMapValue.empty?
-                      subField = indexFields[1].delete_suffix("]").delete("\\'")
+                      subField = indexFields[1].chomp("]").delete("\\'")
                       value = hashMapValue[subField]
                     end
                   else
