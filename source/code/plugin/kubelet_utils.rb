@@ -184,10 +184,10 @@ class KubeletUtils
                 # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-container-fields-as-values-for-environment-variables
               elsif valueFrom.key?("resourceFieldRef") && !valueFrom["resourceFieldRef"]["resource"].nil? && !valueFrom["resourceFieldRef"]["resource"].empty?
                 resource = valueFrom["resourceFieldRef"]["resource"]
-                resourceFileds = resource.split(".")
+                resourceFields = resource.split(".")
                 containerResources = container["resources"]
-                if !containerResources.nil? && !containerResources.empty? && resourceFileds.length() == 2
-                  value = containerResources[resourceFileds[0]][resourceFileds[1]]
+                if !containerResources.nil? && !containerResources.empty? && resourceFields.length() == 2
+                  value = containerResources[resourceFields[0]][resourceFields[1]]
                 end
               else
                 value = envVar["valueFrom"].to_s
