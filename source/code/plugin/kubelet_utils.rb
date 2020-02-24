@@ -189,6 +189,14 @@ class KubeletUtils
                 if !containerResources.nil? && !containerResources.empty? && resourceFields.length() == 2
                   value = containerResources[resourceFields[0]][resourceFields[1]]
                 end
+                # https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables
+              elsif valueFrom.key?("secretKeyRef")
+                secretName = valueFrom["secretKeyRef"]["name"]
+                secretKey = valueFrom["secretKeyRef"]["key"]
+                # flatten value so that Ux can show that
+                if !secretName.nil && !secretName.empty && !secretKey.nil? && !secretKey.empty?
+                   value = "secretKeyRef_#{secretName}_#{secretKey}"
+                end
               else
                 value = envVar["valueFrom"].to_s
               end
