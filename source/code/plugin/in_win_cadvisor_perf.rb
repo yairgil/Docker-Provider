@@ -56,6 +56,7 @@ module Fluent
         insightsMetricsEventStream = MultiEventStream.new
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
+        @@istestvar = ENV["ISTEST"]
 
         #Resetting this cache so that it is populated with the current set of containers with every call
         CAdvisorMetricsAPIClient.resetWinContainerIdCache()
@@ -80,7 +81,7 @@ module Fluent
           router.emit_stream(@tag, eventStream) if eventStream
           router.emit_stream(@mdmtag, eventStream) if eventStream
 
-          @@istestvar = ENV["ISTEST"]
+          
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
@@ -100,7 +101,9 @@ module Fluent
             end
 
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
-            $log.info("winCAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+              $log.info("winCAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end 
           rescue => errorStr
             $log.warn "Failed when processing GPU Usage metrics in_win_cadvisor_perf : #{errorStr}"
             $log.debug_backtrace(errorStr.backtrace)

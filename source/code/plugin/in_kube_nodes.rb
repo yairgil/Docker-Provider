@@ -105,6 +105,7 @@ module Fluent
         eventStream = MultiEventStream.new
         containerNodeInventoryEventStream = MultiEventStream.new
         insightsMetricsEventStream = MultiEventStream.new
+        @@istestvar = ENV["ISTEST"]
         #get node inventory
         nodeInventory["items"].each do |items|
           record = {}
@@ -227,7 +228,7 @@ module Fluent
         if telemetrySent == true
           @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
-        @@istestvar = ENV["ISTEST"]
+        
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
@@ -271,6 +272,9 @@ module Fluent
             end
 
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+              $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           rescue => errorStr
             $log.warn "Failed when processing GPU metrics in_kube_nodes : #{errorStr}"
             $log.debug_backtrace(errorStr.backtrace)

@@ -252,6 +252,7 @@ module Fluent
       emitTime = currentTime.to_f
       #batchTime = currentTime.utc.iso8601
       eventStream = MultiEventStream.new
+      @@istestvar = ENV["ISTEST"]
 
       begin #begin block start
         # Getting windows nodes from kubeapi
@@ -516,6 +517,11 @@ module Fluent
                 "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
               }
               insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
+              
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+                $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
+
             end
 
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
@@ -566,7 +572,7 @@ module Fluent
         #Updating value for AppInsights telemetry
         @podCount += podInventory["items"].length
 
-        @@istestvar = ENV["ISTEST"]
+        
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
