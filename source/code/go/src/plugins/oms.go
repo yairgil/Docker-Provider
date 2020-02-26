@@ -99,7 +99,7 @@ var (
 	enrichContainerLogs bool
 	// container runtime engine configured on the kubelet (true indicates docker else K8s CRI compatiable runtime)
 	isDockerContainerRuntimeEngine bool
-	// container runtime engine configured on the kubelet (true indicates docker else K8s CRI compatiable runtime)
+	// container runtime engine configured on the kubelet
 	containerRuntime string
 )
 
