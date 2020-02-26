@@ -4,7 +4,7 @@ require 'yajl/json_gem'
 
 module HealthModel
 
-    HealthMonitorInstanceState = Struct.new(:prev_sent_record_time, :old_state, :new_state, :state_change_time, :prev_records, :is_state_change_consistent, :should_send) do
+    HealthMonitorInstanceState = Struct.new(:prev_sent_record_time, :old_state, :new_state, :state_change_time, :prev_records, :is_state_change_consistent, :should_send, :monitor_version) do
     end
 
     # Class that is used to store the last sent state and latest monitors
@@ -47,6 +47,7 @@ module HealthModel
                 state.prev_records = health_monitor_instance_state_hash["prev_records"]
                 state.is_state_change_consistent = health_monitor_instance_state_hash["is_state_change_consistent"] || false
                 state.should_send = health_monitor_instance_state_hash["should_send"]
+                state.monitor_version = health_monitor_instance_state_hash["monitor_version"]
                 @@monitor_states[k] = state
                 @@first_record_sent[k] = true
             }

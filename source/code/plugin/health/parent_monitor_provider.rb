@@ -85,5 +85,9 @@ module HealthModel
             @log.info "parent_monitor_instance_id for #{monitor_instance_id} => #{parent_monitor_instance_id}"
             return parent_monitor_instance_id
         end
+
+        def get_monitor_parent_instance_id(monitor_instance_id)
+            return @parent_monitor_instance_mapping[monitor_instance_id]
+        end
     end
 end

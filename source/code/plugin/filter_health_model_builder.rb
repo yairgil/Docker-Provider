@@ -50,6 +50,7 @@ module Fluent
                 # move network calls to the end. This will ensure all the instance variables get initialized
                 deserialized_state_info = @cluster_health_state.get_state
                 @state.initialize_state(deserialized_state_info)
+                @versions.initialize_versions(@state.to_h)
             rescue => e
                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
             end
@@ -208,6 +209,8 @@ module Fluent
                         if !should_send && monitor_instance_id != MonitorId::CLUSTER
                             all_monitors.delete(monitor_instance_id)
                         else
+                            instance_state.monitor_version = monitor_version
+                            @state.set_state(monitor_instance_id, instance_state)
                             @versions.set_monitor_version(monitor_instance_id, monitor_version)
                         end
                     }
@@ -221,11 +224,12 @@ module Fluent
                     # get the state from health_monitor_state
                     # generate the record to send
                     all_monitors.keys.each{|key|
-                        record = @provider.get_record(all_monitors[key], state, monitor_version)
+                        record = @provider.get_record(all_monitors[key], state, monitor_version, @health_model_definition)
                         if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER
                             if !record[HealthMonitorRecordFields::DETAILS].nil?
                                 details = JSON.parse(record[HealthMonitorRecordFields::DETAILS])
                                 details[HealthMonitorRecordFields::HEALTH_MODEL_DEFINITION_VERSION] = "#{ENV['HEALTH_MODEL_DEFINITION_VERSION']}"
+                                @versions.remove_none_state_monitors
                                 details[HealthMonitorRecordFields::VERSIONS_HASH] = @versions.get_current_monitor_versions_hash
                                 record[HealthMonitorRecordFields::DETAILS] = details.to_json
                             end

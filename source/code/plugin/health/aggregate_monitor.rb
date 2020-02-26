@@ -79,7 +79,7 @@ module HealthModel
 
     def calculate_details(monitor_set)
         @details = {}
-        @details['details'] = {}
+        @details['children'] = []
         @details['state'] = state
         @details['timestamp'] = transition_date_time
         ids = []
@@ -87,15 +87,16 @@ module HealthModel
         member_monitor_instance_ids.each{|member_monitor_id|
             member_monitor = monitor_set.get_monitor(member_monitor_id)
             member_state = member_monitor.state
-            if @details['details'].key?(member_state)
-                ids = @details['details'][member_state]
-                if !ids.include?(member_monitor.monitor_instance_id)
-                    ids.push(member_monitor.monitor_instance_id)
-                end
-                @details['details'][member_state] = ids
-            else
-                @details['details'][member_state] = [member_monitor.monitor_instance_id]
-            end
+            @details['children'].push(member_monitor_id) if member_state.downcase != HealthMonitorStates::NONE
+            # if @details['details'].key?(member_state)
+            #     ids = @details['details'][member_state]
+            #     if !ids.include?(member_monitor.monitor_instance_id)
+            #         ids.push(member_monitor.monitor_instance_id)
+            #     end
+            #     @details['details'][member_state] = ids
+            # else
+            #     @details['details'][member_state] = [member_monitor.monitor_instance_id]
+            # end
         }
     end
 
