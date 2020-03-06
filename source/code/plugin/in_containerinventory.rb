@@ -325,9 +325,9 @@ module Fluent
               $log.info("in_container_inventory::fetching cGroup parent  filename @ #{filename}")
               cGroupPid = filename.split("/")[3]
               if @containerCGroupCache.has_key?(containerId)
-                tempCGroupPid = containerCgroupCache[containerId]
+                tempCGroupPid = containerCGroupCache[containerId]
                 if tempCGroupPid > cGroupPid
-                  @containerCgroupCache[containerId] = cGroupPid
+                  @containerCGroupCache[containerId] = cGroupPid
                 end
               else
                 @containerCGroupCache[containerId] = cGroupPid
