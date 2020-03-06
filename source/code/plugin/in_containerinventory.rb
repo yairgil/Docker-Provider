@@ -13,13 +13,13 @@ module Fluent
 
     def initialize
       super
-      require 'yajl/json_gem'
+      require "yajl/json_gem"
       require "time"
       require_relative "DockerApiClient"
       require_relative "ContainerInventoryState"
       require_relative "ApplicationInsightsUtility"
-      require_relative "omslog"      
-      require_relative "kubelet_utils"
+      require_relative "omslog"
+      require_relative "CAdvisorMetricsAPIClient"
     end
 
     config_param :run_interval, :time, :default => 60
@@ -35,7 +35,9 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
-        @@telemetryTimeTracker = DateTime.now.to_time.to_i        
+        @@telemetryTimeTracker = DateTime.now.to_time.to_i
+        # cache the container and cgroup parent process
+        @containerCGroupCache = Hash.new
       end
     end
 
@@ -189,9 +191,182 @@ module Fluent
         $log.warn("Exception in inspectContainer: #{errorStr} for container: #{id}")
       end
       return containerInstance
-    end  
+    end
 
-  def enumerate
+    def getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)
+      containerInventoryRecords = Array.new
+      begin
+        response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
+        if !response.nil? && !response.body.nil?
+          podList = JSON.parse(response.body)
+          if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
+            podList["items"].each do |item|
+              containersInfoMap = getContainersInfoMap(item)
+              containerInventoryRecord = {}
+              if !item["status"].nil? && !item["status"].empty?
+                if !item["status"]["containerStatuses"].nil? && !item["status"]["containerStatuses"].empty?
+                  item["status"]["containerStatuses"].each do |containerStatus|
+                    containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+                    containerName = containerStatus["name"]
+                    containerId = containerStatus["containerID"].split("//")[1]
+                    containerInventoryRecord["InstanceID"] = containerId
+                    # imagedId is of the format - repo@sha256:imageid
+                    imageIdValue = containerStatus["imageID"]
+                    if !imageIdValue.nil? && !imageIdValue.empty?
+                      atLocation = imageIdValue.index("@")
+                      if !atLocation.nil?
+                        containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
+                      end
+                    end
+                    # image is of the format - repository/image:imagetag
+                    imageValue = containerStatus["image"]
+                    if !imageValue.nil? && !imageValue.empty?
+                      # Find delimiters in the string of format repository/image:imagetag
+                      slashLocation = imageValue.index("/")
+                      colonLocation = imageValue.index(":")
+                      if !colonLocation.nil?
+                        if slashLocation.nil?
+                          # image:imagetag
+                          containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
+                        else
+                          # repository/image:imagetag
+                          containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+                          containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
+                        end
+                        containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
+                      end
+                    elsif !imageIdValue.nil? && !imageIdValue.empty?
+                      # Getting repo information from imageIdValue when no tag in ImageId
+                      if !atLocation.nil?
+                        containerInventoryRecord["Repository"] = imageIdValue[0..(atLocation - 1)]
+                      end
+                    end
+                    containerInventoryRecord["ExitCode"] = 0
+                    if !containerStatus["state"].nil? && !containerStatus["state"].empty?
+                      containerState = containerStatus["state"]
+                      if containerState.key?("running")
+                        containerInventoryRecord["State"] = "Running"
+                        containerInventoryRecord["StartedTime"] = containerState["running"]["startedAt"]
+                      elsif containerState.key?("terminated")
+                        containerInventoryRecord["State"] = "Terminated"
+                        containerInventoryRecord["StartedTime"] = containerState["terminated"]["startedAt"]
+                        containerInventoryRecord["FinishedTime"] = containerState["terminated"]["finishedAt"]
+                        containerInventoryRecord["ExitCode"] = containerState["terminated"]["exitCode"]
+                      elsif containerState.key?("waiting")
+                        containerInventoryRecord["State"] = "Waiting"
+                      end
+                    end
+                    containerInfoMap = containersInfoMap[containerName]
+                    containerInventoryRecord["ElementName"] = containerInfoMap["ElementName"]
+                    containerInventoryRecord["Computer"] = containerInfoMap["Computer"]
+                    containerInventoryRecord["ContainerHostname"] = containerInfoMap["ContainerHostname"]
+                    containerInventoryRecord["CreatedTime"] = containerInfoMap["CreatedTime"]
+                    containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
+                    containerInventoryRecord["Ports"] = containerInfoMap["Ports"]
+                    containerInventoryRecord["Command"] = containerInfoMap["Command"]
+                    if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
+                      containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
+                    else
+                      containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars(containerId)
+                    end
+                    containerInventoryRecords.push containerInventoryRecord
+                  end
+                end
+              end
+            end
+          end
+        end
+      rescue => error
+        @log.warn("in_container_inventory::getContainerInventoryRecords : Get Container Inventory Records failed: #{error}")
+      end
+      return containerInventoryRecords
+    end
+
+    def getContainersInfoMap(item)
+      containersInfoMap = {}
+      begin
+        nodeName = (!item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
+        createdTime = item["metadata"]["creationTimestamp"]
+        if !item.nil? && !item.empty? && item.key?("spec") && !item["spec"].nil? && !item["spec"].empty?
+          if !item["spec"]["containers"].nil? && !item["spec"]["containers"].empty?
+            item["spec"]["containers"].each do |container|
+              containerInfoMap = {}
+              containerName = container["name"]
+              containerInfoMap["ElementName"] = containerName
+              containerInfoMap["Computer"] = nodeName
+              containerInfoMap["ContainerHostname"] = nodeName
+              containerInfoMap["CreatedTime"] = createdTime
+              portsValue = container["ports"]
+              portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
+              containerInfoMap["Ports"] = portsValueString
+              cmdValue = container["command"]
+              cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
+              containerInfoMap["Command"] = cmdValueString
+
+              containersInfoMap[containerName] = containerInfoMap
+            end
+          end
+        end
+      rescue => error
+        @log.warn("in_container_inventory::getContainersInfoMap : Get Container Info Maps failed: #{error}")
+      end
+      return containersInfoMap
+    end
+
+    def obtainContainerEnvironmentVars(containerId)
+      $log.info("in_container_inventory::obtainContainerEnvironmentVars @ #{Time.now.utc.iso8601}")
+      envValueString = ""
+      begin
+        unless @containerCGroupCache.has_key?(containerId)
+          $log.info("in_container_inventory::fetching cGroup parent pid @ #{Time.now.utc.iso8601}")
+          Dir["/hostfs/proc/*/cgroup"].each do |filename|
+            if File.file?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
+              # file full path is /hostfs/proc/<cGroupPid>/cgroup
+              $log.info("in_container_inventory::fetching cGroup parent  filename @ #{filename}")
+              cGroupPid = filename.split("/")[3]
+              if @containerCGroupCache.has_key?(containerId)
+                tempCGroupPid = containerCgroupCache[containerId]
+                if tempCGroupPid > cGroupPid
+                  @containerCgroupCache[containerId] = cGroupPid
+                end
+              else
+                @containerCGroupCache[containerId] = cGroupPid
+              end
+            end
+          end
+        end
+        cGroupPid = @containerCGroupCache[containerId]
+        if !cGroupPid.nil?
+          environFilePath = "/hostfs/proc/#{cGroupPid}/environ"
+          if File.exist?(environFilePath)
+            # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
+            # Check to see if the environment variable collection is disabled for this container.
+            if File.foreach(environFilePath).grep(/AZMON_COLLECT_ENV=FALSE/i).any?
+              envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+              $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
+            else
+              fileSize = File.size(environFilePath)
+              $log.info("in_container_inventory::environment vars filename @ #{filename} filesize @ #{fileSize}")
+              # Restricting the ENV string value to 200kb since the size of this string can go very high
+              envVars = File.read(environFilePath, 200000).split(" ")
+              envValueString = envVars.to_s
+              if fileSize > 200000
+                lastIndex = envValueString.rindex("\", ")
+                if !lastIndex.nil?
+                  envValueStringTruncated = envValueString.slice(0..lastIndex) + "]"
+                  envValueString = envValueStringTruncated
+                end
+              end
+            end
+          end
+        end
+      rescue => error
+        @log.warn("in_container_inventory::obtainContainerEnvironmentVars : obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
+      end
+      return envValueString
+    end
+
+    def enumerate
       currentTime = Time.now
       emitTime = currentTime.to_f
       batchTime = currentTime.utc.iso8601
@@ -204,59 +379,60 @@ module Fluent
         $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")
         clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
         if !containerRuntimeEnv.nil? && !containerRuntimeEnv.empty? && containerRuntimeEnv.casecmp("docker") == 0
-            $log.info("in_container_inventory::enumerate : using docker apis since container runtime is docker")
-            hostName = DockerApiClient.getDockerHostName
-            containerIds = DockerApiClient.listContainers
-            if !containerIds.nil? && !containerIds.empty?
-              nameMap = DockerApiClient.getImageIdMap
-              if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
-                $log.warn("Environment Variable collection disabled for cluster")
-              end
-              containerIds.each do |containerId|
-                inspectedContainer = {}
-                inspectedContainer = inspectContainer(containerId, nameMap, clusterCollectEnvironmentVar)
-                inspectedContainer["Computer"] = hostName
-                inspectedContainer["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-                containerInventory.push inspectedContainer
-                ContainerInventoryState.writeContainerState(inspectedContainer)
-              end
-              # Update the state for deleted containers
-              deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
-              if !deletedContainers.nil? && !deletedContainers.empty?
-                deletedContainers.each do |deletedContainer|
-                  container = ContainerInventoryState.readContainerState(deletedContainer)
-                  if !container.nil?
-                    container.each { |k, v| container[k] = v }
-                    container["State"] = "Deleted"
-                    containerInventory.push container
-                  end
-                end
-              end
+          $log.info("in_container_inventory::enumerate : using docker apis since container runtime is docker")
+          hostName = DockerApiClient.getDockerHostName
+          containerIds = DockerApiClient.listContainers
+          if !containerIds.nil? && !containerIds.empty?
+            nameMap = DockerApiClient.getImageIdMap
+            if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
+              $log.warn("Environment Variable collection disabled for cluster")
             end
-        else
-            $log.info("in_container_inventory::enumerate : using cadvisor apis since non docker container runtime : #{containerRuntimeEnv}")
-            containerInventoryRecords = KubeletUtils.getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)
-            containerIds = Array.new
-            containerInventoryRecords.each do |containerRecord|
-              ContainerInventoryState.writeContainerState(containerRecord)
-              if hostName.empty? && !containerRecord["Computer"].empty?
-                 hostName = containerRecord["Computer"]
-              end
-              containerIds.push containerRecord["InstanceID"]
-              containerInventory.push containerRecord
+            containerIds.each do |containerId|
+              inspectedContainer = {}
+              inspectedContainer = inspectContainer(containerId, nameMap, clusterCollectEnvironmentVar)
+              inspectedContainer["Computer"] = hostName
+              inspectedContainer["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+              containerInventory.push inspectedContainer
+              ContainerInventoryState.writeContainerState(inspectedContainer)
             end
             # Update the state for deleted containers
             deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
             if !deletedContainers.nil? && !deletedContainers.empty?
-                deletedContainers.each do |deletedContainer|
-                  container = ContainerInventoryState.readContainerState(deletedContainer)
-                    if !container.nil?
-                      container.each { |k, v| container[k] = v }
-                      container["State"] = "Deleted"                      
-                      containerInventory.push container
-                    end
+              deletedContainers.each do |deletedContainer|
+                container = ContainerInventoryState.readContainerState(deletedContainer)
+                if !container.nil?
+                  container.each { |k, v| container[k] = v }
+                  container["State"] = "Deleted"
+                  containerInventory.push container
                 end
+              end
             end
+          end
+        else
+          $log.info("in_container_inventory::enumerate : using cadvisor apis since non docker container runtime : #{containerRuntimeEnv}")
+          containerInventoryRecords = getContainerInventoryRecords(batchTime, clusterCollectEnvironmentVar)
+          containerIds = Array.new
+          containerInventoryRecords.each do |containerRecord|
+            ContainerInventoryState.writeContainerState(containerRecord)
+            if hostName.empty? && !containerRecord["Computer"].empty?
+              hostName = containerRecord["Computer"]
+            end
+            containerIds.push containerRecord["InstanceID"]
+            containerInventory.push containerRecord
+          end
+          # Update the state for deleted containers
+          deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
+          if !deletedContainers.nil? && !deletedContainers.empty?
+            deletedContainers.each do |deletedContainer|
+              container = ContainerInventoryState.readContainerState(deletedContainer)
+              if !container.nil?
+                container.each { |k, v| container[k] = v }
+                container["State"] = "Deleted"
+                @containerCGroupCache.delete(container["InstanceID"])
+                containerInventory.push container
+              end
+            end
+          end
         end
 
         containerInventory.each do |record|
