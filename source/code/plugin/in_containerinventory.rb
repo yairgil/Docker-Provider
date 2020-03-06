@@ -325,7 +325,7 @@ module Fluent
               $log.info("in_container_inventory::fetching cGroup parent  filename @ #{filename}")
               cGroupPid = filename.split("/")[3]
               if @containerCGroupCache.has_key?(containerId)
-                tempCGroupPid = containerCGroupCache[containerId]
+                tempCGroupPid = @containerCGroupCache[containerId]
                 if tempCGroupPid > cGroupPid
                   @containerCGroupCache[containerId] = cGroupPid
                 end
@@ -343,10 +343,10 @@ module Fluent
             # Check to see if the environment variable collection is disabled for this container.
             if File.foreach(environFilePath).grep(/AZMON_COLLECT_ENV=FALSE/i).any?
               envValueString = ["AZMON_COLLECT_ENV=FALSE"]
-              $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
+              $log.warn("Environment Variable collection for container: #{containerId} skipped because AZMON_COLLECT_ENV is set to false")
             else
               fileSize = File.size(environFilePath)
-              $log.info("in_container_inventory::environment vars filename @ #{filename} filesize @ #{fileSize}")
+              $log.info("in_container_inventory::environment vars filename @ #{environFilePath} filesize @ #{fileSize}")
               # Restricting the ENV string value to 200kb since the size of this string can go very high
               envVars = File.read(environFilePath, 200000).split(" ")
               envValueString = envVars.to_s
