@@ -225,6 +225,7 @@ module Fluent
                     # generate the record to send
                     all_monitors.keys.each{|key|
                         record = @provider.get_record(all_monitors[key], state, monitor_version, @health_model_definition)
+			@log.info "ParentMonitorInstanceId: #{record[HealthMonitorRecordFields::PARENT_MONITOR_INSTANCE_ID]}"
                         if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER
                             if !record[HealthMonitorRecordFields::DETAILS].nil?
                                 details = JSON.parse(record[HealthMonitorRecordFields::DETAILS])

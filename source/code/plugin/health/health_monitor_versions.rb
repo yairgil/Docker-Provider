@@ -30,14 +30,22 @@ module HealthModel
         end
 
         def get_current_monitor_versions_hash
-            hash_array = []
-            @versions_hash.sort.to_h.keys.each{|k|
-                    hash_array.push({k => @versions_hash[k]})
-            }
-            json_to_hash = hash_array.to_json
-            hash_json = Digest::SHA256.hexdigest(json_to_hash)
-            $log.info "HashSize: #{@versions_hash.keys.size}"
-            $log.info "HashJSON: #{hash_json}"
+	    #@versions_hash.sort.to_h.keys.each{|k|
+	#	$log.info "#{k} --> #{@versions_hash[k]}"
+	#    }
+	    hash_array = []
+	    @versions_hash.sort.to_h.keys.each{|k|
+		    hash_array.push({k => @versions_hash[k]})
+	    }
+	    string_to_hash = hash_array.to_s
+	    json_to_hash = hash_array.to_json
+	    $log.info "HashString: #{string_to_hash}"
+	    $log.info "HashJSON: #{json_to_hash}"
+	    hash_string = Digest::SHA256.hexdigest(string_to_hash)
+	    hash_json = Digest::SHA256.hexdigest(json_to_hash)
+	    $log.info "HashSize: #{@versions_hash.keys.size}"
+	    $log.info "HashString: #{hash_string}"
+	    $log.info "HashJSON: #{hash_json}"
             return hash_json
         end
 
