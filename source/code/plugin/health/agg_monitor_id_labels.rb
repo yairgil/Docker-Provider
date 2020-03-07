@@ -12,6 +12,9 @@ module HealthModel
             MonitorId::CONTAINER => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME, HealthMonitorLabels::CONTAINER],
             MonitorId::CONTAINER_CPU_MONITOR_ID => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME],
             MonitorId::CONTAINER_MEMORY_MONITOR_ID => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME],
+            MonitorId::WORKLOAD_ALL_PODS_HEALTH => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME],
+            MonitorId::WORKLOAD_CPU_UTILIZATION => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME],
+            MonitorId::WORKLOAD_MEMORY_UTILIZATION => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME]
         }
 
         def self.get_labels_for(monitor_id)

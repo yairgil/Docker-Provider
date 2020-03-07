@@ -2,12 +2,16 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require_relative 'CAdvisorMetricsAPIClient'
+#require_relative 'CAdvisorMetricsAPIClient'
+
+if Socket.gethostname.start_with?('omsagent-rs')
+    require_relative 'CAdvisorMetricsAPIClient'
+end
 
 class KubeletUtils
     class << self
         def get_node_capacity
-            
+
             cpu_capacity = 1.0
             memory_capacity = 1.0
 

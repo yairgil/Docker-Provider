@@ -10,45 +10,73 @@ class FilterHealthModelBuilderTest < Test::Unit::TestCase
   include HealthModel
 
   def test_event_stream
+
     health_definition_path = 'C:\AzureMonitor\ContainerInsights\Docker-Provider\installer\conf\health_model_definition.json'
-    health_model_definition = ParentMonitorProvider.new(HealthModelDefinitionParser.new(health_definition_path).parse_file)
-    monitor_factory = MonitorFactory.new
+    health_monitor_config_path = 'C:\AzureMonitor\ContainerInsights\Docker-Provider\installer\conf\healthmonitorconfig.json'
+    health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(health_definition_path).parse_file)
+    monitor_factory = HealthModel::MonitorFactory.new
     hierarchy_builder = HealthHierarchyBuilder.new(health_model_definition, monitor_factory)
-    # TODO: Figure out if we need to add NodeMonitorHierarchyReducer to the list of finalizers. For now, dont compress/optimize, since it becomes impossible to construct the model on the UX side
-    state_finalizers = [AggregateMonitorStateFinalizer.new]
-    monitor_set = MonitorSet.new
-    model_builder = HealthModelBuilder.new(hierarchy_builder, state_finalizers, monitor_set)
 
-    i = 1
-    loop do
-        mock_data_path = "C:/AzureMonitor/ContainerInsights/Docker-Provider/source/code/plugin/mock_data-#{i}.json"
-        file = File.read(mock_data_path)
-        data = JSON.parse(file)
+    state_finalizers = [HealthModel::AggregateMonitorStateFinalizer.new]
+    monitor_set = HealthModel::MonitorSet.new
+    model_builder = HealthModel::HealthModelBuilder.new(hierarchy_builder, state_finalizers, monitor_set)
 
-        health_monitor_records = []
-        data.each do |record|
+    kube_api_down_handler = HealthKubeApiDownHandler.new
+    resources = HealthKubernetesResources.instance
+    reducer = HealthSignalReducer.new
+    generator = HealthMissingSignalGenerator.new
+
+
+    resources.node_inventory = JSON.parse(File.read('C:\AzureMonitor\ContainerInsights\Docker-Provider\health_model_redesign\nodes.json'))
+    resources.pod_inventory = JSON.parse(File.read('C:\AzureMonitor\ContainerInsights\Docker-Provider\health_model_redesign\pods.json'))
+    resources.set_replicaset_inventory(JSON.parse(File.read('C:\AzureMonitor\ContainerInsights\Docker-Provider\health_model_redesign\rs.json')))
+    resources.build_pod_uid_lookup
+
+    cluster_id = '/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test'
+    labels = {}
+    labels['container.azm.ms/cluster-region'] = 'eastus'
+    labels['container.azm.ms/cluster-subscription-id'] = '72c8e8ca-dc16-47dc-b65c-6b5875eb600a'
+    labels['container.azm.ms/cluster-resource-group'] = 'dilipr-health-test'
+    labels['container.azm.ms/cluster-name'] = 'dilipr-health-test'
+
+    provider = HealthMonitorProvider.new(cluster_id, labels, resources, health_monitor_config_path)
+
+    state = HealthMonitorState.new
+
+    mock_data_path = 'C:\AzureMonitor\ContainerInsights\Docker-Provider\health_model_redesign\records.json'
+    file = File.read(mock_data_path)
+    data = JSON.parse(file)
+    state_transitions = []
+
+    health_monitor_records = []
+    data.each do |record|
+        monitor_id = record[HealthMonitorRecordFields::MONITOR_ID]
         health_monitor_record = HealthMonitorRecord.new(
             record[HealthMonitorRecordFields::MONITOR_ID],
             record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID],
             record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED],
             record[HealthMonitorRecordFields::DETAILS]["state"],
-            record[HealthMonitorRecordFields::MONITOR_LABELS],
-            record[HealthMonitorRecordFields::MONITOR_CONFIG],
+            provider.get_labels(record),
+            provider.get_config(monitor_id),
             record[HealthMonitorRecordFields::DETAILS]
         )
-        state_transitions.push(state_transition)
-        end
-
-        model_builder.process_state_transitions(state_transitions)
-        changed_monitors = model_builder.finalize_model
-        changed_monitors.keys.each{|key|
-            puts key
-        }
-        i = i + 1
-        if i == 6
-            break
-        end
+        state_transitions.push(health_monitor_record)
     end
-    puts "Done"
+
+    model_builder.process_records(state_transitions)
+    changed_monitors = model_builder.finalize_model
+    sorted = changed_monitors.sort.to_h
+    print_hierarchy(changed_monitors)
+  end
+
+  def print_hierarchy(monitors)
+    root = monitors.select{|k,v| k == 'cluster'}.first[1]
+    p root
+    print_tree(root, monitors)
+  end
+
+  def print_tree(root, monitors)
+
+
   end
 end

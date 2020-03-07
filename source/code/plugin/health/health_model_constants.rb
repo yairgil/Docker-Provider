@@ -37,6 +37,9 @@ module HealthModel
         USER_WORKLOAD = 'user_workload';
         USER_WORKLOAD_PODS_READY_MONITOR_ID = "user_workload_pods_ready"
         WORKLOAD = 'all_workloads';
+        WORKLOAD_ALL_PODS_HEALTH = 'workload_all_pods_health'
+        WORKLOAD_CPU_UTILIZATION = 'workload_cpu_utilization'
+        WORKLOAD_MEMORY_UTILIZATION = 'workload_memory_utilization'
         WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID = "container_cpu_utilization"
         WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID = "container_memory_utilization"
         WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID = "subscribed_capacity_cpu"
