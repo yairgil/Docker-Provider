@@ -202,75 +202,81 @@ module Fluent
           if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
             podList["items"].each do |item|
               containersInfoMap = getContainersInfoMap(item)
+              podContainersStatuses = []
+              if !item["status"]["containerStatuses"].nil? && !item["status"]["containerStatuses"].empty?
+                podContainersStatuses = item["status"]["containerStatuses"]
+              end
+              if !item["status"]["initContainerStatuses"].nil? && !item["status"]["initContainerStatuses"].empty?
+                podContainersStatuses = podContainersStatuses + item["status"]["initContainerStatuses"]
+              end
               containerInventoryRecord = {}
-              if !item["status"].nil? && !item["status"].empty?
-                if !item["status"]["containerStatuses"].nil? && !item["status"]["containerStatuses"].empty?
-                  item["status"]["containerStatuses"].each do |containerStatus|
-                    containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-                    containerName = containerStatus["name"]
-                    containerId = containerStatus["containerID"].split("//")[1]
-                    containerInventoryRecord["InstanceID"] = containerId
-                    # imagedId is of the format - repo@sha256:imageid
-                    imageIdValue = containerStatus["imageID"]
-                    if !imageIdValue.nil? && !imageIdValue.empty?
-                      atLocation = imageIdValue.index("@")
-                      if !atLocation.nil?
-                        containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
-                      end
+              if !podContainersStatuses.empty?
+                podContainersStatuses.each do |containerStatus|
+                  containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+                  containerName = containerStatus["name"]
+                  # containeId format is <containerRuntime>://<containerId>
+                  containerId = containerStatus["containerID"].split("//")[1]
+                  containerInventoryRecord["InstanceID"] = containerId
+                  # imagedId is of the format - repo@sha256:imageid
+                  imageIdValue = containerStatus["imageID"]
+                  if !imageIdValue.nil? && !imageIdValue.empty?
+                    atLocation = imageIdValue.index("@")
+                    if !atLocation.nil?
+                      containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
                     end
-                    # image is of the format - repository/image:imagetag
-                    imageValue = containerStatus["image"]
-                    if !imageValue.nil? && !imageValue.empty?
-                      # Find delimiters in the string of format repository/image:imagetag
-                      slashLocation = imageValue.index("/")
-                      colonLocation = imageValue.index(":")
-                      if !colonLocation.nil?
-                        if slashLocation.nil?
-                          # image:imagetag
-                          containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
-                        else
-                          # repository/image:imagetag
-                          containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
-                          containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
-                        end
-                        containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
-                      end
-                    elsif !imageIdValue.nil? && !imageIdValue.empty?
-                      # Getting repo information from imageIdValue when no tag in ImageId
-                      if !atLocation.nil?
-                        containerInventoryRecord["Repository"] = imageIdValue[0..(atLocation - 1)]
-                      end
-                    end
-                    containerInventoryRecord["ExitCode"] = 0
-                    if !containerStatus["state"].nil? && !containerStatus["state"].empty?
-                      containerState = containerStatus["state"]
-                      if containerState.key?("running")
-                        containerInventoryRecord["State"] = "Running"
-                        containerInventoryRecord["StartedTime"] = containerState["running"]["startedAt"]
-                      elsif containerState.key?("terminated")
-                        containerInventoryRecord["State"] = "Terminated"
-                        containerInventoryRecord["StartedTime"] = containerState["terminated"]["startedAt"]
-                        containerInventoryRecord["FinishedTime"] = containerState["terminated"]["finishedAt"]
-                        containerInventoryRecord["ExitCode"] = containerState["terminated"]["exitCode"]
-                      elsif containerState.key?("waiting")
-                        containerInventoryRecord["State"] = "Waiting"
-                      end
-                    end
-                    containerInfoMap = containersInfoMap[containerName]
-                    containerInventoryRecord["ElementName"] = containerInfoMap["ElementName"]
-                    containerInventoryRecord["Computer"] = containerInfoMap["Computer"]
-                    containerInventoryRecord["ContainerHostname"] = containerInfoMap["ContainerHostname"]
-                    containerInventoryRecord["CreatedTime"] = containerInfoMap["CreatedTime"]
-                    containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
-                    containerInventoryRecord["Ports"] = containerInfoMap["Ports"]
-                    containerInventoryRecord["Command"] = containerInfoMap["Command"]
-                    if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
-                      containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
-                    else
-                      containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars(containerId)
-                    end
-                    containerInventoryRecords.push containerInventoryRecord
                   end
+                  # image is of the format - repository/image:imagetag
+                  imageValue = containerStatus["image"]
+                  if !imageValue.nil? && !imageValue.empty?
+                    # Find delimiters in the string of format repository/image:imagetag
+                    slashLocation = imageValue.index("/")
+                    colonLocation = imageValue.index(":")
+                    if !colonLocation.nil?
+                      if slashLocation.nil?
+                        # image:imagetag
+                        containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
+                      else
+                        # repository/image:imagetag
+                        containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+                        containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
+                      end
+                      containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
+                    end
+                  elsif !imageIdValue.nil? && !imageIdValue.empty?
+                    # Getting repo information from imageIdValue when no tag in ImageId
+                    if !atLocation.nil?
+                      containerInventoryRecord["Repository"] = imageIdValue[0..(atLocation - 1)]
+                    end
+                  end
+                  containerInventoryRecord["ExitCode"] = 0
+                  if !containerStatus["state"].nil? && !containerStatus["state"].empty?
+                    containerState = containerStatus["state"]
+                    if containerState.key?("running")
+                      containerInventoryRecord["State"] = "Running"
+                      containerInventoryRecord["StartedTime"] = containerState["running"]["startedAt"]
+                    elsif containerState.key?("terminated")
+                      containerInventoryRecord["State"] = "Terminated"
+                      containerInventoryRecord["StartedTime"] = containerState["terminated"]["startedAt"]
+                      containerInventoryRecord["FinishedTime"] = containerState["terminated"]["finishedAt"]
+                      containerInventoryRecord["ExitCode"] = containerState["terminated"]["exitCode"]
+                    elsif containerState.key?("waiting")
+                      containerInventoryRecord["State"] = "Waiting"
+                    end
+                  end
+                  containerInfoMap = containersInfoMap[containerName]
+                  containerInventoryRecord["ElementName"] = containerInfoMap["ElementName"]
+                  containerInventoryRecord["Computer"] = containerInfoMap["Computer"]
+                  containerInventoryRecord["ContainerHostname"] = containerInfoMap["ContainerHostname"]
+                  containerInventoryRecord["CreatedTime"] = containerInfoMap["CreatedTime"]
+                  containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
+                  containerInventoryRecord["Ports"] = containerInfoMap["Ports"]
+                  containerInventoryRecord["Command"] = containerInfoMap["Command"]
+                  if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
+                    containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
+                  else
+                    containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars(containerId)
+                  end
+                  containerInventoryRecords.push containerInventoryRecord
                 end
               end
             end
@@ -288,8 +294,15 @@ module Fluent
         nodeName = (!item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
         createdTime = item["metadata"]["creationTimestamp"]
         if !item.nil? && !item.empty? && item.key?("spec") && !item["spec"].nil? && !item["spec"].empty?
+          podContainers = []
           if !item["spec"]["containers"].nil? && !item["spec"]["containers"].empty?
-            item["spec"]["containers"].each do |container|
+            podContainers = item["spec"]["containers"]
+          end
+          if !item["spec"]["initContainers"].nil? && !item["spec"]["initContainers"].empty?
+            podContainers = podContainers + item["spec"]["initContainers"]
+          end
+          if !podContainers.empty?
+            podContainers.each.each do |container|
               containerInfoMap = {}
               containerName = container["name"]
               containerInfoMap["ElementName"] = containerName
@@ -345,12 +358,12 @@ module Fluent
               envValueString = ["AZMON_COLLECT_ENV=FALSE"]
               $log.warn("Environment Variable collection for container: #{containerId} skipped because AZMON_COLLECT_ENV is set to false")
             else
-              fileSize = File.size(environFilePath)
-              $log.info("in_container_inventory::environment vars filename @ #{environFilePath} filesize @ #{fileSize}")
               # Restricting the ENV string value to 200kb since the size of this string can go very high
               envVars = File.read(environFilePath, 200000).split(" ")
               envValueString = envVars.to_s
-              if fileSize > 200000
+              envValueStringLength = envValueString.length
+              $log.info("in_container_inventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
+              if envValueStringLength >= 200000
                 lastIndex = envValueString.rindex("\", ")
                 if !lastIndex.nil?
                   envValueStringTruncated = envValueString.slice(0..lastIndex) + "]"
