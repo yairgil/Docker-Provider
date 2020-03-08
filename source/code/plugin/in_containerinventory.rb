@@ -359,7 +359,7 @@ module Fluent
               $log.warn("Environment Variable collection for container: #{containerId} skipped because AZMON_COLLECT_ENV is set to false")
             else
               # Restricting the ENV string value to 200kb since the size of this string can go very high
-              envVars = File.read(environFilePath, 200000).split(" ")
+              envVars = File.read(environFilePath, 200000).split("\0")
               envValueString = envVars.to_s
               envValueStringLength = envValueString.length
               $log.info("in_container_inventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
