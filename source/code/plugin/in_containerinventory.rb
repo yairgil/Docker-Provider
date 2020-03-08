@@ -217,7 +217,7 @@ module Fluent
                   # containeId format is <containerRuntime>://<containerId>
                   containerRuntime = ""
                   containerId = ""
-                  if !container["containerID"].nil?
+                  if !containerStatus["containerID"].nil?
                     containerRuntime = containerStatus["containerID"].split(":")[0]
                     containerId = containerStatus["containerID"].split("//")[1]
                     containerInventoryRecord["InstanceID"] = containerId
