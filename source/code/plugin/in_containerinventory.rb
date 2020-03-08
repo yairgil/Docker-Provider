@@ -215,9 +215,16 @@ module Fluent
                   containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
                   containerName = containerStatus["name"]
                   # containeId format is <containerRuntime>://<containerId>
-                  containerRuntime = containerStatus["containerID"].split(":")[0]
-                  containerId = containerStatus["containerID"].split("//")[1]
-                  containerInventoryRecord["InstanceID"] = containerId
+                  containerRuntime = ""
+                  containerId = ""
+                  if !container["containerID"].nil?
+                    containerRuntime = containerStatus["containerID"].split(":")[0]
+                    containerId = containerStatus["containerID"].split("//")[1]
+                    containerInventoryRecord["InstanceID"] = containerId
+                  else
+                    # for containers that have image issues (like invalid image/tag etc..) this will be empty. do not make it all 0
+                    containerInventoryRecord["InstanceID"] = containerId
+                  end
                   # imagedId is of the format - repo@sha256:imageid
                   imageIdValue = containerStatus["imageID"]
                   if !imageIdValue.nil? && !imageIdValue.empty?
@@ -275,7 +282,9 @@ module Fluent
                   if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                     containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
                   else
-                    if !containerRuntime.nil? && !containerRuntime.empty? && containerRuntime.casecmp("cri-o") == 0
+                    if containerId.nil? || containerId.empty? || containerRuntime.nil? || containerRuntime.empty?
+                      containerInventoryRecord["EnvironmentVar"] = ""
+                    elsif containerRuntime.casecmp("cri-o") == 0
                       # crio containers have conmon as parent process and we only to need get container main process envvars
                       containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars("crio-#{containerId}")
                     else
@@ -308,7 +317,7 @@ module Fluent
             podContainers = podContainers + item["spec"]["initContainers"]
           end
           if !podContainers.empty?
-            podContainers.each.each do |container|
+            podContainers.each do |container|
               containerInfoMap = {}
               containerName = container["name"]
               containerInfoMap["ElementName"] = containerName
