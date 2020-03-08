@@ -215,6 +215,7 @@ module Fluent
                   containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
                   containerName = containerStatus["name"]
                   # containeId format is <containerRuntime>://<containerId>
+                  containerRuntime = containerStatus["containerID"].split(":")[0]
                   containerId = containerStatus["containerID"].split("//")[1]
                   containerInventoryRecord["InstanceID"] = containerId
                   # imagedId is of the format - repo@sha256:imageid
@@ -274,7 +275,12 @@ module Fluent
                   if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                     containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
                   else
-                    containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars(containerId)
+                    if !containerRuntime.nil? && !containerRuntime.empty? && containerRuntime.casecmp("cri-o") == 0
+                      # crio containers have conmon as parent process and we only to need get container main process envvars
+                      containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars("crio-#{containerId}")
+                    else
+                      containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars(containerId)
+                    end
                   end
                   containerInventoryRecords.push containerInventoryRecord
                 end
@@ -359,15 +365,18 @@ module Fluent
               $log.warn("Environment Variable collection for container: #{containerId} skipped because AZMON_COLLECT_ENV is set to false")
             else
               # Restricting the ENV string value to 200kb since the size of this string can go very high
-              envVars = File.read(environFilePath, 200000).split("\0")
-              envValueString = envVars.to_s
-              envValueStringLength = envValueString.length
-              $log.info("in_container_inventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
-              if envValueStringLength >= 200000
-                lastIndex = envValueString.rindex("\", ")
-                if !lastIndex.nil?
-                  envValueStringTruncated = envValueString.slice(0..lastIndex) + "]"
-                  envValueString = envValueStringTruncated
+              envVars = File.read(environFilePath, 200000)
+              if !envVars.nil? && !envVars.empty?
+                envVars = envVars.split("\0")
+                envValueString = envVars.to_s
+                envValueStringLength = envValueString.length
+                $log.info("in_container_inventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
+                if envValueStringLength >= 200000
+                  lastIndex = envValueString.rindex("\", ")
+                  if !lastIndex.nil?
+                    envValueStringTruncated = envValueString.slice(0..lastIndex) + "]"
+                    envValueString = envValueStringTruncated
+                  end
                 end
               end
             end
