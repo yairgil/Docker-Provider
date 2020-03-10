@@ -192,7 +192,7 @@ module Fluent
             properties["Computer"] = record["Computer"]
             properties["KubeletVersion"] = record["KubeletVersion"]
             properties["OperatingSystem"] = nodeInfo["operatingSystem"]
-            properties["ContainerRuntimeVersion"] = containerRuntimeVersion
+            # DockerVersion field holds docker version if runtime is docker/moby else <runtime>://<version>
             if containerRuntimeVersion.downcase.start_with?("docker://")
               properties["DockerVersion"] = containerRuntimeVersion.split("//")[1]
             else
@@ -239,7 +239,7 @@ module Fluent
         if telemetrySent == true
           @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
-        
+
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
@@ -290,7 +290,7 @@ module Fluent
             $log.warn "Failed when processing GPU metrics in_kube_nodes : #{errorStr}"
             $log.debug_backtrace(errorStr.backtrace)
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-          end 
+          end
           #end GPU InsightsMetrics items
         rescue => errorStr
           $log.warn "Failed in enumerate for KubePerf from in_kube_nodes : #{errorStr}"
