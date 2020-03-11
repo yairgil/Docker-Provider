@@ -97,6 +97,8 @@ var (
 	skipKubeMonEventsFlush bool
 	// enrich container logs (when true this will add the fields - timeofcommand, containername & containerimage)
 	enrichContainerLogs bool	
+	// container runtime engine configured on the kubelet (true indicates docker else K8s CRI compatiable runtime)
+	isDockerContainerRuntimeEngine bool
 	// container runtime engine configured on the kubelet
 	containerRuntime string
 )
@@ -740,7 +742,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap := make(map[string]string)
 
 		logEntry := ToString(record["log"])
-		logEntryTimeStamp := ToString(record["time"])		
+		logEntryTimeStamp := ToString(record["time"])	
+		Log("LogEntryTimestamp:%s", logEntryTimeStamp)		
+		if isDockerContainerRuntimeEngine == false {		
+			logEntryTimeStamp = strings.TrimSpace(logEntryTimeStamp)
+			Log("After LogEntryTimestamp:%s", logEntryTimeStamp)					
+		}	
 		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
 		stringMap["LogEntryTimeStamp"] = logEntryTimeStamp
@@ -969,6 +976,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	// log runtime info for debug purpose
 	containerRuntime = os.Getenv(ContainerRuntimeEnv)		
 	Log("Container Runtime engine %s", containerRuntime)
+	isDockerContainerRuntimeEngine = false
+	if strings.EqualFold(containerRuntime, "docker") {
+		isDockerContainerRuntimeEngine = true
+	}
 	
 	// Initialize image,name map refresh ticker
 	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
