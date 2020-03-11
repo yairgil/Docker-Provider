@@ -743,11 +743,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])	
-		Log("LogEntryTimestamp:%s", logEntryTimeStamp)		
-		if isDockerContainerRuntimeEngine == false {		
-			logEntryTimeStamp = strings.TrimSpace(logEntryTimeStamp)
-			Log("After LogEntryTimestamp:%s", logEntryTimeStamp)					
-		}	
+		Log("LogEntryTimestamp:%s", logEntryTimeStamp)				
 		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
 		stringMap["LogEntryTimeStamp"] = logEntryTimeStamp
@@ -975,11 +971,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	
 	// log runtime info for debug purpose
 	containerRuntime = os.Getenv(ContainerRuntimeEnv)		
-	Log("Container Runtime engine %s", containerRuntime)
-	isDockerContainerRuntimeEngine = false
-	if strings.EqualFold(containerRuntime, "docker") {
-		isDockerContainerRuntimeEngine = true
-	}
+	Log("Container Runtime engine %s", containerRuntime)	
 	
 	// Initialize image,name map refresh ticker
 	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
