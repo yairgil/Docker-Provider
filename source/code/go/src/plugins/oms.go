@@ -96,9 +96,7 @@ var (
 	//KubeMonAgentEvents skip first flush
 	skipKubeMonEventsFlush bool
 	// enrich container logs (when true this will add the fields - timeofcommand, containername & containerimage)
-	enrichContainerLogs bool
-	// container runtime engine configured on the kubelet (true indicates docker else K8s CRI compatiable runtime)
-	isDockerContainerRuntimeEngine bool
+	enrichContainerLogs bool	
 	// container runtime engine configured on the kubelet
 	containerRuntime string
 )
@@ -742,18 +740,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap := make(map[string]string)
 
 		logEntry := ToString(record["log"])
-		logEntryTimeStamp := ToString(record["time"])
-		if isDockerContainerRuntimeEngine == false {
-			//CRI compatiable runtimes uses the CRIO parser which has logtag followed space and then log line
-			// so trimming the log tag (P or F) 
-			logEntry = strings.TrimSpace(logEntry)
-			if strings.HasPrefix(logEntry, "P ") {
-			   logEntry = strings.TrimPrefix(logEntry, "P ")
-		    } else {
-			   logEntry = strings.TrimPrefix(logEntry, "F ") 
-			}
-			logEntryTimeStamp = strings.TrimSpace(logEntryTimeStamp)			
-		}
+		logEntryTimeStamp := ToString(record["time"])		
 		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
 		stringMap["LogEntryTimeStamp"] = logEntryTimeStamp
@@ -979,16 +966,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("ResourceName=%s", ResourceName)
 	}
 	
-	containerRuntime = "docker"
-	if os.Getenv(ContainerRuntimeEnv) != "" {
-		containerRuntime = os.Getenv(ContainerRuntimeEnv)
-	}	
+	// log runtime info for debug purpose
+	containerRuntime = os.Getenv(ContainerRuntimeEnv)		
 	Log("Container Runtime engine %s", containerRuntime)
-	isDockerContainerRuntimeEngine = false
-	if strings.EqualFold(containerRuntime, "docker") {
-		isDockerContainerRuntimeEngine = true
-	}
-
+	
 	// Initialize image,name map refresh ticker
 	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
 	if err != nil {
