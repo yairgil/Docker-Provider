@@ -406,7 +406,7 @@ module Fluent
       hostName = ""
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
       begin
-        containerRuntimeEnv = ENV["CONTAINER_RUN_TIME"]
+        containerRuntimeEnv = ENV["CONTAINER_RUNTIME"]
         $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")
         clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
         if !containerRuntimeEnv.nil? && !containerRuntimeEnv.empty? && containerRuntimeEnv.casecmp("docker") == 0

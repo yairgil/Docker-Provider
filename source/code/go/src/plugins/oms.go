@@ -38,7 +38,7 @@ const ResourceIdEnv = "AKS_RESOURCE_ID"
 const ResourceNameEnv = "ACS_RESOURCE_NAME"
 
 //env variable which has container run time name
-const ContainerRuntimeEnv = "CONTAINER_RUN_TIME"
+const ContainerRuntimeEnv = "CONTAINER_RUNTIME"
 
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags and also for custom-metrics telemetry )
 const TelegrafMetricOriginPrefix = "container.azm.ms"

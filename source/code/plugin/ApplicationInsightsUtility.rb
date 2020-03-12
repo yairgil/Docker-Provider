@@ -6,7 +6,7 @@ class ApplicationInsightsUtility
   require_relative "omslog"
   require_relative "DockerApiClient"
   require_relative "oms_common"
-  require 'yajl/json_gem'
+  require "yajl/json_gem"
   require "base64"
 
   @@HeartBeat = "HeartBeatEvent"
@@ -20,7 +20,7 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsKey = "APPLICATIONINSIGHTS_AUTH"
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
-  @@EnvContainerRuntime = "CONTAINER_RUN_TIME"
+  @@EnvContainerRuntime = "CONTAINER_RUNTIME"
 
   @@CustomProperties = {}
   @@Tc = nil
@@ -65,7 +65,7 @@ class ApplicationInsightsUtility
         @@CustomProperties["ControllerType"] = ENV[@@EnvControllerType]
         encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
-        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud       
+        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud
 
         #Check if telemetry is turned off
         telemetryOffSwitch = ENV["DISABLE_TELEMETRY"]
@@ -74,7 +74,7 @@ class ApplicationInsightsUtility
           @@Tc = ApplicationInsights::TelemetryClient.new
         elsif !encodedAppInsightsKey.nil?
           decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
-          
+
           #override ai endpoint if its available otherwise use default.
           if appInsightsEndpoint && !appInsightsEndpoint.nil? && !appInsightsEndpoint.empty?
             $log.info("AppInsightsUtility: Telemetry client uses overrided endpoint url : #{appInsightsEndpoint}")
@@ -109,21 +109,21 @@ class ApplicationInsightsUtility
       rescue => errorStr
         $log.warn("Exception in AppInsightsUtility: initilizeUtility - error: #{errorStr}")
       end
-    end   
+    end
 
     def getContainerRuntimeInfo()
       containerRuntime = ENV[@@EnvContainerRuntime]
       if !containerRuntime.nil? && !containerRuntime.empty?
         @@CustomProperties["ContainerRunTime"] = containerRuntime
-         if containerRuntime.casecmp("docker") == 0
-           dockerInfo = DockerApiClient.dockerInfo
-           if (!dockerInfo.nil? && !dockerInfo.empty?)
-              @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
-              #@@CustomProperties["DockerApiVersion"] = dockerInfo["ApiVersion"]
-           end
-          end     
+        if containerRuntime.casecmp("docker") == 0
+          dockerInfo = DockerApiClient.dockerInfo
+          if (!dockerInfo.nil? && !dockerInfo.empty?)
+            @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
+            #@@CustomProperties["DockerApiVersion"] = dockerInfo["ApiVersion"]
+          end
+        end
       end
-    end 
+    end
 
     def sendHeartBeatEvent(pluginName)
       begin
