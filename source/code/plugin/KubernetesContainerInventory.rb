@@ -12,10 +12,10 @@ class KubernetesContainerInventory
     end
   
     class << self
-      def getContainerInventoryRecords(podItem, batchTime, clusterCollectEnvironmentVar)
+      def getContainerInventoryRecords(podItem, batchTime, clusterCollectEnvironmentVar, isWindows = false)
         containerInventoryRecords = Array.new
         begin
-          containersInfoMap = getContainersInfoMap(podItem)
+          containersInfoMap = getContainersInfoMap(podItem, isWindows)
           podContainersStatuses = []
           if !podItem["status"]["containerStatuses"].nil? && !podItem["status"]["containerStatuses"].empty?
             podContainersStatuses = podItem["status"]["containerStatuses"]
@@ -95,26 +95,30 @@ class KubernetesContainerInventory
               containerInventoryRecord["Command"] = containerInfoMap["Command"]
               if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
                 containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
+              elsif isWindows
+                containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
               else
                 if containerId.nil? || containerId.empty? || containerRuntime.nil? || containerRuntime.empty?
                   containerInventoryRecord["EnvironmentVar"] = ""
-                elsif containerRuntime.casecmp("cri-o") == 0
-                  # crio containers have conmon as parent process and we only to need get container main process envvars
-                  containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars("crio-#{containerId}")
-                else
-                  containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars(containerId)
-                end
-              end
+                else 
+                  if containerRuntime.casecmp("cri-o") == 0
+                    # crio containers have conmon as parent process and we only to need get container main process envvars
+                    containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars("crio-#{containerId}")
+                  else
+                    containerInventoryRecord["EnvironmentVar"] = obtainContainerEnvironmentVars(containerId)
+                  end 
+                end 
+              end             
               containerInventoryRecords.push containerInventoryRecord
             end
           end
         rescue => error
-          @log.warn("in_container_inventory::getContainerInventoryRecords : Get Container Inventory Records failed: #{error}")
+          @log.warn("KubernetesContainerInventory::getContainerInventoryRecords : Get Container Inventory Records failed: #{error}")          
         end
         return containerInventoryRecords
       end
   
-      def getContainersInfoMap(podItem)
+      def getContainersInfoMap(podItem, isWindows)
         containersInfoMap = {}
         begin
           nodeName = (!podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
@@ -141,27 +145,30 @@ class KubernetesContainerInventory
                 cmdValue = container["command"]
                 cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
                 containerInfoMap["Command"] = cmdValueString
-  
+                containerInfoMap["EnvironmentVar"] = ""
+                if isWindows
+                  containerInfoMap["EnvironmentVar"] = obtainWindowsContainerEnvironmentVars(podItem, container)
+                end   
                 containersInfoMap[containerName] = containerInfoMap
               end
             end
           end
         rescue => error
-          @log.warn("in_container_inventory::getContainersInfoMap : Get Container Info Maps failed: #{error}")
+          @log.warn("KubernetesContainerInventory::getContainersInfoMap : Get Container Info Maps failed: #{error}")
         end
         return containersInfoMap
       end
   
       def obtainContainerEnvironmentVars(containerId)
-        $log.info("in_container_inventory::obtainContainerEnvironmentVars @ #{Time.now.utc.iso8601}")
+        $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars @ #{Time.now.utc.iso8601}")
         envValueString = ""
         begin
           unless @@containerCGroupCache.has_key?(containerId)
-            $log.info("in_container_inventory::fetching cGroup parent pid @ #{Time.now.utc.iso8601}")
+            $log.info("KubernetesContainerInventory::fetching cGroup parent pid @ #{Time.now.utc.iso8601}")
             Dir["/hostfs/proc/*/cgroup"].each do |filename|
               if File.file?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
                 # file full path is /hostfs/proc/<cGroupPid>/cgroup
-                $log.info("in_container_inventory::fetching cGroup parent  filename @ #{filename}")
+                $log.info("KubernetesContainerInventory::fetching cGroup parent  filename @ #{filename}")
                 cGroupPid = filename.split("/")[3]
                 if @@containerCGroupCache.has_key?(containerId)
                   tempCGroupPid = @@containerCGroupCache[containerId]
@@ -190,7 +197,7 @@ class KubernetesContainerInventory
                   envVars = envVars.split("\0")
                   envValueString = envVars.to_s
                   envValueStringLength = envValueString.length
-                  $log.info("in_container_inventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
+                  $log.info("KubernetesContainerInventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
                   if envValueStringLength >= 200000
                     lastIndex = envValueString.rindex("\", ")
                     if !lastIndex.nil?
@@ -203,10 +210,87 @@ class KubernetesContainerInventory
             end
           end
         rescue => error
-          @log.warn("in_container_inventory::obtainContainerEnvironmentVars : obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
+          @log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars : obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
         end
         return envValueString
       end
+
+      def obtainWindowsContainerEnvironmentVars(pod, container)
+        envValueString = ""
+        begin
+          envVars = []
+          envVarsJSON = container["env"]
+          if !pod.nil? && !pod.empty? && !envVarsJSON.nil? && !envVarsJSON.empty?
+            envVarsJSON.each do |envVar|
+              key = envVar["name"]
+              value = ""
+              if !envVar["value"].nil?
+                value = envVar["value"]
+              elsif !envVar["valueFrom"].nil?
+                valueFrom = envVar["valueFrom"]
+                # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-pod-fields-as-values-for-environment-variables
+                if valueFrom.key?("fieldRef") && !valueFrom["fieldRef"]["fieldPath"].nil? && !valueFrom["fieldRef"]["fieldPath"].empty?
+                  fieldPath = valueFrom["fieldRef"]["fieldPath"]
+                  fields = fieldPath.split(".")
+                  if fields.length() == 2
+                    if !fields[1].nil? && !fields[1].empty? && fields[1].end_with?("]")
+                      indexFields = fields[1].split("[")
+                      hashMapValue = pod[fields[0]][indexFields[0]]
+                      if !hashMapValue.nil? && !hashMapValue.empty?
+                        subField = indexFields[1].chomp("]").delete("\\'")
+                        value = hashMapValue[subField]
+                      end
+                    else
+                      value = pod[fields[0]][fields[1]]
+                    end
+                  end
+                  # https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/#use-container-fields-as-values-for-environment-variables
+                elsif valueFrom.key?("resourceFieldRef") && !valueFrom["resourceFieldRef"]["resource"].nil? && !valueFrom["resourceFieldRef"]["resource"].empty?
+                  resource = valueFrom["resourceFieldRef"]["resource"]
+                  resourceFields = resource.split(".")
+                  containerResources = container["resources"]
+                  if !containerResources.nil? && !containerResources.empty? && resourceFields.length() == 2
+                    value = containerResources[resourceFields[0]][resourceFields[1]]
+                  end
+                  # https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables
+                elsif valueFrom.key?("secretKeyRef")
+                  secretName = valueFrom["secretKeyRef"]["name"]
+                  secretKey = valueFrom["secretKeyRef"]["key"]
+                  # This is still secret not the plaintext. Flatten value so that CI Ux can show that
+                  if !secretName.nil? && !secretName.empty? && !secretKey.nil? && !secretKey.empty?
+                     value = "secretKeyRef_#{secretName}_#{secretKey}"
+                  end
+                else
+                  value = envVar["valueFrom"].to_s
+                end
+              end
+              envVars.push("#{key}=#{value}")
+            end
+            envValueString = envVars.to_s
+            containerName = container["name"]
+            # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
+            # Check to see if the environment variable collection is disabled for this container.
+            if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
+              envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+              $log.warn("Environment Variable collection for container: #{containerName} skipped because AZMON_COLLECT_ENV is set to false")
+            else
+              # Restricting the ENV string value to 200kb since the size of this string can go very high
+              if envValueString.length > 200000
+                envValueStringTruncated = envValueString.slice(0..200000)
+                lastIndex = envValueStringTruncated.rindex("\", ")
+                if !lastIndex.nil?
+                  envValueString = envValueStringTruncated.slice(0..lastIndex) + "]"
+                else
+                  envValueString = envValueStringTruncated
+                end
+              end
+            end
+          end
+        rescue => error
+          @log.warn("KubernetesContainerInventory::obtainWindowsContainerEnvironmentVars: parsing of EnvVars failed: #{error}")
+        end
+        return envValueString
+      end      
     end
   end
     
