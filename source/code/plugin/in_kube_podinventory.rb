@@ -2,8 +2,7 @@
 # frozen_string_literal: true
 
 module Fluent
-  require_relative "podinventory_to_mdm"
-  require_relative "KubernetesContainerInventory"    
+  require_relative "podinventory_to_mdm"      
 
   class Kube_PodInventory_Input < Input
     Plugin.register_input("kubepodinventory", self)
@@ -20,7 +19,8 @@ module Fluent
       require "yajl"
       require "set"
       require "time"
-
+      
+      require_relative "KubernetesContainerInventory"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
