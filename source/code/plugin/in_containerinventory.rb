@@ -10,8 +10,7 @@ module Fluent
     def initialize
       super
       require "yajl/json_gem"
-      require "time"
-      require_relative "DockerApiClient"
+      require "time"      
       require_relative "ContainerInventoryState"
       require_relative "ApplicationInsightsUtility"
       require_relative "omslog"
@@ -115,6 +114,7 @@ module Fluent
         end
       rescue => errorStr
         $log.warn("Exception in enumerate container inventory: #{errorStr}")
+        $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
@@ -143,6 +143,7 @@ module Fluent
             $log.info("in_container_inventory::run_periodic.enumerate.end @ #{Time.now.utc.iso8601}")
           rescue => errorStr
             $log.warn "in_container_inventory::run_periodic: Failed in enumerate container inventory: #{errorStr}"
+            $log.debug_backtrace(errorStr.backtrace)
           end
         end
         @mutex.lock

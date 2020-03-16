@@ -164,11 +164,10 @@ class KubernetesContainerInventory
       envValueString = ""
       begin
         unless @@containerCGroupCache.has_key?(containerId)
-          $log.info("KubernetesContainerInventory::fetching cGroup parent pid @ #{Time.now.utc.iso8601}")
+          $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars fetching cGroup parent pid @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
           Dir["/hostfs/proc/*/cgroup"].each do |filename|
             if File.file?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
-              # file full path is /hostfs/proc/<cGroupPid>/cgroup
-              $log.info("KubernetesContainerInventory::fetching cGroup parent  filename @ #{filename}")
+              # file full path is /hostfs/proc/<cGroupPid>/cgroup            
               cGroupPid = filename.split("/")[3]
               if @@containerCGroupCache.has_key?(containerId)
                 tempCGroupPid = @@containerCGroupCache[containerId]
@@ -184,6 +183,7 @@ class KubernetesContainerInventory
         cGroupPid = @@containerCGroupCache[containerId]
         if !cGroupPid.nil?
           environFilePath = "/hostfs/proc/#{cGroupPid}/environ"
+          $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars cGroupPid: #{cGroupPid} environFilePath: #{filename} for containerId: #{containerId}")
           if File.exist?(environFilePath)
             # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
             # Check to see if the environment variable collection is disabled for this container.
@@ -208,9 +208,11 @@ class KubernetesContainerInventory
               end
             end
           end
+        else
+          @log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: cGroupPid is NIL for containerId: #{containerId}")  
         end
       rescue => error
-        @log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars : obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
+        @log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
       end
       return envValueString
     end
