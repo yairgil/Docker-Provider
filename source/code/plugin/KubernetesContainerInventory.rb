@@ -183,7 +183,7 @@ class KubernetesContainerInventory
         cGroupPid = @@containerCGroupCache[containerId]
         if !cGroupPid.nil?
           environFilePath = "/hostfs/proc/#{cGroupPid}/environ"
-          $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars cGroupPid: #{cGroupPid} environFilePath: #{filename} for containerId: #{containerId}")
+          $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars cGroupPid: #{cGroupPid} environFilePath: #{environFilePath} for containerId: #{containerId}")
           if File.exist?(environFilePath)
             # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
             # Check to see if the environment variable collection is disabled for this container.
