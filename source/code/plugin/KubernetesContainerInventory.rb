@@ -71,6 +71,7 @@ class KubernetesContainerInventory
               end
             end
             containerInventoryRecord["ExitCode"] = 0
+            isContainerTerminated = false
             if !containerStatus["state"].nil? && !containerStatus["state"].empty?
               containerState = containerStatus["state"]
               if containerState.key?("running")
@@ -81,6 +82,7 @@ class KubernetesContainerInventory
                 containerInventoryRecord["StartedTime"] = containerState["terminated"]["startedAt"]
                 containerInventoryRecord["FinishedTime"] = containerState["terminated"]["finishedAt"]
                 containerInventoryRecord["ExitCode"] = containerState["terminated"]["exitCode"]
+                isContainerTerminated = true
               elsif containerState.key?("waiting")
                 containerInventoryRecord["State"] = "Waiting"
               end
@@ -98,7 +100,7 @@ class KubernetesContainerInventory
             elsif isWindows
               containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
             else
-              if containerId.nil? || containerId.empty? || containerRuntime.nil? || containerRuntime.empty?
+              if containerId.nil? || containerId.empty? || isContainerTerminated || containerRuntime.nil? || containerRuntime.empty?
                 containerInventoryRecord["EnvironmentVar"] = ""
               else
                 if containerRuntime.casecmp("cri-o") == 0
@@ -181,7 +183,7 @@ class KubernetesContainerInventory
           end
         end
         cGroupPid = @@containerCGroupCache[containerId]
-        if !cGroupPid.nil?
+        if !cGroupPid.nil? && !cGroupPid.empty?
           environFilePath = "/hostfs/proc/#{cGroupPid}/environ"
           $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars cGroupPid: #{cGroupPid} environFilePath: #{environFilePath} for containerId: #{containerId}")
           if File.exist?(environFilePath)
@@ -209,7 +211,7 @@ class KubernetesContainerInventory
             end
           end
         else
-          @log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: cGroupPid is NIL for containerId: #{containerId}")  
+          @log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: cGroupPid is NIL or empty for containerId: #{containerId}")  
         end
       rescue => error
         @log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
