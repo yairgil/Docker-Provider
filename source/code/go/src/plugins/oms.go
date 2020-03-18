@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/fluent/fluent-bit-go/output"
+	"github.com/google/uuid"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
@@ -520,6 +521,8 @@ func flushKubeMonAgentEventRecords() {
 					req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 					req.Header.Set("Content-Type", "application/json")
 					req.Header.Set("User-Agent", userAgent )
+					reqId := uuid.New().String()
+					req.Header.Set("X-Request-ID", reqId)
 					//expensive to do string len for every request, so use a flag
 					if ResourceCentric == true {
 						req.Header.Set("x-ms-AzureResourceId", ResourceID)
@@ -534,7 +537,7 @@ func flushKubeMonAgentEventRecords() {
 						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
 					} else if resp == nil || resp.StatusCode != 200 {
 						if resp != nil {
-							Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+							Log(" RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
 						}
 						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
 					} else {
@@ -664,6 +667,8 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	//set headers
 	req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	req.Header.Set("User-Agent", userAgent )
+	reqId := uuid.New().String()
+	req.Header.Set("X-Request-ID", reqId)
 
 	//expensive to do string len for every request, so use a flag
 	if ResourceCentric == true {
@@ -683,7 +688,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	if resp == nil || resp.StatusCode != 200 {
 		if resp != nil {
-			Log("PostTelegrafMetricsToLA::Error:(retriable) Response Status %v Status Code %v", resp.Status, resp.StatusCode)
+			Log("PostTelegrafMetricsToLA::Error:(retriable) RequestID %s Response Status %v Status Code %v", reqId, resp.Status, resp.StatusCode)
 		}
 		if resp != nil && resp.StatusCode == 429 {
 			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
@@ -822,6 +827,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("User-Agent", userAgent )
+		reqId := uuid.New().String()
+		req.Header.Set("X-Request-ID", reqId)
 		//expensive to do string len for every request, so use a flag
 		if ResourceCentric == true {
 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
@@ -842,7 +849,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		if resp == nil || resp.StatusCode != 200 {
 			if resp != nil {
-				Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+				Log("RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
 			}
 			return output.FLB_RETRY
 		}
@@ -972,8 +979,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 
 	//set useragent to be used by ingestion 
-	if len(strings.TrimSpace(os.Getenv("DOCKER_CIMPROV_VERSION"))) > 0 {
-		dockerCimprovVersion = agentVersion
+	docker_cimprov_version := strings.TrimSpace(os.Getenv("DOCKER_CIMPROV_VERSION"))
+	if len(docker_cimprov_version) > 0 {
+		dockerCimprovVersion = docker_cimprov_version
 	}
 
 	userAgent = fmt.Sprintf("%s/%s", agentName, dockerCimprovVersion)
