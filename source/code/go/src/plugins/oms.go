@@ -97,9 +97,7 @@ var (
 	//KubeMonAgentEvents skip first flush
 	skipKubeMonEventsFlush bool
 	// enrich container logs (when true this will add the fields - timeofcommand, containername & containerimage)
-	enrichContainerLogs bool	
-	// container runtime engine configured on the kubelet (true indicates docker else K8s CRI compatiable runtime)
-	isDockerContainerRuntimeEngine bool
+	enrichContainerLogs bool		
 	// container runtime engine configured on the kubelet
 	containerRuntime string
 )

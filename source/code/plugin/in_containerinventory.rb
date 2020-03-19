@@ -15,7 +15,7 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "omslog"
       require_relative "CAdvisorMetricsAPIClient"
-      require_relative "KubernetesContainerInventory"      
+      require_relative "kubernetes_container_inventory"      
     end
 
     config_param :run_interval, :time, :default => 60

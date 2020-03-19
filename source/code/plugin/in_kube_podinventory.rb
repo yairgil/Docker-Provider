@@ -20,7 +20,7 @@ module Fluent
       require "set"
       require "time"
       
-      require_relative "KubernetesContainerInventory"
+      require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
