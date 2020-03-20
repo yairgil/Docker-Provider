@@ -756,8 +756,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap := make(map[string]string)
 
 		logEntry := ToString(record["log"])
-		logEntryTimeStamp := ToString(record["time"])	
-		Log("LogEntryTimestamp:%s", logEntryTimeStamp)				
+		logEntryTimeStamp := ToString(record["time"])			
 		stringMap["LogEntry"] = logEntry
 		stringMap["LogEntrySource"] = logEntrySource
 		stringMap["LogEntryTimeStamp"] = logEntryTimeStamp

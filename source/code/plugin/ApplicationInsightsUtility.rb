@@ -114,12 +114,12 @@ class ApplicationInsightsUtility
     def getContainerRuntimeInfo()
       containerRuntime = ENV[@@EnvContainerRuntime]
       if !containerRuntime.nil? && !containerRuntime.empty?
-        @@CustomProperties["ContainerRunTime"] = containerRuntime
+        # DockerVersion field holds either containerRuntime for non-docker or Dockerversion if its docker
+        @@CustomProperties["DockerVersion"] = containerRuntime
         if containerRuntime.casecmp("docker") == 0
           dockerInfo = DockerApiClient.dockerInfo
           if (!dockerInfo.nil? && !dockerInfo.empty?)
-            @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
-            #@@CustomProperties["DockerApiVersion"] = dockerInfo["ApiVersion"]
+            @@CustomProperties["DockerVersion"] = dockerInfo["Version"]          
           end
         end
       end
@@ -175,7 +175,7 @@ class ApplicationInsightsUtility
       begin
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
-        elsif @@CustomProperties["ContainerRunTime"].nil?
+        elsif @@CustomProperties["DockerVersion"].nil?
           getContainerRuntimeInfo()
         end
         telemetryProps = {}
@@ -199,7 +199,7 @@ class ApplicationInsightsUtility
       begin
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
-        elsif @@CustomProperties["ContainerRunTime"].nil?
+        elsif @@CustomProperties["DockerVersion"].nil?
           getContainerRuntimeInfo()
         end
         @@CustomProperties["Computer"] = properties["Computer"]
@@ -219,7 +219,7 @@ class ApplicationInsightsUtility
         end
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
-        elsif @@CustomProperties["ContainerRunTime"].nil?
+        elsif @@CustomProperties["DockerVersion"].nil?
           getContainerRuntimeInfo()
         end
         telemetryProps = {}
