@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	//"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -17,9 +17,9 @@ import (
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	//"k8s.io/client-go/rest"
 )
 
 // DataType for Container Log
@@ -38,7 +38,7 @@ const ResourceIdEnv = "AKS_RESOURCE_ID"
 const ResourceNameEnv = "ACS_RESOURCE_NAME"
 
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags and also for custom-metrics telemetry )
-const TelegrafMetricOriginPrefix = "container.azm.ms"
+const TelegrafMetricOriginPrefix = "solutions.azm.ms"
 
 // Origin suffix for telegraf Metrics (used as suffix for origin field)
 const TelegrafMetricOriginSuffix = "telegraf"
@@ -64,8 +64,8 @@ const KubeMonAgentEventInfo = "Info"
 const KubeMonAgentEventsFlushedEvent = "KubeMonAgentEventsFlushed"
 
 // ContainerLogPluginConfFilePath --> config file path for container log plugin
-const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
-const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
+const DaemonSetContainerLogPluginConfFilePath = "/opt/out_oms.conf"
+const ReplicaSetContainerLogPluginConfFilePath = "/opt/out_oms.conf"
 
 // IPName for Container Log
 const IPName = "Containers"
@@ -210,7 +210,7 @@ const (
 
 func createLogger() *log.Logger {
 	var logfile *os.File
-	path := "/var/opt/microsoft/docker-cimprov/log/fluent-bit-out-oms-runtime.log"
+	path := "/opt/fluent-bit-out-oms-runtime.log"
 	if _, err := os.Stat(path); err == nil {
 		fmt.Printf("File Exists. Opening file in append mode...\n")
 		logfile, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
@@ -247,45 +247,7 @@ func updateContainerImageNameMaps() {
 	for ; true; <-ContainerImageNameRefreshTicker.C {
 		Log("Updating ImageIDMap and NameIDMap")
 
-		_imageIDMap := make(map[string]string)
-		_nameIDMap := make(map[string]string)
-
-		listOptions := metav1.ListOptions{}
-		listOptions.FieldSelector = fmt.Sprintf("spec.nodeName=%s", Computer)
-		pods, err := ClientSet.CoreV1().Pods("").List(listOptions)
-
-		if err != nil {
-			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
-			Log(message)
-			continue
-		}
-
-		for _, pod := range pods.Items {
-			podContainerStatuses := pod.Status.ContainerStatuses
-
-			// Doing this to include init container logs as well
-			podInitContainerStatuses := pod.Status.InitContainerStatuses
-			if (podInitContainerStatuses != nil) && (len(podInitContainerStatuses) > 0) {
-				podContainerStatuses = append(podContainerStatuses, podInitContainerStatuses...)
-			}
-			for _, status := range podContainerStatuses {
-				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
-				containerID := status.ContainerID[lastSlashIndex+1 : len(status.ContainerID)]
-				image := status.Image
-				name := fmt.Sprintf("%s/%s", pod.UID, status.Name)
-				if containerID != "" {
-					_imageIDMap[containerID] = image
-					_nameIDMap[containerID] = name
-				}
-			}
-		}
-
-		Log("Locking to update image and name maps")
-		DataUpdateMutex.Lock()
-		ImageIDMap = _imageIDMap
-		NameIDMap = _nameIDMap
-		DataUpdateMutex.Unlock()
-		Log("Unlocking after updating image and name maps")
+	
 	}
 }
 
@@ -566,9 +528,10 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 	}
 
 	//add azure monitor tags
-	tagMap[fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafTagClusterID)] = ResourceID
-	tagMap[fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafTagClusterName)] = ResourceName
-
+	if 1 == 0 {
+		tagMap[fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafTagClusterID)] = ResourceID
+		tagMap[fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafTagClusterName)] = ResourceName
+	}
 	var fieldMap map[interface{}]interface{}
 	fieldMap = m["fields"].(map[interface{}]interface{})
 
@@ -975,7 +938,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	KubeMonAgentConfigEventsSendTicker = time.NewTicker(time.Minute * time.Duration(kubeMonAgentConfigEventFlushInterval))
 
 	// Populate Computer field
-	containerHostName, err := ioutil.ReadFile(pluginConfig["container_host_file_path"])
+	containerHostName, err := os.Hostname() //ioutil.ReadFile(pluginConfig["container_host_file_path"])
 	if err != nil {
 		// It is ok to log here and continue, because only the Computer column will be missing,
 		// which can be deduced from a combination of containerId, and docker logs on the node
@@ -983,8 +946,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log(message)
 		SendException(message)
 	}
-	Computer = strings.TrimSuffix(ToString(containerHostName), "\n")
-	Log("Computer == %s \n", Computer)
+	Computer = containerHostName //strings.TrimSuffix(ToString(containerHostName), "\n")
+	Log("Computer == %s \n", containerHostName)
 
 	ret, err := InitializeTelemetryClient(agentVersion)
 	if ret != 0 || err != nil {
@@ -994,7 +957,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 
 	// Initialize KubeAPI Client
-	config, err := rest.InClusterConfig()
+	/*config, err := rest.InClusterConfig()
 	if err != nil {
 		message := fmt.Sprintf("Error getting config %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 		Log(message)
@@ -1006,7 +969,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		message := fmt.Sprintf("Error getting clientset %s.\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 		SendException(message)
 		Log(message)
-	}
+	}*/
 
 	PluginConfiguration = pluginConfig
 

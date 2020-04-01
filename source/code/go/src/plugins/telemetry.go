@@ -130,7 +130,7 @@ func SendException(err interface{}) {
 
 // InitializeTelemetryClient sets up the telemetry client to send telemetry to the App Insights instance
 func InitializeTelemetryClient(agentVersion string) (int, error) {
-	encodedIkey := os.Getenv(envAppInsightsAuth)
+	encodedIkey := "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi" //os.Getenv(envAppInsightsAuth)
 	if encodedIkey == "" {
 		Log("Environment Variable Missing \n")
 		return -1, errors.New("Missing Environment Variable")
