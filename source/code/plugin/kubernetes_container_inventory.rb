@@ -5,6 +5,8 @@ class KubernetesContainerInventory
   require "yajl/json_gem"
   require "time"
   require_relative "omslog"
+  require_relative "ApplicationInsightsUtility"
+  
   # cache the container and cgroup parent process
   @@containerCGroupCache = Hash.new
 
@@ -116,6 +118,8 @@ class KubernetesContainerInventory
         end
       rescue => error
         @log.warn("KubernetesContainerInventory::getContainerInventoryRecords : Get Container Inventory Records failed: #{error}")
+        $log.debug_backtrace(error.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
       end
       return containerInventoryRecords
     end
@@ -157,6 +161,8 @@ class KubernetesContainerInventory
         end
       rescue => error
         @log.warn("KubernetesContainerInventory::getContainersInfoMap : Get Container Info Maps failed: #{error}")
+        $log.debug_backtrace(error.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
       end
       return containersInfoMap
     end
@@ -292,8 +298,22 @@ class KubernetesContainerInventory
         end
       rescue => error
         @log.warn("KubernetesContainerInventory::obtainWindowsContainerEnvironmentVars: parsing of EnvVars failed: #{error}")
+        $log.debug_backtrace(error.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
       end
       return envValueString
+    end
+    
+    def deleteCGroupCacheEntryForDeletedContainer(containerId)
+      begin
+        if !containerId.nil? && @@containerCGroupCache.nil && @@containerCGroupCache.length > 0 && @@containerCGroupCache.key?(containerId)
+          @@containerCGroupCache.delete(containerId)
+        end      
+      rescue => error
+        @log.warn("KubernetesContainerInventory::deleteCGroupCacheEntryForDeletedContainer: deleting: #{error}")
+        $log.debug_backtrace(error.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
+      end 
     end
   end
 end
