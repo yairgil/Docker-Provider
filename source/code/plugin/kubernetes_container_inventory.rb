@@ -221,6 +221,8 @@ class KubernetesContainerInventory
         end
       rescue => error
         @log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
+        $log.debug_backtrace(error.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
       end
       return envValueString
     end
@@ -303,14 +305,14 @@ class KubernetesContainerInventory
       end
       return envValueString
     end
-    
+
     def deleteCGroupCacheEntryForDeletedContainer(containerId)
       begin
         if !containerId.nil? && @@containerCGroupCache.nil && @@containerCGroupCache.length > 0 && @@containerCGroupCache.key?(containerId)
           @@containerCGroupCache.delete(containerId)
         end      
       rescue => error
-        @log.warn("KubernetesContainerInventory::deleteCGroupCacheEntryForDeletedContainer: deleting: #{error}")
+        @log.warn("KubernetesContainerInventory::deleteCGroupCacheEntryForDeletedContainer: deleting of cache entry failed: #{error}")
         $log.debug_backtrace(error.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(error)
       end 
