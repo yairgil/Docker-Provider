@@ -308,7 +308,7 @@ class KubernetesContainerInventory
 
     def deleteCGroupCacheEntryForDeletedContainer(containerId)
       begin
-        if !containerId.nil? && @@containerCGroupCache.nil && @@containerCGroupCache.length > 0 && @@containerCGroupCache.key?(containerId)
+        if !containerId.nil? && !containerId.empty? && !@@containerCGroupCache.nil? && @@containerCGroupCache.length > 0 && @@containerCGroupCache.key?(containerId)
           @@containerCGroupCache.delete(containerId)
         end      
       rescue => error
