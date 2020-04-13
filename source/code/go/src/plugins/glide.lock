@@ -1,5 +1,5 @@
 hash: b00ffe7239c0f8d9d87e0afe8512c75ff9952c41cd2b3b79dc30fe6d3f0e3ec8
-updated: 2020-03-17T15:46:37.8805517-07:00
+updated: 2020-04-02T14:55:42.4406175-07:00
 imports:
 - name: code.cloudfoundry.org/clock
   version: 86534f4ca3a5cbac1685968132dfaefeb8e8cad2
@@ -53,8 +53,14 @@ imports:
   version: 05fbef0ca5da472bbf96c9322b84a53edc03c9fd
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
+- name: github.com/philhofer/fwd
+  version: bb6d471dc95d4fe11e432687f8b70ff496cf3136
 - name: github.com/satori/go.uuid
   version: b2ce2384e17bbe0c6d34077efa39dbab3e09123b
+- name: github.com/tinylib/msgp
+  version: e88e92c0ccca5e5a22febee39f846063125e92bb
+  subpackages:
+  - msgp
 - name: github.com/ugorji/go
   version: 00b869d2f4a5e27445c2d916fa106fc72c106d4c
   subpackages:

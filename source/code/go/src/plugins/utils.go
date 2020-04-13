@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"net"
 )
 
 // ReadConfiguration reads a property file
@@ -86,5 +87,26 @@ func ToString(s interface{}) string {
 		return string(t)
 	default:
 		return ""
+	}
+}
+
+//mdsdSocketClient to write msgp messages
+func CreateMDSDClient() {
+	if MdsdMsgpUnixSocketClient != nil {
+		MdsdMsgpUnixSocketClient.Close()
+		MdsdMsgpUnixSocketClient = nil
+	}
+	/*conn, err := fluent.New(fluent.Config{FluentNetwork:"unix",
+										  FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
+										  WriteTimeout: 5 * time.Second,
+										  RequestAck: true}) */
+	conn, err := net.Dial("unix", 
+						   "/var/run/mdsd/default_fluent.socket")
+	if err!= nil {
+		Log ("Error::mdsd::Unable to open MDSD msgp socket connection %s", err.Error())
+		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
+	} else {
+		Log("Successfully created MDSD msgp socket connection")
+		MdsdMsgpUnixSocketClient = conn
 	}
 }

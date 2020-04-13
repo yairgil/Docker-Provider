@@ -36,6 +36,8 @@ var (
 	TelegrafMetricsSendErrorCount float64
     //Tracks the number of 429 (throttle) errors between telemetry ticker periods (uses ContainerLogTelemetryTicker)
 	TelegrafMetricsSend429ErrorCount float64
+    //Tracks the number of write/send errors from fluent for containerlogs (uses ContainerLogTelemetryTicker)
+	ContainerLogsSendErrorsToMDSDFromFluent float64
 )
 
 const (
@@ -52,6 +54,7 @@ const (
 	metricNameNumberofTelegrafMetricsSentSuccessfully = "TelegrafMetricsSentCount"
 	metricNameNumberofSendErrorsTelegrafMetrics       = "TelegrafMetricsSendErrorCount"
 	metricNameNumberofSend429ErrorsTelegrafMetrics    = "TelegrafMetricsSend429ErrorCount"
+	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent	  = "ContainerLogs2MdsdSendErrorCount"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -82,6 +85,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		telegrafMetricsSentCount := TelegrafMetricsSentCount
 		telegrafMetricsSendErrorCount := TelegrafMetricsSendErrorCount
 		telegrafMetricsSend429ErrorCount := TelegrafMetricsSend429ErrorCount
+		containerLogsSendErrorsToMDSDFromFluent := ContainerLogsSendErrorsToMDSDFromFluent
 		TelegrafMetricsSentCount = 0.0
 		TelegrafMetricsSendErrorCount = 0.0
 		TelegrafMetricsSend429ErrorCount = 0.0
@@ -92,6 +96,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		logLatencyMsContainer := AgentLogProcessingMaxLatencyMsContainer
 		AgentLogProcessingMaxLatencyMs = 0
 		AgentLogProcessingMaxLatencyMsContainer = ""
+		ContainerLogsSendErrorsToMDSDFromFluent = 0.0
 		ContainerLogTelemetryMutex.Unlock()
 
 		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
@@ -114,6 +119,10 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		if telegrafMetricsSend429ErrorCount > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameNumberofSend429ErrorsTelegrafMetrics, telegrafMetricsSend429ErrorCount))
 		}
+		if containerLogsSendErrorsToMDSDFromFluent > 0.0 {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent, containerLogsSendErrorsToMDSDFromFluent))
+		}
+
 		start = time.Now()
 	}
 }

@@ -32,6 +32,8 @@ class CAdvisorMetricsAPIClient
 
   @cAdvisorMetricsSecurePort = ENV["IS_SECURE_CADVISOR_PORT"]
 
+  @containerLogsRoute = ENV["AZMON_CONTAINER_LOGS_ROUTE"]
+
   @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt"
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
   #   @@rxBytesLast = nil
@@ -240,6 +242,10 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["dsPromFPC"] = @dsPromFieldPassCount
                       telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
                       telemetryProps["dsPromUrl"] = @dsPromUrlCount
+                    end
+                    #telemetry about containerlogsRouting for daemonset
+                    if (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
+                      properties["containerLogsRoute"] = @containerlogsRoute
                     end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end

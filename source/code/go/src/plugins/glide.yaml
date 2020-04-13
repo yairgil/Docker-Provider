@@ -1,10 +1,18 @@
-package: .
+package: plugins
 import:
+- package: github.com/Microsoft/ApplicationInsights-Go
+  version: ^0.4.2
+  subpackages:
+  - appinsights
+  - appinsights/contracts
 - package: github.com/fluent/fluent-bit-go
   subpackages:
   - output
 - package: github.com/google/uuid
   version: ^1.1.0
+- package: github.com/tinylib/msgp
+  subpackages:
+  - msgp
 - package: gopkg.in/natefinch/lumberjack.v2
   version: ^2.1.0
 - package: k8s.io/apimachinery
@@ -15,7 +23,3 @@ import:
   subpackages:
   - kubernetes
   - rest
-- package: github.com/Microsoft/ApplicationInsights-Go
-  version: ^0.4.2
-  subpackages:
-  - appinsights
