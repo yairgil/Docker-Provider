@@ -898,6 +898,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			CreateMDSDClient()
 			if MdsdMsgpUnixSocketClient == nil {
 				Log ("Error::mdsd::Unable to create mdsd client. Please check error log.")
+
+				ContainerLogTelemetryMutex.Lock()
+				defer ContainerLogTelemetryMutex.Unlock()
+				ContainerLogsMDSDClientCreateErrors += 1
+				
 				return output.FLB_RETRY
 			}
 		}
@@ -916,8 +921,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				}
 
 				ContainerLogTelemetryMutex.Lock()
+				defer ContainerLogTelemetryMutex.Unlock()
 				ContainerLogsSendErrorsToMDSDFromFluent += 1
-				ContainerLogTelemetryMutex.Unlock()
+				
 
 				return output.FLB_RETRY
 			} else {
@@ -1122,7 +1128,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	userAgent = fmt.Sprintf("%s/%s", agentName, dockerCimprovVersion)
 
-	Log("Usage-Agent = %s \n", userAgent)
+	Log("User-Agent = %s \n", userAgent)
 
 	// Initialize image,name map refresh ticker
 	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
@@ -1176,7 +1182,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
-	
+
 	if (ContainerLogsRouteV2 == true) {
 		CreateMDSDClient()
 	}

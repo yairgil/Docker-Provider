@@ -243,7 +243,7 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
                       telemetryProps["dsPromUrl"] = @dsPromUrlCount
                     end
-                    #telemetry about containerlogsRouting for daemonset
+                    #telemetry about containerlogs Routing for daemonset
                     if (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
                       properties["containerLogsRoute"] = @containerlogsRoute
                     end
