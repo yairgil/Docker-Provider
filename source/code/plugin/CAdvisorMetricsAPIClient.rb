@@ -245,7 +245,7 @@ class CAdvisorMetricsAPIClient
                     end
                     #telemetry about containerlogs Routing for daemonset
                     if (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
-                      properties["containerLogsRoute"] = @containerlogsRoute
+                      telemetryProps["containerLogsRoute"] = @containerLogsRoute
                     end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
