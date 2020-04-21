@@ -17,6 +17,8 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 ##### Code change log
 - Add support for rate limiting 
 - Add support for Container Runtime Interface compatible container runtime(s) like CRI-O and ContainerD
+     - cAdvisor APIs are used to collect the container inventory for Docker/Moby and CRI runtime K8s environments
+     - Based on the container runtime, corresponding container log FluentBit parser(docker/cri) selected
 
 ##### Customer Impact
 - Ingestion will throttle the workspaces if the agent on the cluster sending the beyond Log Analytics Workspace throttling  limits i.e. 500 MB/s
