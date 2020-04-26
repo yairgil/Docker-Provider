@@ -70,9 +70,9 @@ func CreateHTTPClient() {
 
 	tlsConfig.BuildNameToCertificate()
 
-	proxyConfig := nil
-	if _, err := os.Stat(pluginConfig["omsproxy_conf_path"]); err == nil {
-		omsproxyConf, err := ioutil.ReadFile(pluginConfig["omsproxy_conf_path"])
+	var proxyConfig *url.URL
+	if _, err := os.Stat(PluginConfiguration["omsproxy_conf_path"]); err == nil {
+		omsproxyConf, err := ioutil.ReadFile(PluginConfiguration["omsproxy_conf_path"])
 		if err != nil {
 			message := fmt.Sprintf("Error Reading omsproxy configuration %s\n", err.Error())
 			Log(message)
@@ -80,9 +80,18 @@ func CreateHTTPClient() {
 			time.Sleep(30 * time.Second)
 			log.Fatalln(message)
 		} else {
-			proxyEndpointURL := strings.TrimSpace(omsproxyConf)
-			Log("ProxyEndpoint %s", proxyEndpointURL)
-			proxyConfig = http.ProxyURL(proxyEndpointURL)
+			proxyEndpoint := strings.TrimSpace(string(omsproxyConf))
+			proxyEndpointUrl, err := url.Parse(proxyEndpoint)	
+			if err != nil {
+				message := fmt.Sprintf("Error parsing omsproxy url %s\n", err.Error())
+				Log(message)
+				SendException(message)
+				time.Sleep(30 * time.Second)
+				log.Fatalln(message)
+			} else {		
+				Log("ProxyEndpoint %s", proxyEndpointUrl)
+				proxyConfig = http.ProxyURL(proxyEndpointUrl)
+		   }
 		}
 	}
 
