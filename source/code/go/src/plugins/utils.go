@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -68,7 +69,24 @@ func CreateHTTPClient() {
 	}
 
 	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
+
+	proxyConfig := nil
+	if _, err := os.Stat(pluginConfig["omsproxy_conf_path"]); err == nil {
+		omsproxyConf, err := ioutil.ReadFile(pluginConfig["omsproxy_conf_path"])
+		if err != nil {
+			message := fmt.Sprintf("Error Reading omsproxy configuration %s\n", err.Error())
+			Log(message)
+			SendException(message)
+			time.Sleep(30 * time.Second)
+			log.Fatalln(message)
+		} else {
+			proxyEndpointURL := strings.TrimSpace(omsproxyConf)
+			Log("ProxyEndpoint %s", proxyEndpointURL)
+			proxyConfig = http.ProxyURL(proxyEndpointURL)
+		}
+	}
+
+	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: proxyConfig}
 
 	HTTPClient = http.Client{
 		Transport: transport,
