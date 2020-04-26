@@ -83,9 +83,10 @@ func CreateHTTPClient() {
 		} else {
 			proxyConfigString := strings.TrimSpace(string(omsproxyConf))
 			Log("proxy configuration %s", proxyConfigString)
-			proxyUrl, err := url.Parse(proxyConfigString)	
-			if err != nil {
-				message := fmt.Sprintf("Error parsing omsproxy url %s\n", err.Error())
+			var parseError error
+			proxyUrl, parseError = url.Parse(proxyConfigString)	
+			if parseError != nil {
+				message := fmt.Sprintf("Error parsing omsproxy url %s\n", parseError.Error())
 				Log(message)
 				SendException(message)
 				time.Sleep(30 * time.Second)
