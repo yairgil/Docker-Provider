@@ -81,22 +81,20 @@ func CreateHTTPClient() {
 			time.Sleep(30 * time.Second)
 			log.Fatalln(message)
 		} else {
-			proxyConfig := strings.TrimSpace(string(omsproxyConf))
-			Log("proxy configuration %s", proxyConfig)
-			proxyEndpointUrl, err := url.Parse(proxyConfig)	
+			proxyConfigString := strings.TrimSpace(string(omsproxyConf))
+			Log("proxy configuration %s", proxyConfigString)
+			proxyUrl, err := url.Parse(proxyConfigString)	
 			if err != nil {
 				message := fmt.Sprintf("Error parsing omsproxy url %s\n", err.Error())
 				Log(message)
 				SendException(message)
 				time.Sleep(30 * time.Second)
 				log.Fatalln(message)
-			} else {						
-				proxyUrl = http.ProxyURL(proxyEndpointUrl)
-		   }
+			} 
 		}
 	}
 
-	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: proxyUrl}
+	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyURL(proxyUrl)}
 
 	HTTPClient = http.Client{
 		Transport: transport,
