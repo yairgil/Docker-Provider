@@ -72,29 +72,22 @@ func CreateHTTPClient() {
 	tlsConfig.BuildNameToCertificate()
 
 	var proxyUrl *url.URL
-	if _, err := os.Stat(PluginConfiguration["omsproxy_conf_path"]); err == nil {
-		omsproxyConf, err := ioutil.ReadFile(PluginConfiguration["omsproxy_conf_path"])
-		if err != nil {
-			message := fmt.Sprintf("Error Reading omsproxy configuration %s\n", err.Error())
-			Log(message)
-			SendException(message)
-			time.Sleep(30 * time.Second)
-			log.Fatalln(message)
-		} else {
-			proxyConfigString := strings.TrimSpace(string(omsproxyConf))
-			Log("proxy configuration %s", proxyConfigString)
-			var parseError error
-			proxyUrl, parseError = url.Parse(proxyConfigString)	
-			if parseError != nil {
+	proxyConfigString := ReadProxyConfiguration(PluginConfiguration["omsproxy_conf_path"])
+	if proxyConfigString != "" {	
+		proxyConfigMap := ParseProxyConfiguration(proxyConfigString)	
+		proxyAddr :=  proxyConfigMap["protocol"] + "://" + proxyConfigMap["addr"] + ":" + proxyConfigMap["port"]
+		Log("Proxy address endpoint %s",proxyAddr)
+		var parseError error
+		proxyUrl, parseError = url.Parse(proxyAddr)	
+		if parseError != nil {
 				message := fmt.Sprintf("Error parsing omsproxy url %s\n", parseError.Error())
 				Log(message)
 				SendException(message)
 				time.Sleep(30 * time.Second)
 				log.Fatalln(message)
-			} 
-		}
+		} 		
 	}
-
+	
 	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyURL(proxyUrl)}
 
 	HTTPClient = http.Client{
@@ -114,4 +107,50 @@ func ToString(s interface{}) string {
 	default:
 		return ""
 	}
+}
+
+func ReadProxyConfiguration(proxyConfFile string) (string) {
+	proxyConfigString := ""	
+	if _, err := os.Stat(proxyConfFile); err == nil {
+		Log("Proxy configuration file %s", proxyConfFile )
+		omsproxyConf, err := ioutil.ReadFile(proxyConfFile)
+		if err != nil {
+			message := fmt.Sprintf("Error Reading omsproxy configuration %s\n", err.Error())
+			Log(message)
+			SendException(message)
+			time.Sleep(30 * time.Second)
+			log.Fatalln(message)
+		} else {
+			proxyConfigString = strings.TrimSpace(string(omsproxyConf))
+			Log("proxy configuration %s", proxyConfigString)			
+		}
+	}
+
+	return proxyConfigString
+}
+
+//format of proxyconfig string is http://user01:password@proxy01.contoso.com:8080
+//TBD -- should be more sophisticated. refer parse_proxy_config in baseagent code for improvement
+func ParseProxyConfiguration(proxyConfigString string) (map[string]string) {
+	 configMap := make(map[string]string)
+	 if proxyConfigString != "" {
+		proxyConfigParts := strings.Split(proxyConfigString, "://")	
+		if len(proxyConfigParts) > 1 {
+		  configMap["protocol"] = proxyConfigParts[0] 
+		  proxyConfigSubParts := strings.Split(proxyConfigParts[1], "@")
+		  if len(proxyConfigParts) > 1 {
+			 creds := strings.Split(proxyConfigSubParts[0], ":")
+			 if len(creds) > 1 {
+				configMap["user"] = creds[0]
+				configMap["pass"] = creds[1]
+			 }
+			addressport := strings.Split(proxyConfigSubParts[1], ":")
+			if len(addressport) > 1 {
+				configMap["addr"] = addressport[0]
+				configMap["port"] = addressport[1]
+			 }
+		  } 
+		}
+	}
+	return configMap
 }

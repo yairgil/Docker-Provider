@@ -100,6 +100,8 @@ var (
 	enrichContainerLogs bool		
 	// container runtime engine configured on the kubelet
 	containerRuntime string
+	// proxyconfig string
+	proxyconfigString string
 )
 
 var (
@@ -524,6 +526,12 @@ func flushKubeMonAgentEventRecords() {
 					SendException(message)
 				} else {
 					req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+					if proxyconfigString != "" {
+						proxyConfigMap := ParseProxyConfiguration(proxyConfigString)						
+						auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
+						basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+						req.Header.Add("Proxy-Authorization", basicAuth)	
+					}
 					req.Header.Set("Content-Type", "application/json")
 					req.Header.Set("User-Agent", userAgent )
 					reqId := uuid.New().String()
@@ -666,6 +674,12 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
+	if proxyconfigString != "" {
+		proxyConfigMap := ParseProxyConfiguration(proxyConfigString)						
+		auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
+		basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+		req.Header.Add("Proxy-Authorization", basicAuth)	
+	}
 
 	//req.URL.Query().Add("api-version","2016-04-01")
 
@@ -832,6 +846,13 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+		if proxyconfigString != "" {
+			proxyConfigMap := ParseProxyConfiguration(proxyConfigString)						
+			auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
+			basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+			req.Header.Add("Proxy-Authorization", basicAuth)	
+		}
+
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("User-Agent", userAgent )
 		reqId := uuid.New().String()
@@ -987,7 +1008,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	
 	// log runtime info for debug purpose
 	containerRuntime = os.Getenv(ContainerRuntimeEnv)		
-	Log("Container Runtime engine %s", containerRuntime)	
+	Log("Container Runtime engine %s", containerRuntime)
+
+	proxyConfigString = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
+	//debug purpose and remove this line once everything tested
+	Log("proxyConfigString %s", proxyConfigString)
 	
 
 	//set useragent to be used by ingestion 
