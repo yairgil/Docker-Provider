@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -527,7 +528,7 @@ func flushKubeMonAgentEventRecords() {
 				} else {
 					req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 					if proxyconfigString != "" {
-						proxyConfigMap := ParseProxyConfiguration(proxyConfigString)						
+						proxyConfigMap := ParseProxyConfiguration(proxyconfigString)						
 						auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
 						basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 						req.Header.Add("Proxy-Authorization", basicAuth)	
@@ -675,7 +676,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
 	if proxyconfigString != "" {
-		proxyConfigMap := ParseProxyConfiguration(proxyConfigString)						
+		proxyConfigMap := ParseProxyConfiguration(proxyconfigString)						
 		auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
 		basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 		req.Header.Add("Proxy-Authorization", basicAuth)	
@@ -847,7 +848,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		if proxyconfigString != "" {
-			proxyConfigMap := ParseProxyConfiguration(proxyConfigString)						
+			proxyConfigMap := ParseProxyConfiguration(proxyconfigString)						
 			auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
 			basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 			req.Header.Add("Proxy-Authorization", basicAuth)	
@@ -1010,9 +1011,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	containerRuntime = os.Getenv(ContainerRuntimeEnv)		
 	Log("Container Runtime engine %s", containerRuntime)
 
-	proxyConfigString = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
+	proxyconfigString = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
 	//debug purpose and remove this line once everything tested
-	Log("proxyConfigString %s", proxyConfigString)
+	Log("proxyconfigString %s", proxyconfigString)
 	
 
 	//set useragent to be used by ingestion 
