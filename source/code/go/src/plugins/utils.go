@@ -74,7 +74,7 @@ func CreateHTTPClient(proxyConfigMap map[string]string) {
 	var proxyUrl *url.URL	
 	if proxyConfigMap != nil && len(proxyConfigMap) > 0 {	
 		//proxy url format is http://<user>:<pass>@<addr>:<port>
-		proxyAddr :=  "http://" + configMap["user"] + ":" + configMap["pass"] + "@" + proxyConfigMap["addr"] + ":" + proxyConfigMap["port"]
+		proxyAddr :=  "http://" + proxyConfigMap["user"] + ":" + proxyConfigMap["pass"] + "@" + proxyConfigMap["addr"] + ":" + proxyConfigMap["port"]
 		Log("Proxy address endpoint %s", proxyAddr)
 		var parseError error
 		proxyUrl, parseError = url.Parse(proxyAddr)	

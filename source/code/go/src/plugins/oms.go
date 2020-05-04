@@ -992,11 +992,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	containerRuntime = os.Getenv(ContainerRuntimeEnv)		
 	Log("Container Runtime engine %s", containerRuntime)
 
-	var err error
-	proxyConfiguration, err = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
+	var configError error
+	proxyConfiguration, configError = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
 	//debug purpose and remove this line once everything tested
-	if err != nil {
-		Log("Error on reading proxy configuration %s", err.Error())
+	if configError != nil {
+		Log("Error on reading proxy configuration %s", configError.Error())
 	} else if proxyConfiguration != nil && len(proxyConfiguration) > 0 {
 		Log("Provided Proxy configuration")
 	}
