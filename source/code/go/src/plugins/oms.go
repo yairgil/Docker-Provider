@@ -101,8 +101,8 @@ var (
 	enrichContainerLogs bool		
 	// container runtime engine configured on the kubelet
 	containerRuntime string
-	// proxyconfig string
-	proxyconfigString string
+	// proxyconfig 
+	proxyConfiguration map[string]string
 )
 
 var (
@@ -526,13 +526,7 @@ func flushKubeMonAgentEventRecords() {
 					Log(message)
 					SendException(message)
 				} else {
-					req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-					if proxyconfigString != "" {
-						proxyConfigMap := ParseProxyConfiguration(proxyconfigString)						
-						auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
-						basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
-						req.Header.Add("Proxy-Authorization", basicAuth)	
-					}
+					req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))					
 					req.Header.Set("Content-Type", "application/json")
 					req.Header.Set("User-Agent", userAgent )
 					reqId := uuid.New().String()
@@ -675,13 +669,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
-	if proxyconfigString != "" {
-		proxyConfigMap := ParseProxyConfiguration(proxyconfigString)						
-		auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
-		basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
-		req.Header.Add("Proxy-Authorization", basicAuth)	
-	}
-
+	
 	//req.URL.Query().Add("api-version","2016-04-01")
 
 	//set headers
@@ -846,13 +834,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			return output.FLB_OK
 		}
 
-		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-		if proxyconfigString != "" {
-			proxyConfigMap := ParseProxyConfiguration(proxyconfigString)						
-			auth := proxyConfigMap["user"] + ":" + proxyConfigMap["pass"]
-			basicAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
-			req.Header.Add("Proxy-Authorization", basicAuth)	
-		}
+		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))		
 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("User-Agent", userAgent )
@@ -1011,11 +993,12 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	containerRuntime = os.Getenv(ContainerRuntimeEnv)		
 	Log("Container Runtime engine %s", containerRuntime)
 
-	proxyconfigString = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
+	proxyConfiguration = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
 	//debug purpose and remove this line once everything tested
-	Log("proxyconfigString %s", proxyconfigString)
+	if proxyConfiguration != nil && len(proxyConfiguration) > 0 {
+		Log("Provided Proxy configuration")
+	}
 	
-
 	//set useragent to be used by ingestion 
 	docker_cimprov_version := strings.TrimSpace(os.Getenv("DOCKER_CIMPROV_VERSION"))
 	if len(docker_cimprov_version) > 0 {
@@ -1053,7 +1036,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	Computer = strings.TrimSuffix(ToString(containerHostName), "\n")
 	Log("Computer == %s \n", Computer)
 
-	ret, err := InitializeTelemetryClient(agentVersion)
+	ret, err := InitializeTelemetryClient(agentVersion, proxyConfiguration)
 	if ret != 0 || err != nil {
 		message := fmt.Sprintf("Error During Telemetry Initialization :%s", err.Error())
 		fmt.Printf(message)

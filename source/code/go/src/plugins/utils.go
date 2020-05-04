@@ -55,7 +55,7 @@ func ReadConfiguration(filename string) (map[string]string, error) {
 }
 
 // CreateHTTPClient used to create the client for sending post requests to OMSEndpoint
-func CreateHTTPClient() {
+func CreateHTTPClient(proxyConfigMap map[string]string) {
 	cert, err := tls.LoadX509KeyPair(PluginConfiguration["cert_file_path"], PluginConfiguration["key_file_path"])
 	if err != nil {
 		message := fmt.Sprintf("Error when loading cert %s", err.Error())
@@ -71,12 +71,11 @@ func CreateHTTPClient() {
 
 	tlsConfig.BuildNameToCertificate()
 
-	var proxyUrl *url.URL
-	proxyConfigString := ReadProxyConfiguration(PluginConfiguration["omsproxy_conf_path"])
-	if proxyConfigString != "" {	
-		proxyConfigMap := ParseProxyConfiguration(proxyConfigString)	
-		proxyAddr :=  proxyConfigMap["protocol"] + "://" + proxyConfigMap["addr"] + ":" + proxyConfigMap["port"]
-		Log("Proxy address endpoint %s",proxyAddr)
+	var proxyUrl *url.URL	
+	if proxyConfigMap != nil && len(proxyConfigMap) > 0 {	
+		//proxy url format is http://<user>:<pass>@<addr>:<port>
+		proxyAddr :=  "http://" + configMap["user"] + ":" + configMap["pass"] + "@" + proxyConfigMap["addr"] + ":" + proxyConfigMap["port"]
+		Log("Proxy address endpoint %s", proxyAddr)
 		var parseError error
 		proxyUrl, parseError = url.Parse(proxyAddr)	
 		if parseError != nil {
@@ -109,48 +108,59 @@ func ToString(s interface{}) string {
 	}
 }
 
-func ReadProxyConfiguration(proxyConfFile string) (string) {
-	proxyConfigString := ""	
+// ReadProxyConfiguration reads the proxy config
+func ReadProxyConfiguration(proxyConfFile string) (map[string]string, error) {
+	proxyConfigMap := map[string]string{}	
+	if len(proxyConfFile) == 0 {
+		return nil, errors.New("error: proxy config file path is empty")
+	}
 	if _, err := os.Stat(proxyConfFile); err == nil {
 		Log("Proxy configuration file %s", proxyConfFile )
 		omsproxyConf, err := ioutil.ReadFile(proxyConfFile)
-		if err != nil {
+		if err != nil {			
 			message := fmt.Sprintf("Error Reading omsproxy configuration %s\n", err.Error())
 			Log(message)
 			SendException(message)
 			time.Sleep(30 * time.Second)
 			log.Fatalln(message)
+
+			return nil, err
 		} else {
-			proxyConfigString = strings.TrimSpace(string(omsproxyConf))
-			Log("proxy configuration %s", proxyConfigString)			
+			proxyConfigString := strings.TrimSpace(string(omsproxyConf))	
+			if proxyConfigString == "" {
+				return nil,  errors.New("error: provided empty proxy configuration setting")
+			}
+			proxyConfigURL, err := url.Parse(proxyConfigString)	
+			if err != nil {
+				return nil, err
+			}	
+
+			protocol := proxyConfigURL.Scheme
+			if strings.ToLower(protocol) != "http" && strings.ToLower(protocol) != "https" {
+				return nil, errors.New("error: only supported protocol for proxy is either http or https")
+			}
+			proxyConfigMap["protocol"] = protocol
+
+			user := proxyConfigURL.User.Username()
+			if user == "" {
+				return nil, errors.New("error: missing username for the proxy configuration")
+			}
+			proxyConfigMap["user"] = user
+
+			pass, IsPassProvided := proxyConfigURL.User.Password()
+			if IsPassProvided == false {
+				return nil, errors.New("error: missing password for the proxy configuration")
+			}
+			proxyConfigMap["pass"] = pass
+			
+			addr, port, err := net.SplitHostPort(proxyConfigURL.Host)
+			if err != nil {
+				return nil, err
+			}
+			proxyConfigMap["addr"] = addr
+			proxyConfigMap["port"] = port
 		}
 	}
 
-	return proxyConfigString
-}
-
-//format of proxyconfig string is http://user01:password@proxy01.contoso.com:8080
-//TBD -- should be more sophisticated. refer parse_proxy_config in baseagent code for improvement
-func ParseProxyConfiguration(proxyConfigString string) (map[string]string) {
-	 configMap := make(map[string]string)
-	 if proxyConfigString != "" {
-		proxyConfigParts := strings.Split(proxyConfigString, "://")	
-		if len(proxyConfigParts) > 1 {
-		  configMap["protocol"] = proxyConfigParts[0] 
-		  proxyConfigSubParts := strings.Split(proxyConfigParts[1], "@")
-		  if len(proxyConfigParts) > 1 {
-			 creds := strings.Split(proxyConfigSubParts[0], ":")
-			 if len(creds) > 1 {
-				configMap["user"] = creds[0]
-				configMap["pass"] = creds[1]
-			 }
-			addressport := strings.Split(proxyConfigSubParts[1], ":")
-			if len(addressport) > 1 {
-				configMap["addr"] = addressport[0]
-				configMap["port"] = addressport[1]
-			 }
-		  } 
-		}
-	}
-	return configMap
+	return proxyConfigMap, nil
 }
