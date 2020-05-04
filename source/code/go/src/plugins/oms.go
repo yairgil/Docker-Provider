@@ -834,7 +834,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			return output.FLB_OK
 		}
 
-		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))		
+		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("User-Agent", userAgent )
