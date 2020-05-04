@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/base64"
 	"errors"
+	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -162,7 +164,7 @@ func InitializeTelemetryClient(agentVersion string, agentProxyConfig map[string]
 	// pass customized http client with proxy endpoint if proxy configured
 	if agentProxyConfig != nil && len(agentProxyConfig) > 0 {
 		Log("Configuring Provided Proxy endpoint configuration for AppInsights Telemetry client")
-		proxyAddr :=  "http://" + configMap["user"] + ":" + configMap["pass"] + "@" + proxyConfigMap["addr"] + ":" + proxyConfigMap["port"]
+		proxyAddr :=  "http://" + agentProxyConfig["user"] + ":" + agentProxyConfig["pass"] + "@" + agentProxyConfig["addr"] + ":" + agentProxyConfig["port"]
 		proxyURL, err := url.Parse(proxyAddr)
 		if err != nil {
 			Log("Failed Parsing of Proxy endpoint %s", err.Error())

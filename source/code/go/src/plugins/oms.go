@@ -2,8 +2,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
-	"encoding/base64"
+	"encoding/json"	
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -993,9 +992,12 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	containerRuntime = os.Getenv(ContainerRuntimeEnv)		
 	Log("Container Runtime engine %s", containerRuntime)
 
-	proxyConfiguration = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
+	var err error
+	proxyConfiguration, err = ReadProxyConfiguration(pluginConfig["omsproxy_conf_path"])
 	//debug purpose and remove this line once everything tested
-	if proxyConfiguration != nil && len(proxyConfiguration) > 0 {
+	if err != nil {
+		Log("Error on reading proxy configuration %s", err.Error())
+	} else if proxyConfiguration != nil && len(proxyConfiguration) > 0 {
 		Log("Provided Proxy configuration")
 	}
 	
