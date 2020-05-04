@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
