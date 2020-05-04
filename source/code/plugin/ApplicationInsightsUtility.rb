@@ -21,6 +21,7 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
+  @OmsProxyFilePath="/etc/opt/microsoft/omsagent/proxy.conf"
 
   @@CustomProperties = {}
   @@Tc = nil
@@ -74,6 +75,8 @@ class ApplicationInsightsUtility
           @@Tc = ApplicationInsights::TelemetryClient.new
         elsif !encodedAppInsightsKey.nil?
           decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
+          # read the proxy config
+          proxy = getProxyConfiguration(@OmsProxyFilePath)
 
           #override ai endpoint if its available otherwise use default.
           if appInsightsEndpoint && !appInsightsEndpoint.nil? && !appInsightsEndpoint.empty?
@@ -81,12 +84,23 @@ class ApplicationInsightsUtility
             #telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
             #telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
             #telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
-            sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
+            if proxy.nil? || proxy.empty?
+              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
+            else 
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
+              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy
+            end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
           else
-            sender = ApplicationInsights::Channel::AsynchronousSender.new
+            if proxy.nil? || proxy.empty?
+              sender = ApplicationInsights::Channel::AsynchronousSender.new 
+            else       
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")        
+              sender = ApplicationInsights::Channel::AsynchronousSender.new defaultAppInsightsEndpoint, proxy
+            end         
+            sender = ApplicationInsights::Channel::AsynchronousSender.new 
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, channel
@@ -280,6 +294,43 @@ class ApplicationInsightsUtility
       rescue => errorStr
         $log.warn("Exception in AppInsightsUtility: getWorkspaceCloud - error: #{errorStr}")
       end
+    end
+    
+    def getProxyConfiguration(proxy_conf_path)   
+      if proxy_conf_path.nil?  || proxy_conf_path.empty?  || !File.exist?(proxy_conf_path) 
+        return {}
+      end
+
+      begin      
+        proxy_config = parseProxyConfiguration(File.read(proxy_conf_path))
+      rescue SystemCallError # Error::ENOENT
+        return {}
+      end
+
+      if proxy_config.nil?
+        $log.warn("Failed to parse the proxy configuration in '#{proxy_conf_path}'")
+        return {}
+      end
+
+      return proxy_config
+    end
+
+    def parseProxyConfiguration(proxy_conf_str)
+        # Remove the http(s) protocol
+        proxy_conf_str = proxy_conf_str.gsub(/^(https?:\/\/)?/, "")
+
+        # Check for unsupported protocol
+        if proxy_conf_str[/^[a-z]+:\/\//]
+          return nil
+        end
+
+        re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/ 
+        matches = re.match(proxy_conf_str)
+        if matches.nil? or matches[:addr].nil? 
+          return nil
+        end
+        # Convert nammed matches to a hash
+        Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
     end
   end
 end
