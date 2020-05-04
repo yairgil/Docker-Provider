@@ -1060,7 +1060,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	PluginConfiguration = pluginConfig
 
-	CreateHTTPClient()
+	CreateHTTPClient(proxyConfiguration)
 
 	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 		populateExcludedStdoutNamespaces()

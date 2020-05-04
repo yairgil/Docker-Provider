@@ -159,6 +159,28 @@ func InitializeTelemetryClient(agentVersion string, agentProxyConfig map[string]
 		Log("Overriding the default AppInsights EndpointUrl with %s", appInsightsEndpoint)
 		telemetryClientConfig.EndpointUrl = envAppInsightsEndpoint
 	}
+	// pass customized http client with proxy endpoint if proxy configured
+	if agentProxyConfig != nil && len(agentProxyConfig) > 0 {
+		Log("Configuring Provided Proxy endpoint configuration for AppInsights Telemetry client")
+		proxyAddr :=  "http://" + configMap["user"] + ":" + configMap["pass"] + "@" + proxyConfigMap["addr"] + ":" + proxyConfigMap["port"]
+		proxyURL, err := url.Parse(proxyAddr)
+		if err != nil {
+			Log("Failed Parsing of Proxy endpoint %s", err.Error())
+			return -1, err
+		}
+
+		//adding the proxy settings to the Transport object
+		transport := &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		}
+
+		httpClient := &http.Client{
+			Transport: transport,
+		}
+
+		telemetryClientConfig.Client = httpClient
+	}
+
 	TelemetryClient = appinsights.NewTelemetryClientFromConfig(telemetryClientConfig)
 
 	telemetryOffSwitch := os.Getenv("DISABLE_TELEMETRY")
