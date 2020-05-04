@@ -21,7 +21,8 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
-  @OmsProxyFilePath="/etc/opt/microsoft/omsagent/proxy.conf"
+  @OmsProxyFilePath = "/etc/opt/microsoft/omsagent/proxy.conf"
+  @DefaultAppInsightsEndpoint = "https://dc.services.visualstudio.com/v2/track"
 
   @@CustomProperties = {}
   @@Tc = nil
@@ -98,7 +99,7 @@ class ApplicationInsightsUtility
               sender = ApplicationInsights::Channel::AsynchronousSender.new 
             else       
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")        
-              sender = ApplicationInsights::Channel::AsynchronousSender.new defaultAppInsightsEndpoint, proxy
+              sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy
             end         
             sender = ApplicationInsights::Channel::AsynchronousSender.new 
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
