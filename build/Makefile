@@ -2,20 +2,20 @@
 # Copyright (c) Microsoft Corporation
 
 BASE_DIR := $(subst /build,,$(PWD))
-OMI_ROOT := $(shell cd ../../omi/Unix; pwd -P)
-SCXPAL_DIR := $(shell cd ../../pal; pwd -P)
+# OMI_ROOT := $(shell cd ../../omi/Unix; pwd -P)
+# SCXPAL_DIR := $(shell cd ../../pal; pwd -P)
 
 PF_POSIX := 1
-include $(SCXPAL_DIR)/build/config.mak
+# include $(SCXPAL_DIR)/build/config.mak
 include $(BASE_DIR)/build/config.mak
-include $(SCXPAL_DIR)/build/Makefile.pal
+# include $(SCXPAL_DIR)/build/Makefile.pal
 
 ifndef ENABLE_DEBUG
 $(error "ENABLE_DEBUG is not set.  Please re-run configure")
 endif
 
 # Include the version file
-include ../../docker.version
+include $(BASE_DIR)/build/docker.version
 
 ifndef CONTAINER_BUILDVERSION_STATUS
 $(error "Is docker.version missing?  Please re-run configure")
@@ -26,8 +26,8 @@ TEST_DIR := $(BASE_DIR)/test/code
 
 PROVIDER_DIR := $(SOURCE_DIR)/providers
 PROVIDER_TEST_DIR := $(TEST_DIR)/providers
-PAL_INCLUDE_DIR := $(SCXPAL_DIR)/source/code/include
-PAL_TESTUTILS_DIR := $(SCXPAL_DIR)/test/code/testutils
+# PAL_INCLUDE_DIR := $(SCXPAL_DIR)/source/code/include
+# PAL_TESTUTILS_DIR := $(SCXPAL_DIR)/test/code/testutils
 
 INTERMEDIATE_DIR := $(BASE_DIR)/intermediate/$(BUILD_CONFIGURATION)
 INTERMEDIATE_TESTFILES := $(INTERMEDIATE_DIR)/testfiles
@@ -45,10 +45,10 @@ INCLUDE_DEFINES := $(INTERMEDIATE_DIR)/defines.h
 
 # Compiler flags
 
-OMI_INCLUDE_FLAGS := -I$(OMI_ROOT)/output/include
-PROVIDER_INCLUDE_FLAGS := -I$(PAL_INCLUDE_DIR) -I$(INTERMEDIATE_DIR)
+# OMI_INCLUDE_FLAGS := -I$(OMI_ROOT)/output/include
+PROVIDER_INCLUDE_FLAGS := -I$(INTERMEDIATE_DIR)
 
-PROVIDER_TEST_INCLUDE_FLAGS := -Wmissing-include-dirs -Wno-non-virtual-dtor -I$(SCXPAL_DIR)/source/code/include -I$(INTERMEDIATE_DIR) -I$(SCXPAL_DIR)/test/ext/include -I$(OMI_ROOT)/output/include -I$(OMI_ROOT) -I$(OMI_ROOT)/common -I$(SCXPAL_DIR)/test/code/include $(PROVIDER_INCLUDE_FLAGS) -I$(PROVIDER_DIR)
+PROVIDER_TEST_INCLUDE_FLAGS := -Wmissing-include-dirs -Wno-non-virtual-dtor -I$(INTERMEDIATE_DIR) $(PROVIDER_INCLUDE_FLAGS) -I$(PROVIDER_DIR)
 
 ifeq ($(ENABLE_DEBUG),1)
 PROV_DEBUG_FLAGS := -g
@@ -57,8 +57,8 @@ endif
 COMPILE_FLAGS := $(PROV_DEBUG_FLAGS) -D_REENTRANT -fstack-protector-all -Wall -fno-nonansi-builtins  -Woverloaded-virtual -Wformat -Wformat-security -Wcast-align -Wswitch-enum -Wshadow -Wwrite-strings -Wredundant-decls -Wcast-qual -fPIC
 PROVIDER_COMPILE_FLAGS := $(COMPILE_FLAGS)
 
-LINK_LIBRARIES := -Wl,-rpath=/opt/omi/lib -L$(OMI_ROOT)/output/lib -lmicxx -L$(SCXPAL_TARGET_DIR) -lscxcore -lUtil -lscxassertabort -lrt -luuid
-PROVIDER_TEST_LINK_LIBRARIES := -lbase -lpal -L$(SCXPAL_TARGET_DIR) -lscxcore $(SCXPAL_DIR)/test/ext/lib/linux/$(ARCH)/cppunit/libcppunit.a -lpthread -lrt -luuid
+LINK_LIBRARIES := -Wl,-rpath=/opt/omi/lib -lscxcore -lUtil -lscxassertabort -lrt -luuid
+PROVIDER_TEST_LINK_LIBRARIES := -lbase -lpal -lscxcore -lpthread -lrt -luuid
 
 SHARED_FLAGS := -shared
 
@@ -75,15 +75,15 @@ else
   OUTPUT_PACKAGE_PREFIX=docker-cimprov-$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH)-$(CONTAINER_BUILDVERSION_BUILDNR).$(PF_DISTRO_LC).$(PF_MAJOR).$(PF_ARCH)
 endif
 
-ifeq ("$(wildcard /usr/bin/dpkg-deb)","")
-	DPKG_LOCATION="--DPKG_LOCATION=$(SCXPAL_DIR)/installer/InstallBuilder/tools/bin/dpkg-deb-$(PF_ARCH)"
-else
+ ifeq ("$(wildcard /usr/bin/dpkg-deb)","")
+	DPKG_LOCATION="--DPKG_LOCATION=$(BASE_DIR)/build/installer/InstallBuilder/tools/bin/dpkg-deb-$(PF_ARCH)"
+ else
 	DPKG_LOCATION=
-endif
+ endif
 
 # Support for src_to_obj handling
 
-INCLUDES = $(OMI_INCLUDE_FLAGS) $(PROVIDER_INCLUDE_FLAGS)
+INCLUDES = $(PROVIDER_INCLUDE_FLAGS)
 CFLAGS = $(COMPILE_FLAGS)
 CXXFLAGS = $(COMPILE_FLAGS)
 
@@ -91,9 +91,9 @@ CXXFLAGS = $(COMPILE_FLAGS)
 # Build targets
 
 ifeq ($(ULINUX),1)
-all : $(OMI_ROOT)/output $(SCXPAL_INTERMEDIATE_DIR) PROVIDER_STATUS $(PROVIDER_LIBRARY) KIT_STATUS kit fluentbitplugin rubypluginstests
+all : PROVIDER_STATUS $(PROVIDER_LIBRARY) KIT_STATUS kit fluentbitplugin rubypluginstests
 else
-all : $(OMI_ROOT)/output $(SCXPAL_INTERMEDIATE_DIR) PROVIDER_STATUS $(PROVIDER_LIBRARY) fluentbitplugin rubypluginstests
+all : PROVIDER_STATUS $(PROVIDER_LIBRARY) fluentbitplugin rubypluginstests
 endif
 
 clean :
@@ -102,10 +102,7 @@ clean :
 	-$(RM) $(TEST_DIR)/providers/TestScriptPath.h
 
 distclean : clean
-	$(RM) $(BASE_DIR)/build/config.mak
-	-make -C $(OMI_ROOT) distclean
-	-make -C $(SCXPAL_DIR)/build distclean
-	-$(RMDIR) $(OMI_ROOT)/output*
+	$(RM) $(BASE_DIR)/build/config.mak	
 	-$(RM) $(SCXPAL_DIR)/build/config.mak
 	-$(RM) $(SCXPAL_DIR)/build/Makefile.config_cache
 
@@ -126,14 +123,14 @@ KIT_STATUS:
 #
 # Doing a 'make clean' in OMI directory will force us to rebuild.
 
-$(OMI_ROOT)/output : $(OMI_ROOT)/output/lib/libmicxx.so
+# $(OMI_ROOT)/output : $(OMI_ROOT)/output/lib/libmicxx.so
 
-$(OMI_ROOT)/output/lib/libmicxx.so :
-	@echo "========================= Performing Building OMI"
-	make -C $(OMI_ROOT)
-ifeq ($(PERFORM_OMI_MAKEINSTALL),1)
-	make -C $(OMI_ROOT) install
-endif
+# $(OMI_ROOT)/output/lib/libmicxx.so :
+#	@echo "========================= Performing Building OMI"
+#	make -C $(OMI_ROOT)
+# ifeq ($(PERFORM_OMI_MAKEINSTALL),1)
+#	make -C $(OMI_ROOT) install
+# endif
 
 #---------------------------------------------------------------------------------
 # fluentbit go plugin build. This is required to send container logs to ODS endpoint
@@ -159,9 +156,9 @@ rubypluginstests :
 #
 # Doing a 'make clean' in PAL directory will force us to rebuild.
 
-$(SCXPAL_INTERMEDIATE_DIR) :
-	@echo "========================= Performing Building PAL"
-	make -C $(SCXPAL_DIR)/build
+# $(SCXPAL_INTERMEDIATE_DIR) :
+#	@echo "========================= Performing Building PAL"
+#	make -C $(SCXPAL_DIR)/build
 
 #================================================================================
 # File depends.h (compiler dependencies)
@@ -309,18 +306,18 @@ STATIC_PROVIDER_UNITFILES = \
 	$(PROVIDER_TEST_DIR)/support/productdependencies.cpp \
 	$(PROVIDER_TEST_DIR)/providertestutils.cpp
 
-STATIC_PROVIDER_PAL_UNITFILES = \
-	$(PAL_TESTUTILS_DIR)/scxassert_cppunit.cpp \
-	$(PAL_TESTUTILS_DIR)/testrunner.cpp
+# STATIC_PROVIDER_PAL_UNITFILES = \
+#	$(PAL_TESTUTILS_DIR)/scxassert_cppunit.cpp \
+#	$(PAL_TESTUTILS_DIR)/testrunner.cpp
 
 STATIC_PROVIDER_TEST_OBJFILES = $(call src_to_obj,$(STATIC_PROVIDER_UNITFILES))
 
-$(INTERMEDIATE_DIR)/testrunner: INCLUDES += $(PROVIDER_TEST_INCLUDE_FLAGS) -I$(PAL_INCLUDE_DIR) -I$(PAL_TESTUTILS_DIR) -I$(PROVIDER_DIR) -I$(SOURCE_DIR)
+$(INTERMEDIATE_DIR)/testrunner: INCLUDES += $(PROVIDER_TEST_INCLUDE_FLAGS) -I$(PROVIDER_DIR) -I$(SOURCE_DIR)
 $(INTERMEDIATE_DIR)/testrunner: CFLAGS += $(PROVIDER_COMPILE_FLAGS)
 $(INTERMEDIATE_DIR)/testrunner: CXXFLAGS += $(PROVIDER_COMPILE_FLAGS)
 $(INTERMEDIATE_DIR)/testrunner : $(STATIC_PROVIDER_TEST_OBJFILES) $(STATIC_PROVIDERLIB_OBJFILES) $(INCLUDE_DEFINES) $(PROVIDER_HEADERS)
 	$(MKPATH) $(INTERMEDIATE_DIR)
-	g++ $(PROVIDER_COMPILE_FLAGS) $(PROVIDER_TEST_INCLUDE_FLAGS) -o $@ $(STATIC_PROVIDER_PAL_UNITFILES) $(STATIC_PROVIDER_TEST_OBJFILES) $(STATIC_PROVIDERLIB_OBJFILES) $(LINK_LIBRARIES) $(PROVIDER_TEST_LINK_LIBRARIES)
+	g++ $(PROVIDER_COMPILE_FLAGS) $(PROVIDER_TEST_INCLUDE_FLAGS) -o $@ $(STATIC_PROVIDER_TEST_OBJFILES) $(STATIC_PROVIDERLIB_OBJFILES) $(LINK_LIBRARIES) $(PROVIDER_TEST_LINK_LIBRARIES)
 
 testrun : test
 
@@ -352,7 +349,7 @@ ifeq ($(ULINUX),1)
 	$(MKPATH) $(INSTALLER_TMPDIR)
 	sudo $(RMDIR) $(STAGING_DIR)
 	$(MKPATH) $(INTERMEDIATE_DIR)
-	python $(SCXPAL_DIR)/installer/InstallBuilder/installbuilder.py \
+	python $(BASE_DIR)/build/installer/InstallBuilder/installbuilder.py \
 		--BASE_DIR=$(BASE_DIR) \
 		--TARGET_DIR=$(INTERMEDIATE_DIR) \
 		--INTERMEDIATE_DIR=$(INSTALLER_TMPDIR) \
@@ -372,7 +369,7 @@ ifeq ($(ULINUX),1)
 
 	sudo $(RMDIR) $(STAGING_DIR)
 	$(MKPATH) $(INTERMEDIATE_DIR)
-	python $(SCXPAL_DIR)/installer/InstallBuilder/installbuilder.py \
+	python $(BASE_DIR)/build/installer/InstallBuilder/installbuilder.py \
 		--BASE_DIR=$(BASE_DIR) \
 		--TARGET_DIR=$(INTERMEDIATE_DIR) \
 		--INTERMEDIATE_DIR=$(INSTALLER_TMPDIR) \
@@ -407,7 +404,7 @@ else
 	@echo "========================= Performing Building RPM and DPKG packages"
 	sudo $(RMDIR) $(STAGING_DIR)
 	$(MKPATH) $(INTERMEDIATE_DIR)
-	python $(SCXPAL_DIR)/installer/InstallBuilder/installbuilder.py \
+	python $(BASE_DIR)/build/installer/InstallBuilder/installbuilder.py \
 		--BASE_DIR=$(BASE_DIR) \
 		--TARGET_DIR=$(INTERMEDIATE_DIR) \
 		--INTERMEDIATE_DIR=$(INSTALLER_TMPDIR) \
