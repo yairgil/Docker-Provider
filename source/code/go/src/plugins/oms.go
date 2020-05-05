@@ -14,7 +14,8 @@ import (
 	"time"
 	"github.com/tinylib/msgp/msgp"
 	"net"
-
+	"context"
+	"io"
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/google/uuid"
 
@@ -23,6 +24,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	
+	"github.com/Azure/azure-kusto-go/kusto/ingest"
+
+	
 )
 
 // DataType for Container Log
@@ -85,6 +91,8 @@ const MdsdSourceName = "ContainerLogSource"
 //container logs route - v2 (v2=flush to oneagent, anything else flush to ODS)
 const ContainerLogsV2Route = "v2"
 
+const ContainerLogsADXRoute = "adx"
+
 
 
 var (
@@ -94,6 +102,10 @@ var (
 	HTTPClient http.Client
 	// Client for MDSD msgp Unix socket
 	MdsdMsgpUnixSocketClient net.Conn
+	// Client for ADX
+	//ADXClient kusto.Client
+	// Ingestor for ADX
+	ADXIngestor *ingest.Ingestion
 	// OMSEndpoint ingestion endpoint
 	OMSEndpoint string
 	// Computer (Hostname) when ingesting into ContainerLog table
@@ -112,8 +124,11 @@ var (
 	enrichContainerLogs bool		
 	// container runtime engine configured on the kubelet
 	containerRuntime string
-	// container log route
+	// container log route for routing thru oneagent
 	ContainerLogsRouteV2 bool
+	// container log route for routing thru ADX
+	ContainerLogsRouteADX bool
+
 )
 
 var (
@@ -170,6 +185,7 @@ type DataItem struct {
 	Name                  string `json:"Name" msg:"Name"`
 	SourceSystem          string `json:"SourceSystem" msg:"SourceSystem"`
 	Computer              string `json:"Computer" msg:"Computer"`
+	AzureResourceId		  string `json:"AzureResourceId" msg:"AzureResourceId"`
 }
 
 // telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
@@ -684,6 +700,8 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	jsonBytes, err := json.Marshal(laTelegrafMetrics)
 
+	//Log(bytes.NewBuffer(jsonBytes).String())
+
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
 		Log(message)
@@ -845,6 +863,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			msgPackEntries = append(msgPackEntries, msgPackEntry)
 		} else {
+			//ODS
 			dataItems = append(dataItems, dataItem)
 		}
 
@@ -930,6 +949,65 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				numContainerLogRecords = len(msgPackEntries)
 				Log ("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 			}
+	} else if ( ContainerLogsRouteADX == true && len(dataItems) > 0){
+		// Route to ADX
+		r, w := io.Pipe()
+		defer r.Close()
+		enc := json.NewEncoder(w)
+		go func() {
+			defer w.Close()
+			for _, data := range dataItems {
+				data.AzureResourceId = ResourceID
+				if encError := enc.Encode(data); encError != nil {
+					Log ("Error: Encoding data for ADX")
+					//SendException(message)
+					//return output.FLB_OK
+				}
+			}
+		}()
+
+		/*dataItem.AzureResourceId = ResourceID
+		marshalled, mErr := json.Marshal(dataItem)
+		if mErr != nil {
+			message := fmt.Sprintf("Error while Marshalling log Entry: %s", mErr.Error())
+			Log(message)
+			//SendException(message)
+			return output.FLB_OK
+		}*/
+
+		if ADXIngestor == nil {
+			Log("Error::ADX::ADXIngestor does not exist. re-creating ...")
+			CreateADXClient()
+			if ADXIngestor == nil {
+				Log ("Error::ADX::Unable to create ADX client. Please check error log.")
+
+				//ContainerLogTelemetryMutex.Lock()
+				//defer ContainerLogTelemetryMutex.Unlock()
+				//ContainerLogsMDSDClientCreateErrors += 1
+				
+				return output.FLB_RETRY
+			}
+		}
+
+		// Setup a maximum time for completion to be 15 Seconds.
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		/*if ingestionErr := ADXIngestor.Stream(ctx, marshalled, ingest.JSON, "ContainerLogMapping2"); ingestionErr != nil {
+			Log("Error when streaming to ADX Ingestion: %s", ingestionErr.Error())
+			ADXIngestor = nil
+			return output.FLB_RETRY
+		}*/
+		if ingestionErr := ADXIngestor.FromReader(ctx, r, ingest.IngestionMappingRef("ContainerLogMapping2", ingest.JSON), ingest.FileFormat(ingest.JSON)); ingestionErr != nil {
+			Log("Error when streaming to ADX Ingestion: %s", ingestionErr.Error())
+			ADXIngestor = nil
+			return output.FLB_RETRY
+		}
+
+		elapsed = time.Since(start)
+		numContainerLogRecords = len(dataItems)
+		Log ("Success::adx::Successfully wrote %d container log records to ADX in %s", numContainerLogRecords, elapsed)
+	
 	} else {
 			//flush to ODS
 			if len(dataItems) > 0 {
@@ -1114,10 +1192,14 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	Log("AZMON_CONTAINER_LOGS_ROUTE:%s",ContainerLogsRoute)
 
 	ContainerLogsRouteV2 = false //default is ODS
+	ContainerLogsRouteADX = false //default is LA
 
 	if ( strings.Compare(ContainerLogsRoute, ContainerLogsV2Route) == 0 ) {
 		ContainerLogsRouteV2 = true
 		Log("Routing container logs thru %s route...", ContainerLogsV2Route )
+	} else if (strings.Compare(ContainerLogsRoute,ContainerLogsADXRoute) == 0) {
+		ContainerLogsRouteADX = true
+		Log("Routing container logs thru %s route...", ContainerLogsADXRoute )
 	}
 
 	//set useragent to be used by ingestion 
@@ -1182,6 +1264,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
+	CreateADXClient()
 
 	if (ContainerLogsRouteV2 == true) {
 		CreateMDSDClient()

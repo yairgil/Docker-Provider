@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 	"net"
+	"github.com/Azure/azure-kusto-go/kusto"
+	"github.com/Azure/azure-kusto-go/kusto/ingest"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 )
 
 // ReadConfiguration reads a property file
@@ -108,5 +111,35 @@ func CreateMDSDClient() {
 	} else {
 		Log("Successfully created MDSD msgp socket connection")
 		MdsdMsgpUnixSocketClient = conn
+	}
+}
+
+//mdsdSocketClient to write msgp messages
+func CreateADXClient() {
+
+	if ADXIngestor != nil {
+		//ADXIngestor.Close()
+		//ADXClient = nil
+		ADXIngestor = nil
+	}
+
+	authConfig := auth.NewClientCredentialsConfig("6846a450-07d6-46bb-9ddc-e5e679dfc40c", ".UnewwTq-5dTm6eQw.L=6QW2FQ4pCOO7", "72f988bf-86f1-41af-91ab-2d7cd011db47")
+
+	client, err := kusto.New("https://vishwax2.eastus.kusto.windows.net", kusto.Authorization{Config: authConfig})
+	if err != nil {
+		Log ("Error::mdsd::Unable to create ADX client %s", err.Error())
+		//log.Fatalf("Unable to create ADX connection %s", err.Error())
+	} else {
+		Log("Successfully created ADX Client. Creating Ingestor...")
+		//ADXClient = client
+		ingestor, ingestorErr := ingest.New(client, "containerinsights", "ContainerLog")
+		if ingestorErr != nil {
+			Log ("Error::mdsd::Unable to create ADX ingestor %s", ingestorErr.Error())
+		} else {
+			//ingestor.IngestionMappingRef("ContainerLogMapping2", ingest.JSON)
+			//options:= []ingest.FileOption{ingest.IngestionMappingRef("ContainerLogMapping2", ingest.JSON)}
+			//ingestor.options = options
+			ADXIngestor = ingestor
+		}
 	}
 }
