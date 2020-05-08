@@ -84,6 +84,7 @@ KIT_STATUS:
 #
 fluentbitplugin : 
 	@echo "========================= Building fluentbit out_oms go plugin for logs"
+	$(MKPATH) $(INTERMEDIATE_DIR)
 	make -C $(GO_SOURCE_DIR) fbplugin
 	$(COPY) $(GO_SOURCE_DIR)/out_oms.so $(INTERMEDIATE_DIR)
 
@@ -127,7 +128,7 @@ ifeq ($(ULINUX),1)
 		--RELEASE=$(CONTAINER_BUILDVERSION_BUILDNR) \		
 		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
 		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
-		base_container.data 
+		base_container.data linux.data linux_rpm.data
 
 	sudo $(RMDIR) $(STAGING_DIR)
 	$(MKPATH) $(INTERMEDIATE_DIR)
@@ -147,7 +148,7 @@ ifeq ($(ULINUX),1)
 		$(DPKG_LOCATION) \
 		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
 		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
-		base_container.data 
+		base_container.data linux.data linux_dpkg.data
 
 	# Strip the package extension from the package filename
 	sed -re 's/.rpm$$|.deb$$//' $(INTERMEDIATE_DIR)/package_filename > $(INTERMEDIATE_DIR)/package_file.tmp; mv $(INTERMEDIATE_DIR)/package_file.tmp $(INTERMEDIATE_DIR)/package_filename
@@ -181,6 +182,6 @@ else
 		$(DPKG_LOCATION) \
 		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
 		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
-		base_container.data 
+		base_container.data linux.data linux_dpkg.data
 
 endif
