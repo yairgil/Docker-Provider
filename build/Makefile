@@ -41,6 +41,10 @@ ifeq ($(ENABLE_DEBUG),1)
 PROV_DEBUG_FLAGS := -g
 endif
 
+# Support for installbuilder
+
+STAGING_DIR := $(INTERMEDIATE_DIR)/staging
+
 ifeq ($(ULINUX),1)
   # For consistency, the architecture should be i686 (for x86) and x86_64 (for x64)
   DOCKER_ARCH := $(shell echo $(PF_ARCH) | sed -e 's/x86$$/i686/' -e 's/x64$$/x86_64/')
@@ -105,6 +109,7 @@ rubypluginstests :
 # While the "formal build" only builds ULINUX, we may build something else for DEV purposes.
 # Assume we ALWAYS build DPKG, but only build RPM if --enable-ulinux is speified in configure.
 
+kit : CONTAINERLIB_FILENAME = libcontainer.so
 kit : fluentbitplugin
 
 ifeq ($(ULINUX),1)
@@ -125,7 +130,8 @@ ifeq ($(ULINUX),1)
 		--PFMAJOR=$(PF_MAJOR) \
 		--PFMINOR=$(PF_MINOR) \
 		--VERSION=$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH) \
-		--RELEASE=$(CONTAINER_BUILDVERSION_BUILDNR) \		
+		--RELEASE=$(CONTAINER_BUILDVERSION_BUILDNR) \
+		--CONTAINER_BUILD_LIBRARY=$(CONTAINERLIB_FILENAME) \		
 		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
 		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
 		base_container.data linux.data linux_rpm.data
@@ -145,7 +151,8 @@ ifeq ($(ULINUX),1)
 		--PFMINOR=$(PF_MINOR) \
 		--VERSION=$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH) \
 		--RELEASE=$(CONTAINER_BUILDVERSION_BUILDNR) \		
-		$(DPKG_LOCATION) \
+		--CONTAINER_BUILD_LIBRARY=$(CONTAINERLIB_FILENAME) \	
+		$(DPKG_LOCATION) \		
 		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
 		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
 		base_container.data linux.data linux_dpkg.data
@@ -178,7 +185,8 @@ else
 		--PFMAJOR=$(PF_MAJOR) \
 		--PFMINOR=$(PF_MINOR) \
 		--VERSION=$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH) \
-		--RELEASE=$(CONTAINER_BUILDVERSION_BUILDNR) \		
+		--RELEASE=$(CONTAINER_BUILDVERSION_BUILDNR) \	
+		--CONTAINER_BUILD_LIBRARY=$(CONTAINERLIB_FILENAME) \	
 		$(DPKG_LOCATION) \
 		--OUTPUTFILE=$(OUTPUT_PACKAGE_PREFIX) \
 		--DATAFILE_PATH=$(BASE_DIR)/installer/datafiles \
