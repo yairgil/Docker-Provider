@@ -14,7 +14,8 @@ import (
 	"time"
 	"github.com/tinylib/msgp/msgp"
 	"net"
-
+	"context"
+	"io"
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/google/uuid"
 
@@ -23,6 +24,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	
+	"github.com/Azure/azure-kusto-go/kusto/ingest"
+	//"github.com/pkg/profile"
+
+	
 )
 
 // DataType for Container Log
@@ -85,6 +92,8 @@ const MdsdSourceName = "ContainerLogSource"
 //container logs route - v2 (v2=flush to oneagent, anything else flush to ODS)
 const ContainerLogsV2Route = "v2"
 
+const ContainerLogsADXRoute = "adx"
+
 
 
 var (
@@ -94,6 +103,10 @@ var (
 	HTTPClient http.Client
 	// Client for MDSD msgp Unix socket
 	MdsdMsgpUnixSocketClient net.Conn
+	// Client for ADX
+	//ADXClient kusto.Client
+	// Ingestor for ADX
+	ADXIngestor *ingest.Ingestion
 	// OMSEndpoint ingestion endpoint
 	OMSEndpoint string
 	// Computer (Hostname) when ingesting into ContainerLog table
@@ -112,8 +125,14 @@ var (
 	enrichContainerLogs bool		
 	// container runtime engine configured on the kubelet
 	containerRuntime string
-	// container log route
+	// container log route for routing thru oneagent
 	ContainerLogsRouteV2 bool
+	// container log route for routing thru ADX
+	ContainerLogsRouteADX bool
+
+	//Counter int
+	//x = profile.Start()
+
 )
 
 var (
@@ -161,15 +180,28 @@ var (
 
 // DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
 type DataItem struct {
-	LogEntry              string `json:"LogEntry" msg:"LogEntry"`
-	LogEntrySource        string `json:"LogEntrySource" msg:"LogEntrySource"`
-	LogEntryTimeStamp     string `json:"LogEntryTimeStamp" msg:"LogEntryTimeStamp"`
-	LogEntryTimeOfCommand string `json:"TimeOfCommand" msg:"TimeOfCommand"`
-	ID                    string `json:"Id" msg:"Id"`
-	Image                 string `json:"Image" msg:"Image"`
-	Name                  string `json:"Name" msg:"Name"`
-	SourceSystem          string `json:"SourceSystem" msg:"SourceSystem"`
-	Computer              string `json:"Computer" msg:"Computer"`
+	LogEntry              string `json:"LogEntry"`
+	LogEntrySource        string `json:"LogEntrySource"`
+	LogEntryTimeStamp     string `json:"LogEntryTimeStamp"`
+	LogEntryTimeOfCommand string `json:"TimeOfCommand"`
+	ID                    string `json:"Id"`
+	Image                 string `json:"Image"`
+	Name                  string `json:"Name"`
+	SourceSystem          string `json:"SourceSystem"`
+	Computer              string `json:"Computer"`
+}
+
+type DataItemADX struct {
+	LogEntry              string `json:"LogEntry"`
+	LogEntrySource        string `json:"LogEntrySource"`
+	LogEntryTimeStamp     string `json:"LogEntryTimeStamp"`
+	LogEntryTimeOfCommand string `json:"TimeOfCommand"`
+	ID                    string `json:"Id"`
+	Image                 string `json:"Image"`
+	Name                  string `json:"Name"`
+	SourceSystem          string `json:"SourceSystem"`
+	Computer              string `json:"Computer"`
+	AzureResourceId		  string `json:"AzureResourceId"`
 }
 
 // telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
@@ -745,10 +777,22 @@ func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int
 	ContainerLogTelemetryMutex.Unlock()
 }
 
-// PostDataHelper sends data to the ODS endpoint or oneagent
+// PostDataHelper sends data to the ODS endpoint or oneagent or ADX
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
+
+/*	Counter += 1
+
+	Log(fmt.Sprintf("Counter=%d", Counter))
+
+	if (Counter == 500) {
+		Log("Stopping cpu profiler")
+		x.Stop()
+	}
+*/
+
 	start := time.Now()
 	var dataItems []DataItem
+	var dataItemsADX []DataItemADX
 
 	var msgPackEntries []MsgPackEntry
 	var stringMap map[string]string
@@ -805,53 +849,59 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap["TimeOfCommand"] = start.Format(time.RFC3339)
 		stringMap["Computer"] = Computer
 		var dataItem DataItem
+		var dataItemADX DataItemADX
 		var msgPackEntry MsgPackEntry
 		
-
-		if enrichContainerLogs == true {
-			dataItem = DataItem{
-				ID:                    stringMap["Id"],
-				LogEntry:              stringMap["LogEntry"],
-				LogEntrySource:        stringMap["LogEntrySource"],
-				LogEntryTimeStamp:     stringMap["LogEntryTimeStamp"],
-				LogEntryTimeOfCommand: stringMap["TimeOfCommand"],
-				SourceSystem:          stringMap["SourceSystem"],
-				Computer:              stringMap["Computer"],
-				Image:                 stringMap["Image"],
-				Name:                  stringMap["Name"],
-			}
-		} else { // dont collect timeofcommand field as its part of container log enrichment [But currently we dont know the ux behavior , so waiting for ux fix (LA ux)]
-			dataItem = DataItem{
-				ID:                    stringMap["Id"],
-				LogEntry:              stringMap["LogEntry"],
-				LogEntrySource:        stringMap["LogEntrySource"],
-				LogEntryTimeStamp:     stringMap["LogEntryTimeStamp"],
-				LogEntryTimeOfCommand: stringMap["TimeOfCommand"],
-				SourceSystem:          stringMap["SourceSystem"],
-				Computer:              stringMap["Computer"],
-				Image:                 stringMap["Image"],
-				Name:                  stringMap["Name"],
-			}
-		}
+		
 
 		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
 
 		if (ContainerLogsRouteV2 == true) {
 			msgPackEntry = MsgPackEntry {
-				// this below time is what mdsd uses in its buffer/expiry calculations. beter to be as close to flushtime as possible, so its filled just before flushing for each entry
+				// this below time is what mdsd uses in its buffer/expiry calculations. better to be as close to flushtime as possible, so its filled just before flushing for each entry
 				//Time: start.Unix(),
 				//Time: time.Now().Unix(),
 				Record: stringMap,
 			}
 			msgPackEntries = append(msgPackEntries, msgPackEntry)
+		} else if (ContainerLogsRouteADX == true){
+			if ResourceCentric == true {
+				stringMap["AzureResourceId"] = ResourceID
+			}
+			dataItemADX = DataItemADX{
+				ID:                    stringMap["Id"],
+				LogEntry:              stringMap["LogEntry"],
+				LogEntrySource:        stringMap["LogEntrySource"],
+				LogEntryTimeStamp:     stringMap["LogEntryTimeStamp"],
+				LogEntryTimeOfCommand: stringMap["TimeOfCommand"],
+				SourceSystem:          stringMap["SourceSystem"],
+				Computer:              stringMap["Computer"],
+				Image:                 stringMap["Image"],
+				Name:                  stringMap["Name"],
+				AzureResourceId:	   stringMap["AzureResourceId"],
+			}
+			//ADX 
+			dataItemsADX = append(dataItemsADX, dataItemADX)
 		} else {
+			dataItem = DataItem{
+				ID:                    stringMap["Id"],
+				LogEntry:              stringMap["LogEntry"],
+				LogEntrySource:        stringMap["LogEntrySource"],
+				LogEntryTimeStamp:     stringMap["LogEntryTimeStamp"],
+				LogEntryTimeOfCommand: stringMap["TimeOfCommand"],
+				SourceSystem:          stringMap["SourceSystem"],
+				Computer:              stringMap["Computer"],
+				Image:                 stringMap["Image"],
+				Name:                  stringMap["Name"],
+			}
+			//ODS 
 			dataItems = append(dataItems, dataItem)
 		}
 
-		if dataItem.LogEntryTimeStamp != "" {
-			loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
+		if stringMap["LogEntryTimeStamp"] != "" {
+			loggedTime, e := time.Parse(time.RFC3339, stringMap["LogEntryTimeStamp"])
 			if e != nil {
-				message := fmt.Sprintf("containerId: %s Error while converting LogEntryTimeStamp for telemetry purposes: %s", dataItem.ID, e.Error())
+				message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
 				Log(message)
 				SendException(message)
 			} else {
@@ -887,9 +937,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		msgpBytes = append(msgpBytes, 0x92)
 		msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
 		msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+		batchTime := time.Now().Unix()
 		for entry := range fluentForward.Entries {
 			msgpBytes = append(msgpBytes, 0x92)
-			msgpBytes = msgp.AppendInt64(msgpBytes, time.Now().Unix() )//fluentForward.Entries[entry].Time)
+			msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
 			msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
 		}
 		
@@ -906,30 +957,82 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				return output.FLB_RETRY
 			}
 		}
-		
-			bts, er := MdsdMsgpUnixSocketClient.Write(msgpBytes)
 
-			elapsed = time.Since(start)
+		deadline := 10 * time.Second
+		MdsdMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
 
-			if er != nil {
-				// Commenting this out for now. TODO - Add better telemetry for write errors using aggregation
-				//SendException(message)
-				Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(dataItems), elapsed, er.Error())
-				if (MdsdMsgpUnixSocketClient != nil) {
-					MdsdMsgpUnixSocketClient.Close()
-					MdsdMsgpUnixSocketClient = nil
+		bts, er := MdsdMsgpUnixSocketClient.Write(msgpBytes)
+
+		elapsed = time.Since(start)
+
+		if er != nil {
+			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(dataItems), elapsed, er.Error())
+			if (MdsdMsgpUnixSocketClient != nil) {
+				MdsdMsgpUnixSocketClient.Close()
+				MdsdMsgpUnixSocketClient = nil
+			}
+
+			ContainerLogTelemetryMutex.Lock()
+			defer ContainerLogTelemetryMutex.Unlock()
+			ContainerLogsSendErrorsToMDSDFromFluent += 1
+			
+
+			return output.FLB_RETRY
+		} else {
+			numContainerLogRecords = len(msgPackEntries)
+			Log ("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
+		}
+	} else if ( ContainerLogsRouteADX == true && len(dataItemsADX) > 0){
+		// Route to ADX
+		r, w := io.Pipe()
+		defer r.Close()
+		enc := json.NewEncoder(w)
+		go func() {
+			defer w.Close()
+			for _, data := range dataItemsADX {
+				
+				if encError := enc.Encode(data); encError != nil {
+					message := fmt.Sprintf("Error::ADX Encoding data for ADX %s", encError)
+					Log (message)
+					SendException(message)
+					//continue and move on, so one poisoned message does not impact the whole batch
 				}
+			}
+		}()
+
+		if ADXIngestor == nil {
+			Log("Error::ADX::ADXIngestor does not exist. re-creating ...")
+			CreateADXClient()
+			if ADXIngestor == nil {
+				Log ("Error::ADX::Unable to create ADX client. Please check error log.")
 
 				ContainerLogTelemetryMutex.Lock()
 				defer ContainerLogTelemetryMutex.Unlock()
-				ContainerLogsSendErrorsToMDSDFromFluent += 1
-				
+				ContainerLogsADXClientCreateErrors += 1
 
 				return output.FLB_RETRY
-			} else {
-				numContainerLogRecords = len(msgPackEntries)
-				Log ("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 			}
+		}
+
+		// Setup a maximum time for completion to be 15 Seconds.
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		if ingestionErr := ADXIngestor.FromReader(ctx, r, ingest.IngestionMappingRef("ContainerLogMapping2", ingest.JSON), ingest.FileFormat(ingest.JSON)); ingestionErr != nil {
+			Log("Error when streaming to ADX Ingestion: %s", ingestionErr.Error())
+			ADXIngestor = nil
+
+			ContainerLogTelemetryMutex.Lock()
+			defer ContainerLogTelemetryMutex.Unlock()
+			ContainerLogsSendErrorsToADXFromFluent += 1
+
+			return output.FLB_RETRY
+		}
+
+		elapsed = time.Since(start)
+		numContainerLogRecords = len(dataItemsADX)
+		Log ("Success::ADX::Successfully wrote %d container log records to ADX in %s", numContainerLogRecords, elapsed)
+	
 	} else {
 			//flush to ODS
 			if len(dataItems) > 0 {
@@ -1045,6 +1148,7 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 // InitializePlugin reads and populates plugin configuration
 func InitializePlugin(pluginConfPath string, agentVersion string) {
 
+	//Counter = 1
 	StdoutIgnoreNsSet = make(map[string]bool)
 	StderrIgnoreNsSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
@@ -1114,10 +1218,14 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	Log("AZMON_CONTAINER_LOGS_ROUTE:%s",ContainerLogsRoute)
 
 	ContainerLogsRouteV2 = false //default is ODS
+	ContainerLogsRouteADX = false //default is LA
 
 	if ( strings.Compare(ContainerLogsRoute, ContainerLogsV2Route) == 0 ) {
 		ContainerLogsRouteV2 = true
 		Log("Routing container logs thru %s route...", ContainerLogsV2Route )
+	} else if (strings.Compare(ContainerLogsRoute,ContainerLogsADXRoute) == 0) {
+		ContainerLogsRouteADX = true
+		Log("Routing container logs thru %s route...", ContainerLogsADXRoute )
 	}
 
 	//set useragent to be used by ingestion 
@@ -1185,6 +1293,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	if (ContainerLogsRouteV2 == true) {
 		CreateMDSDClient()
+	} else if (ContainerLogsRouteADX == true) {
+		CreateADXClient()
 	}
 
 	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {

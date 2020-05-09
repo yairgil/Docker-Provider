@@ -1,7 +1,15 @@
 package: plugins
 import:
+- package: github.com/Azure/azure-kusto-go
+  version: 041d4ed55f86670433ae124c36cc19d30b624fd4
+  subpackages:
+  - kusto
+  - kusto/ingest
+- package: github.com/Azure/go-autorest
+  subpackages:
+  - autorest/azure/auth
+  - tracing
 - package: github.com/Microsoft/ApplicationInsights-Go
-  version: ^0.4.2
   subpackages:
   - appinsights
   - appinsights/contracts
@@ -9,17 +17,14 @@ import:
   subpackages:
   - output
 - package: github.com/google/uuid
-  version: ^1.1.0
 - package: github.com/tinylib/msgp
   subpackages:
   - msgp
 - package: gopkg.in/natefinch/lumberjack.v2
-  version: ^2.1.0
 - package: k8s.io/apimachinery
   subpackages:
   - pkg/apis/meta/v1
 - package: k8s.io/client-go
-  version: ^8.0.0
   subpackages:
   - kubernetes
   - rest

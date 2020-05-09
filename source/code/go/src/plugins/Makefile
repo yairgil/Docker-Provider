@@ -14,7 +14,7 @@ test:
 	go test -cover -race -coverprofile=coverage.txt -covermode=atomic
 
 glide:
-	glide install
+	glide install github.com/Azure/azure-kusto-go -v
 
 clean:
 	rm -rf *.so *.h *~

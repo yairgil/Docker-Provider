@@ -36,10 +36,14 @@ var (
 	TelegrafMetricsSendErrorCount float64
     //Tracks the number of 429 (throttle) errors between telemetry ticker periods (uses ContainerLogTelemetryTicker)
 	TelegrafMetricsSend429ErrorCount float64
-    //Tracks the number of write/send errors from fluent for containerlogs (uses ContainerLogTelemetryTicker)
+    //Tracks the number of write/send errors to mdsd for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsSendErrorsToMDSDFromFluent float64
 	 //Tracks the number of mdsd client create errors for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsMDSDClientCreateErrors float64
+	//Tracks the number of write/send errors to ADX for containerlogs (uses ContainerLogTelemetryTicker)
+	ContainerLogsSendErrorsToADXFromFluent float64
+	 //Tracks the number of ADX client create errors for containerlogs (uses ContainerLogTelemetryTicker)
+	ContainerLogsADXClientCreateErrors float64
 )
 
 const (
@@ -58,6 +62,8 @@ const (
 	metricNameNumberofSend429ErrorsTelegrafMetrics    = "TelegrafMetricsSend429ErrorCount"
 	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent	  = "ContainerLogs2MdsdSendErrorCount"
 	metricNameErrorCountContainerLogsMDSDClientCreateError	  = "ContainerLogsMdsdClientCreateErrorCount"
+	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent	  = "ContainerLogs2ADXSendErrorCount"
+	metricNameErrorCountContainerLogsADXClientCreateError	  = "ContainerLogsADXClientCreateErrorCount"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -90,6 +96,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		telegrafMetricsSend429ErrorCount := TelegrafMetricsSend429ErrorCount
 		containerLogsSendErrorsToMDSDFromFluent := ContainerLogsSendErrorsToMDSDFromFluent
 		containerLogsMDSDClientCreateErrors := ContainerLogsMDSDClientCreateErrors
+		containerLogsSendErrorsToADXFromFluent := ContainerLogsSendErrorsToADXFromFluent
+		containerLogsADXClientCreateErrors := ContainerLogsADXClientCreateErrors
 		
 		TelegrafMetricsSentCount = 0.0
 		TelegrafMetricsSendErrorCount = 0.0
@@ -103,6 +111,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		AgentLogProcessingMaxLatencyMsContainer = ""
 		ContainerLogsSendErrorsToMDSDFromFluent = 0.0
 		ContainerLogsMDSDClientCreateErrors = 0.0
+		ContainerLogsSendErrorsToADXFromFluent = 0.0
+		ContainerLogsADXClientCreateErrors = 0.0
 		ContainerLogTelemetryMutex.Unlock()
 
 		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
@@ -130,6 +140,12 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		}
 		if containerLogsMDSDClientCreateErrors > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountContainerLogsMDSDClientCreateError, containerLogsMDSDClientCreateErrors))
+		}
+		if containerLogsSendErrorsToADXFromFluent > 0.0 {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountContainerLogsSendErrorsToADXFromFluent, containerLogsSendErrorsToADXFromFluent))
+		}
+		if containerLogsADXClientCreateErrors > 0.0 {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountContainerLogsADXClientCreateError, containerLogsADXClientCreateErrors))
 		}
 
 		start = time.Now()
