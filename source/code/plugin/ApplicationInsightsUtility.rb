@@ -326,16 +326,18 @@ class ApplicationInsightsUtility
 
         # Check for unsupported protocol
         if proxyConfigString[/^[a-z]+:\/\//]
+          $log.warn("unsupported protocol in proxy configuration")
           return nil
         end
 
         re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/
         matches = re.match(proxyConfigString)
         if matches.nil? or matches[:addr].nil?
+          $log.warn("invalid proxy configuration")
           return nil
         end
         # Convert nammed matches to a hash
-        return Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
+        Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
     end
 
   end
