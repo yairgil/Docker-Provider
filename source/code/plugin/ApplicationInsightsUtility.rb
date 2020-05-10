@@ -21,6 +21,8 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
+  @@EnvAgentProxy  = "HTTPS_PROXY"
+  @DefaultAppInsightsEndpoint = "https://dc.services.visualstudio.com/v2/track"
 
   @@CustomProperties = {}
   @@Tc = nil
@@ -74,6 +76,8 @@ class ApplicationInsightsUtility
           @@Tc = ApplicationInsights::TelemetryClient.new
         elsif !encodedAppInsightsKey.nil?
           decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
+          # read the proxy config as hash
+          proxy = getProxyConfiguration()
 
           #override ai endpoint if its available otherwise use default.
           if appInsightsEndpoint && !appInsightsEndpoint.nil? && !appInsightsEndpoint.empty?
@@ -81,12 +85,24 @@ class ApplicationInsightsUtility
             #telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
             #telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
             #telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
-            sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
+            if proxy.nil? || proxy.empty?
+              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
+            else 
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
+              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy
+              @@CustomProperties["Proxy"] = "Configured"
+            end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
           else
-            sender = ApplicationInsights::Channel::AsynchronousSender.new
+            if proxy.nil? || proxy.empty?
+              sender = ApplicationInsights::Channel::AsynchronousSender.new
+            else       
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")        
+              sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy
+              @@CustomProperties["Proxy"] = "Configured"
+            end         
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, channel
@@ -281,5 +297,44 @@ class ApplicationInsightsUtility
         $log.warn("Exception in AppInsightsUtility: getWorkspaceCloud - error: #{errorStr}")
       end
     end
+
+    def getProxyConfiguration()   
+      proxyEnvVar = ENV[@@EnvAgentProxy]      
+      if proxyEnvVar.nil?  || proxyEnvVar.empty?  
+        return {}
+      end
+
+      begin      
+        proxyConfig = parseProxyConfiguration(proxyEnvVar)
+      rescue SystemCallError # Error::ENOENT
+        return {}
+      end
+
+      if proxyConfig.nil?
+        $log.warn("Failed to parse the proxy configuration in '#{proxy_conf_path}'")
+        return {}
+      end
+
+      return proxy_config
+    end
+
+    def parseProxyConfiguration(proxyConfigString)
+        # Remove the http(s) protocol
+        proxyConfigString = proxyConfigString.gsub(/^(https?:\/\/)?/, "")
+
+        # Check for unsupported protocol
+        if proxyConfigString[/^[a-z]+:\/\//]
+          return nil
+        end
+
+        re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/ 
+        matches = re.match(proxyConfigString)
+        if matches.nil? or matches[:addr].nil? 
+          return nil
+        end
+        # Convert nammed matches to a hash
+        Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
+    end
+
   end
 end

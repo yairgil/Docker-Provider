@@ -68,7 +68,8 @@ func CreateHTTPClient() {
 	}
 
 	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	// Refer: https://golang.org/pkg/net/http/#ProxyFromEnvironment
+	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyFromEnvironment}
 
 	HTTPClient = http.Client{
 		Transport: transport,
