@@ -65,7 +65,7 @@ module ApplicationInsights
         if @proxy.nil? || @proxy.empty?
           http = Net::HTTP.new(uri.hostname, uri.port)
         else
-          http = Net::HTTP.new(uri.hostname, uri.port, proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
+          http = Net::HTTP.new(uri.hostname, uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass])
         end
         if uri.scheme.downcase == 'https'
           http.use_ssl = true

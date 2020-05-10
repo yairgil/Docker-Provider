@@ -90,7 +90,7 @@ class ApplicationInsightsUtility
             else 
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy
-              @@CustomProperties["IsProxyConfigured"] =  true
+              @@CustomProperties["IsProxyConfigured"] =  "true"
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
@@ -101,7 +101,7 @@ class ApplicationInsightsUtility
             else       
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")        
               sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy
-              @@CustomProperties["IsProxyConfigured"] = true
+              @@CustomProperties["IsProxyConfigured"] = "true"
             end         
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
