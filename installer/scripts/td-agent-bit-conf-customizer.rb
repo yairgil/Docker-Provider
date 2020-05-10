@@ -3,7 +3,7 @@ require_relative "ConfigParseErrorLogger"
 
 @td_agent_bit_conf_path = "/etc/opt/microsoft/docker-cimprov/td-agent-bit.conf"
 
-@default_service_interval = "5"
+@default_service_interval = "15"
 
 def is_number?(value)
   true if Integer(value) rescue false
