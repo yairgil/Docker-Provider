@@ -68,6 +68,7 @@ class ApplicationInsightsUtility
         encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
         @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud
+        @@CustomProperties["IsProxyConfigured"] =  "false"
 
         #Check if telemetry is turned off
         telemetryOffSwitch = ENV["DISABLE_TELEMETRY"]
@@ -87,7 +88,7 @@ class ApplicationInsightsUtility
             #telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
             if proxy.nil? || proxy.empty?
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
-            else 
+            else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy
               @@CustomProperties["IsProxyConfigured"] =  "true"
@@ -98,11 +99,11 @@ class ApplicationInsightsUtility
           else
             if proxy.nil? || proxy.empty?
               sender = ApplicationInsights::Channel::AsynchronousSender.new
-            else       
-              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")        
+            else
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
               sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy
               @@CustomProperties["IsProxyConfigured"] = "true"
-            end         
+            end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, channel
@@ -135,7 +136,7 @@ class ApplicationInsightsUtility
         if containerRuntime.casecmp("docker") == 0
           dockerInfo = DockerApiClient.dockerInfo
           if (!dockerInfo.nil? && !dockerInfo.empty?)
-            @@CustomProperties["DockerVersion"] = dockerInfo["Version"]          
+            @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
           end
         end
       end
@@ -298,23 +299,18 @@ class ApplicationInsightsUtility
       end
     end
 
-    def getProxyConfiguration()   
-      proxyEnvVar = ENV[@@EnvAgentProxy]      
-      if proxyEnvVar.nil?  || proxyEnvVar.empty?  
-        return {}
-      end
-
-      begin      
+    def getProxyConfiguration()
+      proxyConfig = {}
+      begin
+        proxyEnvVar = ENV[@@EnvAgentProxy]
+        if proxyEnvVar.nil?  || proxyEnvVar.empty?
+          return proxyConfig
+        end
         proxyConfig = parseProxyConfiguration(proxyEnvVar)
-      rescue SystemCallError # Error::ENOENT
+      rescue => errorStr
+        $log.warn("Failed to parse the proxy configuration in '#{errorStr}'")
         return {}
       end
-
-      if proxyConfig.nil?
-        $log.warn("Failed to parse the proxy configuration in '#{proxyEnvVar}'")
-        return {}
-      end
-
       return proxyConfig
     end
 
@@ -327,13 +323,13 @@ class ApplicationInsightsUtility
           return nil
         end
 
-        re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/ 
+        re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/
         matches = re.match(proxyConfigString)
-        if matches.nil? or matches[:addr].nil? 
+        if matches.nil? or matches[:addr].nil?
           return nil
         end
         # Convert nammed matches to a hash
-        Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
+        return Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
     end
 
   end
