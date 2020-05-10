@@ -302,6 +302,7 @@ class ApplicationInsightsUtility
       end
     end
 
+    #Method to get the http or https proxy configuration if its configured.
     def getProxyConfiguration()
       proxyConfig = {}
       begin
@@ -311,34 +312,27 @@ class ApplicationInsightsUtility
            if proxyEnvVar.nil?  || proxyEnvVar.empty?
               return proxyConfig
            end
+        end     
+        # Remove the http(s) protocol
+        proxyConfigString = proxyEnvVar.gsub(/^(https?:\/\/)?/, "")
+        # Check for unsupported protocol
+        if proxyConfigString[/^[a-z]+:\/\//]
+          $log.warn("unsupported protocol in proxy configuration")
+          return proxyConfig
         end
-        proxyConfig = parseProxyConfiguration(proxyEnvVar)
+        re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/
+        matches = re.match(proxyConfigString)
+        if matches.nil? or matches[:addr].nil?
+          $log.warn("invalid proxy configuration")
+          return proxyConfig
+        end
+        # Convert nammed matches to a hash
+        proxyConfig = Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
       rescue => errorStr
         $log.warn("Failed to parse the proxy configuration in '#{errorStr}'")
         return {}
       end
       return proxyConfig
     end
-
-    def parseProxyConfiguration(proxyConfigString)
-        # Remove the http(s) protocol
-        proxyConfigString = proxyConfigString.gsub(/^(https?:\/\/)?/, "")
-
-        # Check for unsupported protocol
-        if proxyConfigString[/^[a-z]+:\/\//]
-          $log.warn("unsupported protocol in proxy configuration")
-          return nil
-        end
-
-        re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/
-        matches = re.match(proxyConfigString)
-        if matches.nil? or matches[:addr].nil?
-          $log.warn("invalid proxy configuration")
-          return nil
-        end
-        # Convert nammed matches to a hash
-        Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
-    end
-
   end
 end
