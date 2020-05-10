@@ -21,7 +21,8 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
-  @@EnvAgentProxy  = "HTTPS_PROXY"
+  @@EnvHTTPProxy  = "HTTP_PROXY"
+  @@EnvHTTPsProxy  = "HTTPS_PROXY"
   @DefaultAppInsightsEndpoint = "https://dc.services.visualstudio.com/v2/track"
 
   @@CustomProperties = {}
@@ -67,19 +68,21 @@ class ApplicationInsightsUtility
         @@CustomProperties["ControllerType"] = ENV[@@EnvControllerType]
         encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
-        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud
+        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud   
         @@CustomProperties["IsProxyConfigured"] =  "false"
-
+        # read the proxy configuration
+        proxy = getProxyConfiguration()
+        if !proxy.nil? && !proxy.empty?        
+          @@CustomProperties["IsProxyConfigured"] =  "true"
+        end
+        
         #Check if telemetry is turned off
         telemetryOffSwitch = ENV["DISABLE_TELEMETRY"]
         if telemetryOffSwitch && !telemetryOffSwitch.nil? && !telemetryOffSwitch.empty? && telemetryOffSwitch.downcase == "true".downcase
           $log.warn("AppInsightsUtility: Telemetry is disabled")
           @@Tc = ApplicationInsights::TelemetryClient.new
         elsif !encodedAppInsightsKey.nil?
-          decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
-          # read the proxy config as hash
-          proxy = getProxyConfiguration()
-
+          decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)         
           #override ai endpoint if its available otherwise use default.
           if appInsightsEndpoint && !appInsightsEndpoint.nil? && !appInsightsEndpoint.empty?
             $log.info("AppInsightsUtility: Telemetry client uses overrided endpoint url : #{appInsightsEndpoint}")
@@ -302,9 +305,12 @@ class ApplicationInsightsUtility
     def getProxyConfiguration()
       proxyConfig = {}
       begin
-        proxyEnvVar = ENV[@@EnvAgentProxy]
+        proxyEnvVar = ENV[@@EnvHTTPsProxy]
         if proxyEnvVar.nil?  || proxyEnvVar.empty?
-          return proxyConfig
+           proxyEnvVar = ENV[@@EnvHTTPProxy]
+           if proxyEnvVar.nil?  || proxyEnvVar.empty?
+              return proxyConfig
+           end
         end
         proxyConfig = parseProxyConfiguration(proxyEnvVar)
       rescue => errorStr

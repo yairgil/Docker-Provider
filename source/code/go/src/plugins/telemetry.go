@@ -45,6 +45,8 @@ const (
 	envACSResourceName                                = "ACS_RESOURCE_NAME"
 	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
 	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
+	envHTTPProxy                                      = "HTTP_PROXY"
+	envHTTPsProxy                                     = "HTTPS_PROXY"
 	metricNameAvgFlushRate                            = "ContainerLogAvgRecordsFlushedPerSec"
 	metricNameAvgLogGenerationRate                    = "ContainerLogsGeneratedPerSec"
 	metricNameLogSize                                 = "ContainerLogsSize"
@@ -200,9 +202,9 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		CommonProperties["Region"] = region
 	}
 
-	agentProxy := os.Getenv("HTTP_PROXY")
+	agentProxy := os.Getenv(envHTTPsProxy)
 	if agentProxy == "" {
-		agentProxy = os.Getenv("HTTPS_PROXY")
+		agentProxy = os.Getenv(envHTTPProxy)
 	}
 	if agentProxy == "" {
 		CommonProperties["IsProxyConfigured"] = "false"
