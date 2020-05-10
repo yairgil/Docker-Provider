@@ -311,11 +311,11 @@ class ApplicationInsightsUtility
       end
 
       if proxyConfig.nil?
-        $log.warn("Failed to parse the proxy configuration in '#{proxy_conf_path}'")
+        $log.warn("Failed to parse the proxy configuration in '#{proxyEnvVar}'")
         return {}
       end
 
-      return proxy_config
+      return proxyConfig
     end
 
     def parseProxyConfiguration(proxyConfigString)
