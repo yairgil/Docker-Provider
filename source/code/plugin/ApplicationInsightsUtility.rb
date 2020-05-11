@@ -314,8 +314,10 @@ class ApplicationInsightsUtility
       proxyConfig = {}
       begin
         proxyEnvVar = ENV[@@EnvHTTPsProxy]
+        $log.info("HTTPS_PROXY environment var : #{proxyEnvVar}")      
         if proxyEnvVar.nil?  || proxyEnvVar.empty?
            proxyEnvVar = ENV[@@EnvHTTPProxy]
+           $log.info("HTTP_PROXY environment var : #{proxyEnvVar}")      
            if proxyEnvVar.nil?  || proxyEnvVar.empty?
               return proxyConfig
            end
