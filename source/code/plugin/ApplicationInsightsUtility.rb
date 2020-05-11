@@ -93,8 +93,7 @@ class ApplicationInsightsUtility
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
-              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy
-              @@CustomProperties["IsProxyConfigured"] =  "true"
+              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy              
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
@@ -104,8 +103,7 @@ class ApplicationInsightsUtility
               sender = ApplicationInsights::Channel::AsynchronousSender.new
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
-              sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy
-              @@CustomProperties["IsProxyConfigured"] = "true"
+              sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy              
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
@@ -322,14 +320,14 @@ class ApplicationInsightsUtility
         end
         re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/
         matches = re.match(proxyConfigString)
-        if matches.nil? or matches[:addr].nil?
+        if matches.nil? || matches[:addr].nil?
           $log.warn("invalid proxy configuration")
           return proxyConfig
         end
-        # Convert nammed matches to a hash
+        # Convert named matches to a hash
         proxyConfig = Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
-      rescue => errorStr
-        $log.warn("Failed to parse the proxy configuration in '#{errorStr}'")
+      rescue => errorStr        
+        $log.warn("Exception in AppInsightsUtility: getProxyConfiguration - error: #{errorStr}")
         return {}
       end
       return proxyConfig
