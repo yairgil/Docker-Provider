@@ -70,10 +70,15 @@ class ApplicationInsightsUtility
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
         @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud   
         @@CustomProperties["IsProxyConfigured"] =  "false"
+        IsProxyConfigured = false
         # read the proxy configuration
         proxy = getProxyConfiguration()
         if !proxy.nil? && !proxy.empty?        
+          $log.info("proxy configured")
           @@CustomProperties["IsProxyConfigured"] =  "true"
+          IsProxyConfigured = true
+        else 
+          $log.info("proxy is not configured")
         end
         
         #Check if telemetry is turned off
@@ -89,7 +94,7 @@ class ApplicationInsightsUtility
             #telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
             #telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
             #telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
-            if proxy.nil? || proxy.empty?
+            if !IsProxyConfigured
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
@@ -99,7 +104,7 @@ class ApplicationInsightsUtility
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
           else
-            if proxy.nil? || proxy.empty?
+            if !IsProxyConfigured
               sender = ApplicationInsights::Channel::AsynchronousSender.new
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
@@ -301,7 +306,7 @@ class ApplicationInsightsUtility
     end
 
     #Method to get the http or https proxy configuration if its configured.
-    def getProxyConfiguration()
+    def getProxyConfiguration()      
       proxyConfig = {}
       begin
         proxyEnvVar = ENV[@@EnvHTTPsProxy]
