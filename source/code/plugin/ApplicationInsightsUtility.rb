@@ -313,6 +313,8 @@ class ApplicationInsightsUtility
       $log.info("getProxyConfiguration : start")      
       proxyConfig = {}
       begin
+        containerRuntime = ENV[@@EnvContainerRuntime]
+        $log.info("CONTAINER_RUNTIME environment var : #{containerRuntime}")      
         proxyEnvVar = ENV[@@EnvHTTPsProxy]
         $log.info("HTTPS_PROXY environment var : #{proxyEnvVar}")      
         if proxyEnvVar.nil?  || proxyEnvVar.empty?
