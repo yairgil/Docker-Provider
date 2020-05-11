@@ -72,6 +72,7 @@ class ApplicationInsightsUtility
         @@CustomProperties["IsProxyConfigured"] =  "false"
         IsProxyConfigured = false
         # read the proxy configuration
+        $log.info("calling getProxyConfiguration")
         proxy = getProxyConfiguration()
         if !proxy.nil? && !proxy.empty?        
           $log.info("proxy configured")
@@ -197,8 +198,10 @@ class ApplicationInsightsUtility
     def sendExceptionTelemetry(errorStr, properties = nil)
       begin
         if @@CustomProperties.empty? || @@CustomProperties.nil?
+          $log.info("initializing initializeUtility")
           initializeUtility()
         elsif @@CustomProperties["DockerVersion"].nil?
+          $log.info("getContainerRuntimeInfo")
           getContainerRuntimeInfo()
         end
         telemetryProps = {}
@@ -306,7 +309,8 @@ class ApplicationInsightsUtility
     end
 
     #Method to get the http or https proxy configuration if its configured.
-    def getProxyConfiguration()      
+    def getProxyConfiguration()
+      $log.info("getProxyConfiguration : start")      
       proxyConfig = {}
       begin
         proxyEnvVar = ENV[@@EnvHTTPsProxy]
@@ -335,6 +339,7 @@ class ApplicationInsightsUtility
         $log.warn("Exception in AppInsightsUtility: getProxyConfiguration - error: #{errorStr}")
         return {}
       end
+      $log.info("getProxyConfiguration : end")      
       return proxyConfig
     end
   end
