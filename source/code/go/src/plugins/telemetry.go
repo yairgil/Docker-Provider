@@ -210,6 +210,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		CommonProperties["IsProxyConfigured"] = "false"
 	} else {
 		CommonProperties["IsProxyConfigured"] = "true"
+		Log("Proxy configured")
 	}
 
 	TelemetryClient.Context().CommonProperties = CommonProperties

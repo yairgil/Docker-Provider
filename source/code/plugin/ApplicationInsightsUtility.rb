@@ -70,16 +70,14 @@ class ApplicationInsightsUtility
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
         @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud          
         # read the proxy configuration
-        $log.info("calling getProxyConfiguration")
         proxy = getProxyConfiguration()
         if !proxy.nil? && !proxy.empty?        
           $log.info("proxy configured")
           @@CustomProperties["IsProxyConfigured"] =  "true"
           isProxyConfigured = true
-        else 
+        else
           @@CustomProperties["IsProxyConfigured"] =  "false"
           isProxyConfigured = false
-          $log.info("proxy is not configured")
         end
         
         #Check if telemetry is turned off
@@ -98,7 +96,7 @@ class ApplicationInsightsUtility
             if !isProxyConfigured
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
             else
-              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration since proxy configured")
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy              
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
@@ -108,7 +106,7 @@ class ApplicationInsightsUtility
             if !isProxyConfigured
               sender = ApplicationInsights::Channel::AsynchronousSender.new
             else
-              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration since proxy configured")
               sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy              
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
@@ -197,11 +195,9 @@ class ApplicationInsightsUtility
 
     def sendExceptionTelemetry(errorStr, properties = nil)
       begin
-        if @@CustomProperties.empty? || @@CustomProperties.nil?
-          $log.info("initializing initializeUtility")
+        if @@CustomProperties.empty? || @@CustomProperties.nil?          
           initializeUtility()
-        elsif @@CustomProperties["DockerVersion"].nil?
-          $log.info("getContainerRuntimeInfo")
+        elsif @@CustomProperties["DockerVersion"].nil?          
           getContainerRuntimeInfo()
         end
         telemetryProps = {}
@@ -309,20 +305,15 @@ class ApplicationInsightsUtility
     end
 
     #Method to get the http or https proxy configuration if its configured.
-    def getProxyConfiguration()
-      $log.info("getProxyConfiguration : start")      
+    def getProxyConfiguration()    
       proxyConfig = {}
       begin
-        containerRuntime = ENV[@@EnvContainerRuntime]
-        $log.info("CONTAINER_RUNTIME environment var : #{containerRuntime}")      
-        proxyEnvVar = ENV[@@EnvHTTPsProxy]
-        $log.info("HTTPS_PROXY environment var : #{proxyEnvVar}")      
+        proxyEnvVar = ENV[@@EnvHTTPsProxy]   
         if proxyEnvVar.nil?  || proxyEnvVar.empty?
-           proxyEnvVar = ENV[@@EnvHTTPProxy]
-           $log.info("HTTP_PROXY environment var : #{proxyEnvVar}")      
-           if proxyEnvVar.nil?  || proxyEnvVar.empty?
-              return proxyConfig
-           end
+          proxyEnvVar = ENV[@@EnvHTTPProxy]           
+          if proxyEnvVar.nil?  || proxyEnvVar.empty?
+            return proxyConfig
+          end
         end     
         # Remove the http(s) protocol
         proxyConfigString = proxyEnvVar.gsub(/^(https?:\/\/)?/, "")
@@ -342,8 +333,7 @@ class ApplicationInsightsUtility
       rescue => errorStr        
         $log.warn("Exception in AppInsightsUtility: getProxyConfiguration - error: #{errorStr}")
         return {}
-      end
-      $log.info("getProxyConfiguration : end")      
+      end      
       return proxyConfig
     end
   end
