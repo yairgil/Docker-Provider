@@ -36,7 +36,7 @@ var (
 	TelegrafMetricsSentCount float64
 	//Tracks the number of send errors between telemetry ticker periods (uses ContainerLogTelemetryTicker)
 	TelegrafMetricsSendErrorCount float64
-    //Tracks the number of 429 (throttle) errors between telemetry ticker periods (uses ContainerLogTelemetryTicker)
+	//Tracks the number of 429 (throttle) errors between telemetry ticker periods (uses ContainerLogTelemetryTicker)
 	TelegrafMetricsSend429ErrorCount float64
 )
 
@@ -47,6 +47,8 @@ const (
 	envACSResourceName                                = "ACS_RESOURCE_NAME"
 	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
 	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
+	envHTTPProxy                                      = "HTTP_PROXY"
+	envHTTPsProxy                                     = "HTTPS_PROXY"
 	metricNameAvgFlushRate                            = "ContainerLogAvgRecordsFlushedPerSec"
 	metricNameAvgLogGenerationRate                    = "ContainerLogsGeneratedPerSec"
 	metricNameLogSize                                 = "ContainerLogsSize"
@@ -222,6 +224,17 @@ func InitializeTelemetryClient(agentVersion string, agentProxyConfig map[string]
 
 		region := os.Getenv("AKS_REGION")
 		CommonProperties["Region"] = region
+	}
+
+	agentProxy := os.Getenv(envHTTPsProxy)
+	if agentProxy == "" {
+		agentProxy = os.Getenv(envHTTPProxy)
+	}
+	if agentProxy == "" {
+		CommonProperties["IsProxyConfigured"] = "false"
+	} else {
+		CommonProperties["IsProxyConfigured"] = "true"
+		Log("Proxy configured")
 	}
 
 	TelemetryClient.Context().CommonProperties = CommonProperties

@@ -8,9 +8,9 @@ module ApplicationInsights
       SERVICE_ENDPOINT_URI = 'https://dc.services.visualstudio.com/v2/track'
       # Initializes a new instance of the class.
       # @param [String] service_endpoint_uri the address of the service to send
-       # @param [hash] proxy configuration to use if specified
+      # @param [Hash] proxy server configuration to send (optional)
       # telemetry data to.
-      def initialize(service_endpoint_uri = SERVICE_ENDPOINT_URI, proxy = {})
+      def initialize(service_endpoint_uri = SERVICE_ENDPOINT_URI,  proxy = {})
         super service_endpoint_uri, proxy
       end
     end

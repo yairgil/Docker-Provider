@@ -21,7 +21,8 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
-  @OmsProxyFilePath = "/etc/opt/microsoft/omsagent/proxy.conf"
+  @@EnvHTTPProxy  = "HTTP_PROXY"
+  @@EnvHTTPsProxy  = "HTTPS_PROXY"
   @DefaultAppInsightsEndpoint = "https://dc.services.visualstudio.com/v2/track"
 
   @@CustomProperties = {}
@@ -67,41 +68,47 @@ class ApplicationInsightsUtility
         @@CustomProperties["ControllerType"] = ENV[@@EnvControllerType]
         encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
-        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud
-
+        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud          
+        # read the proxy configuration
+        proxy = getProxyConfiguration()
+        if !proxy.nil? && !proxy.empty?        
+          $log.info("proxy configured")
+          @@CustomProperties["IsProxyConfigured"] =  "true"
+          isProxyConfigured = true
+        else
+          @@CustomProperties["IsProxyConfigured"] =  "false"
+          isProxyConfigured = false
+        end
+        
         #Check if telemetry is turned off
         telemetryOffSwitch = ENV["DISABLE_TELEMETRY"]
         if telemetryOffSwitch && !telemetryOffSwitch.nil? && !telemetryOffSwitch.empty? && telemetryOffSwitch.downcase == "true".downcase
           $log.warn("AppInsightsUtility: Telemetry is disabled")
           @@Tc = ApplicationInsights::TelemetryClient.new
         elsif !encodedAppInsightsKey.nil?
-          decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
-          # read the proxy config
-          proxy = getProxyConfiguration(@OmsProxyFilePath)
-
+          decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)         
           #override ai endpoint if its available otherwise use default.
           if appInsightsEndpoint && !appInsightsEndpoint.nil? && !appInsightsEndpoint.empty?
             $log.info("AppInsightsUtility: Telemetry client uses overrided endpoint url : #{appInsightsEndpoint}")
             #telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
             #telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
             #telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
-            if proxy.nil? || proxy.empty?
+            if !isProxyConfigured
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
-            else 
-              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
-              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy
+            else
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration since proxy configured")
+              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, proxy              
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
           else
-            if proxy.nil? || proxy.empty?
-              sender = ApplicationInsights::Channel::AsynchronousSender.new 
-            else       
-              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")        
-              sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy
-            end         
-            sender = ApplicationInsights::Channel::AsynchronousSender.new 
+            if !isProxyConfigured
+              sender = ApplicationInsights::Channel::AsynchronousSender.new
+            else
+              $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration since proxy configured")
+              sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, proxy              
+            end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, channel
@@ -134,7 +141,7 @@ class ApplicationInsightsUtility
         if containerRuntime.casecmp("docker") == 0
           dockerInfo = DockerApiClient.dockerInfo
           if (!dockerInfo.nil? && !dockerInfo.empty?)
-            @@CustomProperties["DockerVersion"] = dockerInfo["Version"]          
+            @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
           end
         end
       end
@@ -188,9 +195,9 @@ class ApplicationInsightsUtility
 
     def sendExceptionTelemetry(errorStr, properties = nil)
       begin
-        if @@CustomProperties.empty? || @@CustomProperties.nil?
+        if @@CustomProperties.empty? || @@CustomProperties.nil?          
           initializeUtility()
-        elsif @@CustomProperties["DockerVersion"].nil?
+        elsif @@CustomProperties["DockerVersion"].nil?          
           getContainerRuntimeInfo()
         end
         telemetryProps = {}
@@ -296,42 +303,38 @@ class ApplicationInsightsUtility
         $log.warn("Exception in AppInsightsUtility: getWorkspaceCloud - error: #{errorStr}")
       end
     end
-    
-    def getProxyConfiguration(proxy_conf_path)   
-      if proxy_conf_path.nil?  || proxy_conf_path.empty?  || !File.exist?(proxy_conf_path) 
-        return {}
-      end
 
-      begin      
-        proxy_config = parseProxyConfiguration(File.read(proxy_conf_path))
-      rescue SystemCallError # Error::ENOENT
-        return {}
-      end
-
-      if proxy_config.nil?
-        $log.warn("Failed to parse the proxy configuration in '#{proxy_conf_path}'")
-        return {}
-      end
-
-      return proxy_config
-    end
-
-    def parseProxyConfiguration(proxy_conf_str)
+    #Method to get the http or https proxy configuration if its configured.
+    def getProxyConfiguration()    
+      proxyConfig = {}
+      begin
+        proxyEnvVar = ENV[@@EnvHTTPsProxy]   
+        if proxyEnvVar.nil?  || proxyEnvVar.empty?
+          proxyEnvVar = ENV[@@EnvHTTPProxy]           
+          if proxyEnvVar.nil?  || proxyEnvVar.empty?
+            return proxyConfig
+          end
+        end     
         # Remove the http(s) protocol
-        proxy_conf_str = proxy_conf_str.gsub(/^(https?:\/\/)?/, "")
-
+        proxyConfigString = proxyEnvVar.gsub(/^(https?:\/\/)?/, "")
         # Check for unsupported protocol
-        if proxy_conf_str[/^[a-z]+:\/\//]
-          return nil
+        if proxyConfigString[/^[a-z]+:\/\//]
+          $log.warn("unsupported protocol in proxy configuration")
+          return proxyConfig
         end
-
-        re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/ 
-        matches = re.match(proxy_conf_str)
-        if matches.nil? or matches[:addr].nil? 
-          return nil
+        re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/
+        matches = re.match(proxyConfigString)
+        if matches.nil? || matches[:addr].nil?
+          $log.warn("invalid proxy configuration")
+          return proxyConfig
         end
-        # Convert nammed matches to a hash
-        Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
+        # Convert named matches to a hash
+        proxyConfig = Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
+      rescue => errorStr        
+        $log.warn("Exception in AppInsightsUtility: getProxyConfiguration - error: #{errorStr}")
+        return {}
+      end      
+      return proxyConfig
     end
   end
 end

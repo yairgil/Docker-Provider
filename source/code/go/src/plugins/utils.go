@@ -72,24 +72,8 @@ func CreateHTTPClient(proxyConfigMap map[string]string) {
 	}
 
 	tlsConfig.BuildNameToCertificate()
-
-	var proxyUrl *url.URL	
-	if proxyConfigMap != nil && len(proxyConfigMap) > 0 {	
-		//proxy url format is http://<user>:<pass>@<addr>:<port>
-		proxyAddr :=  "http://" + proxyConfigMap["user"] + ":" + proxyConfigMap["pass"] + "@" + proxyConfigMap["addr"] + ":" + proxyConfigMap["port"]
-		Log("Proxy address endpoint %s", proxyAddr)
-		var parseError error
-		proxyUrl, parseError = url.Parse(proxyAddr)	
-		if parseError != nil {
-				message := fmt.Sprintf("Error parsing omsproxy url %s\n", parseError.Error())
-				Log(message)
-				SendException(message)
-				time.Sleep(30 * time.Second)
-				log.Fatalln(message)
-		} 		
-	}
-	
-	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyURL(proxyUrl)}
+	// Refer: https://golang.org/pkg/net/http/#ProxyFromEnvironment
+	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyFromEnvironment}
 
 	HTTPClient = http.Client{
 		Transport: transport,
