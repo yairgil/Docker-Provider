@@ -68,17 +68,17 @@ class ApplicationInsightsUtility
         @@CustomProperties["ControllerType"] = ENV[@@EnvControllerType]
         encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
-        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud   
-        @@CustomProperties["IsProxyConfigured"] =  "false"
-        IsProxyConfigured = false
+        @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud          
         # read the proxy configuration
         $log.info("calling getProxyConfiguration")
         proxy = getProxyConfiguration()
         if !proxy.nil? && !proxy.empty?        
           $log.info("proxy configured")
           @@CustomProperties["IsProxyConfigured"] =  "true"
-          IsProxyConfigured = true
+          isProxyConfigured = true
         else 
+          @@CustomProperties["IsProxyConfigured"] =  "false"
+          isProxyConfigured = false
           $log.info("proxy is not configured")
         end
         
@@ -95,7 +95,7 @@ class ApplicationInsightsUtility
             #telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
             #telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
             #telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
-            if !IsProxyConfigured
+            if !isProxyConfigured
               sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
@@ -105,7 +105,7 @@ class ApplicationInsightsUtility
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
           else
-            if !IsProxyConfigured
+            if !isProxyConfigured
               sender = ApplicationInsights::Channel::AsynchronousSender.new
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration")
