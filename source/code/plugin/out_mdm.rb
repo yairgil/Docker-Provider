@@ -15,6 +15,7 @@ module Fluent
       require "yajl/json_gem"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
+      require_relative "proxy_utils"
 
       @@token_resource_url = "https://monitoring.azure.com/"
       @@grant_type = "client_credentials"
@@ -42,6 +43,7 @@ module Fluent
       @last_telemetry_sent_time = nil
       # Setting useMsi to false by default
       @useMsi = false
+      @proxy = (ProxyUtils.getProxyConfiguration)
 
       @get_access_token_backoff_expiry = Time.now
     end
@@ -76,7 +78,11 @@ module Fluent
 
           @@post_request_url = @@post_request_url_template % {aks_region: aks_region, aks_resource_id: aks_resource_id}
           @post_request_uri = URI.parse(@@post_request_url)
-          @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+          if @proxy.nil? || @proxy.empty?
+            @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+          else
+            @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass])
+          end
           @http_client.use_ssl = true
           @log.info "POST Request url: #{@@post_request_url}"
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPluginStart", {})
@@ -125,7 +131,12 @@ module Fluent
               @log.info "Using SP to get the token to post MDM data"
               ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMToken-SP", {})
               @log.info "Opening TCP connection"
-              http_access_token = Net::HTTP.start(@parsed_token_uri.host, @parsed_token_uri.port, :use_ssl => true)
+              if @proxy.nil? || @proxy.empty?                  
+                http_access_token = Net::HTTP.start(@parsed_token_uri.host, @parsed_token_uri.port, :use_ssl => true)
+              else
+                http_access_token = Net::HTTP.start(@parsed_token_uri.host, @parsed_token_uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass]), :use_ssl => true)
+              end
+              
               # http_access_token.use_ssl = true
               token_request = Net::HTTP::Post.new(@parsed_token_uri.request_uri)
               token_request.set_form_data(
