@@ -101,6 +101,8 @@ var (
 	enrichContainerLogs bool
 	// container runtime engine configured on the kubelet
 	containerRuntime string
+	// Proxy endpoint in format http(s)://<user>:<pwd>@<proxyserver>:<port>
+	ProxyEndpoint string
 )
 
 var (
@@ -990,11 +992,28 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		} else {
 			Computer = strings.TrimSuffix(ToString(containerHostName), "\n")
 		}
+		// read proxyendpoint if proxy configured
+		ProxyEndpoint = ""
+		proxyConfigPath := pluginConfig["omsproxy_conf_path"]
+		if _, err := os.Stat(proxyConfigPath); err == nil {
+			Log("Reading proxy configuration for Linux from %s", proxyConfigPath)
+			proxyConfig, err := ioutil.ReadFile(proxyConfigPath)
+			if err != nil {
+				message := fmt.Sprintf("Error Reading omsproxy configuration %s\n", err.Error())
+				Log(message)
+				SendException(message)
+				time.Sleep(30 * time.Second)
+				log.Fatalln(message)
+			} else {
+				ProxyEndpoint = strings.TrimSpace(proxyConfig)		
+			}
+		}
 	} else {
 		// windows
 		Computer = os.Getenv("HOSTNAME")
 		WorkspaceID = os.Getenv("WSID")
 		logAnalyticsDomain := os.Getenv("DOMAIN")
+		ProxyEndpoint = os.Getenv("PROXY")
 		OMSEndpoint = "https://" + WorkspaceID + ".ods." + logAnalyticsDomain + "/OperationalData.svc/PostJsonDataItems"
 	}
 

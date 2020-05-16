@@ -159,6 +159,22 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		Log("Overriding the default AppInsights EndpointUrl with %s", appInsightsEndpoint)
 		telemetryClientConfig.EndpointUrl = envAppInsightsEndpoint
 	}
+	// if the proxy configured set the customized httpclient with proxy
+	if ProxyEndpoint != "" {
+		proxyConfig, err := http.ProxyURL(ProxyEndpoint)
+		if err != nil {
+			Log("Failed Parsing of Proxy endpoint %s", err.Error())			
+			return -1, err
+		}
+		//adding the proxy settings to the Transport object
+		transport := &http.Transport{
+			Proxy: proxyConfig,
+		}
+		httpClient := &http.Client{
+			Transport: transport,
+		}
+		telemetryClientConfig.Client = httpClient
+	}
 	TelemetryClient = appinsights.NewTelemetryClientFromConfig(telemetryClientConfig)
 
 	telemetryOffSwitch := os.Getenv("DISABLE_TELEMETRY")
