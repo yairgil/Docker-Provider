@@ -69,8 +69,8 @@ func CreateHTTPClient() {
 	}
 
 	tlsConfig.BuildNameToCertificate()
-		
-	var proxyConfig *url.URL
+	transport := &http.Transport{TLSClientConfig: tlsConfig}	
+	// set the proxy if the proxy configured
 	if ProxyEndpoint != "" {
 		proxyEndpointUrl, err := url.Parse(ProxyEndpoint)		
 		if err != nil {
@@ -80,10 +80,9 @@ func CreateHTTPClient() {
 			Log(message)
 			log.Fatalf("Error parsing Proxy endpoint %s", err.Error())
 		} else {
-			proxyConfig = http.ProxyURL(proxyEndpointUrl)
+			transport.Proxy = http.ProxyURL(proxyEndpointUrl)
 		}
 	}
-	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: proxyConfig}
 
 	HTTPClient = http.Client{
 		Transport: transport,
