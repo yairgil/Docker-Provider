@@ -69,9 +69,10 @@ func CreateHTTPClient() {
 	}
 
 	tlsConfig.BuildNameToCertificate()
-	proxyConfig := nil
+		
+	var proxyConfig *url.URL
 	if ProxyEndpoint != "" {
-		proxyEndpointUrl, err := url.Parse(proxyEndpoint)		
+		proxyEndpointUrl, err := url.Parse(ProxyEndpoint)		
 		if err != nil {
 			message := fmt.Sprintf("Error parsing Proxy endpoint %s", err.Error())
 			SendException(message)

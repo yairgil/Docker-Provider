@@ -161,15 +161,15 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		telemetryClientConfig.EndpointUrl = envAppInsightsEndpoint
 	}
 	// if the proxy configured set the customized httpclient with proxy
-	if ProxyEndpoint != "" {
-		proxyConfig, err := http.ProxyURL(ProxyEndpoint)
+	if ProxyEndpoint != "" {		
+		proxyEndpointUrl, err := url.Parse(ProxyEndpoint)		
 		if err != nil {
 			Log("Failed Parsing of Proxy endpoint %s", err.Error())			
 			return -1, err
-		}
+		}		
 		//adding the proxy settings to the Transport object
 		transport := &http.Transport{
-			Proxy: proxyConfig,
+			Proxy: http.ProxyURL(proxyEndpointUrl),
 		}
 		httpClient := &http.Client{
 			Transport: transport,
