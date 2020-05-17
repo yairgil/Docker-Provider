@@ -1005,7 +1005,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 				time.Sleep(30 * time.Second)
 				log.Fatalln(message)
 			} else {
-				ProxyEndpoint = strings.TrimSpace(proxyConfig)		
+				ProxyEndpoint = strings.TrimSpace(string(proxyConfig))		
 			}
 		}
 	} else {

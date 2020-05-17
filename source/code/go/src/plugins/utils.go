@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -70,13 +71,15 @@ func CreateHTTPClient() {
 	tlsConfig.BuildNameToCertificate()
 	proxyConfig := nil
 	if ProxyEndpoint != "" {
-		proxyConfig, err := http.ProxyURL(ProxyEndpoint)
+		proxyEndpointUrl, err := url.Parse(proxyEndpoint)		
 		if err != nil {
 			message := fmt.Sprintf("Error parsing Proxy endpoint %s", err.Error())
 			SendException(message)
 			time.Sleep(30 * time.Second)
 			Log(message)
 			log.Fatalf("Error parsing Proxy endpoint %s", err.Error())
+		} else {
+			proxyConfig = http.ProxyURL(proxyEndpointUrl)
 		}
 	}
 	transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: proxyConfig}
