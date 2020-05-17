@@ -76,7 +76,7 @@ module Fluent
         if @can_send_data_to_mdm
           @log.info "MDM Metrics supported in #{aks_region} region"
 
-          @@post_request_url = @@post_request_url_template % {aks_region: aks_region, aks_resource_id: aks_resource_id}
+          @@post_request_url = @@post_request_url_template % { aks_region: aks_region, aks_resource_id: aks_resource_id }
           @post_request_uri = URI.parse(@@post_request_url)
           if @proxy.nil? || @proxy.empty?
             @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
@@ -93,11 +93,11 @@ module Fluent
 
           if (!sp_client_id.nil? && !sp_client_id.empty? && sp_client_id.downcase != "msi")
             @useMsi = false
-            aad_token_url = @@aad_token_url_template % {tenant_id: @data_hash["tenantId"]}
+            aad_token_url = @@aad_token_url_template % { tenant_id: @data_hash["tenantId"] }
             @parsed_token_uri = URI.parse(aad_token_url)
           else
             @useMsi = true
-            msi_endpoint = @@msi_endpoint_template % {user_assigned_client_id: @@userAssignedClientId, resource: @@token_resource_url}
+            msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@userAssignedClientId, resource: @@token_resource_url }
             @parsed_token_uri = URI.parse(msi_endpoint)
           end
 
@@ -105,7 +105,7 @@ module Fluent
         end
       rescue => e
         @log.info "exception when initializing out_mdm #{e}"
-        ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "MDM"})
+        ApplicationInsightsUtility.sendExceptionTelemetry(e, { "FeatureArea" => "MDM" })
         return
       end
     end
@@ -131,12 +131,11 @@ module Fluent
               @log.info "Using SP to get the token to post MDM data"
               ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMToken-SP", {})
               @log.info "Opening TCP connection"
-              if @proxy.nil? || @proxy.empty?                  
+              if @proxy.nil? || @proxy.empty?
                 http_access_token = Net::HTTP.start(@parsed_token_uri.host, @parsed_token_uri.port, :use_ssl => true)
               else
-                http_access_token = Net::HTTP.start(@parsed_token_uri.host, @parsed_token_uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass]), :use_ssl => true)
+                http_access_token = Net::HTTP.start(@parsed_token_uri.host, @parsed_token_uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass], :use_ssl => true)
               end
-              
               # http_access_token.use_ssl = true
               token_request = Net::HTTP::Post.new(@parsed_token_uri.request_uri)
               token_request.set_form_data(
@@ -155,7 +154,7 @@ module Fluent
             parsed_json = JSON.parse(token_response.body)
             @token_expiry_time = Time.now + @@tokenRefreshBackoffInterval * 60 # set the expiry time to be ~thirty minutes from current time
             @cached_access_token = parsed_json["access_token"]
-          @log.info "Successfully got access token"
+            @log.info "Successfully got access token"
           end
         rescue => err
           @log.info "Exception in get_access_token: #{err}"
@@ -165,9 +164,9 @@ module Fluent
             sleep(retries)
             retry
           else
-          @get_access_token_backoff_expiry = Time.now + @@tokenRefreshBackoffInterval * 60
-          @log.info "@get_access_token_backoff_expiry set to #{@get_access_token_backoff_expiry}"
-          ApplicationInsightsUtility.sendExceptionTelemetry(err, {"FeatureArea" => "MDM"})
+            @get_access_token_backoff_expiry = Time.now + @@tokenRefreshBackoffInterval * 60
+            @log.info "@get_access_token_backoff_expiry set to #{@get_access_token_backoff_expiry}"
+            ApplicationInsightsUtility.sendExceptionTelemetry(err, { "FeatureArea" => "MDM" })
           end
         ensure
           if http_access_token
@@ -241,7 +240,7 @@ module Fluent
         request["Authorization"] = "Bearer #{access_token}"
 
         request.body = post_body.join("\n")
-        @log.info "REQUEST BODY SIZE #{request.body.bytesize/1024}"
+        @log.info "REQUEST BODY SIZE #{request.body.bytesize / 1024}"
         response = @http_client.request(request)
         response.value # this throws for non 200 HTTP response code
         @log.info "HTTP Post Response Code : #{response.code}"
