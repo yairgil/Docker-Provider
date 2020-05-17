@@ -162,12 +162,14 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		telemetryClientConfig.EndpointUrl = envAppInsightsEndpoint
 	}
 	// if the proxy configured set the customized httpclient with proxy
-	if ProxyEndpoint != "" {		
-		proxyEndpointUrl, err := url.Parse(ProxyEndpoint)		
+	isProxyConfigured := false
+	if ProxyEndpoint != "" {
+		Log("Using proxy endpoint for telemetry client since proxy configured")
+		proxyEndpointUrl, err := url.Parse(ProxyEndpoint)
 		if err != nil {
-			Log("Failed Parsing of Proxy endpoint %s", err.Error())			
+			Log("Failed Parsing of Proxy endpoint %s", err.Error())
 			return -1, err
-		}		
+		}
 		//adding the proxy settings to the Transport object
 		transport := &http.Transport{
 			Proxy: http.ProxyURL(proxyEndpointUrl),
@@ -176,6 +178,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 			Transport: transport,
 		}
 		telemetryClientConfig.Client = httpClient
+		isProxyConfigured = true
 	}
 	TelemetryClient = appinsights.NewTelemetryClientFromConfig(telemetryClientConfig)
 
@@ -217,6 +220,12 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		region := os.Getenv("AKS_REGION")
 		CommonProperties["Region"] = region
 	}
+
+	if isProxyConfigured == true {
+	  CommonProperties["IsProxyConfigured"] = "true"
+	} else {
+  	   CommonProperties["IsProxyConfigured"] = "false"
+    }
 
 	TelemetryClient.Context().CommonProperties = CommonProperties
 	return 0, nil
