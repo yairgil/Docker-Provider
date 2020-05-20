@@ -12,12 +12,8 @@ There are multiple dependencies that are needed to build the windows container l
 6. Powershell scripts for setup and running the container on an AKS windows node
 
 ### Certificate Generator
-
-This code is checked into the OMS-docker repo [here](https://github.com/microsoft/OMS-docker/tree/dilipr/winakslog/Kubernetes/windows/CertificateGenerator)
-
-- If any change needs to be made here
-
   - Open the folder in vscode and make your edits
+  - Navigate to source\code\windows\CertificateGenerator directory
   - Run the following commands to install dependencies, build and publish
 
          dotnet add package Newtonsoft.json
@@ -26,7 +22,7 @@ This code is checked into the OMS-docker repo [here](https://github.com/microsof
          dotnet publish -c Release -r win10-x64
   
   - Zip the contents of bin\Release\<dotnetversion>\win10-x64\publish to a file called CertificateGenerator.zip
-  - Update the CertificateGenerator.zip file at the following [location](https://github.com/microsoft/OMS-docker/blob/dilipr/winakslog/Kubernetes/windows/omsagentwindows/certgenerator)
+  - Copy CertificateGenerator.zip file to source\code\windows\omsagentwindows\certgenerator directory
 
 ### Configuration files
 

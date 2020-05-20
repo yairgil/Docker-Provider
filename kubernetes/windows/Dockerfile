@@ -7,7 +7,7 @@ ENV tmpdir /opt/omsagentwindows/scripts/powershell
 WORKDIR /opt/omsagentwindows/scripts/powershell
 
 # gangams - TBD -  build certificate generator code here itself so that we can avoid manual step
-COPY ../../source/code/windows/certificategenerator/* /opt/omsagentwindows/certgenerator/
+COPY ../../source/code/windows/omsagentwindows/certgenerator/* /opt/omsagentwindows/certgenerator/
 
 COPY setup.ps1 /opt/omsagentwindows/scripts/powershell
 RUN ./setup.ps1
