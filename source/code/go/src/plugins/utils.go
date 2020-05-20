@@ -69,14 +69,14 @@ func CreateHTTPClient() {
 	}
 
 	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}	
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	// set the proxy if the proxy configured
 	if ProxyEndpoint != "" {
-		proxyEndpointUrl, err := url.Parse(ProxyEndpoint)		
+		proxyEndpointUrl, err := url.Parse(ProxyEndpoint)
 		if err != nil {
 			message := fmt.Sprintf("Error parsing Proxy endpoint %s", err.Error())
 			SendException(message)
-			time.Sleep(30 * time.Second)
+			// if we fail to read proxy configuration, then everything will be fall apart including sending  exceptions to AI
 			Log(message)
 			log.Fatalf("Error parsing Proxy endpoint %s", err.Error())
 		} else {

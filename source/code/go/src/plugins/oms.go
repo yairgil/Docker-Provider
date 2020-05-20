@@ -1001,11 +1001,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			if err != nil {
 				message := fmt.Sprintf("Error Reading omsproxy configuration %s\n", err.Error())
 				Log(message)
+				// if we fail to read proxy configuration, then everything will be fall apart including sending  exceptions to AI
 				SendException(message)
-				time.Sleep(30 * time.Second)
 				log.Fatalln(message)
 			} else {
-				ProxyEndpoint = strings.TrimSpace(string(proxyConfig))		
+				ProxyEndpoint = strings.TrimSpace(string(proxyConfig))
 			}
 		}
 	} else {
