@@ -134,15 +134,17 @@ class CAdvisorMetricsAPIClient
           operatingSystem = "Linux"
         end
         if !metricInfo.nil?
-          metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime))
           metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch", metricTime))
 
           if operatingSystem == "Linux"
             metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores", metricTime))
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes", metricTime))
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes", metricTime, operatingSystem))
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime, operatingSystem))
             metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", "memoryRssBytes", metricTime))
+            
           elsif operatingSystem == "Windows"
             containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", "cpuUsageNanoCores", metricTime)
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime, operatingSystem))
             if containerCpuUsageNanoSecondsRate && !containerCpuUsageNanoSecondsRate.empty? && !containerCpuUsageNanoSecondsRate.nil?
               metricDataItems.concat(containerCpuUsageNanoSecondsRate)
             end
@@ -448,6 +450,41 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
+              #Telemetry about agent performance
+              begin
+                # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
+                # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent"))
+                  if (timeDifferenceInMinutes >= 10)
+                    telemetryProps = {}
+                    telemetryProps["PodName"] = podName
+                    telemetryProps["ContainerName"] = containerName
+                    telemetryProps["Computer"] = hostName
+                    telemetryProps["CAdvisorIsSecure"] = @cAdvisorMetricsSecurePort
+                    #telemetry about log collections settings
+                    if (File.file?(@configMapMountPath))
+                      telemetryProps["clustercustomsettings"] = true
+                      telemetryProps["clusterenvvars"] = @clusterEnvVarCollectionEnabled
+                      telemetryProps["clusterstderrlogs"] = @clusterStdErrLogCollectionEnabled
+                      telemetryProps["clusterstdoutlogs"] = @clusterStdOutLogCollectionEnabled
+                      telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
+                      telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
+                      telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
+                      telemetryProps["clusterCLEnrich"] = @clusterContainerLogEnrich
+                    end
+                    #telemetry about prometheus metric collections settings for daemonset
+                    if (File.file?(@promConfigMountPath))
+                      telemetryProps["dsPromInt"] = @dsPromInterval
+                      telemetryProps["dsPromFPC"] = @dsPromFieldPassCount
+                      telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
+                      telemetryProps["dsPromUrl"] = @dsPromUrlCount
+                    end
+                    ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
+                  end
+                end
+              rescue => errorStr
+                $log.warn("Exception while generating Telemetry from getcontainerCpuMetricItems failed: #{errorStr} for metric #{cpuMetricNameToCollect}")
+              end
             end
           end
         end
@@ -475,7 +512,7 @@ class CAdvisorMetricsAPIClient
       return metricItems
     end
 
-    def getContainerMemoryMetricItems(metricJSON, hostName, memoryMetricNameToCollect, metricNametoReturn, metricPollTime)
+    def getContainerMemoryMetricItems(metricJSON, hostName, memoryMetricNameToCollect, metricNametoReturn, metricPollTime, operatingSystem)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryMemoryMetricTimeTracker).abs
@@ -513,14 +550,14 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && metricNametoReturn.eql?("memoryRssBytes"))
-                  if (timeDifferenceInMinutes >= 10)
-                    telemetryProps = {}
-                    telemetryProps["PodName"] = podName
-                    telemetryProps["ContainerName"] = containerName
-                    telemetryProps["Computer"] = hostName
-                    ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
-                  end
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && ((metricNametoReturn.eql?("memoryRssBytes") && operatingSystem == "Linux") || (metricNametoReturn.eql?("memoryWorkingSetBytes") && operatingSystem == "Windows")))
+                    if (timeDifferenceInMinutes >= 10)
+                      telemetryProps = {}
+                      telemetryProps["PodName"] = podName
+                      telemetryProps["ContainerName"] = containerName
+                      telemetryProps["Computer"] = hostName
+                      ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
+                    end
                 end
               rescue => errorStr
                 $log.warn("Exception while generating Telemetry from getcontainerMemoryMetricItems failed: #{errorStr} for metric #{memoryMetricNameToCollect}")
