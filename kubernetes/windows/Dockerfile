@@ -14,7 +14,7 @@ RUN ./setup.ps1
 
 COPY main.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./scripts/powershell/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
-COPY ./scripts/powershell/cmd/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
+COPY ./scripts/cmd/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
 
 # copy ruby scripts to /opt folder
 COPY ./scripts/ruby/*.rb /opt/omsagentwindows/scripts/ruby/
