@@ -76,9 +76,8 @@ func CreateHTTPClient() {
 		if err != nil {
 			message := fmt.Sprintf("Error parsing Proxy endpoint %s", err.Error())
 			SendException(message)
-			// if we fail to read proxy configuration, then everything will be fall apart including sending  exceptions to AI
+			// if we fail to read proxy secret, AI telemetry might not be working as well
 			Log(message)
-			log.Fatalf("Error parsing Proxy endpoint %s", err.Error())
 		} else {
 			transport.Proxy = http.ProxyURL(proxyEndpointUrl)
 		}

@@ -22,8 +22,7 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
-  @DefaultAppInsightsEndpoint = "https://dc.services.visualstudio.com/v2/track"
-
+  
   @@CustomProperties = {}
   @@Tc = nil
   @@hostName = (OMS::Common.get_hostname)
@@ -107,7 +106,7 @@ class ApplicationInsightsUtility
               sender = ApplicationInsights::Channel::AsynchronousSender.new
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration since proxy configured")
-              sender = ApplicationInsights::Channel::AsynchronousSender.new @DefaultAppInsightsEndpoint, @@proxy
+              sender = ApplicationInsights::Channel::AsynchronousSender.new nil, @@proxy
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue

@@ -994,16 +994,15 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 		// read proxyendpoint if proxy configured
 		ProxyEndpoint = ""
-		proxyConfigPath := pluginConfig["omsproxy_conf_path"]
-		if _, err := os.Stat(proxyConfigPath); err == nil {
-			Log("Reading proxy configuration for Linux from %s", proxyConfigPath)
-			proxyConfig, err := ioutil.ReadFile(proxyConfigPath)
+		proxySecretPath := pluginConfig["omsproxy_secret_path"]
+		if _, err := os.Stat(proxySecretPath); err == nil {
+			Log("Reading proxy configuration for Linux from %s", proxySecretPath)
+			proxyConfig, err := ioutil.ReadFile(proxySecretPath)
 			if err != nil {
 				message := fmt.Sprintf("Error Reading omsproxy configuration %s\n", err.Error())
 				Log(message)
-				// if we fail to read proxy configuration, then everything will be fall apart including sending  exceptions to AI
+				// if we fail to read proxy secret, AI telemetry might not be working as well
 				SendException(message)
-				log.Fatalln(message)
 			} else {
 				ProxyEndpoint = strings.TrimSpace(string(proxyConfig))
 			}

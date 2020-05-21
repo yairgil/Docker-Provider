@@ -5,19 +5,19 @@
 class ProxyUtils
     class << self
         def getProxyConfiguration()   
-            proxy_conf_path = "/etc/opt/microsoft/omsagent/proxy.conf"
-            if !File.exist?(proxy_conf_path) 
+            omsproxy_secret_path = "/etc/omsagent-secret/PROXY"
+            if !File.exist?(omsproxy_secret_path) 
               return {}
             end
       
             begin      
-              proxy_config = parseProxyConfiguration(File.read(proxy_conf_path))
+              proxy_config = parseProxyConfiguration(File.read(omsproxy_secret_path))
             rescue SystemCallError # Error::ENOENT
               return {}
             end
       
             if proxy_config.nil?
-              $log.warn("Failed to parse the proxy configuration in '#{proxy_conf_path}'")
+              $log.warn("Failed to parse the proxy configuration in '#{omsproxy_secret_path}'")
               return {}
             end
       
