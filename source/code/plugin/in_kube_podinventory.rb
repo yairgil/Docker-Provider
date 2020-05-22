@@ -166,19 +166,9 @@ module Fluent
             next
           end
 
-          if podNameSpace.eql?("kube-system") && !items["metadata"].key?("ownerReferences")
-            # The above case seems to be the only case where you have horizontal scaling of pods
-            # but no controller, in which case cAdvisor picks up kubernetes.io/config.hash
-            # instead of the actual poduid. Since this uid is not being surface into the UX
-            # its ok to use this.
-            # Use kubernetes.io/config.hash to be able to correlate with cadvisor data
-            if items["metadata"]["annotations"].nil?
-              next
-            else
-              podUid = items["metadata"]["annotations"]["kubernetes.io/config.hash"]
-            end
-          else
-            podUid = items["metadata"]["uid"]
+          podUid = KubernetesApiClient.getPodUid(podNameSpace, items["metadata"])
+          if podUid.nil?
+            next
           end
           record["PodUid"] = podUid
           record["PodLabel"] = [items["metadata"]["labels"]]
@@ -201,6 +191,7 @@ module Fluent
               end
             end
           end
+
           if podReadyCondition == false
             record["PodStatus"] = "Unknown"
           else
@@ -251,6 +242,9 @@ module Fluent
           podRestartCount = 0
           record["PodRestartCount"] = 0
 
+          #Invoke the helper method to compute ready/not ready mdm metric
+          @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], items["status"]["conditions"])
+
           podContainers = []
           if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty?
             podContainers = podContainers + items["status"]["containerStatuses"]
@@ -264,6 +258,8 @@ module Fluent
           if !podContainers.empty? #container status block start
             podContainers.each do |container|
               containerRestartCount = 0
+              lastFinishedTime = nil
+              # Need this flag to determine if we need to process container data for mdm metrics like oomkilled and container restart
               #container Id is of the form
               #docker://dfd9da983f1fd27432fb2c1fe3049c0a1d25b1c697b2dc1a530c986e58b16527
               if !container["containerID"].nil?
@@ -283,6 +279,7 @@ module Fluent
               #itself in the form of a container label.
               containerRestartCount = container["restartCount"]
               record["ContainerRestartCount"] = containerRestartCount
+
               containerStatus = container["state"]
               record["ContainerStatusReason"] = ""
               # state is of the following form , so just picking up the first key name
@@ -306,6 +303,10 @@ module Fluent
                 if !containerStatus[containerStatus.keys[0]]["reason"].nil? && !containerStatus[containerStatus.keys[0]]["reason"].empty?
                   record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
                 end
+                # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
+                if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
+                  @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
+                end
               end
 
               # Record the last state of the container. This may have information on why a container was killed.
@@ -320,17 +321,31 @@ module Fluent
                   if lastStateObject.key?("reason") && lastStateObject.key?("startedAt") && lastStateObject.key?("finishedAt")
                     newRecord = Hash.new
                     newRecord["lastState"] = lastStateName  # get the name of the last state (ex: terminated)
-                    newRecord["reason"] = lastStateObject["reason"]  # (ex: OOMKilled)
+                    lastStateReason = lastStateObject["reason"]
+                    # newRecord["reason"] = lastStateObject["reason"]  # (ex: OOMKilled)
+                    newRecord["reason"] = lastStateReason  # (ex: OOMKilled)
                     newRecord["startedAt"] = lastStateObject["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
-                    newRecord["finishedAt"] = lastStateObject["finishedAt"]  # (ex: 2019-07-02T14:58:52Z)
+                    lastFinishedTime = lastStateObject["finishedAt"]
+                    newRecord["finishedAt"] = lastFinishedTime  # (ex: 2019-07-02T14:58:52Z)
 
                     # only write to the output field if everything previously ran without error
                     record["ContainerLastStatus"] = newRecord
+
+                    #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
+                    if lastStateReason.downcase == Constants::REASON_OOM_KILLED
+                      @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                    end
+                    lastStateReason = nil
                   else
                     record["ContainerLastStatus"] = Hash.new
                   end
                 else
                   record["ContainerLastStatus"] = Hash.new
+                end
+
+                #Populate mdm metric for container restart count if greater than 0
+                if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
+                  @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
                 end
               rescue => errorStr
                 $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"
@@ -405,9 +420,9 @@ module Fluent
           #end
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
-          begin 
+          begin
             #start GPU InsightsMetrics items
-            
+
             containerGPUInsightsMetricsDataItems = []
             containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
             containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
@@ -422,11 +437,10 @@ module Fluent
                 "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
               }
               insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
-              
+
               if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
                 $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
               end
-
             end
 
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
@@ -477,7 +491,6 @@ module Fluent
         #Updating value for AppInsights telemetry
         @podCount += podInventory["items"].length
 
-        
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end

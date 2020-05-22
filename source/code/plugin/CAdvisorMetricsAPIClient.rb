@@ -134,27 +134,25 @@ class CAdvisorMetricsAPIClient
           operatingSystem = "Linux"
         end
         if !metricInfo.nil?
+          metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", Constants::MEMORY_WORKING_SET_BYTES, metricTime, operatingSystem))
           metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch", metricTime))
 
           if operatingSystem == "Linux"
-            metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores", metricTime))
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes", metricTime, operatingSystem))
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime, operatingSystem))
-            metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", "memoryRssBytes", metricTime))
-            
+            metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", Constants::CPU_USAGE_NANO_CORES, metricTime))
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", Constants::MEMORY_RSS_BYTES, metricTime, operatingSystem))
+            metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", Constants::MEMORY_RSS_BYTES, metricTime))
           elsif operatingSystem == "Windows"
-            containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", "cpuUsageNanoCores", metricTime)
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime, operatingSystem))
+            containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", Constants::CPU_USAGE_NANO_CORES, metricTime)
             if containerCpuUsageNanoSecondsRate && !containerCpuUsageNanoSecondsRate.empty? && !containerCpuUsageNanoSecondsRate.nil?
               metricDataItems.concat(containerCpuUsageNanoSecondsRate)
             end
           end
 
-          cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", "cpuUsageNanoCores", operatingSystem, metricTime)
+          cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", Constants::CPU_USAGE_NANO_CORES, operatingSystem, metricTime)
           if cpuUsageNanoSecondsRate && !cpuUsageNanoSecondsRate.empty? && !cpuUsageNanoSecondsRate.nil?
             metricDataItems.push(cpuUsageNanoSecondsRate)
           end
-          metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "workingSetBytes", "memoryWorkingSetBytes", metricTime))
+          metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "workingSetBytes", Constants::MEMORY_WORKING_SET_BYTES, metricTime))
 
           metricDataItems.push(getNodeLastRebootTimeMetric(metricInfo, hostName, "restartTimeEpoch", metricTime))
 
@@ -203,7 +201,7 @@ class CAdvisorMetricsAPIClient
               metricProps = {}
               metricProps["Timestamp"] = metricTime
               metricProps["Host"] = hostName
-              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               metricProps["Collections"] = []
@@ -218,8 +216,8 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && metricNametoReturn.eql?("cpuUsageNanoCores"))
-                  if (timeDifferenceInMinutes >= 10)
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && metricNametoReturn.eql?(Constants::CPU_USAGE_NANO_CORES))
+                  if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
                     telemetryProps = {}
                     telemetryProps["PodName"] = podName
                     telemetryProps["ContainerName"] = containerName
@@ -253,7 +251,7 @@ class CAdvisorMetricsAPIClient
           end
         end
         # reset time outside pod iterator as we use one timer per metric for 2 pods (ds & rs)
-        if (timeDifferenceInMinutes >= 10 && metricNametoReturn.eql?("cpuUsageNanoCores"))
+        if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES && metricNametoReturn.eql?("cpuUsageNanoCores"))
           @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => error
@@ -410,7 +408,7 @@ class CAdvisorMetricsAPIClient
               metricProps = {}
               metricProps["Timestamp"] = metricTime
               metricProps["Host"] = hostName
-              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               metricProps["Collections"] = []
@@ -535,7 +533,7 @@ class CAdvisorMetricsAPIClient
               metricProps = {}
               metricProps["Timestamp"] = metricTime
               metricProps["Host"] = hostName
-              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               metricProps["Collections"] = []
@@ -550,14 +548,14 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && ((metricNametoReturn.eql?("memoryRssBytes") && operatingSystem == "Linux") || (metricNametoReturn.eql?("memoryWorkingSetBytes") && operatingSystem == "Windows")))
-                    if (timeDifferenceInMinutes >= 10)
-                      telemetryProps = {}
-                      telemetryProps["PodName"] = podName
-                      telemetryProps["ContainerName"] = containerName
-                      telemetryProps["Computer"] = hostName
-                      ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
-                    end
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && ((metricNametoReturn.eql?(Constants::MEMORY_RSS_BYTES) && operatingSystem == "Linux") || (metricNametoReturn.eql?(Constants::MEMORY_WORKING_SET_BYTES) && operatingSystem == "Windows")))
+                  if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+                    telemetryProps = {}
+                    telemetryProps["PodName"] = podName
+                    telemetryProps["ContainerName"] = containerName
+                    telemetryProps["Computer"] = hostName
+                    ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
+                  end
                 end
               rescue => errorStr
                 $log.warn("Exception while generating Telemetry from getcontainerMemoryMetricItems failed: #{errorStr} for metric #{memoryMetricNameToCollect}")
@@ -566,7 +564,7 @@ class CAdvisorMetricsAPIClient
           end
         end
         # reset time outside pod iterator as we use one timer per metric for 2 pods (ds & rs)
-        if (timeDifferenceInMinutes >= 10 && metricNametoReturn.eql?("memoryRssBytes"))
+        if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES && metricNametoReturn.eql?(Constants::MEMORY_RSS_BYTES))
           @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => error
@@ -594,7 +592,7 @@ class CAdvisorMetricsAPIClient
           metricProps = {}
           metricProps["Timestamp"] = metricTime
           metricProps["Host"] = hostName
-          metricProps["ObjectName"] = "K8SNode"
+          metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
           metricProps["InstanceName"] = clusterId + "/" + nodeName
 
           metricProps["Collections"] = []
@@ -711,7 +709,7 @@ class CAdvisorMetricsAPIClient
           metricProps = {}
           metricProps["Timestamp"] = metricTime
           metricProps["Host"] = hostName
-          metricProps["ObjectName"] = "K8SNode"
+          metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
           metricProps["InstanceName"] = clusterId + "/" + nodeName
 
           metricProps["Collections"] = []
@@ -747,7 +745,7 @@ class CAdvisorMetricsAPIClient
         metricProps = {}
         metricProps["Timestamp"] = metricTime
         metricProps["Host"] = hostName
-        metricProps["ObjectName"] = "K8SNode"
+        metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
         metricProps["InstanceName"] = clusterId + "/" + nodeName
 
         metricProps["Collections"] = []
@@ -786,7 +784,7 @@ class CAdvisorMetricsAPIClient
               metricProps = {}
               metricProps["Timestamp"] = metricTime
               metricProps["Host"] = hostName
-              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               metricProps["Collections"] = []
