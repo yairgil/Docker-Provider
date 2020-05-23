@@ -72,10 +72,10 @@ endif
 clean :
 	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target 
 	-find $(BASE_DIR) -name \*~ -exec rm {} \;
-	
+
 distclean : clean
 	$(RM) $(BASE_DIR)/build/config.mak
-	
+
 PROVIDER_STATUS:
 	@echo "========================= Performing Building provider"
 
@@ -86,7 +86,7 @@ KIT_STATUS:
 #---------------------------------------------------------------------------------
 # fluentbit go plugin build. This is required to send container logs to ODS endpoint
 #
-fluentbitplugin : 
+fluentbitplugin :
 	@echo "========================= Building fluentbit out_oms go plugin for logs"
 	$(MKPATH) $(INTERMEDIATE_DIR)
 	make -C $(GO_SOURCE_DIR) fbplugin
