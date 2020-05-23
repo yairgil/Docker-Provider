@@ -38,7 +38,10 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/podinventory_to_mdm.rb;			     source/code/plugin/podinventory_to_mdm.rb;			    	644; root; root
 /opt/microsoft/omsagent/plugin/kubelet_utils.rb;			         source/code/plugin/kubelet_utils.rb;			    	644; root; root
 /opt/microsoft/omsagent/plugin/CustomMetricsUtils.rb;			     source/code/plugin/CustomMetricsUtils.rb;			    	644; root; root
-/opt/microsoft/omsagent/plugin/constants.rb;			     source/code/plugin/constants.rb;			    	644; root; root
+/opt/microsoft/omsagent/plugin/constants.rb;			             source/code/plugin/constants.rb;			    	644; root; root
+/opt/microsoft/omsagent/plugin/MdmAlertTemplates.rb;                 source/code/plugin/MdmAlertTemplates.rb;                644; root; root
+/opt/microsoft/omsagent/plugin/MdmMetricsGenerator.rb;              source/code/plugin/MdmMetricsGenerator.rb;            644; root; root
+
 
 /opt/microsoft/omsagent/plugin/ApplicationInsightsUtility.rb;									source/code/plugin/ApplicationInsightsUtility.rb;	644; root; root
 /opt/microsoft/omsagent/plugin/ContainerInventoryState.rb;										source/code/plugin/ContainerInventoryState.rb;		644; root; root
@@ -46,10 +49,13 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/DockerApiRestHelper.rb;											source/code/plugin/DockerApiRestHelper.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_containerinventory.rb;										source/code/plugin/in_containerinventory.rb;		644; root; root
 /opt/microsoft/omsagent/plugin/kubernetes_container_inventory.rb;							source/code/plugin/kubernetes_container_inventory.rb;		644; root; root
+/opt/microsoft/omsagent/plugin/proxy_utils.rb;						                  	source/code/plugin/proxy_utils.rb;		644; root; root
 
 
 /opt/microsoft/omsagent/plugin/out_mdm.rb;                                                  source/code/plugin/out_mdm.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_cadvisor2mdm.rb;                                      source/code/plugin/filter_cadvisor2mdm.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/filter_telegraf2mdm.rb;                                      source/code/plugin/filter_telegraf2mdm.rb; 644; root; root
+
 
 /opt/microsoft/omsagent/plugin/lib/application_insights/version.rb;								source/code/plugin/lib/application_insights/version.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/lib/application_insights/rack/track_request.rb;					source/code/plugin/lib/application_insights/rack/track_request.rb;      644; root; root
@@ -116,6 +122,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/livenessprobe.sh;                                              installer/scripts/livenessprobe.sh;      755; root; root
 /opt/tomlparser.rb;                                                 installer/scripts/tomlparser.rb;     755; root; root
 /opt/tomlparser-prom-customconfig.rb;                               installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
+/opt/tomlparser-mdm-metrics-config.rb;                               installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
 /opt/td-agent-bit-conf-customizer.rb;                               installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
 /opt/ConfigParseErrorLogger.rb;                                     installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 
@@ -190,6 +197,7 @@ MAINTAINER:              'Microsoft Corporation'
 /var/opt/microsoft;                                     755; root; root; sysdir
 /var/opt/microsoft/docker-cimprov;                      755; root; root
 /var/opt/microsoft/docker-cimprov/state;                755; root; root
+/var/opt/microsoft/docker-cimprov/state/flbstore;       755; root; root
 /var/opt/microsoft/docker-cimprov/state/ContainerInventory; 755; root; root
 /var/opt/microsoft/docker-cimprov/log;                  755; root; root
 
@@ -242,9 +250,17 @@ touch /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 
+touch /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
+
 touch /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
+
+touch /var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log
 
 touch /var/opt/microsoft/docker-cimprov/log/health_monitors.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/health_monitors.log

@@ -15,6 +15,7 @@ module Fluent
       require "yajl/json_gem"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
+      require_relative "constants"
 
       @@token_resource_url = "https://monitoring.azure.com/"
       @@grant_type = "client_credentials"
@@ -24,12 +25,12 @@ module Fluent
 
       # msiEndpoint is the well known endpoint for getting MSI authentications tokens
       @@msi_endpoint_template = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&client_id=%{user_assigned_client_id}&resource=%{resource}"
-      @@userAssignedClientId = ENV["USER_ASSIGNED_IDENTITY_CLIENT_ID"]
+      @@user_assigned_client_id = ENV["USER_ASSIGNED_IDENTITY_CLIENT_ID"]
 
       @@plugin_name = "AKSCustomMetricsMDM"
       @@record_batch_size = 2600
 
-      @@tokenRefreshBackoffInterval = 30
+      @@token_refresh_back_off_interval = 30
 
       @data_hash = {}
       @parsed_token_uri = nil
@@ -42,6 +43,8 @@ module Fluent
       @last_telemetry_sent_time = nil
       # Setting useMsi to false by default
       @useMsi = false
+      @metrics_flushed_count = 0
+
 
       @get_access_token_backoff_expiry = Time.now
     end
@@ -91,7 +94,7 @@ module Fluent
             @parsed_token_uri = URI.parse(aad_token_url)
           else
             @useMsi = true
-            msi_endpoint = @@msi_endpoint_template % {user_assigned_client_id: @@userAssignedClientId, resource: @@token_resource_url}
+            msi_endpoint = @@msi_endpoint_template % {user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url}
             @parsed_token_uri = URI.parse(msi_endpoint)
           end
 
@@ -142,9 +145,9 @@ module Fluent
             token_response = http_access_token.request(token_request)
             # Handle the case where the response is not 200
             parsed_json = JSON.parse(token_response.body)
-            @token_expiry_time = Time.now + @@tokenRefreshBackoffInterval * 60 # set the expiry time to be ~thirty minutes from current time
+            @token_expiry_time = Time.now + @@token_refresh_back_off_interval * 60 # set the expiry time to be ~thirty minutes from current time
             @cached_access_token = parsed_json["access_token"]
-          @log.info "Successfully got access token"
+            @log.info "Successfully got access token"
           end
         rescue => err
           @log.info "Exception in get_access_token: #{err}"
@@ -154,9 +157,9 @@ module Fluent
             sleep(retries)
             retry
           else
-          @get_access_token_backoff_expiry = Time.now + @@tokenRefreshBackoffInterval * 60
-          @log.info "@get_access_token_backoff_expiry set to #{@get_access_token_backoff_expiry}"
-          ApplicationInsightsUtility.sendExceptionTelemetry(err, {"FeatureArea" => "MDM"})
+            @get_access_token_backoff_expiry = Time.now + @@token_refresh_back_off_interval * 60
+            @log.info "@get_access_token_backoff_expiry set to #{@get_access_token_backoff_expiry}"
+            ApplicationInsightsUtility.sendExceptionTelemetry(err, {"FeatureArea" => "MDM"})
           end
         ensure
           if http_access_token
@@ -175,7 +178,7 @@ module Fluent
         File.open(fn, "w") { |file| file.write(status) }
       rescue => e
         @log.debug "Error:'#{e}'"
-        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(e)
       end
     end
 
@@ -216,7 +219,7 @@ module Fluent
           end
         end
       rescue Exception => e
-        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(e)
         @log.info "Exception when writing to MDM: #{e}"
         raise e
       end
@@ -230,7 +233,7 @@ module Fluent
         request["Authorization"] = "Bearer #{access_token}"
 
         request.body = post_body.join("\n")
-        @log.info "REQUEST BODY SIZE #{request.body.bytesize/1024}"
+        @log.info "REQUEST BODY SIZE #{request.body.bytesize / 1024}"
         response = @http_client.request(request)
         response.value # this throws for non 200 HTTP response code
         @log.info "HTTP Post Response Code : #{response.code}"
@@ -257,12 +260,12 @@ module Fluent
       rescue Errno::ETIMEDOUT => e
         @log.info "Timed out when POSTing Metrics to MDM : #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
-        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(e)
         raise e
       rescue Exception => e
         @log.info "Exception POSTing Metrics to MDM : #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
-        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(e)
         raise e
       end
     end
