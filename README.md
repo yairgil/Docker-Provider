@@ -11,8 +11,40 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
+### 05/22/2020 -
+##### Version microsoft/oms:ciprod05222020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05222020 (linux)
+##### Version microsoft/oms:win-ciprod05222020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05222020 (windows)
+##### Code change log
+- Windows Daemonset - Collection of Windows std/stderr logs
+- More Alerable Metrics (going to Metrics Store/custom metrics - see Customer Impact section below for metrics list)
+- Fix OOM-ing at high prometheus scrape volume
+- Update fluentbit (0.14.4 to 1.4.2)
+- Drop non-numeric metrics thru Telegraf
+- Reduce Health exception (when API server response is nil)
+- Add 'Computer' dimension to all telemetry (internal use)
+- Support for specifiying HTTP & HTTPS Proxy for outbound/egress (applicable only for non-AKS clusters)
+- Move to rbac.authorization.k8s.io/v1 for ClusterRole & ClusterRoleBinding
+- Move to apiextensions.k8s.io/v1 for Health CRD
+
+##### Customer Impact
+- Windows Logs - Customers will see agent automatically start collecting windows container STDOUT/STDERR logs sending them to same loganaytics workspace (containerlogs table)
+- Alertable metrics - Customers will see the below metrics & namespaces in 'Metrics' TOC for AKS clusters
+     - Metrics
+         - diskUsagePercentage
+         - completedJobsCount
+         - oomKilledContainerCount
+         - podReadyPercentage
+         - restartingContainerCount
+         - cpuExceededPercentage
+         - memoryRssExceededPercentage
+         - memoryWorkingSetExceededPercentage
+     - Metric Namespaces
+         - insights.container/containers
+- HTTP/S Proxy support - For non-AKS clusters, proxy can be configured when installing thru HELM. Please see documentation for more details
+
+
 ### 04/16/2020 -
-> Note: This agent release targetted for non-AKS clusters via Azure Monitor for containers HELM chart update
+> Note: This agent release targetted ONLY for non-AKS clusters via Azure Monitor for containers HELM chart update
 ##### Version microsoft/oms:ciprod04162020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04162020
 ##### Code change log
 - Add support for rate limiting 
