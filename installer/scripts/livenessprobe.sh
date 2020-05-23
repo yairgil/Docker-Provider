@@ -4,7 +4,7 @@
 (ps -ef | grep omsagent- | grep -v "grep")
 if [ $? -ne 0 ]
 then
- echo "Agent is NOT running"
+ echo "Agent is NOT running" > /dev/termination-log
  exit 1
 fi
 
@@ -12,7 +12,7 @@ fi
 (ps -ef | grep td-agent-bit | grep -v "grep")
 if [ $? -ne 0 ]
 then
- echo "Fluentbit is NOT running"
+ echo "Fluentbit is NOT running" > /dev/termination-log
  exit 1
 fi
 
@@ -24,8 +24,7 @@ else
   if [ -s "inotifyoutput.txt" ]
   then
     # inotifyoutput file has data(config map was applied)
-    echo "inotifyoutput.txt has been updated"
-    echo "config changed" > /dev/termination-log
+    echo "inotifyoutput.txt has been updated - config changed" > /dev/termination-log
     exit 1
   fi
 fi
