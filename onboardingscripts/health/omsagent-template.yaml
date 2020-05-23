@@ -34,7 +34,7 @@ roleRef:
 kind: ConfigMap
 apiVersion: v1
 data:
-  kube.conf: |- 
+  kube.conf: |-
      # Fluentd config file for OMS Docker - cluster components (kubeAPI)
      #fluent forward plugin
      <source>
@@ -97,7 +97,7 @@ data:
       run_interval 60s
       log_level debug
      </source>
-     
+
      #cadvisor perf- Windows nodes
      <source>
       type wincadvisorperf
@@ -209,7 +209,7 @@ data:
       max_retry_wait 9m
      </match>
 
-     <match oms.api.KubePerf**>	
+     <match oms.api.KubePerf**>
       type out_oms
       log_level debug
       num_threads 5
@@ -270,7 +270,7 @@ data:
       max_retry_wait 9m
       retry_mdm_post_wait_minutes 60
      </match>
-     
+
      <match oms.api.KubeHealth.AgentCollectionTime**>
       type out_oms_api
       log_level debug
@@ -377,7 +377,7 @@ spec:
   spec:
    serviceAccountName: omsagent
    containers:
-     - name: omsagent 
+     - name: omsagent
        image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview08012019"
        imagePullPolicy: IfNotPresent
        resources:
@@ -402,12 +402,12 @@ spec:
        - name: NODE_IP
          valueFrom:
             fieldRef:
-              fieldPath: status.hostIP  
+              fieldPath: status.hostIP
        securityContext:
          privileged: true
        ports:
        - containerPort: 25225
-         protocol: TCP 
+         protocol: TCP
        - containerPort: 25224
          protocol: UDP
        volumeMounts:
@@ -416,9 +416,9 @@ spec:
           readOnly: true
         - mountPath: /var/run/host
           name: docker-sock
-        - mountPath: /var/log 
+        - mountPath: /var/log
           name: host-log
-        - mountPath: /var/lib/docker/containers 
+        - mountPath: /var/lib/docker/containers
           name: containerlog-path
         - mountPath: /etc/kubernetes/host
           name: azure-json-path
@@ -436,18 +436,18 @@ spec:
         initialDelaySeconds: 60
         periodSeconds: 60
    nodeSelector:
-    beta.kubernetes.io/os: linux    
+    beta.kubernetes.io/os: linux
    # Tolerate a NoSchedule taint on master that ACS Engine sets.
    tolerations:
     - key: "node-role.kubernetes.io/master"
       operator: "Equal"
       value: "true"
-      effect: "NoSchedule"     
+      effect: "NoSchedule"
    volumes:
     - name: host-root
       hostPath:
        path: /
-    - name: docker-sock 
+    - name: docker-sock
       hostPath:
        path: /var/run
     - name: container-hostname
@@ -493,7 +493,7 @@ spec:
   spec:
    serviceAccountName: omsagent
    containers:
-     - name: omsagent 
+     - name: omsagent
        image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview08012019"
        imagePullPolicy: IfNotPresent
        resources:
@@ -516,23 +516,23 @@ spec:
        - name: NODE_IP
          valueFrom:
             fieldRef:
-              fieldPath: status.hostIP  
+              fieldPath: status.hostIP
        securityContext:
          privileged: true
        ports:
        - containerPort: 25225
-         protocol: TCP 
+         protocol: TCP
        - containerPort: 25224
          protocol: UDP
        - containerPort: 25235
          protocol: TCP
-         name: in-rs-tcp         
+         name: in-rs-tcp
        volumeMounts:
         - mountPath: /var/run/host
           name: docker-sock
-        - mountPath: /var/log 
+        - mountPath: /var/log
           name: host-log
-        - mountPath: /var/lib/docker/containers 
+        - mountPath: /var/lib/docker/containers
           name: containerlog-path
         - mountPath: /etc/kubernetes/host
           name: azure-json-path
@@ -558,7 +558,7 @@ spec:
     beta.kubernetes.io/os: linux
     kubernetes.io/role: agent
    volumes:
-    - name: docker-sock 
+    - name: docker-sock
       hostPath:
        path: /var/run
     - name: container-hostname
@@ -578,7 +578,7 @@ spec:
        secretName: omsagent-secret
     - name: omsagent-rs-config
       configMap:
-        name: omsagent-rs-config    
+        name: omsagent-rs-config
     - name: settings-vol-config
       configMap:
         name: container-azm-ms-agentconfig

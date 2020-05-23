@@ -18,7 +18,7 @@
 "resources": [
 {
     "type": "Microsoft.Resources/deployments",
-    "name": "[Concat('ContainerInsights', '-',  uniqueString(parameters('workspaceResourceId')))]", 
+    "name": "[Concat('ContainerInsights', '-',  uniqueString(parameters('workspaceResourceId')))]",
     "apiVersion": "2017-05-10",
     "subscriptionId": "[split(parameters('workspaceResourceId'),'/')[2]]",
     "resourceGroup": "[split(parameters('workspaceResourceId'),'/')[4]]",
@@ -44,11 +44,11 @@
                         "promotionCode": "",
                         "publisher": "Microsoft"
                     }
-               }                
+               }
             ]
         },
         "parameters": {}
     }
-   } 
-   ] 
+   }
+   ]
   }

@@ -7,9 +7,9 @@
 #  Of the built-in roles, only Owner and User Access Administrator are granted access to this permission.
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
-# curl -sL https://git.io/aks-mdm-onboarding | bash -s subscriptionId clusterResourceGroup clusterName 
+# curl -sL https://git.io/aks-mdm-onboarding | bash -s subscriptionId clusterResourceGroup clusterName
 #
-#   [Required]  ${1}  subscriptionId    subscriptionId  of the AKS cluster 
+#   [Required]  ${1}  subscriptionId    subscriptionId  of the AKS cluster
 #   [Required]  ${2}  clusterResourceGroup      resource group of the AKS cluster
 #   [Required]  ${3}  clusterName           name of the AKS cluster
 #
@@ -22,7 +22,7 @@ echo "subscriptionId"= ${1}
 echo "clusterResourceGroup" = ${2}
 echo "clusterName" = ${3}
 
-# login to azure 
+# login to azure
 az  login
 
 # set the account with specified subscriptionId

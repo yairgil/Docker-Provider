@@ -209,7 +209,7 @@ data:
      max_retry_wait 9m
     </match>
 
-    <match oms.api.KubePerf**>	
+    <match oms.api.KubePerf**>
      type out_oms
      log_level debug
      num_threads 5

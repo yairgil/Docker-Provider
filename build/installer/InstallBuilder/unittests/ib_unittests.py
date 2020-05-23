@@ -148,7 +148,7 @@ BackupConfigurationFile() {
 
     if EXPECTED_STRING != actual_string:
         error("Assertion!\nExpected:\n%s\nActual:\n%s\n" % (EXPECTED_STRING, actual_string))
-            
+
     print("PASS")
 
 
@@ -175,7 +175,7 @@ BackupConfigurationFile() {
 
     if EXPECTED_STRING != actual_string:
         error("Assertion!\nExpected:\n%s\nActual:\n%s\n" % (EXPECTED_STRING, actual_string))
-            
+
     print("PASS")
 
 
@@ -199,7 +199,7 @@ RestoreConfigurationFile() {
 
     if EXPECTED_STRING != actual_string:
         error("Assertion!\nExpected:\n%s\nActual:\n%s\n" % (EXPECTED_STRING, actual_string))
-            
+
     print("PASS")
 
 
@@ -218,7 +218,7 @@ exit 0
 
     if EXPECTED_STRING != actual_string:
         error("Assertion!\nExpected:\n%s\nActual:\n%s" % (EXPECTED_STRING, actual_string))
-            
+
     print("PASS")
 
 

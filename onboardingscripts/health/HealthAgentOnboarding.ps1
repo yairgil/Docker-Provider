@@ -1,6 +1,6 @@
-<# 
-    .DESCRIPTION 
-    	Upgrades the Kubernetes cluster that has been onboarded to monitoring to a version of the agent 
+<#
+    .DESCRIPTION
+    	Upgrades the Kubernetes cluster that has been onboarded to monitoring to a version of the agent
 	that generates health monitor signals
 	1. Installs necessary powershell modules
 	2. Onboards Container Insights solution to the supplied LA workspace if not already onboarded
@@ -31,7 +31,7 @@ $azOperationalInsights = Get-Module -ListAvailable -Name Az.OperationalInsights
 $azAks = Get-Module -ListAvailable -Name Az.Aks
 
 if (($null -eq $azAccountModule) -or ($null -eq $azResourcesModule) -or ($null -eq $azOperationalInsights)) {
-    
+
     $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 
     if ($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -58,7 +58,7 @@ if (($null -eq $azAccountModule) -or ($null -eq $azResourcesModule) -or ($null -
     $decision = $Host.UI.PromptForChoice($message, $question, $choices, 0)
 
     switch ($decision) {
-        0 { 
+        0 {
 
             if ($null -eq $azResourcesModule) {
                 try {
@@ -84,28 +84,28 @@ if (($null -eq $azAccountModule) -or ($null -eq $azResourcesModule) -or ($null -
 
             if ($null -eq $azOperationalInsights) {
                 try {
-             
+
                     Write-Host("Installing AzureRM.OperationalInsights...")
-                    Install-Module Az.OperationalInsights -Repository PSGallery -Force -AllowClobber -ErrorAction Stop                
+                    Install-Module Az.OperationalInsights -Repository PSGallery -Force -AllowClobber -ErrorAction Stop
                 }
                 catch {
-                    Write-Host("Close other powershell logins and try installing the latest modules for AzureRM.OperationalInsights in a new powershell window: eg. 'Install-Module AzureRM.OperationalInsights -Repository PSGallery -Force'") -ForegroundColor Red 
+                    Write-Host("Close other powershell logins and try installing the latest modules for AzureRM.OperationalInsights in a new powershell window: eg. 'Install-Module AzureRM.OperationalInsights -Repository PSGallery -Force'") -ForegroundColor Red
                     exit
-                }        
+                }
             }
             if ($null -eq $azAks) {
                 try {
-             
+
                     Write-Host("Installing Az.Aks...")
-                    Install-Module Az.Aks -Repository PSGallery -Force -AllowClobber -ErrorAction Stop                
+                    Install-Module Az.Aks -Repository PSGallery -Force -AllowClobber -ErrorAction Stop
                 }
                 catch {
-                    Write-Host("Close other powershell logins and try installing the latest modules for AzureRM.OperationalInsights in a new powershell window: eg. 'Install-Module AzureRM.OperationalInsights -Repository PSGallery -Force'") -ForegroundColor Red 
+                    Write-Host("Close other powershell logins and try installing the latest modules for AzureRM.OperationalInsights in a new powershell window: eg. 'Install-Module AzureRM.OperationalInsights -Repository PSGallery -Force'") -ForegroundColor Red
                     exit
-                }        
+                }
             }
 
-           
+
         }
         1 {
 
@@ -130,8 +130,8 @@ if (($null -eq $azAccountModule) -or ($null -eq $azResourcesModule) -or ($null -
                     Stop-Transcript
                     exit
                 }
-            } 
-            
+            }
+
             if ($null -eq $azAccountModule) {
                 try {
                     Import-Module Az.OperationalInsights
@@ -140,11 +140,11 @@ if (($null -eq $azAccountModule) -or ($null -eq $azResourcesModule) -or ($null -
                     Write-Host("Could not import Az.OperationalInsights... Please reinstall this Module") -ForegroundColor Red
                     Stop-Transcript
                     exit
-                }         
+                }
             }
-	
+
         }
-        2 { 
+        2 {
             Write-Host("")
             Stop-Transcript
             exit
@@ -152,7 +152,7 @@ if (($null -eq $azAccountModule) -or ($null -eq $azResourcesModule) -or ($null -
     }
 }
 
-if ([string]::IsNullOrEmpty($logAnalyticsWorkspaceResourceId)) {   
+if ([string]::IsNullOrEmpty($logAnalyticsWorkspaceResourceId)) {
     Write-Host("logAnalyticsWorkspaceResourceId should not be NULL or empty") -ForegroundColor Red
     exit
 }
@@ -164,7 +164,7 @@ if (($logAnalyticsWorkspaceResourceId -match "/providers/Microsoft.OperationalIn
 
 $workspaceResourceDetails = $logAnalyticsWorkspaceResourceId.Split("/")
 
-if ($workspaceResourceDetails.Length -ne 9) { 
+if ($workspaceResourceDetails.Length -ne 9) {
     Write-Host("logAnalyticsWorkspaceResourceId should be valid Azure Resource Id format") -ForegroundColor Red
     exit
 }
@@ -292,7 +292,7 @@ $base64EncodedKey = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF
 $base64EncodedWsId = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($wsid))
 Write-Host("Successfully verified specified logAnalyticsWorkspaceResourceId valid and exists...") -ForegroundColor Green
 $WorkspaceLocation = $WorkspaceInformation.Location
-		
+
 if ($null -eq $WorkspaceLocation) {
     Write-Host("")
     Write-Host("Cannot fetch workspace location. Please try again...") -ForegroundColor Red
@@ -327,7 +327,7 @@ catch {
 }
 
 $isSolutionOnboarded = $WorkspaceIPDetails.Enabled[$ContainerInsightsIndex]
-	
+
 if ($false -eq $isSolutionOnboarded) {
 
     $DeploymentName = "ContainerInsightsSolutionOnboarding-" + ((Get-Date).ToUniversalTime()).ToString('MMdd-HHmm')
@@ -335,22 +335,22 @@ if ($false -eq $isSolutionOnboarded) {
     $Parameters.Add("workspaceResourceId", $logAnalyticsWorkspaceResourceID)
     $Parameters.Add("workspaceRegion", $WorkspaceLocation)
     $Parameters
-    
+
     try {
         New-AzResourceGroupDeployment -Name $DeploymentName `
             -ResourceGroupName $workspaceResourceGroupName `
             -TemplateUri  https://raw.githubusercontent.com/Microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json `
             -TemplateParameterObject $Parameters -ErrorAction Stop`
-        
-        
+
+
         Write-Host("Successfully added Container Insights Solution") -ForegroundColor Green
 
     }
     catch {
         Write-Host ("Template deployment failed with an error: '" + $Error[0] + "' ") -ForegroundColor Red
         Write-Host("Please contact us by emailing askcoin@microsoft.com for help") -ForegroundColor Red
-    }    
-    
+    }
+
 }
 
 Write-Host("Successfully added Container Insights Solution to workspace " + $workspaceName)  -ForegroundColor Green
@@ -363,7 +363,7 @@ try {
     $DeploymentName = "ClusterHealthOnboarding-" + ((Get-Date).ToUniversalTime()).ToString('MMdd-HHmm')
     $Parameters
 
-    Write-Host " Onboarding cluster to provided LA workspace " 
+    Write-Host " Onboarding cluster to provided LA workspace "
 
     if ($account.Subscription.Id -eq $clusterSubscriptionId) {
         Write-Host("Subscription: $clusterSubscriptionId is already selected. Account details: ")
@@ -390,9 +390,9 @@ try {
         -ResourceGroupName $clusterResourceGroupName `
         -TemplateUri  https://raw.githubusercontent.com/Microsoft/OMS-docker/dilipr/onboardHealth/health/customOnboarding.json `
         -TemplateParameterObject $Parameters -ErrorAction Stop`
-    
+
     Write-Host("")
-        
+
     Write-Host("Successfully custom onboarded cluster to Monitoring") -ForegroundColor Green
 
     Write-Host("")
@@ -401,7 +401,7 @@ catch {
     Write-Host ("Template deployment failed with an error: '" + $Error[0] + "' ") -ForegroundColor Red
     exit
     #Write-Host("Please contact us by emailing askcoin@microsoft.com for help") -ForegroundColor Red
-}  
+}
 
 $desktopPath = "~"
 if (-not (test-path $desktopPath/deployments) ) {
@@ -414,15 +414,15 @@ else {
 try {
 
     $aksResourceDetails = $aksResourceId.Split("/")
-    if ($aksResourceDetails.Length -ne 9) { 
+    if ($aksResourceDetails.Length -ne 9) {
         Write-Host("aksResourceDetails should be valid Azure Resource Id format") -ForegroundColor Red
         exit
     }
     $clusterName = $aksResourceDetails[8].Trim()
     $clusterResourceGroupName = $aksResourceDetails[4].Trim()
     Import-AzAksCredential -Id $aksResourceId -Force
-    Invoke-WebRequest https://raw.githubusercontent.com/microsoft/OMS-docker/dilipr/mergeHealthToCiFeature/health/omsagent-template.yaml -OutFile $desktopPath/omsagent-template.yaml   
-    
+    Invoke-WebRequest https://raw.githubusercontent.com/microsoft/OMS-docker/dilipr/mergeHealthToCiFeature/health/omsagent-template.yaml -OutFile $desktopPath/omsagent-template.yaml
+
     (Get-Content -Path $desktopPath/omsagent-template.yaml -Raw) -replace 'VALUE_AKS_RESOURCE_ID', $aksResourceId -replace 'VALUE_AKS_REGION', $aksResourceLocation -replace 'VALUE_WSID', $base64EncodedWsId -replace 'VALUE_KEY', $base64EncodedKey -replace 'VALUE_ACS_RESOURCE_NAME', $acsResourceName | Set-Content $desktopPath/deployments/omsagent-$clusterName.yaml
     kubectl apply -f $desktopPath/deployments/omsagent-$clusterName.yaml
     Write-Host "Successfully onboarded to health model omsagent" -ForegroundColor Green

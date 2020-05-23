@@ -28,14 +28,14 @@ module Tomlrb
     end
 
     def deal_with_array_of_tables(identifiers, is_array_of_tables)
-      identifiers.map!{|n| n.gsub("\"", '')}
-      stringified_identifier = identifiers.join('.')
+      identifiers.map! { |n| n.gsub("\"", "") }
+      stringified_identifier = identifiers.join(".")
 
       if is_array_of_tables
         @array_names << stringified_identifier
         last_identifier = identifiers.pop
       elsif @array_names.include?(stringified_identifier)
-        raise ParseError, 'Cannot define a normal table with the same name as an already established array'
+        raise ParseError, "Cannot define a normal table with the same name as an already established array"
       end
 
       yield(identifiers)
@@ -64,7 +64,7 @@ module Tomlrb
     def end_(type)
       array = []
       while (value = @stack.pop) != [type]
-        raise ParseError, 'Unclosed table' unless value
+        raise ParseError, "Unclosed table" unless value
         array.unshift(value)
       end
       array

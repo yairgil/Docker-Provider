@@ -33,7 +33,7 @@ ForEach ($Item in $EventName) {
     $Null = Register-ObjectEvent  @ObjectEventParams
 }
 
-Get-EventSubscriber -Force 
+Get-EventSubscriber -Force
 
 # keep this running for the container's lifetime, so that it can listen for changes to the config map mount path
 try

@@ -168,7 +168,7 @@ class ConditionalStack:
 
     def Empty(self):
         return len(self.level_stack) == 0
-        
+
 # DataFileParser
 # Description:
 #  This class reads the datafiles, parses them, and evaluates the commands.
@@ -176,7 +176,7 @@ class DataFileParser:
     def __init__(self):
         self.variables = dict()
         self.defines = []
-        
+
     # Used for debugging
     def PrintSections(self):
         sorted_keys = sorted(self.sections.keys())
@@ -198,7 +198,7 @@ class DataFileParser:
         commandline = line[0]
         if len(commandline) == 0:
             return ifstack
-        
+
         tokens = commandline.split()
         firsttoken = tokens[0]
 
@@ -217,12 +217,12 @@ class DataFileParser:
 
         elif firsttoken == "#elseif":
             ifstack.NextConditional()
-            
+
             if ifstack.CurrentLevelHasNotBeenExecutedYet() and self.Evaluate(tokens[1:], line) == True:
                 ifstack.ExecuteCurrentLevel()
         elif firsttoken == "#elseifdef":
             ifstack.NextConditional()
-            
+
             if ifstack.CurrentLevelHasNotBeenExecutedYet() and self.IsDefined(tokens[1:], line) == True:
                 ifstack.ExecuteCurrentLevel()
 
@@ -285,7 +285,7 @@ class DataFileParser:
             return True
         return False
 
-    # This is called on every line that isn't in the Variables or Defines sections, and it replaces any text inside 
+    # This is called on every line that isn't in the Variables or Defines sections, and it replaces any text inside
     # two sets of braces starting with a dollar sign with the value in the self.variables dict.  "${{VAR_NAME}}"
     def ReplaceVariables(self, line):
         # replaces all variables that appear in the form of ${{\w+}}
@@ -301,7 +301,7 @@ class DataFileParser:
         returnList = []
         orderedSectionList = []
 
-        # Find all sections that match 'name' followed by some optional underscores, followed by any combination of digits, 
+        # Find all sections that match 'name' followed by some optional underscores, followed by any combination of digits,
         # then store those digits for numeric sorting and combining scripts
         for section in self.sections.keys():
             section_rex = re.compile(r"%s_*(\d*)" % name)
@@ -345,7 +345,7 @@ class DataFileParser:
                         sections[state] = []
                     elif state not in FILE_SECTIONS + DEPENDENCY_SECTIONS + VAR_SECTIONS:
                         error_section("This script section is defined more than once.", state)
-                        
+
                 else:
                     # Handle states
                     sections[state].append( (line, filename, linenumber) )
@@ -366,11 +366,11 @@ class DataFileParser:
                 if CheckIfCommand(varline.split(" ", 1)[0]):
                     ifstack, dummy, dummy = self.HandleCommand(line, ifstack, [], 0)
                     continue
-                
+
                 # If we're currently in a conditional part of the data file that evaluates to false
                 if not ifstack.IsCodePathActive():
                     continue
-                
+
                 tokens = varline.split(":", 1)
 
                 if len(tokens) != 2:
@@ -389,7 +389,7 @@ class DataFileParser:
 
                 # add the parsed variable to the variables dict
                 self.variables[key] = value
-                
+
             if not ifstack.Empty():
                 error_section(too_many_ifs, "Variables")
 
@@ -402,7 +402,7 @@ class DataFileParser:
 
                 if CheckIfCommand(defline.split(" ", 1)[0]):
                     ifstack, dummy, dummy = self.HandleCommand(line, ifstack, [], 0)
-                    continue                
+                    continue
 
                 if not ifstack.IsCodePathActive():
                     continue
@@ -436,7 +436,7 @@ class DataFileParser:
             line_literal = line[0]
             if section in FILE_SECTIONS + DEPENDENCY_SECTIONS + VAR_SECTIONS:
                 if len(line_literal.strip()) == 0:
-                    continue                
+                    continue
 
             if CheckIfCommand(line_literal.split(" ", 1)[0]):
                 ifstack, newsection, linenum = self.HandleCommand(line, ifstack, newsection, linenum)
@@ -451,7 +451,7 @@ class DataFileParser:
                 newtokens = []
                 for token in tokens:
                     newtokens.append(token.strip())
-                
+
                 if section == "Files":
                     newsection.append(FileEntry(newtokens, line))
                 elif section == "Directories":
@@ -462,7 +462,7 @@ class DataFileParser:
                     error("Failing to parse line type in '" + section + "'.", line)
             else:
                 newsection.append(line_literal)
-                
+
         if not ifstack.Empty():
             error_section(too_many_ifs, section)
 

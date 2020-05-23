@@ -78,7 +78,7 @@ class LinuxDebFile:
             exit(1)
 
         # Fix up owner/permissions in staging directory
-        # (Files are installed on destination as staged)        
+        # (Files are installed on destination as staged)
 
         for f in self.sections["Files"] + self.sections["Directories"]:
             filePath = self.stagingDir + f.stagedLocation

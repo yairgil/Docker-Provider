@@ -46,7 +46,7 @@ Get the below powershell script files to your local computer.
 - Powershell script file [mdm_onboarding.ps1](https://github.com/Microsoft/OMS-docker/blob/ci_feature/docs/aks/mdmonboarding/mdm_onboarding.ps1)
 - Execute the mdm_onboarding.ps1 by passing the SubscriptionId, ResourceGroupName and clusterName of the AKS cluster
 
-``` sh 
+``` sh
 .\mdm_onboarding.ps1 -SubscriptionId <AksClusterSubscriptionId> -ResourceGroupName <aksClusterResourceGroupName> -clusterName <aksClusterName>
 ```
 
@@ -64,7 +64,7 @@ Get the below powershell script files to your local computer.
 - Execute the mdm_onboarding_atscale.ps1 by passing the SubscriptionId where are the AKS clusters in.
 
 ``` sh
-.\mdm_onboarding_atscale.ps1 -SubscriptionId <AksClusterSubscriptionId> 
+.\mdm_onboarding_atscale.ps1 -SubscriptionId <AksClusterSubscriptionId>
 ```
 
 The configuration change can take a few minutes to complete. When it finishes, you see a message similar to the following that includes the result:

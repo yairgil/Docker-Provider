@@ -1,14 +1,14 @@
-﻿<# 
-    .DESCRIPTION 
-		Adds the Monitoring Metrics Publisher role assignment to the specified AKS cluster        
-      
-	
+﻿<#
+    .DESCRIPTION
+		Adds the Monitoring Metrics Publisher role assignment to the specified AKS cluster
+
+
     .PARAMETER SubscriptionId
         Subscription Id that the AKS cluster is in
 
     .PARAMETER ClusterResourceGroup
         Resource Group name that the AKS cluster is in
-            
+
 	 .PARAMETER clusterName
         Name of the AKS cluster.
 #>
@@ -24,7 +24,7 @@ param(
 
 # checks the required Powershell modules exist and if not exists, request the user permission to install
 $azAccountModule = Get-Module -ListAvailable -Name Az.Accounts
-$azAksModule = Get-Module -ListAvailable -Name Az.Aks 
+$azAksModule = Get-Module -ListAvailable -Name Az.Aks
 $azResourcesModule = Get-Module -ListAvailable -Name Az.Resources
 
 if (($null -eq $azAccountModule) -or ($null -eq $azAksModule) -or ($null -eq $azResourcesModule)) {
@@ -57,7 +57,7 @@ if (($null -eq $azAccountModule) -or ($null -eq $azAksModule) -or ($null -eq $az
     $decision = $Host.UI.PromptForChoice($message, $question, $choices, 0)
 
     switch ($decision) {
-        0 { 
+        0 {
 
             if ($null -eq $azResourcesModule) {
                 try {
@@ -87,11 +87,11 @@ if (($null -eq $azAccountModule) -or ($null -eq $azAksModule) -or ($null -eq $az
                     Install-Module Az.Aks -Repository PSGallery -Force -AllowClobber -ErrorAction Stop
                 }
                 catch {
-                    Write-Host("Close other powershell logins and try installing the latest modules for Az.Aks in a new powershell window: eg. 'Install-Module Az.Aks -Repository PSGallery -Force'") -ForegroundColor Red 
+                    Write-Host("Close other powershell logins and try installing the latest modules for Az.Aks in a new powershell window: eg. 'Install-Module Az.Aks -Repository PSGallery -Force'") -ForegroundColor Red
                     exit
                 }
             }
-           
+
         }
         1 {
 
@@ -125,11 +125,11 @@ if (($null -eq $azAccountModule) -or ($null -eq $azAksModule) -or ($null -eq $az
                     Write-Host("Could not import Az.Aks... Please reinstall this Module") -ForegroundColor Red
                     Stop-Transcript
                     exit
-                }   
-            }      
-	
+                }
+            }
+
         }
-        2 { 
+        2 {
             Write-Host("")
             Stop-Transcript
             exit
@@ -222,21 +222,21 @@ if ($servicePrincipalMsiClientId -ne "") {
 
     if ($assignmentError) {
 
-        $roleAssignment = Get-AzRoleAssignment -scope $clusterResourceId -RoleDefinitionName "Monitoring Metrics Publisher" -ErrorVariable getAssignmentError -ErrorAction SilentlyContinue		
+        $roleAssignment = Get-AzRoleAssignment -scope $clusterResourceId -RoleDefinitionName "Monitoring Metrics Publisher" -ErrorVariable getAssignmentError -ErrorAction SilentlyContinue
 
-        if ($assignmentError.Exception -match "role assignment already exists" -or ( $roleAssignment -and $roleAssignment.ObjectType -like "ServicePrincipal" )) {           
-            Write-Host("Monitoring Metrics Publisher role assignment already exists on the cluster resource : '" + $clusterName + "'") -ForegroundColor Green 
+        if ($assignmentError.Exception -match "role assignment already exists" -or ( $roleAssignment -and $roleAssignment.ObjectType -like "ServicePrincipal" )) {
+            Write-Host("Monitoring Metrics Publisher role assignment already exists on the cluster resource : '" + $clusterName + "'") -ForegroundColor Green
         }
-        else { 
-            Write-Host("Failed to add Monitoring Metrics Publisher role assignment to cluster : '" + $clusterName + "' , error : $assignmentError") -ForegroundColor Red      
+        else {
+            Write-Host("Failed to add Monitoring Metrics Publisher role assignment to cluster : '" + $clusterName + "' , error : $assignmentError") -ForegroundColor Red
         }
     }
     else {
-        Write-Host("Successfully added Monitoring Metrics Publisher role assignment to cluster : '" + $clusterName + "'") -ForegroundColor Green 
+        Write-Host("Successfully added Monitoring Metrics Publisher role assignment to cluster : '" + $clusterName + "'") -ForegroundColor Green
     }
 }
 else {
-    Write-Host("Unable to find service principal/msi associated with the cluster : '" + $clusterName + "'") -ForegroundColor Green       
+    Write-Host("Unable to find service principal/msi associated with the cluster : '" + $clusterName + "'") -ForegroundColor Green
 }
 
 

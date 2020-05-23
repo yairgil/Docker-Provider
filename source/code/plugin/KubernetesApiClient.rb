@@ -272,7 +272,7 @@ class KubernetesApiClient
     def getWindowsNodes
       winNodes = []
       begin
-        resourceUri =  getNodesResourceUri("nodes")
+        resourceUri = getNodesResourceUri("nodes")
         nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
         @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
         # Resetting the windows node cache
@@ -392,11 +392,10 @@ class KubernetesApiClient
 
           # For ARO, skip the pods scheduled on to master or infra nodes to ingest
           if isAROV3Cluster() && !pod["spec"].nil? && !pod["spec"]["nodeName"].nil? &&
-            ( pod["spec"]["nodeName"].downcase.start_with?("infra-") ||
-            pod["spec"]["nodeName"].downcase.start_with?("master-") )
+             (pod["spec"]["nodeName"].downcase.start_with?("infra-") ||
+              pod["spec"]["nodeName"].downcase.start_with?("master-"))
             next
           end
-
 
           podContainers = []
           if !pod["spec"]["containers"].nil? && !pod["spec"]["containers"].empty?
@@ -476,7 +475,7 @@ class KubernetesApiClient
       begin
         clusterId = getClusterId
         clusterName = getClusterName
-        
+
         metricInfo = metricJSON
         metricInfo["items"].each do |pod|
           podNameSpace = pod["metadata"]["namespace"]
@@ -516,7 +515,7 @@ class KubernetesApiClient
               #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
               if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
                 metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
-              else 
+              else
                 #No container level limit for the given metric, so default to node level limit for non-gpu metrics
                 if (metricNameToCollect.downcase != "nvidia.com/gpu") && (metricNameToCollect.downcase != "amd.com/gpu")
                   nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
@@ -529,17 +528,17 @@ class KubernetesApiClient
                 metricItem["Computer"] = nodeName
                 metricItem["Name"] = metricNametoReturn
                 metricItem["Value"] = metricValue
-                metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
+                metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
                 metricItem["Namespace"] = Constants::INSIGHTSMETRICS_TAGS_GPU_NAMESPACE
-                
+
                 metricTags = {}
-                metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
+                metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = clusterId
                 metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
                 metricTags[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME] = podUid + "/" + containerName
                 #metricTags[Constants::INSIGHTSMETRICS_TAGS_K8SNAMESPACE] = podNameSpace
-              
+
                 metricItem["Tags"] = metricTags
-                
+
                 metricItems.push(metricItem)
               end
             end
@@ -615,30 +614,30 @@ class KubernetesApiClient
             metricItem["Computer"] = node["metadata"]["name"]
             metricItem["Name"] = metricNametoReturn
             metricItem["Value"] = metricValue
-            metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
+            metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
             metricItem["Namespace"] = Constants::INSIGHTSMETRICS_TAGS_GPU_NAMESPACE
-            
+
             metricTags = {}
-            metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
+            metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = clusterId
             metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
             metricTags[Constants::INSIGHTSMETRICS_TAGS_GPU_VENDOR] = metricNameToCollect
-           
+
             metricItem["Tags"] = metricTags
-            
+
             metricItems.push(metricItem)
             #push node level metrics (except gpu ones) to a inmem hash so that we can use it looking up at container level.
             #Currently if container level cpu & memory limits are not defined we default to node level limits
             if (metricNameToCollect.downcase != "nvidia.com/gpu") && (metricNameToCollect.downcase != "amd.com/gpu")
               @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
               #@Log.info ("Node metric hash: #{@@NodeMetrics}")
-            end 
+            end
           end
         end
       rescue => error
         @Log.warn("parseNodeLimitsAsInsightsMetrics failed: #{error} for metric #{metricCategory} #{metricNameToCollect}")
       end
       return metricItems
-    end 
+    end
 
     def getMetricNumericValue(metricName, metricVal)
       metricValue = metricVal.downcase

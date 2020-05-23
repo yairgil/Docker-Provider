@@ -2,7 +2,7 @@
 #
 # Execute this directly in Azure Cloud Shell (https://shell.azure.com) by pasting (SHIFT+INS on Windows, CTRL+V on Mac or Linux)
 # the following line (beginning with curl...) at the command prompt and then replacing the args:
-#  This script adds the 'Monitoring Metrics Publisher' role assignment for all the AKS clusters 
+#  This script adds the 'Monitoring Metrics Publisher' role assignment for all the AKS clusters
 #  in specified subscription
 #  Note: 'Microsoft.Authorization/roleAssignments/write'  permission required on the  each cluster resource to add the role assignment.
 #  Of the built-in roles, only Owner and User Access Administrator are granted access to this permission.
@@ -11,7 +11,7 @@
 #           jq : sudo apt-get install jq
 #  curl -sL https://git.io/aks-mdm-onboarding-atscale | bash -s subscriptionId
 #
-#  [Required]  ${1}  subscriptionId    subscriptionId  of the AKS cluster 
+#  [Required]  ${1}  subscriptionId    subscriptionId  of the AKS cluster
 #
 #  For example:
 #
@@ -20,7 +20,7 @@
 
 echo "subscriptionId"= ${1}
 
-# login to azure interactively 
+# login to azure interactively
 az login
 
 # set the account with specified subscriptionId

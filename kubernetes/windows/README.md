@@ -20,7 +20,7 @@ There are multiple dependencies that are needed to build the windows container l
          dotnet add package BouncyCastle
          dotnet build
          dotnet publish -c Release -r win10-x64
-  
+
   - Zip the contents of bin\Release\<dotnetversion>\win10-x64\publish to a file called CertificateGenerator.zip
   - Copy CertificateGenerator.zip file to source\code\windows\omsagentwindows\certgenerator directory
 
@@ -29,7 +29,7 @@ There are multiple dependencies that are needed to build the windows container l
   These are checked in directly to the OMS-docker repo and have no dependencies on their linux counterparts in the Docker-Provider repo
 
 ### OMS output plugin
-  
+
   This code comes from the Docker-Provider repo. The go plugin is shared between windows and linux.
 
 - If any changes need to be made to the plugin code
@@ -39,7 +39,7 @@ There are multiple dependencies that are needed to build the windows container l
   - Check in the out_oms.so file at the following [location](https://github.com/microsoft/OMS-docker/tree/dilipr/winakslog/Kubernetes/windows/omsagentwindows)
 
 ### Ruby scripts for config parsing
-  
+
   These are duplicated from the Docker-Provider repo. Any change made there NEEDS to be replicated [here](https://github.com/microsoft/OMS-docker/tree/dilipr/winakslog/Kubernetes/windows/scripts/ruby)
 
 ### Fluent heartbeat plugin

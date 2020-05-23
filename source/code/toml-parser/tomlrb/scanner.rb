@@ -1,4 +1,4 @@
-require 'strscan'
+require "strscan"
 
 module Tomlrb
   class Scanner
@@ -12,8 +12,8 @@ module Tomlrb
     DATETIME = /(-?\d{4})-(\d{2})-(\d{2})(?:(?:t|\s)(\d{2}):(\d{2}):(\d{2}(?:\.\d+)?))?(z|[-+]\d{2}:\d{2})?/i
     FLOAT = /[+-]?(?:[0-9_]+\.[0-9_]*|\d+(?=[eE]))(?:[eE][+-]?[0-9_]+)?/
     INTEGER = /[+-]?([1-9](_?\d)*|0)(?![A-Za-z0-9_-]+)/
-    TRUE   = /true/
-    FALSE  = /false/
+    TRUE = /true/
+    FALSE = /false/
 
     def initialize(io)
       @ss = StringScanner.new(io.read)
@@ -32,8 +32,8 @@ module Tomlrb
       when text = @ss.scan(STRING_LITERAL) then [:STRING_LITERAL, text[1..-2]]
       when text = @ss.scan(FLOAT) then [:FLOAT, text]
       when text = @ss.scan(INTEGER) then [:INTEGER, text]
-      when text = @ss.scan(TRUE)   then [:TRUE, text]
-      when text = @ss.scan(FALSE)  then [:FALSE, text]
+      when text = @ss.scan(TRUE) then [:TRUE, text]
+      when text = @ss.scan(FALSE) then [:FALSE, text]
       when text = @ss.scan(IDENTIFIER) then [:IDENTIFIER, text]
       else
         x = @ss.getch
@@ -43,9 +43,9 @@ module Tomlrb
 
     def process_datetime
       if @ss[7].nil?
-        offset = '+00:00'
+        offset = "+00:00"
       else
-        offset = @ss[7].gsub('Z', '+00:00')
+        offset = @ss[7].gsub("Z", "+00:00")
       end
       args = [@ss[1], @ss[2], @ss[3], @ss[4] || 0, @ss[5] || 0, @ss[6].to_f, offset]
       [:DATETIME, args]

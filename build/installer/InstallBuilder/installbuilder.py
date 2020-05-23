@@ -19,7 +19,7 @@ for arg in sys.argv[1:]:
         # Must be a file
         args.append(arg)
         continue
-    
+
     if arg[0:2] == "--":
         tokens = arg[2:].split("=",1)
         if len(tokens) == 1:
@@ -31,7 +31,7 @@ for arg in sys.argv[1:]:
             Variables[tokens[0]] = tokens[1]
     else:
         args.append(arg)
-        
+
 dfp = datafileparser.DataFileParser()
 
 dfp.InhaleDataFiles(Variables["DATAFILE_PATH"], args)
@@ -70,33 +70,33 @@ for d in Directories:
     pass
 
 for f in Files:
-    scxutil.Copy(os.path.join(baseDir, f.baseLocation), 
+    scxutil.Copy(os.path.join(baseDir, f.baseLocation),
                  stagingDir + f.stagedLocation)
     pass
 
 for l in Links:
-    scxutil.Link(l.baseLocation, 
+    scxutil.Link(l.baseLocation,
                  stagingDir + l.stagedLocation)
     pass
 
 if dfp.variables["PF"] == "Linux":
     if dfp.variables["PACKAGE_TYPE"] == "RPM":
-        packageObject = linuxrpm.LinuxRPMFile(intermediateDir, 
-                                              targetDir, 
-                                              stagingDir, 
-                                              dfp.variables, 
+        packageObject = linuxrpm.LinuxRPMFile(intermediateDir,
+                                              targetDir,
+                                              stagingDir,
+                                              dfp.variables,
                                               dfp.sections)
     elif dfp.variables["PACKAGE_TYPE"] == "DPKG":
-        packageObject = linuxdpkg.LinuxDebFile(intermediateDir, 
-                                               targetDir, 
-                                               stagingDir, 
-                                               dfp.variables, 
+        packageObject = linuxdpkg.LinuxDebFile(intermediateDir,
+                                               targetDir,
+                                               stagingDir,
+                                               dfp.variables,
                                                dfp.sections)
 elif dfp.variables["PF"] == "SunOS":
-    packageObject = sunospkg.SunOSPKGFile(intermediateDir, 
+    packageObject = sunospkg.SunOSPKGFile(intermediateDir,
                                           targetDir,
                                           stagingDir,
-                                          dfp.variables, 
+                                          dfp.variables,
                                           dfp.sections)
 elif dfp.variables["PF"] == "AIX":
     packageObject = aixlpp.AIXLPPFile(intermediateDir,

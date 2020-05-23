@@ -5,7 +5,7 @@
 
 Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
-        
+
     New-Item -Type Directory -Path /opt/fluent-bit
     New-Item -Type Directory -Path /opt/scripts/ruby
 
@@ -15,8 +15,8 @@ Write-Host ('Creating folder structure')
 
     New-Item -Type Directory -Path /etc/config/settings/
 
-Write-Host ('Installing Fluent Bit'); 
-    
+Write-Host ('Installing Fluent Bit');
+
     try {
         $fluentBitUri='https://github.com/microsoft/OMS-docker/releases/download/winakslogagent/td-agent-bit-1.4.0-win64.zip'
         Invoke-WebRequest -Uri $fluentBitUri -OutFile /installation/td-agent-bit.zip
@@ -40,7 +40,7 @@ Write-Host ('Installing Visual C++ Redistributable Package')
     Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation
     Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait
     Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin 
+    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin
     Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin
 Write-Host ('Finished Installing Visual C++ Redistributable Package')
 

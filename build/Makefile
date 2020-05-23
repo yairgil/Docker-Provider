@@ -70,7 +70,7 @@ all : PROVIDER_STATUS fluentbitplugin rubypluginstests
 endif
 
 clean :
-	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target 
+	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target
 	-find $(BASE_DIR) -name \*~ -exec rm {} \;
 
 distclean : clean

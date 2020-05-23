@@ -70,7 +70,7 @@ class SunOSPKGFile:
             prototype.write("s none")
             prototype.write(' ' + l.stagedLocation)
             prototype.write('=' + l.baseLocation + '\n')
-               
+
     def GenerateDepFile(self):
         depfile = open(self.depFileName, 'w')
 
@@ -83,7 +83,7 @@ class SunOSPKGFile:
             depfile.write(d)
             depfile.write("\n")
 
-        # Solaris 11 uses a new package manager (Image Packaging System), and all of our dependencies 
+        # Solaris 11 uses a new package manager (Image Packaging System), and all of our dependencies
         # are installed in it.  For now, do our dependency checks in the preinstall script, but in the
         # long term, we will create an IPS package for Solaris 11 that references IPS dependencies.
 
@@ -105,7 +105,7 @@ class SunOSPKGFile:
         self.WriteScriptFile(self.rConfigFileName, "rConfig")
 
     def BuildPackage(self):
-	
+
         retval = os.system('pkgmk -o' + \
                   ' -r ' + self.stagingDir + \
                   ' -f ' + self.prototypeFileName + \
@@ -130,7 +130,7 @@ class SunOSPKGFile:
 
         if "SKIP_BUILDING_PACKAGE" in self.variables:
             return
-            
+
         retval = os.system('pkgtrans -s ' + self.tempDir + ' ' + pkgfilename + ' ' +  short_name_prefix + self.variables['SHORT_NAME'])
         if retval != 0:
             print("Error: pkgtrans failed.")
@@ -141,7 +141,7 @@ class SunOSPKGFile:
         package_filename.close()
 
 class PKGInfoFile:
-    
+
     def __init__(self, directory, variables):
         self.filename = os.path.join(directory, 'pkginfo')
         self.properties = []
@@ -163,17 +163,17 @@ class PKGInfoFile:
         self.AddProperty('NAME', variables['LONG_NAME'])
         self.AddProperty('VERSION', self.fullversion_dashed)
         self.AddProperty('CATEGORY', 'system')
-        
+
         # Optional entries:
         self.AddProperty('DESC', variables['DESCRIPTION'])
         self.AddProperty('VENDOR', variables['VENDOR'])
         self.AddProperty('SUNW_PKG_ALLZONES', 'false')
         self.AddProperty('SUNW_PKG_HOLLOW', 'false')
         self.AddProperty('SUNW_PKG_THISZONE', 'true')
-        
+
     def AddProperty(self, key, value):
         self.properties.append((key, value))
-        
+
     def Generate(self):
         pkginfo = open(self.filename, 'w')
         for (key, value) in self.properties:

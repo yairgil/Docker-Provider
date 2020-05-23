@@ -38,7 +38,7 @@ rg=$(az group show --name $clusterResourceGroup --subscription $subscriptionId)
 if [ -z "$rg" ]; then
     echo "resource group does not exist in specified subscription":$clusterResourceGroup
     exit 1
-fi	
+fi
 
 # check whether log analytics workspace resource exists or not
 az resource show --ids $workspaceResourceId
@@ -47,7 +47,7 @@ az resource show --ids $workspaceResourceId
 resources=$(az resource list -g $clusterResourceGroup --resource-type "Microsoft.Compute/virtualMachines" --query "[?starts_with(name,'k8s-master')].id" --output tsv)
 
 if [ -z $resources ]; then
-  # if no k8-master nodes, get all k8s-master VMSSes if exists	
+  # if no k8-master nodes, get all k8s-master VMSSes if exists
   resources=$(az resource list -g $clusterResourceGroup --resource-type "Microsoft.Compute/virtualMachineScaleSets" --query "[?starts_with(name,'k8s-master')].id" --output tsv)
 fi
 
@@ -59,7 +59,7 @@ else
   for resid in $resources; do
       jsonrtag=$(az resource show --id $resid --query tags)
       rt=$(echo $jsonrtag | tr -d '"{},' | sed 's/: /=/g')
-     az resource tag --tags $rt logAnalyticsWorkspaceResourceId=$workspaceResourceId clusterName=$clusterName --id $resid 
+     az resource tag --tags $rt logAnalyticsWorkspaceResourceId=$workspaceResourceId clusterName=$clusterName --id $resid
   done
 fi
 

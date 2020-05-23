@@ -33,7 +33,7 @@ class HPUXPackageFile:
             script += line
             script += "\n"
         return script
-        
+
     def GenerateScripts(self):
         scriptfile = open(self.preinstallPath, 'w')
         prein = self.variables["SHELL_HEADER"] + "\n"
@@ -81,7 +81,7 @@ RestoreConfigurationFile() {
         postremove += "exit 0\n"
         scriptfile.write(postremove)
         scriptfile.close()
-        
+
     def GenerateSpecificationFile(self):
         specfile = open(self.specificationFileName, 'w')
 
@@ -176,11 +176,11 @@ RestoreConfigurationFile() {
         if "SKIP_BUILDING_PACKAGE" in self.variables:
             return
 
-        retval = os.system('/usr/sbin/swpackage -s ' + 
-                           os.path.join(self.tempDir, self.specificationFileName) + 
-                           ' -x run_as_superuser=false -x admin_directory=' + 
-                           self.intermediateDir + 
-                           ' -x media_type=tape @ ' + 
+        retval = os.system('/usr/sbin/swpackage -s ' +
+                           os.path.join(self.tempDir, self.specificationFileName) +
+                           ' -x run_as_superuser=false -x admin_directory=' +
+                           self.intermediateDir +
+                           ' -x media_type=tape @ ' +
                            depotfilename)
         if retval != 0:
             print("Error: swpackage returned non-zero status.")

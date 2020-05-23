@@ -11,7 +11,7 @@ import fnmatch
 # \param[in] dstDir Absolute path to destination directory.
 #
 def CopyPattern(srcDir, pattern, dstDir):
-    
+
     names = fnmatch.filter(os.listdir(srcDir), pattern)
 
     for name in names:
@@ -39,7 +39,7 @@ def Copy(srcPath, dstPath):
     if retval != 0:
         print("Unable to copy from %s to %s." % (srcPath, dstPath))
         exit(1)
-    
+
 ##
 # Utility method to move files with all permissions retained
 # \param[in] srcPath Absolute source path.
@@ -50,7 +50,7 @@ def Move(srcPath, dstPath):
     if retval != 0:
         print("Unable to move from %s to %s." % (srcPath, dstPath))
         exit(1)
-    
+
 ##
 # Utility method to create a soft link
 # \param[in] path path to link destination.
@@ -61,7 +61,7 @@ def Link(path, dstPath):
     if retval != 0:
         print("Unable to ln -s %s %s." % (path, dstPath))
         exit(1)
-    
+
 ##
 # Utility method to touch a file
 # \param[in] path Absolute path.

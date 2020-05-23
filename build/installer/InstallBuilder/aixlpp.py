@@ -188,7 +188,7 @@ class AIXLPPFile:
 
         if "SKIP_BUILDING_PACKAGE" in self.variables:
             return
-        
+
         retval = os.system('cd ' + self.stagingDir + \
                   ' && find . | grep -v \"^\\.$\" | backup -ivqf ' + lppfilename)
 

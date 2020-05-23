@@ -22,10 +22,10 @@ ifdef PF_WINDOWS
 	ECHO=cmd /c echo
 	COPY=cmd /c copy
 	COPYDIR=cmd /c robocopy
-	pf_fwrite=echo $(1) > $(2) 
+	pf_fwrite=echo $(1) > $(2)
 	pf_fappend=echo $(1) >> $(2)
 
-	NOOP=rem NOOP 
+	NOOP=rem NOOP
 
 endif
 

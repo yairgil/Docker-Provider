@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 module Fluent
-  require_relative "podinventory_to_mdm"      
+  require_relative "podinventory_to_mdm"
 
   class Kube_PodInventory_Input < Input
     Plugin.register_input("kubepodinventory", self)
@@ -19,7 +19,7 @@ module Fluent
       require "yajl"
       require "set"
       require "time"
-      
+
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
@@ -138,7 +138,7 @@ module Fluent
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-    end    
+    end
 
     def parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
       currentTime = Time.now
@@ -151,7 +151,7 @@ module Fluent
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
 
-        podInventory["items"].each do |items| #podInventory block start          
+        podInventory["items"].each do |items| #podInventory block start
           containerInventoryRecords = []
           records = []
           record = {}
@@ -225,10 +225,10 @@ module Fluent
             if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
-              containerInventoryRecordsInPodItem = KubernetesContainerInventory.getContainerInventoryRecords(items, batchTime, clusterCollectEnvironmentVar, true)  
+              containerInventoryRecordsInPodItem = KubernetesContainerInventory.getContainerInventoryRecords(items, batchTime, clusterCollectEnvironmentVar, true)
               containerInventoryRecordsInPodItem.each do |containerRecord|
-                containerInventoryRecords.push(containerRecord)          
-              end              
+                containerInventoryRecords.push(containerRecord)
+              end
             end
           end
 
@@ -340,7 +340,7 @@ module Fluent
               end
 
               podRestartCount += containerRestartCount
-              records.push(record.dup)            
+              records.push(record.dup)
             end
           else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
             records.push(record)
@@ -405,9 +405,9 @@ module Fluent
           #end
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
-          begin 
+          begin
             #start GPU InsightsMetrics items
-            
+
             containerGPUInsightsMetricsDataItems = []
             containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
             containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
@@ -422,11 +422,10 @@ module Fluent
                 "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
               }
               insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
-              
+
               if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
                 $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
               end
-
             end
 
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
@@ -477,7 +476,6 @@ module Fluent
         #Updating value for AppInsights telemetry
         @podCount += podInventory["items"].length
 
-        
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end

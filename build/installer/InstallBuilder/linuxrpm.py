@@ -13,7 +13,7 @@ class LinuxRPMFile:
         if "RELEASE" in self.variables:
             self.fullversion = self.variables["VERSION"] + "." + self.variables["RELEASE"]
             self.fullversion_dashed = self.variables["VERSION"] + "-" + self.variables["RELEASE"]
-            
+
     def GeneratePackageDescriptionFiles(self):
         self.GenerateSpecFile()
 

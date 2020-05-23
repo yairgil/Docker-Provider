@@ -81,13 +81,13 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
 
       if [ -e "/etc/omsagent-secret/PROXY" ]; then
             export PROXY_ENDPOINT=$(cat /etc/omsagent-secret/PROXY)
-            # Validate Proxy Endpoint URL 
+            # Validate Proxy Endpoint URL
             # extract the protocol://
             proto="$(echo $PROXY_ENDPOINT | grep :// | sed -e's,^\(.*://\).*,\1,g')"
             # convert the protocol prefix in lowercase for validation
             proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
             if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"           
+               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             fi
             # remove the protocol
             url="$(echo ${PROXY_ENDPOINT/$proto/})"
@@ -97,7 +97,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             pwd="$(echo $creds | cut -d':' -f2)"
             # extract the host and port
             hostport="$(echo ${url/$creds@/} | cut -d/ -f1)"
-            # extract host without port    
+            # extract host without port
             host="$(echo $hostport | sed -e 's,:.*,,g')"
             # extract the port
             port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
