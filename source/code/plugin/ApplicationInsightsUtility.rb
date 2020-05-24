@@ -22,7 +22,7 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
-
+  
   @@CustomProperties = {}
   @@Tc = nil
   @@hostName = (OMS::Common.get_hostname)
@@ -65,6 +65,7 @@ class ApplicationInsightsUtility
         @@CustomProperties["WorkspaceID"] = getWorkspaceId
         @@CustomProperties["AgentVersion"] = ENV[@@EnvAgentVersion]
         @@CustomProperties["ControllerType"] = ENV[@@EnvControllerType]
+        @@CustomProperties["Computer"] = @@hostName
         encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
         appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
         @@CustomProperties["WorkspaceCloud"] = getWorkspaceCloud

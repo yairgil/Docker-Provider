@@ -10,7 +10,7 @@ module Fluent
     def initialize
       super
       require "yaml"
-      require "yajl/json_gem"
+      require 'yajl/json_gem'
       require "time"
 
       require_relative "CAdvisorMetricsAPIClient"
@@ -81,6 +81,7 @@ module Fluent
           router.emit_stream(@tag, eventStream) if eventStream
           router.emit_stream(@mdmtag, eventStream) if eventStream
 
+          
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
@@ -102,12 +103,12 @@ module Fluent
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
               $log.info("winCAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-            end
+            end 
           rescue => errorStr
             $log.warn "Failed when processing GPU Usage metrics in_win_cadvisor_perf : #{errorStr}"
             $log.debug_backtrace(errorStr.backtrace)
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-          end
+          end 
           #end GPU InsightsMetrics items
 
         end

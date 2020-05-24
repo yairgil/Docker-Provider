@@ -59,7 +59,6 @@ class CAdvisorMetricsAPIClient
   #cadvisor ports
   @@CADVISOR_SECURE_PORT = "10250"
   @@CADVISOR_NON_SECURE_PORT = "10255"
-
   def initialize
   end
 
@@ -80,40 +79,40 @@ class CAdvisorMetricsAPIClient
     end
 
     def getBaseCAdvisorUri(winNode)
-      cAdvisorSecurePort = isCAdvisorOnSecurePort()
+        cAdvisorSecurePort = isCAdvisorOnSecurePort()
 
-      if !!cAdvisorSecurePort == true
-        defaultHost = "https://localhost:#{@@CADVISOR_SECURE_PORT}"
-      else
-        defaultHost = "http://localhost:#{@@CADVISOR_NON_SECURE_PORT}"
-      end
-
-      if !winNode.nil?
-        nodeIP = winNode["InternalIP"]
-      else
-        nodeIP = ENV["NODE_IP"]
-      end
-
-      if !nodeIP.nil?
-        @Log.info("Using #{nodeIP} for CAdvisor Host")
         if !!cAdvisorSecurePort == true
-          return "https://#{nodeIP}:#{@@CADVISOR_SECURE_PORT}"
+            defaultHost = "https://localhost:#{@@CADVISOR_SECURE_PORT}"
         else
-          return "http://#{nodeIP}:#{@@CADVISOR_NON_SECURE_PORT}"
+            defaultHost = "http://localhost:#{@@CADVISOR_NON_SECURE_PORT}"
         end
-      else
-        @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost}")
+
         if !winNode.nil?
-          return nil
+            nodeIP = winNode["InternalIP"]
         else
-          return defaultHost
+            nodeIP = ENV["NODE_IP"]
         end
-      end
+
+        if !nodeIP.nil?
+            @Log.info("Using #{nodeIP} for CAdvisor Host")
+            if !!cAdvisorSecurePort == true
+                return "https://#{nodeIP}:#{@@CADVISOR_SECURE_PORT}"
+            else
+                return "http://#{nodeIP}:#{@@CADVISOR_NON_SECURE_PORT}"
+            end
+        else
+            @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost}")
+            if !winNode.nil?
+                return nil
+            else
+                return defaultHost
+            end
+        end
     end
 
     def getCAdvisorUri(winNode, relativeUri)
-      baseUri = getBaseCAdvisorUri(winNode)
-      return baseUri + relativeUri
+        baseUri = getBaseCAdvisorUri(winNode)
+        return baseUri + relativeUri
     end
 
     def getMetrics(winNode: nil, metricTime: Time.now.utc.iso8601)
@@ -135,26 +134,25 @@ class CAdvisorMetricsAPIClient
           operatingSystem = "Linux"
         end
         if !metricInfo.nil?
+          metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", Constants::MEMORY_WORKING_SET_BYTES, metricTime, operatingSystem))
           metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch", metricTime))
 
           if operatingSystem == "Linux"
-            metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores", metricTime))
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes", metricTime, operatingSystem))
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime, operatingSystem))
-            metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", "memoryRssBytes", metricTime))
+            metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", Constants::CPU_USAGE_NANO_CORES, metricTime))
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", Constants::MEMORY_RSS_BYTES, metricTime, operatingSystem))
+            metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", Constants::MEMORY_RSS_BYTES, metricTime))
           elsif operatingSystem == "Windows"
-            containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", "cpuUsageNanoCores", metricTime)
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime, operatingSystem))
+            containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", Constants::CPU_USAGE_NANO_CORES, metricTime)
             if containerCpuUsageNanoSecondsRate && !containerCpuUsageNanoSecondsRate.empty? && !containerCpuUsageNanoSecondsRate.nil?
               metricDataItems.concat(containerCpuUsageNanoSecondsRate)
             end
           end
 
-          cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", "cpuUsageNanoCores", operatingSystem, metricTime)
+          cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", Constants::CPU_USAGE_NANO_CORES, operatingSystem, metricTime)
           if cpuUsageNanoSecondsRate && !cpuUsageNanoSecondsRate.empty? && !cpuUsageNanoSecondsRate.nil?
             metricDataItems.push(cpuUsageNanoSecondsRate)
           end
-          metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "workingSetBytes", "memoryWorkingSetBytes", metricTime))
+          metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "workingSetBytes", Constants::MEMORY_WORKING_SET_BYTES, metricTime))
 
           metricDataItems.push(getNodeLastRebootTimeMetric(metricInfo, hostName, "restartTimeEpoch", metricTime))
 
@@ -203,7 +201,7 @@ class CAdvisorMetricsAPIClient
               metricProps = {}
               metricProps["Timestamp"] = metricTime
               metricProps["Host"] = hostName
-              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               metricProps["Collections"] = []
@@ -218,8 +216,8 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && metricNametoReturn.eql?("cpuUsageNanoCores"))
-                  if (timeDifferenceInMinutes >= 10)
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && metricNametoReturn.eql?(Constants::CPU_USAGE_NANO_CORES))
+                  if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
                     telemetryProps = {}
                     telemetryProps["PodName"] = podName
                     telemetryProps["ContainerName"] = containerName
@@ -253,7 +251,7 @@ class CAdvisorMetricsAPIClient
           end
         end
         # reset time outside pod iterator as we use one timer per metric for 2 pods (ds & rs)
-        if (timeDifferenceInMinutes >= 10 && metricNametoReturn.eql?("cpuUsageNanoCores"))
+        if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES && metricNametoReturn.eql?("cpuUsageNanoCores"))
           @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => error
@@ -283,8 +281,8 @@ class CAdvisorMetricsAPIClient
         end
         if !metricInfo.nil?
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryTotal", "containerGpumemoryTotalBytes", metricTime))
-          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed", "containerGpumemoryUsedBytes", metricTime))
-          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle", "containerGpuDutyCycle", metricTime))
+          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed","containerGpumemoryUsedBytes", metricTime))
+          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle","containerGpuDutyCycle", metricTime))
         else
           @Log.warn("Couldn't get Insights metrics information for host: #{hostName} os:#{operatingSystem}")
         end
@@ -314,17 +312,18 @@ class CAdvisorMetricsAPIClient
                   if (!accelerator[metricNameToCollect].nil?) #empty check is invalid for non-strings
                     containerName = container["name"]
                     metricValue = accelerator[metricNameToCollect]
+                    
 
                     metricItem = {}
                     metricItem["CollectionTime"] = metricPollTime
                     metricItem["Computer"] = hostName
                     metricItem["Name"] = metricNametoReturn
                     metricItem["Value"] = metricValue
-                    metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
+                    metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
                     metricItem["Namespace"] = Constants::INSIGHTSMETRICS_TAGS_GPU_NAMESPACE
-
+                    
                     metricTags = {}
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = clusterId
+                    metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
                     metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
                     metricTags[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME] = podUid + "/" + containerName
                     #metricTags[Constants::INSIGHTSMETRICS_TAGS_K8SNAMESPACE] = podNameSpace
@@ -340,9 +339,9 @@ class CAdvisorMetricsAPIClient
                     if (!accelerator["id"].nil? && !accelerator["id"].empty?)
                       metricTags[Constants::INSIGHTSMETRICS_TAGS_GPU_ID] = accelerator["id"]
                     end
-
+                  
                     metricItem["Tags"] = metricTags
-
+                    
                     metricItems.push(metricItem)
                   end
                 end
@@ -409,7 +408,7 @@ class CAdvisorMetricsAPIClient
               metricProps = {}
               metricProps["Timestamp"] = metricTime
               metricProps["Host"] = hostName
-              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               metricProps["Collections"] = []
@@ -534,7 +533,7 @@ class CAdvisorMetricsAPIClient
               metricProps = {}
               metricProps["Timestamp"] = metricTime
               metricProps["Host"] = hostName
-              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               metricProps["Collections"] = []
@@ -549,8 +548,8 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && ((metricNametoReturn.eql?("memoryRssBytes") && operatingSystem == "Linux") || (metricNametoReturn.eql?("memoryWorkingSetBytes") && operatingSystem == "Windows")))
-                  if (timeDifferenceInMinutes >= 10)
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && ((metricNametoReturn.eql?(Constants::MEMORY_RSS_BYTES) && operatingSystem == "Linux") || (metricNametoReturn.eql?(Constants::MEMORY_WORKING_SET_BYTES) && operatingSystem == "Windows")))
+                  if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
                     telemetryProps = {}
                     telemetryProps["PodName"] = podName
                     telemetryProps["ContainerName"] = containerName
@@ -565,7 +564,7 @@ class CAdvisorMetricsAPIClient
           end
         end
         # reset time outside pod iterator as we use one timer per metric for 2 pods (ds & rs)
-        if (timeDifferenceInMinutes >= 10 && metricNametoReturn.eql?("memoryRssBytes"))
+        if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES && metricNametoReturn.eql?(Constants::MEMORY_RSS_BYTES))
           @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => error
@@ -593,7 +592,7 @@ class CAdvisorMetricsAPIClient
           metricProps = {}
           metricProps["Timestamp"] = metricTime
           metricProps["Host"] = hostName
-          metricProps["ObjectName"] = "K8SNode"
+          metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
           metricProps["InstanceName"] = clusterId + "/" + nodeName
 
           metricProps["Collections"] = []
@@ -710,7 +709,7 @@ class CAdvisorMetricsAPIClient
           metricProps = {}
           metricProps["Timestamp"] = metricTime
           metricProps["Host"] = hostName
-          metricProps["ObjectName"] = "K8SNode"
+          metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
           metricProps["InstanceName"] = clusterId + "/" + nodeName
 
           metricProps["Collections"] = []
@@ -746,7 +745,7 @@ class CAdvisorMetricsAPIClient
         metricProps = {}
         metricProps["Timestamp"] = metricTime
         metricProps["Host"] = hostName
-        metricProps["ObjectName"] = "K8SNode"
+        metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
         metricProps["InstanceName"] = clusterId + "/" + nodeName
 
         metricProps["Collections"] = []
@@ -785,7 +784,7 @@ class CAdvisorMetricsAPIClient
               metricProps = {}
               metricProps["Timestamp"] = metricTime
               metricProps["Host"] = hostName
-              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               metricProps["Collections"] = []
@@ -819,13 +818,13 @@ class CAdvisorMetricsAPIClient
           uri = URI.parse(cAdvisorUri)
           if isCAdvisorOnSecurePort()
             Net::HTTP.start(uri.host, uri.port,
-                            :use_ssl => true, :open_timeout => 20, :read_timeout => 40,
-                            :ca_file => "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-                            :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
-              cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
-              cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
-              response = http.request(cAdvisorApiRequest)
-              @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+              :use_ssl => true, :open_timeout => 20, :read_timeout => 40,
+              :ca_file => "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+              :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+            cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
+            cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
+            response = http.request(cAdvisorApiRequest)
+            @Log.info "Got response code #{response.code} from #{uri.request_uri}"
             end
           else
             Net::HTTP.start(uri.host, uri.port, :use_ssl => false, :open_timeout => 20, :read_timeout => 40) do |http|
@@ -845,12 +844,12 @@ class CAdvisorMetricsAPIClient
     end
 
     def isCAdvisorOnSecurePort
-      cAdvisorSecurePort = false
-      # Check to see whether omsagent needs to use 10255(insecure) port or 10250(secure) port
-      if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
-        cAdvisorSecurePort = true
-      end
-      return cAdvisorSecurePort
+        cAdvisorSecurePort = false
+        # Check to see whether omsagent needs to use 10255(insecure) port or 10250(secure) port
+        if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
+          cAdvisorSecurePort = true
+        end
+        return cAdvisorSecurePort
     end
   end
 end

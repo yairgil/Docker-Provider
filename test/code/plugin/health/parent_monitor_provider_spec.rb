@@ -1,12 +1,12 @@
-require_relative "../test_helpers"
-Dir[File.join(File.expand_path(File.dirname(__FILE__)), "../../../../source/code/plugin/health/*.rb")].reject { |f| f.include?("health_monitor_utils") }.each { |file| require file }
+require_relative '../test_helpers'
+Dir[File.join(File.expand_path(File.dirname(__FILE__)), "../../../../source/code/plugin/health/*.rb")].reject{|f| f.include?('health_monitor_utils')}.each { |file| require file }
 include HealthModel
 include Minitest
 
 describe "ParentMonitorProvider spec" do
-  it "returns correct parent_monitor_id for a non-condition case" do
-    #arrange
-    definition = JSON.parse('{
+    it 'returns correct parent_monitor_id for a non-condition case' do
+        #arrange
+        definition = JSON.parse('{
             "monitor_id" : {
                     "parent_monitor_id": "parent_monitor_id",
                     "labels": [
@@ -14,45 +14,47 @@ describe "ParentMonitorProvider spec" do
                         "label_2"
                     ]
                 }
-            }')
-    health_model_definition = ParentMonitorProvider.new(definition)
+            }'
+        )
+        health_model_definition = ParentMonitorProvider.new(definition)
 
-    monitor = Mock.new
-    def monitor.monitor_id; "monitor_id"; end
-    def monitor.monitor_instance_id; "monitor_instance_id"; end
+        monitor = Mock.new
+        def monitor.monitor_id; "monitor_id"; end
+        def monitor.monitor_instance_id; "monitor_instance_id"; end
 
-    #act
-    parent_id = health_model_definition.get_parent_monitor_id(monitor)
-    #assert
-    assert_equal parent_id, "parent_monitor_id"
-  end
-
-  it "returns raises for an incorrect monitor id" do
-    #arrange
-    definition = JSON.parse('{
-            "monitor_id" : {
-                    "parent_monitor_id": "parent_monitor_id",
-                    "labels": [
-                        "label_1",
-                        "label_2"
-                    ]
-                }
-            }')
-    health_model_definition = ParentMonitorProvider.new(definition)
-
-    monitor = Mock.new
-    def monitor.monitor_id; "monitor_id_!"; end
-    def monitor.monitor_instance_id; "monitor_instance_id"; end
-
-    #act and assert
-    assert_raises do
-      parent_id = health_model_definition.get_parent_monitor_id(monitor)
+        #act
+        parent_id = health_model_definition.get_parent_monitor_id(monitor)
+        #assert
+        assert_equal parent_id, "parent_monitor_id"
     end
-  end
 
-  it "returns correct parent_monitor_id for a conditional case" do
-    #arrange
-    definition = JSON.parse('{"conditional_monitor_id": {
+    it 'returns raises for an incorrect monitor id' do
+        #arrange
+        definition = JSON.parse('{
+            "monitor_id" : {
+                    "parent_monitor_id": "parent_monitor_id",
+                    "labels": [
+                        "label_1",
+                        "label_2"
+                    ]
+                }
+            }'
+        )
+        health_model_definition = ParentMonitorProvider.new(definition)
+
+        monitor = Mock.new
+        def monitor.monitor_id; "monitor_id_!"; end
+        def monitor.monitor_instance_id; "monitor_instance_id"; end
+
+        #act and assert
+        assert_raises do
+            parent_id = health_model_definition.get_parent_monitor_id(monitor)
+        end
+    end
+
+    it 'returns correct parent_monitor_id for a conditional case' do
+        #arrange
+        definition = JSON.parse('{"conditional_monitor_id": {
             "conditions": [
               {
                 "key": "kubernetes.io/role",
@@ -80,23 +82,24 @@ describe "ParentMonitorProvider spec" do
             "aggregation_algorithm_params": null
           }
 
-            }')
-    health_model_definition = ParentMonitorProvider.new(definition)
+            }'
+        )
+        health_model_definition = ParentMonitorProvider.new(definition)
 
-    monitor = Mock.new
-    def monitor.monitor_id; "conditional_monitor_id"; end
-    def monitor.monitor_instance_id; "conditional_monitor_instance_id"; end
-    def monitor.labels; { HealthMonitorLabels::ROLE => "master" }; end
+        monitor = Mock.new
+        def monitor.monitor_id; "conditional_monitor_id"; end
+        def monitor.monitor_instance_id; "conditional_monitor_instance_id"; end
+        def monitor.labels; {HealthMonitorLabels::ROLE => "master"}; end
 
-    #act
-    parent_id = health_model_definition.get_parent_monitor_id(monitor)
-    #assert
-    assert_equal parent_id, "master_node_pool"
-  end
+        #act
+        parent_id = health_model_definition.get_parent_monitor_id(monitor)
+        #assert
+        assert_equal parent_id, "master_node_pool"
+    end
 
-  it "returns defaultParentMonitorTypeId if conditions are not met" do
-    #arrange
-    definition = JSON.parse('{"conditional_monitor_id": {
+    it 'returns defaultParentMonitorTypeId if conditions are not met' do
+        #arrange
+        definition = JSON.parse('{"conditional_monitor_id": {
             "conditions": [
               {
                 "key": "kubernetes.io/role",
@@ -125,17 +128,19 @@ describe "ParentMonitorProvider spec" do
             "aggregation_algorithm_params": null
           }
 
-            }')
-    health_model_definition = ParentMonitorProvider.new(definition)
+            }'
+        )
+        health_model_definition = ParentMonitorProvider.new(definition)
 
-    monitor = Mock.new
-    def monitor.monitor_id; "conditional_monitor_id"; end
-    def monitor.monitor_instance_id; "conditional_monitor_instance_id"; end
-    def monitor.labels; { HealthMonitorLabels::ROLE => "master1" }; end
+        monitor = Mock.new
+        def monitor.monitor_id; "conditional_monitor_id"; end
+        def monitor.monitor_instance_id; "conditional_monitor_instance_id"; end
+        def monitor.labels; {HealthMonitorLabels::ROLE => "master1"}; end
 
-    #act and assert
+        #act and assert
 
-    parent_id = health_model_definition.get_parent_monitor_id(monitor)
-    parent_id.must_equal("default_parent_monitor_id")
-  end
+        parent_id = health_model_definition.get_parent_monitor_id(monitor)
+        parent_id.must_equal('default_parent_monitor_id')
+
+    end
 end

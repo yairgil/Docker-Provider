@@ -1,17 +1,18 @@
 module Tomlrb
   class StringUtils
+
     SPECIAL_CHARS = {
-      '\\t' => "\t",
-      '\\b' => "\b",
-      '\\f' => "\f",
-      '\\n' => "\n",
-      '\\r' => "\r",
-      '\\"' => '"',
-      '\\\\' => '\\',
+      '\\t'  => "\t",
+      '\\b'  => "\b",
+      '\\f'  => "\f",
+      '\\n'  => "\n",
+      '\\r'  => "\r",
+      '\\"'  => '"',
+      '\\\\' => '\\'
     }.freeze
 
     def self.multiline_replacements(str)
-      strip_spaces(str).gsub(/\\\n\s+/, "")
+      strip_spaces(str).gsub(/\\\n\s+/, '')
     end
 
     def self.replace_escaped_chars(str)
@@ -25,7 +26,7 @@ module Tomlrb
     end
 
     def self.strip_spaces(str)
-      str[0] = "" if str[0] == "\n"
+      str[0] = '' if str[0] == "\n"
       str
     end
   end

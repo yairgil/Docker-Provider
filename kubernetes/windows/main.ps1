@@ -55,6 +55,15 @@ function Set-EnvironmentVariables
     [System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Process")
     [System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Machine")
 
+    $proxy = ""
+    if (Test-Path /etc/omsagent-secret/PROXY) {
+        # TODO: Change to omsagent-secret before merging
+        $proxy =  Get-Content /etc/omsagent-secret/PROXY
+    }
+
+    # Set PROXY
+    [System.Environment]::SetEnvironmentVariable("PROXY", $proxy, "Process")
+    [System.Environment]::SetEnvironmentVariable("PROXY", $proxy, "Machine")
     #set agent config schema version
     $schemaVersionFile = '/etc/config/settings/schema-version'
     if (Test-Path $schemaVersionFile) {

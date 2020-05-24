@@ -81,13 +81,13 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
 
       if [ -e "/etc/omsagent-secret/PROXY" ]; then
             export PROXY_ENDPOINT=$(cat /etc/omsagent-secret/PROXY)
-            # Validate Proxy Endpoint URL
+            # Validate Proxy Endpoint URL 
             # extract the protocol://
             proto="$(echo $PROXY_ENDPOINT | grep :// | sed -e's,^\(.*://\).*,\1,g')"
             # convert the protocol prefix in lowercase for validation
             proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
             if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"           
             fi
             # remove the protocol
             url="$(echo ${PROXY_ENDPOINT/$proto/})"
@@ -97,7 +97,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             pwd="$(echo $creds | cut -d':' -f2)"
             # extract the host and port
             hostport="$(echo ${url/$creds@/} | cut -d/ -f1)"
-            # extract host without port
+            # extract host without port    
             host="$(echo $hostport | sed -e 's,:.*,,g')"
             # extract the port
             port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
@@ -209,6 +209,14 @@ if [ -e "telemetry_prom_config_env_var" ]; then
       source telemetry_prom_config_env_var
 fi
 
+#Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
+/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-mdm-metrics-config.rb
+
+cat config_mdm_metrics_env_var | while read line; do
+    echo $line >> ~/.bashrc
+done
+source config_mdm_metrics_env_var
+
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
 #Defaults to use port 10255
@@ -230,7 +238,6 @@ if [ "$cAdvisorIsSecure" = true ] ; then
       echo "export CADVISOR_METRICS_URL=https://$NODE_IP:10250/metrics" >> ~/.bashrc
       echo "Making wget request to cadvisor endpoint /pods with port 10250 to get the configured container runtime on kubelet"
       IS_GET_PODS_API_SUCCESS=$(wget --server-response https://$NODE_IP:10250/pods --no-check-certificate --header="Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" -O podsResponseFile 2>&1 | grep -c '200 OK')
-
 else
       echo "Wget request using port 10250 failed. Using port 10255"
       export IS_SECURE_CADVISOR_PORT=false

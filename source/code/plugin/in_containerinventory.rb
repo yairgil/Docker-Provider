@@ -5,17 +5,17 @@ module Fluent
   class Container_Inventory_Input < Input
     Plugin.register_input("containerinventory", self)
 
-    @@PluginName = "ContainerInventory"
+    @@PluginName = "ContainerInventory"   
 
     def initialize
       super
       require "yajl/json_gem"
-      require "time"
+      require "time"      
       require_relative "ContainerInventoryState"
       require_relative "ApplicationInsightsUtility"
       require_relative "omslog"
       require_relative "CAdvisorMetricsAPIClient"
-      require_relative "kubernetes_container_inventory"
+      require_relative "kubernetes_container_inventory"      
     end
 
     config_param :run_interval, :time, :default => 60
@@ -43,8 +43,8 @@ module Fluent
         }
         @thread.join
       end
-    end
-
+    end   
+  
     def enumerate
       currentTime = Time.now
       emitTime = currentTime.to_f
@@ -57,25 +57,25 @@ module Fluent
         containerRuntimeEnv = ENV["CONTAINER_RUNTIME"]
         $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")
         clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
-        $log.info("in_container_inventory::enumerate : using cadvisor apis")
+        $log.info("in_container_inventory::enumerate : using cadvisor apis")                    
         containerIds = Array.new
         response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil?
-          podList = JSON.parse(response.body)
-          if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
-            podList["items"].each do |item|
-              containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar)
-              containerInventoryRecords.each do |containerRecord|
-                ContainerInventoryState.writeContainerState(containerRecord)
-                if hostName.empty? && !containerRecord["Computer"].empty?
-                  hostName = containerRecord["Computer"]
-                end
-                containerIds.push containerRecord["InstanceID"]
-                containerInventory.push containerRecord
+            podList = JSON.parse(response.body)
+            if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
+              podList["items"].each do |item|
+                containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar)
+                containerInventoryRecords.each do |containerRecord|
+                  ContainerInventoryState.writeContainerState(containerRecord)
+                  if hostName.empty? && !containerRecord["Computer"].empty?
+                    hostName = containerRecord["Computer"]
+                  end
+                  containerIds.push containerRecord["InstanceID"]
+                  containerInventory.push containerRecord
+                end           
               end
-            end
-          end
-        end
+            end  
+        end                          
         # Update the state for deleted containers
         deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
         if !deletedContainers.nil? && !deletedContainers.empty?
@@ -83,12 +83,12 @@ module Fluent
             container = ContainerInventoryState.readContainerState(deletedContainer)
             if !container.nil?
               container.each { |k, v| container[k] = v }
-              container["State"] = "Deleted"
+              container["State"] = "Deleted"   
               KubernetesContainerInventory.deleteCGroupCacheEntryForDeletedContainer(container["InstanceID"])
               containerInventory.push container
-            end
-          end
-        end
+             end
+           end
+        end        
         containerInventory.each do |record|
           wrapper = {
             "DataType" => "CONTAINER_INVENTORY_BLOB",
