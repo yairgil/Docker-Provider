@@ -174,7 +174,7 @@ set PATH=%PATH%;%SYSTEMDRIVE%\go\bin
 set GOBIN=%SYSTEMDRIVE%\go\bin
 set GOPATH=%userprofile%\Docker-Provider\source\code\go
 ```
-> Note: if you want set these environment variables, you can use setx command instead of set
+> Note: if you want set these environment variables permanently, you can use setx command instead of set command
 3. Install glide to manage the go dependencies
 ```
 cd  %userprofile%
