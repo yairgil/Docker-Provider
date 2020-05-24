@@ -51,7 +51,7 @@ class AIXLPPFile:
         self.GenerateScripts()
         self.GenerateLppNameFile()
         self.GenerateLiblppFile()
- 
+
     def GenerateLppNameFile(self):
         specfile = open(self.lppNameFileName, 'w')
 
@@ -139,7 +139,7 @@ class AIXLPPFile:
             inventoryfile.write('   owner = ' + d.owner + '\n')
             inventoryfile.write('   group = ' + d.group + '\n')
             inventoryfile.write('   mode = ' + str(d.permissions) + '\n')
-            inventoryfile.write('   class = apply,inventory,' + self.filesetName + '\n')   
+            inventoryfile.write('   class = apply,inventory,' + self.filesetName + '\n')
             inventoryfile.write('   type = DIRECTORY\n')
             inventoryfile.write('\n')
 
