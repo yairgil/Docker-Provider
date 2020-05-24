@@ -51,7 +51,9 @@ The general directory structure is:
 │   │   ├── main.ps1                   - Windows Agent container entry point
 │   │   ├── setup.ps1                  - setup file for Windows Agent Container Image
 │   ├── .../                           - yamls and configuration files to install the Azure Monitor for containers on K8s cluster(s)
-├── onboardingscripts/                 - scripts for onboarding for Azure Monitor for containers agent to non-AKS clusters
+├── scripts/                           - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
+│   ├── troubleshoot/                  - scripts for troubleshooting of Azure Monitor for containers onboarding issues
+│   ├── onboarding/                    - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
 ├── source/                            - source code
 │   ├── code/                          - source code
 │   │   ├── go/                        - plugins code in go
@@ -61,7 +63,6 @@ The general directory structure is:
 │   │   ├── toml-parser/               - code for parsing of toml configuration files
 │   ├── test/                          - source code for tests
 │   │   ├── health/                    - source code for health feature tests
-├── troubleshoot/                      - scripts for troubleshooting of Azure Monitor for containers onboarding issues
 ├── !_README.md                        - this file
 ├── .gitignore                         - git config file with include/exclude file rules
 ├── LICENSE                            - License file
