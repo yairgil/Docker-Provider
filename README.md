@@ -12,7 +12,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 2. [Go lang](https://golang.org/) for building go code
 3. Ubuntu machine Ubuntu 14.04 to build Linux Agent
 4. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
-5. Windows machine to build  Windows Agent
+5. Windows 10 Professional machine to build  Windows Agent
 6. [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
 
 # Repo structure
