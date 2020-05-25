@@ -12,6 +12,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
 2. [Go lang](https://golang.org/) for building go code
 3. [Glide-Package Management for Go](https://https://glide.sh/)
+4. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) for Azure related operations
 
 ## Linux
 4. Ubuntu machine Ubuntu 14.04 to build Linux Agent
@@ -121,23 +122,26 @@ export PATH=$PATH:$HOME/go/bin
 export GOBIN=$HOME/go/bin
 export GOPATH=~/Docker-Provider/source/code/go #Set this based on your repo path
 ```
-4. Install glide to manage the go dependencies
+4. Install glide to manage the go dependencies if you dont have installed already
 ```
 sudo chmod 777 ~/go/bin #Required to get permissions to create glide executable
 curl https://glide.sh/get | sh
+```
+5. Update go depencies
+```
 cd ~/Docker-Provider/source/code/go/src/plugins #cd <path to go src>
 glide init
 glide update
 glide install
 ```
 > Note: If glide init fails with [ERROR] Cowardly refusing to overwrite existing YAML, you can ignore this error if you havent added any new dependecy else delete glide.yaml and re-run the glide init command to create glide.yaml.
-5.  Build the code  with below commands
+6.  Build the code  with below commands
 ```
-cd ~/Docker-Provider/build
-./configure --enable-ulinux
+cd ~/Docker-Provider/build/linux
+bash ./configure --enable-ulinux
 make
 ```
-6. If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
+7. If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
   > Note: x.x.x-x is the version of the docker provider which is determined from version info in docker.version file
 
 ### Build Docker Image
@@ -146,7 +150,10 @@ make
   ```
   cd ~/Docker-Provider/kubernetes/linux/
   ```
-2. Upload docker-cimprov-x.x.x-x.universal.x86_64.sh in ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/ to azure blob storage account blob
+2. Upload docker-cimprov-x.x.x-x.universal.x86_64.sh from ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/ to azure blob storage account blob
+ ```
+ # instructions to upload azure blob storage goes here
+ ```
   > Note: x.x.x-x is the version of the docker provider which is determined from version info in docker.version file
 3. Update the azure storage blob location of docker-cimprov-x.x.x-x.universal.x86_64.sh in setup.sh
 4. Build the Docker image via below command
