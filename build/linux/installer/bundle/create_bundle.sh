@@ -45,8 +45,8 @@
 # not install OMI.  Why a bundle, then?  Primarily so a single package can
 # install either a .DEB file or a .RPM file, whichever is appropraite.
 
-SOURCE_DIR=`(cd ../installer/bundle; pwd -P)`
-INTERMEDIATE_DIR=`(mkdir -p ../installer/intermediate; cd ../installer/intermediate; pwd -P)`
+SOURCE_DIR=`(cd .; pwd -P)`
+INTERMEDIATE_DIR=`(mkdir -p ../intermediate; cd ../intermediate; pwd -P)`
 
 # Exit on error
 set -e
