@@ -200,15 +200,15 @@ powershell # switch to powershell from cmd
 ### Build Docker Image
 
 1.  Navigate to below directory to build the docker image
-  ```
+```
   cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
- ```
+```
 2. Build the Docker image via below command
- ```
+```
    docker build -t  <repo>:<imagetag> .
 ```
 3. Push the Docker image to docker repo
 
 # Update Kubernetes yamls
 
-Navigate to Kubernetes directory and update the yamls with latest docker image and other relevant updates.
+Navigate to Kubernetes directory and update the yamls with latest docker image of Linux and Windows Agent and other relevant updates.
