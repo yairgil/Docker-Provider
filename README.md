@@ -8,13 +8,20 @@ Feel free to contact engineering team owners in case you have any questions abou
 
 # Prerequisites
 
-1. [Visual Studio Code](https://code.visualstudio.com/) for authoring.
+## Common
+1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
 2. [Go lang](https://golang.org/) for building go code
+
+## Linux
 3. Ubuntu machine Ubuntu 14.04 to build Linux Agent
 4. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
+
+## Windows
 5. Windows 10 Professional machine to build  Windows Agent
 6. [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
 7. [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
+8. [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
+
 
 # Repo structure
 
@@ -114,7 +121,7 @@ glide init
 glide update
 glide install
 ```
-> Note: If glide init fails with [ERROR] Cowardly refusing to overwrite existing YAML, you can ignore this error if you havent added any new dependecy else delete glide.yaml and re-run the glide init command.
+> Note: If glide init fails with [ERROR] Cowardly refusing to overwrite existing YAML, you can ignore this error if you havent added any new dependecy else delete glide.yaml and re-run the glide init command to create glide.yaml.
 
 you can ignore [ERROR] Cowardly refusing to overwrite existing YAML  for glide init.
 5.  Build the code  with below commands
@@ -193,12 +200,7 @@ glide init
 glide update
 glide install
 ```
-
-5. set GITVERSION and BUILDDATE environment variables  and  build the code
-> Note: Make sure update BUILDDATE accordingly
+5. Build the go code
 ```
-set GITVERSION=0.1
-# TBD -- figure out how to get rfc-3339 date time format in windows
-set BUILDDATE=2020-05-24 03:21:05+00:00
-go build -ldflags "-X 'main.revision=%GITVERSION%' -X 'main.builddate=%BUILDDATE%'" -buildmode=c-shared -o out_oms.so .
+go build -o out_oms.so .
 ```
