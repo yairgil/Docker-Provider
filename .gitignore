@@ -5,9 +5,12 @@
 /build/config.mak
 
 # Unit test files
-
-/test/code/providers/TestScriptPath.h
-/test/code/providers/providertestutils.cpp
 source/code/go/src/plugins/profiling
 .vscode/launch.json
 source/code/go/src/plugins/vendor/
+# go shared object files
+*.so
+*.zip
+# .net code build artificats
+kubernetes/windows/CertificateGenerator/bin
+kubernetes/windows/CertificateGenerator/obj

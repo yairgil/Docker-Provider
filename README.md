@@ -11,16 +11,17 @@ Feel free to contact engineering team owners in case you have any questions abou
 ## Common
 1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
 2. [Go lang](https://golang.org/) for building go code
+3. [Glide-Package Management for Go](https://https://glide.sh/)
 
 ## Linux
-3. Ubuntu machine Ubuntu 14.04 to build Linux Agent
-4. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
+4. Ubuntu machine Ubuntu 14.04 to build Linux Agent
+5. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
 
 ## Windows
-5. Windows 10 Professional machine to build  Windows Agent
-6. [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
-7. [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
-8. [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
+6. Windows 10 Professional machine to build  Windows Agent
+7. [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
+8. [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
+9. [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
 
 
 # Repo structure
@@ -28,58 +29,60 @@ Feel free to contact engineering team owners in case you have any questions abou
 The general directory structure is:
 
 ```
-├── build/                            - files to related to  compile and build the code
-│   ├── linux/                         - Makefiles and installer files for the Docker Provider
-│   │   ├── docker.version             - docker provider version
-│   │   ├── Makefile                   - Makefile to build docker provider code
-│   │   ├── Makefle.common             - dependency common file for Makefile
-│   │   ├── configure                  - configure file to determine provider configuration
-│   │   ├── installer                  - files related to installer
-|   |   |   |── bundle/                - shell scripts to create shell bundle
-|   |   |   |── conf/                  - plugin configuration files
-|   |   |   |── datafiles/             - data files for the installer
-|   |   |   |── scripts/               - data files for the installer
-|   |   |   |── InstallBuilder/        - python script files for the install builder
-│   ├── windows/                       - scripts to build the .net and go code
-|   |   |── build.ps1/                 - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
-├── alerts/                            - alert queries
-├── kubernetes/                        - files related to Linux and Windows Agent for Kubernetes
-│   ├── linux/                         - scripts to build the Docker image for Linux Agent
-│   │   ├── DockerFile                 - DockerFile for Linux Agent Container Image
-│   │   ├── main.sh                    - Linux Agent container entry point
-│   │   ├── setup.sh                   - setup file for Linux Agent Container Image
-│   │   ├── acrprodnamespace.yaml      - acr woirkflow to push the Linux Agent Container Image
-│   │   ├── defaultpromenvvariables    - default environment variables for Prometheus scraping
-│   │   ├── defaultpromenvvariables-rs - cluster level default environment variables for Prometheus scraping
-│   ├── windows/                       - scripts to build the Docker image for Windows Agent
-│   │   ├── acrWorkFlows/              - acr work flows for the Windows Agent container image
-│   │   ├── baseimage/                 - windowsservercore base image for the windows agent container
-│   │   ├── CertificateGenerator/      - .NET code to create self-signed certificate register with OMS
-│   │   ├── fluent/                    - fluent heartbeat plugin code
-│   │   ├── fluent-bit/                - fluent-bit plugin code for oms output plugin code
-│   │   ├── scripts/                   - scripts for livenessprobe, filesystemwatcher and config parsers etc.
-│   │   ├── omsagentwindows/           - out_oms conf file. Build compressed certificate generator  binaries and out_oms.so file will be copied to here
-│   │   ├── DockerFile                 - DockerFile for Windows Agent Container Image
-│   │   ├── main.ps1                   - Windows Agent container entry point
-│   │   ├── setup.ps1                  - setup file for Windows Agent Container Image
-│   ├── .../                           - yamls and configuration files to install the Azure Monitor for containers on K8s cluster(s)
-├── scripts/                           - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
-│   ├── troubleshoot/                  - scripts for troubleshooting of Azure Monitor for containers onboarding issues
-│   ├── onboarding/                    - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
-├── source/                            - source code
-│   ├── code/                          - source code
-│   │   ├── go/                        - plugins code in go
-│   │   ├── plugin/                    - plugins code inr ruby
-│   │   |   ├── health/                - code for health feature
-│   │   |   ├── lib/                   - lib for app insights ruby
-│   │   ├── toml-parser/               - code for parsing of toml configuration files
-│   ├── test/                          - source code for tests
-│   │   ├── health/                    - source code for health feature tests
-├── !_README.md                        - this file
-├── .gitignore                         - git config file with include/exclude file rules
-├── LICENSE                            - License file
-├── Rakefile                           - Rake file to trigger ruby plugin tests
-└── ReleaseNotes.md                    - Release notes for the release of the Azure Monitor for containers agent
+├── build/                                    - files to related to  compile and build the code
+│   ├── linux/                                - Makefiles and installer files for the Docker Provider
+│   │   ├── docker.version                    - docker provider version
+│   │   ├── Makefile                          - Makefile to build docker provider code
+│   │   ├── Makefle.common                    - dependency common file for Makefile
+│   │   ├── configure                         - configure file to determine provider configuration
+│   │   ├── installer                         - files related to installer
+|   |   |   |── bundle/                       - shell scripts to create shell bundle
+|   |   |   |── conf/                         - plugin configuration files
+|   |   |   |── datafiles/                    - data files for the installer
+|   |   |   |── scripts/                      - data files for the installer
+|   |   |   |── InstallBuilder/               - python script files for the install builder
+│   ├── windows/                              - scripts to build the .net and go code
+|   |   |── build.ps1/                        - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
+├── alerts/                                   - alert queries
+├── kubernetes/                               - files related to Linux and Windows Agent for Kubernetes
+│   ├── linux/                                - scripts to build the Docker image for Linux Agent
+│   │   ├── DockerFile                        - DockerFile for Linux Agent Container Image
+│   │   ├── main.sh                           - Linux Agent container entry point
+│   │   ├── setup.sh                          - setup file for Linux Agent Container Image
+│   │   ├── acrprodnamespace.yaml             - acr woirkflow to push the Linux Agent Container Image
+│   │   ├── defaultpromenvvariables           - default environment variables for Prometheus scraping
+│   │   ├── defaultpromenvvariables-rs        - cluster level default environment variables for Prometheus scraping
+│   ├── windows/                              - scripts to build the Docker image for Windows Agent
+│   │   ├── acrWorkFlows/                     - acr work flows for the Windows Agent container image
+│   │   ├── baseimage/                        - windowsservercore base image for the windows agent container
+│   │   ├── CertificateGenerator/             - .NET code to create self-signed certificate register with OMS
+│   │   ├── fluent/                           - fluent heartbeat plugin code
+│   │   ├── fluent-bit/                       - fluent-bit plugin code for oms output plugin code
+│   │   ├── scripts/                          - scripts for livenessprobe, filesystemwatcher and config parsers etc.
+│   │   ├── omsagentwindows/                  - out_oms conf file.Build cert generator binaries zip and out_oms.so file will be copied to here.
+│   │   ├── DockerFile                        - DockerFile for Windows Agent Container Image
+│   │   ├── main.ps1                          - Windows Agent container entry point
+│   │   ├── setup.ps1                         - setup file for Windows Agent Container Image
+│   ├── omsagent.yaml                         - kubernetes yaml for both Linux and Windows Agent
+│   ├── container-azm-ms-agentconfig.yaml     - kubernetes yaml for both Linux and Windows Agent
+│   ├── .../                                  - yamls and configuration files to install the Azure Monitor for containers on K8s cluster(s)
+├── scripts/                                  - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
+│   ├── troubleshoot/                         - scripts for troubleshooting of Azure Monitor for containers onboarding issues
+│   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
+├── source/                                   - source code
+│   ├── code/                                 - source code
+│   │   ├── go/                               - out_oms plugin code in go lang
+│   │   ├── plugin/                           - plugins code inr ruby
+│   │   |   ├── health/                       - code for health feature
+│   │   |   ├── lib/                          - lib for app insights ruby and this code of application_insights gem
+│   │   ├── toml-parser/                      - code for parsing of toml configuration files
+│   ├── test/                                 - source code for tests
+│   │   ├── health/                           - source code for health feature tests
+├── !_README.md                               - this file
+├── .gitignore                                - git config file with include/exclude file rules
+├── LICENSE                                   - License file
+├── Rakefile                                  - Rake file to trigger ruby plugin tests
+└── ReleaseNotes.md                           - Release notes for the release of the Azure Monitor for containers agent
 ```
 
 # Branches
@@ -104,6 +107,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 1. Begin by downloading the latest package for Go by running this command, which will pull down the Go package file, and save it to your current working directory
 
 ```
+sudo mkdir temp
 sudo curl -O https://storage.googleapis.com/golang/go1.9.1.linux-amd64.tar.gz
 ```
 2. Next, use tar to unpack the package. This command will use the tar tool to open and expand the downloaded file, and creates a folder using the package name, and then moves it to $HOME
@@ -127,10 +131,7 @@ glide update
 glide install
 ```
 > Note: If glide init fails with [ERROR] Cowardly refusing to overwrite existing YAML, you can ignore this error if you havent added any new dependecy else delete glide.yaml and re-run the glide init command to create glide.yaml.
-
-you can ignore [ERROR] Cowardly refusing to overwrite existing YAML  for glide init.
 5.  Build the code  with below commands
-
 ```
 cd ~/Docker-Provider/build
 ./configure --enable-ulinux
@@ -145,19 +146,20 @@ make
   ```
   cd ~/Docker-Provider/kubernetes/linux/
   ```
-2. Make sure the latest docker-cimprov-x.x.x-x.universal.x86_64.sh file location updated in setup.sh
- > Note: x.x.x-x is the version of the docker provider which is determined from version info in docker.version file
-3. Build the Docker image via below command
+2. Upload docker-cimprov-x.x.x-x.universal.x86_64.sh in ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/ to azure blob storage account blob
+  > Note: x.x.x-x is the version of the docker provider which is determined from version info in docker.version file
+3. Update the azure storage blob location of docker-cimprov-x.x.x-x.universal.x86_64.sh in setup.sh
+4. Build the Docker image via below command
  ```
    docker build -t  <repo>:<imagetag> .
 ```
-4. Push the Docker image to docker repo
+5. Push the Docker image to docker repo
 
 ## Windows Agent
 > Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine with Docker for Windows
 ### Build Certificate Generator Source code and Out OMS Go plugin code
-1. Install .Net Core SDK 2.2 or higher from https://dotnet.microsoft.com/download
-2. Install go if you havent installed already.
+1. Install .Net Core SDK 2.2 or higher from https://dotnet.microsoft.com/download if you dont have installed already
+2. Install go if you havent installed already
   ```
   cd  %userprofile%
   mkdir go
@@ -172,7 +174,7 @@ set PATH=%PATH%;%SYSTEMDRIVE%\go\bin
 set GOPATH=%userprofile%\Docker-Provider\source\code\go #Set this based on your repo path
 ```
 > Note: If you want set these environment variables permanently, you can use setx command instead of set command
-3. Download glide to manage the go dependencies. Skip this test if you have glide already on your windows dev/build machine
+3. Download glide to manage the go dependencies. Skip this step if you have glide already on your windows dev/build machine
 ```
 cd  %userprofile%
 mkdir glide
@@ -183,7 +185,7 @@ cd  %userprofile%\glide\windows-amd64
 # update path environment variable with glide.exe path
 set PATH=%PATH%;%userprofile%\glide\windows-amd64
 ```
-4. Navigate to go plugin code  and update go dependencies
+4. Navigate to go plugin code  and update go dependencies via glide
 ```
 cd  %userprofile%\Docker-Provider\source\code\go\src\plugins # this based on your repo path
 glide init
@@ -194,8 +196,7 @@ glide install
 5. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
 cd %userprofile%\Docker-Provider\build\windows # based on your repo path
-powershell # switch to powershell from cmd
-.\build.ps1 # trigger build and publish
+powershell -executionpolicy bypass -File .\build.ps1 # trigger build and publish
 ```
 ### Build Docker Image
 
