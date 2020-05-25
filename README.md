@@ -28,32 +28,37 @@ Feel free to contact engineering team owners in case you have any questions abou
 The general directory structure is:
 
 ```
-├── build/
-|   ├── docker.version                 - docker provider version
-|   ├── Makefle                        - Makefile to build docker provider code
-|   ├── Makefle.common                 - dependency common file for Makefile
-|   ├── configure                      - configure file to determine provider configuration
-|   ├── installer/                     - files related to installer
-│   │   ├── bundle/                    - shell scripts to create shell bundle
-│   │   ├── conf/                      - plugin configuration files
-│   │   ├── datafiles/                 - data files for the installer
-│   │   ├── scripts/                   - scripts related to parse configuration files, livenessprobe etc.
+├── build/                            - files to related to  compile and build the code
+│   ├── linux/                         - Makefiles and installer files for the Docker Provider
+│   │   ├── docker.version             - docker provider version
+│   │   ├── Makefile                   - Makefile to build docker provider code
+│   │   ├── Makefle.common             - dependency common file for Makefile
+│   │   ├── configure                  - configure file to determine provider configuration
+│   │   ├── installer                  - files related to installer
+|   |   |   |── bundle/                - shell scripts to create shell bundle
+|   |   |   |── conf/                  - plugin configuration files
+|   |   |   |── datafiles/             - data files for the installer
+|   |   |   |── scripts/               - data files for the installer
+|   |   |   |── InstallBuilder/        - python script files for the install builder
+│   ├── windows/                       - scripts to build the .net and go code
+|   |   |── build.ps1/                 - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
 ├── alerts/                            - alert queries
 ├── kubernetes/                        - files related to Linux and Windows Agent for Kubernetes
-│   ├── Linux/                         - scripts to build the Docker image for Linux Agent
+│   ├── linux/                         - scripts to build the Docker image for Linux Agent
 │   │   ├── DockerFile                 - DockerFile for Linux Agent Container Image
 │   │   ├── main.sh                    - Linux Agent container entry point
 │   │   ├── setup.sh                   - setup file for Linux Agent Container Image
 │   │   ├── acrprodnamespace.yaml      - acr woirkflow to push the Linux Agent Container Image
 │   │   ├── defaultpromenvvariables    - default environment variables for Prometheus scraping
 │   │   ├── defaultpromenvvariables-rs - cluster level default environment variables for Prometheus scraping
-│   ├── Windows/                       - scripts to build the Docker image for Windows Agent
+│   ├── windows/                       - scripts to build the Docker image for Windows Agent
 │   │   ├── acrWorkFlows/              - acr work flows for the Windows Agent container image
 │   │   ├── baseimage/                 - windowsservercore base image for the windows agent container
 │   │   ├── CertificateGenerator/      - .NET code to create self-signed certificate register with OMS
 │   │   ├── fluent/                    - fluent heartbeat plugin code
 │   │   ├── fluent-bit/                - fluent-bit plugin code for oms output plugin code
 │   │   ├── scripts/                   - scripts for livenessprobe, filesystemwatcher and config parsers etc.
+│   │   ├── omsagentwindows/           - out_oms conf file. Build compressed certificate generator  binaries and out_oms.so file will be copied to here
 │   │   ├── DockerFile                 - DockerFile for Windows Agent Container Image
 │   │   ├── main.ps1                   - Windows Agent container entry point
 │   │   ├── setup.ps1                  - setup file for Windows Agent Container Image
@@ -94,7 +99,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 ## Linux Agent
 
-## Build Docker Provider Shell Bundle
+### Build Docker Provider Shell Bundle
 
 1. Begin by downloading the latest package for Go by running this command, which will pull down the Go package file, and save it to your current working directory
 
@@ -134,7 +139,7 @@ make
 6. If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
   > Note: x.x.x-x is the version of the docker provider which is determined from version info in docker.version file
 
-## Build Docker Image
+### Build Docker Image
 
 1.  Navigate to below directory to build the docker image
   ```
@@ -150,39 +155,24 @@ make
 
 ## Windows Agent
 > Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine with Docker for Windows
-
-### Build and Publish Certificate Generator Binaries
-1. Navigate to your Docker-Provider  enlistment directory for example you have enlisted to under %userprofile% directory
-2. cd %userprofile%\Docker-Provider\kubernetes\windows\CertificateGenerator
-3. Run the following commands to install dependencies, build and publish
-```
-  dotnet add package Newtonsoft.json
-  dotnet add package BouncyCastle
-  dotnet build
-  dotnet publish -c Release -r win10-x64
-```
-4. Zip the contents of bin\Release\<dotnetversion>\win10-x64\publish to a file called CertificateGenerator.zip
-5. Copy CertificateGenerator.zip file to cd %userprofile%\Docker-Provider\kubernetes\windows\omsagentwindows\certgenerator
-
-### Build Go plugin code
-
-1. Install go if you havent installed already
-```
-cd  %userprofile%
-mkdir go
-cd  %userprofile%\go
-curl -LO https://dl.google.com/go/go1.14.3.windows-amd64.msi
-# install go. default will get installed %SYSTEMDRIVE%\go
-msiexec /i %userprofile%\go\go1.14.3.windows-amd64.msi
-```
-2. Set and Update required GO environment variable if you dont have set already
+### Build Certificate Generator Source code and Out OMS Go plugin code
+1. Install .Net Core SDK 2.2 or higher from https://dotnet.microsoft.com/download
+2. Install go if you havent installed already.
+  ```
+  cd  %userprofile%
+  mkdir go
+  cd  %userprofile%\go
+  curl -LO https://dl.google.com/go/go1.14.3.windows-amd64.msi
+  # install go. default will get installed %SYSTEMDRIVE%\go
+  msiexec /i %userprofile%\go\go1.14.3.windows-amd64.msi
+  ```
+2. Set and Update required PATH and GOPATH environment variables based on the Go bin and repo path
 ```
 set PATH=%PATH%;%SYSTEMDRIVE%\go\bin
-set GOBIN=%SYSTEMDRIVE%\go\bin
-set GOPATH=%userprofile%\Docker-Provider\source\code\go
+set GOPATH=%userprofile%\Docker-Provider\source\code\go #Set this based on your repo path
 ```
-> Note: if you want set these environment variables permanently, you can use setx command instead of set command
-3. Install glide to manage the go dependencies
+> Note: If you want set these environment variables permanently, you can use setx command instead of set command
+3. Download glide to manage the go dependencies. Skip this test if you have glide already on your windows dev/build machine
 ```
 cd  %userprofile%
 mkdir glide
@@ -195,12 +185,30 @@ set PATH=%PATH%;%userprofile%\glide\windows-amd64
 ```
 4. Navigate to go plugin code  and update go dependencies
 ```
-cd  %userprofile%\Docker-Provider\source\code\go\src\plugins
+cd  %userprofile%\Docker-Provider\source\code\go\src\plugins # this based on your repo path
 glide init
 glide update
 glide install
 ```
-5. Build the go code
+5. Install [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code if you havent installed
+5. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
-go build -o out_oms.so .
+cd %userprofile%\Docker-Provider\build\windows # based on your repo path
+powershell # switch to powershell from cmd
+.\build.ps1 # trigger build and publish
 ```
+### Build Docker Image
+
+1.  Navigate to below directory to build the docker image
+  ```
+  cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
+ ```
+2. Build the Docker image via below command
+ ```
+   docker build -t  <repo>:<imagetag> .
+```
+3. Push the Docker image to docker repo
+
+# Update Kubernetes yamls
+
+Navigate to Kubernetes directory and update the yamls with latest docker image and other relevant updates.
