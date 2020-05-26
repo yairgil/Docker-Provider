@@ -6,8 +6,8 @@ ENV tmpdir /opt/omsagentwindows/scripts/powershell
 
 WORKDIR /opt/omsagentwindows/scripts/powershell
 
-# gangams - TBD -  build certificate generator code here itself so that we can avoid manual step
-COPY ./omsagentwindows/certgenerator/* /opt/omsagentwindows/certgenerator/
+# copy certificate generator binaries zip
+COPY ./omsagentwindows/*.zip /opt/omsagentwindows/
 
 COPY setup.ps1 /opt/omsagentwindows/scripts/powershell
 RUN ./setup.ps1
@@ -19,7 +19,6 @@ COPY ./scripts/cmd/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
 # copy ruby scripts to /opt folder
 COPY ./scripts/ruby/*.rb /opt/omsagentwindows/scripts/ruby/
 
-# gangams - TBD - figure out building the go code in the docker file or have Makefile do this
 COPY ./omsagentwindows/out_oms.so /opt/omsagentwindows/out_oms.so
 
 COPY ./fluent/fluent.conf /etc/fluent/
