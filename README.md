@@ -24,7 +24,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - Add 'Computer' dimension to all telemetry (internal use)
 - Support for specifiying HTTP & HTTPS Proxy for outbound/egress (applicable only for non-AKS clusters)
 - Move to rbac.authorization.k8s.io/v1 for ClusterRole & ClusterRoleBinding
-- Rever version apiextensions.k8s.io/v1 to apiextensions.k8s.io/v1beta1 for Health CRD since this require schema update
+- Reverted version change from apiextensions.k8s.io/v1 to apiextensions.k8s.io/v1beta1 for Health CRD since this require schema update
 - Dont ingest per container telemetry exceptions related to container inventory since these will be huge
 
 ##### Customer Impact
