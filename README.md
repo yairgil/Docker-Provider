@@ -11,6 +11,38 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
+### 05/26/2020 -
+##### Version microsoft/oms:ciprod05262020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05262020 (linux)
+##### Version microsoft/oms:win-ciprod05262020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020 (windows)
+##### Code change log
+- Windows Daemonset - Collection of Windows std/stderr logs
+- More Alerable Metrics (going to Metrics Store/custom metrics - see Customer Impact section below for metrics list)
+- Fix OOM-ing at high prometheus scrape volume
+- Update fluentbit (0.14.4 to 1.4.2)
+- Drop non-numeric metrics thru Telegraf
+- Reduce Health exception (when API server response is nil)
+- Add 'Computer' dimension to all telemetry (internal use)
+- Support for specifiying HTTP & HTTPS Proxy for outbound/egress (applicable only for non-AKS clusters)
+- Move to rbac.authorization.k8s.io/v1 for ClusterRole & ClusterRoleBinding
+- Rever version apiextensions.k8s.io/v1 to apiextensions.k8s.io/v1beta1 for Health CRD since this require schema update
+- Dont ingest per container telemetry exceptions related to container inventory since these will be huge
+
+##### Customer Impact
+- Windows Logs - Customers will see agent automatically start collecting windows container STDOUT/STDERR logs sending them to same loganaytics workspace (containerlogs table)
+- Alertable metrics - Customers will see the below metrics & namespaces in 'Metrics' TOC for AKS clusters
+     - Metrics
+         - diskUsagePercentage
+         - completedJobsCount
+         - oomKilledContainerCount
+         - podReadyPercentage
+         - restartingContainerCount
+         - cpuExceededPercentage
+         - memoryRssExceededPercentage
+         - memoryWorkingSetExceededPercentage
+     - Metric Namespaces
+         - insights.container/containers
+- HTTP/S Proxy support - For non-AKS clusters, proxy can be configured when installing thru HELM. Please see documentation for more details
+
 ### 05/22/2020 -
 ##### Version microsoft/oms:ciprod05222020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05222020 (linux)
 ##### Version microsoft/oms:win-ciprod05222020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05222020 (windows)
@@ -47,14 +79,14 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 > Note: This agent release targetted ONLY for non-AKS clusters via Azure Monitor for containers HELM chart update
 ##### Version microsoft/oms:ciprod04162020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04162020
 ##### Code change log
-- Add support for rate limiting 
+- Add support for rate limiting
 - Add support for Container Runtime Interface compatible container runtime(s) like CRI-O and ContainerD
      - cAdvisor APIs are used to collect the container inventory for Docker/Moby and CRI runtime K8s environments
      - Based on the container runtime, corresponding container log FluentBit parser(docker/cri) selected
 
 ##### Customer Impact
 - Ingestion will throttle the workspaces if the agent on the cluster sending the beyond Log Analytics Workspace throttling  limits i.e. 500 MB/s
-- On Docker runtime environments, Inventory of the containers obtained  earlier via Docker REST API. 
+- On Docker runtime environments, Inventory of the containers obtained  earlier via Docker REST API.
   Agent now uses the cAdvisor APIs to get the inventory of the containers for Docker and non-Docker container runtime environments.
 
 ### 03/02/2020 -
@@ -73,7 +105,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 
 ##### Customer Impact
 - Providing capability for customers to collect 'Normal' kube events using config map
-- Metrics for GPU are collected and ingested to customers workspace if they have GPU enabled nodes 
+- Metrics for GPU are collected and ingested to customers workspace if they have GPU enabled nodes
 - Bug fix for windows container image collection allows customers to get the right data in the ContainerInventory table for windows       containers.
 
 ### 01/07/2020 -
