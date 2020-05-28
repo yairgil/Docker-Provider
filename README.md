@@ -10,7 +10,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 
 ## Common
 1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
-2. [Go lang](https://golang.org/) for building go code
+2. [Go lang](https://golang.org/) for building go code. Go lang version 1.14.3 or higher.
 3. [Glide-Package Management for Go](https://https://glide.sh/)
 4. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) for Azure related operations
 
@@ -107,36 +107,21 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 1. Install Go Lang if you havent installed already
 ```
 sudo mkdir temp
-sudo curl -O https://storage.googleapis.com/golang/go1.9.1.linux-amd64.tar.gz
+sudo curl -O https://storage.googleapis.com/golang/go1.14.3.linux-amd64.tar.gz
 cd temp
-sudo tar -xvf go1.9.1.linux-amd64.tar.gz
+sudo tar -xvf go1.14.3.linux-amd64.tar.gz
 sudo mv go ~
 ```
-2. Install glide to manage the go dependencies if you havent installed already
-```
-sudo chmod 777 ~/go/bin #Required to get permissions to create glide executable
-curl https://glide.sh/get | sh
-```
-3. Install Docker as per instructions in https://docs.docker.com/engine/install/ubuntu/
-
+2. Install Docker as per instructions in https://docs.docker.com/engine/install/ubuntu/
 
 ### Build Docker Provider Shell Bundle
 
-1. Set PATH, GOBIN, GOPATH  environment variables
-```
-export PATH=$PATH:$HOME/go/bin
-export GOBIN=$HOME/go/bin
-export GOPATH=~/Docker-Provider/source/code/go #Set this based on your repo path
-```
-2. Update go depencies
+1. Update go depencies
 ```
 cd ~/Docker-Provider/source/code/go/src/plugins #cd <path to go src>
-glide init
-glide update
-glide install
+go get
 ```
-> Note: If glide init fails with [ERROR] Cowardly refusing to overwrite existing YAML, you can ignore this error if you havent added any new dependecy else delete glide.yaml and re-run the glide init command to create glide.yaml.
-3.  Build the code  with below commands
+2.  Build the code  with below commands
 ```
 cd ~/Docker-Provider/build/linux
 bash ./configure --enable-ulinux
@@ -204,33 +189,14 @@ make
   # install go. default will get installed %SYSTEMDRIVE%\go
   msiexec /i %userprofile%\go\go1.14.3.windows-amd64.msi
   ```
-3. Download glide to manage the go dependencies. Skip this step if you have glide already on your windows dev/build machine
-```
-cd  %userprofile%
-mkdir glide
-curl -LO https://github.com/Masterminds/glide/releases/download/v0.13.3/glide-v0.13.3-windows-amd64.zip
-# extract zip file
-tar -xf glide-v0.13.3-windows-amd64.zip
-cd  %userprofile%\glide\windows-amd64
-# update path environment variable with glide.exe path
-set PATH=%PATH%;%userprofile%\glide\windows-amd64
-```
-4. Install [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code if you havent installed
-5. Install Docker for windows https://docs.docker.com/docker-for-windows/install/
+3. Install [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code if you havent installed
+4. Install Docker for windows https://docs.docker.com/docker-for-windows/install/
 
 ### Build Certificate Generator Source code and Out OMS Go plugin code
-1. Set and Update required PATH and GOPATH environment variables based on the Go bin and repo path
-```
-set PATH=%PATH%;%SYSTEMDRIVE%\go\bin
-set GOPATH=%userprofile%\Docker-Provider\source\code\go #Set this based on your repo path
-```
-> Note: If you want set these environment variables permanently, you can use setx command instead of set command
-2. Navigate to go plugin code  and update go dependencies via glide
+1. Navigate to go plugin code  and update go dependencies via glide
 ```
 cd  %userprofile%\Docker-Provider\source\code\go\src\plugins # this based on your repo path
-glide init
-glide update
-glide install
+go get
 ```
 3. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
