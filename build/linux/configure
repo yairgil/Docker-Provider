@@ -20,8 +20,8 @@ omi_configure_quals=""
 
 # Do we have a version file from the super project? If not, trigger error
 
-if [ ! -f docker.version ]; then
-    echo "Docker version file does not exist in superproject"
+if [ ! -f ../version]; then
+    echo "version file does not exist in project"
     exit 1
 fi
 

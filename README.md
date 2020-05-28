@@ -30,8 +30,8 @@ The general directory structure is:
 
 ```
 ├── build/                                    - files to related to  compile and build the code
+│   ├── version                               - build version used for docker prvider and go shared object(so) files
 │   ├── linux/                                - Makefiles and installer files for the Docker Provider
-│   │   ├── docker.version                    - docker provider version
 │   │   ├── Makefile                          - Makefile to build docker provider code
 │   │   ├── Makefle.common                    - dependency common file for Makefile
 │   │   ├── configure                         - configure file to determine provider configuration
@@ -103,7 +103,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 ## Linux Agent
 
 ### Install Pre-requisites
-1. Install Go Lang if you havent installed already
+1. Install go1.14.3 if you havent installed already
 ```
 sudo mkdir temp
 sudo curl -O https://storage.googleapis.com/golang/go1.14.3.linux-amd64.tar.gz
@@ -127,7 +127,7 @@ bash ./configure --enable-ulinux
 make
 ```
 4. If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
-  > Note: x.x.x-x is the version of the docker provider which is determined from version info in docker.version file
+  > Note: x.x.x-x is the version of the docker provider which is determined from version info in version file
 
 ### Build Docker Image
 
@@ -179,7 +179,7 @@ make
 > Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine with Docker for Windows
 ### Install Pre-requisites
 1. Install .Net Core SDK 2.2 or higher from https://dotnet.microsoft.com/download if you dont have installed already
-2. Install go if you havent installed already
+2. Install go1.14.3 if you havent installed already
   ```
   cd  %userprofile%
   mkdir go
