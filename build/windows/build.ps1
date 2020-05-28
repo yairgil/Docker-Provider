@@ -22,7 +22,7 @@ if ($false -eq (Test-Path -Path $srcdir)) {
     Write-Host("Invalid docker provider root source dir : " + $srcdir + " ") -ForegroundColor Red
     exit
 }
-$certsrcdir = Join-Path -Path $srcdir -ChildPath "kubernetes\windows\CertificateGenerator"
+$certsrcdir = Join-Path -Path $srcdir -ChildPath "kubernetes\windows\certificategenerator"
 if ($false -eq (Test-Path -Path $certsrcdir)) {
     Write-Host("Invalid certificate generator source dir : " + $srcdir + " ") -ForegroundColor Red
     exit
@@ -52,7 +52,7 @@ if ($false -eq (Test-Path -Path $publishdir)) {
     exit
 }
 
-$certreleasepublishpath = Join-Path  -Path $publishdir -ChildPath "CertificateGenerator.zip"
+$certreleasepublishpath = Join-Path  -Path $publishdir -ChildPath "certificategenerator.zip"
 
 Write-Host("Compressing and copying the certificate generator release binaries ...")
 Compress-Archive -Path  $certreleasebinpath -DestinationPath $certreleasepublishpath  -Force
