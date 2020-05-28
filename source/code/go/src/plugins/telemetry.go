@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
-	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/fluent/fluent-bit-go/output"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 )
 
 var (
@@ -222,10 +222,10 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	}
 
 	if isProxyConfigured == true {
-	  CommonProperties["IsProxyConfigured"] = "true"
+		CommonProperties["IsProxyConfigured"] = "true"
 	} else {
-  	   CommonProperties["IsProxyConfigured"] = "false"
-    }
+		CommonProperties["IsProxyConfigured"] = "false"
+	}
 
 	TelemetryClient.Context().CommonProperties = CommonProperties
 	return 0, nil
