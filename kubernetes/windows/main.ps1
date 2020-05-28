@@ -101,7 +101,7 @@ function Start-Fluent
 function Generate-Certificates
 {
     Write-Host "Generating Certificates"
-    C:\\opt\\omsagentwindows\\certgenerator\\CertificateGenerator.exe
+    C:\\opt\\omsagentwindows\\certgenerator\\certificategenerator.exe
 }
 
 function Test-CertificatePath

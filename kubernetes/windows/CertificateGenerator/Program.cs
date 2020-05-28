@@ -24,7 +24,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Org.BouncyCastle.OpenSsl;
 
-namespace CertificateGenerator
+namespace certificategenerator
 
 
 {
@@ -372,7 +372,7 @@ namespace CertificateGenerator
             {
                 Console.WriteLine("Failed to read env variables (DOMAIN)" + ex.Message);
             }
-            
+
             X509Certificate2 clientCertificate = RegisterAgentWithOMS(logAnalyticsWorkspaceID, logAnalyticsWorkspaceSharedKey, logAnayticsDomain);
         }
     }

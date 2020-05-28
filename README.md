@@ -11,8 +11,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 ## Common
 1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
 2. [Go lang](https://golang.org/) for building go code. Go lang version 1.14.3 or higher.
-3. [Glide-Package Management for Go](https://https://glide.sh/)
-4. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) for Azure related operations
+3. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) for Azure related operations
 
 ## Linux
 4. Ubuntu machine Ubuntu 14.04 to build Linux Agent
@@ -50,13 +49,13 @@ The general directory structure is:
 │   │   ├── DockerFile                        - DockerFile for Linux Agent Container Image
 │   │   ├── main.sh                           - Linux Agent container entry point
 │   │   ├── setup.sh                          - setup file for Linux Agent Container Image
-│   │   ├── acrprodnamespace.yaml             - acr woirkflow to push the Linux Agent Container Image
+│   │   ├── acrworkflows/                     - acr work flows for the Linux Agent container image
 │   │   ├── defaultpromenvvariables           - default environment variables for Prometheus scraping
 │   │   ├── defaultpromenvvariables-rs        - cluster level default environment variables for Prometheus scraping
 │   ├── windows/                              - scripts to build the Docker image for Windows Agent
-│   │   ├── acrWorkFlows/                     - acr work flows for the Windows Agent container image
+│   │   ├── acrworkflows/                     - acr work flows for the Windows Agent container image
 │   │   ├── baseimage/                        - windowsservercore base image for the windows agent container
-│   │   ├── CertificateGenerator/             - .NET code to create self-signed certificate register with OMS
+│   │   ├── certificategenerator/             - .NET code to create self-signed certificate register with OMS
 │   │   ├── fluent/                           - fluent heartbeat plugin code
 │   │   ├── fluent-bit/                       - fluent-bit plugin code for oms output plugin code
 │   │   ├── scripts/                          - scripts for livenessprobe, filesystemwatcher and config parsers etc.

@@ -12,5 +12,5 @@ source/code/go/src/plugins/vendor/
 *.so
 *.zip
 # .net code build artificats
-kubernetes/windows/CertificateGenerator/bin
-kubernetes/windows/CertificateGenerator/obj
+kubernetes/windows/certificategenerator/bin
+kubernetes/windows/certificategenerator/obj
