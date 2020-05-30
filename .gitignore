@@ -15,4 +15,4 @@ source/code/go/src/plugins/vendor/
 kubernetes/windows/certificategenerator/bin
 kubernetes/windows/certificategenerator/obj
 # files under omsagentwindows dir since this temp directory to build the docker image
-#kubernetes/windows/omsagentwindows
+kubernetes/windows/omsagentwindows
