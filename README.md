@@ -69,6 +69,7 @@ The general directory structure is:
 ├── scripts/                                  - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
 │   ├── troubleshoot/                         - scripts for troubleshooting of Azure Monitor for containers onboarding issues
 │   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
+│   ├── privatepreview/                       - scripts related private preview features
 ├── source/                                   - source code
 │   ├── code/                                 - source code
 │   │   ├── go/                               - out_oms plugin code in go lang
@@ -202,12 +203,13 @@ powershell -executionpolicy bypass -File .\build.ps1 # trigger build and publish
 1.  Navigate to below directory to build the docker image
 ```
   cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
+  docker build -t  <repo>:<imagetag> .
 ```
-2. Build the Docker image via below command
+2. Push the Docker image to docker repo. For testing, you will be pushing to Docker hub
 ```
-   docker build -t  <repo>:<imagetag> .
+  cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
+  docker push  <repo>:<imagetag>
 ```
-3. Push the Docker image to docker repo
 
 # Update Kubernetes yamls
 
