@@ -7,7 +7,7 @@ class KubernetesContainerInventory
   require "json"
   require_relative "omslog"
   require_relative "ApplicationInsightsUtility"
-  
+
   # cache the container and cgroup parent process
   @@containerCGroupCache = Hash.new
 
@@ -175,17 +175,20 @@ class KubernetesContainerInventory
         unless @@containerCGroupCache.has_key?(containerId)
           $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars fetching cGroup parent pid @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
           Dir["/hostfs/proc/*/cgroup"].each do |filename|
-            if File.file?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
-              # file full path is /hostfs/proc/<cGroupPid>/cgroup            
-              cGroupPid = filename.split("/")[3]
-              if @@containerCGroupCache.has_key?(containerId)
-                tempCGroupPid = @@containerCGroupCache[containerId]
-                if tempCGroupPid > cGroupPid
+            begin
+              if File.file?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
+                # file full path is /hostfs/proc/<cGroupPid>/cgroup
+                cGroupPid = filename.split("/")[3]
+                if @@containerCGroupCache.has_key?(containerId)
+                  tempCGroupPid = @@containerCGroupCache[containerId]
+                  if tempCGroupPid > cGroupPid
+                    @@containerCGroupCache[containerId] = cGroupPid
+                  end
+                else
                   @@containerCGroupCache[containerId] = cGroupPid
                 end
-              else
-                @@containerCGroupCache[containerId] = cGroupPid
               end
+            rescue SystemCallError # ignore Error::ENOENT,Errno::ESRCH which is expected if any of the container gone while we read
             end
           end
         end
@@ -200,8 +203,8 @@ class KubernetesContainerInventory
               envValueString = ["AZMON_COLLECT_ENV=FALSE"]
               $log.warn("Environment Variable collection for container: #{containerId} skipped because AZMON_COLLECT_ENV is set to false")
             else
-              # Restricting the ENV string value to 200kb since the size of this string can go very high             
-              envVars = File.read(environFilePath, 200000)             
+              # Restricting the ENV string value to 200kb since the size of this string can go very high
+              envVars = File.read(environFilePath, 200000)
               if !envVars.nil? && !envVars.empty?
                 envVars = envVars.split("\0")
                 envValueString = envVars.to_json
@@ -218,12 +221,11 @@ class KubernetesContainerInventory
             end
           end
         else
-          $log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: cGroupPid is NIL or empty for containerId: #{containerId}")  
+          $log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: cGroupPid is NIL or empty for containerId: #{containerId}")
         end
       rescue => error
         $log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: obtain Container Environment vars failed: #{error} for containerId: #{containerId}")
         $log.debug_backtrace(error.backtrace)
-        ApplicationInsightsUtility.sendExceptionTelemetry(error)
       end
       return envValueString
     end
@@ -311,12 +313,12 @@ class KubernetesContainerInventory
       begin
         if !containerId.nil? && !containerId.empty? && !@@containerCGroupCache.nil? && @@containerCGroupCache.length > 0 && @@containerCGroupCache.key?(containerId)
           @@containerCGroupCache.delete(containerId)
-        end      
+        end
       rescue => error
         $log.warn("KubernetesContainerInventory::deleteCGroupCacheEntryForDeletedContainer: deleting of cache entry failed: #{error}")
         $log.debug_backtrace(error.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(error)
-      end 
+      end
     end
   end
 end
