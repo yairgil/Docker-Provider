@@ -39,12 +39,13 @@ The general directory structure is:
 |   |   |   |── bundle/                       - shell scripts to create shell bundle
 |   |   |   |── conf/                         - plugin configuration files
 |   |   |   |── datafiles/                    - data files for the installer
-|   |   |   |── scripts/                      - data files for the installer
+|   |   |   |── scripts/                      - script files related to livenessproble, tomlparser etc..
 |   |   |   |── InstallBuilder/               - python script files for the install builder
 │   ├── windows/                              - scripts to build the .net and go code
 │   │   ├── installer                         - files related to installer
-|   |   |   |── conf/                         - plugin configuration files
-|   |   |   |── scripts/                      - data files for the installer
+|   |   |   |── conf/                         - fluent, fluentbit and out_oms plugin configuration files
+|   |   |   |── scripts/                      - script files related to livenessproble, filesystemwatcher, keepCertificateAlive etc..
+|   |   |   |── certificategenerator/         - .NET code for the generation self-signed certificate of the windows agent
 |   |   |── Makefile.ps1/                     - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
 ├── alerts/                                   - alert queries
 ├── kubernetes/                               - files related to Linux and Windows Agent for Kubernetes
@@ -58,7 +59,6 @@ The general directory structure is:
 │   ├── windows/                              - scripts to build the Docker image for Windows Agent
 │   │   ├── acrworkflows/                     - acr work flows for the Windows Agent container image
 │   │   ├── baseimage/                        - windowsservercore base image for the windows agent container
-│   │   ├── certificategenerator/             - .NET code to create self-signed certificate register with OMS
 │   │   ├── DockerFile                        - DockerFile for Windows Agent Container Image
 │   │   ├── main.ps1                          - Windows Agent container entry point
 │   │   ├── setup.ps1                         - setup file for Windows Agent Container Image

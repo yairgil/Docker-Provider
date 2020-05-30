@@ -12,7 +12,7 @@ source/code/go/src/plugins/vendor/
 *.so
 *.zip
 # .net code build artificats
-kubernetes/windows/certificategenerator/bin
-kubernetes/windows/certificategenerator/obj
+build/windows/installer/certificategenerator/bin
+build/windows/installer/certificategenerator/obj
 # files under omsagentwindows dir since this temp directory to build the docker image
 kubernetes/windows/omsagentwindows
