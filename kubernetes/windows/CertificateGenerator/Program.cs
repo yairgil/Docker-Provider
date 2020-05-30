@@ -25,8 +25,6 @@ using System.Threading;
 using Org.BouncyCastle.OpenSsl;
 
 namespace certificategenerator
-
-
 {
     class Program
     {

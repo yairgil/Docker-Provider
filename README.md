@@ -42,7 +42,10 @@ The general directory structure is:
 |   |   |   |── scripts/                      - data files for the installer
 |   |   |   |── InstallBuilder/               - python script files for the install builder
 │   ├── windows/                              - scripts to build the .net and go code
-|   |   |── build.ps1/                        - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
+│   │   ├── installer                         - files related to installer
+|   |   |   |── conf/                         - plugin configuration files
+|   |   |   |── scripts/                      - data files for the installer
+|   |   |── Makefile.ps1/                     - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
 ├── alerts/                                   - alert queries
 ├── kubernetes/                               - files related to Linux and Windows Agent for Kubernetes
 │   ├── linux/                                - scripts to build the Docker image for Linux Agent
@@ -56,10 +59,6 @@ The general directory structure is:
 │   │   ├── acrworkflows/                     - acr work flows for the Windows Agent container image
 │   │   ├── baseimage/                        - windowsservercore base image for the windows agent container
 │   │   ├── certificategenerator/             - .NET code to create self-signed certificate register with OMS
-│   │   ├── fluent/                           - fluent heartbeat plugin code
-│   │   ├── fluent-bit/                       - fluent-bit plugin code for oms output plugin code
-│   │   ├── scripts/                          - scripts for livenessprobe, filesystemwatcher and config parsers etc.
-│   │   ├── omsagentwindows/                  - out_oms conf file.Build cert generator binaries zip and out_oms.so file will be copied to here.
 │   │   ├── DockerFile                        - DockerFile for Windows Agent Container Image
 │   │   ├── main.ps1                          - Windows Agent container entry point
 │   │   ├── setup.ps1                         - setup file for Windows Agent Container Image
@@ -195,7 +194,7 @@ make
 1. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
 cd %userprofile%\Docker-Provider\build\windows # based on your repo path
-powershell -executionpolicy bypass -File .\build.ps1 # trigger build and publish
+powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publish
 ```
 ### Build Docker Image
 
