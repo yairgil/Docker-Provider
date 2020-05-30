@@ -42,11 +42,11 @@ The general directory structure is:
 |   |   |   |── scripts/                      - script files related to livenessproble, tomlparser etc..
 |   |   |   |── InstallBuilder/               - python script files for the install builder
 │   ├── windows/                              - scripts to build the .net and go code
+|   |   |── Makefile.ps1                     - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
 │   │   ├── installer                         - files related to installer
 |   |   |   |── conf/                         - fluent, fluentbit and out_oms plugin configuration files
 |   |   |   |── scripts/                      - script files related to livenessproble, filesystemwatcher, keepCertificateAlive etc..
 |   |   |   |── certificategenerator/         - .NET code for the generation self-signed certificate of the windows agent
-|   |   |── Makefile.ps1/                     - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
 ├── alerts/                                   - alert queries
 ├── kubernetes/                               - files related to Linux and Windows Agent for Kubernetes
 │   ├── linux/                                - scripts to build the Docker image for Linux Agent
