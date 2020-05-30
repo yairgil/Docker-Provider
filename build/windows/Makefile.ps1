@@ -2,6 +2,7 @@
 #  It does following  tasks
 #  1. Builds the certificate generator code in .NET and copy the binaries in zip file to ..\..\kubernetes\windows\omsagentwindows
 #  2. Builds the out_oms plugin code in go lang  into the shared object(.so) file and copy the out_oms.so file  to ..\..\kubernetes\windows\omsagentwindows
+#  3. copy the files under installer directory to ..\..\kubernetes\windows\omsagentwindows
 
 $dotnetcoreframework = "netcoreapp2.2"
 
@@ -47,10 +48,12 @@ if ($false -eq (Test-Path -Path $certreleasebinpath)) {
     exit
 }
 $publishdir = Join-Path -Path $srcdir -ChildPath "kubernetes\windows\omsagentwindows"
-if ($false -eq (Test-Path -Path $publishdir)) {
-    Write-Host("certificate release bin publish dir doesnt exist : " + $publishdir + " ") -ForegroundColor Red
-    exit
+if ($true -eq (Test-Path -Path $publishdir)) {
+    Write-Host("publish dir exist hence deleting: " + $publishdir + " ")
+    Remove-Item -Path $publishdir  -Recurse -Force
 }
+Write-Host("creating publish dir exist: " + $publishdir + " ")
+New-Item -Path $publishdir -ItemType "directory" -Force
 
 $certreleasepublishpath = Join-Path  -Path $publishdir -ChildPath "certificategenerator.zip"
 
@@ -76,3 +79,8 @@ Write-Host("copying out_oms.so file to : $publishdir")
 Copy-Item -Path (Join-path -Path $outomsgoplugindir -ChildPath "out_oms.so")  -Destination $publishdir -Force
 Write-Host("successfully copied out_oms.so file to : $publishdir") -ForegroundColor Green
 Set-Location $currentdir
+
+$installerdir = Join-Path -Path $builddir -ChildPath "windows\installer"
+Write-Host("copying installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ...")
+Copy-Item  -Path $installerdir  -Destination $publishdir -Recurse -Force
+Write-Host("successfully copied installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ") -ForegroundColor Green
