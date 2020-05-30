@@ -192,12 +192,7 @@ make
 4. Install Docker for windows https://docs.docker.com/docker-for-windows/install/
 
 ### Build Certificate Generator Source code and Out OMS Go plugin code
-1. Navigate to go plugin code  and update go dependencies via glide
-```
-cd  %userprofile%\Docker-Provider\source\code\go\src\plugins # this based on your repo path
-go get
-```
-3. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
+1. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
 cd %userprofile%\Docker-Provider\build\windows # based on your repo path
 powershell -executionpolicy bypass -File .\build.ps1 # trigger build and publish

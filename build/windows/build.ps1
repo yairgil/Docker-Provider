@@ -66,6 +66,9 @@ if ($false -eq (Test-Path -Path $outomsgoplugindir)) {
     exit
 }
 Set-Location -Path $outomsgoplugindir
+Write-Host("getting latest go modules ...")
+go get
+Write-Host("successfyullt got latest go modules") -ForegroundColor Green
 go build -o out_oms.so .
 Write-Host("Successfully build Out_OMS go plugin code") -ForegroundColor Green
 
