@@ -77,8 +77,7 @@ The general directory structure is:
 │   │   |   ├── health/                       - code for health feature
 │   │   |   ├── lib/                          - lib for app insights ruby and this code of application_insights gem
 │   │   ├── toml-parser/                      - code for parsing of toml configuration files
-│   ├── test/                                 - source code for tests
-│   │   ├── health/                           - source code for health feature tests
+├── test/                                     - source code for tests
 ├── !_README.md                               - this file
 ├── .gitignore                                - git config file with include/exclude file rules
 ├── LICENSE                                   - License file
