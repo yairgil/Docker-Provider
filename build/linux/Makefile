@@ -5,7 +5,45 @@ BASE_DIR := $(subst /build/linux,,$(PWD))
 
 PF_POSIX := 1
 include $(BASE_DIR)/build/linux/config.mak
-include $(BASE_DIR)/build/linux/Makefile.common
+
+# RM - Remove a file
+# RMDIR - Remove a directory
+# MKPATH - Create a directory and all necessary dirs along the way
+# NOOP - Command which is not executed on this platform
+# pf_tp(path_list) - Transform the paths in the list to paths accepted by platform
+# pf_fwrite(text,filename) - Creates/replaces a new file with 'text' as content
+# pf_fappend(text,filename) - Append text to file at the end
+
+ifdef PF_WINDOWS
+	pf_tp=$(subst /,\,$(patsubst %,"%",$1))
+	RM=cmd /c del /f /q
+	RMDIR=cmd /c rmdir /S /Q
+	MKPATH=cmd /c mkdir
+	ECHO=cmd /c echo
+	COPY=cmd /c copy
+	COPYDIR=cmd /c robocopy
+	pf_fwrite=echo $(1) > $(2)
+	pf_fappend=echo $(1) >> $(2)
+
+	NOOP=rem NOOP
+
+endif
+
+
+ifdef PF_POSIX
+	pf_tp=$1
+	RM=rm -f
+	RMDIR=rm -rf
+	MKPATH=mkdir -p
+	ECHO=@echo
+	COPY=cp
+	COPYDIR=cp -r
+	pf_fwrite=echo $(1) > $(2)
+	pf_fappend=echo $(1) >> $(2)
+	SOFTLINK=ln -sf
+	NOOP=echo
+	MV=mv
+endif
 
 
 ifndef ENABLE_DEBUG

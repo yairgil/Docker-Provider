@@ -33,7 +33,6 @@ The general directory structure is:
 │   ├── version                               - build version used for docker prvider and go shared object(so) files
 │   ├── linux/                                - Makefiles and installer files for the Docker Provider
 │   │   ├── Makefile                          - Makefile to build docker provider code
-│   │   ├── Makefle.common                    - dependency common file for Makefile
 │   │   ├── configure                         - configure file to determine provider configuration
 │   │   ├── installer                         - files related to installer
 |   |   |   |── bundle/                       - shell scripts to create shell bundle
