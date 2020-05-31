@@ -103,28 +103,21 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 ### Install Pre-requisites
 1. Install go1.14.3 if you havent installed already
 ```
-sudo mkdir temp
+sudo mkdir temp && cd temp
 sudo curl -O https://storage.googleapis.com/golang/go1.14.3.linux-amd64.tar.gz
-cd temp
 sudo tar -xvf go1.14.3.linux-amd64.tar.gz
 sudo mv go ~
 ```
 2. Install Docker as per instructions in https://docs.docker.com/engine/install/ubuntu/
 
 ### Build Docker Provider Shell Bundle
-
-1. Update go depencies
-```
-cd ~/Docker-Provider/source/code/go/src/plugins #cd <path to go src>
-go get
-```
-2.  Build the code  with below commands
+1.  Build the code  with below commands
 ```
 cd ~/Docker-Provider/build/linux
 bash ./configure --enable-ulinux
 make
 ```
-4. If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
+2. If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
   > Note: x.x.x-x is the version of the docker provider which is determined from version info in version file
 
 ### Build Docker Image

@@ -20,7 +20,7 @@ omi_configure_quals=""
 
 # Do we have a version file from the super project? If not, trigger error
 
-if [ ! -f ../version]; then
+if [ ! -f ../version ]; then
     echo "version file does not exist in project"
     exit 1
 fi

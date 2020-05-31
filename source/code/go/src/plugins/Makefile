@@ -8,13 +8,11 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 fbplugin:
+    go get
 	go build -ldflags "-X 'main.revision=$(GITVERSION)' -X 'main.builddate=$(BUILDDATE)'" -buildmode=c-shared -o out_oms.so .
 
 test:
 	go test -cover -race -coverprofile=coverage.txt -covermode=atomic
-
-glide:
-	glide install
 
 clean:
 	rm -rf *.so *.h *~
