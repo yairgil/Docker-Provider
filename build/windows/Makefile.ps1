@@ -19,6 +19,47 @@ if ($false -eq (Test-Path -Path $builddir)) {
     exit
 }
 
+$versionFilePath = Join-Path -Path $builddir -child "version"
+if ($false -eq (Test-Path -Path $versionFilePath)) {
+    Write-Host("Version file path incorret or doesnt exist : " + $versionFilePath + " ") -ForegroundColor Red
+    exit
+}
+
+# read the version info
+ $
+foreach($line in Get-Content -Path $versionFilePath) {
+    if ([string]$line.startswith("CONTAINER_BUILDVERSION_") -eq $true) {
+         $parts =  $line.split("=")
+         if ($parts.leng < 2 ) {
+            Write-Host("Invalid content in version file : " + $versionFilePath + " ") -ForegroundColor Red
+            exit
+         }
+         switch ($parts[0]) {
+            "CONTAINER_BUILDVERSION_MAJOR" { $BuildVersionMajor = $parts[1] }
+            "CONTAINER_BUILDVERSION_MINOR" { $BuildVersionMinor = $parts[1] }
+            "CONTAINER_BUILDVERSION_PATCH" { $BuildVersionPatch = $parts[1] }
+            "CONTAINER_BUILDVERSION_BUILDNR" { $BuildVersionBuildNR = $parts[1] }
+            "CONTAINER_BUILDVERSION_DATE" { $BuildVersionDate = $parts[1] }
+            "CONTAINER_BUILDVERSION_STATUS" { $BuildVersionStatus = $parts[1] }
+            default { Write-Host("This field is not expected in the version file : $line") -ForegroundColor Yellow }
+        }
+    }
+}
+
+if ([string]::IsNullOrEmpty($BuildVersionMajor)
+     -or [string]::IsNullOrEmpty($BuildVersionMinor)
+     -or [string]::IsNullOrEmpty($BuildVersionPatch)
+     -or [string]::IsNullOrEmpty($BuildVersionBuildNR)
+     -or [string]::IsNullOrEmpty($BuildVersionDate)
+     -or [string]::IsNullOrEmpty($BuildVersionStatus)) {
+        Write-Host("Expected version info doesnt exist in this version file : " + $versionFilePath + " ") -ForegroundColor Red
+        exit
+}
+# build version format will be [major].[minior].[patch]-[revision]
+$buildVersionString = $BuildVersionMajor + "." + $BuildVersionMinor + "." + $BuildVersionPatch + "-" + $BuildVersionBuildNR
+$buildVersionDate = $BuildVersionDate
+
+
 $certsrcdir = Join-Path -Path $builddir -ChildPath "windows\installer\certificategenerator"
 if ($false -eq (Test-Path -Path $certsrcdir)) {
     Write-Host("Invalid certificate generator source dir : " + $certsrcdir + " ") -ForegroundColor Red
@@ -75,7 +116,8 @@ Set-Location -Path $outomsgoplugindir
 Write-Host("getting latest go modules ...")
 go get
 Write-Host("successfyullt got latest go modules") -ForegroundColor Green
-go build -o out_oms.so .
+
+go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -o out_oms.so .
 Write-Host("Successfully build Out_OMS go plugin code") -ForegroundColor Green
 
 Write-Host("copying out_oms.so file to : $publishdir")
