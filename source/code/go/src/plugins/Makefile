@@ -8,7 +8,7 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 fbplugin:
-    go get
+	go get
 	go build -ldflags "-X 'main.revision=$(GITVERSION)' -X 'main.builddate=$(BUILDDATE)'" -buildmode=c-shared -o out_oms.so .
 
 test:

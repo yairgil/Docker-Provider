@@ -51,7 +51,7 @@ $(error "ENABLE_DEBUG is not set.  Please re-run configure")
 endif
 
 # Include the version file
-include $(BASE_DIR)/build/linux/version
+include $(BASE_DIR)/build/version
 
 ifndef CONTAINER_BUILDVERSION_STATUS
 $(error "Is version missing?  Please re-run configure")
