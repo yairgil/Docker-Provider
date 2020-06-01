@@ -10,11 +10,11 @@ Feel free to contact engineering team owners in case you have any questions abou
 
 ## Common
 1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
-2. [Go lang](https://golang.org/) for building go code. Go lang version 1.14.3 or higher.
+2. [Go lang](https://golang.org/) for building go code. Go lang version 1.14.1.
 3. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) for Azure related operations
 
 ## Linux
-4. Ubuntu machine Ubuntu 14.04 to build Linux Agent
+4. Ubuntu machine Ubuntu 14.04 or higher to build Linux Agent
 5. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
 
 ## Windows
@@ -101,14 +101,20 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 ## Linux Agent
 
 ### Install Pre-requisites
-1. Install go1.14.3 if you havent installed already
+1. Install go1.14.1 if you havent installed already
 ```
 sudo mkdir temp && cd temp
-sudo curl -O https://storage.googleapis.com/golang/go1.14.3.linux-amd64.tar.gz
-sudo tar -xvf go1.14.3.linux-amd64.tar.gz
+sudo curl -O https://dl.google.com/go/go1.14.1.linux-amd64.tar.gz
+sudo tar -xvf go1.14.1.linux-amd64.tar.gz
 sudo mv go ~
 ```
-2. Install Docker as per instructions in https://docs.docker.com/engine/install/ubuntu/
+2. Install Build dependencies
+```
+sudo apt-get upgrade
+sudo apt-get update
+sudo apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev
+```
+3. Install Docker as per instructions in https://docs.docker.com/engine/install/ubuntu/
 
 ### Build Docker Provider Shell Bundle
 1. Set PATH , GOBIN, GOPATH Environment variables
@@ -181,16 +187,23 @@ If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh u
 > Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine with Docker for Windows
 ### Install Pre-requisites
 1. Install .Net Core SDK 2.2 or higher from https://dotnet.microsoft.com/download if you dont have installed already
-2. Install go1.14.3 if you havent installed already
+2. Install go1.14.1 if you havent installed already
   ```
   cd  %userprofile%
   mkdir go
   cd  %userprofile%\go
-  curl -LO https://dl.google.com/go/go1.14.3.windows-amd64.msi
+  curl -LO https://dl.google.com/go/go1.14.1.windows-amd64.msi
   # install go. default will get installed %SYSTEMDRIVE%\go
-  msiexec /i %userprofile%\go\go1.14.3.windows-amd64.msi
+  msiexec /i %userprofile%\go\go1.14.1.windows-amd64.msi
   ```
-3. Install [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code if you havent installed
+3. Install build dependencies
+```
+cd  %userprofile%
+mkdir gccinstallertemp
+## gcc for windows
+curl -LO https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe
+msiexec /i %userprofile%\gccinstallertemp\tdm64-gcc-9.2.0.exe
+```
 4. Install Docker for windows https://docs.docker.com/docker-for-windows/install/
 
 ### Build Certificate Generator Source code and Out OMS Go plugin code
