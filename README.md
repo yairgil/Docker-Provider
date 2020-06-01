@@ -199,10 +199,11 @@ If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh u
 3. Install build dependencies
 ```
 cd  %userprofile%
-mkdir gccinstallertemp
-## gcc for windows
+mkdir gcctemp && cd gcctemp
+## download gcc for windows
 curl -LO https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe
-msiexec /i %userprofile%\gccinstallertemp\tdm64-gcc-9.2.0.exe
+## install gcc on windows
+%userprofile%\gcctemp\tdm64-gcc-9.2.0.exe
 ```
 4. Install Docker for windows https://docs.docker.com/docker-for-windows/install/
 

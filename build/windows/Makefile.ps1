@@ -30,7 +30,7 @@ if ($false -eq (Test-Path -Path $versionFilePath)) {
 foreach($line in Get-Content -Path $versionFilePath) {
     if ([string]$line.startswith("CONTAINER_BUILDVERSION_") -eq $true) {
          $parts =  $line.split("=")
-         if ($parts.leng < 2 ) {
+         if ($parts.leng -lt 2 ) {
             Write-Host("Invalid content in version file : " + $versionFilePath + " ") -ForegroundColor Red
             exit
          }
