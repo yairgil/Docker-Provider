@@ -13,22 +13,22 @@ COPY setup.ps1 /opt/omsagentwindows/scripts/powershell
 RUN ./setup.ps1
 
 COPY main.ps1 /opt/omsagentwindows/scripts/powershell
-COPY ./omsagentwindows/scripts/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
-COPY ./omsagentwindows/scripts/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
+COPY ./omsagentwindows/installer/scripts/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
+COPY ./omsagentwindows/installer/scripts/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
 
 # copy ruby scripts to /opt folder
-COPY ./omsagentwindows/scripts/*.rb /opt/omsagentwindows/scripts/ruby/
+COPY ./omsagentwindows/installer/scripts/*.rb /opt/omsagentwindows/scripts/ruby/
 
 # copy out_oms.so file
 COPY ./omsagentwindows/out_oms.so /opt/omsagentwindows/out_oms.so
 
 # copy fluent, fluent-bit and out_oms conf files
-COPY ./omsagentwindows/conf/fluent.conf /etc/fluent/
-COPY ./omsagentwindows/conf/fluent-bit.conf /etc/fluent-bit
-COPY ./omsagentwindows/conf/out_oms.conf /etc/omsagentwindows
+COPY ./omsagentwindows/installer/conf/fluent.conf /etc/fluent/
+COPY ./omsagentwindows/installer/conf/fluent-bit.conf /etc/fluent-bit
+COPY ./omsagentwindows/installer/conf/out_oms.conf /etc/omsagentwindows
 
 # copy keepcert alive ruby scripts
-COPY ./omsagentwindows/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
+COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
 
 ENV AGENT_VERSION "win-ciprod05262020-2"
 ENV OS_TYPE "windows"
