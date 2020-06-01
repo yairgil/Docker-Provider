@@ -178,10 +178,13 @@ If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh u
  cd ~/Docker-Provider/kubernetes/linux/
  ```
 4. Build the Docker image via below command
- ```
-   docker build -t  <repo>:<imagetag> .
+```
+   docker build -t  <repo>/<imagename>:<imagetag> .
 ```
 5. Push the Docker image to docker repo
+```
+   docker push  <repo>/<imagename>:<imagetag>
+```
 
 ## Windows Agent
 > Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine with Docker for Windows
@@ -218,12 +221,13 @@ powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publ
 1.  Navigate to below directory to build the docker image
 ```
   cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
-  docker build -t  <repo>:<imagetag> .
+  docker build -t  <repo>/<imagename>:win-<imagetag> .
+
 ```
 2. Push the Docker image to docker repo. For testing, you will be pushing to Docker hub
 ```
   cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
-  docker push  <repo>:<imagetag>
+  docker push  <repo>/<imagename>:<imagetag>
 ```
 
 # Update Kubernetes yamls
