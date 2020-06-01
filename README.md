@@ -111,13 +111,24 @@ sudo mv go ~
 2. Install Docker as per instructions in https://docs.docker.com/engine/install/ubuntu/
 
 ### Build Docker Provider Shell Bundle
-1.  Build the code  with below commands
+1. Set PATH , GOBIN, GOPATH Environment variables
+```
+export PATH=$PATH:$HOME/go/bin
+export GOBIN=$HOME/go/bin
+export GOPATH=~/Docker-Provider/source/code/go #Set this based on your repo path
+```
+2. Get the go dependencies
+```
+cd ~/Docker-Provider/source/code/go/src/plugins
+go get
+```
+3. Build the code  with below commands
 ```
 cd ~/Docker-Provider/build/linux
 bash ./configure --enable-ulinux
 make
 ```
-2. If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
+If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
   > Note: x.x.x-x is the version of the docker provider which is determined from version info in version file
 
 ### Build Docker Image

@@ -8,11 +8,10 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 fbplugin:
-	sudo go get
-	sudo go build -ldflags "-X 'main.revision=$(GITVERSION)' -X 'main.builddate=$(BUILDDATE)'" -buildmode=c-shared -o out_oms.so .
+	go build -ldflags "-X 'main.revision=$(GITVERSION)' -X 'main.builddate=$(BUILDDATE)'" -buildmode=c-shared -o out_oms.so .
 
 test:
-	sudo go test -cover -race -coverprofile=coverage.txt -covermode=atomic
+	go test -cover -race -coverprofile=coverage.txt -covermode=atomic
 
 clean:
-	sudo rm -rf *.so *.h *~
+	rm -rf *.so *.h *~
