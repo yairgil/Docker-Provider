@@ -26,7 +26,6 @@ if ($false -eq (Test-Path -Path $versionFilePath)) {
 }
 
 # read the version info
- $
 foreach($line in Get-Content -Path $versionFilePath) {
     if ([string]$line.startswith("CONTAINER_BUILDVERSION_") -eq $true) {
          $parts =  $line.split("=")
