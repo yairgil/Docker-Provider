@@ -30,7 +30,7 @@ if ($false -eq (Test-Path -Path $versionFilePath)) {
 foreach($line in Get-Content -Path $versionFilePath) {
     if ([string]$line.startswith("CONTAINER_BUILDVERSION_") -eq $true) {
          $parts =  $line.split("=")
-         if ($parts.leng -lt 2 ) {
+         if ($parts.length -lt 2 ) {
             Write-Host("Invalid content in version file : " + $versionFilePath + " ") -ForegroundColor Red
             exit
          }
@@ -46,14 +46,14 @@ foreach($line in Get-Content -Path $versionFilePath) {
     }
 }
 
-if ([string]::IsNullOrEmpty($BuildVersionMajor)
-     -or [string]::IsNullOrEmpty($BuildVersionMinor)
-     -or [string]::IsNullOrEmpty($BuildVersionPatch)
-     -or [string]::IsNullOrEmpty($BuildVersionBuildNR)
-     -or [string]::IsNullOrEmpty($BuildVersionDate)
-     -or [string]::IsNullOrEmpty($BuildVersionStatus)) {
-        Write-Host("Expected version info doesnt exist in this version file : " + $versionFilePath + " ") -ForegroundColor Red
-        exit
+if ([string]::IsNullOrEmpty($BuildVersionMajor) -or
+    [string]::IsNullOrEmpty($BuildVersionMinor) -or
+    [string]::IsNullOrEmpty($BuildVersionPatch) -or
+    [string]::IsNullOrEmpty($BuildVersionBuildNR) -or
+    [string]::IsNullOrEmpty($BuildVersionDate) -or
+    [string]::IsNullOrEmpty($BuildVersionStatus)) {
+    Write-Host("Expected version info doesnt exist in this version file : " + $versionFilePath + " ") -ForegroundColor Red
+    exit
 }
 # build version format will be [major].[minior].[patch]-[revision]
 $buildVersionString = $BuildVersionMajor + "." + $BuildVersionMinor + "." + $BuildVersionPatch + "-" + $BuildVersionBuildNR
