@@ -41,7 +41,7 @@ The general directory structure is:
 |   |   |   |── scripts/                      - script files related to livenessproble, tomlparser etc..
 |   |   |   |── InstallBuilder/               - python script files for the install builder
 │   ├── windows/                              - scripts to build the .net and go code
-|   |   |── Makefile.ps1                     - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
+|   |   |── Makefile.ps1                      - powershell script to build .net and go lang code and copy the files to omsagentwindows directory
 │   │   ├── installer                         - files related to installer
 |   |   |   |── conf/                         - fluent, fluentbit and out_oms plugin configuration files
 |   |   |   |── scripts/                      - script files related to livenessproble, filesystemwatcher, keepCertificateAlive etc..
@@ -67,7 +67,7 @@ The general directory structure is:
 ├── scripts/                                  - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
 │   ├── troubleshoot/                         - scripts for troubleshooting of Azure Monitor for containers onboarding issues
 │   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
-│   ├── privatepreview/                       - scripts related private preview features
+│   ├── privatepreview/                       - scripts related to private preview features goes here ..
 ├── source/                                   - source code
 │   ├── code/                                 - source code
 │   │   ├── go/                               - out_oms plugin code in go lang
