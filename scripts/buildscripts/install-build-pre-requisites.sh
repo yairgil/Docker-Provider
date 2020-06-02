@@ -49,5 +49,5 @@ install_go_lang
 install_build_dependencies
 install_docker
 echo "cleanup temp directory":$TEMP_DIR
-sudo rm -rf TEMP_DIR
+sudo rm -rf $TEMP_DIR
 echo "installing build pre-requisites golang, build dependencies and docker completed"

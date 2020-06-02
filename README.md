@@ -104,7 +104,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 1. Install go1.14.1, build dependencies and docker if you dont have installed already on your dev machine
 ```
-bash ~/Docker-Provider/scripts/install-build-pre-requisites.sh
+bash ~/Docker-Provider/scripts/buildscripts/install-build-pre-requisites.sh
 ```
 
 ### Build Docker Provider Shell Bundle
