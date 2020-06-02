@@ -63,7 +63,6 @@ The general directory structure is:
 │   │   ├── setup.ps1                         - setup file for Windows Agent Container Image
 │   ├── omsagent.yaml                         - kubernetes yaml for both Linux and Windows Agent
 │   ├── container-azm-ms-agentconfig.yaml     - kubernetes yaml for both Linux and Windows Agent
-│   ├── .../                                  - yamls and configuration files to install the Azure Monitor for containers on K8s cluster(s)
 ├── scripts/                                  - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
 │   ├── troubleshoot/                         - scripts for troubleshooting of Azure Monitor for containers onboarding issues
 │   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
