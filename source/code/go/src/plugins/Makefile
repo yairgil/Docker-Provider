@@ -1,14 +1,13 @@
-GITVERSION := 0.1
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-	BUILDDATE := $(shell date --rfc-3339=seconds)
-endif
-ifeq ($(UNAME_S),Darwin)
-	BUILDDATE := $(shell gdate --rfc-3339=seconds)
-endif
+BASE_DIR := $(subst /build/linux,,$(PWD))
+include $(BASE_DIR)/build/version
 
 fbplugin:
-	go build -ldflags "-X 'main.revision=$(GITVERSION)' -X 'main.builddate=$(BUILDDATE)'" -buildmode=c-shared -o out_oms.so .
+	@echo "========================= Building  go code ..... =========================
+	BUILDVERSION=$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH)-$(CONTAINER_BUILDVERSION_BUILDNR)
+	BUILDDATE=$(CONTAINER_BUILDVERSION_DATE)
+	@echo $(BUILDVERSION)
+	@echo $(BUILD_DATE)
+	go build -ldflags "-X 'main.revision=$(BUILDVERSION)' -X 'main.builddate=$(BUILDDATE)'" -buildmode=c-shared -o out_oms.so .
 
 test:
 	go test -cover -race -coverprofile=coverage.txt -covermode=atomic
