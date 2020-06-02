@@ -31,9 +31,9 @@ The general directory structure is:
 ```
 ├── build/                                    - files to related to  compile and build the code
 │   ├── version                               - build version used for docker prvider and go shared object(so) files
-│   ├── linux/                                - Makefiles and installer files for the Docker Provider
-│   │   ├── Makefile                          - Makefile to build docker provider code
-│   │   ├── configure                         - configure file to determine provider configuration
+│   ├── linux/                                - Makefile and installer files for the Docker Provider
+│   │   ├── Makefile                          - Makefile to build the docker provider
+│   │   ├── configure                         - configure file to enable ulinux configuration
 │   │   ├── installer                         - files related to installer
 |   |   |   |── bundle/                       - shell scripts to create shell bundle
 |   |   |   |── conf/                         - plugin configuration files
@@ -62,7 +62,7 @@ The general directory structure is:
 │   │   ├── main.ps1                          - Windows Agent container entry point
 │   │   ├── setup.ps1                         - setup file for Windows Agent Container Image
 │   ├── omsagent.yaml                         - kubernetes yaml for both Linux and Windows Agent
-│   ├── container-azm-ms-agentconfig.yaml     - kubernetes yaml for both Linux and Windows Agent
+│   ├── container-azm-ms-agentconfig.yaml     - kubernetes yaml for agent configuration
 ├── scripts/                                  - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
 │   ├── troubleshoot/                         - scripts for troubleshooting of Azure Monitor for containers onboarding issues
 │   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
