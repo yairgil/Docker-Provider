@@ -109,16 +109,13 @@ bash ~/Docker-Provider/scripts/buildscripts/install-build-pre-requisites.sh
 
 ### Build Docker Provider Shell Bundle
 
-1. Set GOPATH Environment variable based on your repo path
+1. Set GOPATH Environment variable and get the go dependencies
 ```
 export GOPATH=~/Docker-Provider/source/code/go #Set this based on your repo path
-```
-2. Get the go dependencies
-```
 cd ~/Docker-Provider/source/code/go/src/plugins
 go get
 ```
-3. Build the code  with below commands
+2. Build the code  with below commands
 ```
 cd ~/Docker-Provider/build/linux
 bash ./configure --enable-ulinux
