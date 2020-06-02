@@ -105,7 +105,12 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 sudo mkdir temp && cd temp
 sudo curl -O https://dl.google.com/go/go1.14.1.linux-amd64.tar.gz
 sudo tar -xvf go1.14.1.linux-amd64.tar.gz
-sudo mv go ~
+sudo mv go /usr/local
+export PATH=$PATH:/usr/local/go/bin
+export GOBIN=/usr/local/go/bin
+echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
+echo "export GOBIN=/usr/local/go/bin" >> ~/.bashrc
+source ~/.bashrc
 ```
 2. Install Build dependencies
 ```
@@ -116,10 +121,8 @@ sudo apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-
 3. Install Docker as per instructions in https://docs.docker.com/engine/install/ubuntu/
 
 ### Build Docker Provider Shell Bundle
-1. Set PATH , GOBIN, GOPATH Environment variables
+1. Set GOPATH Environment variable based on your repo path
 ```
-export PATH=$PATH:$HOME/go/bin
-export GOBIN=$HOME/go/bin
 export GOPATH=~/Docker-Provider/source/code/go #Set this based on your repo path
 ```
 2. Get the go dependencies
