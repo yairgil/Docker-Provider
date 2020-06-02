@@ -116,7 +116,7 @@ Write-Host("getting latest go modules ...")
 go get
 Write-Host("successfyullt got latest go modules") -ForegroundColor Green
 
-go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -o out_oms.so .
+go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
 Write-Host("Successfully build Out_OMS go plugin code") -ForegroundColor Green
 
 Write-Host("copying out_oms.so file to : $publishdir")
