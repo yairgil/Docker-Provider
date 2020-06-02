@@ -2,7 +2,7 @@ BASE_DIR := $(subst /build/linux,,$(PWD))
 include $(BASE_DIR)/build/version
 
 fbplugin:
-	@echo "========================= Building  go code ..... =========================
+	@echo "========================= Building  out_oms plugin go code  ========================="
 	BUILDVERSION=$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH)-$(CONTAINER_BUILDVERSION_BUILDNR)
 	BUILDDATE=$(CONTAINER_BUILDVERSION_DATE)
 	@echo $(BUILDVERSION)
