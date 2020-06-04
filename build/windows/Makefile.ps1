@@ -21,7 +21,7 @@ if ($false -eq (Test-Path -Path $builddir)) {
 
 $versionFilePath = Join-Path -Path $builddir -child "version"
 if ($false -eq (Test-Path -Path $versionFilePath)) {
-    Write-Host("Version file path incorret or doesnt exist : " + $versionFilePath + " ") -ForegroundColor Red
+    Write-Host("Version file path incorrect or doesnt exist : " + $versionFilePath + " ") -ForegroundColor Red
     exit
 }
 

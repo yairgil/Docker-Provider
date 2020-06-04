@@ -1,5 +1,0 @@
-%ThisIsASectionToBeIncluded
-echo "I'm included!"
-
-%Preinstall_10
-#include ThisIsASectionToBeIncluded
