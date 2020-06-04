@@ -116,11 +116,12 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			    build/linux/installer/conf/telegraf-rs.conf;                    644; root; root
 /opt/microsoft/docker-cimprov/bin/TelegrafTCPErrorTelemetry.sh; build/linux/installer/scripts/TelegrafTCPErrorTelemetry.sh;      755; root; root
 /opt/livenessprobe.sh;                                          build/linux/installer/scripts/livenessprobe.sh;      755; root; root
-/opt/tomlparser.rb;                                             build/linux/installer/scripts/tomlparser.rb;     755; root; root
 /opt/tomlparser-prom-customconfig.rb;                           build/linux/installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
 /opt/tomlparser-mdm-metrics-config.rb;                          build/linux/installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
-/opt/td-agent-bit-conf-customizer.rb;                           build/linux/installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
-/opt/ConfigParseErrorLogger.rb;                                 build/linux/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
+
+/opt/tomlparser.rb;                                             build/common/installer/scripts/tomlparser.rb;     755; root; root
+/opt/td-agent-bit-conf-customizer.rb;                           build/common/installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
+/opt/ConfigParseErrorLogger.rb;                                 build/common/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 
 
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_container.rb;                                 source/code/plugin/filter_cadvisor_health_container.rb; 644; root; root

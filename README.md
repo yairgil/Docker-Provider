@@ -31,6 +31,9 @@ The general directory structure is:
 ```
 ├── build/                                    - files to related to  compile and build the code
 │   ├── version                               - build version used for docker prvider and go shared object(so) files
+│   ├── common/                               - common to both windows and linux installers
+│   │   ├── installer                         - files related to installer
+|   |   |   |── scripts/                      - script files related to configmap parsing
 │   ├── linux/                                - Makefile and installer files for the Docker Provider
 │   │   ├── Makefile                          - Makefile to build the docker provider
 │   │   ├── configure                         - configure file to enable ulinux configuration
