@@ -174,7 +174,12 @@ while getopts 'hk:r:w:p:n:u:' opt; do
 
  local subscriptionId="$(echo ${clusterResourceId} | cut -d'/' -f3)"
  local resourceGroup="$(echo ${clusterResourceId} | cut -d'/' -f5)"
- local providerName="$(echo ${clusterResourceId} | cut -d'/' -f7)"
+
+ # get resource parts and join back to get the provider name
+ local providerNameResourcePart1="$(echo ${clusterResourceId} | cut -d'/' -f7)"
+ local providerNameResourcePart2="$(echo ${clusterResourceId} | cut -d'/' -f8)"
+ local providerName="$(echo ${providerNameResourcePart1}/${providerNameResourcePart2} )"
+
  local clusterName="$(echo ${clusterResourceId} | cut -d'/' -f9)"
 
  # convert to lowercase for validation
@@ -195,22 +200,22 @@ while getopts 'hk:r:w:p:n:u:' opt; do
    exit 1
  fi
 
- if [[ $providerName != microsoft.kubernetes* ]]; then
-     echo "cluster resource type is determined as Azure Arc K8s Cluster resource"
-     isArcK8sCluster=true
- fi
-
  # detect the resource provider from the provider name in the cluster resource id
- if [[ $providerName != microsoft.kubernetes/* ]]; then
+ # detect the resource provider from the provider name in the cluster resource id
+ if [ $providerName = "microsoft.kubernetes/connectedclusters" ]; then
     echo "provider cluster resource is of Azure ARC K8s cluster type"
+    isArcK8sCluster=true
     resourceProvider=$arcK8sResourceProvider
- elif [[ $providerName != microsoft.redhatopenshift/* ]]; then
+ elif [ $providerName = "microsoft.redhatopenshift/openshiftclusters" ]; then
     echo "provider cluster resource is of AROv4 cluster type"
     resourceProvider=$aroV4ResourceProvider
- elif [[ $providerName != microsoft.containerservice/managedclusters ]]; then
+ elif [ $providerName = "microsoft.containerservice/managedclusters" ]; then
     echo "provider cluster resource is of AKS cluster type"
     isAksCluster=true
     resourceProvider=$aksResourceProvider
+ else
+   echo "-e unsupported azure managed cluster type"
+   exit 1
  fi
 
  if [ -z "$kubeconfigContext" ]; then

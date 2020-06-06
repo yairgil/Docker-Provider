@@ -5,13 +5,12 @@
 #  This scripts disables monitoring on to monitoring enabled managed cluster
 
 #      1. Deletes the existing Azure Monitor for containers helm release
-#      2. Deletes logAnalyticsWorkspaceResourceId tag on the provided Azure Arc Cluster
+#      2. Deletes logAnalyticsWorkspaceResourceId tag on the provided Managed cluster
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 #     Helm3 : https://helm.sh/docs/intro/install/
 #
-# bash <script> --resource-id <azureArcResourceId> --kube-context <kube-context>
-# bash <script> -r <azureArcResourceId> -k <kube-context>
+# bash <script> --resource-id/-r <clusterResourceId> --kube-context/-k <kube-context>
 # For example to disables azure monitor for containers on monitoring enabled Azure Arc K8s cluster
 # bash disable_monitoring.sh -r /subscriptions/57ac26cf-a9f0-4908-b300-9a4e9a0fb205/resourceGroups/AzureArcTest/providers/Microsoft.Kubernetes/connectedClusters/AzureArcTest1 -k MyK8sTestCluster
 
@@ -43,11 +42,7 @@ usage()
     local basename=`basename $0`
     echo
     echo "Disable Azure Monitor for containers:"
-    echo "-------------------
-    $basename -r <resource id of the cluster> -k <name of the kubeconfig context to use>
-            or
-    $basename --resource-id <resource id of the cluster> --kube-context <name of the kubeconfig context to use>
-    --------------------------"
+    echo "$basename --resource-id/-r <cluster resource id> --kube-context/-k <name of the kube context >"
 }
 
 delete_helm_release()
@@ -155,6 +150,7 @@ done
         clusterResourceId="$OPTARG"
         echo "clusterResourceId is $OPTARG"
         ;;
+
       ?)
         usage
         exit 1
@@ -163,14 +159,18 @@ done
   done
   shift "$(($OPTIND -1))"
 
- subscriptionId="$(echo ${1} | cut -d'/' -f3)"
- resourceGroup="$(echo ${1} | cut -d'/' -f5)"
- providerName="$(echo ${1} | cut -d'/' -f7)"
- clusterName="$(echo ${1} | cut -d'/' -f9)"
+ subscriptionId="$(echo ${clusterResourceId} | cut -d'/' -f3)"
+ resourceGroup="$(echo ${clusterResourceId} | cut -d'/' -f5)"
+
+ # get resource parts and join back to get the provider name
+ providerNameResourcePart1="$(echo ${clusterResourceId} | cut -d'/' -f7)"
+ providerNameResourcePart2="$(echo ${clusterResourceId} | cut -d'/' -f8)"
+ providerName="$(echo ${providerNameResourcePart1}/${providerNameResourcePart2} )"
+
+ clusterName="$(echo ${clusterResourceId} | cut -d'/' -f9)"
  # convert to lowercase for validation
  providerName=$(echo $providerName | tr "[:upper:]" "[:lower:]")
 
- kubeconfigContext="$(echo ${2})"
 
  echo "cluster SubscriptionId:" $subscriptionId
  echo "cluster ResourceGroup:" $resourceGroup
@@ -192,24 +192,22 @@ done
     exit 1
  fi
 
- if [[ $providerName != microsoft.kubernetes* ]]; then
-     echo "cluster resource type is determined as Azure Arc K8s Cluster resource"
-     isArcK8sCluster=true
- fi
-
  # detect the resource provider from the provider name in the cluster resource id
- if [[ $providerName != microsoft.kubernetes/* ]]; then
+ if [ $providerName = "microsoft.kubernetes/connectedclusters" ]; then
     echo "provider cluster resource is of Azure ARC K8s cluster type"
+    isArcK8sCluster=true
     resourceProvider=$arcK8sResourceProvider
- elif [[ $providerName != microsoft.redhatopenshift/* ]]; then
+ elif [ $providerName = "microsoft.redhatopenshift/openshiftclusters" ]; then
     echo "provider cluster resource is of AROv4 cluster type"
     resourceProvider=$aroV4ResourceProvider
- elif [[ $providerName != microsoft.containerservice/managedclusters ]]; then
+ elif [ $providerName = "microsoft.containerservice/managedclusters" ]; then
     echo "provider cluster resource is of AKS cluster type"
     isAksCluster=true
     resourceProvider=$aksResourceProvider
+ else
+   echo "-e unsupported azure managed cluster type"
+   exit 1
  fi
-
 
 }
 
@@ -222,7 +220,7 @@ delete_helm_release $kubeconfigContext
 
 # remove monitoring tags on the cluster resource to make fully off boarded
 if [ "$isAksCluster" = true ] ; then
-   echo "disable monitoring addon since cluster resource of AKS type"
+   echo "disable monitoring addon since cluster is AKS"
    disable_aks_monitoring_addon $clusterResourceId
 else
   remove_monitoring_tags $clusterResourceId
