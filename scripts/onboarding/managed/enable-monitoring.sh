@@ -6,7 +6,7 @@
 #
 #      1. Creates the Default Azure log analytics workspace if doesn't exist one in specified subscription
 #      2. Adds the ContainerInsights solution to the Azure log analytics workspace
-#      3. Adds the workspaceResourceId tag on the provided Managed cluster resource id
+#      3. Adds the workspaceResourceId tag or enable addon (if the cluster is AKS) on the provided Managed cluster resource id
 #      4. Installs Azure Monitor for containers HELM chart to the K8s cluster in provided via --kube-context
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
@@ -61,6 +61,9 @@ workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
 
 # arc k8s cluster resource
 isArcK8sCluster=false
+
+# aks cluster resource
+isAksCluster=false
 
 # workspace and cluster is same azure subscription
 isClusterAndWorkspaceInSameSubscription=true
@@ -204,8 +207,9 @@ while getopts 'hk:r:w:p:n:u:' opt; do
  elif [[ $providerName != microsoft.redhatopenshift/* ]]; then
     echo "provider cluster resource is of AROv4 cluster type"
     resourceProvider=$aroV4ResourceProvider
- elif [[ $providerName != microsoft.containerservice/* ]]; then
+ elif [[ $providerName != microsoft.containerservice/managedclusters ]]; then
     echo "provider cluster resource is of AKS cluster type"
+    isAksCluster=true
     resourceProvider=$aksResourceProvider
  fi
 
@@ -468,6 +472,17 @@ attach_monitoring_tags()
   echo "successfully attached logAnalyticsWorkspaceResourceId tag on the cluster resource"
 }
 
+# enables aks monitoring addon for private preview and dont use this for aks prod
+enable_aks_monitoring_addon()
+{
+ echo "getting cluster object"
+ clusterGetResponse=$(az rest --method get --uri $clusterResourceId?api-version=2020-03-01)
+ export jqquery=".properties.addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID=\"$workspaceResourceId\""
+ echo $clusterGetResponse | jq $jqquery > putrequestbody.json
+ status=$(az rest --method put --uri $clusterResourceId?api-version=2020-03-01 --body @putrequestbody.json --headers Content-Type=application/json)
+ echo "status after enabling of aks monitoringa addon:$status"
+}
+
 # parse and validate args
 parse_args $@
 
@@ -525,7 +540,11 @@ if [ "$isClusterAndWorkspaceInSameSubscription" = true ] ; then
 fi
 
 # attach monitoring tags on to cluster resource
-attach_monitoring_tags
+if [ "$isAksCluster" = true ] ; then
+  enable_aks_monitoring_addon
+else
+  attach_monitoring_tags
+fi
 
 # install helm chart
 install_helm_chart

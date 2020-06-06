@@ -34,6 +34,10 @@ aksResourceProvider="Microsoft.ContainerService/managedClusters"
 # arc k8s cluster resource
 isArcK8sCluster=false
 
+# aks cluster resource
+isAksCluster=false
+
+
 usage()
 {
     local basename=`basename $0`
@@ -88,6 +92,27 @@ remove_monitoring_tags()
 
   echo "remove the value of loganalyticsworkspaceResourceId tag on to cluster resource"
   status=$(az resource update --set tags.logAnalyticsWorkspaceResourceId='' -g $resourceGroup -n $clusterName --resource-type $resourceProvider)
+
+  echo "deleting of monitoring tags completed.."
+}
+
+disable_aks_monitoring_addon()
+{
+  echo "disabling aks monitoring addon ..."
+
+  subscriptionId="$(echo ${1} | cut -d'/' -f3)"
+  resourceGroup="$(echo ${1} | cut -d'/' -f5)"
+  providerName="$(echo ${1} | cut -d'/' -f7)"
+  clusterName="$(echo ${1} | cut -d'/' -f9)"
+
+  echo "login to the azure interactively"
+  az login --use-device-code
+
+  echo "set the cluster subscription id: ${subscriptionId}"
+  az account set -s ${subscriptionId}
+
+  status=$(az aks disable-addons -a monitoring -g $resourceGroup -n $clusterName)
+  echo "status after disabling addon : $status"
 
   echo "deleting of monitoring tags completed.."
 }
@@ -179,8 +204,9 @@ done
  elif [[ $providerName != microsoft.redhatopenshift/* ]]; then
     echo "provider cluster resource is of AROv4 cluster type"
     resourceProvider=$aroV4ResourceProvider
- elif [[ $providerName != microsoft.containerservice/* ]]; then
+ elif [[ $providerName != microsoft.containerservice/managedclusters ]]; then
     echo "provider cluster resource is of AKS cluster type"
+    isAksCluster=true
     resourceProvider=$aksResourceProvider
  fi
 
@@ -195,6 +221,11 @@ parse_args $@
 delete_helm_release $kubeconfigContext
 
 # remove monitoring tags on the cluster resource to make fully off boarded
-remove_monitoring_tags $clusterResourceId
+if [ "$isAksCluster" = true ] ; then
+   echo "disable monitoring addon since cluster resource of AKS type"
+   disable_aks_monitoring_addon $clusterResourceId
+else
+  remove_monitoring_tags $clusterResourceId
+fi
 
 echo "successfully disabled monitoring addon for cluster":$clusterResourceId
