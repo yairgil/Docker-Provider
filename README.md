@@ -69,7 +69,7 @@ The general directory structure is:
 ├── scripts/                                  - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
 │   ├── troubleshoot/                         - scripts for troubleshooting of Azure Monitor for containers onboarding issues
 │   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
-│   ├── privatepreview/                       - scripts related to private preview features goes here ..
+│   ├── preview/                              - scripts related to preview features ...
 │   ├── buildscripts/                         - scripts related to build such as installing pre-requisites etc.
 ├── source/                                   - source code
 │   ├── code/                                 - source code
