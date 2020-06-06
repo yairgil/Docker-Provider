@@ -24,6 +24,16 @@ releasename="azmon-containers-release-1"
 # resource type for azure arc clusters
 resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
+# resource provider for azure arc connected cluster
+arcK8sResourceProvider="Microsoft.Kubernetes/connectedClusters"
+# resource provider for azure redhat openshift v4 cluster
+aroV4ResourceProvider="Microsoft.RedHatOpenShift/OpenShiftClusters"
+# resource provider for aks cluster
+aksResourceProvider="Microsoft.ContainerService/managedClusters"
+
+# arc k8s cluster resource
+isArcK8sCluster=false
+
 usage()
 {
     local basename=`basename $0`
@@ -155,14 +165,59 @@ done
     esac
   done
   shift "$(($OPTIND -1))"
+
+ subscriptionId="$(echo ${1} | cut -d'/' -f3)"
+ resourceGroup="$(echo ${1} | cut -d'/' -f5)"
+ providerName="$(echo ${1} | cut -d'/' -f7)"
+ clusterName="$(echo ${1} | cut -d'/' -f9)"
+ # convert to lowercase for validation
+ providerName=$(echo $providerName | tr "[:upper:]" "[:lower:]")
+
+ kubeconfigContext="$(echo ${2})"
+
+ echo "cluster SubscriptionId:" $subscriptionId
+ echo "cluster ResourceGroup:" $resourceGroup
+ echo "cluster ProviderName:" $providerName
+ echo "cluster Name:" $clusterName
+
+ if [ -z "$subscriptionId" -o -z "$resourceGroup" -o -z "$providerName" -o  -z "$clusterName" ]; then
+    echo "-e invalid cluster resource id. Please try with valid fully qualified resource id of the cluster"
+    exit 1
+ fi
+
+ if [[ $providerName != microsoft.* ]]; then
+   echo "-e invalid azure cluster resource id format."
+   exit 1
+ fi
+
+ if [ -z "$kubeconfigContext" ]; then
+    echo "-e kubeconfig context is empty. Please try with valid kube-context of the cluster"
+    exit 1
+ fi
+
+ if [[ $providerName != microsoft.kubernetes* ]]; then
+     echo "cluster resource type is determined as Azure Arc K8s Cluster resource"
+     isArcK8sCluster=true
+ fi
+
+ # detect the resource provider from the provider name in the cluster resource id
+ if [[ $providerName != microsoft.kubernetes/* ]]; then
+    echo "provider cluster resource is of Azure ARC K8s cluster type"
+    resourceProvider=$arcK8sResourceProvider
+ elif [[ $providerName != microsoft.redhatopenshift/* ]]; then
+    echo "provider cluster resource is of AROv4 cluster type"
+    resourceProvider=$aroV4ResourceProvider
+ elif [[ $providerName != microsoft.containerservice/* ]]; then
+    echo "provider cluster resource is of AKS cluster type"
+    resourceProvider=$aksResourceProvider
+ fi
+
+
 }
 
 
 # parse args
 parse_args $@
-
-# validate parameters
-validate_params $clusterResourceId $kubeconfigContext
 
 # delete helm release
 delete_helm_release $kubeconfigContext

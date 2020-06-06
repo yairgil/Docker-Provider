@@ -53,7 +53,7 @@ aroV4ResourceProvider="Microsoft.RedHatOpenShift/OpenShiftClusters"
 aksResourceProvider="Microsoft.ContainerService/managedClusters"
 
 # default of resourceProvider is arc k8s and this will get updated based on the provider cluster resource
-resourceProvider=$arcK8sResourceProvider
+resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
 
 # resource type for azure log analytics workspace
