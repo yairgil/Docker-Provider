@@ -20,9 +20,9 @@ set -u
 set -o pipefail
 
 # default release name used during onboarding
-export releasename="azmon-containers-release-1"
+releasename="azmon-containers-release-1"
 # resource type for azure arc clusters
-export resourceProvider="Microsoft.Kubernetes/connectedClusters"
+resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
 usage()
 {

@@ -35,45 +35,46 @@ set -e
 set -o pipefail
 
 # default to public cloud since only supported cloud is azure public clod
-export defaultAzureCloud="AzureCloud"
+defaultAzureCloud="AzureCloud"
 
 # helm repo details
-export helmRepoName="incubator"
-export helmRepoUrl="https://kubernetes-charts-incubator.storage.googleapis.com/"
-export helmChartName="azuremonitor-containers"
+helmRepoName="incubator"
+helmRepoUrl="https://kubernetes-charts-incubator.storage.googleapis.com/"
+helmChartName="azuremonitor-containers"
 
 # default release name used during onboarding
-export releasename="azmon-containers-release-1"
+releasename="azmon-containers-release-1"
 
 # resource type for azure arc clusters
-export resourceProvider="Microsoft.Kubernetes/connectedClusters"
+resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
 # resource type for azure log analytics workspace
-export workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
+workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
 
 # arc k8s cluster resource
-export isArcK8sCluster=false
+isArcK8sCluster=false
 
 # workspace and cluster is same azure subscription
-export isClusterAndWorkspaceInSameSubscription=true
+isClusterAndWorkspaceInSameSubscription=true
 
 # this needs to be updated once code moved to ci_dev or ci_prod branch completly
-export solutionTemplateUri="https://raw.githubusercontent.com/microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json"
+solutionTemplateUri="https://raw.githubusercontent.com/microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json"
 
 # default global params
-export clusterResourceId=""
-export kubeconfigContext=""
-export workspaceResourceId=""
-export proxyEndpoint=""
+clusterResourceId=""
+kubeconfigContext=""
+workspaceResourceId=""
+proxyEndpoint=""
+containerLogVolume=""
 
 # default workspace region and code
-export workspaceRegion="eastus"
-export workspaceRegionCode="EUS"
-export workspaceResourceGroup="DefaultResourceGroup-"$workspaceRegionCode
+workspaceRegion="eastus"
+workspaceRegionCode="EUS"
+workspaceResourceGroup="DefaultResourceGroup-"$workspaceRegionCode
 
-export workspaceName=""
-export workspaceGuid=""
-export workspaceKey=""
+# default workspace guid and key
+workspaceGuid=""
+workspaceKey=""
 
 usage()
 {
@@ -102,6 +103,7 @@ for arg in "$@"; do
     "--proxy") set -- "$@" "-p" ;;
     "--helm-repo-name") set -- "$@" "-n" ;;
     "--helm-repo-url") set -- "$@" "-u" ;;
+    "--container-log-volume") set -- "$@" "-v" ;;
     "--"*)   usage ;;
     *)        set -- "$@" "$arg"
   esac
@@ -143,6 +145,11 @@ while getopts 'hk:r:w:p:n:u:' opt; do
       u)
         helmRepoUrl="$OPTARG"
         echo "helm repo url is $OPTARG"
+        ;;
+
+      v)
+        containerLogVolume="$OPTARG"
+        echo "container log volume is $OPTARG"
         ;;
 
       ?)
