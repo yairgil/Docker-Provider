@@ -6,29 +6,41 @@
 #
 #      1. Creates the Default Azure log analytics workspace if doesn't exist one in specified subscription
 #      2. Adds the ContainerInsights solution to the Azure log analytics workspace
-#      3. Adds the workspaceResourceId tag on the provided Azure Arc Cluster
-#      4. Installs Azure Monitor for containers HELM chart to the K8s cluster in Kubeconfig
+#      3. Adds the workspaceResourceId tag on the provided Azure Arc K8s Cluster
+#      4. Installs Azure Monitor for containers HELM chart to the K8s cluster in provided via --kube-context
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 #     Helm3 : https://helm.sh/docs/intro/install/
 #
-# bash <script> <azureArcResourceId> <kube-context> <azureLogAnayticsWorkspaceResourceId>(optional)
+#
+# Note > 1. Format of the proxy endpoint should be http(s)://<user>:<pwd>@proxyhost:proxyport
+#        2. Format of the cluster resource should in  /subscriptions/<subId>/resourceGroups/<resourceGroupdName>/providers/Microsoft.Kubernetes/connectedClusters/<clusterName>
+#        3. Format of the workspace resource should in  /subscriptions/<subId>/resourcegroups/<resourceGroupdName>/providers/microsoft.operationalinsights/workspaces/<workspaceName>
 
-# For example to onboard to azure monitor for containers using Default Azure Log Analytics Workspace:
-# bash onboarding_azuremonitor_for_containers.sh /subscriptions/57ac26cf-a9f0-4908-b300-9a4e9a0fb205/resourceGroups/AzureArcTest/providers/Microsoft.Kubernetes/connectedClusters/AzureArcTest1 MyK8sTestCluster
 
-# For example to onboard to azure monitor for containers using existing Azure Log Analytics Workspace:
-# bash onboarding_azuremonitor_for_containers.sh /subscriptions/57ac26cf-a9f0-4908-b300-9a4e9a0fb205/resourceGroups/AzureArcTest/providers/Microsoft.Kubernetes/connectedClusters/AzureArcTest1 MyK8sTestCluster  /subscriptions/57ac26cf-a9f0-4908-b300-9a4e9a0fb205/resourcegroups/test-la-workspace-rg/providers/microsoft.operationalinsights/workspaces/test-la-workspace
+# 1. Using Default Azure Log Analytics and no-proxy
+# bash <script> --resource-id <azureArcResourceId> --kube-context <kube-context>
+
+# 2. Using Default Azure Log Analytics and with proxy endpoint configuration
+# bash <script> --resource-id <azureArcResourceId> --kube-context <kube-context> --proxy <proxy-endpoint>
+
+
+# 3. Using Existing Azure Log Analytics and no-proxy
+# bash <script> --resource-id <azureArcResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id>
+
+# 4. Using Existing Azure Log Analytics and proxy
+# bash <script> --resource-id <azureArcResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id> --proxy <proxy-endpoint>
 
 set -e
-set -u
 set -o pipefail
 
 # default to public cloud since only supported cloud is azure public clod
 export defaultAzureCloud="AzureCloud"
 
-# this needs to be updated once code moved to ci_dev or ci_prod branch completly
-export solutionTemplateUri="https://raw.githubusercontent.com/microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json"
+# helm repo details
+export helmRepoName="incubator"
+export helmRepoUrl="https://kubernetes-charts-incubator.storage.googleapis.com/"
+export helmChartName="azuremonitor-containers"
 
 # default release name used during onboarding
 export releasename="azmon-containers-release-1"
@@ -36,48 +48,119 @@ export releasename="azmon-containers-release-1"
 # resource type for azure arc clusters
 export resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
-# cluster resource details
-export clusterResourceId=""
-
 # resource type for azure log analytics workspace
 export workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
 
-# workspace resource details
-export workspaceResourceId=""
+# arc k8s cluster resource
+export isArcK8sCluster=false
+
+# workspace and cluster is same azure subscription
+export isClusterAndWorkspaceInSameSubscription=true
+
+# this needs to be updated once code moved to ci_dev or ci_prod branch completly
+export solutionTemplateUri="https://raw.githubusercontent.com/microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json"
+
+# default global params
+export clusterResourceId=""
 export kubeconfigContext=""
+export workspaceResourceId=""
 export proxyEndpoint=""
 
 # default workspace region and code
 export workspaceRegion="eastus"
 export workspaceRegionCode="EUS"
 export workspaceResourceGroup="DefaultResourceGroup-"$workspaceRegionCode
+
 export workspaceName=""
 export workspaceGuid=""
-export workspaeKey=""
+export workspaceKey=""
 
 usage()
 {
     local basename=`basename $0`
     echo
     echo "Enable Azure Monitor for containers:"
-    echo "-------------------
-    $basename -r <resource id of the cluster> -k <name of the kube context to use> [-w <resource id of existing workspace>] [-p <proxy endpoint>]
-            or
-    $basename --resource-id <resource id of the cluster> --kube-context <name of the kube context to use> [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>]
-    --------------------------"
+    echo "$basename --resource-id <cluster resource id> --kube-context <name of the kube context > [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>]"
 }
 
-validate_params()
+parse_args()
 {
 
- clusterSubscriptionId="$(echo ${1} | cut -d'/' -f3)"
- clusterResourceGroup="$(echo ${1} | cut -d'/' -f5)"
- providerName="$(echo ${1} | cut -d'/' -f7)"
- clusterName="$(echo ${1} | cut -d'/' -f9)"
+ if [ $# -le 2 ]
+  then
+    usage
+    exit 1
+ fi
+
+# Transform long options to short ones
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--resource-id")  set -- "$@" "-r" ;;
+    "--kube-context") set -- "$@" "-k" ;;
+    "--workspace-id") set -- "$@" "-w" ;;
+    "--proxy") set -- "$@" "-p" ;;
+    "--helm-repo-name") set -- "$@" "-n" ;;
+    "--helm-repo-url") set -- "$@" "-u" ;;
+    "--"*)   usage ;;
+    *)        set -- "$@" "$arg"
+  esac
+done
+
+local OPTIND opt
+
+while getopts 'hk:r:w:p:n:u:' opt; do
+    case "$opt" in
+      h)
+      usage
+        ;;
+
+      k)
+        kubeconfigContext="$OPTARG"
+        echo "name of kube-context is $OPTARG"
+        ;;
+
+      r)
+        clusterResourceId="$OPTARG"
+        echo "clusterResourceId is $OPTARG"
+        ;;
+
+      w)
+        workspaceResourceId="$OPTARG"
+        echo "workspaceResourceId is $OPTARG"
+        ;;
+
+      p)
+        proxyEndpoint="$OPTARG"
+        echo "proxyEndpoint is $OPTARG"
+        ;;
+
+      n)
+        helmRepoName="$OPTARG"
+        echo "helm repo name is $OPTARG"
+        ;;
+
+      u)
+        helmRepoUrl="$OPTARG"
+        echo "helm repo url is $OPTARG"
+        ;;
+
+      ?)
+        usage
+        exit 1
+        ;;
+    esac
+  done
+  shift "$(($OPTIND -1))"
+
+
+ local subscriptionId="$(echo ${clusterResourceId} | cut -d'/' -f3)"
+ local resourceGroup="$(echo ${clusterResourceId} | cut -d'/' -f5)"
+ local providerName="$(echo ${clusterResourceId} | cut -d'/' -f7)"
+ local clusterName="$(echo ${clusterResourceId} | cut -d'/' -f9)"
+
  # convert to lowercase for validation
  providerName=$(echo $providerName | tr "[:upper:]" "[:lower:]")
-
- kubeconfigContext="$(echo ${2})"
 
  echo "cluster SubscriptionId:" $subscriptionId
  echo "cluster ResourceGroup:" $resourceGroup
@@ -94,32 +177,35 @@ validate_params()
    exit 1
  fi
 
+ if [[ $providerName != microsoft.kubernetes* ]]; then
+     echo "cluster resource type is determined as Azure Arc K8s Cluster resource"
+     isArcK8sCluster=true
+ fi
+
  if [ -z "$kubeconfigContext" ]; then
     echo "-e kubeconfig context is empty. Please try with valid kube-context of the cluster"
     exit 1
  fi
 
- workspaceId="$(echo ${3})"
- if [ ! -z "$workspaceId" ]; then
-    workspaceSubscriptionId="$(echo $workspaceId | cut -d'/' -f3)"
-    workspaceResourceGroup="$(echo $workspaceId | cut -d'/' -f5)"
-    workspaceProviderName="$(echo $workspaceId | cut -d'/' -f7)"
-    workspaceName="$(echo $workspaceId | cut -d'/' -f9)"
+if [ ! -z "$workspaceResourceId" ]; then
+    local workspaceSubscriptionId="$(echo $workspaceResourceId | cut -d'/' -f3)"
+    local workspaceResourceGroup="$(echo $workspaceResourceId | cut -d'/' -f5)"
+    local workspaceProviderName="$(echo $workspaceResourceId | cut -d'/' -f7)"
+    local workspaceName="$(echo $workspaceResourceId | cut -d'/' -f9)"
     # convert to lowercase for validation
     workspaceProviderName=$(echo $workspaceProviderName | tr "[:upper:]" "[:lower:]")
     echo "workspace SubscriptionId:" $workspaceSubscriptionId
     echo "workspace ResourceGroup:" $workspaceResourceGroup
     echo "workspace ProviderName:" $workspaceName
-    echo "workspace Name:" $clusterName
+    echo "workspace Name:" $workspaceName
 
    if [[ $workspaceProviderName != microsoft.operationalinsights* ]]; then
-     echo "-e invalid azure cluster resource id format."
+     echo "-e invalid azure log analytics resource id format."
      exit 1
    fi
- fi
+fi
 
- proxyEndpoint="$(echo ${4})"
- if [ ! -z "$proxyEndpoint" ]; then
+if [ ! -z "$proxyEndpoint" ]; then
     # Validate Proxy Endpoint URL
     # extract the protocol://
     proto="$(echo $proxyEndpoint | grep :// | sed -e's,^\(.*://\).*,\1,g')"
@@ -144,94 +230,44 @@ validate_params()
     if [ -z "$user" -o -z "$pwd" -o -z "$host" -o -z "$port" ]; then
       echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
     else
-      echo "successfully validated provided proxy endpoint is valid and expected format"
+      echo "successfully validated provided proxy endpoint is valid and in expected format"
     fi
- fi
-
-}
-
-parse_args()
-{
-
- if [ $# -le 2 ]
-  then
-    usage
-    exit 1
- fi
-
-# Transform long options to short ones
-for arg in "$@"; do
-  shift
-  case "$arg" in
-    "--resource-id")  set -- "$@" "-r" ;;
-    "--kube-context") set -- "$@" "-k" ;;
-    "--workspace-id") set -- "$@" "-w" ;;
-    "--proxy") set -- "$@" "-p" ;;
-    "--"*)   usage ;;
-    *)        set -- "$@" "$arg"
-  esac
-done
-
-local OPTIND opt
-
-while getopts 'hk:r:w:p:' opt; do
-    case "$opt" in
-      h)
-      usage
-        ;;
-
-      k)
-        kubeconfigContext="$OPTARG"
-        echo "name of kube-context is $OPTARG"
-        ;;
-
-      r)
-        clusterResourceId="$OPTARG"
-        echo "clusterResourceId is $OPTARG"
-
-        ;;
-
-      w)
-        workspaceResourceId="$OPTARG"
-        echo "workspaceResourceId is $OPTARG"
-        ;;
-
-      p)
-        proxyEndpoint="$OPTARG"
-        echo "proxyEndpoint is $OPTARG"
-        ;;
-      ?)
-        usage
-        exit 1
-        ;;
-    esac
-  done
-  shift "$(($OPTIND -1))"
+fi
 
 }
 
 configure_to_public_cloud()
 {
   echo "Set AzureCloud as active cloud for az cli"
-  az cloud set -n $AzureCloud
+  az cloud set -n $defaultAzureCloud
 }
 
 validate_cluster_identity()
 {
-  identitytype=$(az resource show -g ${resourceGroup} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
-  identitytype=$(echo "$identitytype" | tr "[:upper:]" "[:lower:]")
+  echo "validating cluster identity"
+
+  local rgName="$(echo ${1})"
+  local clusterName="$(echo ${2})"
+
+  local identitytype=$(az resource show -g ${rgName} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
+  identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"')
   echo "cluster identity type:" $identitytype
+
+  if [[ "$identitytype" != "systemassigned" ]]; then
+     echo "-e only supported cluster identity is systemassigned"
+     exit 1
+  fi
+
+  echo "successfully validated the identity of the cluster"
 }
 
 create_default_log_analytics_workspace()
 {
-  echo "Using or creating default Log Analytics Workspace since workspaceResourceId parameter not set..."
 
-  subscriptionId="$(echo ${1})"
-
-  clusterRegion=$(az resource show --ids ${subscriptionId} --query location)
+  # extract subscription from cluster resource id
+  local subscriptionId="$(echo $clusterResourceId | cut -d'/' -f3)"
+  local clusterRegion=$(az resource show --ids ${clusterResourceId} --query location)
   echo "cluster region:" $clusterRegion
-
 
   # mapping fors for default Azure Log Analytics workspace
   declare -A AzureCloudLocationToOmsRegionCodeMap=(
@@ -334,10 +370,10 @@ create_default_log_analytics_workspace()
 
 add_container_insights_solution()
 {
-  resourceId="$(echo ${1})"
+  local resourceId="$(echo ${1})"
 
   # extract resource group from workspace resource id
-  resourceGroup="$(echo ${resourceId} | cut -d'/' -f5)"
+  local resourceGroup="$(echo ${resourceId} | cut -d'/' -f5)"
 
   echo "adding containerinsights solution to workspace"
   solution=$(az deployment group create -g $resourceGroup --template-uri $solutionTemplateUri --parameters workspaceResourceId=$resourceId --parameters workspaceRegion=$workspaceRegion)
@@ -346,11 +382,10 @@ add_container_insights_solution()
 get_workspace_guid_and_key()
 {
   # extract resource parts from workspace resource id
-  resourceId="$(echo ${1})"
-  resourceId=$(echo $resourceId | tr -d '"')
-  subId="$(echo ${resourceId} | cut -d'/' -f3)"
-  rgName="$(echo ${resourceId} | cut -d'/' -f5)"
-  wsName="$(echo ${resourceId} | cut -d'/' -f9)"
+  local resourceId="$(echo ${1} | tr -d '"' )"
+  local subId="$(echo ${resourceId} | cut -d'/' -f3)"
+  local rgName="$(echo ${resourceId} | cut -d'/' -f5)"
+  local wsName="$(echo ${resourceId} | cut -d'/' -f9)"
 
   # get the workspace guid
   workspaceGuid=$(az resource show -g $rgName -n $wsName --resource-type $workspaceResourceProvider --query properties.customerId)
@@ -365,15 +400,21 @@ get_workspace_guid_and_key()
 install_helm_chart()
 {
 
- echo "installing Azure Monitor for containers HELM chart ..."
+ echo "installing Azure Monitor for containers HELM chart on to the cluster with kubecontext:${kubeconfigContext} ..."
 
- echo "adding helm incubator repo"
- helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
+ echo "adding helm repo:" $helmRepoName
+ helm repo add $helmRepoName $helmRepoUrl
 
  echo "updating helm repo to get latest charts"
  helm repo update
 
- helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId incubator/azuremonitor-containers --kube-context ${kubeconfigContext}
+ if [ ! -z "$proxyEndpoint" ]; then
+   echo "using proxy endpoint since proxy configuration passed in"
+   helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+ else
+   helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+ fi
+
  echo "chart installation completed."
 
 }
@@ -386,45 +427,59 @@ login_to_azure()
 
 set_azure_subscription()
 {
- subscriptionId="$(echo ${1})"
- echo "set the subscription id: ${subscriptionId}"
+ local subscriptionId="$(echo ${1})"
+ echo "setting the subscription id: ${subscriptionId} as current subscription for the azure cli"
  az account set -s ${subscriptionId}
-
+ echo "successfully configured subscription id: ${subscriptionId} as current subscription for the azure cli"
 }
 
-# parse args
-parse_args $@
+attach_monitoring_tags()
+{
+  echo "attach loganalyticsworkspaceResourceId tag on to cluster resource"
+  status=$(az  resource update --set tags.logAnalyticsWorkspaceResourceId=$workspaceResourceId -g $clusterResourceGroup -n $clusterName --resource-type $resourceProvider)
+  echo "$status"
+  echo "successfully attached logAnalyticsWorkspaceResourceId tag on the cluster resource"
+}
 
-# validate parameters
-validate_params $clusterResourceId $kubeconfigContext $workspaceResourceId $proxyEndpoint
+# parse and validate args
+parse_args $@
 
 # configure azure cli for public cloud
 configure_to_public_cloud
 
 # parse cluster resource id
-clusterSubscriptionId="$(echo $clusterResourceId | cut -d'/' -f3)"
+clusterSubscriptionId="$(echo $clusterResourceId | cut -d'/' -f3 | tr "[:upper:]" "[:lower:]")"
 clusterResourceGroup="$(echo $clusterResourceId | cut -d'/' -f5)"
 providerName="$(echo $clusterResourceId | cut -d'/' -f7)"
 clusterName="$(echo $clusterResourceId | cut -d'/' -f9)"
 
-# login to azure
+# login to azure interactively
 login_to_azure
 
 # set the cluster subscription id as active sub for azure cli
 set_azure_subscription $clusterSubscriptionId
 
+# validate cluster identity if its ARC k8s cluster
+if [ "$isArcK8sCluster" = true ] ; then
+   validate_cluster_identity $clusterResourceGroup $clusterName
+fi
+
 if [ -z $workspaceResourceId ]; then
-  create_default_log_analytics_workspace $clusterSubscriptionId
+  echo "Using or creating default Log Analytics Workspace since workspaceResourceId parameter not set..."
+  create_default_log_analytics_workspace
 else
   echo "using provided azure log analytics workspace:${workspaceResourceId}"
   workspaceResourceId=$(echo $workspaceResourceId | tr -d '"')
-  workspaceSubscriptionId="$(echo ${workspaceResourceId} | cut -d'/' -f3)"
+  workspaceSubscriptionId="$(echo ${workspaceResourceId} | cut -d'/' -f3 | tr "[:upper:]" "[:lower:]" )"
   workspaceResourceGroup="$(echo ${workspaceResourceId} | cut -d'/' -f5)"
   workspaceName="$(echo ${workspaceResourceId} | cut -d'/' -f9)"
 
-  # set the azure subscription to azure cli
-  echo "set the subscription id as active subscription for azure cli: ${workspaceSubscriptionId}"
-  set_azure_subscription $workspaceSubscriptionId
+  # set the azure subscription to azure cli if the workspace in different sub than cluster
+  if [[ "$clusterSubscriptionId" != "$workspaceSubscriptionId" ]]; then
+    echo "switch subscription id of workspace as active subscription for azure cli since workspace in different subscription than cluster: ${workspaceSubscriptionId}"
+    isClusterAndWorkspaceInSameSubscription=false
+    set_azure_subscription $workspaceSubscriptionId
+  fi
 
   workspaceRegion=$(az resource show --ids ${workspaceResourceId} --query location)
   workspaceRegion=$(echo $workspaceRegion | tr -d '"')
@@ -437,13 +492,16 @@ add_container_insights_solution $workspaceResourceId
 # get workspace guid and key
 get_workspace_guid_and_key $workspaceResourceId
 
-echo "set the cluster subscription id: ${clusterSubscriptionId}"
-set_azure_subscription $clusterSubscriptionId
+if [ "$isClusterAndWorkspaceInSameSubscription" = true ] ; then
+  echo "switch to cluster subscription id as active subscription for cli: ${clusterSubscriptionId}"
+  set_azure_subscription $clusterSubscriptionId
+fi
 
-echo "attach loganalyticsworkspaceResourceId tag on to cluster resource"
-status=$(az  resource update --set tags.logAnalyticsWorkspaceResourceId=$workspaceResourceId -g $clusterResourceGroup -n $clusterName --resource-type $resourceProvider)
+# attach monitoring tags on to cluster resource
+attach_monitoring_tags
 
+# install helm chart
 install_helm_chart
 
 # portal link
-echo "Proceed to https://aka.ms/azmon-containers-azurearc to view health of your newly onboarded Azure Arc cluster"
+echo "Proceed to https://aka.ms/azmon-containers to view health of your newly onboarded cluster"

@@ -70,7 +70,9 @@ The general directory structure is:
 │   ├── troubleshoot/                         - scripts for troubleshooting of Azure Monitor for containers onboarding issues
 │   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
 │   ├── preview/                              - scripts related to preview features ...
-│   ├── buildscripts/                         - scripts related to build such as installing pre-requisites etc.
+│   ├── build/                                - scripts related to build such as installing pre-requisites etc.
+│   ├── deployment/                           - scripts related to deployment goes here.
+│   ├── release/                              - scripts related to release  goes here.
 ├── source/                                   - source code
 │   ├── code/                                 - source code
 │   │   ├── go/                               - out_oms plugin code in go lang
@@ -107,7 +109,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 1. Install go1.14.1, build dependencies and docker if you dont have installed already on your dev machine
 ```
-bash ~/Docker-Provider/scripts/buildscripts/install-build-pre-requisites.sh
+bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 ```
 
 ### Build Docker Provider Shell Bundle
