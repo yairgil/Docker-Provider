@@ -75,49 +75,21 @@ remove_monitoring_tags()
   echo "set the cluster subscription id: ${subscriptionId}"
   az account set -s ${subscriptionId}
 
-  identitytype=$(az resource show -g ${resourceGroup} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
-  identitytype=$(echo "$identitytype" | tr "[:upper:]" "[:lower:]")
-  echo "cluster identity type:" $identitytype
+  # validate cluster identity for ARC k8s cluster
+  if [ "$isArcK8sCluster" = true ] ; then
+   identitytype=$(az resource show -g ${resourceGroup} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
+   identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"')
+   echo "cluster identity type:" $identitytype
+    if [[ "$identitytype" != "systemassigned" ]]; then
+      echo "-e only supported cluster identity is systemassigned for Azure ARC K8s cluster type"
+      exit 1
+    fi
+  fi
 
   echo "remove the value of loganalyticsworkspaceResourceId tag on to cluster resource"
   status=$(az resource update --set tags.logAnalyticsWorkspaceResourceId='' -g $resourceGroup -n $clusterName --resource-type $resourceProvider)
 
   echo "deleting of monitoring tags completed.."
-}
-
-
-validate_params()
-{
-
- subscriptionId="$(echo ${1} | cut -d'/' -f3)"
- resourceGroup="$(echo ${1} | cut -d'/' -f5)"
- providerName="$(echo ${1} | cut -d'/' -f7)"
- clusterName="$(echo ${1} | cut -d'/' -f9)"
- # convert to lowercase for validation
- providerName=$(echo $providerName | tr "[:upper:]" "[:lower:]")
-
- kubeconfigContext="$(echo ${2})"
-
- echo "cluster SubscriptionId:" $subscriptionId
- echo "cluster ResourceGroup:" $resourceGroup
- echo "cluster ProviderName:" $providerName
- echo "cluster Name:" $clusterName
-
- if [ -z "$subscriptionId" -o -z "$resourceGroup" -o -z "$providerName" -o  -z "$clusterName" ]; then
-    echo "-e invalid cluster resource id. Please try with valid fully qualified resource id of the cluster"
-    exit 1
- fi
-
- if [[ $providerName != microsoft.* ]]; then
-   echo "-e invalid azure cluster resource id format."
-   exit 1
- fi
-
- if [ -z "$kubeconfigContext" ]; then
-    echo "-e kubeconfig context is empty. Please try with valid kube-context of the cluster"
-    exit 1
- fi
-
 }
 
 parse_args()

@@ -281,7 +281,7 @@ validate_cluster_identity()
   echo "cluster identity type:" $identitytype
 
   if [[ "$identitytype" != "systemassigned" ]]; then
-     echo "-e only supported cluster identity is systemassigned"
+     echo "-e only supported cluster identity is systemassigned for Azure ARC K8s cluster type"
      exit 1
   fi
 
