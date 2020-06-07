@@ -21,7 +21,7 @@ class FilterHealthModelBuilderTest < Test::Unit::TestCase
 
     i = 1
     loop do
-        mock_data_path = "C:/AzureMonitor/ContainerInsights/Docker-Provider/source/code/plugin/mock_data-#{i}.json"
+        mock_data_path = "C:/AzureMonitor/ContainerInsights/Docker-Provider/source/plugins/ruby/mock_data-#{i}.json"
         file = File.read(mock_data_path)
         data = JSON.parse(file)
 
