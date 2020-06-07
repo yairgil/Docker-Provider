@@ -74,13 +74,16 @@ The general directory structure is:
 │   ├── deployment/                           - scripts related to deployment goes here.
 │   ├── release/                              - scripts related to release  goes here.
 ├── source/                                   - source code
-│   ├── code/                                 - source code
+│   ├── plugins/                              - plugins source code
 │   │   ├── go/                               - out_oms plugin code in go lang
-│   │   ├── plugin/                           - plugins code inr ruby
+│   │   ├── ruby/                             - plugins code inr ruby
 │   │   |   ├── health/                       - code for health feature
 │   │   |   ├── lib/                          - lib for app insights ruby and this code of application_insights gem
-│   │   ├── toml-parser/                      - code for parsing of toml configuration files
+│   │   |   ...                               - plugins in, out and filters code in ruby
+│   ├── toml-parser/                          - code for parsing of toml configuration files
 ├── test/                                     - source code for tests
+│   ├── unit-tests/                           - unit tests code
+│   ├── scenario/                             - scenario tests code
 ├── !_README.md                               - this file
 ├── .gitignore                                - git config file with include/exclude file rules
 ├── LICENSE                                   - License file
