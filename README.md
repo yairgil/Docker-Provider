@@ -68,7 +68,7 @@ The general directory structure is:
 │   ├── container-azm-ms-agentconfig.yaml     - kubernetes yaml for agent configuration
 ├── scripts/                                  - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
 │   ├── troubleshoot/                         - scripts for troubleshooting of Azure Monitor for containers onboarding issues
-│   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding for non-AKS and preview AKS features
+│   ├── onboarding/                           - scripts related to Azure Monitor for containers onboarding.
 │   ├── preview/                              - scripts related to preview features ...
 │   ├── build/                                - scripts related to build such as installing pre-requisites etc.
 │   ├── deployment/                           - scripts related to deployment goes here.
