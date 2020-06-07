@@ -41,7 +41,7 @@ helmRepoUrl="https://kubernetes-charts-incubator.storage.googleapis.com/"
 helmChartName="azuremonitor-containers"
 
 # default release name used during onboarding
-releasename="azmon-containers-release-1"
+releaseName="azmon-containers-release-1"
 
 # resource provider for azure arc connected cluster
 arcK8sResourceProvider="Microsoft.Kubernetes/connectedClusters"

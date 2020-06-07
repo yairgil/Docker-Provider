@@ -5,7 +5,7 @@
 #  This scripts disables monitoring on to monitoring enabled managed cluster
 
 #      1. Deletes the existing Azure Monitor for containers helm release
-#      2. Deletes logAnalyticsWorkspaceResourceId tag on the provided Managed cluster
+#      2. Deletes logAnalyticsWorkspaceResourceId tag  or disable monitoring addon (if AKS) on the provided Managed cluster
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 #     Helm3 : https://helm.sh/docs/intro/install/
@@ -19,7 +19,7 @@ set -u
 set -o pipefail
 
 # default release name used during onboarding
-releasename="azmon-containers-release-1"
+releaseName="azmon-containers-release-1"
 # resource type for azure arc clusters
 resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
@@ -47,12 +47,12 @@ usage()
 
 delete_helm_release()
 {
-  echo "deleting chart release:" $releasename
+  echo "deleting chart release:" $releaseName
   kubeconfigContext="$(echo ${1})"
-  releases=$(helm list --filter $releasename --kube-context $kubeconfigContext)
+  releases=$(helm list --filter $releaseName --kube-context $kubeconfigContext)
   echo $releases
-  if [[ "$releases" == *"$releasename"* ]]; then
-    helm del $releasename --kube-context $kubeconfigContext
+  if [[ "$releases" == *"$releaseName"* ]]; then
+    helm del $releaseName --kube-context $kubeconfigContext
   else
     echo "there is no existing release of azure monitor for containers"
   fi
