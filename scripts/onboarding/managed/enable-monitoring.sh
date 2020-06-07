@@ -114,7 +114,6 @@ for arg in "$@"; do
     "--proxy") set -- "$@" "-p" ;;
     "--helm-repo-name") set -- "$@" "-n" ;;
     "--helm-repo-url") set -- "$@" "-u" ;;
-    "--container-log-volume") set -- "$@" "-v" ;;
     "--"*)   usage ;;
     *)        set -- "$@" "$arg"
   esac
