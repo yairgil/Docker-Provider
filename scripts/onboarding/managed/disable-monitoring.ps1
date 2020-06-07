@@ -185,9 +185,9 @@ if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedcluste
     exit
 }
 
-if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -eq $true)) {
+if ($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -eq $true) {
    $isArcK8sCluster = $true
-} else if (($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true)) {
+} elseif ($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true) {
    $isAksCluster =  $true
 }
 
@@ -257,7 +257,7 @@ $clusterRegion = $clusterResource.Location.ToLower()
 if ($isArcK8sCluster -eq $true) {
    # validate identity
    $clusterIdentity = $clusterResource.identity.type.ToString().ToLower()
-   if ($clusterIdentity.contains("systemassigned") -eq $false) {
+   if ($clusterIdentity.Contains("systemassigned") -eq $false) {
      Write-Host("Identity of Azure Arc K8s cluster should be systemassigned but it has identity: $clusterIdentity") -ForegroundColor Red
      exit
    }
@@ -279,14 +279,14 @@ Write-Host("Deleting helm chart release : $helmChartReleaseName if exists, Azure
 try {
 
     $releases = helm list --filter $helmChartReleaseName --kube-context $kubeconfigContext
-    if ($releases.Count < 2) {
+    if ($releases.Count -lt 2) {
         Write-Host("There is no existing release with name : $helmChartReleaseName") -ForegroundColor Yellow
         exit
     }
 
     for($index =0 ; $index -lt $releases.Count ; $index ++ ) {
         $release = $releases[$index]
-        if ($release.contains(helmChartReleaseName) -eq $true) {
+        if ($release.contains($helmChartReleaseName) -eq $true) {
            Write-Host("release found $helmChartReleaseName hence deleting it") -ForegroundColor Yellow
            helm del $helmChartReleaseName --kube-context $kubeconfigContext
         }
