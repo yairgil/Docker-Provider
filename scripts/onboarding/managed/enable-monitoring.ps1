@@ -191,6 +191,12 @@ if ([string]::IsNullOrEmpty($clusterResourceId)) {
     exit
 }
 
+if ([string]::IsNullOrEmpty($kubeContext)) {
+    Write-Host("Specified kube config context should not be NULL or empty") -ForegroundColor Red
+    exit
+}
+
+
 $clusterResourceId = $clusterResourceId.Trim()
 if ($clusterResourceId.EndsWith("/")) {
     Write-Host("Trimming redundant / in tail end of cluster resource id")
@@ -215,9 +221,9 @@ if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedcluste
     exit
 }
 
-if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -eq $true)) {
+if ($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -eq $true) {
    $isArcK8sCluster = $true
-} else if (($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true)) {
+} elseif ($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true) {
    $isAksCluster =  $true
 }
 
@@ -504,6 +510,7 @@ catch {
     Write-Host ("Failed to Install Azure Monitor for containers HELM chart : '" + $Error[0] + "' ") -ForegroundColor Red
 }
 
+Write-Host("Successfully enabled Azure Monitor for containers for cluster: $clusterResourceId") -ForegroundColor Green
 Write-Host("Proceed to https://aka.ms/azmon-containers to view your newly onboarded Azure Managed cluster") -ForegroundColor Green
 
 

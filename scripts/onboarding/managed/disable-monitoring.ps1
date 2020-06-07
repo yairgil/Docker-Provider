@@ -157,7 +157,12 @@ if (($null -eq $azAccountModule) -or ($null -eq $azResourcesModule) -or ($null -
 }
 
 if ([string]::IsNullOrEmpty($clusterResourceId)) {
-    Write-Host("Specified Azure Arc ClusterResourceId should not be NULL or empty") -ForegroundColor Red
+    Write-Host("Specified Azure ClusterResourceId should not be NULL or empty") -ForegroundColor Red
+    exit
+}
+
+if ([string]::IsNullOrEmpty($kubeContext)) {
+    Write-Host("Specified kube config context should not be NULL or empty") -ForegroundColor Red
     exit
 }
 
@@ -278,7 +283,7 @@ Write-Host "Helm version" : $helmVersion
 Write-Host("Deleting helm chart release : $helmChartReleaseName if exists, Azure Monitor for containers HELM chart ...")
 try {
 
-    $releases = helm list --filter $helmChartReleaseName --kube-context $kubeconfigContext
+    $releases = helm list --filter $helmChartReleaseName --kube-context $kubeContext
     if ($releases.Count -lt 2) {
         Write-Host("There is no existing release with name : $helmChartReleaseName") -ForegroundColor Yellow
         exit
@@ -288,7 +293,7 @@ try {
         $release = $releases[$index]
         if ($release.contains($helmChartReleaseName) -eq $true) {
            Write-Host("release found $helmChartReleaseName hence deleting it") -ForegroundColor Yellow
-           helm del $helmChartReleaseName --kube-context $kubeconfigContext
+           helm del $helmChartReleaseName --kube-context $kubeContext
         }
     }
 }
