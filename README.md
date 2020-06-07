@@ -116,8 +116,8 @@ bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 
 1. Set GOPATH Environment variable and get the go dependencies
 ```
-export GOPATH=~/Docker-Provider/source/code/go #Set this based on your repo path
-cd ~/Docker-Provider/source/code/go/src/plugins
+export GOPATH=~/Docker-Provider/source/plugins/go #Set this based on your repo path
+cd ~/Docker-Provider/source/plugins/go
 go get
 ```
 2. Build the code  with below commands

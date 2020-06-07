@@ -5,9 +5,9 @@
 /build/config.mak
 
 # Unit test files
-source/code/go/src/plugins/profiling
+source/plugins/go/profiling
 .vscode/launch.json
-source/code/go/src/plugins/vendor/
+source/plugins/go/vendor/
 # go shared object files
 *.so
 *.zip

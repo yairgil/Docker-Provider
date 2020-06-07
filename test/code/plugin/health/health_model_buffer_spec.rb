@@ -1,4 +1,4 @@
-require_relative '../../../../source/code/plugin/health/health_model_buffer'
+require_relative '../../../../source/plugins/ruby/health/health_model_buffer'
 require_relative '../test_helpers'
 
 include HealthModel

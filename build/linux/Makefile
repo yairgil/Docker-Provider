@@ -58,11 +58,8 @@ $(error "Is version missing?  Please re-run configure")
 endif
 
 
-SOURCE_DIR := $(BASE_DIR)/source/code
+SOURCE_DIR := $(BASE_DIR)/source
 TEST_DIR := $(BASE_DIR)/test/code
-
-PROVIDER_DIR := $(SOURCE_DIR)/providers
-PROVIDER_TEST_DIR := $(TEST_DIR)/providers
 
 INTERMEDIATE_DIR := $(BASE_DIR)/intermediate/$(BUILD_CONFIGURATION)
 INTERMEDIATE_TESTFILES := $(INTERMEDIATE_DIR)/testfiles
@@ -73,7 +70,7 @@ INSTALLER_TMPDIR := $(INTERMEDIATE_DIR)/installer_tmp
 
 
 # GO Source dir for custom fluent bit plugin
-GO_SOURCE_DIR := $(SOURCE_DIR)/go/src/plugins
+GO_SOURCE_DIR := $(SOURCE_DIR)/plugins/go
 
 ifeq ($(ENABLE_DEBUG),1)
 PROV_DEBUG_FLAGS := -g

@@ -1,8 +1,8 @@
 require 'test/unit'
 require 'json'
-# require_relative '../../../source/code/plugin/health'
+# require_relative '../../../source/plugins/ruby/health'
 
-Dir[File.join(__dir__, '../../../../source/code/plugin/health', '*.rb')].each { |file| require file }
+Dir[File.join(__dir__, '../../../../source/plugins/ruby/health', '*.rb')].each { |file| require file }
 
 class FilterHealthModelBuilderTest < Test::Unit::TestCase
     include HealthModel

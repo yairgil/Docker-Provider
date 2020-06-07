@@ -1,4 +1,4 @@
-require_relative '../../../../source/code/plugin/health/unit_monitor'
+require_relative '../../../../source/plugins/ruby/health/unit_monitor'
 require_relative '../test_helpers'
 
 class UnitMonitorTest < Minitest::Test
