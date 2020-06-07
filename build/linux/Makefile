@@ -59,7 +59,6 @@ endif
 
 
 SOURCE_DIR := $(BASE_DIR)/source
-TEST_DIR := $(BASE_DIR)/test/code
 
 INTERMEDIATE_DIR := $(BASE_DIR)/intermediate/$(BUILD_CONFIGURATION)
 INTERMEDIATE_TESTFILES := $(INTERMEDIATE_DIR)/testfiles
