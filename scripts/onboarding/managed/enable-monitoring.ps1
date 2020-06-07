@@ -1,23 +1,28 @@
 <#
     .DESCRIPTION
 
-     Onboards Azure Monitor for containers to Kubernetes cluster hosted outside and connected to Azure via Azure Arc cluster
-
-      1. Creates or Use the Default Azure log analytics workspace if there is no specified Azure Log analytics workspace
-      2. Adds the ContainerInsights solution to the Azure log analytics workspace
-      3. Attaches logAnalyticsWorkspaceResourceId tag on the provided Azure Arc Cluster
-      4. Installs Azure Monitor for containers HELM chart to the K8s cluster in Kubeconfig
+     Onboards Azure Monitor for containers to Azure Managed Kuberenetes such as Azure Arc K8s, ARO v4 and AKS etc.
+       1. Creates the Default Azure log analytics workspace if doesn't exist one in specified subscription
+       2. Adds the ContainerInsights solution to the Azure log analytics workspace
+       3. Adds the workspaceResourceId tag or enable addon (if the cluster is AKS) on the provided Managed cluster resource id
+       4. Installs Azure Monitor for containers HELM chart to the K8s cluster in provided via --kube-context
 
     .PARAMETER clusterResourceId
-        Id of the Azure Arc Cluster
+        Id of the Azure Managed Cluster such as Azure ARC K8s, ARO v4 etc.
     .PARAMETER kubeContext
         kube-context of the k8 cluster to install Azure Monitor for containers HELM chart
     .PARAMETER workspaceResourceId (optional)
         Provide the azure resource id of the existing  Azure Log Analytics Workspace if you want to use existing one
-
+    .PARAMETER proxyEndpoint (optional)
+        Provide Proxy endpoint if you have K8s cluster behind the proxy and would like to route Azure Monitor for containers outbound traffic via proxy.
+        Format of the proxy endpoint should be http(s://<user>:<password>@<proxyhost>:<port>
+    .PARAMETER helmRepoName (optional)
+        helm repo name. should be used only for the private preview features
+    .PARAMETER helmRepoUrl (optional)
+        helm repo url. should be used only for the private preview features
 
      Pre-requisites:
-      -  Azure Arc cluster Resource Id
+      -  Azure Managed cluster Resource Id
       -  Contributor role permission on the Subscription of the Azure Arc Cluster
       -  Helm v3.0.0 or higher  https://github.com/helm/helm/releases
       -  kube-context of the K8s cluster
@@ -30,8 +35,31 @@ param(
     [Parameter(mandatory = $true)]
     [string]$kubeContext,
     [Parameter(mandatory = $false)]
-    [string]$workspaceResourceId
+    [string]$workspaceResourceId,
+    [Parameter(mandatory = $false)]
+    [string]$proxyEndpoint,
+    [Parameter(mandatory = $false)]
+    [string]$helmRepoName,
+    [Parameter(mandatory = $false)]
+    [string]$helmRepoUrl
 )
+
+$solutionTemplateUri= "https://raw.githubusercontent.com/Microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json"
+$helmChartReleaseName = "azmon-containers-release-1"
+$helmChartName = "azuremonitor-containers"
+$helmChartRepoName = "incubator"
+$helmChartRepoUrl = "https://kubernetes-charts-incubator.storage.googleapis.com/"
+# flags to indicate the cluster types
+$isArcK8sCluster = $false
+$isAksCluster =  $false
+
+if([string]::IsNullOrEmpty($helmRepoName) -eq $false){
+    $helmChartRepoName = $helmRepoName
+}
+
+if([string]::IsNullOrEmpty($helmRepoUrl) -eq $false){
+    $helmChartRepoUrl = $helmRepoUrl
+}
 
 # checks the required Powershell modules exist and if not exists, request the user permission to install
 $azAccountModule = Get-Module -ListAvailable -Name Az.Accounts
@@ -173,9 +201,23 @@ if ($clusterResourceId.StartsWith("/") -eq $false) {
     $clusterResourceId = "/" + $clusterResourceId
 }
 
-if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -ne $true) -or ($clusterResourceId.Split("/").Length -ne 9)) {
-    Write-Host("Provided cluster resource id should be in this format /subscriptions/<subId>/resourceGroups/<rgName>/providers/Microsoft.Kubernetes/connectedClusters/<clusterName>") -ForegroundColor Red
+if ($clusterResourceId.Split("/").Length -ne 9){
+     Write-Host("Provided Cluster Resource Id is not in expected format") -ForegroundColor Red
     exit
+}
+
+if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -ne $true) -and
+    ($clusterResourceId.ToLower().Contains("microsoft.redhatopenshift/openshiftclusters") -ne $true) -and
+    ($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -ne $true)
+  ) {
+    Write-Host("Provided cluster ResourceId is not supported cluster type: $clusterResourceId") -ForegroundColor Red
+    exit
+}
+
+if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -eq $true)) {
+   $isArcK8sCluster = $true
+} else if (($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true)) {
+   $isAksCluster =  $true
 }
 
 $resourceParts = $clusterResourceId.Split("/")
@@ -232,14 +274,23 @@ else {
     }
 }
 
-# validate specified Azure Arc cluster exists and got access permissions
-Write-Host("Checking specified Azure Arc cluster exists and got access...")
+# validate specified Azure Managed cluster exists and got access permissions
+Write-Host("Checking specified Azure Managed cluster resource exists and got access...")
 $clusterResource = Get-AzResource -ResourceId $clusterResourceId
 if ($null -eq $clusterResource) {
-    Write-Host("specified Azure Arc cluster resource id either you dont have access or doesnt exist") -ForegroundColor Red
+    Write-Host("specified Azure Managed cluster resource id either you dont have access or doesnt exist") -ForegroundColor Red
     exit
 }
 $clusterRegion = $clusterResource.Location.ToLower()
+
+if ($isArcK8sCluster -eq $true) {
+   # validate identity
+   $clusterIdentity = $clusterResource.identity.type.ToString().ToLower()
+   if ($clusterIdentity.contains("systemassigned") -eq $false) {
+     Write-Host("Identity of Azure Arc K8s cluster should be systemassigned but it has identity: $clusterIdentity") -ForegroundColor Red
+     exit
+   }
+}
 
 if ([string]::IsNullOrEmpty($workspaceResourceId)) {
     Write-Host("Using or creating default Log Analytics Workspace since workspaceResourceId parameter not set...")
@@ -388,7 +439,7 @@ $Parameters
 try {
     New-AzResourceGroupDeployment -Name $DeploymentName `
         -ResourceGroupName $workspaceResourceGroup `
-        -TemplateUri  https://raw.githubusercontent.com/Microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json `
+        -TemplateUri  $solutionTemplateUri `
         -TemplateParameterObject $Parameters -ErrorAction Stop`
 
     Write-Host("")
@@ -422,32 +473,37 @@ if ($account.Subscription.Id -eq $clusterSubscriptionId) {
     Set-AzContext -SubscriptionId $clusterSubscriptionId
 }
 
-Write-Host("Attaching workspaceResourceId tag on the cluster ResourceId")
-$clusterResource.Tags["logAnalyticsWorkspaceResourceId"] = $WorkspaceInformation.ResourceId
-Set-AzResource -Tag $clusterResource.Tags -ResourceId $clusterResource.ResourceId -Force
+if ($isAksCluster -eq $true) {
+    Write-Host ("Enabling AKS Monitoring Addon ..")
+    # TBD
+} else {
+    Write-Host("Attaching workspaceResourceId tag on the cluster ResourceId")
+    $clusterResource.Tags["logAnalyticsWorkspaceResourceId"] = $WorkspaceInformation.ResourceId
+    Set-AzResource -Tag $clusterResource.Tags -ResourceId $clusterResource.ResourceId -Force
+}
 
 $helmVersion = helm version
 Write-Host "Helm version" : $helmVersion
 
-Write-Host("Adding incubator repo to helm: https://kubernetes-charts-incubator.storage.googleapis.com/")
-helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
-
-Write-Host("updating helm repo to get latest version of charts")
-helm repo update
-
 Write-Host("Installing or upgrading if exists, Azure Monitor for containers HELM chart ...")
 try {
 
-    helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
+    Write-Host("Adding $helmChartRepoName repo to helm: $helmChartRepoUrl")
+    helm repo add $helmChartRepoName $helmChartRepoUrl
+    Write-Host("updating helm repo to get latest version of charts")
     helm repo update
     $helmParameters = "omsagent.secret.wsid=$workspaceGUID,omsagent.secret.key=$workspacePrimarySharedKey,omsagent.env.clusterId=$clusterResourceId"
-    helm upgrade --install azmon-containers-release-1 --set $helmParameters incubator/azuremonitor-containers --kube-context $kubeContext
+    if([string]::IsNullOrEmpty($proxyEndpoint) -eq $false) {
+        Write-Host("using proxy endpoint since its provided")
+        $helmParameters = $helmParameters + ",omsagent.proxy=$proxyEndpoint"
+    }
+    helm upgrade --install $helmChartReleaseName --set $helmParameters $helmChartRepoName/$helmChartName --kube-context $kubeContext
 }
 catch {
     Write-Host ("Failed to Install Azure Monitor for containers HELM chart : '" + $Error[0] + "' ") -ForegroundColor Red
 }
 
-Write-Host("Proceed to https://aka.ms/azmon-containers-azurearc to view your newly onboarded Azure Arc cluster") -ForegroundColor Green
+Write-Host("Proceed to https://aka.ms/azmon-containers to view your newly onboarded Azure Managed cluster") -ForegroundColor Green
 
 
 
