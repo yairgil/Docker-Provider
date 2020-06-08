@@ -4,7 +4,9 @@
 # 2. install build dependencies
 # 3. install the docker engine
 # set -e # commenting since bash on wsl doesnt understand .. weird??
+
 TEMP_DIR=temp-$RANDOM
+
 install_go_lang()
 {
   echo "installing go 1.14.1 version ..."
