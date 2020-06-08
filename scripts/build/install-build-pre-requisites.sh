@@ -3,7 +3,7 @@
 # 1. install go lang and set the required environment variables
 # 2. install build dependencies
 # 3. install the docker engine
-set -e
+# set -e # commenting since bash on wsl doesnt understand .. weird??
 TEMP_DIR=temp-$RANDOM
 install_go_lang()
 {
