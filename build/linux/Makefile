@@ -69,7 +69,7 @@ INSTALLER_TMPDIR := $(INTERMEDIATE_DIR)/installer_tmp
 
 
 # GO Source dir for custom fluent bit plugin
-GO_SOURCE_DIR := $(SOURCE_DIR)/plugins/go
+GO_SOURCE_DIR := $(SOURCE_DIR)/plugins/go/src
 
 ifeq ($(ENABLE_DEBUG),1)
 PROV_DEBUG_FLAGS := -g

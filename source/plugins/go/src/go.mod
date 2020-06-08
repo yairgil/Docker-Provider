@@ -1,4 +1,4 @@
-module Docker-Provider/source/plugins/go
+module Docker-Provider/source/plugins/go/src
 
 go 1.14
 

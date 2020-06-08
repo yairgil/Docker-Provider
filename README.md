@@ -76,7 +76,7 @@ The general directory structure is:
 ├── source/                                   - source code
 │   ├── plugins/                              - plugins source code
 │   │   ├── go/                               - out_oms plugin code in go lang
-│   │   ├── ruby/                             - plugins code inr ruby
+│   │   ├── ruby/                             - plugins code in ruby
 │   │   |   ├── health/                       - code for health feature
 │   │   |   ├── lib/                          - lib for app insights ruby and this code of application_insights gem
 │   │   |   ...                               - plugins in, out and filters code in ruby
@@ -120,7 +120,7 @@ bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 1. Set GOPATH Environment variable and get the go dependencies
 ```
 export GOPATH=~/Docker-Provider/source/plugins/go #Set this based on your repo path
-cd ~/Docker-Provider/source/plugins/go
+cd ~/Docker-Provider/source/plugins/go/src
 go get
 ```
 2. Build the code  with below commands
