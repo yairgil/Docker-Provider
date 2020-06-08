@@ -114,6 +114,12 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 ```
 bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 ```
+2. Verify python, docker and golang installed properly and also PATH and GOBIN environment variables set with go path.
+   For some reason go env not set, run the following commands to set them
+   ```
+   export PATH=$PATH:/usr/local/go/bin
+   export GOBIN=/usr/local/go/bin
+   ```
 
 ### Build Docker Provider Shell Bundle
 
@@ -230,5 +236,13 @@ powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publ
 Navigate to Kubernetes directory and update the yamls with latest docker image of Linux and Windows Agent and other relevant updates.
 
 #  Deployment and Validation
-Deploy the Kubernetes yamls on to your Kubernetes cluster with Linux and Windows nodes and make sure no regressions or whatever
+
+Deploy the Kubernetes yamls on to your Kubernetes cluster with Linux and Windows nodes and make sure all the scenarios works.
+
+# E2E Tests
+TBD
+
+# Code of Conduct
+
+This project has adopted the [Microsoft Open Source Code of Conduct] (https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ] (https://opensource.microsoft.com/codeofconduct/faq/) or contact opencode@microsoft.com with any additional questions or comments.
 
