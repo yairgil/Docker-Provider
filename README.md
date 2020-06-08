@@ -178,11 +178,13 @@ If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh u
  # update the setup.sh in this with the url in above step in place of  https://github.com/microsoft/Docker-Provider/releases/download/..
  cd ~/Docker-Provider/kubernetes/linux/
  ```
-4. Build the Docker image via below command
+4. Update AGENT_VERSION environment variable with your imagetag in ~/Docker-Provider/kubernetes/linux/Dockerfile
+ > Note: format of the imagetag will be ci<release>MMDDYYYY. possible values for release are test, preview, dogfood, prod etc.
+5. Build the Docker image via below command
 ```
    docker build -t  <repo>/<imagename>:<imagetag> .
 ```
-5. Push the Docker image to docker repo
+6. Push the Docker image to docker repo
 ```
    docker push  <repo>/<imagename>:<imagetag>
 ```
