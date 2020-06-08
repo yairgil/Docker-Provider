@@ -14,7 +14,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 3. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) for Azure related operations
 
 ## Linux
-4. Ubuntu machine Ubuntu 14.04 or higher to build Linux Agent
+4. Ubuntu 14.04 or higher to build Linux Agent. you can also use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 5. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
 
 ## Windows

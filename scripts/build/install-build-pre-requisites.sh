@@ -8,8 +8,6 @@ TEMP_DIR=temp-$RANDOM
 install_go_lang()
 {
   echo "installing go 1.14.1 version ..."
-  echo "creating temp directory":$TEMP_DIR
-  sudo mkdir $TEMP_DIR && cd $TEMP_DIR
   sudo curl -O https://dl.google.com/go/go1.14.1.linux-amd64.tar.gz
   sudo tar -xvf go1.14.1.linux-amd64.tar.gz
   sudo mv go /usr/local
@@ -18,7 +16,7 @@ install_go_lang()
   export GOBIN=/usr/local/go/bin
   echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
   echo "export GOBIN=/usr/local/go/bin" >> ~/.bashrc
-  source ~/.bashrc
+  sudo source ~/.bashrc
   echo "installation of go 1.14.1 and setting of PATH and GOBIN environment variables completed."
 }
 
@@ -44,10 +42,32 @@ install_docker()
  echo "installing docker completed"
 }
 
-echo "installing build pre-requisites go 1.14.1, build dependencies and docker for the Linux Agent ..."
+install_python()
+{
+  echo "installing python ..."
+  sudo apt-get update -y
+  sudo apt-get install python -y
+  echo "installation of python completed."
+}
+
+echo "installing build pre-requisites python, go 1.14.1, build dependencies and docker for the Linux Agent ..."
+cd ~
+echo "creating temp directory":$TEMP_DIR
+sudo mkdir $TEMP_DIR && cd $TEMP_DIR
+
+# install python
+install_python
+
+# install go
 install_go_lang
+
+# install build dependencies
 install_build_dependencies
+
+# install docker
 install_docker
+
 echo "cleanup temp directory":$TEMP_DIR
+cd ~
 sudo rm -rf $TEMP_DIR
 echo "installing build pre-requisites golang, build dependencies and docker completed"
