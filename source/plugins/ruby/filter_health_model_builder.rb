@@ -23,6 +23,7 @@ module Fluent
         @@cluster_id = KubernetesApiClient.getClusterId
         @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
         @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
         def initialize
             begin
@@ -76,6 +77,10 @@ module Fluent
         end
 
         def filter_stream(tag, es)
+            if !@@cluster_health_model_enabled
+                @log.info "Cluster Health Model disabled in filter_health_model_builder"
+                return MultiEventStream.new
+            end
             begin
                 new_es = MultiEventStream.new
                 time = Time.now

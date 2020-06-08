@@ -16,6 +16,7 @@ module Fluent
 
     @@clusterCpuCapacity = 0.0
     @@clusterMemoryCapacity = 0.0
+    @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
 
     def initialize
       begin
@@ -59,6 +60,9 @@ module Fluent
           @@clusterMemoryCapacity = cluster_capacity[1]
           @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
           initialize_inventory
+          if @@cluster_health_model_enabled
+            ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
+          end
         end
       rescue => e
         ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
@@ -76,6 +80,10 @@ module Fluent
     end
 
     def enumerate
+      if !@@cluster_health_model_enabled
+        @@hmlog.info "Cluster Health Model disabled in in_kube_health"
+        return MultiEventStream.new
+    end
       begin
         currentTime = Time.now
         emitTime = currentTime.to_f
