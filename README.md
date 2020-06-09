@@ -123,7 +123,7 @@ bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 3. If you want to use Docker on the WSL/2, verify following configuration settings configured
    ```
    echo $DOCKER_HOST
-   # if either DOCKER_HOST not set already or doesnt have tcp://localhost:2375 value, set this value below command
+   # if either DOCKER_HOST not set already or doesnt have tcp://localhost:2375 value, set DOCKER_HOST value via this command
    echo "export DOCKER_HOST=tcp://localhost:2375" >> ~/.bashrc && source ~/.bashrc
    # on Docker Desktop for Windows make sure docker running linux mode and enabled Expose daemon on tcp://localhost:2375 without TLS
    ```

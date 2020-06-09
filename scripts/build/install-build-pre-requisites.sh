@@ -69,7 +69,7 @@ install_build_dependencies
 # install docker
 install_docker
 
-# if its running on wsl/2, configure remote docker daemon to use docker for desktop on the windows host
+# if its running on wsl/2, set DOCKER_HOST env to use docker for desktop docker endpoint on the windows host
 if [[ $(uname -r) =~ Microsoft$ ]]; then
     echo "****detected running on WSL/2 hence configuring remote docker daemon****"
     echo "export DOCKER_HOST=tcp://localhost:2375" >> ~/.bashrc && source ~/.bashrc
