@@ -10,6 +10,7 @@ module Fluent
   Dir[File.join(__dir__, "./health", "*.rb")].each { |file| require file }
 
   class KubeHealthInput < Input
+    include HealthModel
     Plugin.register_input("kubehealth", self)
 
     config_param :health_monitor_config_path, :default => "/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json"
@@ -36,7 +37,6 @@ module Fluent
       end
     end
 
-    include HealthModel
     config_param :run_interval, :time, :default => 60
     config_param :tag, :string, :default => "kubehealth.ReplicaSet"
 
