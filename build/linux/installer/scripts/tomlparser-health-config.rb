@@ -19,12 +19,12 @@ def parseConfigMap
   begin
     # Check to see if config map is created
     if (File.file?(@configMapMountPath))
-      puts "config::configmap container-azm-ms-agentconfig for settings mounted, parsing values"
+      puts "config::configmap container-azm-ms-agentconfig for agent health settings mounted, parsing values"
       parsedConfig = Tomlrb.load_file(@configMapMountPath, symbolize_keys: true)
       puts "config::Successfully parsed mounted config map"
       return parsedConfig
     else
-      puts "config::configmap container-azm-ms-agentconfig for settings not mounted, using defaults"
+      puts "config::configmap container-azm-ms-agentconfig for agent health settings not mounted, using defaults"
       return nil
     end
   rescue => errorStr
@@ -36,7 +36,7 @@ end
 # Use the ruby structure created after config parsing to set the right values to be used as environment variables
 def populateSettingValuesFromConfigMap(parsedConfig)
   begin
-    if !parsedConfig.nil?  && !parsedConfig[:agent_settings][:health_model].nil? && !parsedConfig[:agent_settings][:health_model][:enabled].nil?
+    if !parsedConfig.nil? && !parsedConfig[:agent_settings].nil? && !parsedConfig[:agent_settings][:health_model].nil? && !parsedConfig[:agent_settings][:health_model][:enabled].nil?
         @enable_health_model = parsedConfig[:agent_settings][:health_model][:enabled]
         puts "enable_health_model = #{@enable_health_model}"
     end
