@@ -15,7 +15,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 
 ## Linux
 4. Ubuntu 14.04 or higher to build Linux Agent. you can also use [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
-  > Note: If you are using WSL2, make sure you have cloned the code into ubuntu not to windows
+  > Note: If you are using WSL2, make sure you have cloned the code into ubuntu not on to windows
 5. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
 
 ## Windows
