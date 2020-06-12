@@ -37,7 +37,6 @@ The general directory structure is:
 |   |   |   |── scripts/                      - script files related to configmap parsing
 │   ├── linux/                                - Makefile and installer files for the Docker Provider
 │   │   ├── Makefile                          - Makefile to build the docker provider
-│   │   ├── configure                         - configure file to enable ulinux configuration
 │   │   ├── installer                         - files related to installer
 |   |   |   |── bundle/                       - shell scripts to create shell bundle
 |   |   |   |── conf/                         - plugin configuration files
@@ -116,7 +115,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 ```
 2. Verify python, docker and golang installed properly and also PATH and GOBIN environment variables set with go path.
-   For some reason go env not set, run the following commands to set them
+   For some reason go env not set by install-build-pre-requisites.sh script, run the following commands to set them
    ```
    export PATH=$PATH:/usr/local/go/bin
    export GOBIN=/usr/local/go/bin
@@ -131,7 +130,7 @@ bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 
 ### Build Docker Provider Shell Bundle
 
-1. Build the code  with below commands
+1. Build the code  with below command
 ```
 cd ~/Docker-Provider/build/linux
 make
