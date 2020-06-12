@@ -4,7 +4,18 @@
 BASE_DIR := $(subst /build/linux,,$(PWD))
 
 PF_POSIX := 1
-include $(BASE_DIR)/build/linux/config.mak
+
+# parameters required for the build
+ENABLE_DEBUG=0
+BUILD_TYPE=Release
+PF=Linux
+PF_MAJOR=1
+PF_MINOR=0
+PF_ARCH=x64
+PF_WIDTH=64
+PF_DISTRO=ULINUX
+ULINUX=1
+BUILD_CONFIGURATION=Linux_ULINUX_1.0_x64_64_Release
 
 # RM - Remove a file
 # RMDIR - Remove a directory
@@ -54,7 +65,7 @@ endif
 include $(BASE_DIR)/build/version
 
 ifndef CONTAINER_BUILDVERSION_STATUS
-$(error "Is version missing?  Please re-run configure")
+$(error "version file is missing")
 endif
 
 
