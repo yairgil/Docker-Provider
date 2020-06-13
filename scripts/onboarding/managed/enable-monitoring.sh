@@ -16,18 +16,21 @@
 # Note > 1. Format of the proxy endpoint should be http(s)://<user>:<pwd>@proxyhost:proxyport
 #        2. cluster and workspace resource should be in valid azure resoure id format
 
-# 1. Using Default Azure Log Analytics and no-proxy
-# bash <script> --resource-id <clusterResourceId> --kube-context <kube-context>
+# 1. Using Default Azure Log Analytics and no-proxy with current kube config context
+# bash enable-monitoring.sh --resource-id <clusterResourceId>
 
-# 2. Using Default Azure Log Analytics and with proxy endpoint configuration
-# bash <script> --resource-id <clusterResourceId> --kube-context <kube-context> --proxy <proxy-endpoint>
+# 2. Using Default Azure Log Analytics and no-proxy
+# bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context>
+
+# 3. Using Default Azure Log Analytics and with proxy endpoint configuration
+# bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --proxy <proxy-endpoint>
 
 
-# 3. Using Existing Azure Log Analytics and no-proxy
-# bash <script> --resource-id <clusterResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id>
+# 4. Using Existing Azure Log Analytics and no-proxy
+# bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id>
 
-# 4. Using Existing Azure Log Analytics and proxy
-# bash <script> --resource-id <clusterResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id> --proxy <proxy-endpoint>
+# 5. Using Existing Azure Log Analytics and proxy
+# bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id> --proxy <proxy-endpoint>
 
 set -e
 set -o pipefail
@@ -92,13 +95,13 @@ usage()
     local basename=`basename $0`
     echo
     echo "Enable Azure Monitor for containers:"
-    echo "$basename --resource-id <cluster resource id> --kube-context <name of the kube context > [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>]"
+    echo "$basename --resource-id <cluster resource id> [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>]"
 }
 
 parse_args()
 {
 
- if [ $# -le 2 ]
+ if [ $# -le 1 ]
   then
     usage
     exit 1
@@ -218,8 +221,7 @@ while getopts 'hk:r:w:p:n:u:' opt; do
  fi
 
  if [ -z "$kubeconfigContext" ]; then
-    echo "-e kubeconfig context is empty. Please try with valid kube-context of the cluster"
-    exit 1
+    echo "using current kube config context since --kube-context parameter not set "
  fi
 
 if [ ! -z "$workspaceResourceId" ]; then
@@ -435,7 +437,11 @@ get_workspace_guid_and_key()
 install_helm_chart()
 {
 
- echo "installing Azure Monitor for containers HELM chart on to the cluster with kubecontext:${kubeconfigContext} ..."
+ if [ -z "$kubeconfigContext" ]; then
+  echo "installing Azure Monitor for containers HELM chart on to the cluster and using current kube context since --kube-context/-k parameter not passed in..."
+ else
+  echo "installing Azure Monitor for containers HELM chart on to the cluster with kubecontext:${kubeconfigContext} ..."
+ fi
 
  echo "adding helm repo:" $helmRepoName
  helm repo add $helmRepoName $helmRepoUrl
@@ -445,9 +451,21 @@ install_helm_chart()
 
  if [ ! -z "$proxyEndpoint" ]; then
    echo "using proxy endpoint since proxy configuration passed in"
-   helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+   if [ -z "$kubeconfigContext" ]; then
+     echo "using current kube-context since --kube-context/-k parameter not passed in"
+     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName
+   else
+     echo "using --kube-context:${kubeconfigContext} since passed in"
+     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+   fi
  else
-   helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+   if [ -z "$kubeconfigContext" ]; then
+     echo "using current kube-context since --kube-context/-k parameter not passed in"
+     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName
+   else
+     echo "using --kube-context:${kubeconfigContext} since passed in"
+     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+   fi
  fi
 
  echo "chart installation completed."

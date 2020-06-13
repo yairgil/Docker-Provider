@@ -10,12 +10,14 @@
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 #     Helm3 : https://helm.sh/docs/intro/install/
 #
-# bash <script> --resource-id/-r <clusterResourceId> --kube-context/-k <kube-context>
-# For example to disables azure monitor for containers on monitoring enabled Azure Arc K8s cluster
-# bash disable_monitoring.sh -r /subscriptions/57ac26cf-a9f0-4908-b300-9a4e9a0fb205/resourceGroups/AzureArcTest/providers/Microsoft.Kubernetes/connectedClusters/AzureArcTest1 -k MyK8sTestCluster
+# 1. disable monitoring using current kube-context
+# bash disable_monitoring.sh --resource-id/-r <clusterResourceId>
+
+# 2. disable monitoring using specific kube-context
+# bash disable_monitoring.sh --resource-id/-r <clusterResourceId> --kube-context/-k <kube-context>
+
 
 set -e
-set -u
 set -o pipefail
 
 # default release name used during onboarding
@@ -42,19 +44,28 @@ usage()
     local basename=`basename $0`
     echo
     echo "Disable Azure Monitor for containers:"
-    echo "$basename --resource-id/-r <cluster resource id> --kube-context/-k <name of the kube context >"
+    echo "$basename --resource-id/-r <cluster resource id> [--kube-context/-k <name of the kube context >]"
 }
 
 delete_helm_release()
 {
   echo "deleting chart release:" $releaseName
-  kubeconfigContext="$(echo ${1})"
-  releases=$(helm list --filter $releaseName --kube-context $kubeconfigContext)
-  echo $releases
-  if [[ "$releases" == *"$releaseName"* ]]; then
-    helm del $releaseName --kube-context $kubeconfigContext
+  if [ -z "$kubeconfigContext" ]; then
+    releases=$(helm list --filter $releaseName)
+    echo $releases
+    if [[ "$releases" == *"$releaseName"* ]]; then
+      helm del $releaseName
+    else
+      echo "there is no existing release of azure monitor for containers"
+    fi
   else
-    echo "there is no existing release of azure monitor for containers"
+    releases=$(helm list --filter $releaseName --kube-context $kubeconfigContext)
+    echo $releases
+    if [[ "$releases" == *"$releaseName"* ]]; then
+      helm del $releaseName --kube-context $kubeconfigContext
+    else
+      echo "there is no existing release of azure monitor for containers"
+    fi
   fi
   echo "deletion of chart release done."
 }
@@ -115,7 +126,7 @@ disable_aks_monitoring_addon()
 parse_args()
 {
 
- if [ $# -le 2 ]
+ if [ $# -le 1 ]
   then
     usage
     exit 1
@@ -188,8 +199,7 @@ done
  fi
 
  if [ -z "$kubeconfigContext" ]; then
-    echo "-e kubeconfig context is empty. Please try with valid kube-context of the cluster"
-    exit 1
+    echo "using current kube config context since --kube-context parameter not set "
  fi
 
  # detect the resource provider from the provider name in the cluster resource id
@@ -216,7 +226,7 @@ done
 parse_args $@
 
 # delete helm release
-delete_helm_release $kubeconfigContext
+delete_helm_release
 
 # remove monitoring tags on the cluster resource to make fully off boarded
 if [ "$isAksCluster" = true ] ; then

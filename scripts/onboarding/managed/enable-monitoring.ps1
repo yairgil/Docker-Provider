@@ -9,7 +9,7 @@
 
     .PARAMETER clusterResourceId
         Id of the Azure Managed Cluster such as Azure ARC K8s, ARO v4 etc.
-    .PARAMETER kubeContext
+    .PARAMETER kubeContext (optional)
         kube-context of the k8 cluster to install Azure Monitor for containers HELM chart
     .PARAMETER workspaceResourceId (optional)
         Provide the azure resource id of the existing  Azure Log Analytics Workspace if you want to use existing one
@@ -32,7 +32,7 @@
 param(
     [Parameter(mandatory = $true)]
     [string]$clusterResourceId,
-    [Parameter(mandatory = $true)]
+    [Parameter(mandatory = $false)]
     [string]$kubeContext,
     [Parameter(mandatory = $false)]
     [string]$workspaceResourceId,
@@ -192,8 +192,7 @@ if ([string]::IsNullOrEmpty($clusterResourceId)) {
 }
 
 if ([string]::IsNullOrEmpty($kubeContext)) {
-    Write-Host("Specified kube config context should not be NULL or empty") -ForegroundColor Red
-    exit
+    Write-Host("Since kubeContext parameter not passed in so using current kube config context") -ForegroundColor Yellow
 }
 
 
@@ -504,7 +503,12 @@ try {
         Write-Host("using proxy endpoint since its provided")
         $helmParameters = $helmParameters + ",omsagent.proxy=$proxyEndpoint"
     }
-    helm upgrade --install $helmChartReleaseName --set $helmParameters $helmChartRepoName/$helmChartName --kube-context $kubeContext
+    if ([string]::IsNullOrEmpty($kubeContext)) {
+        helm upgrade --install $helmChartReleaseName --set $helmParameters $helmChartRepoName/$helmChartName
+    } else {
+      Write-Host("using provided kube-context: $kubeContext")
+      helm upgrade --install $helmChartReleaseName --set $helmParameters $helmChartRepoName/$helmChartName --kube-context $kubeContext
+    }
 }
 catch {
     Write-Host ("Failed to Install Azure Monitor for containers HELM chart : '" + $Error[0] + "' ") -ForegroundColor Red
