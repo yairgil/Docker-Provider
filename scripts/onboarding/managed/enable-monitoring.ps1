@@ -413,7 +413,7 @@ else {
     }
 
     if (($workspaceResourceId.ToLower().Contains("microsoft.operationalinsights/workspaces") -ne $true) -or ($workspaceResourceId.Split("/").Length -ne 9)) {
-        Write-Host("Provided cluster resource id should be in this format /subscriptions/<subId>/resourceGroups/<rgName>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>") -ForegroundColor Red
+        Write-Host("Provided workspace resource id should be in this format /subscriptions/<subId>/resourceGroups/<rgName>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>") -ForegroundColor Red
         exit
     }
 
