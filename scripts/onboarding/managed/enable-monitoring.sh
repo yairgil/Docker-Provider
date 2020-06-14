@@ -11,7 +11,7 @@
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 #     Helm3 : https://helm.sh/docs/intro/install/
-#
+#     OC: https://docs.microsoft.com/en-us/azure/openshift/tutorial-connect-cluster#install-the-openshift-cli # Applicable for only ARO v4
 #
 # Note > 1. Format of the proxy endpoint should be http(s)://<user>:<pwd>@proxyhost:proxyport
 #        2. cluster and workspace resource should be in valid azure resoure id format
@@ -61,6 +61,11 @@ resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
 # resource type for azure log analytics workspace
 workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
+
+# openshift project name for aro v4 cluster
+openshiftProjectName="azure-monitor-for-containers"
+# arc k8s cluster resource
+isAroV4Cluster=false
 
 # arc k8s cluster resource
 isArcK8sCluster=false
@@ -211,6 +216,7 @@ while getopts 'hk:r:w:p:n:u:' opt; do
  elif [ $providerName = "microsoft.redhatopenshift/openshiftclusters" ]; then
     echo "provider cluster resource is of AROv4 cluster type"
     resourceProvider=$aroV4ResourceProvider
+    isAroV4Cluster=true
  elif [ $providerName = "microsoft.containerservice/managedclusters" ]; then
     echo "provider cluster resource is of AKS cluster type"
     isAksCluster=true
@@ -221,7 +227,7 @@ while getopts 'hk:r:w:p:n:u:' opt; do
  fi
 
  if [ -z "$kubeconfigContext" ]; then
-    echo "using current kube config context since --kube-context parameter not set "
+    echo "using or getting current kube config context since --kube-context parameter not set "
  fi
 
 if [ ! -z "$workspaceResourceId" ]; then
@@ -437,8 +443,23 @@ get_workspace_guid_and_key()
 install_helm_chart()
 {
 
+ # get the config-context for ARO v4 cluster
+ if [ "$isAroV4Cluster" = true ] ; then
+    echo "getting config-context of ARO v4 cluster "
+    echo "getting admin user creds for aro v4 cluster"
+    adminUserName=$(az aro list-credentials -g $clusterResourceGroup -n $clusterName --query 'kubeadminUsername' -o tsv)
+    adminPassword=$(az aro list-credentials -g $clusterResourceGroup -n $clusterName --query 'kubeadminPassword' -o tsv)
+    apiServer=$(az aro show -g $clusterResourceGroup -n $clusterName --query apiserverProfile.url -o tsv)
+    echo "login to the cluster via oc login"
+    oc login $apiServer -u $adminUserName -p $adminPassword
+    echo "creating project azure-monitor-for-containers"
+    oc new-project $openshiftProjectName
+    echo "getting config-context of aro v4 cluster"
+    kubeconfigContext=$(oc config current-context)
+ fi
+
  if [ -z "$kubeconfigContext" ]; then
-  echo "installing Azure Monitor for containers HELM chart on to the cluster and using current kube context since --kube-context/-k parameter not passed in..."
+     echo "installing Azure Monitor for containers HELM chart on to the cluster and using current kube context ..."
  else
   echo "installing Azure Monitor for containers HELM chart on to the cluster with kubecontext:${kubeconfigContext} ..."
  fi
