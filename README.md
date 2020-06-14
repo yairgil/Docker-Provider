@@ -135,7 +135,7 @@ bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 cd ~/Docker-Provider/build/linux
 make
 ```
-If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/
+If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/kubernetes/linux/Linux_ULINUX_1.0_x64_64_Release/
   > Note: x.x.x-x is the version of the docker provider which is determined from version info in version file
 
 ### Build Docker Image
@@ -144,47 +144,13 @@ If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh u
   ```
   cd ~/Docker-Provider/kubernetes/linux/
   ```
-2. Upload docker-cimprov-x.x.x-x.universal.x86_64.sh from ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/ to azure blob storage account blob
-
- ```
- AZURE_SUBSCRIPTIONID=<azure-subscription-id> # subscriptionId for the azure storage account (new or exist)
- STORAGE_ACCOUNT_RG=<resource-group>
- STORAGE_ACCOUNT_LOCATION=<location>
- STORAGE_ACCOUNT_NAME=<account-name>
- STORAGE_ACCOUNT_BLOB_NAME=<blob-name> # for example agentshellbundle
-
- # login to azure interactively and set the subscription id
- az login --use-device-code
- az account set -s $AZURE_SUBSCRIPTIONID
-
- # create rg and storage account if this doesnt exist one already
- az group create -n $STORAGE_ACCOUNT_RG -l $STORAGE_ACCOUNT_LOCATION
- az storage account create -n $STORAGE_ACCOUNT_NAME -g $STORAGE_ACCOUNT_RG -l $STORAGE_ACCOUNT_LOCATION
-
- # create blob container
- az storage container create --account-name $STORAGE_ACCOUNT_NAME --name $STORAGE_ACCOUNT_BLOB_NAME --auth-mode login --public-access container
-
- # upload docker-cimprov shell bundle to storage account. please specify the correct version
- az storage blob upload --account-name $STORAGE_ACCOUNT_NAME --container-name $STORAGE_ACCOUNT_BLOB_NAME --name docker-cimprov-10.0.0-0.universal.x86_64.sh --file  ~/Docker-Provider/target/Linux_ULINUX_1.0_x64_64_Release/docker-cimprov-10.0.0-0.universal.x86_64.sh
- # replace the placeholders in this url
- https://$STORAGE_ACCOUNT_NAME.blob.core.windows.net/$STORAGE_ACCOUNT_BLOB_NAME/docker-cimprov-10.0.0-0.universal.x86_64.sh
-
- # verify this url valid and exist by running the curl --head command as below
- curl --head https://mydevomsagentsa.blob.core.windows.net/agentshellbundle/docker-cimprov-10.0.0-0.universal.x86_64.sh
- ```
-  > Note: x.x.x-x is the version of the docker provider which is determined from version info in docker.version file
-3. Update the azure storage blob location of docker-cimprov-x.x.x-x.universal.x86_64.sh in setup.sh
- ```
- # update the setup.sh in this with the url in above step in place of  https://github.com/microsoft/Docker-Provider/releases/download/..
- cd ~/Docker-Provider/kubernetes/linux/
- ```
-4. Update AGENT_VERSION environment variable with your imagetag in ~/Docker-Provider/kubernetes/linux/Dockerfile
+2. Update AGENT_VERSION environment variable with your imagetag in ~/Docker-Provider/kubernetes/linux/Dockerfile
  > Note: format of the imagetag will be ci<release>MMDDYYYY. possible values for release are test, dev, preview, dogfood, prod etc.
-5. Build the Docker image via below command
+3. Build the Docker image via below command
 ```
    docker build -t  <repo>/<imagename>:<imagetag> .
 ```
-6. Push the Docker image to docker repo
+4. Push the Docker image to docker repo
 ```
    docker push  <repo>/<imagename>:<imagetag>
 ```

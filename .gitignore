@@ -16,3 +16,11 @@ build/windows/installer/certificategenerator/bin
 build/windows/installer/certificategenerator/obj
 # files under omsagentwindows dir since this temp directory to build the docker image
 kubernetes/windows/omsagentwindows
+# ignore everything under intermediate directory
+intermediate
+# ignore all intermeditae *.pyc files
+*.pyc
+# ignore docker provider shell bundle
+kubernetes/linux/Linux_ULINUX_1.0_x64_64_Release
+# ignore intermediate .h files under go src
+source/plugins/go/src/*.h
