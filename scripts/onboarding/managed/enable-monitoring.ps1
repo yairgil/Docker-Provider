@@ -27,7 +27,8 @@
       -  Helm v3.0.0 or higher  https://github.com/helm/helm/releases
       -  kube-context of the K8s cluster
  Note: 1. Please make sure you have all the pre-requisistes before running this script.
-
+# download script
+# curl -o enable-monitoring.ps1 -L https://aka.ms/enable-monitoring-powershell-script
 #>
 param(
     [Parameter(mandatory = $true)]

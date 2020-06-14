@@ -9,7 +9,8 @@
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 #     Helm3 : https://helm.sh/docs/intro/install/
-#
+# download script
+# curl -o disable-monitoring.sh -L https://aka.ms/disable-monitoring-bash-script
 # 1. disable monitoring using current kube-context
 # bash disable_monitoring.sh --resource-id/-r <clusterResourceId>
 
