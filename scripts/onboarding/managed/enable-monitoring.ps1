@@ -44,8 +44,7 @@ param(
     [string]$helmRepoUrl
 )
 
-# this needs to be updated once code moved to ci_dev or ci_prod branch completly
-$solutionTemplateUri= "https://raw.githubusercontent.com/Microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json"
+$solutionTemplateUri= "https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_dev/scripts/onboarding/templates/azuremonitor-containerSolution.json"
 $helmChartReleaseName = "azmon-containers-release-1"
 $helmChartName = "azuremonitor-containers"
 $helmChartRepoName = "incubator"

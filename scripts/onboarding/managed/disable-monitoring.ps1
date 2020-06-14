@@ -31,6 +31,7 @@ $helmChartName = "azuremonitor-containers"
 # flags to indicate the cluster types
 $isArcK8sCluster = $false
 $isAksCluster =  $false
+$isAroV4Cluster = $false
 
 # checks the required Powershell modules exist and if not exists, request the user permission to install
 $azAccountModule = Get-Module -ListAvailable -Name Az.Accounts
@@ -193,6 +194,8 @@ if ($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedcluster
    $isArcK8sCluster = $true
 } elseif ($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true) {
    $isAksCluster =  $true
+} elseif ($clusterResourceId.ToLower().Contains("microsoft.redhatopenshift/openshiftclusters") -eq $true) {
+   $isAroV4Cluster = $true
 }
 
 $resourceParts = $clusterResourceId.Split("/")
