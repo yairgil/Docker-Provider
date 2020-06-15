@@ -52,6 +52,7 @@ The general directory structure is:
 ├── alerts/                                   - alert queries
 ├── kubernetes/                               - files related to Linux and Windows Agent for Kubernetes
 │   ├── linux/                                - scripts to build the Docker image for Linux Agent
+│   │   ├── dockerbuild                       - script to build docker provider, docker image and publish docker image
 │   │   ├── DockerFile                        - DockerFile for Linux Agent Container Image
 │   │   ├── main.sh                           - Linux Agent container entry point
 │   │   ├── setup.sh                          - setup file for Linux Agent Container Image
