@@ -128,32 +128,13 @@ bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
    # on Docker Desktop for Windows make sure docker running linux mode and enabled Expose daemon on tcp://localhost:2375 without TLS
    ```
 
-### Build Docker Provider Shell Bundle
+### Build Docker Provider Shell Bundle and Docker Image and Publish Docker Image
 
-1. Build the code  with below command
 ```
-cd ~/Docker-Provider/build/linux
-make
+cd ~/Docker-Provider/kubernetes/linux/dockerbuild
+bash build-docker-image.sh --image <repo>/<imagename>:<imagetag>
 ```
-If build successful, you should see docker-cimprov-x.x.x-x.universal.x86_64.sh under ~/Docker-Provider/kubernetes/linux/Linux_ULINUX_1.0_x64_64_Release/
-  > Note: x.x.x-x is the version of the docker provider which is determined from version info in version file
-
-### Build Docker Image
-
-1.  Navigate to below directory to build the docker image
-  ```
-  cd ~/Docker-Provider/kubernetes/linux/
-  ```
-2. Update AGENT_VERSION environment variable with your imagetag in ~/Docker-Provider/kubernetes/linux/Dockerfile
- > Note: format of the imagetag will be ci<release>MMDDYYYY. possible values for release are test, dev, preview, dogfood, prod etc.
-3. Build the Docker image via below command
-```
-   docker build -t  <repo>/<imagename>:<imagetag> .
-```
-4. Push the Docker image to docker repo
-```
-   docker push  <repo>/<imagename>:<imagetag>
-```
+> Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
 ## Windows Agent
 > Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine with Docker for Windows

@@ -3,8 +3,8 @@ MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="OMS Container Docker Provider" \
     com.microsoft.version="10.0.0-1"
-# make sure to update the agent version based on the release
-ENV AGENT_VERSION ciprod05262020
+ARG IMAGE_TAG=ciprod05262020
+ENV AGENT_VERSION ${IMAGE_TAG}
 ENV tmpdir /opt
 ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
 ENV MALLOC_ARENA_MAX 2
