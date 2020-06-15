@@ -1,8 +1,6 @@
 #!/bin/bash
 #
-# Execute this directly in Azure Cloud Shell (https://shell.azure.com) by pasting (SHIFT+INS on Windows, CTRL+V on Mac or Linux)
-# the following line (beginning with curl...) at the command prompt and then replacing the args:
-#  This scripts builds docker image ad push to specified docker repo
+#  This scripts builds docker provider shell bundle, docker image and pushes to specified image to docker hub or azure acr registry
 
 set -e
 set -o pipefail
@@ -105,10 +103,7 @@ build_docker_image()
 {
   echo "build docker image: $image and image tage is $imageTag"
   cd $baseDir/kubernetes/linux
-  docker build -t $image --build-arg IMAGE_TAG=$imageTag  .
-
-  echo "publishing docker image to docker repo"
-  docker push  $image
+  sudo docker build -t $image --build-arg IMAGE_TAG=$imageTag  .
 
   echo "build docker image completed"
 }
@@ -117,6 +112,7 @@ publish_docker_image()
 {
   echo "publishing docker image: $image"
   docker push  $image
+  echo "publishing docker image: $image done."
 }
 
 # parse and validate args
@@ -134,9 +130,6 @@ dockerFileDir=$baseDir/kubernetes/linux
 echo "sour code base directory: $baseDir"
 echo "build directory for docker provider: $buildDir"
 echo "docker file directory: $dockerFileDir"
-
-# login to docker
-login_to_docker
 
 # build docker provider shell bundle
 build_docker_provider

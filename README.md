@@ -133,6 +133,9 @@ bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
 
 ```
 cd ~/Docker-Provider/kubernetes/linux/dockerbuild
+# login docker or azure acr depending what you are using for docker image repo
+sudo docker login # for docker
+# az acr login -n <acr registry name> # For login to azure acr
 bash build-docker-image.sh --image <repo>/<imagename>:<imagetag>
 ```
 > Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
