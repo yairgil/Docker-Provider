@@ -125,8 +125,7 @@ parse_args $@
 currentDir=$PWD
 
 ## TODO figureout better way than this
-dockerBuildDir=$(dirname $PWD)
-linuxDir=$(dirname $dockerBuildDir)
+linuxDir=$(dirname $PWD)
 kubernetsDir=$(dirname $linuxDir)
 baseDir=$(dirname $kubernetsDir)
 buildDir=$baseDir/build/linux
