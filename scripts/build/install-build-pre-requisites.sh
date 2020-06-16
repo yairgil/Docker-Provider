@@ -25,9 +25,9 @@ install_go_lang()
 install_build_dependencies()
 {
   echo "installing build dependencies"
-  apt-get upgrade -y
-  apt-get update -y
-  apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev -y
+  sudo apt-get upgrade -y
+  sudo apt-get update -y
+  sudo apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev -y
   echo "installation of build depencies done."
 }
 
@@ -63,13 +63,16 @@ sudo mkdir $TEMP_DIR && cd $TEMP_DIR
 install_python
 
 # install go
-install_go_lang
+# install_go_lang
 
 # install build dependencies
 install_build_dependencies
 
 # install docker
 install_docker
+
+# install go
+install_go_lang
 
 # if its running on wsl/2, set DOCKER_HOST env to use docker for desktop docker endpoint on the windows host
 if [[ $(uname -r) =~ Microsoft$ ]]; then
