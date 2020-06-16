@@ -19,7 +19,17 @@ install_go_lang()
   echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
   echo 'export GOBIN=/usr/local/go/bin' >> ~/.bashrc
   source ~/.bashrc
-  echo "installation of go 1.14.1 and setting of PATH and GOBIN environment variables completed."
+  echo "installation of go 1.14.1 completed."
+}
+
+install_go_env_vars()
+{
+  echo "setting PATH and GOBIN environment variables"
+  export PATH='$PATH:/usr/local/go/bin'
+  export GOBIN=/usr/local/go/bin
+  echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+  echo 'export GOBIN=/usr/local/go/bin' >> ~/.bashrc
+  source ~/.bashrc
 }
 
 install_build_dependencies()
@@ -84,4 +94,8 @@ fi
 echo "cleanup temp directory":$TEMP_DIR
 cd ~
 sudo rm -rf $TEMP_DIR
+
+# set go env vars
+install_go_env_vars
+
 echo "installing build pre-requisites python, go 1.14.1, build dependencies and docker completed"
