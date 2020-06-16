@@ -25,9 +25,9 @@ install_go_lang()
 install_build_dependencies()
 {
   echo "installing build dependencies"
-  # sudo apt-get upgrade -y
-  sudo apt-get update -y
-  sudo apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev -y
+  apt-get upgrade -y
+  apt-get update -y
+  apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev -y
   echo "installation of build depencies done."
 }
 
