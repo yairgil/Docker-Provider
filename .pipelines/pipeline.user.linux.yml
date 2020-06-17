@@ -24,7 +24,7 @@ package:
       dockerfile_name: 'Dockerfile'                       # OPTIONAL: The name of the dockerfile. Docker client does allow the Dockerfile
                                                           # to be named differently. Defaults to Dockerfile.
                                                           # In effect, the -f option value passed to docker build will be repository_checkout_folder/src/DockerFinal/Foo.dockerfile.
-      repository_name: 'cdpx-user-samples'                # REQUIRED: The name of the image repository. Final repository name will be registry/artifact/service-tree-id/cdpx/sample.
+      repository_name: 'cdpxlinux'                        # only supported ones are cdpx acr repos
       tag: '1.0.0alpha'                                   # OPTIONAL: Defaults to latest. The tag for the built image. Final tag will be 1.0.0alpha, 1.0.0-timestamp-commitID.
       latest: false                                       # OPTIONAL: Defaults to false. If tag is not set to latest and this flag is set, then tag as latest as well and push latest as well.
       publish: false                                      # OPTIONAL: Defaults to true. If set to false, image will not be pushed. Useful to speed up pull requests.
