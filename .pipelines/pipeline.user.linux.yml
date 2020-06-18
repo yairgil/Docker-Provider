@@ -44,5 +44,5 @@ package:
         artifact_path: 'test\docker-image-meta.json'      # If defined, the drop outputs relative path to the file into which JSON metadata about the created image is emitted.
       export_to_artifact_path: 'images\pockers.tar.zip'   # If defined, the drop outputs relative path to the file into which the generated image is exported.
                                                           # NOTE: On Windows, the path must end with .tar.zip. 7-Zip is used to compress the TAR export from Docker.
-                                                          @# NOTE: On Linux, the path must end with .tar.gz. GZip is used to compress the TAR export from Docker.
+                                                          # NOTE: On Linux, the path must end with .tar.gz. GZip is used to compress the TAR export from Docker.
 
