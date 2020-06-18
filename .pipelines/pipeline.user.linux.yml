@@ -5,7 +5,7 @@ environment:
     version: '16.04'
   runtime:
     provider: 'appcontainer'
-    image: image: 'cdpxlinux.azurecr.io/user/azure-monitor:ci'
+    image: 'cdpxlinux.azurecr.io/user/azure-monitor:ci'
 
 version:
   name: 'DockerProvider'
