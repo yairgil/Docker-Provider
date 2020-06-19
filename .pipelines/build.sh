@@ -7,7 +7,7 @@ echo $DIR
 
 # grant file permission for go bin
 echo "start: grant file permissions for go bin"
-sudo chmod 777 /usr/local/go/bin
+chmod 777 /usr/local/go/bin
 echo "end: grant file permissions for go bin"
 
 cd $DIR/../build/linux
