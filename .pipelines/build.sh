@@ -7,6 +7,8 @@ echo $DIR
 
 cd $DIR/../build/linux
 
-echo ----------- Build Docker Provider -------------------------------
+echo "get the go modules"
+go get
+echo "----------- Build Docker Provider -------------------------------"
 make
 cd $DIR
