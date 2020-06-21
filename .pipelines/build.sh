@@ -10,12 +10,7 @@ export GOOS="linux"
 export GOARCH="amd64"
 export GOPATH=$DIR/../source/plugins/go
 echo "GOPATH:"$GOPATH
-echo "GOPROXY":$GOPROXY
 go env
-# echo "start:get the go modules"
-# cd $DIR/../source/plugins/go/src
-# go get
-# echo "end:get the go modules"
 
 cd $DIR/../build/linux
 echo "----------- Build Docker Provider -------------------------------"
