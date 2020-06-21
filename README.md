@@ -115,7 +115,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 1. Install go1.14.1, build dependencies and docker if you dont have installed already on your dev machine
 ```
-bash ~/Docker-Provider/scripts/build/install-build-pre-requisites.sh
+bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 ```
 2. Verify python, docker and golang installed properly and also PATH and GOBIN environment variables set with go path.
    For some reason go env not set by install-build-pre-requisites.sh script, run the following commands to set them
@@ -145,27 +145,10 @@ bash build-docker-image.sh --image <repo>/<imagename>:<imagetag>
 ## Windows Agent
 > Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine with Docker for Windows
 ### Install Pre-requisites
-1. Install .Net Core SDK 2.2 or higher from https://dotnet.microsoft.com/download if you dont have installed already
-2. Install go1.14.1 if you havent installed already
-  ```
-  cd  %userprofile%
-  mkdir go
-  cd  %userprofile%\go
-  curl -LO https://dl.google.com/go/go1.14.1.windows-amd64.msi
-  # install go. default will get installed %SYSTEMDRIVE%\go
-  msiexec /i %userprofile%\go\go1.14.1.windows-amd64.msi
-  ```
-3. Install build dependencies
 ```
-cd  %userprofile%
-mkdir gcctemp && cd gcctemp
-## download gcc for windows
-curl -LO https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe
-## install gcc on windows
-%userprofile%\gcctemp\tdm64-gcc-9.2.0.exe
+cd %userprofile%\Docker-Provider\scripts\windows # based on your repo path
+powershell -executionpolicy bypass -File .\install-build-pre-requisites.ps1 #
 ```
-4. Install Docker for windows https://docs.docker.com/docker-for-windows/install/
-
 ### Build Certificate Generator Source code and Out OMS Go plugin code
 1. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
