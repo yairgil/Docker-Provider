@@ -9,12 +9,12 @@ function Install-Go {
     Write-Host("creating gotemp dir : " + $tempGo + " ")
     New-Item -Path $tempGo -ItemType "directory" -Force -ErrorAction Stop
     if ($false -eq (Test-Path -Path $tempGo)) {
-        Write-Host("Invalid tempGo : " + $tempDir + " ") -ForegroundColor Red
+        Write-Host("Invalid tempGo : " + $tempGo + " ") -ForegroundColor Red
         exit
     }
 
    $url = "https://dl.google.com/go/go1.14.1.windows-amd64.msi"
-   $output = Join-Path -Path $tempDir -ChildPath "go1.14.1.windows-amd64.msi"
+   $output = Join-Path -Path $tempGo -ChildPath "go1.14.1.windows-amd64.msi"
    Write-Host("downloading go msi into directory path : " + $output + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
    Write-Host("downloading of go msi into directory path : " + $output + "  completed")
