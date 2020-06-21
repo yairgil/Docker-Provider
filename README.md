@@ -30,6 +30,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 The general directory structure is:
 
 ```
+├── .pipelines/                               - files related to azure devops build and release pipelines
 ├── build/                                    - files to related to  compile and build the code
 │   ├── version                               - build version used for docker prvider and go shared object(so) files
 │   ├── common/                               - common to both windows and linux installers
@@ -60,6 +61,7 @@ The general directory structure is:
 │   │   ├── defaultpromenvvariables           - default environment variables for Prometheus scraping
 │   │   ├── defaultpromenvvariables-rs        - cluster level default environment variables for Prometheus scraping
 │   ├── windows/                              - scripts to build the Docker image for Windows Agent
+│   │   ├── dockerbuild                       - script to build the code and docker imag, and publish docker image
 │   │   ├── acrworkflows/                     - acr work flows for the Windows Agent container image
 │   │   ├── baseimage/                        - windowsservercore base image for the windows agent container
 │   │   ├── DockerFile                        - DockerFile for Windows Agent Container Image
