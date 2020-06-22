@@ -30,7 +30,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 The general directory structure is:
 
 ```
-├── .pipelines/                               - files related to azure devops build and release pipelines
+├── .pipelines/                               - files related to azure devops ci and cd pipelines
 ├── build/                                    - files to related to  compile and build the code
 │   ├── version                               - build version used for docker prvider and go shared object(so) files
 │   ├── common/                               - common to both windows and linux installers
