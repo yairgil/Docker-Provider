@@ -1,5 +1,4 @@
 #!/usr/local/bin/ruby
-# frozen_string_literal: true
 
 class MdmMetricsGenerator
   require "logger"
@@ -289,6 +288,63 @@ class MdmMetricsGenerator
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return records
+    end
+
+    def getMetricRecords(record)
+      records = []
+      begin
+        dimNames = ""
+        dimValues = ""
+        noDimVal ="-"
+        metricValue = 0
+        if !record["tags"].nil?
+            i = 0
+            record["tags"].each { |k, v| 
+              i = i+1
+              if (i <= 10) #MDM = 10 dims
+                dimNames.concat("\"#{k}\"")
+                dimNames.concat(",")
+                if !v.nil? && v.length >0
+                  dimValues.concat("\"#{v}\"")
+                else
+                  dimValues.concat("\"#{noDimVal}\"")
+                end
+                dimValues.concat(",")
+              end
+          }
+          if (dimNames.end_with?(","))
+            dimNames.chomp!(",")
+          end
+          if (dimValues.end_with?(","))
+            dimValues.chomp!(",")
+          end
+        end
+        timestamp = record["timestamp"]
+        convertedTimestamp = Time.at(timestamp.to_i).utc.iso8601
+        if !record["fields"].nil?
+          record["fields"].each { |k, v|
+          if is_numeric(v)
+            metricRecord = MdmAlertTemplates::Generic_metric_template % {
+              timestamp: convertedTimestamp,
+              metricName: k,
+              dimNames: dimNames,
+              dimValues: dimValues,
+              metricValue: v,
+            }
+            records.push(Yajl::Parser.parse(StringIO.new(metricRecord)))
+            #@log.info "pushed mdmgenericmetric: #{k},#{v}"
+          end
+            }
+        end
+      rescue => errorStr
+        @log.info "getMetricRecords:Error: #{errorStr} for record #{record}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+      return records
+    end
+
+    def is_numeric(o)
+        true if Float(o) rescue false
     end
 
     def getContainerResourceUtilizationThresholds
