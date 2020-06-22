@@ -51,17 +51,17 @@ function Build-Dependencies {
     Write-Host("downloading gcc core, runtime and bin utils : " + $destinationPath + "  ...")
     $gccCoreUrl = "http://downloads.sourceforge.net/project/tdm-gcc/TDM-GCC%205%20series/5.1.0-tdm64-1/gcc-5.1.0-tdm64-1-core.zip"
     $gccCorePath =  Join-Path -Path $tempDependencies -ChildPath "gcc.zip"
-    Invoke-WebRequest -Uri $gccCoreUrl -OutFile $gccCorePath -ErrorAction Stop
+    Invoke-WebRequest  -UserAgent "BuildAgent" -Uri $gccCoreUrl -OutFile $gccCorePath -ErrorAction Stop
     Expand-Archive -LiteralPath $gccCorePath -DestinationPath $destinationPath -Force
 
     $gccRuntimeUrl = "http://downloads.sourceforge.net/project/tdm-gcc/MinGW-w64%20runtime/GCC%205%20series/mingw64runtime-v4-git20150618-gcc5-tdm64-1.zip"
     $gccRuntimePath =  Join-Path -Path $tempDependencies -ChildPath "runtime.zip"
-    Invoke-WebRequest -Uri $gccRuntimeUrl -OutFile $gccRuntimePath -ErrorAction Stop
+    Invoke-WebRequest  -UserAgent "BuildAgent" -Uri $gccRuntimeUrl -OutFile $gccRuntimePath -ErrorAction Stop
     Expand-Archive -LiteralPath $gccRuntimePath -DestinationPath $destinationPath -Force
 
     $gccBinUtilsUrl = "http://downloads.sourceforge.net/project/tdm-gcc/GNU%20binutils/binutils-2.25-tdm64-1.zip"
     $gccBinUtilsPath =  Join-Path -Path $tempDependencies -ChildPath "binutils.zip"
-    Invoke-WebRequest -Uri $gccBinUtilsUrl -OutFile $gccBinUtilsPath -ErrorAction Stop
+    Invoke-WebRequest  -UserAgent "BuildAgent" -Uri $gccBinUtilsUrl -OutFile $gccBinUtilsPath -ErrorAction Stop
     Expand-Archive -LiteralPath $gccBinUtilsUrl -DestinationPath $destinationPath -Force
     Write-Host("downloading and extraction of gcc core, runtime and bin utils completed")
 
