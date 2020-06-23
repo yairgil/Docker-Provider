@@ -7,8 +7,8 @@ dotnet publish -c Release -r win10-x64
 echo "END:Adding and restoring dotnet packages"
 
 echo "START:set environment variables"
-set PATH="%PATH%;c:\gcc\bin;c:\go\bin"
 setx path "%path%;c:\gcc\bin;c:\go\bin"
+set PATH="%PATH%;c:\gcc\bin;c:\go\bin"
 echo "END:set environment variables"
 
 echo "START:Getting go packages"
