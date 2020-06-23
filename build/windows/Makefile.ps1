@@ -4,7 +4,7 @@
 #  2. Builds the out_oms plugin code in go lang  into the shared object(.so) file and copy the out_oms.so file  to ..\..\kubernetes\windows\omsagentwindows
 #  3. copy the files under installer directory to ..\..\kubernetes\windows\omsagentwindows
 
-$dotnetcoreframework = "netcoreapp2.2"
+$dotnetcoreframework = "netcoreapp3.1"
 
 Write-Host("Building Certificate generator code...")
 $currentdir =  $PWD

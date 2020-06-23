@@ -19,7 +19,7 @@ build:
   commands:
     - !!defaultcommand
       name: 'Build Docker Provider Shell Bundle'
-      command: '.pipelines/build.sh'
+      command: '.pipelines/build-linux.sh'
       fail_on_stderr: false
 
 package:
