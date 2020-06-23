@@ -7,19 +7,23 @@
 $dotnetcoreframework = "netcoreapp3.1"
 
 Write-Host("Building Certificate generator code...")
-$currentdir =  $PWD
+$currentdir =  $PSScriptRoot
+Write-Host("current script dir : " + $currentdir + " ")
+
 if ($false -eq (Test-Path -Path $currentdir)) {
     Write-Host("Invalid current dir : " + $currentdir + " ") -ForegroundColor Red
     exit
 }
 
 $builddir = Split-Path -Path $currentdir
+Write-Host("builddir dir : " + $builddir + " ")
 if ($false -eq (Test-Path -Path $builddir)) {
     Write-Host("Invalid build dir : " + $builddir + " ") -ForegroundColor Red
     exit
 }
 
 $versionFilePath = Join-Path -Path $builddir -child "version"
+Write-Host("versionFilePath  : " + $versionFilePath + " ")
 if ($false -eq (Test-Path -Path $versionFilePath)) {
     Write-Host("Version file path incorrect or doesnt exist : " + $versionFilePath + " ") -ForegroundColor Red
     exit
@@ -60,6 +64,7 @@ $buildVersionDate = $BuildVersionDate
 
 
 $certsrcdir = Join-Path -Path $builddir -ChildPath "windows\installer\certificategenerator"
+Write-Host("certsrc dir : " + $certsrcdir + " ")
 if ($false -eq (Test-Path -Path $certsrcdir)) {
     Write-Host("Invalid certificate generator source dir : " + $certsrcdir + " ") -ForegroundColor Red
     exit

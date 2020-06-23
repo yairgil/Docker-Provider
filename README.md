@@ -172,6 +172,11 @@ powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publ
   docker push  <repo>/<imagename>:<imagetag>
 ```
 
+# Azure DevOps Build Pipeline
+
+Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines.
+These pipelines are configured for CI triggers for dev and master (TBD).
+
 # Update Kubernetes yamls
 
 Navigate to Kubernetes directory and update the yamls with latest docker image of Linux and Windows Agent and other relevant updates.
