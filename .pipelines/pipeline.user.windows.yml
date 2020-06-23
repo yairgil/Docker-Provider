@@ -20,13 +20,18 @@ signing_options:
   profile: 'azure'
   codesign_validation_glob_pattern: 'regex|.+(?:dll|exe|sys|ps1|psm1|ps1xml|psc1|psd1|cdxml|vbs|js|wsf)$;-:file|**\linux\**' #CSV does not currently support binaries built for linux, so we exclude this folder
 
+restore:
+  commands:
+    - !!defaultcommand
+       name: 'Restore dotnet packages'
+       command: '.pipelines/restore-windows.cmd'
+
 build:
   commands:
     - !!defaultcommand
       name: 'Build Certificate Generator Source code and Out OMS Go plugin code'
       command: '.pipelines/build-windows.cmd'
       fail_on_stderr: false
-
 
 package:
   commands:

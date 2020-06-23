@@ -69,7 +69,7 @@ if ($false -eq (Test-Path -Path $certsrcdir)) {
     Write-Host("Invalid certificate generator source dir : " + $certsrcdir + " ") -ForegroundColor Red
     exit
 }
-Write-Host("set the cerificate generator source code director : " + $certsrcdir + " ...")
+Write-Host("set the cerificate generator source code directory : " + $certsrcdir + " ...")
 Set-Location -Path $certsrcdir
 
 Write-Host("Adding dotnet packages Newtonsoft.json and BouncyCastle ...")
