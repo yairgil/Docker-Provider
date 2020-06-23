@@ -15,6 +15,13 @@ version:
   system: 'custom'
   exclude_commit: true
 
+restore:
+  commands:
+    - !!defaultcommand
+      name: 'get go modules'
+      command: '.pipelines/restore-linux.sh'
+      fail_on_stderr: false
+
 build:
   commands:
     - !!defaultcommand
