@@ -5,11 +5,11 @@ set +e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo $DIR
 
-echo "set GOPATH, GOARCH and GOOS env variables"
+echo "set GOARCH and GOOS env variables"
 export GOOS="linux"
 export GOARCH="amd64"
-export GOPATH=$DIR/../source/plugins/go
-echo "GOPATH:"$GOPATH
+# export GOPATH=$DIR/../source/plugins/go
+# echo "GOPATH:"$GOPATH
 go env
 
 cd $DIR/../build/linux
