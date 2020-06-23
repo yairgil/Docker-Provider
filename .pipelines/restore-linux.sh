@@ -8,18 +8,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo $DIR
 
 # change to source code directory
-cd $DIR/../source/plugins/go
+cd $DIR/../source/plugins/go/src
 pwd
 
-echo "set GOPATH, GOARCH and GOOS env variables"
-export GOOS="linux"
-export GOARCH="amd64"
-export GOPATH=$DIR/../source/plugins/go
-echo "GOPATH:"$GOPATH
+echo "go environment variables"
 go env
 
-echo "get go modules"
+echo "start:get go modules"
 go get
+echo "end:get go modules"
 
 # Restore working directory
 popd
