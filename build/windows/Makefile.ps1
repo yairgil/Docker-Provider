@@ -80,7 +80,8 @@ dotnet build  -f $dotnetcoreframework
 Write-Host("Building Certificate generator code and ...") -ForegroundColor Green
 
 Write-Host("Publish release and win10-x64 binaries of certificate generator code  ...")
-dotnet publish -c Release -r win10-x64
+# explicit set --no-restore since this will work cdpx build machines
+dotnet publish -c Release -r win10-x64 --no-restore
 Write-Host("Successfully published certificate generator code binaries") -ForegroundColor Green
 
 $certreleasebinpath =  Join-Path -PATH $certsrcdir -ChildPath "bin\Release\$dotnetcoreframework\win10-x64\publish\*.*"
@@ -118,10 +119,11 @@ if ($false -eq (Test-Path -Path $outomsgoplugindir)) {
 }
 Set-Location -Path $outomsgoplugindir
 Write-Host("getting latest go modules ...")
-go get
+# TBD: Fix go path issue in build windows container image
+c:\go\bin\go.exe get
 Write-Host("successfyullt got latest go modules") -ForegroundColor Green
 
-go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
+c:\go\bin\go.exe build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
 Write-Host("Successfully build Out_OMS go plugin code") -ForegroundColor Green
 
 Write-Host("copying out_oms.so file to : $publishdir")
