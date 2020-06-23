@@ -175,7 +175,8 @@ powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publ
 # Azure DevOps Build Pipeline
 
 Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines.
-These pipelines are configured for CI triggers for dev and master (TBD).
+
+These pipelines are configured with CI triggers for dev and master (TBD).
 
 ## Onboarding feature branch
 
@@ -189,7 +190,8 @@ Here are the instructions to onboard the feature branch to Azure Dev Ops pipelin
  6. create build definition
 
  This will create build definition for the Linux agent.
- Repeat above steps except this time select Operation system as "Windows" to onboard the Windows agent.
+ Repeat above steps except that this time select Operation system as "Windows" to onboard the pipeline for Windows agent.
+
 
 # Update Kubernetes yamls
 
