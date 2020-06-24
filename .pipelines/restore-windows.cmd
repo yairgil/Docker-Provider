@@ -13,5 +13,5 @@ echo "END:set environment variables"
 
 echo "START:Getting go packages"
 cd /D "%~dp0..\source\plugins\go\src"
-c:\go\bin\go.exe get
+go get
 echo "END:Getting go packages"
