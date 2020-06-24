@@ -6,6 +6,16 @@
 
 $dotnetcoreframework = "netcoreapp3.1"
 
+Write-Host("Set the PATH enviroment variables...")
+$ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
+[System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv + ";C:\gcc\bin", "PROCESS")
+
+$UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
+[System.Environment]::SetEnvironmentVariable("PATH", $UserPathEnv + ";C:\gcc\bin", "USER")
+
+$SystemPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
+[System.Environment]::SetEnvironmentVariable("PATH", $SystemPathEnv + ";C:\gcc\bin", "Machine")
+
 Write-Host("Building Certificate generator code...")
 $currentdir =  $PSScriptRoot
 Write-Host("current script dir : " + $currentdir + " ")
