@@ -80,7 +80,7 @@ dotnet build  -f $dotnetcoreframework
 Write-Host("Building Certificate generator code and ...") -ForegroundColor Green
 
 Write-Host("Publish release and win10-x64 binaries of certificate generator code  ...")
-dotnet publish -c Release -r win10-x64
+dotnet publish -c Release -r win10-x64 --no-restore
 Write-Host("Successfully published certificate generator code binaries") -ForegroundColor Green
 
 $certreleasebinpath =  Join-Path -PATH $certsrcdir -ChildPath "bin\Release\$dotnetcoreframework\win10-x64\publish\*.*"
