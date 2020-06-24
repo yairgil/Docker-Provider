@@ -30,7 +30,7 @@ COPY ./omsagentwindows/installer/conf/out_oms.conf /etc/omsagentwindows
 # copy keepcert alive ruby scripts
 COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
 
-ENV AGENT_VERSION "omsagent-adx-win"
+ENV AGENT_VERSION "win-ciprod05262020-2"
 ENV OS_TYPE "windows"
 ENV APPLICATIONINSIGHTS_AUTH "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
 ENV AZMON_COLLECT_ENV False
