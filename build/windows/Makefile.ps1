@@ -119,10 +119,10 @@ if ($false -eq (Test-Path -Path $outomsgoplugindir)) {
 Set-Location -Path $outomsgoplugindir
 Write-Host("getting latest go modules ...")
 # TBD: Fix go path issue in build windows container image
-go get
+C:\Go\bin\go.exe  get
 Write-Host("successfyullt got latest go modules") -ForegroundColor Green
 
-go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
+C:\Go\bin\go.exe build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
 Write-Host("Successfully build Out_OMS go plugin code") -ForegroundColor Green
 
 Write-Host("copying out_oms.so file to : $publishdir")
