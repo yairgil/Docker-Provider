@@ -8,9 +8,13 @@
 source/plugins/go/src/profiling
 .vscode/launch.json
 source/plugins/go/src/vendor/
-# go shared object files
+# ignore all these types
 *.so
 *.zip
+*.exe
+*.jar
+*.dll
+*.obj
 # .net code build artificats
 build/windows/installer/certificategenerator/bin
 build/windows/installer/certificategenerator/obj
