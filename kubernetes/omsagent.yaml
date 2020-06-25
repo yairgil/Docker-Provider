@@ -653,7 +653,7 @@ spec:
           - mountPath: C:\etc\omsagent-secret
             name: omsagent-secret
             readOnly: true
-          - mountPath: C:\etc\config\settings
+          - mountPath: C:\etc\config\adx
             name: omsagent-adx-secret
             readOnly: true
          livenessProbe:
