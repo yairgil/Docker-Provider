@@ -8,6 +8,8 @@
 source/plugins/go/src/profiling
 .vscode/launch.json
 source/plugins/go/src/vendor/
+# ignore go packages
+source/plugins/go/pkg/
 # ignore all these types
 *.so
 *.zip

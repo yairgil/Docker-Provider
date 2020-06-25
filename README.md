@@ -141,6 +141,20 @@ bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag>
 ```
 > Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
+If you prefe to build docker provider shell bundle and image separately, then you can follow below instructions
+
+##### Build Docker Provider shell bundle
+```
+cd ~/Docker-Provider/build/linux
+make
+```
+##### Build and Push Docker Image
+```
+cd ~/Docker-Provider/kubernetes/linux/
+docker build -t <repo>/<imagename>:<imagetag> IMAGE_TAG=<imagetag> .
+docker push <repo>/<imagename>:<imagetag>
+```
+
 ## Windows Agent
 > Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine
 ### Install Pre-requisites
@@ -153,16 +167,33 @@ powershell -executionpolicy bypass -File .\install-build-pre-requisites.ps1 #
 ```
 docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
 cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
-powershell # switch to powershell if you are not on powershell already
+powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
 .\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
 ```
 > Note: format of the imagetag will be win-ci<release>MMDDYYYY. possible values for release are test, dev, preview, dogfood, prod etc.
 
+If you prefe to build Certificate Generator Source code and Out OMS Go plugin code and image separately, then you can follow below instructions
+
+#### Build Certificate Generator Source code and Out OMS Go plugin code
+```
+cd %userprofile%\Docker-Provider\build\windows # based on your repo path
+powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publish
+```
+
+####  Build and Push Docker Image
+```
+cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
+docker build -t <repo>/<imagename>:<imagetag> IMAGE_TAG=<imagetag> .
+docker push <repo>/<imagename>:<imagetag>
+```
+
 # Azure DevOps Build Pipeline
 
-Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines.
+Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines. These pipelines are configured with CI triggers for dev and master (TBD).
 
-These pipelines are configured with CI triggers for dev and master (TBD).
+Docker Images will be pushed to CDPX ACR repos and these needs to retagged pushed to corresponding ACR or docker hub. Only onboarded Azure AD AppId has permission to pull the images from CDPx ACRs.
+
+Please reach out the agent engineering team if you need access to it.
 
 ## Onboarding feature branch
 
