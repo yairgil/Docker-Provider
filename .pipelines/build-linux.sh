@@ -8,8 +8,6 @@ echo $DIR
 echo "set GOARCH and GOOS env variables"
 export GOOS="linux"
 export GOARCH="amd64"
-# export GOPATH=$DIR/../source/plugins/go
-# echo "GOPATH:"$GOPATH
 go env
 
 cd $DIR/../build/linux

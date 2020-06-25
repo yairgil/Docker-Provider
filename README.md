@@ -135,42 +135,28 @@ bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 
 ```
 cd ~/Docker-Provider/kubernetes/linux/dockerbuild
-# login docker or azure acr depending what you are using for docker image repo
-sudo docker login # for docker
-# az acr login -n <acr registry name> # For login to azure acr
-bash build-docker-image.sh --image <repo>/<imagename>:<imagetag>
+sudo docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
+# build provider, docker image and publish to docker image
+bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag>
 ```
 > Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
 ## Windows Agent
-> Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine with Docker for Windows
+> Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine
 ### Install Pre-requisites
 ```
 cd %userprofile%\Docker-Provider\scripts\windows # based on your repo path
 powershell -executionpolicy bypass -File .\install-build-pre-requisites.ps1 #
 ```
-### Build Certificate Generator Source code and Out OMS Go plugin code
+### Build Cert generator, Out OMS Plugun and Docker Image and Publish Docker Image
 1. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
-cd %userprofile%\Docker-Provider\build\windows # based on your repo path
-powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publish
+docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
+cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
+powershell # switch to powershell if you are not on powershell already
+.\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
 ```
-### Build Docker Image
-
-1. Update AGENT_VERSION environment variable with your intended imagetag in  %userprofile%\Docker-Provider\kubernetes\windows\Dockerfile
- > Note: format of the imagetag will be win-ci<release>MMDDYYYY. possible values for release are test, dev, preview, dogfood, prod etc.
-
-2.  Navigate to below directory to build the docker image
-```
-  cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
-  docker build -t  <repo>/<imagename>:win-<imagetag> .
-
-```
-3. Push the Docker image to docker repo. For testing, you will be pushing to Docker hub
-```
-  cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
-  docker push  <repo>/<imagename>:<imagetag>
-```
+> Note: format of the imagetag will be win-ci<release>MMDDYYYY. possible values for release are test, dev, preview, dogfood, prod etc.
 
 # Azure DevOps Build Pipeline
 
@@ -188,10 +174,10 @@ Here are the instructions to onboard the feature branch to Azure Dev Ops pipelin
  4. select the your feature branch from Branch drop down
  5. Select the Operation system as "Linux" and Build type as "buddy"
  6. create build definition
+ 7. enable continous integration on trigger on the build definition
 
  This will create build definition for the Linux agent.
  Repeat above steps except that this time select Operation system as "Windows" to onboard the pipeline for Windows agent.
-
 
 # Update Kubernetes yamls
 

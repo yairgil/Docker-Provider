@@ -9,8 +9,8 @@ environment:
 
 version:
   name: 'DockerProvider'
-  major: 0
-  minor: 9
+  major: 10
+  minor: 0
   tag: 'beta'
   system: 'custom'
   exclude_commit: true

@@ -10,8 +10,8 @@ environment:
 
 version:
   name: 'Certificate Generator and Out OMS plugin'
-  major: 0
-  minor: 9
+  major: 10
+  minor: 0
   tag: 'beta'
   system: 'custom'
   exclude_commit: true
