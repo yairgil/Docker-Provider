@@ -149,7 +149,7 @@ class MdmAlertTemplates
                 "data": {
                     "baseData": {
                         "metric": "%{metricName}",
-                        "namespace": "Insights.Container/prometheus",
+                        "namespace": "Insights.Container/%{namespaceSuffix}",
                         "dimNames": [%{dimNames}],
                         "series": [
                         {

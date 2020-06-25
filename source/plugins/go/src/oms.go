@@ -1148,9 +1148,12 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	go func() {
-		e1 := http.ListenAndServe("localhost:6060", nil)
-		if e1 != nil {
-			Log("HTTP Listen Error: %s \n", e1.Error())
+		isTest := os.Getenv("ISTEST")
+		if strings.Compare(strings.ToLower(strings.TrimSpace(isTest)), "true") == 0 {
+			e1 := http.ListenAndServe("localhost:6060", nil)
+			if e1 != nil {
+				Log("HTTP Listen Error: %s \n", e1.Error())
+			}
 		}
 	}()
 	StdoutIgnoreNsSet = make(map[string]bool)

@@ -1,4 +1,5 @@
 #!/usr/local/bin/ruby
+# frozen_string_literal: true
 
 class MdmMetricsGenerator
   require "logger"
@@ -293,8 +294,8 @@ class MdmMetricsGenerator
     def getMetricRecords(record)
       records = []
       begin
-        dimNames = ""
-        dimValues = ""
+        dimNames = String.new "" #mutable string
+        dimValues = String.new ""
         noDimVal ="-"
         metricValue = 0
         if !record["tags"].nil?
@@ -327,6 +328,7 @@ class MdmMetricsGenerator
             metricRecord = MdmAlertTemplates::Generic_metric_template % {
               timestamp: convertedTimestamp,
               metricName: k,
+              namespaceSuffix: record["name"],
               dimNames: dimNames,
               dimValues: dimValues,
               metricValue: v,
