@@ -48,31 +48,34 @@ function Build-Dependencies {
 
 
     $destinationPath = Join-Path -Path $env:SYSTEMDRIVE -ChildPath "gcc"
-    Write-Host("downloading gcc core, runtime and bin utils : " + $destinationPath + "  ...")
-    $gccCoreUrl = "http://downloads.sourceforge.net/project/tdm-gcc/TDM-GCC%205%20series/5.1.0-tdm64-1/gcc-5.1.0-tdm64-1-core.zip"
-    $gccCorePath =  Join-Path -Path $tempDependencies -ChildPath "gcc.zip"
-    Invoke-WebRequest  -UserAgent "BuildAgent" -Uri $gccCoreUrl -OutFile $gccCorePath -ErrorAction Stop
-    Expand-Archive -LiteralPath $gccCorePath -DestinationPath $destinationPath -Force
+    New-Item -Path $destinationPath -ItemType "directory" -Force -ErrorAction Stop
 
-    $gccRuntimeUrl = "http://downloads.sourceforge.net/project/tdm-gcc/MinGW-w64%20runtime/GCC%205%20series/mingw64runtime-v4-git20150618-gcc5-tdm64-1.zip"
-    $gccRuntimePath =  Join-Path -Path $tempDependencies -ChildPath "runtime.zip"
-    Invoke-WebRequest  -UserAgent "BuildAgent" -Uri $gccRuntimeUrl -OutFile $gccRuntimePath -ErrorAction Stop
-    Expand-Archive -LiteralPath $gccRuntimePath -DestinationPath $destinationPath -Force
+    Write-Host("downloading gcc : " + $destinationPath + "  ...")
+    $gccDownLoadUrl = "https://ciwinagentbuildgcc.blob.core.windows.net/tdm-gcc-64/TDM-GCC-64.zip"
+    $gccPath =  Join-Path -Path $destinationPath -ChildPath "gcc.zip"
+    Invoke-WebRequest -UserAgent "BuildAgent" -Uri $gccDownLoadUrl -OutFile $gccPath
+    Write-Host("downloading gcc zip  file completed")
 
-    $gccBinUtilsUrl = "http://downloads.sourceforge.net/project/tdm-gcc/GNU%20binutils/binutils-2.25-tdm64-1.zip"
-    $gccBinUtilsPath =  Join-Path -Path $tempDependencies -ChildPath "binutils.zip"
-    Invoke-WebRequest  -UserAgent "BuildAgent" -Uri $gccBinUtilsUrl -OutFile $gccBinUtilsPath -ErrorAction Stop
-    Expand-Archive -LiteralPath $gccBinUtilsUrl -DestinationPath $destinationPath -Force
-    Write-Host("downloading and extraction of gcc core, runtime and bin utils completed")
+    Write-Host("extracting gcc core zip  file ....")
+    Expand-Archive -LiteralPath $gccPath -DestinationPath $destinationPath -Force
+    Write-Host("extracting gcc core zip  completed....")
 
     # set gcc environment variable
+    Write-Host("updating PATH environment variable with gcc path")
     $gccBinPath = Join-Path -Path $destinationPath -ChildPath "bin"
 
-    Write-Host "updating PATH variable"
-    $gccBinPath = Join-Path -Path $destinationPath -ChildPath "bin"
-    $path = $env:PATH + ";=" + $gccBinPath
-    [System.Environment]::SetEnvironmentVariable("PATH", $path, "PROCESS")
-    [System.Environment]::SetEnvironmentVariable("PATH", $path, "USER")
+    $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
+    $ProcessPathEnv = $ProcessPathEnv + ";" + $gccBinPath
+
+    $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
+    $UserPathEnv = $UserPathEnv + ";" + $gccBinPath
+
+    $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+    $MachinePathEnv = $MachinePathEnv + ";" + $gccBinPath
+
+    [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
+    [System.Environment]::SetEnvironmentVariable("PATH", $UserPathEnv, "USER")
+    [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
 }
 
 function Install-DotNetCoreSDK() {

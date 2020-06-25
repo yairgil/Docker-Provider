@@ -6,16 +6,6 @@
 
 $dotnetcoreframework = "netcoreapp3.1"
 
-Write-Host("Set the PATH enviroment variables...")
-$ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
-[System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv + ";C:\gcc\bin", "PROCESS")
-
-$UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
-[System.Environment]::SetEnvironmentVariable("PATH", $UserPathEnv + ";C:\gcc\bin", "USER")
-
-$SystemPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
-[System.Environment]::SetEnvironmentVariable("PATH", $SystemPathEnv + ";C:\gcc\bin", "Machine")
-
 Write-Host("Building Certificate generator code...")
 $currentdir =  $PSScriptRoot
 Write-Host("current script dir : " + $currentdir + " ")
@@ -90,7 +80,15 @@ dotnet build  -f $dotnetcoreframework
 Write-Host("Building Certificate generator code and ...") -ForegroundColor Green
 
 Write-Host("Publish release and win10-x64 binaries of certificate generator code  ...")
-dotnet publish -c Release -r win10-x64
+if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDPXBuildMachine", "PROCESS")) -or
+![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDPXBuildMachine", "USER")) -or
+![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDPXBuildMachine", "Machine") )) {
+    Write-Host("running on CDPX build machine so setting --no-restore since there is no n/w connectivity during build")
+    dotnet publish -c Release -r win10-x64 --no-restore
+} else {
+   dotnet publish -c Release -r win10-x64
+}
+
 Write-Host("Successfully published certificate generator code binaries") -ForegroundColor Green
 
 $certreleasebinpath =  Join-Path -PATH $certsrcdir -ChildPath "bin\Release\$dotnetcoreframework\win10-x64\publish\*.*"
@@ -128,11 +126,10 @@ if ($false -eq (Test-Path -Path $outomsgoplugindir)) {
 }
 Set-Location -Path $outomsgoplugindir
 Write-Host("getting latest go modules ...")
-# TBD: Fix go path issue in build windows container image
-C:\Go\bin\go.exe  get
+go  get
 Write-Host("successfyullt got latest go modules") -ForegroundColor Green
 
-C:\Go\bin\go.exe build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
+go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
 Write-Host("Successfully build Out_OMS go plugin code") -ForegroundColor Green
 
 Write-Host("copying out_oms.so file to : $publishdir")
