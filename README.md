@@ -24,6 +24,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 8. [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
 9. [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
 
+> Note: recommend to clone the code into Ubuntu app on Windows 10 so that you can work on development of both windows and linux agent.
 
 # Repo structure
 
@@ -104,8 +105,7 @@ Pull request must be approved by at least one engineering team members.
 
 # Authoring code
 
-We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring.
-
+We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code into Ubuntu app so that you dont need to wory about line ending issues LF vs CRLF.
 
 # Building code
 
@@ -156,17 +156,21 @@ docker push <repo>/<imagename>:<imagetag>
 ```
 
 ## Windows Agent
-> Note: To build the Windows Agent Image, you will need Windows 10 Pro or higher machine
+> Note: Below instructions are assumed you have cloned the code on to WSL/2 machine
 ### Install Pre-requisites
 ```
-cd %userprofile%\Docker-Provider\scripts\windows # based on your repo path
+powershell # launch powershell with elevated admin on your windows machine
+net use z: \\wsl$\Ubuntu-16.04 # map the network share of the ubuntu app
+cd z:\
+cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
 powershell -executionpolicy bypass -File .\install-build-pre-requisites.ps1 #
 ```
 ### Build Cert generator, Out OMS Plugun and Docker Image and Publish Docker Image
-1. Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
+
+Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
 docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
-cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
+cd z:\home\sshadmin\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
 powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
 .\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
 ```
@@ -176,13 +180,13 @@ If you prefe to build Certificate Generator Source code and Out OMS Go plugin co
 
 #### Build Certificate Generator Source code and Out OMS Go plugin code
 ```
-cd %userprofile%\Docker-Provider\build\windows # based on your repo path
+cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
 powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publish
 ```
 
 ####  Build and Push Docker Image
 ```
-cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
+cd z:\home\sshadmin\Docker-Provider\kubernetes\windows # based on your repo path
 docker build -t <repo>/<imagename>:<imagetag> IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
 ```
