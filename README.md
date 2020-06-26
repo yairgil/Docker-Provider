@@ -160,8 +160,8 @@ docker push <repo>/<imagename>:<imagetag>
 ### Install Pre-requisites
 ```
 powershell # launch powershell with elevated admin on your windows machine
-powershell -executionpolicy bypass # set the execution policy
-net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app
+Set-ExecutionPolicy -ExecutionPolicy bypass # set the execution policy
+net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app to windows
 cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
 .\install-build-pre-requisites.ps1 #
 ```
@@ -195,7 +195,7 @@ docker push <repo>/<imagename>:<imagetag>
 
 Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines. These pipelines are configured with CI triggers for dev and master (TBD).
 
-Docker Images will be pushed to CDPX ACR repos and these needs to retagged pushed to corresponding ACR or docker hub. Only onboarded Azure AD AppId has permission to pull the images from CDPx ACRs.
+Docker Images will be pushed to CDPX ACR repos and these needs to retagged and pushed to corresponding ACR or docker hub. Only onboarded Azure AD AppId has permission to pull the images from CDPx ACRs.
 
 Please reach out the agent engineering team if you need access to it.
 
