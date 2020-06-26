@@ -160,10 +160,10 @@ docker push <repo>/<imagename>:<imagetag>
 ### Install Pre-requisites
 ```
 powershell # launch powershell with elevated admin on your windows machine
-net use z: \\wsl$\Ubuntu-16.04 # map the network share of the ubuntu app
-cd z:\
+powershell -executionpolicy bypass # set the execution policy
+net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app
 cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
-powershell -executionpolicy bypass -File .\install-build-pre-requisites.ps1 #
+.\install-build-pre-requisites.ps1 #
 ```
 ### Build Cert generator, Out OMS Plugun and Docker Image and Publish Docker Image
 
