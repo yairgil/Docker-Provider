@@ -299,10 +299,10 @@ class MdmMetricsGenerator
         noDimVal ="-"
         metricValue = 0
         if !record["tags"].nil?
-            i = 0
+            dimCount = 0
             record["tags"].each { |k, v| 
-              i = i+1
-              if (i <= 10) #MDM = 10 dims
+            dimCount = dimCount+1
+              if (dimCount <= 10) #MDM = 10 dims
                 dimNames.concat("\"#{k}\"")
                 dimNames.concat(",")
                 if !v.nil? && v.length >0

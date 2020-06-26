@@ -4,7 +4,7 @@ LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
 ENV tmpdir /opt
 ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
-ENV AGENT_VERSION oneagentadxmerge06212020
+ENV AGENT_VERSION ciprod05262020
 ENV MALLOC_ARENA_MAX 2
 ENV HOST_MOUNT_PREFIX /hostfs
 ENV HOST_PROC /hostfs/proc

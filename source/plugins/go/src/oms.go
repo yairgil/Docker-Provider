@@ -1346,7 +1346,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 		AdxClientSecret, err = ReadFileContents(PluginConfiguration["adx_client_secret_path"])
 		if err != nil {
-			Log("Error when reading AdxClientID %s", err)
+			Log("Error when reading AdxClientSecret %s", err)
 		}
 
 		if len(AdxClusterUri) > 0 && len(AdxClientID) > 0 && len(AdxClientSecret) > 0 && len(AdxTenantID) > 0 {

@@ -647,7 +647,7 @@ spec:
             readOnly: true
           - mountPath: C:\var #Read + Write access on this for position file
             name: docker-windows-kuberenetes-container-logs
-          - mountPath: C:\etc\config\settings\adx
+          - mountPath: C:\etc\config\settings
             name: settings-vol-config
             readOnly: true
           - mountPath: C:\etc\omsagent-secret
