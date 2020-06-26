@@ -1,0 +1,296 @@
+version: 2.1
+parameters:
+  run-build-publish:
+    type: boolean 
+    default: true 
+  run-stability-tests:
+    type: boolean 
+    default: false
+  collector-sha:
+    type: string
+    default: ""
+
+executors:
+  golang:
+    docker:
+      - image: cimg/go:1.14
+
+commands:
+  attach_to_workspace:
+    steps:
+      - attach_workspace:
+          at: ~/
+
+  save_module_cache:
+    steps:
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
+          paths:
+            - "/home/circleci/go/pkg/mod"
+
+  restore_module_cache:
+    steps:
+      - run:
+          name: create modules dir
+          command: mkdir -p ~/go/pkg/mod
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
+      - persist_to_workspace:
+          root: ~/
+          paths: go/pkg/mod
+
+  publish_docker_images:
+    parameters:
+      repo:
+        type: string
+      tag:
+        type: string
+    steps:
+      - run:
+          name: Build image
+          command: |
+            make docker-otelcontribcol
+            docker tag otelcontribcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
+            docker tag otelcontribcol:latest otel/<< parameters.repo >>:latest
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push otel/<< parameters.repo >>:<< parameters.tag >>
+            docker push otel/<< parameters.repo >>:latest
+
+workflows:
+  version: 2
+  stability-tests:
+    when: << pipeline.parameters.run-stability-tests >>
+    jobs:
+      - checkout-commit
+      - setup:
+          requires:
+            - checkout-commit
+      - build:
+          requires:
+            - setup
+      - run-stability-tests:
+          requires:
+            - build
+      - publish-dev:
+          requires:
+            - run-stability-tests 
+
+  build-publish:
+    when: << pipeline.parameters.run-build-publish >>
+    jobs:
+      - setup:
+          filters:
+            tags:
+              only: /.*/
+      - lint:
+          requires:
+            - setup 
+          filters:
+            tags:
+              only: /.*/
+      - build:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+      - build-examples-tracing:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+      - cross-compile:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - loadtest:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - test:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+      - publish-stable:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9].[0-9].[0-9]+.*/
+      - spawn-stability-tests-job:
+          requires:
+            - lint
+            - test
+            - build
+          filters:
+            branches:
+              only: /master/
+            tags:
+              ignore: /.*/
+
+jobs:
+  setup:
+    executor: golang
+    steps:
+      - checkout
+      - restore_module_cache
+      - persist_to_workspace:
+          root: ~/
+          paths: project
+      - run:
+          name: Install tools
+          command: make install-tools
+      - run:
+          name: Install testbed tools
+          command: make -C testbed install-tools
+      - persist_to_workspace:
+          root: ~/
+          paths: go/bin
+  lint:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Lint
+          command: CMD="make lint" make -j4 for-all
+      - run:
+          name: Checks
+          command: make -j4 checklicense impi misspell
+
+  build:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Build collector for linux_amd64
+          command: make otelcontribcol
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  build-examples-tracing:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - run:
+          name: Build trace example
+          command: docker-compose -f examples/tracing/docker-compose.yml build
+
+  cross-compile:
+    executor: golang
+    parallelism: 4
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Build collector for all archs
+          command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  test:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Coverage tests
+          command: make test-with-cover
+      - run:
+          name: Code coverage
+          command: bash <(curl -s https://codecov.io/bash)
+
+  loadtest:
+    executor: golang
+    resource_class: medium+
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Loadtest
+          command: make -C testbed runtests
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
+
+  publish-stable:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - publish_docker_images:
+          repo: opentelemetry-collector-contrib
+          tag: ${CIRCLE_TAG:1}
+      - run:
+          name: Calculate checksums 
+          command: cd bin && shasum -a 256 * > checksums.txt
+      - run:
+          name: Create Github release and upload artifacts
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
+
+  publish-dev:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - publish_docker_images:
+          repo: opentelemetry-collector-contrib-dev
+          tag: ${CIRCLE_SHA1}
+
+  spawn-stability-tests-job:
+    executor: golang
+    steps:
+      - run:
+          name: Trigger stability tests job
+          command: |
+            curl -f -X POST "https://circleci.com/api/v2/project/github/open-telemetry/${CIRCLE_PROJECT_REPONAME}/pipeline?circle-token=${CIRCLE_API_TOKEN}" \
+                -H 'Content-Type: application/json' \
+                -H 'Accept: application/json' \
+                -d '{"parameters": {"run-build-publish": false, "run-stability-tests": true, "collector-sha": "'"${CIRCLE_SHA1}"'"}, "branch": "'"${CIRCLE_BRANCH}"'"}'
+
+  checkout-commit:
+    executor: golang
+    steps:
+      - checkout
+      - run:
+          name: Checkout pipeline parameter commit
+          command: |
+            git checkout << pipeline.parameters.collector-sha >>
+            git status
+
+  run-stability-tests:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Run stability tests
+          command: make stability-tests
+      - run:
+          name: Run on fail status
+          command: |
+              curl --request POST \
+              --url https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/issues \
+              --header "authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "content-type: application/json" \
+              --data '{
+                "title": "Stability tests failed in branch '"${CIRCLE_BRANCH}"' for commit << pipeline.parameters.collector-sha >>",
+                "body": "Link to failed job: '"${CIRCLE_BUILD_URL}"'."
+                }'
+          when: on_fail

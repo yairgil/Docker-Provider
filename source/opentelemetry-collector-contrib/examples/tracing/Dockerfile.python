@@ -1,0 +1,10 @@
+FROM python:3
+ADD collector.py /
+RUN pip3 install opentelemetry-api
+RUN pip3 install opentelemetry-sdk
+RUN pip3 install opentelemetry-ext-opencensusexporter
+RUN pip3 install flask
+RUN pip3 install requests
+RUN pip3 install opentelemetry-ext-flask
+RUN pip3 install opentelemetry-ext-requests
+CMD [ "python3", "./collector.py"]

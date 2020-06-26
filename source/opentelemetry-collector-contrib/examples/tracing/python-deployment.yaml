@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collector-python
+spec:
+  selector:
+    matchLabels:
+      app: collector-python
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: collector-python
+    spec:
+      containers:
+      - name: collector-python
+        image: ayushisingh/collectorpy:06222020v7
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 5001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: collector-python-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 5001
+  selector:
+    app: collector-python
