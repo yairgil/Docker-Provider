@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/service"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/version"
 )
 

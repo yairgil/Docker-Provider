@@ -16,7 +16,6 @@ package k8sobserver
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 

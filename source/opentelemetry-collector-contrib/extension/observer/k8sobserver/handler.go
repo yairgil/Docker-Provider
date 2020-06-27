@@ -20,7 +20,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 

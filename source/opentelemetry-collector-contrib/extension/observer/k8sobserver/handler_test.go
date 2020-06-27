@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
