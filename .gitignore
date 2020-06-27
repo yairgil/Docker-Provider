@@ -10,13 +10,6 @@ source/plugins/go/src/profiling
 source/plugins/go/src/vendor/
 # ignore go packages
 source/plugins/go/pkg/
-# ignore all these types
-*.so
-*.zip
-*.exe
-*.jar
-*.dll
-*.obj
 # .net code build artificats
 build/windows/installer/certificategenerator/bin
 build/windows/installer/certificategenerator/obj
@@ -24,8 +17,8 @@ build/windows/installer/certificategenerator/obj
 kubernetes/windows/omsagentwindows
 # ignore everything under intermediate directory
 intermediate
-# ignore all intermeditae *.pyc files
-*.pyc
+# ignore all these files
+*[.pyc, .so, .zip, .exe, .jar, .dll, .obj]
 # ignore docker provider shell bundle
 kubernetes/linux/Linux_ULINUX_1.0_x64_64_Release
 # ignore intermediate .h files under go src

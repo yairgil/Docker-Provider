@@ -174,7 +174,7 @@ cd z:\home\sshadmin\Docker-Provider\kubernetes\windows\dockerbuild # based on yo
 powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
 .\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
 ```
-> Note: format of the imagetag will be win-ci<release>MMDDYYYY. possible values for release are test, dev, preview, dogfood, prod etc.
+> Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
 If you prefe to build Certificate Generator Source code and Out OMS Go plugin code and image separately, then you can follow below instructions
 
