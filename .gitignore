@@ -10,6 +10,7 @@ source/plugins/go/src/profiling
 source/plugins/go/src/vendor/
 # ignore go packages
 source/plugins/go/pkg/
+source/plugins/go/src/*.h
 # .net code build artificats
 build/windows/installer/certificategenerator/bin
 build/windows/installer/certificategenerator/obj

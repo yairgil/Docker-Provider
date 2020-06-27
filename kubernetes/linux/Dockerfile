@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
-    com.microsoft.product="OMS Container Docker Provider" \
+    com.microsoft.product="Azure Monitor for containers" \
     com.microsoft.version="10.0.0-1"
 ARG IMAGE_TAG=ciprod05262020
 ENV AGENT_VERSION ${IMAGE_TAG}
@@ -17,7 +17,7 @@ ENV AZMON_COLLECT_ENV False
 ENV KUBE_CLIENT_BACKOFF_BASE 1
 ENV KUBE_CLIENT_BACKOFF_DURATION 0
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y libc-bin wget openssl curl sudo python-ctypes init-system-helpers  net-tools rsyslog cron vim dmidecode apt-transport-https gnupg && rm -rf /var/lib/apt/lists/*
-COPY setup.sh main.sh defaultpromenvvariables defaultpromenvvariables-rs $tmpdir/
+COPY setup.sh main.sh defaultpromenvvariables defaultpromenvvariables-rs mdsd.xml envmdsd $tmpdir/
 WORKDIR ${tmpdir}
 
 # copy docker provider shell bundle to use the agent image
