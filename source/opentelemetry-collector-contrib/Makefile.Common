@@ -18,7 +18,6 @@ GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=a
 GOTEST=go test
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
-ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 STATICCHECK=staticcheck
@@ -36,7 +35,7 @@ all-srcs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: checklicense impi lint misspell test
+common: impi lint misspell test
 
 .PHONY: test
 test:
@@ -49,29 +48,6 @@ test:
 .PHONY: benchmark
 benchmark:
 	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
-
-.PHONY: addlicense
-addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
-			exit 1; \
-		else \
-			echo "Add License finished successfully"; \
-		fi
-
-.PHONY: checklicense
-checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
-			echo "Use 'make addlicense' to fix this."; \
-			exit 1; \
-		else \
-			echo "Check License finished successfully"; \
-		fi
 
 .PHONY: lint-static-check
 lint-static-check:

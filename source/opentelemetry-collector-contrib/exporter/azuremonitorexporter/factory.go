@@ -16,8 +16,8 @@ package azuremonitorexporter
 
 import (
 	"errors"
-	"time"
 	"fmt"
+	"time"
 
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"

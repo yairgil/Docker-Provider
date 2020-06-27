@@ -1,1 +1,0 @@
-module github.com/signalfx/com_signalfx_metrics_protobuf
