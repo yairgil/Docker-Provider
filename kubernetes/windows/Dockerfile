@@ -1,4 +1,7 @@
 FROM mcr.microsoft.com/azuremonitor/containerinsights/ciprod:winakslogbase-04212020
+MAINTAINER OMSContainers@microsoft.com
+LABEL vendor=Microsoft\ Corp \
+    com.microsoft.product="Azure Monitor for containers"
 
 ARG IMAGE_TAG=ciprod05262020-2
 
