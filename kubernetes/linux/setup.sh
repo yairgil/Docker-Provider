@@ -14,8 +14,6 @@ wget https://github.com/Microsoft/OMS-Agent-for-Linux/releases/download/OMSAgent
 #create file to disable omi service startup script
 touch /etc/.omi_disable_service_control
 
-wget https://github.com/microsoft/Docker-Provider/releases/download/10.0.0-1/docker-cimprov-10.0.0-1.universal.x86_64.sh
-
 chmod 775 $TMPDIR/*.sh
 
 #Extract omsbundle
@@ -32,6 +30,12 @@ mv $TMPDIR/omsbundle* $TMPDIR/omsbundle
 
 /usr/bin/dpkg -i $TMPDIR/omsbundle/110/omsagent*.deb
 #/usr/bin/dpkg -i $TMPDIR/omsbundle/100/omsconfig*.deb
+
+#install oneagent
+wget https://dockerprovider.blob.core.windows.net/mdsdagent/azure-mdsd_1.5.122-build.develop.1087_x86_64.deb
+/usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
+cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
+cp -f $TMPDIR/envmdsd /etc/mdsd.d
 
 #Assign permissions to omsagent user to access docker.sock
 sudo apt-get install acl
@@ -59,7 +63,8 @@ wget https://github.com/microsoft/Docker-Provider/releases/download/5.0.0.0/tele
 
 chmod 777 /opt/telegraf
 
-/$TMPDIR/docker-cimprov-10.0.0-*.x86_64.sh --install
+# Use wildcard version so that it doesnt require to touch this file
+/$TMPDIR/docker-cimprov-*.*.*-*.x86_64.sh --install
 
 #download and install fluent-bit(td-agent-bit)
 wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
@@ -70,3 +75,6 @@ sudo apt-get install td-agent-bit=1.4.2 -y
 rm -rf $TMPDIR/omsbundle
 rm -f $TMPDIR/omsagent*.sh
 rm -f $TMPDIR/docker-cimprov*.sh
+rm -f $TMPDIR/azure-mdsd*.deb
+rm -f $TMPDIR/mdsd.xml
+rm -f $TMPDIR/envmdsd
