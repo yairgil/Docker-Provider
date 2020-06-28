@@ -25,10 +25,6 @@ static_analysis_options:
     files_to_scan:
       - from: 'build\windows\installer\certificategenerator\bin\'
         exclude:
-          - '**/*.dll'
-          - '**/*.exe'
-          - '**/**/**/*.dll'
-          - '**/**/**/*.exe'
           - '**/**/**/BouncyCastle.Crypto.dll'
           - '**/**/**/**/BouncyCastle.Crypto.dll'
 restore:
