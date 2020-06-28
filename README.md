@@ -11,18 +11,19 @@ Feel free to contact engineering team owners in case you have any questions abou
 ## Common
 1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
 2. [Go lang](https://golang.org/) for building go code. Go lang version 1.14.1.
-3. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) for Azure related operations
 
 ## Linux
-4. Ubuntu 14.04 or higher to build Linux Agent. you can also use [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+3. Ubuntu 14.04 or higher to build Linux Agent. you can also use [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
   > Note: If you are using WSL2, make sure you have cloned the code into ubuntu not on to windows
-5. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
+4. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
 
 ## Windows
-6. Windows 10 Professional machine to build  Windows Agent
-7. [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
-8. [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
-9. [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
+5. Windows 10 Professional machine to build  Windows Agent
+6. [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
+7. [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
+8. [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
+
+9. For WSL2 environment, configure [Docker-for-desktop-wsl2](https://docs.docker.com/docker-for-windows/wsl/)
 
 > Note: recommend to clone the code into Ubuntu app on Windows 10 so that you can work on development of both windows and linux agent.
 
@@ -105,7 +106,7 @@ Pull request must be approved by at least one engineering team members.
 
 # Authoring code
 
-We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code into Ubuntu app so that you dont need to wory about line ending issues LF vs CRLF.
+We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code into Ubuntu app so that you dont need to worry about line ending issues LF vs CRLF.
 
 # Building code
 
