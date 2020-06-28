@@ -9,23 +9,26 @@ Feel free to contact engineering team owners in case you have any questions abou
 # Prerequisites
 
 ## Common
-1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
-2. [Go lang](https://golang.org/) for building go code. Go lang version 1.14.1.
+- [Visual Studio Code](https://code.visualstudio.com/) for authoring
+- [Go lang](https://golang.org/) for building go code. Go lang version 1.14.1.
+
+> Note: If you are using WSL2, make sure you have cloned the code onto ubuntu not onto windows
+
+## WSL2
+- [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+- configure [Docker-for-windows-wsl2](https://docs.docker.com/docker-for-windows/wsl/)
 
 ## Linux
-3. Ubuntu 14.04 or higher to build Linux Agent. you can also use [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
-  > Note: If you are using WSL2, make sure you have cloned the code into ubuntu not on to windows
-4. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
+- Ubuntu 14.04 or higher to build Linux Agent.
+- [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
+> Note: if you are using WSL2, you can ignore Docker since Docker for windows will be used.
 
 ## Windows
-5. Windows 10 Professional machine to build  Windows Agent
-6. [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
-7. [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
-8. [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
+- Windows 10 Professional machine to build  Windows Agent
+- [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
+- [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
+- [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
 
-9. For WSL2 environment, configure [Docker-for-desktop-wsl2](https://docs.docker.com/docker-for-windows/wsl/)
-
-> Note: recommend to clone the code into Ubuntu app on Windows 10 so that you can work on development of both windows and linux agent.
 
 # Repo structure
 
@@ -106,7 +109,7 @@ Pull request must be approved by at least one engineering team members.
 
 # Authoring code
 
-We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code into Ubuntu app so that you dont need to worry about line ending issues LF vs CRLF.
+We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code onto Ubuntu app so that you dont need to worry about line ending issues LF vs CRLF.
 
 # Building code
 
@@ -118,13 +121,13 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 ```
 bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 ```
-2. Verify python, docker and golang installed properly and also PATH and GOBIN environment variables set with go path.
+2. Verify python, docker and golang installed properly and also PATH and GOBIN environment variables set with go bin path.
    For some reason go env not set by install-build-pre-requisites.sh script, run the following commands to set them
    ```
    export PATH=$PATH:/usr/local/go/bin
    export GOBIN=/usr/local/go/bin
    ```
-3. If you want to use Docker on the WSL/2, verify following configuration settings configured
+3. If you want to use Docker on the WSL2, verify following configuration settings configured on your Ubuntu app
    ```
    echo $DOCKER_HOST
    # if either DOCKER_HOST not set already or doesnt have tcp://localhost:2375 value, set DOCKER_HOST value via this command
@@ -224,9 +227,11 @@ Navigate to Kubernetes directory and update the yamls with latest docker image o
 Deploy the Kubernetes yamls on to your Kubernetes cluster with Linux and Windows nodes and make sure all the scenarios works.
 
 # E2E Tests
+
 TBD
 
 # Code of Conduct
 
-This project has adopted the [Microsoft Open Source Code of Conduct] (https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ] (https://opensource.microsoft.com/codeofconduct/faq/) or contact opencode@microsoft.com with any additional questions or comments.
+This project has adopted the [Microsoft Open Source Code of Conduct] (https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ] (https://opensource.microsoft.com/codeofconduct/faq/) or contact opencode@microsoft.com with any additional questions or comments.
 
