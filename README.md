@@ -136,7 +136,7 @@ bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
    ```
 
 ### Build Docker Provider Shell Bundle and Docker Image and Publish Docker Image
-
+> Note: If you are using WSL2, ensure Docker for windows running Linux containers mode to build Linux agent image successfully
 ```
 cd ~/Docker-Provider/kubernetes/linux/dockerbuild
 sudo docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
@@ -155,7 +155,7 @@ make
 ##### Build and Push Docker Image
 ```
 cd ~/Docker-Provider/kubernetes/linux/
-docker build -t <repo>/<imagename>:<imagetag> IMAGE_TAG=<imagetag> .
+docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
 ```
 
@@ -170,10 +170,12 @@ cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo p
 .\install-build-pre-requisites.ps1 #
 ```
 ### Build Cert generator, Out OMS Plugun and Docker Image and Publish Docker Image
+> Note: If you are using WSL2, ensure Docker for windows running Windows containers mode to build Windows agent image successfully
 
 Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
 ```
 docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
+net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app to windows if you havent't mapped already
 cd z:\home\sshadmin\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
 powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
 .\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
@@ -184,14 +186,14 @@ If you prefe to build Certificate Generator Source code and Out OMS Go plugin co
 
 #### Build Certificate Generator Source code and Out OMS Go plugin code
 ```
-cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
+cd z:\home\sshadmin\Docker-Provider\build\windows # based on your repo path
 powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publish
 ```
 
 ####  Build and Push Docker Image
 ```
 cd z:\home\sshadmin\Docker-Provider\kubernetes\windows # based on your repo path
-docker build -t <repo>/<imagename>:<imagetag> IMAGE_TAG=<imagetag> .
+docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
 ```
 
