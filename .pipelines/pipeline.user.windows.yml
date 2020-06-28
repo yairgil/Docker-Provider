@@ -23,12 +23,14 @@ signing_options:
 static_analysis_options:
   binskim_options:
     files_to_scan:
-      - exclude: # excluding binaries which we dont build
-          - 'build\windows\installer\certificategenerator\bin\*\netcoreapp3.1\win10-x64\BouncyCastle.Crypto.dll'
-          - 'build\windows\installer\certificategenerator\bin\*\netcoreapp3.1\win10-x64\publish\BouncyCastle.Crypto.dll'
-          - 'kubernetes\windows\omsagentwindows\installer\certificategenerator\bin\*\netcoreapp3.1\BouncyCastle.Crypto.dll'
-          - 'kubernetes\windows\omsagentwindows\installer\certificategenerator\bin\*\netcoreapp3.1\*\BouncyCastle.Crypto.dll'
-
+      - from: 'build\windows\installer\certificategenerator\bin\'
+        exclude:
+          - '**/*.dll'
+          - '**/*.exe'
+          - '**/**/**/*.dll'
+          - '**/**/**/*.exe'
+          - '**/**/**/BouncyCastle.Crypto.dll'
+          - '**/**/**/**/BouncyCastle.Crypto.dll'
 restore:
   commands:
     - !!defaultcommand
