@@ -58,6 +58,43 @@ install_python()
   echo "installation of python completed."
 }
 
+register_microsoft_gpg_keys()
+{
+  echo "download and register microsoft GPG keys ..."
+  export ubuntuVersion="$(echo $(lsb_release -rs))"
+  curl -LO https://packages.microsoft.com/config/ubuntu/${ubuntuVersion}/packages-microsoft-prod.deb
+  sudo dpkg -i packages-microsoft-prod.deb
+  echo "completed registration of microsoft GPG keys"
+}
+install_dotnet_sdk()
+{
+  echo "installing dotnet sdk 3.1 ..."
+  sudo apt-get update -y
+  sudo apt-get install -y apt-transport-https
+  sudo apt-get update -y
+  sudo apt-get install -y dotnet-sdk-3.1
+  echo "installation of dotnet sdk 3.1 completed."
+}
+
+install_gcc_for_windows_platform()
+{
+  echo "installing cross platform gcc build dependencies for windows ..."
+  sudo apt-get update -y
+  sudo apt-get install binutils-mingw-w64 -y
+  sudo apt-get install gcc-mingw-w64-x86-64 -y
+  echo "installing cross platform gcc build dependencies for windows completed."
+}
+
+install_powershell_core()
+{
+  echo "installing powershell core ..."
+  # Update the list of products
+  sudo apt-get update -y
+  # Install PowerShell
+  sudo apt-get install -y powershell
+  echo "installing powershell core completed"
+}
+
 echo "installing build pre-requisites python, go 1.14.1, build dependencies and docker for the Linux Agent ..."
 cd ~
 echo "creating temp directory":$TEMP_DIR
@@ -77,6 +114,18 @@ install_docker
 
 # install go
 install_go_lang
+
+# register microsoft GPG keys
+register_microsoft_gpg_keys
+
+# install cross platform gcc to build the go code for windows platform
+install_gcc_for_windows_platform
+
+# dotnet core sdk 3.1
+install_dotnet_sdk
+
+# powershell core
+install_powershell_core
 
 # if its running on wsl/2, set DOCKER_HOST env to use docker for desktop docker endpoint on the windows host
 if [[ $(uname -r) =~ Microsoft$ ]]; then
