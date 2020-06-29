@@ -148,6 +148,8 @@ if ($isCDPxEnvironment) {
     [System.Environment]::SetEnvironmentVariable("CGO_ENABLED", "1", [System.EnvironmentVariableTarget]::PROCESS)
     [System.Environment]::SetEnvironmentVariable("CC", "x86_64-w64-mingw32-gcc", [System.EnvironmentVariableTarget]::PROCESS)
     [System.Environment]::SetEnvironmentVariable("CXX", "x86_64-w64-mingw32-g++", [System.EnvironmentVariableTarget]::PROCESS)
+    # unset GOBIN env var for cross platform build just process level not impact the linux go build
+    [System.Environment]::SetEnvironmentVariable("GOBIN", "", [System.EnvironmentVariableTarget]::PROCESS)
   }
 
   Write-Host("getting latest go modules ...")
