@@ -158,10 +158,10 @@ cd ~/Docker-Provider/kubernetes/linux/
 docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
 ```
-
 ## Windows Agent
-> Note: Below instructions are assumed you have cloned the code on to WSL/2 machine
+
 ### Install Pre-requisites
+Below Instructions only applicable if you are trying to build everything for the windows agent on windows machine
 ```
 powershell # launch powershell with elevated admin on your windows machine
 Set-ExecutionPolicy -ExecutionPolicy bypass # set the execution policy
