@@ -63,7 +63,7 @@ for-all:
 .PHONY: install-tools
 install-tools:
 	go install github.com/client9/misspell/cmd/misspell
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	# go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	go install github.com/google/addlicense
 	go install honnef.co/go/tools/cmd/staticcheck
 	go install github.com/pavius/impi/cmd/impi

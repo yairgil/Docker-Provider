@@ -25,4 +25,15 @@ COPY ./Linux_ULINUX_1.0_x64_64_Release/docker-cimprov-*.*.*-*.x86_64.sh .
 # wget https://github.com/microsoft/Docker-Provider/releases/download/10.0.0-1/docker-cimprov-10.0.0-1.universal.x86_64.sh
 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh
+
+FROM alpine:latest as certs
+RUN apk --update add ca-certificates
+
+FROM scratch
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY ./Linux_ULINUX_1.0_x64_64_Release/otelcontribcol_linux_amd64 /otelcontribcol
+COPY otel-collector-config.yml /etc/otel-collector-config.yml
+ENTRYPOINT ["/otelcontribcol"]
+EXPOSE 55680 55679
+
 CMD [ "/opt/main.sh" ]
