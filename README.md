@@ -117,7 +117,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 ### Install Pre-requisites
 
-1. Install go1.14.1, build dependencies and docker if you dont have installed already on your dev machine
+1. Install go1.14.1, dotnet, powershell, docker and build dependencies to build go code for both Linux and Windows platforms
 ```
 bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 ```
@@ -145,7 +145,7 @@ bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag>
 ```
 > Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
-If you prefer to build docker provider shell bundle and image separately, then you can follow below instructions
+If you preferr to build docker provider shell bundle and image separately, then you can follow below instructions
 
 ##### Build Docker Provider shell bundle
 ```
@@ -182,7 +182,7 @@ powershell -ExecutionPolicy bypass  # switch to powershell if you are not on pow
 ```
 > Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
-If you prefe to build Certificate Generator Source code and Out OMS Go plugin code and image separately, then you can follow below instructions
+If you prefer to build Certificate Generator Source code and Out OMS Go plugin code and image separately, then you can follow below instructions
 
 #### Build Certificate Generator Source code and Out OMS Go plugin code
 ```
