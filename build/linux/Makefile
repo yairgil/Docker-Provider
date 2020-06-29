@@ -73,6 +73,7 @@ SOURCE_DIR := $(BASE_DIR)/source
 INTERMEDIATE_DIR := $(BASE_DIR)/intermediate/$(BUILD_CONFIGURATION)
 INTERMEDIATE_TESTFILES := $(INTERMEDIATE_DIR)/testfiles
 TARGET_DIR := $(BASE_DIR)/kubernetes/linux/$(BUILD_CONFIGURATION)
+OT_TARGET_DIR := $(BASE_DIR)/kubernetes/otel-collector
 PROVIDER_LIBRARY := $(INTERMEDIATE_DIR)/libcontainer.so
 
 INSTALLER_TMPDIR := $(INTERMEDIATE_DIR)/installer_tmp
@@ -213,4 +214,4 @@ kit : fluentbitplugin
 	# Copy the shell bundle to the target directory
 	$(MKPATH) $(TARGET_DIR)
 	cd $(INTERMEDIATE_DIR); $(COPY) `cat $(INTERMEDIATE_DIR)/package_filename`.sh $(TARGET_DIR)
-	cd $(INTERMEDIATE_DIR); $(COPY) $(INTERMEDIATE_DIR)/otelcontribcol_linux_amd64 $(TARGET_DIR)
+	cd $(INTERMEDIATE_DIR); $(COPY) $(INTERMEDIATE_DIR)/otelcontribcol_linux_amd64 $(OT_TARGET_DIR)

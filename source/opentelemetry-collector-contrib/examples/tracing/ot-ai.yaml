@@ -76,7 +76,7 @@ spec:
         #image: otel/opentelemetry-collector-contrib-dev:2b5b51cf55542e8e8a09ef2bf6813dbb356345a0
         #image: otel/opentelemetry-collector-contrib-dev:latest
         # image: otel/opentelemetry-collector-contrib:latest
-        image: ayushisingh/otelcontribcol:06252020v2
+        image: ayushisingh/otelcontribcol:06292020
         command:
           - "/otelcontribcol"
           - "--config=/conf/otel-collector-config.yaml"
