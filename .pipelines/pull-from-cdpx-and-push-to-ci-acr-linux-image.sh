@@ -41,8 +41,7 @@ echo "CI ACR : ${CI_ACR}"
 echo "CI AGENT REPOSITORY NAME : ${CI_AGENT_REPO}"
 
 echo "tag linux agent image"
-docker tag ${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG}
-${CI_ACR}/public/azuremonitor/containerinsights/${CI_AGENT_REPO}:${imagetag}
+docker tag ${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG} ${CI_ACR}/public/azuremonitor/containerinsights/${CI_AGENT_REPO}:${imagetag}
 
 echo "login ciprod acr":$CI_ACR
 docker login $CI_ACR --username $ACR_APP_ID --password $ACR_APP_SECRET
