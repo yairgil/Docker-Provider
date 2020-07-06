@@ -15,6 +15,13 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 ##### Version microsoft/oms:ciprod05222020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05302020 (linux)
 ##### Version microsoft/oms:win-ciprod05222020-2 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020-2 (windows)
 ##### Code change log
+- Hotfix for nested JSON log parsing bug (applicable only to Linux Daemonset)
+- We didn't rebuild windows container, so the image version for windows container stayas the same as last release (ciprod:win-ciprod05262020-2) before this hotfix
+
+### 05/26/2020 -
+##### Version microsoft/oms:ciprod05222020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05262020 (linux)
+##### Version microsoft/oms:win-ciprod05222020-2 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020-2 (windows)
+##### Code change log
 - Windows Daemonset - Collection of Windows std/stderr logs
 - More Alerable Metrics (going to Metrics Store/custom metrics - see Customer Impact section below for metrics list)
 - Fix OOM-ing at high prometheus scrape volume
