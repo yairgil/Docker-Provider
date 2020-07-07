@@ -28,7 +28,3 @@ az keyvault secret download --file ./acrappsecret --vault-name ${KV}  --name ${A
 echo "downloaded the appsecret from KV:${KV} and KV secret:${AppSecret}"
 
 echo "end: get app id and secret from specified key vault"
-
-
-
-
