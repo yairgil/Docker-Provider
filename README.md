@@ -244,7 +244,7 @@ Navigate to Kubernetes directory and update the yamls with latest docker image o
 
 #  Deployment and Validation
 
-Deploy the Kubernetes yamls on to your Kubernetes cluster with Linux and Windows nodes and make sure all the scenarios works.
+For DEV and PROD branches, automatically deployed latest yaml with latest agent image (which automatically built by the azure devops pipeline) onto CIDEV and CIPROD AKS clusters in build subscription.  So, you can use CIDEV and CIPROD AKS cluster to validate E2E. Similarly, you can set up build and release pipelines for your feature branch.
 
 # E2E Tests
 
