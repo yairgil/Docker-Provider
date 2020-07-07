@@ -29,16 +29,16 @@ linuxAgentImageTag=$CI_RELEASE$CI_IMAGE_TAG_SUFFIX
 echo "Linux Agent Image Tag:"$linuxAgentImageTag
 
 linuxAgentImage="mcr.microsoft.com/azuremonitor/containerinsights/${CI_RELEASE}:${linuxAgentImageTag}"
-imagePrefixLinuxAgent="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod[0-9]*"
-sed -i "s=$imagePrefixLinuxAgent=$linuxAgentImage=g" omsagent.yaml
+imagePrefixLinuxAgent="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod[0-9]*(-[0-9])?"
+sed -i -E "s=$imagePrefixLinuxAgent=$linuxAgentImage=g" omsagent.yaml
 
 echo "replace windows agent image"
 windowsAgentImageTag="win-"$CI_RELEASE$CI_IMAGE_TAG_SUFFIX
 echo "Windows Agent Image Tag:"$windowsAgentImageTag
 
 windowsAgentImage="mcr.microsoft.com/azuremonitor/containerinsights/${CI_RELEASE}:${windowsAgentImageTag}"
-imagePrefixWindowsAgent="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod[0-9]*"
-sed -i "s=$imagePrefixWindowsAgent=$windowsAgentImage=g" omsagent.yaml
+imagePrefixWindowsAgent="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod[0-9]*(-[0-9])?"
+sed -i -E "s=$imagePrefixWindowsAgent=$windowsAgentImage=g" omsagent.yaml
 
 
 echo "read workspace id and key which written by get-workspace-id-and-key.sh script"
@@ -46,14 +46,16 @@ WSID=$(cat ~/WSID)
 WSKEY=$(cat ~/WSKEY)
 
 echo "log analytics workspace guid: ${WSID}"
-echo "log analytics workspace key: ${WSKEY}"
+# avoid wskey in the logs and uncomment if required for debugging
+# echo "log analytics workspace key: ${WSKEY}"
 
 echo "Base64 encoding WSID and WSKEY values"
 Base64EncodedWSID=$(echo $WSID | base64 | tr -d '\n' | tr -d '\r')
 Base64EncodedWSKEY=$(echo $WSKEY | base64 | tr -d '\n' | tr -d '\r')
 
 echo "Base64 encoded log analytics workspace guid: ${Base64EncodedWSID}"
-echo "Base64 encoded log analytics workspace key: ${Base64EncodedWSKEY}"
+# avoid wskey in the logs and uncomment if required for debugging
+# echo "Base64 encoded log analytics workspace key: ${Base64EncodedWSKEY}"
 
 echo "replace base64 encoded log analytics workspace id"
 sed -i "s/VALUE_WSID/$Base64EncodedWSID/g" omsagent.yaml
