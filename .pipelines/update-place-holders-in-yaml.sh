@@ -38,12 +38,15 @@ echo "Windows Agent Image Tag:"$windowsAgentImageTag
 
 windowsAgentImage="mcr.microsoft.com/azuremonitor/containerinsights/${CI_RELEASE}:${windowsAgentImageTag}"
 imagePrefixWindowsAgent="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod[0-9]*"
-sed -i "s=$imagePrefixWindowsAgent/$windowsAgentImage=g" omsagent.yaml
+sed -i "s=$imagePrefixWindowsAgent=$windowsAgentImage=g" omsagent.yaml
 
 
 echo "read workspace id and key which written by get-workspace-id-and-key.sh script"
-WSID=$(cat ./WSID)
-WSKEY=$(cat ./WSKEY)
+WSID=$(cat ~/WSID)
+WSKEY=$(cat ~/WSKEY)
+
+echo "log analytics workspace guid: ${WSID}"
+echo "log analytics workspace key: ${WSKEY}"
 
 echo "Base64 encoding WSID and WSKEY values"
 Base64EncodedWSID=$(echo $WSID | base64)
