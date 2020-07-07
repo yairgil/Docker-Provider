@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 echo "start: update placeholders such as clusterResourceId, clusterRegion, WSID, WSKEY and Image etc.."
 
 for ARGUMENT in "$@"
@@ -13,9 +12,6 @@ do
            ClusterRegion) ClusterRegion=$VALUE ;;
            CIRelease) CI_RELEASE=$VALUE ;;
            CIImageTagSuffix) CI_IMAGE_TAG_SUFFIX=$VALUE ;;
-           WSIDBase64Encoded) WSID=$VALUE ;;
-           WSKEYBase64Encoded) WSKEY=$VALUE ;;
-
            *)
     esac
 done
@@ -44,11 +40,19 @@ windowsAgentImage="mcr.microsoft.com/azuremonitor/containerinsights/${CI_RELEASE
 imagePrefixWindowsAgent="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod[0-9]*"
 sed -i "s=$imagePrefixWindowsAgent/$windowsAgentImage=g" omsagent.yaml
 
+
+echo "read workspace id and key which written by get-workspace-id-and-key.sh script"
+WSID=$(cat ./WSID)
+WSKEY=$(cat ./WSKEY)
+
+echo "Base64 encoding WSID and WSKEY values"
+Base64EncodedWSID=$(echo $WSID | base64)
+Base64EncodedWSKEY=$(echo $WSKEY | base64)
+
 echo "replace base64 encoded log analytics workspace id"
-echo "Base64 Encoded workspace id: ${WSID}"
-sed -i "s/VALUE_WSID/$WSID/g" omsagent.yaml
+sed -i "s/VALUE_WSID/$Base64EncodedWSID/g" omsagent.yaml
 
 echo "replace base64 encoded log analytics workspace key"
-sed -i "s/VALUE_KEY/$WSKEY/g" omsagent.yaml
+sed -i "s/VALUE_KEY/$Base64EncodedWSKEY/g" omsagent.yaml
 
 echo "end: update placeholders such as clusterResourceId, clusterRegion, WSID, WSKEY and Image etc.."
