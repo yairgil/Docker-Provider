@@ -49,8 +49,11 @@ echo "log analytics workspace guid: ${WSID}"
 echo "log analytics workspace key: ${WSKEY}"
 
 echo "Base64 encoding WSID and WSKEY values"
-Base64EncodedWSID=$(echo $WSID | base64)
-Base64EncodedWSKEY=$(echo $WSKEY | base64)
+Base64EncodedWSID=$(echo $WSID | base64 | tr -d '\n' | tr -d '\r')
+Base64EncodedWSKEY=$(echo $WSKEY | base64 | tr -d '\n' | tr -d '\r')
+
+echo "Base64 encoded log analytics workspace guid: ${Base64EncodedWSID}"
+echo "Base64 encoded log analytics workspace key: ${Base64EncodedWSKEY}"
 
 echo "replace base64 encoded log analytics workspace id"
 sed -i "s/VALUE_WSID/$Base64EncodedWSID/g" omsagent.yaml
