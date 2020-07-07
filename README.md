@@ -96,6 +96,7 @@ The general directory structure is:
 ├── .gitignore                                - git config file with include/exclude file rules
 ├── LICENSE                                   - License file
 ├── Rakefile                                  - Rake file to trigger ruby plugin tests
+└── ReleaseProcess.md                         - Release process instructions
 └── ReleaseNotes.md                           - Release notes for the release of the Azure Monitor for containers agent
 ```
 
