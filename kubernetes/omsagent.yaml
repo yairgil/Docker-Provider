@@ -337,6 +337,7 @@ spec:
               cpu: 75m
               memory: 225Mi
           env:
+            # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
@@ -479,6 +480,7 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
+            # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
@@ -629,6 +631,7 @@ spec:
            cpu: 75m
            memory: 225Mi
          env:
+          # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
           - name: AKS_RESOURCE_ID
             value: "VALUE_AKS_RESOURCE_ID_VALUE"
           - name: AKS_REGION
