@@ -3,7 +3,7 @@
 # 1. Production agent image and automatic deployment to CIPROD cluster
 
 Here are the high-level instructions to get the CIPROD`<MM><DD><YYYY>` image for the production release
-1. create release branch from ci_dev and make the following updates
+1. create feature branch from ci_dev and make the following updates
       > Note: This required since Azure Dev Ops pipeline doesnt support --build-arg yet to automate this.
    -  Ensure IMAGE_TAG updated with release candiate image tag in the DockerFile under kubernetes/linux and kubernetes/windows directory
    - Update omsagent.yaml if there are any changes to the yaml
@@ -11,7 +11,7 @@ Here are the high-level instructions to get the CIPROD`<MM><DD><YYYY>` image for
 2. Make PR to ci_dev branch and once the PR approved, merge the changes to ci_dev
 3. Latest bits of ci_dev automatically deployed to CIDEV cluster in build subscription so just validated E2E to make sure everthing works
 4. If everything validated in DEV, make merge PR from ci_dev and ci_prod and merge once this reviewed by dev team
-5. Merge ci_dev and ci_prod branch which will trigger automatic deployment to CIPROD cluster with CIPROD`<MM><DD><YYYY>` image (TBD)
+5. Merge ci_dev and ci_prod branch which will trigger automatic deployment of latest bits to CIPROD cluster with CIPROD`<MM><DD><YYYY>` image (TBD)
    > Note: production image automatically pushed to CIPROD Public cloud ACR which will inturn replicated to Public cloud MCR.
 6. Validate all the scenarios against CIPROD cluster in Build subscription
 
@@ -21,7 +21,7 @@ Deploy latest omsagent yaml with release candidate agent image in to supported k
 
 # 3. Production Image to MCR CN for Azure China Cloud
 
-Push the image to ACR CN for china cloud and which would automatically replicate the image to MCR CN
+Image automatically synched to MCR CN from Public cloud MCR.
 
 # 4. Release of the agent
 
