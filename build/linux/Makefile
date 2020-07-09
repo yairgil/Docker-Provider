@@ -215,3 +215,4 @@ kit : fluentbitplugin
 	$(MKPATH) $(TARGET_DIR)
 	cd $(INTERMEDIATE_DIR); $(COPY) `cat $(INTERMEDIATE_DIR)/package_filename`.sh $(TARGET_DIR)
 	# cd $(INTERMEDIATE_DIR); $(COPY) $(INTERMEDIATE_DIR)/otelcontribcol_linux_amd64 $(OT_TARGET_DIR)
+	

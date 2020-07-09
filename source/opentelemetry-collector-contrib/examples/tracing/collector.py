@@ -35,4 +35,5 @@ def pull_requests():
 
     return 'OpenTracing Pull Requests: ' + ', '.join(pull_request_titles)
 
+# App will run when http://localhost:5001/ is hit
 app.run(debug=True, port=my_port)

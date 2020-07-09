@@ -17,7 +17,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"go.opentelemetry.io/collector/service"
@@ -26,7 +25,6 @@ import (
 )
 
 func main() {
-	fmt.Printf("AYUSHI IN MAIN")
 	handleErr := func(message string, err error) {
 		if err != nil {
 			log.Fatalf("%s: %v", message, err)
