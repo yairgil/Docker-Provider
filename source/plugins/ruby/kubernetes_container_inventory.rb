@@ -130,6 +130,7 @@ class KubernetesContainerInventory
       begin
         nodeName = (!podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
         createdTime = podItem["metadata"]["creationTimestamp"]
+        podName = podItem["metadata"]["name"]
         if !podItem.nil? && !podItem.empty? && podItem.key?("spec") && !podItem["spec"].nil? && !podItem["spec"].empty?
           podContainers = []
           if !podItem["spec"]["containers"].nil? && !podItem["spec"]["containers"].empty?
@@ -144,7 +145,7 @@ class KubernetesContainerInventory
               containerName = container["name"]
               containerInfoMap["ElementName"] = containerName
               containerInfoMap["Computer"] = nodeName
-              containerInfoMap["ContainerHostname"] = nodeName
+              containerInfoMap["ContainerHostname"] = podName # pod is the container host
               containerInfoMap["CreatedTime"] = createdTime
               portsValue = container["ports"]
               portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
