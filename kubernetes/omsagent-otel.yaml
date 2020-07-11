@@ -691,7 +691,7 @@ spec:
     spec:
       containers:
       - name: otel-collector
-        image: ayushisingh/omsagent:07092020v9
+        image: ayushisingh/omsagent:07102020
         command:
           - "/otelcontribcol"
           - "--config=/conf/otel-collector-config.yaml"

@@ -15,6 +15,7 @@ PF_ARCH=x64
 PF_WIDTH=64
 PF_DISTRO=ULINUX
 BUILD_CONFIGURATION=Linux_ULINUX_1.0_x64_64_Release
+OT_COLLECTOR_ENABLE=0
 
 # RM - Remove a file
 # RMDIR - Remove a directory
@@ -106,7 +107,11 @@ endif
 # Build targets
 # TODO - fix plugintests and enable it back
 # all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin rubypluginstests
+ifeq ($(OT_COLLECTOR_ENABLE), 0)
+all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin 
+else
 all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin otelcontribcol
+endif
 
 clean :
 	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target
@@ -145,7 +150,7 @@ otelcontribcol:
 	$(MKPATH) $(INTERMEDIATE_DIR)
 	make -C $(OT_SOURCE_DIR) install-tools
 	make -C $(OT_SOURCE_DIR) 
-	$(COPY) $(OT_SOURCE_DIR)/bin/otelcontribcol_linux_amd64 $(INTERMEDIATE_DIR)
+	$(COPY) $(OT_SOURCE_DIR)/bin/otelcontribcol_linux_amd64 $(OT_TARGET_DIR)
 
 #--------------------------------------------------------------------------------
 # Build the distribution kit
@@ -214,5 +219,4 @@ kit : fluentbitplugin
 	# Copy the shell bundle to the target directory
 	$(MKPATH) $(TARGET_DIR)
 	cd $(INTERMEDIATE_DIR); $(COPY) `cat $(INTERMEDIATE_DIR)/package_filename`.sh $(TARGET_DIR)
-	# cd $(INTERMEDIATE_DIR); $(COPY) $(INTERMEDIATE_DIR)/otelcontribcol_linux_amd64 $(OT_TARGET_DIR)
 	
