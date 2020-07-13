@@ -1,20 +1,16 @@
 receivers:
   opencensus:
     endpoint: 0.0.0.0:55678
-
 processors:
-  probabilistic_sampler:
-    sampling_percentage: 10
-    hash_seed: 22
-  # batch:
-  # queued_retry:
-
+  batch:
+  queued_retry:
+extensions:
+  health_check:
 exporters:
   azuremonitor:
     # endpoint is the uri used to communicate with Azure Monitor
     endpoint: "https://dc.services.visualstudio.com/v2/track"
     # instrumentation_key is the unique identifer for your Application Insights resource
-    # instrumentation_key: 24dd1990-a772-4311-8f04-474058a753b1
     instrumentation_key: c7bd3894-56c1-47d7-a8e6-98440e2018b6
     # maxbatchsize is the maximum number of items that can be queued before calling to the configured endpoint
     maxbatchsize: 100
@@ -22,49 +18,10 @@ exporters:
     maxbatchinterval: 10s
   logging:
     # loglevel: debug
-
 service:
-  extensions: [pprof, zpages, health_check]
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [opencensus]
-      processors: [probabilistic_sampler]
-      # processors: [batch, queued_retry]
+      processors: [batch, queued_retry]
       exporters: [azuremonitor, logging]
-      
-
-# receivers:
-#   opencensus:
-#     endpoint: 0.0.0.0:55678
-
-# exporters:
-#   azuremonitor:
-#     # endpoint is the uri used to communicate with Azure Monitor
-#     endpoint: "https://dc.services.visualstudio.com/v2/track"
-#     # instrumentation_key is the unique identifer for your Application Insights resource
-#     instrumentation_key: 24dd1990-a772-4311-8f04-474058a753b1
-#     # maxbatchsize is the maximum number of items that can be queued before calling to the configured endpoint
-#     maxbatchsize: 100
-#     # maxbatchinterval is the maximum time to wait before calling the configured endpoint.
-#     maxbatchinterval: 10s
-#   logging:
-#     # loglevel: debug
-
-# processors:
-#   batch:
-#   queued_retry:
-
-# extensions:
-#   health_check:
-#   pprof:
-#     endpoint: :1888
-#   zpages:
-#     endpoint: :55679
-
-# service:
-#   extensions: [pprof, zpages, health_check]
-#   pipelines:
-#     traces:
-#       receivers: [opencensus]
-#       exporters: [azuremonitor, logging]
-#       processors: [batch, queued_retry]

@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/otel v0.6.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.6.0
 	honnef.co/go/tools v0.0.1-2020.1.3
+	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
 )
 
 replace git.apache.org/thrift.git v0.12.0 => github.com/apache/thrift v0.12.0

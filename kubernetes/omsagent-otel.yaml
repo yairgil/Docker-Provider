@@ -631,29 +631,25 @@ data:
       opencensus:
         endpoint: 0.0.0.0:55678
     processors:
-      probabilistic_sampler:
-        sampling_percentage: 10
-        hash_seed: 22
+      batch:
+      queued_retry:
     extensions:
       health_check:
-      pprof:
-        endpoint: :1888
-      zpages:
-        endpoint: :55679
     exporters:
       azuremonitor:
-      azuremonitor/2:
         endpoint: "https://dc.services.visualstudio.com/v2/track"
         instrumentation_key: c7bd3894-56c1-47d7-a8e6-98440e2018b6
         maxbatchsize: 100
         maxbatchinterval: 10s
+      logging:
+        # loglevel: debug
     service:
-      extensions: [pprof, zpages, health_check]
+      extensions: [health_check]
       pipelines:
         traces:
           receivers: [opencensus]
-          processors: [probabilistic_sampler]
-          exporters: [azuremonitor/2]
+          processors: [batch, queued_retry]
+          exporters: [azuremonitor, logging]
 ---
 apiVersion: v1
 kind: Service
@@ -691,7 +687,7 @@ spec:
     spec:
       containers:
       - name: otel-collector
-        image: ayushisingh/omsagent:07102020
+        image: ayushisingh/omsagent:07132020v3
         command:
           - "/otelcontribcol"
           - "--config=/conf/otel-collector-config.yaml"

@@ -219,4 +219,3 @@ kit : fluentbitplugin
 	# Copy the shell bundle to the target directory
 	$(MKPATH) $(TARGET_DIR)
 	cd $(INTERMEDIATE_DIR); $(COPY) `cat $(INTERMEDIATE_DIR)/package_filename`.sh $(TARGET_DIR)
-	

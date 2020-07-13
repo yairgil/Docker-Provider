@@ -4,8 +4,9 @@ This demo is a sample Python app to build the collector and exercise its tracing
 
 ## Deploying the Python Application
 #### 1. Create Docker image for Python app
-`docker build -f Dockerfile.python . -t <name:tag>` <br/>
-`docker push <name:tag>` <br/>
+Go to source > opentelemetry-collector-contrib > examples > tracing > python.
+`docker build -f Dockerfile.python . -t <repo>/<image>:<tag>` <br/>
+`docker push <repo>/<image>:<tag>` <br/>
 
 #### 2. Delete previous deployments
 `kubectl delete -f python-deployment.yaml`<br/>
@@ -17,13 +18,18 @@ This demo is a sample Python app to build the collector and exercise its tracing
 #### 4. Deploy
 `kubectl apply -f python-deployment.yaml`<br/>
 
-Once that has been completed, it is time to deploy the collector.
+Once that has been completed, it is time to deploy the collector. 
+
+## Build collector binaries
+Go to build > linux.
+`make OT_COLLECTOR_ENABLE=1`
 
 ## Deploying the Collector
 
 #### 1. Create Docker image for collector
-`docker build -t <name:tag> .` <br/>
-`docker push <name:tag>` <br/>
+Go to kubernetes > otel-collector.
+`docker build -t <repo>/<image>:<tag> .` <br/>
+`docker push <repo>/<image>:<tag>` <br/>
 
 #### 2. Delete previous deployments
 `kubectl delete -f omsagent-otel.yaml`<br/>
@@ -33,7 +39,7 @@ Once that has been completed, it is time to deploy the collector.
 `kubectl get pods`<br/>
 
 #### 4. Update & Deploy
-Go to omsagent-otel.yaml (in kubernetes folder), and update "image" for the otel-collector deployment to be the docker image you just built. Then, run:
+Go to omsagent-otel.yaml (in kubernetes folder), and update "image" for the otel-collector deployment to be the docker image you just built. Then, from the kubernetes folder, run:
 `kubectl apply -f omsagent-otel.yaml`<br/>
 
 Finally, it is time to emit traces and see them in Application Insights.
