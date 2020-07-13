@@ -116,6 +116,7 @@ endif
 clean :
 	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target
 	-find $(BASE_DIR) -name \*~ -exec rm {} \;
+	$(RM) $(BASE_DIR)/kubernetes/otel-collector/otelcontribcol_linux_amd64
 
 distclean : clean
 	$(RM) $(BASE_DIR)/build/config.mak
