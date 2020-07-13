@@ -1,5 +1,3 @@
-include ./Makefile.Common
-
 RUN_CONFIG=local/config.yaml
 
 CMD?=
@@ -16,7 +14,7 @@ STATIC_CHECK=staticcheck
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: common otelcontribcol
+all: otelcontribcol
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol
