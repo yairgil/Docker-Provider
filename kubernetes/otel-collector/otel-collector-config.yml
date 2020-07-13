@@ -25,4 +25,3 @@ service:
       receivers: [opencensus]
       processors: [batch, queued_retry]
       exporters: [azuremonitor, logging]
-      
