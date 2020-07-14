@@ -21,7 +21,7 @@ Go to source > opentelemetry-collector-contrib > examples > tracing > python.
 Once that has been completed, it is time to deploy the collector. 
 
 ## Build collector binaries
-Go to build > linux.
+Go to build > linux. <br/>
 `make OT_COLLECTOR_ENABLE=1`
 
 ## Deploying the Collector
