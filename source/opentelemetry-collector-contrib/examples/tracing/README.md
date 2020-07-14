@@ -27,7 +27,7 @@ Go to build > linux. <br/>
 ## Deploying the Collector
 
 #### 1. Create Docker image for collector
-Go to kubernetes > otel-collector.
+Go to kubernetes > otel-collector. <br/>
 `docker build -t <repo>/<image>:<tag> .` <br/>
 `docker push <repo>/<image>:<tag>` <br/>
 
@@ -35,7 +35,7 @@ Go to kubernetes > otel-collector.
 `kubectl delete -f omsagent-otel.yaml`<br/>
 
 #### 3. Check deployment and related pods are deleted
-`kubectl get deployments`
+`kubectl get deployments` <br/>
 `kubectl get pods`<br/>
 
 #### 4. Update & Deploy
