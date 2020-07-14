@@ -26,9 +26,10 @@ class KubernetesContainerInventory
         if !podItem["status"]["initContainerStatuses"].nil? && !podItem["status"]["initContainerStatuses"].empty?
           podContainersStatuses = podContainersStatuses + podItem["status"]["initContainerStatuses"]
         end
-        containerInventoryRecord = {}
+
         if !podContainersStatuses.empty?
           podContainersStatuses.each do |containerStatus|
+            containerInventoryRecord = {}
             containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
             containerName = containerStatus["name"]
             # containeId format is <containerRuntime>://<containerId>
@@ -130,6 +131,7 @@ class KubernetesContainerInventory
       begin
         nodeName = (!podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
         createdTime = podItem["metadata"]["creationTimestamp"]
+        podName = podItem["metadata"]["name"]
         if !podItem.nil? && !podItem.empty? && podItem.key?("spec") && !podItem["spec"].nil? && !podItem["spec"].empty?
           podContainers = []
           if !podItem["spec"]["containers"].nil? && !podItem["spec"]["containers"].empty?
@@ -144,7 +146,7 @@ class KubernetesContainerInventory
               containerName = container["name"]
               containerInfoMap["ElementName"] = containerName
               containerInfoMap["Computer"] = nodeName
-              containerInfoMap["ContainerHostname"] = nodeName
+              containerInfoMap["ContainerHostname"] = podName # pod is the container host
               containerInfoMap["CreatedTime"] = createdTime
               portsValue = container["ports"]
               portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
