@@ -5,7 +5,7 @@ Intended for those looking to use an integrated version of the Container Insight
 ## Pre-requisites
 1. [Workspace-based Application Insights Resource](https://docs.microsoft.com/en-us/azure/azure-monitor/app/create-workspace-resource)
 2. [Add the 'AzureMonitor-Containers' Solution to your Log Analytics workspace.](https://github.com/Microsoft/OMS-docker/blob/ci_feature_prod/docs/solution-onboarding.md)
-3. An app instrumented with OpenTelemetry
+3. [An app instrumented with OpenTelemetry](https://opentelemetry.io/)
 
 ## Install Chart
 Add the repo: 
