@@ -11,6 +11,16 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
+### 07/14/2020 -
+##### Version microsoft/oms:ciprod06302020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod07142020 (linux)
+##### Version microsoft/oms:win-ciprod05262020-2 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020-2 (windows)
+##### Code change log
+- Following hotfixes which are applicable only for Linux agent
+  - Fix the issue related to collection of multi-containers in pod for the containerinventory table
+  - Fix the containerhostname field value to have podname rather than nodename in containerinventory table
+  - Fix OOM issue during container startup if there are high number of pods or containers on the node
+- We didn't rebuild windows container, so the image version for windows container stays the same as last release (ciprod:win-ciprod05262020-2) before this hotfix
+
 ### 06/30/2020 -
 ##### Version microsoft/oms:ciprod06302020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06302020 (linux)
 ##### Version microsoft/oms:win-ciprod05262020-2 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020-2 (windows)
@@ -54,14 +64,14 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 > Note: This agent release targetted ONLY for non-AKS clusters via Azure Monitor for containers HELM chart update
 ##### Version microsoft/oms:ciprod04162020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04162020
 ##### Code change log
-- Add support for rate limiting 
+- Add support for rate limiting
 - Add support for Container Runtime Interface compatible container runtime(s) like CRI-O and ContainerD
      - cAdvisor APIs are used to collect the container inventory for Docker/Moby and CRI runtime K8s environments
      - Based on the container runtime, corresponding container log FluentBit parser(docker/cri) selected
 
 ##### Customer Impact
 - Ingestion will throttle the workspaces if the agent on the cluster sending the beyond Log Analytics Workspace throttling  limits i.e. 500 MB/s
-- On Docker runtime environments, Inventory of the containers obtained  earlier via Docker REST API. 
+- On Docker runtime environments, Inventory of the containers obtained  earlier via Docker REST API.
   Agent now uses the cAdvisor APIs to get the inventory of the containers for Docker and non-Docker container runtime environments.
 
 ### 03/02/2020 -
@@ -80,7 +90,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 
 ##### Customer Impact
 - Providing capability for customers to collect 'Normal' kube events using config map
-- Metrics for GPU are collected and ingested to customers workspace if they have GPU enabled nodes 
+- Metrics for GPU are collected and ingested to customers workspace if they have GPU enabled nodes
 - Bug fix for windows container image collection allows customers to get the right data in the ContainerInventory table for windows       containers.
 
 ### 01/07/2020 -
