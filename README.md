@@ -43,12 +43,12 @@ kubectl edit configmap <configmap-name> -n kube-system
 ```
 
 ## Configure application 
-Make sure your app that is being instrumented with OpenTelemetry is configured to use `endpoint="otel-collector:55680"` (OTLP's default endpoint). If you are using OpenCensus, use `endpoint="otel-collector:55678".`
+Make sure your app that is being instrumented with OpenTelemetry is configured to the appropriate endpoint based on the exporter you are using. If you are using the OTLP exporter, it must be specified to have `endpoint="otel-collector:55680"` (OTLP's default endpoint). If you are using the OpenCensus exporter, use `endpoint="otel-collector:55678"`.
 
 ## Verify data ingestion
 Run your application, and see your traces in Application Insights. Data should be available under "Investigate" in Application Map and in Search. Below is an image of what this data can look like.
-![Application Map](appmap.png)
-![Search](search.png)
+![Application Map](./appmap.png)
+![Search](./search.png)
 
 ## Contact
 If you run into issues, feel free to reach out to t-aysi@microsoft.com, or visit the instructions for a sample Python application in `~/Docker-Provider/source/opentelemetry-collector-contrib/examples/tracing` and confirm that you can see data coming into Application Insights.
