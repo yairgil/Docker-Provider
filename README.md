@@ -22,18 +22,22 @@ helm upgrade --install azmon-containers-release-1-ot --set omsagent.instrumentat
 ```
 
 ## Verify Installation
+Confirm `azmon-containers-release-1-ot` is listed:
+```
+helm list 
+```
 Confirm `otel-collector` is running:
 ```
 kubectl get deployments 
 ```
 
 ## Configure OpenTelemetry Collector Receiver
-By default, OTLP is configured to be the receiver for the collector. If you wish to change it (for example, to OpenCensus), you will need to edit the collector configuration. The OpenCensus configuration is commented out for convenience, in case you choose to use that.
-To get all configmaps, run:
+By default, OTLP is configured to be the receiver for the collector. If you wish to change it (for example, to OpenCensus), you will need to edit the collector configuration. Note: the OpenCensus configuration is commented out for convenience, in case you choose to use that.
+To get all configmaps (to see the current collector configuration), run:
 ```
 kubectl get configmap -n kube-system 
 ```
-Edit configmap by running: 
+Edit the configuration by running: 
 ```
 kubectl edit configmap <configmap-name> -n kube-system
 ```
