@@ -1,6 +1,10 @@
 receivers:
   opencensus:
     endpoint: 0.0.0.0:55678
+  otlp:
+    protocols:
+        grpc:
+  # otlp: {}
 processors:
   batch:
   queued_retry:
@@ -22,6 +26,7 @@ service:
   extensions: [health_check]
   pipelines:
     traces:
-      receivers: [opencensus]
+      receivers: [otlp]
+      # receivers: [opencensus]
       processors: [batch, queued_retry]
       exporters: [azuremonitor, logging]

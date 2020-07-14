@@ -630,6 +630,9 @@ data:
     receivers:
       opencensus:
         endpoint: 0.0.0.0:55678
+      otlp:
+        protocols:
+            grpc:
     processors:
       batch:
       queued_retry:
@@ -647,7 +650,8 @@ data:
       extensions: [health_check]
       pipelines:
         traces:
-          receivers: [opencensus]
+          receivers: [otlp]
+          # receivers: [opencensus]
           processors: [batch, queued_retry]
           exporters: [azuremonitor, logging]
 ---
@@ -664,6 +668,10 @@ spec:
     port: 55678
     protocol: TCP
     targetPort: 55678
+  - name: otlp # Default endpoint for OTLP receiver.
+    port: 55680
+    protocol: TCP
+    targetPort: 55680
   selector:
     component: otel-collector
 ---
@@ -687,7 +695,7 @@ spec:
     spec:
       containers:
       - name: otel-collector
-        image: ayushisingh/omsagent:07132020v7
+        image: ayushisingh/omsagent:07142020v9
         command:
           - "/otelcontribcol"
           - "--config=/conf/otel-collector-config.yaml"
