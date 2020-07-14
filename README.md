@@ -25,6 +25,8 @@ kubectl get deployments
 Confirm `otel-collector` is running. 
 
 ## Run your application 
+Make sure your app that is being instrumented with OpenTelemetry is configured to use `endpoint="otel-collector:55678"`.
+
 Run your application, and see your traces in Application Insights. If you run into issues, feel free to reach out to t-aysi@microsoft.com, or visit the instructions for a sample Python application in `source/opentelemetry-collector-contrib/examples/tracing` and make sure that it works as expected.
 ___
 # About
