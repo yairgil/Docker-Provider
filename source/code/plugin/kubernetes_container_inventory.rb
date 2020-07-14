@@ -100,8 +100,8 @@ class KubernetesContainerInventory
             containerInfoMap = containersInfoMap[containerName]
             podName = containerInfoMap["PodName"]
             namespace = containerInfoMap["Namespace"]
-            # containername format docker sees
-            containerNameInDockerFormat= "k8s_#{containerName}_#{podName}_#{namespace}_#{containerId}_#{restartCount}"
+            # containername in the format what docker sees
+            containerNameInDockerFormat = "k8s_#{containerName}_#{podName}_#{namespace}_#{containerId}_#{restartCount}"
             containerInventoryRecord["ElementName"] = containerNameInDockerFormat
             containerInventoryRecord["Computer"] = containerInfoMap["Computer"]
             containerInventoryRecord["ContainerHostname"] = podName
