@@ -1,5 +1,5 @@
 # Private Preview Instructions
-Intended for those looking to use an integrated version of the Container Insights agent and OpenTelemetry collector to obtain both infrastructure and application insights. If you are currently not set up to use the Container Insights agent, please follow the original steps listed below the divider (starting from "About"), and return to these instructions upon completion. 
+Intended for those looking to use an integrated version of the Container Insights agent and OpenTelemetry collector to obtain both infrastructure and application insights. If you are currently not set up to use the Container Insights agent, please follow the original steps listed below the divider (starting from "About"), and return to these instructions upon completion. This integration is currently only available with the Linux Agent.
 
 ## Build collector binaries
 ```
