@@ -16,9 +16,10 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 ##### Version microsoft/oms:win-ciprod05262020-2 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020-2 (windows)
 ##### Code change log
 - Following hotfixes which are applicable only for Linux agent
-  - Fix the issue related to collection of multi-containers in pod for the containerinventory table
-  - Fix the containerhostname field value to have podname rather than nodename in containerinventory table
+  - Fix the issue related to collection of multi-containers in pod for the ContainerInventory table
+  - Fix the containerhostname field value to have podname rather than nodename in ContainerInventory table
   - Fix OOM issue during container startup if there are high number of pods or containers on the node
+  - Fix the ContainerName field value same as before in ContainerInventory table
 - We didn't rebuild windows container, so the image version for windows container stays the same as last release (ciprod:win-ciprod05262020-2) before this hotfix
 
 ### 06/30/2020 -
