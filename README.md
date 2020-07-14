@@ -3,7 +3,7 @@ Intended for those looking to use an integrated version of the Container Insight
 
 ## Build collector binaries
 ```
-cd Docker-Provider/build/linux
+cd ~/Docker-Provider/build/linux
 make OT_COLLECTOR_ENABLE=1
 ```
 Check if build was successful by confirming `otelcontribcol_linux_amd64` exists after running:
