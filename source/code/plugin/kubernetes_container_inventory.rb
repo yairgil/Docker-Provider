@@ -91,10 +91,20 @@ class KubernetesContainerInventory
                 containerInventoryRecord["State"] = "Waiting"
               end
             end
+
+            restartCount = 0
+            if !containerStatus["restartCount"].nil?
+              restartCount = containerStatus["restartCount"]
+            end
+
             containerInfoMap = containersInfoMap[containerName]
-            containerInventoryRecord["ElementName"] = containerInfoMap["ElementName"]
+            podName = containerInfoMap["PodName"]
+            namespace = containerInfoMap["Namespace"]
+            # containername format docker sees
+            containerNameInDockerFormat= "k8s_#{containerName}_#{podName}_#{namespace}_#{containerId}_#{restartCount}"
+            containerInventoryRecord["ElementName"] = containerNameInDockerFormat
             containerInventoryRecord["Computer"] = containerInfoMap["Computer"]
-            containerInventoryRecord["ContainerHostname"] = containerInfoMap["ContainerHostname"]
+            containerInventoryRecord["ContainerHostname"] = podName
             containerInventoryRecord["CreatedTime"] = containerInfoMap["CreatedTime"]
             containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
             containerInventoryRecord["Ports"] = containerInfoMap["Ports"]
@@ -132,6 +142,7 @@ class KubernetesContainerInventory
         nodeName = (!podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
         createdTime = podItem["metadata"]["creationTimestamp"]
         podName = podItem["metadata"]["name"]
+        namespace = podItem["metadata"]["namespace"]
         if !podItem.nil? && !podItem.empty? && podItem.key?("spec") && !podItem["spec"].nil? && !podItem["spec"].empty?
           podContainers = []
           if !podItem["spec"]["containers"].nil? && !podItem["spec"]["containers"].empty?
@@ -146,7 +157,8 @@ class KubernetesContainerInventory
               containerName = container["name"]
               containerInfoMap["ElementName"] = containerName
               containerInfoMap["Computer"] = nodeName
-              containerInfoMap["ContainerHostname"] = podName # pod is the container host
+              containerInfoMap["PodName"] = podName
+              containerInfoMap["Namespace"] = namespace
               containerInfoMap["CreatedTime"] = createdTime
               portsValue = container["ports"]
               portsValueString = (portsValue.nil?) ? "" : portsValue.to_s
