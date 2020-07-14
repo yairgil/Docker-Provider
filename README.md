@@ -1,4 +1,5 @@
-# Private Preview: Container Insights Agent Integration with OpenTelemetry Collector
+# Private Preview Instructions 
+## Container Insights Agent Integration with OpenTelemetry Collector
 Intended for those looking to use an integrated version of the Container Insights agent and OpenTelemetry collector (deployed as a kubernetes service) to obtain both infrastructure and application insights. This integration is currently only available with the Linux Agent. 
 
 ## Pre-requisites
