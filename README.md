@@ -6,11 +6,10 @@ Intended for those looking to use an integrated version of the Container Insight
 cd Docker-Provider/build/linux
 make OT_COLLECTOR_ENABLE=1
 ```
-Check if build was successful.
+Check if build was successful by confirming `otelcontribcol_linux_amd64` exists after running:
 ```
 ls ../../kubernetes/otel-collector/
 ```
-Confirm `otelcontribcol_linux_amd64` exists.  
 
 ## Deploy collector
 To deploy the collector, run the following commands: 
