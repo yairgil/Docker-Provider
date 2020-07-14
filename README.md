@@ -1,3 +1,33 @@
+# Private Preview Instructions
+Intended for those looking to use an integrated version of the Container Insights agent and OpenTelemetry collector to obtain both infrastructure and application insights. If you are currently not set up to use the Container Insights agent, please follow the original steps listed below the divider (starting from "About"), and return to these instructions upon completion. 
+
+## Build collector binaries
+```
+cd Docker-Provider/build/linux
+make OT_COLLECTOR_ENABLE=1
+```
+Check if build was successful.
+```
+ls ../../kubernetes/otel-collector/
+```
+Confirm `otelcontribcol_linux_amd64` exists.  
+
+## Deploy collector
+To deploy the collector, run the following commands: 
+```
+helm repo add open-telemetry https://ayusheesingh.github.io/helm-chart/
+helm repo list
+```
+Confirm open-telemetry is a listed repo.
+```
+helm upgrade --install azmon-containers-release-1-ot --set omsagent.instrumentationKey=<your_instrumentation_key>,omsagent.secret.wsid=<your_wsid>,omsagent.secret.key=<your_key>,omsagent.env.clusterName=<your_cluster_name>  open-telemetry/azuremonitor-containers
+kubectl get deployments 
+```
+Confirm `otel-collector` is running. 
+
+## Run your application 
+Run your application, and see your traces in Application Insights. If you run into issues, feel free to reach out to t-aysi@microsoft.com, or visit the instructions for a sample Python application in `source/opentelemetry-collector-contrib/examples/tracing` and make sure that it works as expected.
+___
 # About
 
 This repository contains source code for Azure Monitor for containers Linux and Windows Agent
