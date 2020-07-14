@@ -12,12 +12,12 @@ ls ../../kubernetes/otel-collector/
 ```
 
 ## Deploy collector
-To deploy the collector, run the following commands: 
+Add the repo and confirm it's been added by checking `open-telemetry` is listed.
 ```
 helm repo add open-telemetry https://ayusheesingh.github.io/helm-chart/
-helm repo list
+helm repo list 
 ```
-Confirm open-telemetry is a listed repo.
+Install helm chart (specify your Azure credentials by replacing the fields surrounded by `<>`:
 ```
 helm upgrade --install azmon-containers-release-1-ot --set omsagent.instrumentationKey=<your_instrumentation_key>,omsagent.secret.wsid=<your_wsid>,omsagent.secret.key=<your_key>,omsagent.env.clusterName=<your_cluster_name>  open-telemetry/azuremonitor-containers
 kubectl get deployments 
