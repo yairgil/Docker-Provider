@@ -47,8 +47,8 @@ Make sure your app that is being instrumented with OpenTelemetry is configured t
 
 ## Verify data ingestion
 Run your application, and see your traces in Application Insights. Data should be available under "Investigate" in Application Map and in Search. Below is an image of what this data can look like.
-![Application Map](./appmap.png)
-![Search](./search.png)
+![Application Map](./appmap.PNG)
+![Search](./search.PNG)
 
 ## Contact
 If you run into issues, feel free to reach out to t-aysi@microsoft.com, or visit the instructions for a sample Python application in `~/Docker-Provider/source/opentelemetry-collector-contrib/examples/tracing` and confirm that you can see data coming into Application Insights.
