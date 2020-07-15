@@ -40,22 +40,26 @@ Feel free to contact engineering team owners in case you have any questions abou
 # Prerequisites
 
 ## Common
-1. [Visual Studio Code](https://code.visualstudio.com/) for authoring
-2. [Go lang](https://golang.org/) for building go code. Go lang version 1.14.1.
-3. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) for Azure related operations
+- [Visual Studio Code](https://code.visualstudio.com/) for authoring
+- [Go lang](https://golang.org/) for building go code. Go lang version 1.14.1.
+
+> Note: If you are using WSL2, make sure you have cloned the code onto ubuntu not onto windows
+
+## WSL2
+- [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+- configure [Docker-for-windows-wsl2](https://docs.docker.com/docker-for-windows/wsl/)
 
 ## Linux
-4. Ubuntu 14.04 or higher to build Linux Agent. you can also use [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
-  > Note: If you are using WSL2, make sure you have cloned the code into ubuntu not on to windows
-5. [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
+- Ubuntu 14.04 or higher to build Linux Agent.
+- [Docker](https://docs.docker.com/engine/install/ubuntu/) to build the docker image for Linux Agent
+> Note: if you are using WSL2, you can ignore Docker since Docker for windows will be used.
 
 ## Windows
-6. Windows 10 Professional machine to build  Windows Agent
-7. [Docker for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
-8. [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
-9. [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
+- Windows 10 Professional machine to build  Windows Agent
+- [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
+- [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
+- [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
 
-> Note: recommend to clone the code into Ubuntu app on Windows 10 so that you can work on development of both windows and linux agent.
 
 # Repo structure
 
@@ -136,7 +140,7 @@ Pull request must be approved by at least one engineering team members.
 
 # Authoring code
 
-We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code into Ubuntu app so that you dont need to wory about line ending issues LF vs CRLF.
+We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code onto Ubuntu app so that you dont need to worry about line ending issues LF vs CRLF.
 
 # Building code
 
@@ -144,17 +148,17 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 ### Install Pre-requisites
 
-1. Install go1.14.1, build dependencies and docker if you dont have installed already on your dev machine
+1. Install go1.14.1, dotnet, powershell, docker and build dependencies to build go code for both Linux and Windows platforms
 ```
 bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 ```
-2. Verify python, docker and golang installed properly and also PATH and GOBIN environment variables set with go path.
+2. Verify python, docker and golang installed properly and also PATH and GOBIN environment variables set with go bin path.
    For some reason go env not set by install-build-pre-requisites.sh script, run the following commands to set them
    ```
    export PATH=$PATH:/usr/local/go/bin
    export GOBIN=/usr/local/go/bin
    ```
-3. If you want to use Docker on the WSL/2, verify following configuration settings configured
+3. If you want to use Docker on the WSL2, verify following configuration settings configured on your Ubuntu app
    ```
    echo $DOCKER_HOST
    # if either DOCKER_HOST not set already or doesnt have tcp://localhost:2375 value, set DOCKER_HOST value via this command
@@ -164,6 +168,8 @@ bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 
 ### Build Docker Provider Shell Bundle and Docker Image and Publish Docker Image
 
+> Note: If you are using WSL2, ensure Docker for windows running Linux containers mode to build Linux agent image successfully
+
 ```
 cd ~/Docker-Provider/kubernetes/linux/dockerbuild
 sudo docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
@@ -172,23 +178,27 @@ bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag>
 ```
 > Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
-If you prefe to build docker provider shell bundle and image separately, then you can follow below instructions
+If you prefer to build docker provider shell bundle and image separately, then you can follow below instructions
 
 ##### Build Docker Provider shell bundle
+
 ```
 cd ~/Docker-Provider/build/linux
 make
 ```
 ##### Build and Push Docker Image
+
 ```
 cd ~/Docker-Provider/kubernetes/linux/
-docker build -t <repo>/<imagename>:<imagetag> IMAGE_TAG=<imagetag> .
+docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
 ```
-
 ## Windows Agent
-> Note: Below instructions are assumed you have cloned the code on to WSL/2 machine
+
 ### Install Pre-requisites
+
+If you are planning to build the .net and go code for windows agent on Linux machine and you have already have Docker for Windows on Windows machine, then you may skip this.
+
 ```
 powershell # launch powershell with elevated admin on your windows machine
 Set-ExecutionPolicy -ExecutionPolicy bypass # set the execution policy
@@ -196,30 +206,37 @@ net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app to wind
 cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
 .\install-build-pre-requisites.ps1 #
 ```
-### Build Cert generator, Out OMS Plugun and Docker Image and Publish Docker Image
-
-Build Certificate generator source code in .NET and Out OMS Plugin code in Go lang  by running these commands in CMD shell
-```
-docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
-cd z:\home\sshadmin\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
-powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
-.\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
-```
-> Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
-
-If you prefe to build Certificate Generator Source code and Out OMS Go plugin code and image separately, then you can follow below instructions
-
 #### Build Certificate Generator Source code and Out OMS Go plugin code
+
+> Note: .net and go code for windows agent can built on Ubuntu
+
 ```
-cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
-powershell -executionpolicy bypass -File .\Makefile.ps1 # trigger build and publish
+cd ~/Docker-Provider/build/windows # based on your repo path on ubuntu or WSL2
+pwsh #switch to powershell
+.\Makefile.ps1 # trigger build and publish of .net and go code
 ```
+> Note: format of the imagetag will be `win-ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
 ####  Build and Push Docker Image
+
+> Note: windows container can only built on windows hence you will have to execute below commands on windows via accessing network share or copying published bits omsagentwindows under kubernetes directory on to windows machine
+
 ```
+net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app to windows
 cd z:\home\sshadmin\Docker-Provider\kubernetes\windows # based on your repo path
-docker build -t <repo>/<imagename>:<imagetag> IMAGE_TAG=<imagetag> .
+docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
+```
+
+### Build Cert generator, Out OMS Plugun and Docker Image and Publish Docker Image
+
+If you have code cloned on to windows, you can built everything for windows agent on windows machine via below instructions
+
+```
+cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
+docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
+powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
+.\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
 ```
 
 # Azure DevOps Build Pipeline
@@ -254,9 +271,11 @@ Navigate to Kubernetes directory and update the yamls with latest docker image o
 Deploy the Kubernetes yamls on to your Kubernetes cluster with Linux and Windows nodes and make sure all the scenarios works.
 
 # E2E Tests
+
 TBD
 
 # Code of Conduct
 
-This project has adopted the [Microsoft Open Source Code of Conduct] (https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ] (https://opensource.microsoft.com/codeofconduct/faq/) or contact opencode@microsoft.com with any additional questions or comments.
+This project has adopted the [Microsoft Open Source Code of Conduct] (https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ] (https://opensource.microsoft.com/codeofconduct/faq/) or contact opencode@microsoft.com with any additional questions or comments.
 
