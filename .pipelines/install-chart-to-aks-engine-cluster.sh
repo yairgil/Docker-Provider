@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "start: install azure-monitor for containers chart to specificied aks-engine cluster"
-$releaseName="azmon-containers-release-1"
+releaseName="azmon-containers-release-1"
 
 for ARGUMENT in "$@"
 do
