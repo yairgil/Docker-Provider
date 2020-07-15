@@ -13,10 +13,11 @@ build/windows/installer/certificategenerator/obj
 kubernetes/windows/omsagentwindows
 # ignore everything under intermediate directory
 intermediate
-# ignore all these file extensions
+# ignore files which are having these extensions
 *.pyc
 *.so
 *.zip
+*.tar
 *.exe
 *.jar
 *.dll
