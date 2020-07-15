@@ -12,15 +12,10 @@ do
            ClusterName) ClusterName=$VALUE ;;
            CIRelease) CI_RELEASE=$VALUE ;;
            CIImageTagSuffix) CI_IMAGE_TAG_SUFFIX=$VALUE ;;
-           KV) KV=$VALUE ;;
-           KVSECRETNAMEKUBECONFIG) KubeConfigSecret=$VALUE ;;
            *)
     esac
 done
 
-echo "downloading the KubeConfig from KV:${KV} and KV secret:${KubeConfigSecret}"
-az keyvault secret download --file ./kubeconfig --vault-name ${KV} --name ${KubeConfigSecret}
-echo "downloaded the KubeConfig from KV:${KV} and KV secret:${KubeConfigSecret}"
 
 echo "replace linux agent image"
 linuxAgentImageTag=$CI_RELEASE$CI_IMAGE_TAG_SUFFIX
@@ -36,6 +31,12 @@ echo "Windows Agent Image Tag:"$windowsAgentImageTag
 echo "read workspace id and key which written by get-workspace-id-and-key.sh script"
 WSID=$(cat ~/WSID)
 WSKEY=$(cat ~/WSKEY)
+
+echo "Workspace GUID: ${WSID}"
+echo "Workspace Key: ${WSKEY}"
+
+kubeconfig=$(cat ./kubeconfig)
+echo "kubeconfig:${kubeconfig}"
 
 echo "installing the chart release: ${releaseName}"
 helm upgrade --install $releaseName --kubeconfig ./kubeconfig --set omsagent.secret.wsid=$WSID,omsagent.secret.key=$WSKEY,omsagent.env.clusterName=$ClusterName,omsagent.image.repo=$imageRepo,omsagent.image.tag=$linuxAgentImageTag,omsagent.image.tagWindows=$windowsAgentImageTag  azuremonitor-containers
