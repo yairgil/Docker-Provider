@@ -28,7 +28,7 @@ helm list
 ```
 Confirm `otel-collector` is running:
 ```
-kubectl get deployments 
+kubectl get deployments -n kube-system
 ```
 
 ## Configure OpenTelemetry Collector Receiver
