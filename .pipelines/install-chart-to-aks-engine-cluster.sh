@@ -9,7 +9,7 @@ do
    VALUE=$(echo $ARGUMENT | cut -f2 -d=)
 
    case "$KEY" in
-           AKSEngineCluster) ClusterName=$VALUE ;;
+           ClusterName) ClusterName=$VALUE ;;
            CIRelease) CI_RELEASE=$VALUE ;;
            CIImageTagSuffix) CI_IMAGE_TAG_SUFFIX=$VALUE ;;
            *)
@@ -34,4 +34,4 @@ WSID=$(cat ~/WSID)
 WSKEY=$(cat ~/WSKEY)
 
 echo "installing the chart release: ${releaseName}"
-helm upgrade --install $releaseName --set omsagent.secret.wsid=$WSID,omsagent.secret.key=$WSKEY,omsagent.env.clusterName=$ClusterName,omsagent.image.repo=$imageRepo,omsagent.image.tag=$linuxAgentImageTag,omsagent.image.tagWindows=$windowsAgentImageTag  charts/azuremonitor-containers
+helm upgrade --install $releaseName --set omsagent.secret.wsid=$WSID,omsagent.secret.key=$WSKEY,omsagent.env.clusterName=$ClusterName,omsagent.image.repo=$imageRepo,omsagent.image.tag=$linuxAgentImageTag,omsagent.image.tagWindows=$windowsAgentImageTag  azuremonitor-containers
