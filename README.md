@@ -55,6 +55,8 @@ The general directory structure is:
 |   |   |   |── conf/                         - fluent, fluentbit and out_oms plugin configuration files
 |   |   |   |── scripts/                      - script files related to livenessproble, filesystemwatcher, keepCertificateAlive etc..
 |   |   |   |── certificategenerator/         - .NET code for the generation self-signed certificate of the windows agent
+├── charts/                                   - helm charts
+│   ├── azuremonitor-containers/              - azure monitor for containers helm chart used for non-AKS clusters
 ├── alerts/                                   - alert queries
 ├── kubernetes/                               - files related to Linux and Windows Agent for Kubernetes
 │   ├── linux/                                - scripts to build the Docker image for Linux Agent

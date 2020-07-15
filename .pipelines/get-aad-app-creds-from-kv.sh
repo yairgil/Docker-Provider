@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "end: get app id and secret from specified key vault"
+echo "start: get app id and secret from specified key vault"
 
 for ARGUMENT in "$@"
 do
