@@ -80,7 +80,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 
 ## Windows
 - Windows 10 Professional machine to build  Windows Agent
-- [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
+- [Docker for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
 - [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
 - [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
 
