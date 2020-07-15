@@ -35,8 +35,8 @@ WSKEY=$(cat ~/WSKEY)
 echo "Workspace GUID: ${WSID}"
 echo "Workspace Key: ${WSKEY}"
 
-kubeconfig=$(cat ./kubeconfig)
+kubeconfig=$(cat ~/kubeconfig)
 echo "kubeconfig:${kubeconfig}"
 
 echo "installing the chart release: ${releaseName}"
-helm upgrade --install $releaseName --kubeconfig ./kubeconfig --set omsagent.secret.wsid=$WSID,omsagent.secret.key=$WSKEY,omsagent.env.clusterName=$ClusterName,omsagent.image.repo=$imageRepo,omsagent.image.tag=$linuxAgentImageTag,omsagent.image.tagWindows=$windowsAgentImageTag  azuremonitor-containers
+helm upgrade --install $releaseName --kubeconfig ~/kubeconfig --set omsagent.secret.wsid=$WSID,omsagent.secret.key=$WSKEY,omsagent.env.clusterName=$ClusterName,omsagent.image.repo=$imageRepo,omsagent.image.tag=$linuxAgentImageTag,omsagent.image.tagWindows=$windowsAgentImageTag  azuremonitor-containers
