@@ -4,7 +4,6 @@ receivers:
   otlp:
     protocols:
         grpc:
-  # otlp: {}
 processors:
   batch:
   queued_retry:
