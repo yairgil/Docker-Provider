@@ -144,7 +144,7 @@ module Fluent
                 
                 hpaStatuslastScaleTime = ""
                 if !hpa["status"]["lastScaleTime"].nil?
-                    hpsStatuslastScaleTime = hpa["status"]["lastScaleTime"]
+                    hpaStatuslastScaleTime = hpa["status"]["lastScaleTime"]
                 end
                 
                 
