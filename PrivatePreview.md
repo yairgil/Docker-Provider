@@ -16,7 +16,7 @@ Confirm it's been added by checking `open-telemetry` is listed:
 ```
 helm repo list 
 ```
-Go to your Log Analytics workspace in the Azure Portal, click on "Advanced Settings" > "Connected Sources" > "Agents management", and retrieve your workspace ID (<your_wsid>) and primary key (<your_key>) from there. Similarly, get your Application Insights resource instrumentation key (<your_instrumentation_key>) from the Overview tab in Azure Portal. Replace these values in the command below and run.
+Go to your Log Analytics workspace in the Azure Portal, click on "Advanced Settings" > "Connected Sources" > "Agents management", and retrieve your workspace ID (<your_wsid>) and primary key (<your_key>) from there. Similarly, get your Application Insights resource instrumentation key (<your_instrumentation_key>) from the "Overview" tab in Azure Portal. Replace these values in the command below and run.
 ```
 helm upgrade --install azmon-containers-release-1-ot --set omsagent.instrumentationKey=<your_instrumentation_key>,omsagent.secret.wsid=<your_wsid>,omsagent.secret.key=<your_key>,omsagent.env.clusterName=<your_cluster_name>  open-telemetry/azuremonitor-containers
 ```
