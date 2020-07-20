@@ -253,7 +253,8 @@ For DEV and PROD branches, automatically deployed latest yaml with latest agent 
 
 # E2E Tests
 
-TBD
+Clusters are used in release pipeline already has the yamls under test\scenario deployed. Make sure to validate these scenarios.
+If you have new interesting scenarios, please add/update them.
 
 # Code of Conduct
 
