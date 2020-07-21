@@ -19,11 +19,11 @@ echo "key vault name:${KV}"
 echo "key vault secret name for appid:${KVSECRETNAMEAPPID}"
 echo "key vault secret name for appsecret:${KVSECRETNAMEAPPSECRET}"
 
-az keyvault secret download --file ./acrappid --vault-name ${KV}  --name ${AppId}
+az keyvault secret download --file ~/acrappid --vault-name ${KV}  --name ${AppId}
 
 echo "downloaded the appid from KV:${KV} and KV secret:${AppId}"
 
-az keyvault secret download --file ./acrappsecret --vault-name ${KV}  --name ${AppSecret}
+az keyvault secret download --file ~/acrappsecret --vault-name ${KV}  --name ${AppSecret}
 
 echo "downloaded the appsecret from KV:${KV} and KV secret:${AppSecret}"
 
