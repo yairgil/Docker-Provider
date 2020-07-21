@@ -25,7 +25,7 @@ ACR_APP_ID=$(cat ~/acrappid)
 ACR_APP_SECRET=$(cat ~/acrappsecret)
 echo "end: read appid and appsecret"
 
-ACR=${CIARCACR}".azurecr.io"
+ACR=${CIARCACR}
 
 echo "login to acr:${ACR} using oras"
 oras login $ACR  --username $ACR_APP_ID --password $ACR_APP_SECRET
