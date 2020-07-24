@@ -283,11 +283,11 @@ fi
 echo "configured container runtime on kubelet is : "$CONTAINER_RUNTIME
 echo "export CONTAINER_RUNTIME="$CONTAINER_RUNTIME >> ~/.bashrc
 
-# these metrics available from k8s 1.18 or up
-export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
-echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
-export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
-echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
+# # these metrics available from k8s 1.18 or up
+# export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
+# echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
+# export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
+# echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
 
 # default to docker metrics
 export KUBELET_RUNTIME_OPERATIONS_METRIC="kubelet_docker_operations"
@@ -312,6 +312,21 @@ else
       usermod -aG ${DOCKER_GROUP} ${REGULAR_USER}
    fi
 fi
+
+if [ ! -z "$KUBERNETES_VERSION" ]; then
+   echo "kubernetes version of the cluster is : ${KUBERNETES_VERSION}"
+   K8S_VERSION=$(echo "${KUBERNETES_VERSION//v/}" | awk -F'-' '{print $1}')
+   if [ ! -z "$K8S_VERSION" ]; then
+      if $(dpkg --compare-versions $K8S_VERSION "lt" "1.18"); then
+         echo "k8s version less than 1.18"
+      else
+        echo "k8s version is 1.18 or higher so picking kubelet_runtime_operations_total and kubelet_runtime_operations_errors_total"
+        export KUBELET_RUNTIME_OPERATIONS_METRIC="kubelet_runtime_operations_total"
+        export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="kubelet_runtime_operations_errors_total"
+      fi
+   fi
+fi
+
 
 echo "set caps for ruby process to read container env from proc"
 sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /opt/microsoft/omsagent/ruby/bin/ruby

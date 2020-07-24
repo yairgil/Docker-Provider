@@ -353,6 +353,9 @@ spec:
               cpu: 75m
               memory: 225Mi
           env:
+           # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.GitVersion }}"
+           - name: KUBERNETES_VERSION
+             value: ""
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
@@ -496,6 +499,9 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
+            # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.GitVersion }}"
+            - name: KUBERNETES_VERSION
+              value: ""
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
@@ -647,6 +653,9 @@ spec:
            cpu: 75m
            memory: 225Mi
          env:
+          # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.GitVersion }}"
+          - name: KUBERNETES_VERSION
+            value: ""
           # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
           - name: AKS_RESOURCE_ID
             value: "VALUE_AKS_RESOURCE_ID_VALUE"
