@@ -353,7 +353,8 @@ spec:
               cpu: 75m
               memory: 225Mi
           env:
-            # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.GitVersion }}"
+            # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.Version }}"
+            # for local testing, you can specify the k8s version of your cluster for example v1.17.3
             - name: KUBERNETES_VERSION
               value: "VALUE_KUBERNETES_VERSION_VALUE"
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
@@ -499,7 +500,8 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
-            # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.GitVersion }}"
+            # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.Version }}"
+            # for local testing, you can specify the k8s version of your cluster for example v1.17.3
             - name: KUBERNETES_VERSION
               value: "VALUE_KUBERNETES_VERSION_VALUE"
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
@@ -653,7 +655,8 @@ spec:
            cpu: 75m
            memory: 225Mi
          env:
-          # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.GitVersion }}"
+          # value, In AKS-RP should be "{{ .Values.global.Versions.Kubernetes }}"  and in HELM  should  be "{{ .Capabilities.KubeVersion.Version }}"
+          # for local testing, you can specify the k8s version of your cluster for example v1.17.3
           - name: KUBERNETES_VERSION
             value: "VALUE_KUBERNETES_VERSION_VALUE"
           # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
