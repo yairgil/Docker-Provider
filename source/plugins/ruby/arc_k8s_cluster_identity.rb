@@ -7,9 +7,11 @@ require "yajl/json_gem"
 require "base64"
 
 class ArcK8sClusterIdentity
+
+  @@crd_resource_uri_template = "%{kube_api_server_url}/apis/clusterconfig.azure.com/v1beta1/namespaces/azure-arc/azureclusteridentityrequests/container-insights-clusteridentityrequest"
+  @@secret_resource_uri_template = "%{kube_api_server_url}/api/v1/namespaces/azure-arc/secrets/%{token_secret_name}"
+
   def initialize
-    @@crd_resource_uri_template = "%{kube_api_server_url}/apis/clusterconfig.azure.com/v1beta1/namespaces/azure-arc/azureclusteridentityrequests/container-insights-clusteridentityrequest"
-    @@secret_resource_uri_template = "%{kube_api_server_url}/api/v1/namespaces/azure-arc/secrets/%{token_secret_name}"
     @token_expiry_time = Time.now
     @cached_access_token = String.new
     @token_secret_name = String.new
@@ -26,9 +28,9 @@ class ArcK8sClusterIdentity
       crd_request_uri = @@crd_resource_uri_template % {
         kube_api_server_url: kube_api_server_url,
       }
-      @service_account_token = get_service_account_token
+      service_account_token = get_service_account_token
       get_request = Net::HTTP::Get.new(crd_request_uri)
-      get_request["Authorization"] = "Bearer #{@service_account_token}"
+      get_request["Authorization"] = "Bearer #{service_account_token}"
       $log.info "Making GET request to #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       get_response = @http_client.request(get_request)
       $log.info "Got response of #{get_response.code} for #{crd_request_uri} @ #{Time.now.utc.iso8601}"
@@ -49,7 +51,7 @@ class ArcK8sClusterIdentity
         }
 
         get_request = Net::HTTP::Get.new(secret_request_uri)
-        get_request["Authorization"] = "Bearer #{@service_account_token}"
+        get_request["Authorization"] = "Bearer #{service_account_token}"
         $log.info "Making GET request to #{secret_request_uri} @ #{Time.now.utc.iso8601}"
         get_response = @http_client.request(get_request)
         $log.info "Got response of #{get_response.code} for #{secret_request_uri} @ #{Time.now.utc.iso8601}"
@@ -66,14 +68,13 @@ class ArcK8sClusterIdentity
   end
 
   private
-
   def get_service_account_token()
     begin
-      if File.exist?(@@token_file_path) && File.readable?(@@token_file_path)
-        token_str = File.read(@@token_file_path).strip
+      if File.exist?(@token_file_path) && File.readable?(@token_file_path)
+        token_str = File.read(@token_file_path).strip
         return token_str
       else
-        $log.info ("Unable to read token string from #{@@token_file_path}")
+        $log.info ("Unable to read token string from #{@token_file_path}")
         return nil
       end
     end
@@ -81,9 +82,8 @@ class ArcK8sClusterIdentity
 
   def get_http_client()
     kube_api_server_url = get_kube_api_server_url
-    host = URI.parse(kube_api_server_url)
-    port = URI.parse(kube_api_server_url)
-    http = Net::HTTP.new(host, port)
+    base_api_server_url = URI.parse(kube_api_server_url)
+    http = Net::HTTP.new(base_api_server_url.host, base_api_server_url.port)
     http.use_ssl = true
     if !File.exist?(@cert_file_path)
       raise "#{@cert_file_path} doesnt exist"
