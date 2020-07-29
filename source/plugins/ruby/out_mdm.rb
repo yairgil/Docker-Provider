@@ -239,7 +239,7 @@ module Fluent
     def send_to_mdm(post_body)
       begin
         if (!!@isArcK8sCluster)
-            if !@cluster_identity.nil?
+            if @cluster_identity.nil?
               @cluster_identity = ArcK8sClusterIdentity.new
             end
           access_token = @cluster_identity.get_cluster_identity_token
