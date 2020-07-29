@@ -46,6 +46,8 @@ module Fluent
       @useMsi = false
       @metrics_flushed_count = 0
 
+      @cluster_identity = nil
+      @isArcK8sCluster = false
       @get_access_token_backoff_expiry = Time.now
     end
 
@@ -87,6 +89,7 @@ module Fluent
           # arc k8s cluster uses cluster identity
           if aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
              @log.info "using cluster identity token since cluster is azure k8s cluster"
+             @isArcK8sCluster = true
              @cluster_identity = ArcK8sClusterIdentity.new
              @cached_access_token = @cluster_identity.get_cluster_identity_token
           else
@@ -235,7 +238,14 @@ module Fluent
 
     def send_to_mdm(post_body)
       begin
-        access_token = get_access_token
+        if (!!@isArcK8sCluster)
+            if !@cluster_identity.nil?
+              @cluster_identity = ArcK8sClusterIdentity.new
+            end
+          access_token = @cluster_identity.get_cluster_identity_token
+        else
+          access_token = get_access_token
+        end
         request = Net::HTTP::Post.new(@post_request_uri.request_uri)
         request["Content-Type"] = "application/x-ndjson"
         request["Authorization"] = "Bearer #{access_token}"
