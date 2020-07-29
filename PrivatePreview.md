@@ -7,6 +7,9 @@ Intended for those looking to use an integrated version of the Container Insight
 2. [AzureMonitor-Containers Solution added to your Log Analytics workspace](https://github.com/Microsoft/OMS-docker/blob/ci_feature_prod/docs/solution-onboarding.md)
 3. [An app instrumented with OpenTelemetry](https://opentelemetry.io/)
 
+## Precautions
+Currently, this solution supports requests and dependencies but not logs or metrics for ingesting application telemetry data. If you are currently using the Application Insights SDK to instrument and monitor your apps, this solution will not be supporting all the features avaiable in Application Insights. If Application Insights supports the language of your application and you wish to be able to have feature-rich functionality, please use the Application Insights SDK, or use this solution but be aware of its limitations. If Application Insights does not have support for your language, this is a great solution to be able to see application-level insights.
+
 ## Install Chart
 Add the repo: 
 ```
@@ -32,23 +35,27 @@ kubectl get deployments -n kube-system
 ```
 
 ## Configure OpenTelemetry Collector Receiver
-By default, OTLP is configured to be the receiver for the collector. If you wish to change it (for example, to OpenCensus), you will need to edit the collector configuration. Note: the OpenCensus configuration is commented out for convenience, in case you choose to use that.
+By default, OTLP is configured to be the receiver for the collector. If you wish to change it to OpenCensus, you will need to edit the collector configuration. Note: the OpenCensus configuration is commented out for convenience. 
+
 To get all configmaps (to see the current collector configuration), run:
 ```
 kubectl get configmap -n kube-system 
 ```
-Edit the configuration by running: 
+If you would like to switch to using OpenCensus, uncomment the lines with "opencensus", and comment the ones with "otlp". Edit this configuration by running: 
 ```
 kubectl edit configmap <configmap-name> -n kube-system
 ```
 
 ## Configure application 
-Make sure your app that is being instrumented with OpenTelemetry is configured to the appropriate endpoint based on the exporter you are using. If you are using the OTLP exporter, it must be specified to have `endpoint="otel-collector:55680"` (OTLP's default endpoint). If you are using the OpenCensus exporter, use `endpoint="otel-collector:55678"`.
+Make sure your app that is being instrumented with OpenTelemetry is configured to the appropriate endpoint based on the exporter you are using. If you are using the OTLP exporter, it must be specified to have `endpoint="otel-collector:55680"` (OTLP's default endpoint). If you are using the OpenCensus exporter, use `endpoint="otel-collector:55678"`. In order for the collector to work as expected, these ports must be available.
 
 ## Verify data ingestion
 Run your application, and see your traces in Application Insights. Data should be available under "Investigate" in Application Map and in Search. Below is an image of what this data can look like.
 ![Application Map](./appmap.PNG)
 ![Search](./search.PNG)
+
+## Limitations
+If you use Jaeger to instrument your applications, there may be some discrepancies in the way the data is rendered on the Application Map and Log Analytics due to span type mismatch. 
 
 ## Contact
 If you run into issues, feel free to reach out to t-aysi@microsoft.com, or visit the instructions for a sample Python application in `~/Docker-Provider/source/opentelemetry-collector-contrib/examples/tracing` and confirm that you can see data coming into Application Insights.
