@@ -23,7 +23,7 @@ class ArcK8sClusterIdentity
   end
 
   def get_cluster_identity_token
-    # get the cluster identity token
+    # get the cluster msi identity token which is valid for 24 hrs.
     if @cached_access_token.to_s.empty? || (Time.now + 60 * 60 > @token_expiry_time) # Refresh token 1 hr from expiration
       kube_api_server_url = get_kube_api_server_url
       crd_request_uri = @@crd_resource_uri_template % {
