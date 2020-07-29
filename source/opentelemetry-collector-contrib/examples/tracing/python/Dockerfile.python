@@ -1,5 +1,6 @@
 FROM python:3
 ADD collector.py /
+ADD run.sh /
 RUN pip3 install opentelemetry-api
 RUN pip3 install opentelemetry-sdk
 RUN pip3 install opentelemetry-ext-otlp

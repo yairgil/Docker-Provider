@@ -1,6 +1,8 @@
 import flask
+import logging
 import requests
 import sys
+import threading
 
 from opentelemetry import trace
 from opentelemetry.ext.flask import FlaskInstrumentor
@@ -31,15 +33,12 @@ FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 
 @app.route("/")
-def pull_requests():
-    # Fetch a list of pull requests on the opentracing repository
-    github_url = "https://api.github.com/repos/opentracing/opentracing-python/pulls"
-    r = requests.get(github_url)
+def make_request():
+    for i in range(4):
+        url = "http://www.example.com/"
+        r = requests.get(url)
+    
+    return 'Success!'
 
-    json = r.json()
-    pull_request_titles = map(lambda item: item['title'], json)
-
-    return 'OpenTracing Pull Requests: ' + ', '.join(pull_request_titles)
-
-# App will run when http://localhost:5001/ is hit
 app.run(debug=True, port=my_port)
+
