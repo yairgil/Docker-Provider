@@ -8,7 +8,7 @@ Intended for those looking to use an integrated version of the Container Insight
 3. [An app instrumented with OpenTelemetry](https://opentelemetry.io/)
 
 ## Precautions
-Currently, this solution supports requests and dependencies but not logs or metrics for ingesting application telemetry data. If you are currently using the Application Insights SDK to instrument and monitor your apps, this solution will not be supporting all the features avaiable in Application Insights. If Application Insights supports the language of your application and you wish to be able to have feature-rich functionality, please use the Application Insights SDK, or use this solution but be aware of its limitations. If Application Insights does not have support for your language, this is a great solution to be able to see application-level insights.
+Currently, this solution supports requests and dependencies but not logs or metrics when ingesting application telemetry data. If you are currently using the Application Insights SDK to instrument and monitor your apps, this solution will not be supporting all the features avaiable in Application Insights. If Application Insights supports the language of your application and you wish to be able to have feature-rich functionality, please use the Application Insights SDK, or use this solution but be aware of its limitations. If Application Insights does not have support for your language, this is a great solution to be able to see application-level insights.
 
 ## Install Chart
 Add the repo: 
