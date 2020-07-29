@@ -5,6 +5,7 @@ require "net/https"
 require "uri"
 require "yajl/json_gem"
 require "base64"
+require "time"
 
 class ArcK8sClusterIdentity
 
@@ -38,7 +39,7 @@ class ArcK8sClusterIdentity
       if get_response.code.to_i == 200
         status = JSON.parse(get_response.body)["status"]
         tokenReference = status["tokenReference"]
-        @token_expiry_time = status["expirationTime"]
+        @token_expiry_time = Time.parse(status["expirationTime"])
         @token_secret_name = status["tokenReference"]["secretName"]
         @token_secret_data_name = status["tokenReference"]["dataName"]
       end
