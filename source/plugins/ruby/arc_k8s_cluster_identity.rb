@@ -53,7 +53,6 @@ class ArcK8sClusterIdentity
         $log.info "Making GET request to #{secret_request_uri} @ #{Time.now.utc.iso8601}"
         get_response = @http_client.request(get_request)
         $log.info "Got response of #{get_response.code} for #{secret_request_uri} @ #{Time.now.utc.iso8601}"
-
         if get_response.code.to_i == 200
           token_secret = JSON.parse(get_response.body)["data"]
           cluster_identity_token = token_secret[@token_secret_data_name]
