@@ -88,7 +88,7 @@ module Fluent
 
           # arc k8s cluster uses cluster identity
           if aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
-             @log.info "using cluster identity token since cluster is azure k8s cluster"
+             @log.info "using cluster identity token since cluster is azure arc k8s cluster"
              @isArcK8sCluster = true
              @cluster_identity = ArcK8sClusterIdentity.new
              @cached_access_token = @cluster_identity.get_cluster_identity_token
