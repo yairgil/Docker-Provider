@@ -1,8 +1,8 @@
 # Onboard to Azure Monitor for containers Health(Tab) limited preview
 
-For on-boarding to Health(Tab), you would need to follow two steps
+For on-boarding to Health(Tab), you would need to complete two steps
 1. Configure agent through configmap to collect health data. [Learn more about ConfigMap](https://docs.microsoft.com/azure/azure-monitor/insights/container-insights-agent-config#configmap-file-settings-overview)
-2. Access `Health tab` with feature flag to view health tab. [aka.ms/HealthPreview](https://aka.ms/Healthpreview)
+2. Access Health(Tab) in Azure Monitor for Containers Insights experience in portal with feature flag URL. [aka.ms/HealthPreview](https://aka.ms/Healthpreview)
 
 
 ## Configure agent through ConfigMap
@@ -20,7 +20,7 @@ The configuration change can take a few minutes to finish before taking effect, 
 
 
 ## Access health(tab) in Azure Monitor for containers Insights experience
-1. You can access Health(tab) by accessing protal through this link. [aka.ms/HealthPreview](https://aka.ms/Healthpreview). This link includes feature flag to access Health(tab).
+1. You can view Health(tab) by accessing portal through this link. [aka.ms/HealthPreview](https://aka.ms/Healthpreview). This URL includes feature flag to view Health(Tab).
 
 
 For any question please reachout to us at [askcoin@microsoft.com](mailto:askcoin@microsoft.com)
