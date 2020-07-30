@@ -16,7 +16,7 @@ For on-boarding to Health(Tab), you would need to complete two steps
    
 Example: `kubectl apply -f container-azm-ms-agentconfig.yaml`.
 
-The configuration change can take a few minutes to finish before taking effect, and all omsagent pods in the cluster will restart. The restart is a rolling restart for all omsagent pods, not all restart at the same time. When the restarts are finished, a message is displayed that's similar to the following and includes the result: `configmap "container-azm-ms-agentconfig"` created.
+The configuration change can take a few minutes to finish before taking effect, and all omsagent pods in the cluster will restart. The restart is a rolling restart for all omsagent pods, not all restart at the same time.
 
 
 ## Access health(tab) in Azure Monitor for containers Insights experience
