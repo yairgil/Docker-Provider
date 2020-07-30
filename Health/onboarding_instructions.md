@@ -20,7 +20,7 @@ The configuration change can take a few minutes to finish before taking effect, 
 
 
 ## Access health(tab) in Azure Monitor for containers Insights experience
-1. You can view Health(tab) by accessing portal through this link. [aka.ms/HealthPreview](https://aka.ms/Healthpreview). This URL includes feature flag to view Health(Tab).
+1. You can view Health(tab) by accessing portal through this link. [aka.ms/HealthPreview](https://aka.ms/Healthpreview). This URL includes required feature flag.
 
 
 For any question please reachout to us at [askcoin@microsoft.com](mailto:askcoin@microsoft.com)
