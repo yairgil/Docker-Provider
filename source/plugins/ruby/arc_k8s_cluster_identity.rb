@@ -120,11 +120,11 @@ class ArcK8sClusterIdentity
             # sleep 30 seconds to get the renewed token  available
             sleep 30
           end
-          tokneReference = get_token_reference_from_crd
-          if !tokneReference.nil? && !tokneReference.empty?
-            @token_expiry_time = Time.parse(tokneReference["expirationTime"])
-            token_secret_name = tokneReference["secretName"]
-            token_secret_data_name = tokneReference["dataName"]
+          tokenReference = get_token_reference_from_crd
+          if !tokenReference.nil? && !tokenReference.empty?
+            @token_expiry_time = Time.parse(tokenReference["expirationTime"])
+            token_secret_name = tokenReference["secretName"]
+            token_secret_data_name = tokenReference["dataName"]
             # get the token from secret
             token = get_token_from_secret(token_secret_name, token_secret_data_name)
             if !token.nil?
