@@ -59,6 +59,7 @@ class ArcK8sClusterIdentity
         kube_api_server_url: @kube_api_server_url,
         cluster_config_crd_api_version: @@cluster_config_crd_api_version,
         cluster_identity_resource_namespace: @@cluster_identity_resource_namespace,
+        cluster_identity_resource_name: @@cluster_identity_resource_name,
       }
       get_request = Net::HTTP::Get.new(crd_request_uri)
       get_request["Authorization"] = "Bearer #{@service_account_token}"
@@ -83,6 +84,7 @@ class ArcK8sClusterIdentity
         kube_api_server_url: @kube_api_server_url,
         cluster_config_crd_api_version: @@cluster_config_crd_api_version,
         cluster_identity_resource_namespace: @@cluster_identity_resource_namespace,
+        cluster_identity_resource_name: @@cluster_identity_resource_name,
       }
       get_request = Net::HTTP::Get.new(crd_request_uri)
       get_request["Authorization"] = "Bearer #{@service_account_token}"
