@@ -171,10 +171,7 @@ class KubernetesContainerInventory
               cmdValue = container["command"]
               cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
               containerInfoMap["Command"] = cmdValueString
-              containerInfoMap["EnvironmentVar"] = ""
-              if isWindows
-                containerInfoMap["EnvironmentVar"] = obtainWindowsContainerEnvironmentVars(podItem, container)
-              end
+              containerInfoMap["EnvironmentVar"] = obtainContainerEnvironmentVarsFromPodsResponse(podItem, container)
               containersInfoMap[containerName] = containerInfoMap
             end
           end
@@ -249,7 +246,7 @@ class KubernetesContainerInventory
       return envValueString
     end
 
-    def obtainWindowsContainerEnvironmentVars(pod, container)
+    def obtainContainerEnvironmentVarsFromPodsResponse(pod, container)
       envValueString = ""
       begin
         envVars = []
@@ -321,7 +318,7 @@ class KubernetesContainerInventory
           end
         end
       rescue => error
-        $log.warn("KubernetesContainerInventory::obtainWindowsContainerEnvironmentVars: parsing of EnvVars failed: #{error}")
+        $log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVarsFromPodsResponse: parsing of EnvVars failed: #{error}")
         $log.debug_backtrace(error.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(error)
       end
