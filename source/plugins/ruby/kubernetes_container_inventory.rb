@@ -85,9 +85,12 @@ class KubernetesContainerInventory
                 containerInventoryRecord["State"] = "Terminated"
                 containerInventoryRecord["StartedTime"] = containerState["terminated"]["startedAt"]
                 containerInventoryRecord["FinishedTime"] = containerState["terminated"]["finishedAt"]
-                containerInventoryRecord["ExitCode"] = containerState["terminated"]["exitCode"]
-                # exit code non-zero indicates the container in failed state
-                if containerInventoryRecord["ExitCode"] != 0
+                exitCodeValue = containerState["terminated"]["exitCode"]
+                if exitCodeValue < 0
+                  exitCodeValue = 128
+                end
+                containerInventoryRecord["ExitCode"] = exitCodeValue
+                if exitCodeValue > 0
                   containerInventoryRecord["State"] = "Failed"
                 end
                 isContainerTerminated = true
