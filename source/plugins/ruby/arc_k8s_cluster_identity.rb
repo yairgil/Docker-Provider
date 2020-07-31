@@ -116,9 +116,10 @@ class ArcK8sClusterIdentity
       if @cached_access_token.to_s.empty? || (Time.now + 60 * 60 > @token_expiry_time) # Refresh token 1 hr from expiration
           # renew the token if its near expiry
           if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
+            $log.info ("renewing the token since its near expiry")
             renew_near_expiry_token
-            # sleep 30 seconds to get the renewed token  available
-            sleep 30
+            # sleep 60 seconds to get the renewed token  available
+            sleep 60
           end
           tokenReference = get_token_reference_from_crd
           if !tokenReference.nil? && !tokenReference.empty?
@@ -132,6 +133,8 @@ class ArcK8sClusterIdentity
             else
               $log.warn ("got token nil from secret: #{@token_secret_name}")
             end
+          else
+            $log.warn ("got token reference either nil or empty")
           end
       end
     rescue => err
@@ -147,7 +150,7 @@ class ArcK8sClusterIdentity
         token_str = File.read(@token_file_path).strip
         return token_str
       else
-        $log.info ("Unable to read token string from #{@token_file_path}")
+        $log.warn ("Unable to read token string from #{@token_file_path}")
         return nil
       end
     end
