@@ -115,10 +115,11 @@ class KubernetesContainerInventory
             containerInventoryRecord["Command"] = containerInfoMap["Command"]
             if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
               containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
-            elsif isWindows
+            elsif isWindows || isContainerTerminated
+              # for terminated containers, since the cproc gone we lost the env and we can only get this
               containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
             else
-              if containerId.nil? || containerId.empty? || isContainerTerminated || containerRuntime.nil? || containerRuntime.empty?
+              if containerId.nil? || containerId.empty? || containerRuntime.nil? || containerRuntime.empty?
                 containerInventoryRecord["EnvironmentVar"] = ""
               else
                 if containerRuntime.casecmp("cri-o") == 0
