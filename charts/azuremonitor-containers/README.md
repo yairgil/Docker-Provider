@@ -1,4 +1,4 @@
-# Azure Monitor � Containers
+# Azure Monitor – Containers
 
 ---
 
