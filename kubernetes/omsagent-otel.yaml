@@ -336,7 +336,7 @@ spec:
             requests:
               cpu: 75m
               memory: 225Mi
-          env:
+          env: 
             - name: AKS_RESOURCE_ID
               value: "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/ayushi-test/providers/Microsoft.ContainerService/managedClusters/t-aysi_cluster"
             - name: AKS_REGION
@@ -674,7 +674,7 @@ spec:
     targetPort: 55680
   selector:
     component: otel-collector
----
+--- 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -695,7 +695,7 @@ spec:
     spec:
       containers:
       - name: otel-collector
-        image: ayushisingh/omsagent:07292020v5
+        image: ayushisingh/omsagent:07302020
         command:
           - "/otelcontribcol"
           - "--config=/conf/otel-collector-config.yaml"
@@ -706,6 +706,9 @@ spec:
           requests:
             cpu: 75m
             memory: 225Mi
+        env: 
+          - name: APPLICATIONINSIGHTS_AUTH
+            value: YzdiZDM4OTQtNTZjMS00N2Q3LWE4ZTYtOTg0NDBlMjAxOGI2
         ports:
           - containerPort: 55678 # Default endpoint for Opencensus receiver.
         volumeMounts:

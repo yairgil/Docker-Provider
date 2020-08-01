@@ -1,0 +1,15 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "aksResourceId": {
+        "value": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/ayushi-workspace-rg/providers/Microsoft.ContainerService/managedClusters/ayushicluster"
+      },
+      "aksResourceLocation": {
+        "value": "East US"
+      },
+      "workspaceResourceId": {
+        "value": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/defaultresourcegroup-eus/providers/microsoft.operationalinsights/workspaces/defaultworkspace-72c8e8ca-dc16-47dc-b65c-6b5875eb600a-eus"
+      }
+    }
+  }

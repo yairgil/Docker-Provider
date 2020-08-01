@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: collector-python
-        image: ayushisingh/collectorpy:07292020v6
+        image: ayushisingh/collectorpy:07302020v8
         imagePullPolicy: Always
         ports:
           - containerPort: 5001

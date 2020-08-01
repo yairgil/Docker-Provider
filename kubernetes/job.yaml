@@ -1,0 +1,28 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  creationTimestamp: null
+  name: simplejob
+spec:
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+      name: simplejob
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - image: ayushisingh/collectorpy:07202020
+            name: simplejob
+            args:
+              - /bin/bash
+              - -c
+              - for i in {1..10}; do (curl http://52.224.29.140:30326); done
+            resources: {}
+          restartPolicy: OnFailure
+      parallelism: 2 
+  concurrencyPolicy: Allow
+  schedule: '*/2 * * * *'
+status: {}

@@ -2,8 +2,6 @@
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates
 
-ENV APPLICATIONINSIGHTS_AUTH YzdiZDM4OTQtNTZjMS00N2Q3LWE4ZTYtOTg0NDBlMjAxOGI2
-
 FROM scratch
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY otelcontribcol_linux_amd64 /otelcontribcol 

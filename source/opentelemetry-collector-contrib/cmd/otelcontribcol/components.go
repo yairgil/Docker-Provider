@@ -15,12 +15,11 @@
 package main
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
-	
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 )
 
 func components() (config.Factories, error) {
@@ -30,8 +29,7 @@ func components() (config.Factories, error) {
 		return config.Factories{}, err
 	}
 
-	extensions := []component.ExtensionFactory{
-	}
+	extensions := []component.ExtensionFactory{}
 
 	for _, ext := range factories.Extensions {
 		extensions = append(extensions, ext)
@@ -42,8 +40,7 @@ func components() (config.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	receivers := []component.ReceiverFactoryBase{
-	}
+	receivers := []component.ReceiverFactoryBase{}
 
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
@@ -68,15 +65,14 @@ func components() (config.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	processors := []component.ProcessorFactoryBase{
-	}
+	processors := []component.ProcessorFactoryBase{}
 
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)
 	}
 
 	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
-	
+
 	if err != nil {
 		errs = append(errs, err)
 	}

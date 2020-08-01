@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+
+pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name")
+
+for pod in "${pods[@]}"
+do
+	:
+	echo $pod
+	kubectl exec -it $pod /bin/bash
+#	curl http://localhost:500l
+done
