@@ -76,6 +76,7 @@ class KubernetesContainerInventory
             end
             containerInventoryRecord["ExitCode"] = 0
             isContainerTerminated = false
+            isContainerWaiting = false
             if !containerStatus["state"].nil? && !containerStatus["state"].empty?
               containerState = containerStatus["state"]
               if containerState.key?("running")
@@ -96,6 +97,7 @@ class KubernetesContainerInventory
                 isContainerTerminated = true
               elsif containerState.key?("waiting")
                 containerInventoryRecord["State"] = "Waiting"
+                isContainerWaiting = true
               end
             end
 
@@ -118,8 +120,8 @@ class KubernetesContainerInventory
             containerInventoryRecord["Command"] = containerInfoMap["Command"]
             if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
               containerInventoryRecord["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
-            elsif isWindows || isContainerTerminated
-              # for terminated containers, since the cproc gone we lost the env and we can only get this
+            elsif isWindows || isContainerTerminated || isContainerWaiting
+              # for terminated and waiting containers, since the cproc doesnt exist we lost the env and we can only get this
               containerInventoryRecord["EnvironmentVar"] = containerInfoMap["EnvironmentVar"]
             else
               if containerId.nil? || containerId.empty? || containerRuntime.nil? || containerRuntime.empty?
