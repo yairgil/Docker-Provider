@@ -17,6 +17,7 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
       require_relative "arc_k8s_cluster_identity"
+      require_relative "proxy_utils"
 
       @@token_resource_url = "https://monitoring.azure.com/"
       @@grant_type = "client_credentials"
@@ -79,17 +80,29 @@ module Fluent
         if @can_send_data_to_mdm
           @log.info "MDM Metrics supported in #{aks_region} region"
 
+          if aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
+            @isArcK8sCluster = true
+          end
           @@post_request_url = @@post_request_url_template % { aks_region: aks_region, aks_resource_id: aks_resource_id }
           @post_request_uri = URI.parse(@@post_request_url)
-          @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+          if (!!@isArcK8sCluster)
+             proxy = (ProxyUtils.getProxyConfiguration)
+             if proxy.nil? || proxy.empty?
+               @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+             else
+               @log.info "Proxy configured on this cluster: #{aks_resource_id}"
+               @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
+             end
+          else
+            @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+          end
           @http_client.use_ssl = true
           @log.info "POST Request url: #{@@post_request_url}"
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPluginStart", {})
 
           # arc k8s cluster uses cluster identity
-          if aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
+          if (!!@isArcK8sCluster)
              @log.info "using cluster identity token since cluster is azure arc k8s cluster"
-             @isArcK8sCluster = true
              @cluster_identity = ArcK8sClusterIdentity.new
              @cached_access_token = @cluster_identity.get_cluster_identity_token
           else
