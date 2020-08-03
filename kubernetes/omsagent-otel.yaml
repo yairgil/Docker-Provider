@@ -658,7 +658,7 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: otel-collector
+  name: omsagent-otel
   labels:
     app: opencensus
     component: omsagent-otel
