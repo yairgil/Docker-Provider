@@ -621,12 +621,12 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: otel-collector-conf
+  name: omsagent-otel-conf
   labels:
     app: opentelemetry
-    component: otel-collector-conf
+    component: omsagent-otel-conf
 data:
-  otel-collector-config: |
+  omsagent-otel-config: |
     receivers:
       opencensus:
         endpoint: 0.0.0.0:55678
@@ -660,8 +660,8 @@ kind: Service
 metadata:
   name: otel-collector
   labels:
-    app: opencesus
-    component: otel-collector
+    app: opencensus
+    component: omsagent-otel
 spec:
   ports:
   - name: opencensus # Default endpoint for Opencensus receiver.
@@ -673,15 +673,15 @@ spec:
     protocol: TCP
     targetPort: 55680
   selector:
-    component: otel-collector
+    component: omsagent-otel
 --- 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: otel-collector
+  name: omsagent-otel
   labels:
     app: opentelemetry
-    component: otel-collector
+    component: omsagent-otel
 spec:
   replicas: 1  # scale out based on your usage
   selector:
@@ -691,14 +691,14 @@ spec:
     metadata:
       labels:
         app: opentelemetry
-        component: otel-collector
+        component: omsagent-otel
     spec:
       containers:
-      - name: otel-collector
-        image: ayushisingh/omsagent:07302020
+      - name: omsagent-otel
+        image: ayushisingh/omsagent:08032020v2
         command:
           - "/otelcontribcol"
-          - "--config=/conf/otel-collector-config.yaml"
+          - "--config=/conf/omsagent-otel-config.yaml"
         resources:
           limits:
             cpu: 150m
@@ -712,7 +712,7 @@ spec:
         ports:
           - containerPort: 55678 # Default endpoint for Opencensus receiver.
         volumeMounts:
-          - name: otel-collector-config-vol
+          - name: omsagent-otel-config-vol
             mountPath: /conf
         livenessProbe:
           httpGet:
@@ -724,10 +724,12 @@ spec:
             port: 13133
       volumes:
         - configMap:
-            name: otel-collector-conf
+            name: omsagent-otel-conf
             items:
-              - key: otel-collector-config
-                path: otel-collector-config.yaml
-          name: otel-collector-config-vol
+              # - key: otel-collector-config
+              #   path: otel-collector-config.yaml
+              - key: omsagent-otel-config
+                path: omsagent-otel-config.yaml
+          name: omsagent-otel-config-vol
 
     
