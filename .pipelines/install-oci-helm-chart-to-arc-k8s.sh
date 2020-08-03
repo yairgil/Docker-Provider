@@ -66,9 +66,3 @@ echo "Workspace GUID: ${WSID}"
 echo "start: installing the chart release: ${releaseName}"
 helm upgrade --install $RELEASE_NAME --kubeconfig ~/arcK8kubeconfig --set omsagent.secret.wsid=$WSID,omsagent.secret.key=$WSKEY,omsagent.env.clusterId=$ArcK8sClusterResourceId,omsagent.env.clusterRegion=$ArcK8sClusterRegion,omsagent.image.repo=$imageRepo,omsagent.image.tag=$linuxAgentImageTag,omsagent.image.tagWindows=$windowsAgentImageTag  incubator/azuremonitor-containers
 echo "end: installing the chart release: ${releaseName}"
-
-
-
-
-
-
