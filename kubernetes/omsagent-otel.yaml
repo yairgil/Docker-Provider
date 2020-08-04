@@ -327,7 +327,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05262020"
+          image: ayushisingh/omsagent-ci:08032020
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -469,7 +469,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05262020"
+          image: ayushisingh/omsagent-ci:08032020
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -622,6 +622,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: omsagent-otel-conf
+  namespace: kube-system
   labels:
     app: opentelemetry
     component: omsagent-otel-conf
@@ -659,6 +660,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: omsagent-otel
+  namespace: kube-system
   labels:
     app: opencensus
     component: omsagent-otel
@@ -679,6 +681,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: omsagent-otel
+  namespace: kube-system
   labels:
     app: opentelemetry
     component: omsagent-otel

@@ -18,7 +18,7 @@ if len(sys.argv) > 1:
 else:
     print("need to specify port number as first parameter")
 
-exporter = OTLPSpanExporter(endpoint="omsagent-otel:55680")
+exporter = OTLPSpanExporter(endpoint="omsagent-otel.kube-system:55680")
 
 trace.set_tracer_provider(TracerProvider(resource=Resource(labels={ "service.name": "basic-service-%s" % my_port})))
 span_processor = BatchExportSpanProcessor(exporter)
