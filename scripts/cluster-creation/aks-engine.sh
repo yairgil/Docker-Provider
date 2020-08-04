@@ -17,7 +17,7 @@ usage()
 {
     local basename=`basename $0`
     echo
-    echo "Enable Azure Monitor for containers:"
+    echo "create aks-engine cluster:"
     echo "$basename deploy --subscription-id <subscriptionId> --client-id <clientId> --client-secret <clientSecret> --dns-prefix <dns-prefix> --location <location>"
 }
 
@@ -59,7 +59,7 @@ while getopts 'hs:c:w:d:l:' opt; do
 
       c)
         clientId="$OPTARG"
-        echo "client-id is $OPTARG"
+        echo "clientId is $OPTARG"
         ;;
 
       w)
@@ -92,6 +92,7 @@ create_cluster()
 
 sudo touch kubernetes.json
 sudo chmod 777 kubernetes.json
+# For docker runtime, remove kubernetesConfig block
 cat >> kubernetes.json <<EOL
 {
   "apiVersion": "vlabs",

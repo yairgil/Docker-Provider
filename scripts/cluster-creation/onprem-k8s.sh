@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 TEMP_DIR=temp-$RANDOM
-DEFAULT_ONPREM_K8S_CLUSTER="onprem-k8s-cluster-test"
 
 install-kind()
 {
@@ -24,21 +23,54 @@ EOL
 sudo kind create cluster --config kind-config.yaml  --name $ClusterName
 }
 
+usage()
+{
+    local basename=`basename $0`
+    echo
+    echo "create kind k8 cluster:"
+    echo "$basename --cluster-name <clusterName> "
+}
 
-for ARGUMENT in "$@"
-do
-   KEY=$(echo $ARGUMENT | cut -f1 -d=)
-   VALUE=$(echo $ARGUMENT | cut -f2 -d=)
+parse_args()
+{
 
-   case "$KEY" in
-           ClusterName) ClusterName=$VALUE ;;
-           *)
-    esac
+ if [ $# -le 1 ]
+  then
+    usage
+    exit 1
+ fi
+
+# Transform long options to short ones
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--cluster-name") set -- "$@" "-c" ;;
+    "--"*)   usage ;;
+    *)        set -- "$@" "$arg"
+  esac
 done
 
-if [ -z $ClusterName ]; then
-  ClusterName=$DEFAULT_ONPREM_K8S_CLUSTER
-fi
+local OPTIND opt
+
+while getopts 'hc:' opt; do
+    case "$opt" in
+      h)
+      usage
+        ;;
+
+      c)
+        clusterName="$OPTARG"
+        echo "clusterName is $OPTARG"
+        ;;
+
+      ?)
+        usage
+        exit 1
+        ;;
+    esac
+  done
+  shift "$(($OPTIND -1))"
+}
 
 echo "creating kind k8 cluster ..."
 cd ~
@@ -48,7 +80,7 @@ sudo mkdir $TEMP_DIR && cd $TEMP_DIR
 echo "download and install kind"
 install-kind
 
-echo "creating cluster: ${ClusterName}"
+echo "creating cluster: ${clusterName}"
 create_cluster
 
 echo "creating kind k8 cluster completed."
