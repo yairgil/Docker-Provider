@@ -47,7 +47,7 @@ kubectl edit configmap <configmap-name> -n kube-system
 ```
 
 ## Configure application 
-Make sure your app that is being instrumented with OpenTelemetry is configured to the appropriate endpoint based on the exporter you are using. If you are using the OTLP exporter, it must be specified to have `endpoint="omsagent-otel:55680"` (OTLP's default endpoint). If you are using the OpenCensus exporter, use `endpoint="omsagent-otel:55678"`. In order for the collector to work as expected, these ports must be available.
+Make sure your app that is being instrumented with OpenTelemetry is configured to the appropriate endpoint based on the exporter you are using. If you are using the OTLP exporter, it must be specified to have `endpoint="omsagent-otel.kube-system:55680"` (OTLP's default endpoint). If you are using the OpenCensus exporter, use `endpoint="omsagent-otel.kube-system:55678"`. In order for the collector to work as expected, these ports must be available.
 
 ## Verify data ingestion
 Run your application, and see your traces in Application Insights. Data should be available under "Investigate" in Application Map and in Search. Below is an image of what this data can look like.
