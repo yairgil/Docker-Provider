@@ -12,8 +12,8 @@ sudo mv ./kind /usr/local/bin/kind
 
 create_cluster()
 {
-sudo touch ~/${TEMP_DIR}/kind-config.yaml
-sudo chmod 777~/${TEMP_DIR}/kind-config.yaml
+sudo touch kind-config.yaml
+sudo chmod 777 kind-config.yaml
 cat >> kind-config.yaml <<EOL
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
@@ -21,7 +21,7 @@ nodes:
  - role: control-plane
  - role: worker
 EOL
-sudo kind create cluster --config ~/${TEMP_DIR}/kind-config.yaml  --name $ClusterName
+sudo kind create cluster --config kind-config.yaml  --name $ClusterName
 }
 
 
