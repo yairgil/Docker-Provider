@@ -12,8 +12,8 @@ additional questions or comments.
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
 ### 08/05/2020 -
-##### Version microsoft/oms:ciprod07152020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08052020 (linux)
-##### Version microsoft/oms:win-ciprod05262020-2 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod08052020 (windows)
+##### Version microsoft/oms:ciprod08052020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08052020 (linux)
+##### Version microsoft/oms:win-ciprod08052020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod08052020 (windows)
 ##### Code change log
 - Collection of KubeState metrics for deployments and HPA
 - Add the Proxy for Windows agent
