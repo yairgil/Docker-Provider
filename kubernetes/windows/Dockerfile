@@ -3,7 +3,7 @@ MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
 
-ARG IMAGE_TAG=win-ciprod05262020-2
+ARG IMAGE_TAG=win-ciprod08052020
 
 SHELL ["powershell"]
 
