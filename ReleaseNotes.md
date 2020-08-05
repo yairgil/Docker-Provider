@@ -21,6 +21,10 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - Change /spec to /metrics/cadvisor endpoint to collect node capacity metrics
 - Disable Health Plugin by default and can enabled via configmap
 - Pin version of jq 1.5+dfsg-2
+- Bug fix for showing node as 'not ready' when there is disk pressure
+- oneagent integration (disabled by default)
+- Add region check before sending alertable metrics to MDM
+- Telemetry fix for agent telemetry for sov. clouds
 
 
 ### 07/15/2020 -

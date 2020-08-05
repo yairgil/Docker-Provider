@@ -33,9 +33,7 @@ Image automatically synched to MCR CN from Public cloud MCR.
 
 ## AKS
 
-- Make PR to prebake the latest image (https://github.com/Azure/AgentBaker)
-- Make PR against [AKS-RP](https://msazure.visualstudio.com/CloudNativeCompute/_git/aks-rp?version=GBmaster) repo with chart update(s)
-- Update latest image tag for government clouds (https://github.com/microsoft/mcr)
+- Refer to internal docs for the release process and instructions.
 
 ## ARO v3
 
