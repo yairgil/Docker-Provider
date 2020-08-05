@@ -40,9 +40,6 @@ def pull_requests():
     github_url = "https://api.github.com/repos/opentracing/opentracing-python/pulls"
     r = requests.get(github_url)
 
-    json = r.json()
-    pull_request_titles = map(lambda item: item['title'], json)
-
     if forward_port:
         requests.get("http://localhost:%s" % forward_port)
 

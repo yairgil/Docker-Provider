@@ -41,13 +41,9 @@ def run(command, result=False, debug=False, env=os.environ, bg=False):
     return ret
 
 run("python3 collector.py 5001", bg=True)
-# time.sleep(10)
 run("python3 collector.py 5002 5001", bg=True)
-# time.sleep(10)
 run("python3 collector.py 5003 5002", bg=True)
-# time.sleep(10)
 run("python3 collector.py 5004 5003", bg=True)
-# time.sleep(10)
 
 while 1:
     time.sleep(10000)

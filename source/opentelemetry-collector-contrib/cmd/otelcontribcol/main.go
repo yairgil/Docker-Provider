@@ -24,39 +24,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/version"
 )
 
-// func InitializeTelemetryClient(agentVersion string) (int, error) {
-// 	encodedIkey := os.Getenv(envAppInsightsAuth)
-// 	if encodedIkey == "" {
-// 		return -1, errors.New("Missing Environment Variable")
-// 	}
-
-// 	decIkey, err := base64.StdEncoding.DecodeString(encodedIkey)
-// 	if err != nil {
-// 		log.Printf("Decoding Error %s", err.Error())
-// 		return -1, err
-// 	}
-
-// 	return 0, nil
-// }
-
 func main() {
-	// // print this: "\"os.Getenv(envAppInsightsAuth)\""
-	// log.Printf("7.29.2020 @ 8:23pm --------- app insights auth is: %s\n", os.Getenv(envAppInsightsAuth))
-
-	// ret, err := InitializeTelemetryClient("1.10.0.1")
-	// if ret != 0 || err != nil {
-	// 	message := fmt.Sprintf("Error During Telemetry Initialization :%s", err.Error())
-	// 	log.Printf(message)
-	// }
-	// // later change this to use AI AUTH env variable
-	// TelemetryClient := appinsights.NewTelemetryClient("c7bd3894-56c1-47d7-a8e6-98440e2018b6")
-	// TelemetryClient.TrackMetric("Testing testing", 0)
 
 	handleErr := func(message string, err error) {
 		if err != nil {
 			log.Fatalf("%s: %v", message, err)
-			// exception := appinsights.NewExceptionTelemetry(err)
-			// TelemetryClient.Track(exception)
 		}
 	}
 
