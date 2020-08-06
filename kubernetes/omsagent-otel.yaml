@@ -327,7 +327,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05262020"
+          image: ayushisingh/omsagent-ci:08032020
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -336,12 +336,12 @@ spec:
             requests:
               cpu: 75m
               memory: 225Mi
-          env:
+          env: 
             - name: AKS_RESOURCE_ID
-              value: "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/ayushi-test/providers/Microsoft.ContainerService/managedClusters/t-aysi_cluster"
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
               value: "East US"
-            #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
+            # Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             # - name: ACS_RESOURCE_NAME
             #   value: "my_acs_cluster_name"
             - name: CONTROLLER_TYPE
@@ -469,7 +469,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05262020"
+          image: ayushisingh/omsagent-ci:08032020
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -621,12 +621,13 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: otel-collector-conf
+  name: omsagent-otel-conf
+  namespace: kube-system
   labels:
     app: opentelemetry
-    component: otel-collector-conf
+    component: omsagent-otel-conf
 data:
-  otel-collector-config: |
+  omsagent-otel-config: |
     receivers:
       opencensus:
         endpoint: 0.0.0.0:55678
@@ -658,10 +659,11 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: otel-collector
+  name: omsagent-otel
+  namespace: kube-system
   labels:
-    app: opencesus
-    component: otel-collector
+    app: opencensus
+    component: omsagent-otel
 spec:
   ports:
   - name: opencensus # Default endpoint for Opencensus receiver.
@@ -673,15 +675,16 @@ spec:
     protocol: TCP
     targetPort: 55680
   selector:
-    component: otel-collector
----
+    component: omsagent-otel
+--- 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: otel-collector
+  name: omsagent-otel
+  namespace: kube-system
   labels:
     app: opentelemetry
-    component: otel-collector
+    component: omsagent-otel
 spec:
   replicas: 1  # scale out based on your usage
   selector:
@@ -691,25 +694,25 @@ spec:
     metadata:
       labels:
         app: opentelemetry
-        component: otel-collector
+        component: omsagent-otel
     spec:
       containers:
-      - name: otel-collector
-        image: ayushisingh/omsagent:07162020
+      - name: omsagent-otel
+        image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciotpreview08062020
         command:
           - "/otelcontribcol"
-          - "--config=/conf/otel-collector-config.yaml"
+          - "--config=/conf/omsagent-otel-config.yaml"
         resources:
           limits:
-            cpu: 1
-            memory: 2Gi
+            cpu: 150m
+            memory: 600Mi
           requests:
-            cpu: 200m
-            memory: 400Mi
+            cpu: 75m
+            memory: 225Mi
         ports:
           - containerPort: 55678 # Default endpoint for Opencensus receiver.
         volumeMounts:
-          - name: otel-collector-config-vol
+          - name: omsagent-otel-config-vol
             mountPath: /conf
         livenessProbe:
           httpGet:
@@ -721,10 +724,10 @@ spec:
             port: 13133
       volumes:
         - configMap:
-            name: otel-collector-conf
+            name: omsagent-otel-conf
             items:
-              - key: otel-collector-config
-                path: otel-collector-config.yaml
-          name: otel-collector-config-vol
-
-    
+              # - key: otel-collector-config
+              #   path: otel-collector-config.yaml
+              - key: omsagent-otel-config
+                path: omsagent-otel-config.yaml
+          name: omsagent-otel-config-vol
