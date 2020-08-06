@@ -67,7 +67,7 @@ Finally, it is time to emit traces and see them in Application Insights.
 ## Run Python application and emit traces
 #### 1. Execute commands from container
 ```
-kubectl exec -it <name of pod> /bin/bash`<br/>
+kubectl exec -it <name of pod> /bin/bash <br/>
 ```
 #### 2. Generate spans
 Note: if the probability sampler is enabled in the otel-collector, you might not see all the spans you send (adjust this number in collector's configuration, or disable it).
