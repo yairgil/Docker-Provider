@@ -93,67 +93,71 @@ class Inventory2MdmConvertor
   end
 
   def get_pod_inventory_mdm_records(batch_time)
+    records = []
     begin
-      # generate all possible values of non_phase_dim_values X pod Phases and zero-fill the ones that are not already present
-      @no_phase_dim_values_hash.each { |key, value|
-        @@pod_phase_values.each { |phase|
-          pod_key = [key, phase].join("~~")
-          if !@pod_count_hash.key?(pod_key)
-            @pod_count_hash[pod_key] = 0
-          else
+      if @process_incoming_stream
+        # generate all possible values of non_phase_dim_values X pod Phases and zero-fill the ones that are not already present
+        @no_phase_dim_values_hash.each { |key, value|
+          @@pod_phase_values.each { |phase|
+            pod_key = [key, phase].join("~~")
+            if !@pod_count_hash.key?(pod_key)
+              @pod_count_hash[pod_key] = 0
+            else
+              next
+            end
+          }
+        }
+        @pod_count_hash.each { |key, value|
+          key_elements = key.split("~~")
+          if key_elements.length != 4
             next
           end
+
+          # get dimension values by key
+          podNodeDimValue = key_elements[0]
+          podNamespaceDimValue = key_elements[1]
+          podControllerNameDimValue = key_elements[2]
+          podPhaseDimValue = key_elements[3]
+
+          record = @@pod_inventory_custom_metrics_template % {
+            timestamp: batch_time,
+            metricName: @@pod_count_metric_name,
+            phaseDimValue: podPhaseDimValue,
+            namespaceDimValue: podNamespaceDimValue,
+            nodeDimValue: podNodeDimValue,
+            controllerNameDimValue: podControllerNameDimValue,
+            podCountMetricValue: value,
+          }
+          records.push(JSON.parse(record))
         }
-      }
-      records = []
-      @pod_count_hash.each { |key, value|
-        key_elements = key.split("~~")
-        if key_elements.length != 4
-          next
+
+        #Add pod metric records
+        records = MdmMetricsGenerator.appendAllPodMetrics(records, batch_time)
+
+        #Send telemetry for pod metrics
+        timeDifference = (DateTime.now.to_time.to_i - @@metricTelemetryTimeTracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          MdmMetricsGenerator.flushPodMdmMetricTelemetry
+          @@metricTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
 
-        # get dimension values by key
-        podNodeDimValue = key_elements[0]
-        podNamespaceDimValue = key_elements[1]
-        podControllerNameDimValue = key_elements[2]
-        podPhaseDimValue = key_elements[3]
-
-        record = @@pod_inventory_custom_metrics_template % {
-          timestamp: batch_time,
-          metricName: @@pod_count_metric_name,
-          phaseDimValue: podPhaseDimValue,
-          namespaceDimValue: podNamespaceDimValue,
-          nodeDimValue: podNodeDimValue,
-          controllerNameDimValue: podControllerNameDimValue,
-          podCountMetricValue: value,
-        }
-        records.push(JSON.parse(record))
-      }
-
-      #Add pod metric records
-      records = MdmMetricsGenerator.appendAllPodMetrics(records, batch_time)
-
-      #Send telemetry for pod metrics
-      timeDifference = (DateTime.now.to_time.to_i - @@metricTelemetryTimeTracker).abs
-      timeDifferenceInMinutes = timeDifference / 60
-      if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
-        MdmMetricsGenerator.flushPodMdmMetricTelemetry
-        @@metricTelemetryTimeTracker = DateTime.now.to_time.to_i
+        # Clearing out all hashes after telemetry is flushed
+        MdmMetricsGenerator.clearPodHashes
       end
-
-      # Clearing out all hashes after telemetry is flushed
-      MdmMetricsGenerator.clearPodHashes
     rescue Exception => e
       @log.info "Error processing pod inventory record Exception: #{e.class} Message: #{e.message}"
       ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
       return []
     end
-    @log.info "Pod Count To Phase #{@pod_count_by_phase} "
-    @log.info "resetting convertor state "
-    @pod_count_hash = {}
-    @no_phase_dim_values_hash = {}
-    @pod_count_by_phase = {}
-    @pod_uids = {}
+    if @process_incoming_stream
+      @log.info "Pod Count To Phase #{@pod_count_by_phase} "
+      @log.info "resetting convertor state "
+      @pod_count_hash = {}
+      @no_phase_dim_values_hash = {}
+      @pod_count_by_phase = {}
+      @pod_uids = {}
+    end
     return records
   end
 
@@ -174,90 +178,98 @@ class Inventory2MdmConvertor
   end
 
   def process_record_for_oom_killed_metric(podControllerNameDimValue, podNamespaceDimValue, finishedTime)
-    begin
-      @log.info "in process_record_for_oom_killed_metric..."
+    if @process_incoming_stream
+      begin
+        @log.info "in process_record_for_oom_killed_metric..."
 
-      # Send OOM Killed state for container only if it terminated in the last 5 minutes, we dont want to keep sending this count forever
-      if is_container_terminated_recently(finishedTime)
-        if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
-          podControllerNameDimValue = "No Controller"
+        # Send OOM Killed state for container only if it terminated in the last 5 minutes, we dont want to keep sending this count forever
+        if is_container_terminated_recently(finishedTime)
+          if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
+            podControllerNameDimValue = "No Controller"
+          end
+          MdmMetricsGenerator.generateOOMKilledContainerMetrics(podControllerNameDimValue,
+                                                                podNamespaceDimValue)
         end
-        MdmMetricsGenerator.generateOOMKilledContainerMetrics(podControllerNameDimValue,
-                                                        podNamespaceDimValue)
+      rescue => errorStr
+        @log.warn("Exception in process_record_for_oom_killed_metric: #{errorStr}")
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-    rescue => errorStr
-      @log.warn("Exception in process_record_for_oom_killed_metric: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
     end
   end
 
   def process_record_for_container_restarts_metric(podControllerNameDimValue, podNamespaceDimValue, finishedTime)
-    begin
-      @log.info "in process_record_for_container_restarts_metric..."
+    if @process_incoming_stream
+      begin
+        @log.info "in process_record_for_container_restarts_metric..."
 
-      # Send OOM Killed state for container only if it terminated in the last 5 minutes, we dont want to keep sending this count forever
-      if is_container_terminated_recently(finishedTime)
-        if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
-          podControllerNameDimValue = "No Controller"
+        # Send OOM Killed state for container only if it terminated in the last 5 minutes, we dont want to keep sending this count forever
+        if is_container_terminated_recently(finishedTime)
+          if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
+            podControllerNameDimValue = "No Controller"
+          end
+          MdmMetricsGenerator.generateRestartingContainersMetrics(podControllerNameDimValue,
+                                                                  podNamespaceDimValue)
         end
-        MdmMetricsGenerator.generateRestartingContainersMetrics(podControllerNameDimValue,
-                                                             podNamespaceDimValue)
+      rescue => errorStr
+        @log.warn("Exception in process_record_for_container_restarts_metric: #{errorStr}")
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-    rescue => errorStr
-      @log.warn("Exception in process_record_for_container_restarts_metric: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
     end
   end
 
   def process_record_for_pods_ready_metric(podControllerNameDimValue, podNamespaceDimValue, podStatusConditions)
-    begin
-      @log.info "in process_record_for_pods_ready_metric..."
-      if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
-        podControllerNameDimValue = "No Controller"
-      end
-      podReadyCondition = false
-      if !podStatusConditions.nil? && !podStatusConditions.empty?
-        podStatusConditions.each do |condition|
-          if condition["type"] == "Ready"
-            if condition["status"].downcase == "true"
-              podReadyCondition = true
+    if @process_incoming_stream
+      begin
+        @log.info "in process_record_for_pods_ready_metric..."
+        if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
+          podControllerNameDimValue = "No Controller"
+        end
+        podReadyCondition = false
+        if !podStatusConditions.nil? && !podStatusConditions.empty?
+          podStatusConditions.each do |condition|
+            if condition["type"] == "Ready"
+              if condition["status"].downcase == "true"
+                podReadyCondition = true
+              end
+              break #Exit the for loop since we found the ready condition
             end
-            break #Exit the for loop since we found the ready condition
           end
         end
+        MdmMetricsGenerator.generatePodReadyMetrics(podControllerNameDimValue,
+                                                    podNamespaceDimValue, podReadyCondition)
+      rescue => errorStr
+        @log.warn("Exception in process_record_for_pods_ready_metric: #{errorStr}")
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-      MdmMetricsGenerator.generatePodReadyMetrics(podControllerNameDimValue,
-                                                  podNamespaceDimValue, podReadyCondition)
-    rescue => errorStr
-      @log.warn("Exception in process_record_for_pods_ready_metric: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
     end
   end
 
   # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
   def process_record_for_terminated_job_metric(podControllerNameDimValue, podNamespaceDimValue, containerStatus)
-    begin
-      @log.info "in process_record_for_terminated_job_metric..."
-      if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
-        podControllerNameDimValue = "No Controller"
-      end
-      if !containerStatus.keys[0].nil? && containerStatus.keys[0].downcase == Constants::CONTAINER_STATE_TERMINATED
-        containerTerminatedReason = containerStatus["terminated"]["reason"]
-        if !containerTerminatedReason.nil? && containerTerminatedReason.downcase == Constants::CONTAINER_TERMINATION_REASON_COMPLETED
-          containerFinishedTime = containerStatus["terminated"]["finishedAt"]
-          if !containerFinishedTime.nil? && !containerFinishedTime.empty?
-            finishedTimeParsed = Time.parse(containerFinishedTime)
-            # Check to see if job was completed 6 hours ago/STALE_JOB_TIME_IN_MINUTES
-            if ((Time.now - finishedTimeParsed) / 60) > Constants::STALE_JOB_TIME_IN_MINUTES
-              MdmMetricsGenerator.generateStaleJobCountMetrics(podControllerNameDimValue,
-                                                               podNamespaceDimValue)
+    if @process_incoming_stream
+      begin
+        @log.info "in process_record_for_terminated_job_metric..."
+        if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
+          podControllerNameDimValue = "No Controller"
+        end
+        if !containerStatus.keys[0].nil? && containerStatus.keys[0].downcase == Constants::CONTAINER_STATE_TERMINATED
+          containerTerminatedReason = containerStatus["terminated"]["reason"]
+          if !containerTerminatedReason.nil? && containerTerminatedReason.downcase == Constants::CONTAINER_TERMINATION_REASON_COMPLETED
+            containerFinishedTime = containerStatus["terminated"]["finishedAt"]
+            if !containerFinishedTime.nil? && !containerFinishedTime.empty?
+              finishedTimeParsed = Time.parse(containerFinishedTime)
+              # Check to see if job was completed 6 hours ago/STALE_JOB_TIME_IN_MINUTES
+              if ((Time.now - finishedTimeParsed) / 60) > Constants::STALE_JOB_TIME_IN_MINUTES
+                MdmMetricsGenerator.generateStaleJobCountMetrics(podControllerNameDimValue,
+                                                                 podNamespaceDimValue)
+              end
             end
           end
         end
+      rescue => errorStr
+        @log.warn("Exception in process_record_for_terminated_job: #{errorStr}")
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-    rescue => errorStr
-      @log.warn("Exception in process_record_for_terminated_job: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
     end
   end
 
@@ -300,7 +312,6 @@ class Inventory2MdmConvertor
         else
           @no_phase_dim_values_hash[key_without_phase_dim_value] = true
         end
-
       rescue Exception => e
         @log.info "Error processing pod inventory record Exception: #{e.class} Message: #{e.message}"
         ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
