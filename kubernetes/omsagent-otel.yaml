@@ -338,10 +338,10 @@ spec:
               memory: 225Mi
           env: 
             - name: AKS_RESOURCE_ID
-              value: "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/ayushi-test/providers/Microsoft.ContainerService/managedClusters/t-aysi_cluster"
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
               value: "East US"
-            #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
+            # Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             # - name: ACS_RESOURCE_NAME
             #   value: "my_acs_cluster_name"
             - name: CONTROLLER_TYPE
