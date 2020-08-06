@@ -70,7 +70,6 @@ The general directory structure is:
 │   ├── windows/                              - scripts to build the Docker image for Windows Agent
 │   │   ├── dockerbuild                       - script to build the code and docker imag, and publish docker image
 │   │   ├── acrworkflows/                     - acr work flows for the Windows Agent container image
-│   │   ├── baseimage/                        - windowsservercore base image for the windows agent container
 │   │   ├── DockerFile                        - DockerFile for Windows Agent Container Image
 │   │   ├── main.ps1                          - Windows Agent container entry point
 │   │   ├── setup.ps1                         - setup file for Windows Agent Container Image

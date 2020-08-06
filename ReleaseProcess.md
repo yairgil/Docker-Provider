@@ -15,7 +15,7 @@ Here are the high-level instructions to get the CIPROD`<MM><DD><YYYY>` image for
 4. If everything validated in DEV, make merge PR from ci_dev and ci_prod and merge once this reviewed by dev team
 6. Update following pipeline variables under ReleaseCandiate with version of chart and image tag
     - CIHELMCHARTVERSION <VersionValue> # For example, 2.7.4
-    - CIImageTagSuffix <ImageTag> # ciprod08052020 or ciprod08052020-1 etc.
+    - CIImageTagSuffix <ImageTag> # ciprod08062020 or ciprod08062020-1 etc.
 7. Merge ci_dev and ci_prod branch which will trigger automatic deployment of latest bits to CIPROD cluster with CIPROD`<MM><DD><YYYY>` image to test and scale cluters, AKS, AKS-Engine
    > Note: production image automatically pushed to CIPROD Public cloud ACR which will inturn replicated to Public cloud MCR.
 8. Validate all the scenarios against clusters in build subscription and scale clusters
