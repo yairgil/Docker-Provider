@@ -698,7 +698,7 @@ spec:
     spec:
       containers:
       - name: omsagent-otel
-        image: ayushisingh/omsagent:08062020
+        image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciotpreview08062020
         command:
           - "/otelcontribcol"
           - "--config=/conf/omsagent-otel-config.yaml"
