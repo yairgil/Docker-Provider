@@ -20,7 +20,7 @@ clientId=$(echo $sp | jq '.appId')
 clientSecret=$(echo $sp | jq '.password')
 
 # create the aks-engine
-bash aks-engine.sh --subscription-id <subscriptionId> --client-id <clientId> --client-secret <clientSecret> --dns-prefix <clusterDnsPrefix> --location ${location}
+bash aks-engine.sh --subscription-id <subscriptionId> --client-id <clientId> --client-secret <clientSecret> --dns-prefix <clusterDnsPrefix> --location <location>
 ```
 
 ## ARO v4 Cluster
