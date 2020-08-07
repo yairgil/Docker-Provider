@@ -7,8 +7,8 @@
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "ciprod08062020"
-    tagWindows: "win-ciprod08062020"
+    tag: "ciprod08072020"
+    tagWindows: "win-ciprod08072020"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "10.0.0-4"
     agentVersion: "1.10.0.1"
