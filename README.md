@@ -25,7 +25,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 
 ## Windows
 - Windows 10 Professional machine to build  Windows Agent
-- [Dokcer for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
+- [Docker for Windows](https://docs.docker.com/docker-for-windows/) to build docker image for Windows Agent
 - [.NET Core SDK](https://dotnet.microsoft.com/download) to build the Windows Agent code
 - [gcc for windows](https://github.com/jmeubank/tdm-gcc/releases/download/v9.2.0-tdm64-1/tdm64-gcc-9.2.0.exe) to build go code
 
@@ -55,6 +55,8 @@ The general directory structure is:
 |   |   |   |── conf/                         - fluent, fluentbit and out_oms plugin configuration files
 |   |   |   |── scripts/                      - script files related to livenessproble, filesystemwatcher, keepCertificateAlive etc..
 |   |   |   |── certificategenerator/         - .NET code for the generation self-signed certificate of the windows agent
+├── charts/                                   - helm charts
+│   ├── azuremonitor-containers/              - azure monitor for containers helm chart used for non-AKS clusters
 ├── alerts/                                   - alert queries
 ├── kubernetes/                               - files related to Linux and Windows Agent for Kubernetes
 │   ├── linux/                                - scripts to build the Docker image for Linux Agent
@@ -211,7 +213,7 @@ powershell -ExecutionPolicy bypass  # switch to powershell if you are not on pow
 
 # Azure DevOps Build Pipeline
 
-Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines. These pipelines are configured with CI triggers for ci_dev and ci_prod (TBD).
+Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines. These pipelines are configured with CI triggers for ci_dev and ci_prod.
 
 Docker Images will be pushed to CDPX ACR repos and these needs to retagged and pushed to corresponding ACR or docker hub. Only onboarded Azure AD AppId has permission to pull the images from CDPx ACRs.
 
@@ -234,7 +236,7 @@ Here are the instructions to onboard the feature branch to Azure Dev Ops pipelin
 
 # Azure DevOps Release Pipeline
 
-Integrated to Azure DevOps release pipeline for the ci_dev and ci_prod (TBD).With this, for every commit to ci_dev branch, latest bits automatically deployded to DEV AKS clusters in Build subscription and similarly for for every commit to ci_prod branch, latest bits automatically deployed to PROD AKS clusters in Build subscription.
+Integrated to Azure DevOps release pipeline for the ci_dev and ci_prod.With this, for every commit to ci_dev branch, latest bits automatically deployded to DEV AKS clusters in Build subscription and similarly for for every commit to ci_prod branch, latest bits automatically deployed to PROD AKS clusters in Build subscription.
 
 For dev, agent image will be in this format mcr.microsoft.com/azuremonitor/containerinsights/cidev:cidev<git-commit-id>.
 For prod, agent will be in this format mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod`<MM><DD><YYYY>`.
@@ -251,7 +253,8 @@ For DEV and PROD branches, automatically deployed latest yaml with latest agent 
 
 # E2E Tests
 
-TBD
+Clusters are used in release pipeline already has the yamls under test\scenario deployed. Make sure to validate these scenarios.
+If you have new interesting scenarios, please add/update them.
 
 # Code of Conduct
 
