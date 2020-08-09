@@ -9,7 +9,6 @@ require "time"
 require "jwt"
 
 class ArcK8sClusterIdentity
-
   @@cluster_config_crd_api_version = "clusterconfig.azure.com/v1beta1"
   @@cluster_identity_resource_name = "container-insights-clusteridentityrequest"
   @@cluster_identity_resource_namespace = "azure-arc"
@@ -35,25 +34,25 @@ class ArcK8sClusterIdentity
     begin
       # get the cluster msi identity token either if its empty or near expirty. Token is valid 24 hrs.
       if @cached_access_token.to_s.empty? || (Time.now + 60 * 60 > @token_expiry_time) # Refresh token 1 hr from expiration
-          # renew the token if its near expiry
-          if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
-            $log.info ("renewing the token since its near expiry")
-            renew_near_expiry_token
-            # sleep 60 seconds to get the renewed token  available
-            sleep 60
+        # renew the token if its near expiry
+        if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
+          $log.info ("renewing the token since its near expiry")
+          renew_near_expiry_token
+          # sleep 60 seconds to get the renewed token  available
+          sleep 60
+        end
+        # get the token from secret
+        token = get_token_from_secret(@cluster_identity_token_secret, @cluster_identity_token_secret_data_name)
+        if !token.nil?
+          @token_expiry_time = Time.parse(tokenReference["expirationTime"])
+          expiration = token[0]["exp"]
+          if !expiration.nil? && !expiration.empty?
+            @token_expiry_time = Time.at(expiration)
           end
-          # get the token from secret
-          token = get_token_from_secret(@cluster_identity_token_secret, @cluster_identity_token_secret_data_name)
-          if !token.nil?
-             @token_expiry_time = Time.parse(tokenReference["expirationTime"])
-             expiration = token[0]["exp"]
-            if !expiration.nil? && !expiration.empty?
-              @token_expiry_time = Time.at(expiration)
-            end
-            @cached_access_token = token
-          else
-              $log.warn ("got token nil from secret: #{@cluster_identity_token_secret}")
-          end
+          @cached_access_token = token
+        else
+          $log.warn ("got token nil from secret: #{@cluster_identity_token_secret}")
+        end
       end
     rescue => err
       $log.warn ("get_cluster_identity_token failed: #{err}")
@@ -62,6 +61,7 @@ class ArcK8sClusterIdentity
   end
 
   private
+
   def get_token_from_secret(token_secret_name, token_secret_data_name)
     token = nil
     begin
@@ -87,6 +87,7 @@ class ArcK8sClusterIdentity
   end
 
   private
+
   def renew_near_expiry_token()
     begin
       crd_request_uri = @@crd_resource_uri_template % {
@@ -114,6 +115,7 @@ class ArcK8sClusterIdentity
   end
 
   private
+
   def get_service_account_token()
     begin
       if File.exist?(@token_file_path) && File.readable?(@token_file_path)
@@ -127,6 +129,7 @@ class ArcK8sClusterIdentity
   end
 
   private
+
   def get_http_client()
     kube_api_server_url = get_kube_api_server_url
     base_api_server_url = URI.parse(kube_api_server_url)
@@ -142,6 +145,7 @@ class ArcK8sClusterIdentity
   end
 
   private
+
   def get_kube_api_server_url
     if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
       return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}"
@@ -152,16 +156,16 @@ class ArcK8sClusterIdentity
   end
 
   private
+
   def get_update_request_body
     body = {}
     body["apiVersion"] = @@cluster_config_crd_api_version
     body["kind"] = @@cluster_identity_request_kind
     body["metadata"] = {}
     body["metadata"]["name"] = @@cluster_identity_resource_name
-    body["metadata"]["namespace"]  = @@cluster_identity_resource_namespace
+    body["metadata"]["namespace"] = @@cluster_identity_resource_namespace
     body["spec"] = {}
     body["spec"]["audience"] = @@azure_monitor_custom_metrics_audience
     return body
   end
-
 end
