@@ -2,12 +2,12 @@
 
 require_relative "security_utils"
 require "openssl"
-require_relative "jwt/algos/hmac"
-require_relative "jwt/algos/eddsa"
-require_relative "jwt/algos/ecdsa"
-require_relative "jwt/algos/rsa"
-require_relative "jwt/algos/ps"
-require_relative "jwt/algos/unsupported"
+require_relative "algos/hmac"
+require_relative "algos/eddsa"
+require_relative "algos/ecdsa"
+require_relative "algos/rsa"
+require_relative "algos/ps"
+require_relative "algos/unsupported"
 # begin
 #   require "rbnacl"
 # rescue LoadError
