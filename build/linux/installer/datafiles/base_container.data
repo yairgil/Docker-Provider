@@ -275,6 +275,11 @@ touch /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 
+touch /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
+
+
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 
