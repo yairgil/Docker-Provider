@@ -28,6 +28,39 @@ class ArcK8sClusterIdentity
     @service_account_token = get_service_account_token
   end
 
+  def get_cluster_identity_token()
+    begin
+      # get the cluster msi identity token either if its empty or near expirty. Token is valid 24 hrs.
+      if @cached_access_token.to_s.empty? || (Time.now + 60 * 60 > @token_expiry_time) # Refresh token 1 hr from expiration
+        # renew the token if its near expiry
+        if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
+          $log.info ("renewing the token since its near expiry")
+          renew_near_expiry_token
+          # sleep 60 seconds to get the renewed token  available
+          sleep 60
+        end
+        tokenReference = get_token_reference_from_crd
+        if !tokenReference.nil? && !tokenReference.empty?
+          @token_expiry_time = Time.parse(tokenReference["expirationTime"])
+          token_secret_name = tokenReference["secretName"]
+          token_secret_data_name = tokenReference["dataName"]
+          # get the token from secret
+          token = get_token_from_secret(token_secret_name, token_secret_data_name)
+          if !token.nil?
+            @cached_access_token = token
+          else
+            $log.warn ("got token nil from secret: #{@token_secret_name}")
+          end
+        else
+          $log.warn ("got token reference either nil or empty")
+        end
+      end
+    rescue => err
+      $log.warn ("get_cluster_identity_token failed: #{err}")
+    end
+    return @cached_access_token
+  end
+
   private
 
   def get_token_from_secret(token_secret_name, token_secret_data_name)
@@ -109,39 +142,6 @@ class ArcK8sClusterIdentity
     rescue => err
       $log.warn ("renew_near_expiry_token call failed: #{err}")
     end
-  end
-
-  def get_cluster_identity_token()
-    begin
-      # get the cluster msi identity token either if its empty or near expirty. Token is valid 24 hrs.
-      if @cached_access_token.to_s.empty? || (Time.now + 60 * 60 > @token_expiry_time) # Refresh token 1 hr from expiration
-        # renew the token if its near expiry
-        if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
-          $log.info ("renewing the token since its near expiry")
-          renew_near_expiry_token
-          # sleep 60 seconds to get the renewed token  available
-          sleep 60
-        end
-        tokenReference = get_token_reference_from_crd
-        if !tokenReference.nil? && !tokenReference.empty?
-          @token_expiry_time = Time.parse(tokenReference["expirationTime"])
-          token_secret_name = tokenReference["secretName"]
-          token_secret_data_name = tokenReference["dataName"]
-          # get the token from secret
-          token = get_token_from_secret(token_secret_name, token_secret_data_name)
-          if !token.nil?
-            @cached_access_token = token
-          else
-            $log.warn ("got token nil from secret: #{@token_secret_name}")
-          end
-        else
-          $log.warn ("got token reference either nil or empty")
-        end
-      end
-    rescue => err
-      $log.warn ("get_cluster_identity_token failed: #{err}")
-    end
-    return @cached_access_token
   end
 
   private
