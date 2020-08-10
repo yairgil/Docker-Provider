@@ -8,7 +8,7 @@ require "base64"
 require "time"
 
 class ArcK8sClusterIdentity
-
+  # this arc k8s crd version  and arc k8s  uses corresponding version v1beta1 vs v1 based on the k8s version for apiextensions.k8s.io
   @@cluster_config_crd_api_version = "clusterconfig.azure.com/v1beta1"
   @@cluster_identity_resource_name = "container-insights-clusteridentityrequest"
   @@cluster_identity_resource_namespace = "azure-arc"
@@ -27,6 +27,8 @@ class ArcK8sClusterIdentity
     @http_client = get_http_client
     @service_account_token = get_service_account_token
   end
+
+  private
 
   def get_token_from_secret(token_secret_name, token_secret_data_name)
     token = nil
@@ -52,6 +54,8 @@ class ArcK8sClusterIdentity
     return token
   end
 
+  private
+
   def get_token_reference_from_crd()
     tokenReference = {}
     begin
@@ -69,7 +73,7 @@ class ArcK8sClusterIdentity
       if get_response.code.to_i == 200
         status = JSON.parse(get_response.body)["status"]
         tokenReference["expirationTime"] = status["expirationTime"]
-        tokenReference["secretName"]= status["tokenReference"]["secretName"]
+        tokenReference["secretName"] = status["tokenReference"]["secretName"]
         tokenReference["dataName"] = status["tokenReference"]["dataName"]
       end
     rescue => err
@@ -77,6 +81,8 @@ class ArcK8sClusterIdentity
     end
     return tokenReference
   end
+
+  private
 
   def renew_near_expiry_token()
     begin
@@ -86,25 +92,20 @@ class ArcK8sClusterIdentity
         cluster_identity_resource_namespace: @@cluster_identity_resource_namespace,
         cluster_identity_resource_name: @@cluster_identity_resource_name,
       }
-      get_request = Net::HTTP::Get.new(crd_request_uri)
-      get_request["Authorization"] = "Bearer #{@service_account_token}"
-      $log.info "Making GET request to #{crd_request_uri} @ #{Time.now.utc.iso8601}"
-      get_response = @http_client.request(get_request)
-      $log.info "Got response of #{get_response.code} for #{crd_request_uri} @ #{Time.now.utc.iso8601}"
-      if get_response.code.to_i == 404 # NOT found
-        #POST
-        update_request = Net::HTTP::Post.new(crd_request_uri)
-        update_request["Content-Type"] = "application/json"
-      elsif get_response.code.to_i == 200 # Update == Patch
-        #PATCH
-        update_request = Net::HTTP::Patch.new(crd_request_uri)
-        update_request["Content-Type"] = "application/merge-patch+json"
-      end
+      update_request = Net::HTTP::Patch.new(crd_request_uri)
+      update_request["Content-Type"] = "application/merge-patch+json"
       update_request["Authorization"] = "Bearer #{@service_account_token}"
       update_request_body = get_update_request_body
       update_request.body = update_request_body.to_json
       update_response = @http_client.request(update_request)
-      $log.info "Got response of #{update_response.code} for #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+      $log.info "Got response of #{update_response.code} for PATCH #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+      if update_response.code.to_i == 404
+        $log.info "since crd resource doesnt exist since creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
+        update_request = Net::HTTP::Post.new(crd_request_uri)
+        update_request["Content-Type"] = "application/json"
+        update_response = @http_client.request(update_request)
+        $log.info "Got response of #{update_response.code} for POST #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+      end
     rescue => err
       $log.warn ("renew_near_expiry_token call failed: #{err}")
     end
@@ -114,28 +115,28 @@ class ArcK8sClusterIdentity
     begin
       # get the cluster msi identity token either if its empty or near expirty. Token is valid 24 hrs.
       if @cached_access_token.to_s.empty? || (Time.now + 60 * 60 > @token_expiry_time) # Refresh token 1 hr from expiration
-          # renew the token if its near expiry
-          if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
-            $log.info ("renewing the token since its near expiry")
-            renew_near_expiry_token
-            # sleep 60 seconds to get the renewed token  available
-            sleep 60
-          end
-          tokenReference = get_token_reference_from_crd
-          if !tokenReference.nil? && !tokenReference.empty?
-            @token_expiry_time = Time.parse(tokenReference["expirationTime"])
-            token_secret_name = tokenReference["secretName"]
-            token_secret_data_name = tokenReference["dataName"]
-            # get the token from secret
-            token = get_token_from_secret(token_secret_name, token_secret_data_name)
-            if !token.nil?
-              @cached_access_token = token
-            else
-              $log.warn ("got token nil from secret: #{@token_secret_name}")
-            end
+        # renew the token if its near expiry
+        if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
+          $log.info ("renewing the token since its near expiry")
+          renew_near_expiry_token
+          # sleep 60 seconds to get the renewed token  available
+          sleep 60
+        end
+        tokenReference = get_token_reference_from_crd
+        if !tokenReference.nil? && !tokenReference.empty?
+          @token_expiry_time = Time.parse(tokenReference["expirationTime"])
+          token_secret_name = tokenReference["secretName"]
+          token_secret_data_name = tokenReference["dataName"]
+          # get the token from secret
+          token = get_token_from_secret(token_secret_name, token_secret_data_name)
+          if !token.nil?
+            @cached_access_token = token
           else
-            $log.warn ("got token reference either nil or empty")
+            $log.warn ("got token nil from secret: #{@token_secret_name}")
           end
+        else
+          $log.warn ("got token reference either nil or empty")
+        end
       end
     rescue => err
       $log.warn ("get_cluster_identity_token failed: #{err}")
@@ -144,6 +145,7 @@ class ArcK8sClusterIdentity
   end
 
   private
+
   def get_service_account_token()
     begin
       if File.exist?(@token_file_path) && File.readable?(@token_file_path)
@@ -155,6 +157,8 @@ class ArcK8sClusterIdentity
       end
     end
   end
+
+  private
 
   def get_http_client()
     kube_api_server_url = get_kube_api_server_url
@@ -170,6 +174,8 @@ class ArcK8sClusterIdentity
     return http
   end
 
+  private
+
   def get_kube_api_server_url
     if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
       return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}"
@@ -179,16 +185,17 @@ class ArcK8sClusterIdentity
     end
   end
 
+  private
+
   def get_update_request_body
     body = {}
     body["apiVersion"] = @@cluster_config_crd_api_version
     body["kind"] = @@cluster_identity_request_kind
     body["metadata"] = {}
     body["metadata"]["name"] = @@cluster_identity_resource_name
-    body["metadata"]["namespace"]  = @@cluster_identity_resource_namespace
+    body["metadata"]["namespace"] = @@cluster_identity_resource_namespace
     body["spec"] = {}
     body["spec"]["audience"] = @@azure_monitor_custom_metrics_audience
     return body
   end
-
 end

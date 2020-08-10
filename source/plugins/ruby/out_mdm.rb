@@ -86,13 +86,13 @@ module Fluent
           @@post_request_url = @@post_request_url_template % { aks_region: aks_region, aks_resource_id: aks_resource_id }
           @post_request_uri = URI.parse(@@post_request_url)
           if (!!@isArcK8sCluster)
-             proxy = (ProxyUtils.getProxyConfiguration)
-             if proxy.nil? || proxy.empty?
-               @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
-             else
-               @log.info "Proxy configured on this cluster: #{aks_resource_id}"
-               @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
-             end
+            proxy = (ProxyUtils.getProxyConfiguration)
+            if proxy.nil? || proxy.empty?
+              @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+            else
+              @log.info "Proxy configured on this cluster: #{aks_resource_id}"
+              @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
+            end
           else
             @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
           end
@@ -102,9 +102,9 @@ module Fluent
 
           # arc k8s cluster uses cluster identity
           if (!!@isArcK8sCluster)
-             @log.info "using cluster identity token since cluster is azure arc k8s cluster"
-             @cluster_identity = ArcK8sClusterIdentity.new
-             @cached_access_token = @cluster_identity.get_cluster_identity_token
+            @log.info "using cluster identity token since cluster is azure arc k8s cluster"
+            @cluster_identity = ArcK8sClusterIdentity.new
+            @cached_access_token = @cluster_identity.get_cluster_identity_token
           else
             # Check to see if SP exists, if it does use SP. Else, use msi
             sp_client_id = @data_hash["aadClientId"]
@@ -122,7 +122,6 @@ module Fluent
 
             @cached_access_token = get_access_token
           end
-
         end
       rescue => e
         @log.info "exception when initializing out_mdm #{e}"
@@ -252,9 +251,9 @@ module Fluent
     def send_to_mdm(post_body)
       begin
         if (!!@isArcK8sCluster)
-            if @cluster_identity.nil?
-              @cluster_identity = ArcK8sClusterIdentity.new
-            end
+          if @cluster_identity.nil?
+            @cluster_identity = ArcK8sClusterIdentity.new
+          end
           access_token = @cluster_identity.get_cluster_identity_token
         else
           access_token = get_access_token
