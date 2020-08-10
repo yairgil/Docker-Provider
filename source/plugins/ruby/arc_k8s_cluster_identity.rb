@@ -48,6 +48,7 @@ class ArcK8sClusterIdentity
         token = get_token_from_secret
         if !token.nil?
           decoded_token = JWT.decode token, nil, false
+          # exp is integer i.e. Seconds Since the Epoch
           expiration = decoded_token[0]["exp"]
           $log.info ("secret expiry: #{expiration}")
           if !expiration.nil?
