@@ -100,6 +100,29 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel/event.rb;						source/plugins/ruby/lib/application_insights/channel/event.rb;   644; root; root
 /opt/microsoft/omsagent/plugin/lib/application_insights.rb;     source/plugins/ruby/lib/application_insights.rb; 644; root; root
 
+/opt/microsoft/omsagent/plugin/jwt/jwt.rb;                     source/plugins/ruby/jwt/jwt.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/base64.rb;              source/plugins/ruby/jwt/jwt/base64.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/claims_validator.rb;    source/plugins/ruby/jwt/jwt/claims_validator.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/decode.rb;              source/plugins/ruby/jwt/jwt/decode.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/default_options.rb;     source/plugins/ruby/jwt/jwt/default_options.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/encode.rb;              source/plugins/ruby/jwt/jwt/encode.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/error.rb;               source/plugins/ruby/jwt/jwt/error.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/json.rb;                source/plugins/ruby/jwt/jwt/json.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/jwk.rb;                 source/plugins/ruby/jwt/jwt/jwk.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/security_utils.rb;      source/plugins/ruby/jwt/jwt/security_utils.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/signature.rb;           source/plugins/ruby/jwt/jwt/signature.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/verify.rb;              source/plugins/ruby/jwt/jwt/verify.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/version.rb;             source/plugins/ruby/jwt/jwt/version.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/algos/ecdsa.rb;         source/plugins/ruby/jwt/jwt/algos/ecdsa.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/algos/eddsa.rb;         source/plugins/ruby/jwt/jwt/algos/eddsa.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/algos/hmac.rb;          source/plugins/ruby/jwt/jwt/algos/hmac.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/algos/ps.rb;            source/plugins/ruby/jwt/jwt/algos/ps.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/algos/rsa.rb;           source/plugins/ruby/jwt/jwt/algos/rsa.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/algos/unsupported.rb;   source/plugins/ruby/jwt/jwt/algos/unsupported.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/jwk/key_finder.rb;      source/plugins/ruby/jwt/jwt/jwk/key_finder.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/jwt/jwt/jwk/rsa.rb;             source/plugins/ruby/jwt/jwt/jwk/rsa.rb; 644; root; root
+
+
 /opt/tomlrb.rb;                                                 source/toml-parser/tomlrb.rb; 644; root; root
 /opt/tomlrb/generated_parser.rb;                                source/toml-parser/tomlrb/generated_parser.rb; 644; root; root
 /opt/tomlrb/handler.rb;                                         source/toml-parser/tomlrb/handler.rb; 644; root; root
@@ -213,6 +236,11 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/lib/application_insights/rack;                   755; root; root; sysdir
 
 /opt/tomlrb;												755; root; root; sysdir
+
+/opt/microsoft/omsagent/plugin/jwt;                          755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/jwt/jwt;                      755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/jwt/jwt/algos;                755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/jwt/jwt/jwk;                  755; root; root; sysdir
 
 %Dependencies
 

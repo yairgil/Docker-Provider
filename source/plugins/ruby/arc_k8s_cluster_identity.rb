@@ -6,7 +6,8 @@ require "uri"
 require "yajl/json_gem"
 require "base64"
 require "time"
-require "jwt"
+require_relative "jwt/jwt"
+require "logger"
 
 class ArcK8sClusterIdentity
   @@cluster_config_crd_api_version = "clusterconfig.azure.com/v1beta1"
