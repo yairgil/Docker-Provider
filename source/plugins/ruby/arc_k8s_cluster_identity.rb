@@ -45,7 +45,7 @@ class ArcK8sClusterIdentity
           sleep 60
         end
         # get the token from secret
-        token = get_token_from_secret(@@cluster_identity_token_secret, @@cluster_identity_token_secret_data_name)
+        token = get_token_from_secret
         if !token.nil?
           decoded_token = JWT.decode token, nil, false
           expiration = decoded_token[0]["exp"]
@@ -67,13 +67,13 @@ class ArcK8sClusterIdentity
 
   private
 
-  def get_token_from_secret(token_secret_name, token_secret_data_name)
+  def get_token_from_secret()
     token = nil
     begin
       secret_request_uri = @@secret_resource_uri_template % {
         kube_api_server_url: @kube_api_server_url,
         cluster_identity_token_secret_namespace: @@cluster_identity_token_secret_namespace,
-        token_secret_name: token_secret_name,
+        token_secret_name: @@cluster_identity_token_secret,
       }
       get_request = Net::HTTP::Get.new(secret_request_uri)
       get_request["Authorization"] = "Bearer #{@service_account_token}"
@@ -82,7 +82,7 @@ class ArcK8sClusterIdentity
       $log.info "Got response of #{get_response.code} for #{secret_request_uri} @ #{Time.now.utc.iso8601}"
       if get_response.code.to_i == 200
         token_secret = JSON.parse(get_response.body)["data"]
-        cluster_identity_token = token_secret[token_secret_data_name]
+        cluster_identity_token = token_secret[@@cluster_identity_token_secret_data_name]
         token = Base64.decode64(cluster_identity_token)
       end
     rescue => err

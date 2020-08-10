@@ -8,11 +8,11 @@ require_relative "algos/ecdsa"
 require_relative "algos/rsa"
 require_relative "algos/ps"
 require_relative "algos/unsupported"
-# begin
-#   require "rbnacl"
-# rescue LoadError
-#   raise if defined?(RbNaCl)
-# end
+begin
+  require "rbnacl"
+rescue LoadError
+  raise if defined?(RbNaCl)
+end
 
 # JWT::Signature module
 module JWT
