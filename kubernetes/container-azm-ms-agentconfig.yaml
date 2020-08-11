@@ -35,8 +35,10 @@ data:
           enabled = true
        [log_collection_settings.enrich_container_logs]
           # In the absense of this configmap, default value for enrich_container_logs is false
-          enabled = false
+          enabled = true
           # When this is enabled (enabled = true), every container log entry (both stdout & stderr) will be enriched with container Name & container Image
+       [log_collection_settings.route_container_logs]
+          version = "adx"
        [log_collection_settings.collect_all_kube_events]
           # In the absense of this configmap, default value for collect_all_kube_events is false
           # When the setting is set to false, only the kube events with !normal event type will be collected
@@ -100,6 +102,10 @@ data:
         container_memory_rss_threshold_percentage = 95.0
         # Threshold for container memoryWorkingSet, metric will be sent only when memory working set exceeds or becomes equal to the following percentage
         container_memory_working_set_threshold_percentage = 95.0
+  integrations: |-
+    [integrations.azure_network_policy_manager]
+        collect_basic_metrics = false
+        collect_advanced_metrics = false
 metadata:
   name: container-azm-ms-agentconfig
   namespace: kube-system
