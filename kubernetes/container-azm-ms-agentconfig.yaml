@@ -37,8 +37,6 @@ data:
           # In the absense of this configmap, default value for enrich_container_logs is false
           enabled = false
           # When this is enabled (enabled = true), every container log entry (both stdout & stderr) will be enriched with container Name & container Image
-       [log_collection_settings.route_container_logs]
-          version = "adx"
        [log_collection_settings.collect_all_kube_events]
           # In the absense of this configmap, default value for collect_all_kube_events is false
           # When the setting is set to false, only the kube events with !normal event type will be collected
