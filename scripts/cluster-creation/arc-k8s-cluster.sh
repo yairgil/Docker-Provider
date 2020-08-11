@@ -2,11 +2,12 @@
 set -e
 TEMP_DIR=temp-$RANDOM
 DefaultCloud="AzureCloud"
+HELM_VERSION="v3.2.1"
 
 install-helm()
 {
-  sudo curl -LO  https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz
-  sudo tar -zxvf helm-v3.2.1-linux-amd64.tar.gz
+  sudo curl -LO  https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
+  sudo tar -zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz
   sudo rm -rf /usr/local/bin/helm
   sudo mv linux-amd64/helm /usr/local/bin/helm
 }
@@ -153,6 +154,7 @@ connect_azure_arc_k8s()
 
 
 echo "connecting k8s cluster to azure arc..."
+echo "HELM version: ${HELM_VERSION}"
 cd ~
 echo "creating temp directory":$TEMP_DIR
 sudo mkdir $TEMP_DIR && cd $TEMP_DIR

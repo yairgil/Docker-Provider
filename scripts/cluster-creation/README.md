@@ -15,6 +15,7 @@ aks-engine is unmanaged cluster in azure and you can use below command to create
 ```
 
 # Either you can reuse existing service principal or create one with below instructions
+subscriptionId="<subscription id>"
 sp=$(az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/${subscriptionId}")
 clientId=$(echo $sp | jq '.appId')
 clientSecret=$(echo $sp | jq '.password')

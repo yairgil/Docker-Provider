@@ -2,14 +2,14 @@
 set -e
 TEMP_DIR=temp-$RANDOM
 DEFAULT_ONPREM_K8S_CLUSTER="aks-engine-k8s-test"
+AKS_ENGINE_VERSION="v0.54.0"
 
 download-aks-engine()
 {
-    sudo curl -LO https://github.com/Azure/aks-engine/releases/download/v0.54.0/aks-engine-v0.54.0-linux-amd64.tar.gz
-    sudo tar -xvf aks-engine-v0.54.0-linux-amd64.tar.gz
-    sudo mv aks-engine-v0.54.0-linux-amd64 aks-engine
-    sudo rm -rf /usr/local/aks-engine/
-    sudo mv -f aks-engine /usr/local/
+    sudo curl -LO https://github.com/Azure/aks-engine/releases/download/${AKS_ENGINE_VERSION}/aks-engine-v0.54.0-linux-amd64.tar.gz
+    sudo tar -xvf aks-engine-${AKS_ENGINE_VERSION}-linux-amd64.tar.gz
+    sudo mv aks-engine-${AKS_ENGINE_VERSION}-linux-amd64 aks-engine
+    sudo mv -f aks-engine/aks-engine /usr/local/bin
 }
 
 
@@ -141,7 +141,9 @@ echo "deploying of aks-engine cluster completed."
 }
 
 
+
 echo "creating aks-engine k8s cluster ..."
+echo "AKS-ENGINE version: ${AKS_ENGINE_VERSION}"
 cd ~
 echo "creating temp directory":$TEMP_DIR
 sudo mkdir $TEMP_DIR && cd $TEMP_DIR
@@ -154,5 +156,4 @@ download-aks-engine
 
 echo "creating cluster: ${ClusterName}"
 create_cluster
-
-echo "creating kind k8 cluster completed."
+echo "creating aks-engine cluster completed."

@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
 TEMP_DIR=temp-$RANDOM
+KIND_VERSION="v0.8.1"
 
 install-kind()
 {
-sudo curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
+sudo curl -Lo ./kind https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64
 sudo chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 }
@@ -73,6 +74,7 @@ while getopts 'hc:' opt; do
 }
 
 echo "creating kind k8 cluster ..."
+echo "KIND version: ${KIND_VERSION}"
 cd ~
 echo "creating temp directory":$TEMP_DIR
 sudo mkdir $TEMP_DIR && cd $TEMP_DIR
