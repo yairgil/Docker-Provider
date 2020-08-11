@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-
+require "logger"
 require "net/http"
 require "net/https"
 require "uri"
@@ -19,6 +19,9 @@ class ArcK8sClusterIdentity
   @@cluster_identity_request_kind = "AzureClusterIdentityRequest"
 
   def initialize
+    @LogPath = "/var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log"
+    @log = Logger.new(@LogPath, 1, 5000000)
+    @log.info "initialize start @ #{Time.now.utc.iso8601}"
     @token_expiry_time = Time.now
     @cached_access_token = String.new
     @token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
@@ -26,6 +29,7 @@ class ArcK8sClusterIdentity
     @kube_api_server_url = get_kube_api_server_url
     @http_client = get_http_client
     @service_account_token = get_service_account_token
+    @log.info "initialize complete @ #{Time.now.utc.iso8601}"
   end
 
   def get_cluster_identity_token()
@@ -34,29 +38,31 @@ class ArcK8sClusterIdentity
       if @cached_access_token.to_s.empty? || (Time.now + 60 * 60 > @token_expiry_time) # Refresh token 1 hr from expiration
         # renew the token if its near expiry
         if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
-          $log.info ("renewing the token since its near expiry")
+          @log.info "renewing the token since its near expiry @ #{Time.now.utc.iso8601}"
           renew_near_expiry_token
           # sleep 60 seconds to get the renewed token  available
           sleep 60
         end
+        @log.info "get token reference from crd @ #{Time.now.utc.iso8601}"
         tokenReference = get_token_reference_from_crd
         if !tokenReference.nil? && !tokenReference.empty?
           @token_expiry_time = Time.parse(tokenReference["expirationTime"])
           token_secret_name = tokenReference["secretName"]
           token_secret_data_name = tokenReference["dataName"]
           # get the token from secret
+          @log.info "get token from secret @ #{Time.now.utc.iso8601}"
           token = get_token_from_secret(token_secret_name, token_secret_data_name)
           if !token.nil?
             @cached_access_token = token
           else
-            $log.warn ("got token nil from secret: #{@token_secret_name}")
+            @log.warn "got token nil from secret: #{@token_secret_name}"
           end
         else
-          $log.warn ("got token reference either nil or empty")
+          @log.warn "got token reference either nil or empty"
         end
       end
     rescue => err
-      $log.warn ("get_cluster_identity_token failed: #{err}")
+      @log.warn "get_cluster_identity_token failed: #{err}"
     end
     return @cached_access_token
   end
@@ -73,16 +79,16 @@ class ArcK8sClusterIdentity
       }
       get_request = Net::HTTP::Get.new(secret_request_uri)
       get_request["Authorization"] = "Bearer #{@service_account_token}"
-      $log.info "Making GET request to #{secret_request_uri} @ #{Time.now.utc.iso8601}"
+      @log.info "Making GET request to #{secret_request_uri} @ #{Time.now.utc.iso8601}"
       get_response = @http_client.request(get_request)
-      $log.info "Got response of #{get_response.code} for #{secret_request_uri} @ #{Time.now.utc.iso8601}"
+      @log.info "Got response of #{get_response.code} for #{secret_request_uri} @ #{Time.now.utc.iso8601}"
       if get_response.code.to_i == 200
         token_secret = JSON.parse(get_response.body)["data"]
         cluster_identity_token = token_secret[token_secret_data_name]
         token = Base64.decode64(cluster_identity_token)
       end
     rescue => err
-      $log.warn ("get_token_from_secret API call failed: #{err}")
+      @log.warn "get_token_from_secret API call failed: #{err}"
     end
     return token
   end
@@ -100,9 +106,9 @@ class ArcK8sClusterIdentity
       }
       get_request = Net::HTTP::Get.new(crd_request_uri)
       get_request["Authorization"] = "Bearer #{@service_account_token}"
-      $log.info "Making GET request to #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+      @log.info "Making GET request to #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       get_response = @http_client.request(get_request)
-      $log.info "Got response of #{get_response.code} for #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+      @log.info "Got response of #{get_response.code} for #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       if get_response.code.to_i == 200
         status = JSON.parse(get_response.body)["status"]
         tokenReference["expirationTime"] = status["expirationTime"]
@@ -110,7 +116,7 @@ class ArcK8sClusterIdentity
         tokenReference["dataName"] = status["tokenReference"]["dataName"]
       end
     rescue => err
-      $log.warn ("get_token_reference_from_crd call failed: #{err}")
+      @log.warn "get_token_reference_from_crd call failed: #{err}"
     end
     return tokenReference
   end
@@ -131,16 +137,16 @@ class ArcK8sClusterIdentity
       update_request_body = get_update_request_body
       update_request.body = update_request_body.to_json
       update_response = @http_client.request(update_request)
-      $log.info "Got response of #{update_response.code} for PATCH #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+      @log.info "Got response of #{update_response.code} for PATCH #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       if update_response.code.to_i == 404
-        $log.info "since crd resource doesnt exist since creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
+        @log.info "since crd resource doesnt exist since creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
         update_request = Net::HTTP::Post.new(crd_request_uri)
         update_request["Content-Type"] = "application/json"
         update_response = @http_client.request(update_request)
-        $log.info "Got response of #{update_response.code} for POST #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+        @log.info "Got response of #{update_response.code} for POST #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       end
     rescue => err
-      $log.warn ("renew_near_expiry_token call failed: #{err}")
+      @log.warn "renew_near_expiry_token call failed: #{err}"
     end
   end
 
@@ -152,7 +158,7 @@ class ArcK8sClusterIdentity
         token_str = File.read(@token_file_path).strip
         return token_str
       else
-        $log.warn ("Unable to read token string from #{@token_file_path}")
+        @log.warn "Unable to read token string from #{@token_file_path}"
         return nil
       end
     end
@@ -180,7 +186,7 @@ class ArcK8sClusterIdentity
     if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
       return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}"
     else
-      $log.warn ("Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{ENV["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{ENV["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri")
+      @log.warn "Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{ENV["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{ENV["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri"
       return nil
     end
   end
