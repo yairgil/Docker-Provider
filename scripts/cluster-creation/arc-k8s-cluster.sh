@@ -138,7 +138,7 @@ connect_azure_arc_k8s()
 {
 
   echo "create resource group: ${resourceGroupName} if it doenst exist"
-  isrgExists=$(az group -g ${resourceGroupName})
+  isrgExists=$(az group exists -g ${resourceGroupName})
   if $isrgExists; then
      echo "resource group: ${resourceGroupName} already exists"
   else

@@ -89,7 +89,7 @@ create_aro_v4_cluster()
 {
 
   echo "create resource group: ${resourceGroupName} if it doenst exist"
-  isrgExists=$(az group -g ${resourceGroupName})
+  isrgExists=$(az group exists -g ${resourceGroupName})
   if $isrgExists; then
      echo "resource group: ${resourceGroupName} already exists"
   else
@@ -105,6 +105,9 @@ create_aro_v4_cluster()
 
   echo "adding empty subnet for worker nodes"
   az network vnet subnet create --resource-group ${resourceGroupName}  --vnet-name ${DefaultVnetName} --name ${DefaultWorkerSubnetName} --address-prefixes 10.0.2.0/23 --service-endpoints Microsoft.ContainerRegistry
+
+  echo "Please make sure disable to diable cleanup service on subnet nsgs of aor vnet for internal subscriptions"
+  sleep 1m
 
   echo "Disable subnet private endpoint policies on the master subnet"
   az network vnet subnet update --name ${DefaultMasterSubnetName} --resource-group ${resourceGroupName} --vnet-name ${DefaultVnetName} --disable-private-link-service-network-policies true
