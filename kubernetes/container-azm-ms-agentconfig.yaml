@@ -35,7 +35,7 @@ data:
           enabled = true
        [log_collection_settings.enrich_container_logs]
           # In the absense of this configmap, default value for enrich_container_logs is false
-          enabled = true
+          enabled = false
           # When this is enabled (enabled = true), every container log entry (both stdout & stderr) will be enriched with container Name & container Image
        [log_collection_settings.route_container_logs]
           version = "adx"
