@@ -13,9 +13,13 @@ sudo mv ./kind /usr/local/bin/kind
 download_install_docker()
 {
  echo "download docker script"
- curl -fsSL https://get.docker.com -o get-docker.sh
+ sudo curl -L https://get.docker.com/ -o get-docker.sh
  echo "installing docker script"
  sudo sh get-docker.sh
+
+ echo "add user to docker group"
+ sudo usermod -aG docker $USER
+
 }
 
 create_cluster()
