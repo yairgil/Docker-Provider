@@ -21,7 +21,7 @@ nodes:
  - role: control-plane
  - role: worker
 EOL
-sudo kind create cluster --config kind-config.yaml  --name $ClusterName
+sudo kind create cluster --config kind-config.yaml  --name $clusterName
 }
 
 usage()
