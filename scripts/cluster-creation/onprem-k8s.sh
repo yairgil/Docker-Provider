@@ -10,6 +10,14 @@ sudo chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 }
 
+download_install_docker()
+{
+ echo "download docker script"
+ curl -fsSL https://get.docker.com -o get-docker.sh
+ echo "installing docker script"
+ sudo sh get-docker.sh
+}
+
 create_cluster()
 {
 sudo touch kind-config.yaml
@@ -78,6 +86,12 @@ echo "KIND version: ${KIND_VERSION}"
 cd ~
 echo "creating temp directory":$TEMP_DIR
 sudo mkdir $TEMP_DIR && cd $TEMP_DIR
+
+echo "parsing args"
+parse_args $@
+
+echo "download and install docker"
+download_install_docker
 
 echo "download and install kind"
 install-kind
