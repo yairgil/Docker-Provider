@@ -160,7 +160,7 @@ done
 source config_env_var
 
 
-#Parse the configmap to set the right environment variables.
+#Parse the configmap to set the right environment variables for health feature.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-health-config.rb
 
 cat health_config_env_var | while read line; do
@@ -168,6 +168,15 @@ cat health_config_env_var | while read line; do
     echo $line >> ~/.bashrc
 done
 source health_config_env_var
+
+#Parse the configmap to set the right environment variables for network policy manager (npm) integration.
+/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
+
+cat integration_npm_config_env_var | while read line; do
+    #echo $line
+    echo $line >> ~/.bashrc
+done
+source integration_npm_config_env_var
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
 if [ ! -e "/etc/config/kube.conf" ]; then

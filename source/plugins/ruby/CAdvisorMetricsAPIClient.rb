@@ -33,6 +33,8 @@ class CAdvisorMetricsAPIClient
   @cAdvisorMetricsSecurePort = ENV["IS_SECURE_CADVISOR_PORT"]
   @containerLogsRoute = ENV["AZMON_CONTAINER_LOGS_ROUTE"]
   @hmEnabled = ENV["AZMON_CLUSTER_ENABLE_HEALTH_MODEL"]
+  @npmIntegrationBasic = ENV["TELEMETRY_NPM_INTEGRATION_METRICS_BASIC"]
+  @npmIntegrationAdvanced = ENV["TELEMETRY_NPM_INTEGRATION_METRICS_ADVANCED"]
 
   @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt"
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
@@ -250,7 +252,13 @@ class CAdvisorMetricsAPIClient
                      #telemetry about health model
                      if (!@hmEnabled.nil? && !@hmEnabled.empty?)
                       telemetryProps["hmEnabled"] = @hmEnabled
-                    end
+                     end
+                     #telemetry for npm integration
+                     if (!@npmIntegrationAdvanced.nil? && !@npmIntegrationAdvanced.empty?)
+                       telemetryProps["int-npm-a"] = "1"
+                     elsif (!@npmIntegrationBasic.nil? && !@npmIntegrationBasic.empty?)
+                       telemetryProps["int-npm-b"] = "1"
+                     end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
                 end
