@@ -131,19 +131,22 @@ class ArcK8sClusterIdentity
         cluster_identity_resource_namespace: @@cluster_identity_resource_namespace,
         cluster_identity_resource_name: @@cluster_identity_resource_name,
       }
+      crd_request_body = get_crd_request_body
+      crd_request_body_json = crd_request_body.to_json
       update_request = Net::HTTP::Patch.new(crd_request_uri)
       update_request["Content-Type"] = "application/merge-patch+json"
       update_request["Authorization"] = "Bearer #{@service_account_token}"
-      update_request_body = get_update_request_body
-      update_request.body = update_request_body.to_json
+      update_request.body = crd_request_body_json
       update_response = @http_client.request(update_request)
       @log.info "Got response of #{update_response.code} for PATCH #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       if update_response.code.to_i == 404
         @log.info "since crd resource doesnt exist since creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
-        update_request = Net::HTTP::Post.new(crd_request_uri)
-        update_request["Content-Type"] = "application/json"
-        update_response = @http_client.request(update_request)
-        @log.info "Got response of #{update_response.code} for POST #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+        create_request = Net::HTTP::Post.new(crd_request_uri)
+        create_request["Content-Type"] = "application/json"
+        create_request["Authorization"] = "Bearer #{@service_account_token}"
+        create_request.body = crd_request_body_json
+        create_response = @http_client.request(create_request)
+        @log.info "Got response of #{create_response.code} for POST #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       end
     rescue => err
       @log.warn "renew_near_expiry_token call failed: #{err}"
@@ -193,7 +196,7 @@ class ArcK8sClusterIdentity
 
   private
 
-  def get_update_request_body
+  def get_crd_request_body
     body = {}
     body["apiVersion"] = @@cluster_config_crd_api_version
     body["kind"] = @@cluster_identity_request_kind
