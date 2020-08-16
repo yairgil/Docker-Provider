@@ -1,3 +1,14 @@
+add-type @"
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+public class TrustAllCertsPolicy : ICertificatePolicy {
+    public bool CheckValidationResult(
+        ServicePoint srvPoint, X509Certificate certificate,
+        WebRequest request, int certificateProblem) {
+        return true;
+    }
+}
+"@
 function Confirm-WindowsServiceExists($name) {
     if (Get-Service $name -ErrorAction SilentlyContinue) {
         return $true
@@ -108,54 +119,86 @@ function Set-EnvironmentVariables {
     .\setenv.ps1
 }
 
-function Start-Fluent {
+function Get-ContainerRuntime {
     $containerRuntime = "docker"
-    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service.
-    # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
-    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\omsagentwindows\out_oms.so") }
-
     # determine the container runtime
-    $response = Invoke-WebRequest -uri http://$NODE_IP:10255/pods  -UseBasicParsing
-    $isPodsAPISuccess = $flase
-
-    if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
-        Write-Host "Response of the Invoke-WebRequest -uri http://$NODE_IP:10255/pods is : $($response.StatusCode)"
-        $isPodsAPISuccess = $true
+    $NODE_IP = ""
+    if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("NODE_IP", "PROCESS"))) {
+        $NODE_IP = [System.Environment]::GetEnvironmentVariable("NODE_IP", "PROCESS")
     }
-    else {
-        $response = Invoke-WebRequest -Uri https://$NODE_IP:10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
+    elseif (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("NODE_IP", "USER"))) {
+        $NODE_IP = [System.Environment]::GetEnvironmentVariable("NODE_IP", "USER")
+    }
+    elseif (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("NODE_IP", "MACHINE"))) {
+        $NODE_IP = [System.Environment]::GetEnvironmentVariable("NODE_IP", "MACHINE")
+    }
+
+    if (![string]::IsNullOrEmpty($NODE_IP)) {
+        Write-Host "Value of NODE_IP environment variable : $($NODE_IP)"
+        $response = Invoke-WebRequest -uri http://$NODE_IP:10255/pods  -UseBasicParsing
+        $isPodsAPISuccess = $false
+
         if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
-            Write-Host "Response of the Invoke-WebRequest -uri http://$NODE_IP:10250/pods is : $($response.StatusCode)"
+            Write-Host "Response of the Invoke-WebRequest -uri http://$NODE_IP:10255/pods is : $($response.StatusCode)"
             $isPodsAPISuccess = $true
         }
-    }
-    if ($isPodsAPISuccess -and ![string]::IsNullOrEmpty($response.Content)) {
-        $podList = $response.Content | ConvertFrom-Json
-        if (![string]::IsNullOrEmpty($podList)) {
-            $podItems = $podList.Items
-            if (![string]::IsNullOrEmpty($podItems) -and $podItems.Length -gt 0) {
-                Write-Host "found pod items: $($podItems.Length)"
-                for ($index = 0; $index -le $podItems.Length ; $index++) {
-                    Write-Host "podItem index : $($index)"
-                    $pod = $podItems[$index]
-                    if (![string]::IsNullOrEmpty($pod) -and
-                        ![string]::IsNullOrEmpty($pod.status) -and
-                        ![string]::IsNullOrEmpty($pod.status.phase) -and
-                        $pod.status.phase -eq "Running" -and
-                        $pod.status.ContainerStatuses.Length -gt 0) {
-                        $containerID = $pod.status.ContainerStatuses[0].containerID
-                        $containerRuntime = $containerID.split(":")[0].trim()
-                        Write-Host "detected containerRuntime as : $($containerRuntime)"
-                        break
+        else {
+           [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Ssl3, [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12
+            $response = Invoke-WebRequest -Uri https://$NODE_IP:10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
+            if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
+                Write-Host "Response of the Invoke-WebRequest -uri https://$NODE_IP:10250/pods is : $($response.StatusCode)"
+                $isPodsAPISuccess = $true
+            }
+        }
+
+        if ($isPodsAPISuccess -and ![string]::IsNullOrEmpty($response.Content)) {
+            $podList = $response.Content | ConvertFrom-Json
+            if (![string]::IsNullOrEmpty($podList)) {
+                $podItems = $podList.Items
+                if (![string]::IsNullOrEmpty($podItems) -and $podItems.Length -gt 0) {
+                    Write-Host "found pod items: $($podItems.Length)"
+                    for ($index = 0; $index -le $podItems.Length ; $index++) {
+                        Write-Host "podItem index : $($index)"
+                        $pod = $podItems[$index]
+                        if (![string]::IsNullOrEmpty($pod) -and
+                            ![string]::IsNullOrEmpty($pod.status) -and
+                            ![string]::IsNullOrEmpty($pod.status.phase) -and
+                            $pod.status.phase -eq "Running" -and
+                            $pod.status.ContainerStatuses.Length -gt 0) {
+                            $containerID = $pod.status.ContainerStatuses[0].containerID
+                            $detectedContainerRuntime = $containerID.split(":")[0].trim()
+                            if (![string]::IsNullOrEmpty($detectedContainerRuntime) -and [string]$detectedContainerRuntime.StartsWith('docker') -eq $false) {
+                                $containerRuntime = $detectedContainerRuntime
+                                Write-Host "detected containerRuntime as : $($containerRuntime)"
+                            }
+                            break
+                        }
                     }
                 }
             }
         }
     }
 
+    return $containerRuntime
+}
+
+function Start-Fluent {
+
+    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service.
+    # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
+    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\omsagentwindows\out_oms.so") }
+
+    $containerRuntime = Get-ContainerRuntime
+
     #register fluentd as a service and start
     # there is a known issues with win32-service https://github.com/chef/win32-service/issues/70
-    fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
+    if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
+        fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent-cri.conf -o C:/etc/fluent/fluent.log'
+    }
+    else {
+        fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
+    }
 
     Notepad.exe | Out-Null
 }

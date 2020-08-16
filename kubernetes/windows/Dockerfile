@@ -56,6 +56,8 @@ COPY ./omsagentwindows/out_oms.so /opt/omsagentwindows/out_oms.so
 
 # copy fluent, fluent-bit and out_oms conf files
 COPY ./omsagentwindows/installer/conf/fluent.conf /etc/fluent/
+# copy fluent cri runtime conf file
+COPY ./omsagentwindows/installer/conf/fluent-cri.conf /etc/fluent/
 COPY ./omsagentwindows/installer/conf/fluent-bit.conf /etc/fluent-bit
 COPY ./omsagentwindows/installer/conf/out_oms.conf /etc/omsagentwindows
 
