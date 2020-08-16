@@ -158,10 +158,11 @@ function Get-ContainerRuntime {
                                 $pod.status.ContainerStatuses.Length -gt 0) {
                                 $containerID = $pod.status.ContainerStatuses[0].containerID
                                 $detectedContainerRuntime = $containerID.split(":")[0].trim()
+                                Write-Host "detected containerRuntime as : $($containerRuntime)"
                                 if (![string]::IsNullOrEmpty($detectedContainerRuntime) -and [string]$detectedContainerRuntime.StartsWith('docker') -eq $false) {
                                     $containerRuntime = $detectedContainerRuntime
-                                    Write-Host "detected containerRuntime as : $($containerRuntime)"
                                 }
+                                Write-Host "using containerRuntime as : $($containerRuntime)"
                                 break
                             }
                         }
