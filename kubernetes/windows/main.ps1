@@ -124,20 +124,20 @@ function Get-ContainerRuntime {
 
         if (![string]::IsNullOrEmpty($NODE_IP)) {
             Write-Host "Value of NODE_IP environment variable : $($NODE_IP)"
-            $response = Invoke-WebRequest -uri http://$NODE_IP:10255/pods  -UseBasicParsing
+            $response = Invoke-WebRequest -uri http://$($NODE_IP):10255/pods  -UseBasicParsing
             $isPodsAPISuccess = $false
 
             if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
-                Write-Host "Response of the Invoke-WebRequest -uri http://$NODE_IP:10255/pods is : $($response.StatusCode)"
+                Write-Host "Response of the Invoke-WebRequest -uri http://$($NODE_IP):10255/pods is : $($response.StatusCode)"
                 $isPodsAPISuccess = $true
             }
             else {
                 # set the certificate policy to ignore the certificate validation since kubelet uses self-signed cert
                 # [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
                 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-                $response = Invoke-WebRequest -Uri https://$NODE_IP:10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
+                $response = Invoke-WebRequest -Uri https://$($NODE_IP):10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
                 if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
-                    Write-Host "Response of the Invoke-WebRequest -uri https://$NODE_IP:10250/pods is : $($response.StatusCode)"
+                    Write-Host "Response of the Invoke-WebRequest -uri https://$($NODE_IP):10250/pods is : $($response.StatusCode)"
                     $isPodsAPISuccess = $true
                 }
             }
