@@ -660,6 +660,10 @@ spec:
             valueFrom:
                fieldRef:
                  fieldPath: spec.nodeName
+          - name: NODE_IP
+            valueFrom:
+               fieldRef:
+                 fieldPath: status.hostIP
          volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers
