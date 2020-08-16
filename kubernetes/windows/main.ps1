@@ -170,6 +170,9 @@ function Get-ContainerRuntime {
                 }
             }
         }
+        # set CONTAINER_RUNTIME env for debug and telemetry purpose
+        [System.Environment]::SetEnvironmentVariable("CONTAINER_RUNTIME", $containerRuntime, "Process")
+        [System.Environment]::SetEnvironmentVariable("CONTAINER_RUNTIME", $containerRuntime, "Machine")
     }
     catch {
         $e = $_.Exception
