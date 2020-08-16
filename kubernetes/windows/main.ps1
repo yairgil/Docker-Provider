@@ -121,7 +121,6 @@ function Set-EnvironmentVariables {
 
 function Get-ContainerRuntime {
     $containerRuntime = "docker"
-    # determine the container runtime
     $NODE_IP = ""
     if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("NODE_IP", "PROCESS"))) {
         $NODE_IP = [System.Environment]::GetEnvironmentVariable("NODE_IP", "PROCESS")
@@ -143,8 +142,9 @@ function Get-ContainerRuntime {
             $isPodsAPISuccess = $true
         }
         else {
-           [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Ssl3, [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12
+            # set the certificate policy to ignore the certificate policy since kubelet uses self-signed cert
+            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Ssl3, [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12
             $response = Invoke-WebRequest -Uri https://$NODE_IP:10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
             if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
                 Write-Host "Response of the Invoke-WebRequest -uri https://$NODE_IP:10250/pods is : $($response.StatusCode)"
