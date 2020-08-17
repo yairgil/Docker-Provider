@@ -186,35 +186,32 @@ function Get-ContainerRuntime {
                     $podList = $response.Content | ConvertFrom-Json
                     if (![string]::IsNullOrEmpty($podList)) {
                         $podItems = $podList.Items
-                        if (![string]::IsNullOrEmpty($podItems)) {
-                            if ($podItems.Length -gt 0) {
-                                Write-Host "found pod items: $($podItems.Length)"
-                                for ($index = 0; $index -le $podItems.Length ; $index++) {
-                                    Write-Host "current podItem index : $($index)"
-                                    $pod = $podItems[$index]
-                                    if (![string]::IsNullOrEmpty($pod) -and
-                                        ![string]::IsNullOrEmpty($pod.status) -and
-                                        ![string]::IsNullOrEmpty($pod.status.phase) -and
-                                        $pod.status.phase -eq "Running" -and
-                                        $pod.status.ContainerStatuses.Length -gt 0) {
-                                        $containerID = $pod.status.ContainerStatuses[0].containerID
-                                        $detectedContainerRuntime = $containerID.split(":")[0].trim()
-                                        Write-Host "detected containerRuntime as : $($detectedContainerRuntime)"
-                                        if (![string]::IsNullOrEmpty($detectedContainerRuntime) -and [string]$detectedContainerRuntime.StartsWith('docker') -eq $false) {
-                                            $containerRuntime = $detectedContainerRuntime
-                                        }
-                                        Write-Host "using containerRuntime as : $($containerRuntime)"
-                                        break
+                        if ($podItems.Length -gt 0) {
+                            Write-Host "found pod items: $($podItems.Length)"
+                            for ($index = 0; $index -le $podItems.Length ; $index++) {
+                                Write-Host "current podItem index : $($index)"
+                                $pod = $podItems[$index]
+                                if (![string]::IsNullOrEmpty($pod) -and
+                                    ![string]::IsNullOrEmpty($pod.status) -and
+                                    ![string]::IsNullOrEmpty($pod.status.phase) -and
+                                    $pod.status.phase -eq "Running" -and
+                                    $pod.status.ContainerStatuses.Length -gt 0) {
+                                    $containerID = $pod.status.ContainerStatuses[0].containerID
+                                    $detectedContainerRuntime = $containerID.split(":")[0].trim()
+                                    Write-Host "detected containerRuntime as : $($detectedContainerRuntime)"
+                                    if (![string]::IsNullOrEmpty($detectedContainerRuntime) -and [string]$detectedContainerRuntime.StartsWith('docker') -eq $false) {
+                                        $containerRuntime = $detectedContainerRuntime
                                     }
+                                    Write-Host "using containerRuntime as : $($containerRuntime)"
+                                    break
                                 }
-                            }
-                            else {
-                                Write-Host "got podItems count is 0 hence using default container runtime:  $($containerRuntime)"
                             }
                         }
                         else {
-                            Write-Host "got podItems null or empty hence using default container runtime:  $($containerRuntime)"
+                            Write-Host "got podItems count is 0 hence using default container runtime:  $($containerRuntime)"
                         }
+
+
                     }
                     else {
                         Write-Host "got podList null or empty hence using default container runtime:  $($containerRuntime)"
