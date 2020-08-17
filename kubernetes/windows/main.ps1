@@ -1,3 +1,14 @@
+add-type @"
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+public class TrustAllCertsPolicy : ICertificatePolicy {
+    public bool CheckValidationResult(
+        ServicePoint srvPoint, X509Certificate certificate,
+        WebRequest request, int certificateProblem) {
+        return true;
+    }
+}
+"@
 function Confirm-WindowsServiceExists($name) {
     if (Get-Service $name -ErrorAction SilentlyContinue) {
         return $true
@@ -110,6 +121,7 @@ function Set-EnvironmentVariables {
 
 function Get-ContainerRuntime {
     $containerRuntime = "docker"
+    $response = ""
     $NODE_IP = ""
     try {
         if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("NODE_IP", "PROCESS"))) {
@@ -123,23 +135,36 @@ function Get-ContainerRuntime {
         }
 
         if (![string]::IsNullOrEmpty($NODE_IP)) {
-            Write-Host "Value of NODE_IP environment variable : $($NODE_IP)"
-            $response = Invoke-WebRequest -uri http://$($NODE_IP):10255/pods  -UseBasicParsing
             $isPodsAPISuccess = $false
+            Write-Host "Value of NODE_IP environment variable : $($NODE_IP)"
+            try {
+              Write-Host "Making API call to http://$($NODE_IP):10255/pods"
+              $response = Invoke-WebRequest -uri http://$($NODE_IP):10255/pods  -UseBasicParsing
+              Write-Host "Response status code of API call to http://$($NODE_IP):10255/pods : $($response.StatusCode)"
+            }
+            catch {
+                Write-Host "API call to http://$($NODE_IP):10255/pods failed"
+            }
 
             if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
-                Write-Host "Response of the Invoke-WebRequest -uri http://$($NODE_IP):10255/pods is : $($response.StatusCode)"
+                Write-Host "API call to http://$($NODE_IP):10255/pods succeeded"
                 $isPodsAPISuccess = $true
             }
             else {
-                # set the certificate policy to ignore the certificate validation since kubelet uses self-signed cert
-                # [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-                [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-                $response = Invoke-WebRequest -Uri https://$($NODE_IP):10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
-                if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
-                    Write-Host "Response of the Invoke-WebRequest -uri https://$($NODE_IP):10250/pods is : $($response.StatusCode)"
-                    $isPodsAPISuccess = $true
-                }
+                try {
+                    Write-Host "Making API call to https://$($NODE_IP):10250/pods"
+                    # set the certificate policy to ignore certificate validation since kubelet uses self-signed cert
+                    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+                    $response = Invoke-WebRequest -Uri https://$($NODE_IP):10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
+                    Write-Host "Response status code of API call to https://$($NODE_IP):10250/pods : $($response.StatusCode)"
+                    if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
+                        Write-Host "API call to https://$($NODE_IP):10250/pods succeeded"
+                        $isPodsAPISuccess = $true
+                    }
+               }
+               catch {
+                  Write-Host "API call to https://$($NODE_IP):10250/pods failed"
+               }
             }
 
             if ($isPodsAPISuccess -and ![string]::IsNullOrEmpty($response.Content)) {
@@ -149,7 +174,7 @@ function Get-ContainerRuntime {
                     if (![string]::IsNullOrEmpty($podItems) -and $podItems.Length -gt 0) {
                         Write-Host "found pod items: $($podItems.Length)"
                         for ($index = 0; $index -le $podItems.Length ; $index++) {
-                            Write-Host "podItem index : $($index)"
+                            Write-Host "current podItem index : $($index)"
                             $pod = $podItems[$index]
                             if (![string]::IsNullOrEmpty($pod) -and
                                 ![string]::IsNullOrEmpty($pod.status) -and
