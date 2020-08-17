@@ -1,13 +1,25 @@
-add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
+Add-Type @"
+    using System;
+    using System.Net;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
+    public class ServerCertificateValidationCallback
+    {
+        public static void Ignore()
+        {
+            ServicePointManager.ServerCertificateValidationCallback +=
+                delegate
+                (
+                    Object obj,
+                    X509Certificate certificate,
+                    X509Chain chain,
+                    SslPolicyErrors errors
+                )
+                {
+                    return true;
+                };
+        }
     }
-}
 "@
 function Confirm-WindowsServiceExists($name) {
     if (Get-Service $name -ErrorAction SilentlyContinue) {
@@ -153,8 +165,8 @@ function Get-ContainerRuntime {
             else {
                 try {
                     Write-Host "Making API call to https://$($NODE_IP):10250/pods"
-                    # set the certificate policy to ignore certificate validation since kubelet uses self-signed cert
-                    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+                    # ignore certificate validation since kubelet uses self-signed cert
+                    [ServerCertificateValidationCallback]::Ignore();
                     $response = Invoke-WebRequest -Uri https://$($NODE_IP):10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
                     Write-Host "Response status code of API call to https://$($NODE_IP):10250/pods : $($response.StatusCode)"
                     if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
