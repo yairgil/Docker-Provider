@@ -166,7 +166,7 @@ function Get-ContainerRuntime {
                 try {
                     Write-Host "Making API call to https://$($NODE_IP):10250/pods"
                     # ignore certificate validation since kubelet uses self-signed cert
-                    [ServerCertificateValidationCallback]::Ignore();
+                    [ServerCertificateValidationCallback]::Ignore()
                     $response = Invoke-WebRequest -Uri https://$($NODE_IP):10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
                     Write-Host "Response status code of API call to https://$($NODE_IP):10250/pods : $($response.StatusCode)"
                     if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
