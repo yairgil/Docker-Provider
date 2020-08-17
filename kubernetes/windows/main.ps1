@@ -182,7 +182,6 @@ function Get-ContainerRuntime {
 
             if ($isPodsAPISuccess) {
                 if (![string]::IsNullOrEmpty($response.Content)) {
-                    Write-Host "response content: $($response.Content)"
                     $podList = $response.Content | ConvertFrom-Json
                     if (![string]::IsNullOrEmpty($podList)) {
                         $podItems = $podList.Items
