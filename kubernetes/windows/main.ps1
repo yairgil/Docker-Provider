@@ -132,6 +132,7 @@ function Set-EnvironmentVariables {
 }
 
 function Get-ContainerRuntime {
+    # default container runtime and make default as containerd when containerd becomes default in AKS
     $containerRuntime = "docker"
     $response = ""
     $NODE_IP = ""
@@ -150,9 +151,9 @@ function Get-ContainerRuntime {
             $isPodsAPISuccess = $false
             Write-Host "Value of NODE_IP environment variable : $($NODE_IP)"
             try {
-              Write-Host "Making API call to http://$($NODE_IP):10255/pods"
-              $response = Invoke-WebRequest -uri http://$($NODE_IP):10255/pods  -UseBasicParsing
-              Write-Host "Response status code of API call to http://$($NODE_IP):10255/pods : $($response.StatusCode)"
+                Write-Host "Making API call to http://$($NODE_IP):10255/pods"
+                $response = Invoke-WebRequest -uri http://$($NODE_IP):10255/pods  -UseBasicParsing
+                Write-Host "Response status code of API call to http://$($NODE_IP):10255/pods : $($response.StatusCode)"
             }
             catch {
                 Write-Host "API call to http://$($NODE_IP):10255/pods failed"
@@ -173,39 +174,58 @@ function Get-ContainerRuntime {
                         Write-Host "API call to https://$($NODE_IP):10250/pods succeeded"
                         $isPodsAPISuccess = $true
                     }
-               }
-               catch {
-                  Write-Host "API call to https://$($NODE_IP):10250/pods failed"
-               }
-            }
-
-            if ($isPodsAPISuccess -and ![string]::IsNullOrEmpty($response.Content)) {
-                $podList = $response.Content | ConvertFrom-Json
-                if (![string]::IsNullOrEmpty($podList)) {
-                    $podItems = $podList.Items
-                    if (![string]::IsNullOrEmpty($podItems) -and $podItems.Length -gt 0) {
-                        Write-Host "found pod items: $($podItems.Length)"
-                        for ($index = 0; $index -le $podItems.Length ; $index++) {
-                            Write-Host "current podItem index : $($index)"
-                            $pod = $podItems[$index]
-                            if (![string]::IsNullOrEmpty($pod) -and
-                                ![string]::IsNullOrEmpty($pod.status) -and
-                                ![string]::IsNullOrEmpty($pod.status.phase) -and
-                                $pod.status.phase -eq "Running" -and
-                                $pod.status.ContainerStatuses.Length -gt 0) {
-                                $containerID = $pod.status.ContainerStatuses[0].containerID
-                                $detectedContainerRuntime = $containerID.split(":")[0].trim()
-                                Write-Host "detected containerRuntime as : $($detectedContainerRuntime)"
-                                if (![string]::IsNullOrEmpty($detectedContainerRuntime) -and [string]$detectedContainerRuntime.StartsWith('docker') -eq $false) {
-                                    $containerRuntime = $detectedContainerRuntime
-                                }
-                                Write-Host "using containerRuntime as : $($containerRuntime)"
-                                break
-                            }
-                        }
-                    }
+                }
+                catch {
+                    Write-Host "API call to https://$($NODE_IP):10250/pods failed"
                 }
             }
+
+            if ($isPodsAPISuccess) {
+                if (![string]::IsNullOrEmpty($response.Content)) {
+                    $podList = $response.Content | ConvertFrom-Json
+                    if (![string]::IsNullOrEmpty($podList)) {
+                        $podItems = $podList.Items
+                        if (![string]::IsNullOrEmpty($podItems)) {
+                            if ($podItems.Length -gt 0) {
+                                Write-Host "found pod items: $($podItems.Length)"
+                                for ($index = 0; $index -le $podItems.Length ; $index++) {
+                                    Write-Host "current podItem index : $($index)"
+                                    $pod = $podItems[$index]
+                                    if (![string]::IsNullOrEmpty($pod) -and
+                                        ![string]::IsNullOrEmpty($pod.status) -and
+                                        ![string]::IsNullOrEmpty($pod.status.phase) -and
+                                        $pod.status.phase -eq "Running" -and
+                                        $pod.status.ContainerStatuses.Length -gt 0) {
+                                        $containerID = $pod.status.ContainerStatuses[0].containerID
+                                        $detectedContainerRuntime = $containerID.split(":")[0].trim()
+                                        Write-Host "detected containerRuntime as : $($detectedContainerRuntime)"
+                                        if (![string]::IsNullOrEmpty($detectedContainerRuntime) -and [string]$detectedContainerRuntime.StartsWith('docker') -eq $false) {
+                                            $containerRuntime = $detectedContainerRuntime
+                                        }
+                                        Write-Host "using containerRuntime as : $($containerRuntime)"
+                                        break
+                                    }
+                                }
+                            }
+                            else {
+                                Write-Host "got podItems count is 0 hence using default container runtime:  $($containerRuntime)"
+                            }
+                        }
+                        else {
+                            Write-Host "got podItems null or empty hence using default container runtime:  $($containerRuntime)"
+                        }
+                    }
+                    else {
+                        Write-Host "got podList null or empty hence using default container runtime:  $($containerRuntime)"
+                    }
+                }
+                else {
+                    Write-Host "got empty response content for /Pods API call hence using default container runtime:  $($containerRuntime)"
+                }
+            }
+        }
+        else {
+            Write-Host "got empty NODE_IP environment variable"
         }
         # set CONTAINER_RUNTIME env for debug and telemetry purpose
         [System.Environment]::SetEnvironmentVariable("CONTAINER_RUNTIME", $containerRuntime, "Process")
