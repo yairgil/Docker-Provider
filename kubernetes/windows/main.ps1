@@ -249,6 +249,7 @@ function Start-Fluent {
     # there is a known issues with win32-service https://github.com/chef/win32-service/issues/70
     if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
         # change parser from docker to cri if the container runtime is not docker
+        Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
         (Get-Content -Path C:/etc/fluent/fluent.conf -Raw)  -replace 'fluent-docker-parser.conf','fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
     }
 
