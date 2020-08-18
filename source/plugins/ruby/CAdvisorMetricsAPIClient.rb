@@ -293,6 +293,10 @@ class CAdvisorMetricsAPIClient
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryTotal", "containerGpumemoryTotalBytes", metricTime))
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed","containerGpumemoryUsedBytes", metricTime))
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle","containerGpuDutyCycle", metricTime))
+
+          metricNamesToCollect = ["availableBytes", "capacityBytes", "usedBytes", "inodes", "inodesUsed", "inodesFree"]
+          metricNamesToReturn = ["PVAvailableBytes", "PVCapacityBytes", "PVUsedBytes", "PVinodes", "PVinodesUsed", "PVinodesFree"]
+          metricDataItems.concat(getPersistentVolumeClaimMetrics(metricInfo, hostName, metricNamesToCollect, metricNamesToReturn, metricTime))
         else
           @Log.warn("Couldn't get Insights metrics information for host: #{hostName} os:#{operatingSystem}")
         end
@@ -302,6 +306,73 @@ class CAdvisorMetricsAPIClient
       end
       return metricDataItems
     end
+
+    def getPersistentVolumeClaimMetrics(metricJSON, hostName, metricNamesToCollect, metricNamesToReturn, metricPollTime)
+      metricItems = []
+      clusterId = KubernetesApiClient.getClusterId
+      clusterName = KubernetesApiClient.getClusterName
+      begin
+        metricInfo = metricJSON
+        metricInfo["pods"].each do |pod|
+          podUid = pod["podRef"]["uid"]
+          podName = pod["podRef"]["name"]
+          podNamespace = pod["podRef"]["namespace"]
+
+          containerNames = []
+          if (!pod["containers"].nil?)
+            pod["containers"].each do |container|
+              containerName = container["name"]
+              containerNames.push(podUid + "/" + containerName)
+          
+              if (!pod["volume"].nil?)
+                pod["volume"].each do |volume|
+                  if (!volume["pvcRef"].nil?)
+                    pvcRef = volume["pvcRef"]
+                    if (!pvcRef["name"].nil?)
+
+                      # A PVC exists on this volume
+                      pvcName = pvcRef["name"]
+                      pvName = volume["name"]
+                      time = volume["time"]
+
+                      metricCount = 0
+                      metricNamesToCollect.each do |metricNameToCollect|
+                        metricItem = {}
+                        metricItem["CollectionTime"] = metricPollTime
+                        metricItem["Computer"] = hostName
+                        metricItem["Name"] = metricNamesToReturn[metricCount]
+                        metricItem["Value"] = volume[metricNameToCollect]
+                        metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
+                        metricItem["Namespace"] = Constants::INSIGHTSMETRICS_TAGS_GPU_NAMESPACE
+                      
+                        metricTags = {}
+                        metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
+                        metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
+                        metricTags[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME] = podUid + "/" + containerName
+                        metricTags["PVName"] = pvName
+                        metricTags["PVCName"] = pvcName
+                        metricTags["Time"] = time
+
+                        metricItem["Tags"] = metricTags
+                      
+                        metricItems.push(metricItem)
+
+                        metricCount = metricCount + 1
+                      end
+                    end
+                  end
+                end
+              end
+            end
+          end
+        end
+      rescue => errorStr
+      @Log.warn("getContainerGpuMetricsAsInsightsMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
+        return metricItems
+        end
+      return metricItems
+    end
+
 
     def getContainerGpuMetricsAsInsightsMetrics(metricJSON, hostName, metricNameToCollect, metricNametoReturn, metricPollTime)
       metricItems = []
