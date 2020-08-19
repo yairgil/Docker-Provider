@@ -100,6 +100,10 @@ data:
         container_memory_rss_threshold_percentage = 95.0
         # Threshold for container memoryWorkingSet, metric will be sent only when memory working set exceeds or becomes equal to the following percentage
         container_memory_working_set_threshold_percentage = 95.0
+  integrations: |-
+    [integrations.azure_network_policy_manager]
+        collect_basic_metrics = false
+        collect_advanced_metrics = false
 metadata:
   name: container-azm-ms-agentconfig
   namespace: kube-system
