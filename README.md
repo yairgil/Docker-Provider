@@ -200,11 +200,15 @@ docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
 ```
 
-### Build Cert generator, Out OMS Plugun and Docker Image and Publish Docker Image
+### Build Cert generator, Out OMS Plugin and Docker Image and Publish Docker Image
 
 If you have code cloned on to windows, you can built everything for windows agent on windows machine via below instructions
 
 ```
+# install pre-requisites if you havent installed already
+cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
+.\install-build-pre-requisites.ps1
+
 cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
 docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
 powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
