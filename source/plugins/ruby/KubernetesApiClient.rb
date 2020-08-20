@@ -99,7 +99,6 @@ class KubernetesApiClient
           elsif api_group == @@ApiGroupHPA
             return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/apis/" + @@ApiGroupHPA + "/" + @@ApiVersionHPA + "/" + resource
           end
-          
         else
           @Log.warn ("Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{ENV["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{ENV["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri")
           return nil
@@ -743,7 +742,7 @@ class KubernetesApiClient
       resourceInventory = nil
       begin
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
-        resourceInfo = getKubeResourceInfo(uri, api_group:api_group)
+        resourceInfo = getKubeResourceInfo(uri, api_group: api_group)
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
         if !resourceInfo.nil?
           @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
@@ -761,5 +760,19 @@ class KubernetesApiClient
       end
       return continuationToken, resourceInventory
     end #getResourcesAndContinuationToken
+
+    def getKubeAPIServerUrl
+      apiServerUrl = nil
+      begin
+        if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
+          apiServerUrl = "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}"
+        else
+          @Log.warn "Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{ENV["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{ENV["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri"
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getKubeAPIServerUrl:Failed  #{errorStr}"
+      end
+      return apiServerUrl
+    end
   end
 end
