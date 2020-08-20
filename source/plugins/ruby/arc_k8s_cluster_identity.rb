@@ -6,6 +6,8 @@ require "uri"
 require "yajl/json_gem"
 require "base64"
 require "time"
+require_relative "KubernetesApiClient"
+require_relative "ApplicationInsightsUtility"
 
 class ArcK8sClusterIdentity
   # this arc k8s crd version  and arc k8s  uses corresponding version v1beta1 vs v1 based on the k8s version for apiextensions.k8s.io
@@ -26,7 +28,10 @@ class ArcK8sClusterIdentity
     @cached_access_token = String.new
     @token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
     @cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-    @kube_api_server_url = get_kube_api_server_url
+    @kube_api_server_url = KubernetesApiClient.getKubeAPIServerUrl
+    if @kube_api_server_url.nil?
+      @log.warn "got api server url nil from KubernetesApiClient.getKubeAPIServerUrl @ #{Time.now.utc.iso8601}"
+    end
     @http_client = get_http_client
     @service_account_token = get_service_account_token
     @log.info "initialize complete @ #{Time.now.utc.iso8601}"
@@ -63,6 +68,7 @@ class ArcK8sClusterIdentity
       end
     rescue => err
       @log.warn "get_cluster_identity_token failed: #{err}"
+      ApplicationInsightsUtility.sendExceptionTelemetry(err, { "FeatureArea" => "MDM" })
     end
     return @cached_access_token
   end
@@ -89,6 +95,7 @@ class ArcK8sClusterIdentity
       end
     rescue => err
       @log.warn "get_token_from_secret API call failed: #{err}"
+      ApplicationInsightsUtility.sendExceptionTelemetry(err, { "FeatureArea" => "MDM" })
     end
     return token
   end
@@ -117,6 +124,7 @@ class ArcK8sClusterIdentity
       end
     rescue => err
       @log.warn "get_token_reference_from_crd call failed: #{err}"
+      ApplicationInsightsUtility.sendExceptionTelemetry(err, { "FeatureArea" => "MDM" })
     end
     return tokenReference
   end
@@ -150,6 +158,7 @@ class ArcK8sClusterIdentity
       end
     rescue => err
       @log.warn "renew_near_expiry_token call failed: #{err}"
+      ApplicationInsightsUtility.sendExceptionTelemetry(err, { "FeatureArea" => "MDM" })
     end
   end
 
@@ -164,34 +173,31 @@ class ArcK8sClusterIdentity
         @log.warn "Unable to read token string from #{@token_file_path}"
         return nil
       end
+    rescue => err
+      @log.warn "get_service_account_token call failed: #{err}"
+      ApplicationInsightsUtility.sendExceptionTelemetry(err, { "FeatureArea" => "MDM" })
     end
   end
 
   private
 
   def get_http_client()
-    kube_api_server_url = get_kube_api_server_url
-    base_api_server_url = URI.parse(kube_api_server_url)
-    http = Net::HTTP.new(base_api_server_url.host, base_api_server_url.port)
-    http.use_ssl = true
-    if !File.exist?(@cert_file_path)
-      raise "#{@cert_file_path} doesnt exist"
-    else
-      http.ca_file = @cert_file_path
+    begin
+      base_api_server_url = URI.parse(@kube_api_server_url)
+      http = Net::HTTP.new(base_api_server_url.host, base_api_server_url.port)
+      http.use_ssl = true
+      if !File.exist?(@cert_file_path)
+        raise "#{@cert_file_path} doesnt exist"
+      else
+        http.ca_file = @cert_file_path
+      end
+      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      return http
+    rescue => err
+      @log.warn "Unable to create http client #{err}"
+      ApplicationInsightsUtility.sendExceptionTelemetry(err, { "FeatureArea" => "MDM" })
     end
-    http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-    return http
-  end
-
-  private
-
-  def get_kube_api_server_url
-    if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
-      return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}"
-    else
-      @log.warn "Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{ENV["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{ENV["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri"
-      return nil
-    end
+    return nil
   end
 
   private

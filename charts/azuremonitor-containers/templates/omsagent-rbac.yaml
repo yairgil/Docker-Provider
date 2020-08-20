@@ -36,7 +36,7 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   resourceNames: ["container-insights-clusteridentityrequest-token"]
-  verbs: ["list", "get", "watch"]
+  verbs: ["list", "get"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
