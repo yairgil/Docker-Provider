@@ -20,6 +20,7 @@ class CAdvisorMetricsAPIClient
   @clusterEnvVarCollectionEnabled = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
   @clusterStdErrLogCollectionEnabled = ENV["AZMON_COLLECT_STDERR_LOGS"]
   @clusterStdOutLogCollectionEnabled = ENV["AZMON_COLLECT_STDOUT_LOGS"]
+  @pvKubeSystemCollectionMetricsEnabled = ENV["AZMON_PV_COLLECT_KUBE_SYSTEM_METRICS"]
   @clusterLogTailExcludPath = ENV["AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH"]
   @clusterLogTailPath = ENV["AZMON_LOG_TAIL_PATH"]
   @clusterAgentSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
@@ -302,9 +303,7 @@ class CAdvisorMetricsAPIClient
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed","containerGpumemoryUsedBytes", metricTime))
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle","containerGpuDutyCycle", metricTime))
 
-          metricNamesToCollect = ["availableBytes", "capacityBytes", "usedBytes", "inodes", "inodesUsed", "inodesFree"]
-          metricNamesToReturn = ["PVAvailableBytes", "PVCapacityBytes", "PVUsedBytes", "PVinodes", "PVinodesUsed", "PVinodesFree"]
-          metricDataItems.concat(getPersistentVolumeClaimMetrics(metricInfo, hostName, metricNamesToCollect, metricNamesToReturn, metricTime))
+          metricDataItems.concat(getPersistentVolumeClaimMetrics(metricInfo, hostName, "usedBytes", "pv_used_bytes", metricTime))
         else
           @Log.warn("Couldn't get Insights metrics information for host: #{hostName} os:#{operatingSystem}")
         end
@@ -327,7 +326,7 @@ class CAdvisorMetricsAPIClient
           podNamespace = pod["podRef"]["namespace"]
 
           containerNames = []
-          if (!pod["containers"].nil?)
+          if ((!podNamespace == "kube-system" || @pvKubeSystemCollectionMetricsEnabled) && !pod["containers"].nil?)
             pod["containers"].each do |container|
               containerName = container["name"]
               containerNames.push(podUid + "/" + containerName)
@@ -341,32 +340,26 @@ class CAdvisorMetricsAPIClient
                       # A PVC exists on this volume
                       pvcName = pvcRef["name"]
                       pvName = volume["name"]
-                      time = volume["time"]
 
-                      metricCount = 0
-                      metricNamesToCollect.each do |metricNameToCollect|
-                        metricItem = {}
-                        metricItem["CollectionTime"] = metricPollTime
-                        metricItem["Computer"] = hostName
-                        metricItem["Name"] = metricNamesToReturn[metricCount]
-                        metricItem["Value"] = volume[metricNameToCollect]
-                        metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
-                        metricItem["Namespace"] = Constants::INSIGHTSMETRICS_TAGS_GPU_NAMESPACE
+                      metricItem = {}
+                      metricItem["CollectionTime"] = metricPollTime
+                      metricItem["Computer"] = hostName
+                      metricItem["Name"] = metricNamesToReturn[metricCount]
+                      metricItem["Value"] = volume[metricNameToCollect]
+                      metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
+                      metricItem["Namespace"] = podNameSpace
                       
-                        metricTags = {}
-                        metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
-                        metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
-                        metricTags[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME] = podUid + "/" + containerName
-                        metricTags["PVName"] = pvName
-                        metricTags["PVCName"] = pvcName
-                        metricTags["Time"] = time
+                      metricTags = {}
+                      metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
+                      metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
+                      metricTags[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME] = podUid + "/" + containerName
+                      metricTags["pvName"] = pvName
+                      metricTags["pvcName"] = pvcName
+                      metricTags["pv_capacity_bytes"] = volume["capacityBytes"]
 
-                        metricItem["Tags"] = metricTags
+                      metricItem["Tags"] = metricTags
                       
-                        metricItems.push(metricItem)
-
-                        metricCount = metricCount + 1
-                      end
+                      metricItems.push(metricItem)
                     end
                   end
                 end
@@ -375,7 +368,7 @@ class CAdvisorMetricsAPIClient
           end
         end
       rescue => errorStr
-      @Log.warn("getContainerGpuMetricsAsInsightsMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
+      @Log.warn("getPersistentVolumeClaimMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
         return metricItems
         end
       return metricItems
