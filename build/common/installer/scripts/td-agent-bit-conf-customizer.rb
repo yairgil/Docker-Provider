@@ -17,6 +17,8 @@ def substituteFluentBitPlaceHolders
     interval = ENV["FBIT_SERVICE_FLUSH_INTERVAL"]
     bufferChunkSize = ENV["FBIT_TAIL_BUFFER_CHUNK_SIZE"]
     bufferMaxSize = ENV["FBIT_TAIL_BUFFER_MAX_SIZE"]
+    multilineLogging = ENV["AZMON_LOG_STITCH_MULTILINE"]
+    containerRuntime = ENV["CONTAINER_RUNTIME"]
 
     serviceInterval = (!interval.nil? && is_number?(interval)) ? interval : @default_service_interval
     serviceIntervalSetting = "Flush         " + serviceInterval
@@ -37,6 +39,26 @@ def substituteFluentBitPlaceHolders
     else
       new_contents = new_contents.gsub("\n    ${TAIL_BUFFER_MAX_SIZE}\n", "\n")
     end
+
+    # for stitching together multiline logs
+    puts multilineLogging
+    puts containerRuntime
+
+    puts "config::multiline -------------------------------- 1"
+    if !multilineLogging.nil? && multilineLogging.to_s.downcase == "true" && !containerRuntime.nil?
+      puts "config::multiline -------------------------------- 2"
+      if containerRuntime == "docker"
+        puts "config::multiline -------------------------------- 3"
+        new_contents = new_contents.gsub("#${DOCKER_MULTILINE_LOGGING}", "")
+      else
+        puts "config::multiline -------------------------------- 4"
+        new_contents = new_contents.gsub("#${CONTAINTERD_MULTILINE_LOGGING}", "")
+        new_contents = new_contents.gsub("#${MULTILINE-FILTER}", "")
+      end
+    else
+      puts "config::multiline -------------------------------- 4"
+    end
+    puts "config::multiline -------------------------------- 5"
 
     File.open(@td_agent_bit_conf_path, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in td-agent-bit.conf file"
