@@ -314,7 +314,7 @@ class CAdvisorMetricsAPIClient
       return metricDataItems
     end
 
-    def getPersistentVolumeClaimMetrics(metricJSON, hostName, metricNamesToCollect, metricNamesToReturn, metricPollTime)
+    def getPersistentVolumeClaimMetrics(metricJSON, hostName, metricNameToCollect, metricNameToReturn, metricPollTime)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       clusterName = KubernetesApiClient.getClusterName
@@ -326,7 +326,7 @@ class CAdvisorMetricsAPIClient
           podNamespace = pod["podRef"]["namespace"]
 
           containerNames = []
-          if ((!podNamespace == "kube-system" || @pvKubeSystemCollectionMetricsEnabled) && !pod["containers"].nil?)
+          if ((!(podNamespace == "kube-system") || @pvKubeSystemCollectionMetricsEnabled) && !pod["containers"].nil?)
             pod["containers"].each do |container|
               containerName = container["name"]
               containerNames.push(podUid + "/" + containerName)
@@ -344,7 +344,7 @@ class CAdvisorMetricsAPIClient
                       metricItem = {}
                       metricItem["CollectionTime"] = metricPollTime
                       metricItem["Computer"] = hostName
-                      metricItem["Name"] = metricNamesToReturn[metricCount]
+                      metricItem["Name"] = metricNameToReturn
                       metricItem["Value"] = volume[metricNameToCollect]
                       metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
                       metricItem["Namespace"] = podNameSpace
