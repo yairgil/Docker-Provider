@@ -356,6 +356,7 @@ class MdmMetricsGenerator
         metric_threshold_hash[Constants::CPU_USAGE_NANO_CORES] = Constants::DEFAULT_MDM_CPU_UTILIZATION_THRESHOLD
         metric_threshold_hash[Constants::MEMORY_RSS_BYTES] = Constants::DEFAULT_MDM_MEMORY_RSS_THRESHOLD
         metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES] = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
+        metric_threshold_hash["pvUsage"] = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
 
         cpuThreshold = ENV["AZMON_ALERT_CONTAINER_CPU_THRESHOLD"]
         if !cpuThreshold.nil? && !cpuThreshold.empty?
@@ -374,6 +375,13 @@ class MdmMetricsGenerator
         if !memoryWorkingSetThreshold.nil? && !memoryWorkingSetThreshold.empty?
           memoryWorkingSetThresholdFloat = (memoryWorkingSetThreshold.to_f).round(2)
           metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES] = memoryWorkingSetThresholdFloat
+        end
+
+        pvUsagePercentageThreshold = ENV["AZMON_ALERT_PV_USAGE_THRESHOLD"]
+        @log.info "pvUsagePercentageThreshold: #{pvUsagePercentageThreshold}"
+        if !pvUsagePercentageThreshold.nil? && !pvUsagePercentageThreshold.empty?
+          pvUsagePercentageThresholdFloat = (pvUsagePercentageThreshold.to_f).round(2)
+          metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES] = pvUsagePercentageThresholdFloat
         end
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilizationThresholds: #{errorStr}"

@@ -12,6 +12,7 @@ require_relative "microsoft/omsagent/plugin/constants"
 @percentageCpuUsageThreshold = Constants::DEFAULT_MDM_CPU_UTILIZATION_THRESHOLD
 @percentageMemoryRssThreshold = Constants::DEFAULT_MDM_MEMORY_RSS_THRESHOLD
 @percentageMemoryWorkingSetThreshold = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
+@percentagePVUsageThreshold = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -66,6 +67,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "config::Non floating point value or value not convertible to float specified for Memory Working Set threshold, using default "
           @percentageMemoryWorkingSetThreshold = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
         end
+        #PV
+        pvUsageThreshold = resourceUtilization[:pv_usage_threshold_percentage]
+        pvUsageThresholdFloat = pvUsageThreshold.to_f
+        if pvUsageThresholdFloat.kind_of? Float
+          @percentagePVUsageThreshold = pvUsageThresholdFloat
+        else
+          puts "config::Non floating point value or value not convertible to float specified for PV threshold, using default "
+          @percentagePVUsageThreshold = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
+        end
         puts "config::Using config map settings for MDM metric configuration settings for resource utilization"
       end
     rescue => errorStr
@@ -73,6 +83,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       @percentageCpuUsageThreshold = Constants::DEFAULT_MDM_CPU_UTILIZATION_THRESHOLD
       @percentageMemoryRssThreshold = Constants::DEFAULT_MDM_MEMORY_RSS_THRESHOLD
       @percentageMemoryWorkingSetThreshold = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
+      @percentagePVUsageThreshold = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
     end
   end
 end
@@ -97,6 +108,7 @@ if !file.nil?
   file.write("export AZMON_ALERT_CONTAINER_CPU_THRESHOLD=#{@percentageCpuUsageThreshold}\n")
   file.write("export AZMON_ALERT_CONTAINER_MEMORY_RSS_THRESHOLD=#{@percentageMemoryRssThreshold}\n")
   file.write("export AZMON_ALERT_CONTAINER_MEMORY_WORKING_SET_THRESHOLD=\"#{@percentageMemoryWorkingSetThreshold}\"\n")
+  file.write("export AZMON_ALERT_PV_USAGE_THRESHOLD=#{@percentagePVUsageThreshold}\n")
   # Close file after writing all MDM setting environment variables
   file.close
   puts "****************End MDM Metrics Config Processing********************"
