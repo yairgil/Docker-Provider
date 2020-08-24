@@ -135,37 +135,38 @@ module Fluent
           ip_name = record["IPName"]
           @log.info "Data Type: #{data_type}"
           @log.info "IP Name: #{data_type}"
-          
+
           if data_type == "INSIGHTS_METRICS_BLOB"
-          @log.info "insights metrics in filter_cadvisor2mdm"
-          record["DataItems"].each do |dataItem|
-            @log.info "dataItem: #{dataItem}"
-            if dataItem["Name"] == "pv_used_bytes"
-              @log.info "pv_used_bytes is a data item"
-              metricName = dataItem["Name"]
-              usage = dataItem["Value"]
-              capacity = dataItem["Tags"]["pv_capacity_bytes"]
-              if capacity != 0
-                percentage_metric_value = (usage) * 100 / capacity
-                @log.info "capacity is not 0"
-              end
-              @log.info "percentage_metric_value for metric: #{metricName} for instance: #{instanceName} percentage: #{percentage_metric_value}"
-              @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
+            @log.info "insights metrics in filter_cadvisor2mdm"
+            record["DataItems"].each do |dataItem|
+              @log.info "dataItem: #{dataItem}"
+              if dataItem["Name"] == "pv_used_bytes"
+                @log.info "pv_used_bytes is a data item"
+                metricName = dataItem["Name"]
+                usage = dataItem["Value"]
+                capacity = dataItem["Tags"]["pv_capacity_bytes"]
+                if capacity != 0
+                  percentage_metric_value = (usage) * 100 / capacity
+                  @log.info "capacity is not 0"
+                end
+                @log.info "percentage_metric_value for metric: #{metricName} for instance: #{instanceName} percentage: #{percentage_metric_value}"
+                @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
-              resourceDimensions = {}
-              resourceDimensions[0] = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
-              resourceDimensions[1] = "podName"
-              resourceDimensions[2] = "controllerName"
-              resourceDimensions[3] = dataItem["Tags"]["podNamespace"]
-              @log.info "resourceDimensions: #{resourceDimensions}"
+                resourceDimensions = {}
+                resourceDimensions[0] = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
+                resourceDimensions[1] = "podName"
+                resourceDimensions[2] = "controllerName"
+                resourceDimensions[3] = dataItem["Tags"]["podNamespace"]
+                @log.info "resourceDimensions: #{resourceDimensions}"
 
-              thresholdPercentage = @@metric_threshold_hash[metricName]
-              @log.info "thresholdPercentage: #{thresholdPercentage}"
-              return MdmMetricsGenerator.getContainerResourceUtilMetricRecords(dataItem["CollectionTime"],
+                thresholdPercentage = @@metric_threshold_hash[metricName]
+                @log.info "thresholdPercentage: #{thresholdPercentage}"
+                return MdmMetricsGenerator.getContainerResourceUtilMetricRecords(dataItem["CollectionTime"],
                                                                              metricName,
                                                                              percentage_metric_value,
                                                                              resourceDimensions,
                                                                              thresholdPercentage)
+              end
             end
           end
 
