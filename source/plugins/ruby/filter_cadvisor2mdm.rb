@@ -135,6 +135,10 @@ module Fluent
           counter_name = record["DataItems"][0]["Collections"][0]["CounterName"]
           percentage_metric_value = 0.0
           metric_value = record["DataItems"][0]["Collections"][0]["Value"]
+          data_type = record["DataType"]
+          ip_name = record["IPName"]
+          @log.info "Data Type: #{data_type}"
+          @log.info "IP Name: #{data_type}"
 
           if object_name == Constants::OBJECT_NAME_K8S_NODE && @metrics_to_collect_hash.key?(counter_name.downcase)
             # Compute and send % CPU and Memory
@@ -199,9 +203,10 @@ module Fluent
             else
               return []
             end #end if block for percentage metric > configured threshold % check
-          elsif tag == Constants::INSIGHTSMETRICS_FLUENT_TAG
+          elsif data_type == "INSIGHTS_METRICS_BLOB"
             @log.info "insights metrics in filter_cadvisor2mdm"
             record["DataItems"].each do |dataItem|
+              @log.info "dataItem: #{dataItem}"
               if dataItem["Name"] == "pv_used_bytes"
                 @log.info "pv_used_bytes is a data item"
                 metricName = dataItem["Name"]
