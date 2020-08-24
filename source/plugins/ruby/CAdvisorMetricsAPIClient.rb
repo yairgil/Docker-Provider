@@ -315,6 +315,14 @@ class CAdvisorMetricsAPIClient
     end
 
     def getPersistentVolumeClaimMetrics(metricJSON, hostName, metricNameToCollect, metricNameToReturn, metricPollTime)
+      @Log.info("Getting PV metrics")
+      pvKubeSystem = @pvKubeSystemCollectionMetricsEnabled.nil? ? "pv kube-system nil" : "pv kube-system not nil"
+      @Log.info(pvKubeSystem)
+      @Log.info(@pvKubeSystemCollectionMetricsEnabled)
+
+      pvKubeSystemCollectionMetrics = ENV["AZMON_PV_COLLECT_KUBE_SYSTEM_METRICS"]
+      @Log.info(pvKubeSystemCollectionMetrics)
+
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       clusterName = KubernetesApiClient.getClusterName
@@ -325,11 +333,22 @@ class CAdvisorMetricsAPIClient
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
 
-          containerNames = []
-          if ((!(podNamespace == "kube-system") || @pvKubeSystemCollectionMetricsEnabled) && !pod["containers"].nil?)
+          kubeSystemNamespace = false
+          if (podNamespace.include? "kube-system")
+            @Log.info("kube-system namespace encountered")
+            if (pvKubeSystemCollectionMetrics == "true")
+              kubeSystemNamespace = false
+              @Log.info("kube-system namespace encountered - include")
+            else
+              kubeSystemNamespace = true
+              @Log.info("kube-system namespace encountered - exclude")
+            end
+          end
+
+
+          if (!pod["containers"].nil? && !kubeSystemNamespace)
             pod["containers"].each do |container|
               containerName = container["name"]
-              containerNames.push(podUid + "/" + containerName)
           
               if (!pod["volume"].nil?)
                 pod["volume"].each do |volume|
@@ -347,7 +366,7 @@ class CAdvisorMetricsAPIClient
                       metricItem["Name"] = metricNameToReturn
                       metricItem["Value"] = volume[metricNameToCollect]
                       metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
-                      metricItem["Namespace"] = podNameSpace
+                      metricItem["Namespace"] = "container.azm.ms/pv"
                       
                       metricTags = {}
                       metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
@@ -356,6 +375,7 @@ class CAdvisorMetricsAPIClient
                       metricTags["pvName"] = pvName
                       metricTags["pvcName"] = pvcName
                       metricTags["pv_capacity_bytes"] = volume["capacityBytes"]
+                      metricTags["podNamespace"] = podNamespace
 
                       metricItem["Tags"] = metricTags
                       
