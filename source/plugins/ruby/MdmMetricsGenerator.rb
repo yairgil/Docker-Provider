@@ -377,11 +377,12 @@ class MdmMetricsGenerator
           metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES] = memoryWorkingSetThresholdFloat
         end
 
+        #pvUsagePercentageThreshold = 80.0
         pvUsagePercentageThreshold = ENV["AZMON_ALERT_PV_USAGE_THRESHOLD"]
         @log.info "pvUsagePercentageThreshold: #{pvUsagePercentageThreshold}"
         if !pvUsagePercentageThreshold.nil? && !pvUsagePercentageThreshold.empty?
           pvUsagePercentageThresholdFloat = (pvUsagePercentageThreshold.to_f).round(2)
-          metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES] = pvUsagePercentageThresholdFloat
+          metric_threshold_hash["pv_used_bytes"] = pvUsagePercentageThresholdFloat
         end
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilizationThresholds: #{errorStr}"

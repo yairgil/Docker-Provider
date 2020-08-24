@@ -16,7 +16,7 @@ module Fluent
     config_param :enable_log, :integer, :default => 0
     config_param :log_path, :string, :default => "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
     config_param :custom_metrics_azure_regions, :string
-    config_param :metrics_to_collect, :string, :default => "Constants::CPU_USAGE_NANO_CORES,Constants::MEMORY_WORKING_SET_BYTES,Constants::MEMORY_RSS_BYTES,pv_used_bytes"
+    config_param :metrics_to_collect, :string, :default => "Constants::CPU_USAGE_NANO_CORES,Constants::MEMORY_WORKING_SET_BYTES,Constants::MEMORY_RSS_BYTES,'pv_used_bytes'"
 
     @@hostName = (OMS::Common.get_hostname)
 
@@ -129,6 +129,7 @@ module Fluent
 
     def filter(tag, time, record)
       begin
+        @log.info "Tag: #{tag}"
         if @process_incoming_stream
           object_name = record["DataItems"][0]["ObjectName"]
           counter_name = record["DataItems"][0]["Collections"][0]["CounterName"]
