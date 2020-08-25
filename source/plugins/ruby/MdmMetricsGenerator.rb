@@ -35,6 +35,7 @@ class MdmMetricsGenerator
     Constants::CPU_USAGE_NANO_CORES => Constants::MDM_CONTAINER_CPU_UTILIZATION_METRIC,
     Constants::MEMORY_RSS_BYTES => Constants::MDM_CONTAINER_MEMORY_RSS_UTILIZATION_METRIC,
     Constants::MEMORY_WORKING_SET_BYTES => Constants::MDM_CONTAINER_MEMORY_WORKING_SET_UTILIZATION_METRIC,
+    "pv_used_bytes" => "pv_usage_percentage"
   }
 
   # Setting this to true since we need to send zero filled metrics at startup. If metrics are absent alert creation fails
@@ -247,6 +248,32 @@ class MdmMetricsGenerator
           containerNameDimValue: containerName,
           podNameDimValue: podName,
           controllerNameDimValue: controllerName,
+          namespaceDimValue: podNamespace,
+          containerResourceUtilizationPercentage: percentageMetricValue,
+          thresholdPercentageDimValue: thresholdPercentage,
+        }
+        @log.info "resourceUtilRecord: #{resourceUtilRecord}"
+        records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
+      rescue => errorStr
+        @log.info "Error in getContainerResourceUtilMetricRecords: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+      return records
+    end
+
+    def getPVResourceUtilMetricRecords(recordTimeStamp, metricName, percentageMetricValue, dims, thresholdPercentage)
+      records = []
+      begin
+        @log.info "resource dimensions: #{dims}"
+        # get dimension values
+        containerName = dims[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
+        podNamespace = dims["podNamespace"]
+        resourceUtilRecord = MdmAlertTemplates::Container_resource_utilization_template % {
+          timestamp: recordTimeStamp,
+          metricName: @@container_metric_name_metric_percentage_name_hash[metricName],
+          containerNameDimValue: containerName,
+          podNameDimValue: "podName",
+          controllerNameDimValue: "controllerName",
           namespaceDimValue: podNamespace,
           containerResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,

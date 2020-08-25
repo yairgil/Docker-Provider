@@ -148,19 +148,18 @@ module Fluent
                 usage = dataItem["Value"]
                 capacity = dataItem["Tags"]["pv_capacity_bytes"]
                 if capacity != 0
-                  percentage_metric_value = (usage) * 100 / capacity
+                  percentage_metric_value = (usage * 100.0) / capacity
                   @log.info "capacity is not 0"
                 end
                 @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
                 @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
-                resourceDimensions = [dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME],
-                  "podName", "controllerName", dataItem["Tags"]["podNamespace"]].join("~~")
-                @log.info "resourceDimensions: #{resourceDimensions}"
+                resourceDimensions = dataItem["Tags"]
+                @log.info "#{resourceDimensions}"
 
                 thresholdPercentage = @@metric_threshold_hash[metricName]
                 @log.info "thresholdPercentage: #{thresholdPercentage}"
-                mdmMetrics.push(MdmMetricsGenerator.getContainerResourceUtilMetricRecords(dataItem["CollectionTime"],
+                mdmMetrics.push(MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
                                                                              metricName,
                                                                              percentage_metric_value,
                                                                              resourceDimensions,
