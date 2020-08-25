@@ -138,6 +138,8 @@ module Fluent
 
           if data_type == "INSIGHTS_METRICS_BLOB"
             @log.info "insights metrics in filter_cadvisor2mdm"
+            @log.info "#{record["DataItems"]}"
+            mdmMetrics = []
             record["DataItems"].each do |dataItem|
               @log.info "dataItem: #{dataItem}"
               if dataItem["Name"] == "pv_used_bytes"
@@ -152,21 +154,19 @@ module Fluent
                 @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
                 @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
-                resourceDimensions = {}
-                resourceDimensions[0] = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
-                resourceDimensions[1] = "podName"
-                resourceDimensions[2] = "controllerName"
-                resourceDimensions[3] = dataItem["Tags"]["podNamespace"]
+                resourceDimensions = [dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME],
+                  "podName", "controllerName", dataItem["Tags"]["podNamespace"]].join("~~")
                 @log.info "resourceDimensions: #{resourceDimensions}"
 
                 thresholdPercentage = @@metric_threshold_hash[metricName]
                 @log.info "thresholdPercentage: #{thresholdPercentage}"
-                return MdmMetricsGenerator.getContainerResourceUtilMetricRecords(dataItem["CollectionTime"],
+                mdmMetrics.push(MdmMetricsGenerator.getContainerResourceUtilMetricRecords(dataItem["CollectionTime"],
                                                                              metricName,
                                                                              percentage_metric_value,
                                                                              resourceDimensions,
-                                                                             thresholdPercentage)
+                                                                             thresholdPercentage))
               end
+            return mdmMetrics
             end
           end
 

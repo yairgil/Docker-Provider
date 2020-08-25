@@ -251,6 +251,7 @@ class MdmMetricsGenerator
           containerResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
+        @log.info "resourceUtilRecord: #{resourceUtilRecord}"
         records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilMetricRecords: #{errorStr}"
