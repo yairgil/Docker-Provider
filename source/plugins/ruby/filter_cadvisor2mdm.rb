@@ -149,7 +149,7 @@ module Fluent
                   percentage_metric_value = (usage) * 100 / capacity
                   @log.info "capacity is not 0"
                 end
-                @log.info "percentage_metric_value for metric: #{metricName} for instance: #{instanceName} percentage: #{percentage_metric_value}"
+                @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
                 @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
                 resourceDimensions = {}
