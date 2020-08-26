@@ -51,6 +51,7 @@ module Fluent
     def configure(conf)
       s = conf.add_element("secondary")
       s["type"] = ChunkErrorHandler::SecondaryName
+      @log = Logger.new("/var/opt/microsoft/docker-cimprov/log/out_mdm.log", 1, 5000000)
       super
     end
 
