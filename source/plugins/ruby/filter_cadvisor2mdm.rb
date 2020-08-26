@@ -168,7 +168,7 @@ module Fluent
               end
             flushMetricTelemetry
             setThresholdExceededTelemetry(metricName)
-            return mdmMetrics
+            return mdmMetrics[0]
             end
           end
 
@@ -304,7 +304,9 @@ module Fluent
 
         es.each { |time, record|
           filtered_records = filter(tag, time, record)
+          @log.info "filtered records: #{filtered_records}"
           filtered_records.each { |filtered_record|
+            @log.info "filtered_record: #{filtered_record}"
             new_es.add(time, filtered_record) if filtered_record
           } if filtered_records
         }
