@@ -120,6 +120,7 @@ module Fluent
           @containersExceededCpuThreshold = false
           @containersExceededMemRssThreshold = false
           @containersExceededMemWorkingSetThreshold = false
+          @pvExceededUsageThreshold = false
         end
       rescue => errorStr
         @log.info "Error in flushMetricTelemetry: #{errorStr}"
@@ -165,6 +166,8 @@ module Fluent
                                                                              resourceDimensions,
                                                                              thresholdPercentage))
               end
+            flushMetricTelemetry
+            setThresholdExceededTelemetry(metricName)
             return mdmMetrics
             end
           end

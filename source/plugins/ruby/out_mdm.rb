@@ -4,6 +4,7 @@
 module Fluent
   class OutputMDM < BufferedOutput
     config_param :retry_mdm_post_wait_minutes, :integer
+    config_param :log_path, :string, :default => "/var/opt/microsoft/docker-cimprov/log/out_mdm.log"
 
     Plugin.register_output("out_mdm", self)
 
@@ -51,7 +52,7 @@ module Fluent
     def configure(conf)
       s = conf.add_element("secondary")
       s["type"] = ChunkErrorHandler::SecondaryName
-      @log = Logger.new("/var/opt/microsoft/docker-cimprov/log/out_mdm.log", 1, 5000000)
+      @log = Logger.new(@log_path, 1, 5000000)
       super
     end
 
