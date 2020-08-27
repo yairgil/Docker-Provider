@@ -13,6 +13,10 @@ class Constants
     INSIGHTSMETRICS_TAGS_K8SNAMESPACE = "k8sNamespace"
     INSIGHTSMETRICS_TAGS_CONTROLLER_NAME = "controllerName"
     INSIGHTSMETRICS_TAGS_CONTROLLER_KIND = "controllerKind"
+    INSIGHTSMETRICS_TAGS_PV_NAME = "pvName"
+    INSIGHTSMETRICS_TAGS_PVC_NAME = "pvcName"
+    INSIGHTSMETRICS_TAGS_POD_NAMESPACE = "podNamespace"
+    INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES = "pvCapacityBytes"
     INSIGHTSMETRICS_FLUENT_TAG = "oms.api.InsightsMetrics"
     REASON_OOM_KILLED = "oomkilled"
     #Kubestate (common)
@@ -45,6 +49,7 @@ class Constants
     MDM_CONTAINER_CPU_UTILIZATION_METRIC = "cpuExceededPercentage"
     MDM_CONTAINER_MEMORY_RSS_UTILIZATION_METRIC = "memoryRssExceededPercentage"
     MDM_CONTAINER_MEMORY_WORKING_SET_UTILIZATION_METRIC = "memoryWorkingSetExceededPercentage"
+    MDM_PV_UTILIZATION_METRIC = "pvUsageExceededPercentage"
     MDM_NODE_CPU_USAGE_PERCENTAGE = "cpuUsagePercentage"
     MDM_NODE_MEMORY_RSS_PERCENTAGE = "memoryRssPercentage"
     MDM_NODE_MEMORY_WORKING_SET_PERCENTAGE = "memoryWorkingSetPercentage"
@@ -56,6 +61,7 @@ class Constants
     CPU_USAGE_MILLI_CORES = "cpuUsageMillicores"
     MEMORY_WORKING_SET_BYTES= "memoryWorkingSetBytes"
     MEMORY_RSS_BYTES = "memoryRssBytes"
+    PV_USED_BYTES = "pvUsedBytes"
     DEFAULT_MDM_CPU_UTILIZATION_THRESHOLD = 95.0
     DEFAULT_MDM_MEMORY_RSS_THRESHOLD = 95.0
     DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD = 95.0

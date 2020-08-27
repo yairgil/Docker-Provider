@@ -35,7 +35,7 @@ class MdmMetricsGenerator
     Constants::CPU_USAGE_NANO_CORES => Constants::MDM_CONTAINER_CPU_UTILIZATION_METRIC,
     Constants::MEMORY_RSS_BYTES => Constants::MDM_CONTAINER_MEMORY_RSS_UTILIZATION_METRIC,
     Constants::MEMORY_WORKING_SET_BYTES => Constants::MDM_CONTAINER_MEMORY_WORKING_SET_UTILIZATION_METRIC,
-    "pv_used_bytes" => "pv_usage_percentage"
+    Constants::PV_USED_BYTES => Constants::MDM_PV_UTILIZATION_METRIC
   }
 
   # Setting this to true since we need to send zero filled metrics at startup. If metrics are absent alert creation fails
@@ -410,7 +410,7 @@ class MdmMetricsGenerator
         @log.info "pvUsagePercentageThreshold: #{pvUsagePercentageThreshold}"
         if !pvUsagePercentageThreshold.nil? && !pvUsagePercentageThreshold.empty?
           pvUsagePercentageThresholdFloat = (pvUsagePercentageThreshold.to_f).round(2)
-          metric_threshold_hash["pv_used_bytes"] = pvUsagePercentageThresholdFloat
+          metric_threshold_hash[Constants::PV_USED_BYTES] = pvUsagePercentageThresholdFloat
         end
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilizationThresholds: #{errorStr}"

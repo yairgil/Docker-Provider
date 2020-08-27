@@ -303,7 +303,7 @@ class CAdvisorMetricsAPIClient
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed","containerGpumemoryUsedBytes", metricTime))
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle","containerGpuDutyCycle", metricTime))
 
-          metricDataItems.concat(getPersistentVolumeClaimMetrics(metricInfo, hostName, "usedBytes", "pv_used_bytes", metricTime))
+          metricDataItems.concat(getPersistentVolumeClaimMetrics(metricInfo, hostName, "usedBytes", Constants::PV_USED_BYTES, metricTime))
         else
           @Log.warn("Couldn't get Insights metrics information for host: #{hostName} os:#{operatingSystem}")
         end
@@ -372,10 +372,10 @@ class CAdvisorMetricsAPIClient
                       metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
                       metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
                       metricTags[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME] = podUid + "/" + containerName
-                      metricTags["pvName"] = pvName
-                      metricTags["pvcName"] = pvcName
-                      metricTags["pv_capacity_bytes"] = volume["capacityBytes"]
-                      metricTags["podNamespace"] = podNamespace
+                      metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_NAME] = pvName
+                      metricTags[Constants::INSIGHTSMETRICS_TAGS_PVC_NAME] = pvcName
+                      metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAMESPACE] = podNamespace
+                      metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = volume["capacityBytes"]
 
                       metricItem["Tags"] = metricTags
                       

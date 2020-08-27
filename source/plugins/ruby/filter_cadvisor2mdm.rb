@@ -16,7 +16,7 @@ module Fluent
     config_param :enable_log, :integer, :default => 0
     config_param :log_path, :string, :default => "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
     config_param :custom_metrics_azure_regions, :string
-    config_param :metrics_to_collect, :string, :default => "Constants::CPU_USAGE_NANO_CORES,Constants::MEMORY_WORKING_SET_BYTES,Constants::MEMORY_RSS_BYTES,'pv_used_bytes'"
+    config_param :metrics_to_collect, :string, :default => "Constants::CPU_USAGE_NANO_CORES,Constants::MEMORY_WORKING_SET_BYTES,Constants::MEMORY_RSS_BYTES,Constants::PV_USED_BYTES"
 
     @@hostName = (OMS::Common.get_hostname)
 
@@ -90,7 +90,7 @@ module Fluent
           @containersExceededMemRssThreshold = true
         elsif metricName == Constants::MEMORY_WORKING_SET_BYTES
           @containersExceededMemWorkingSetThreshold = true
-        elsif metricName == "pv_used_bytes"
+        elsif metricName == Constants::PV_USED_BYTES
           @pvExceededUsageThreshold = true
         end
       rescue => errorStr
@@ -109,7 +109,7 @@ module Fluent
           properties["CpuThresholdPercentage"] = @@metric_threshold_hash[Constants::CPU_USAGE_NANO_CORES]
           properties["MemoryRssThresholdPercentage"] = @@metric_threshold_hash[Constants::MEMORY_RSS_BYTES]
           properties["MemoryWorkingSetThresholdPercentage"] = @@metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES]
-          properties["PVUsageThresholdPercentage"] = @@metric_threshold_hash["pv_used_bytes"]
+          properties["PVUsageThresholdPercentage"] = @@metric_threshold_hash[Constants::PV_USED_BYTES]
           # Keeping track of any containers that have exceeded threshold in the last flush interval
           properties["CpuThresholdExceededInLastFlushInterval"] = @containersExceededCpuThreshold
           properties["MemRssThresholdExceededInLastFlushInterval"] = @containersExceededMemRssThreshold
@@ -143,11 +143,11 @@ module Fluent
             mdmMetrics = []
             record["DataItems"].each do |dataItem|
               @log.info "dataItem: #{dataItem}"
-              if dataItem["Name"] == "pv_used_bytes"
+              if dataItem["Name"] == Constants::PV_USED_BYTES
                 @log.info "pv_used_bytes is a data item"
                 metricName = dataItem["Name"]
                 usage = dataItem["Value"]
-                capacity = dataItem["Tags"]["pv_capacity_bytes"]
+                capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
                 if capacity != 0
                   percentage_metric_value = (usage * 100.0) / capacity
                   @log.info "capacity is not 0"
