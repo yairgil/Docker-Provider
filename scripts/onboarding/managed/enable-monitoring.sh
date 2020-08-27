@@ -464,6 +464,10 @@ install_helm_chart()
   echo "installing Azure Monitor for containers HELM chart on to the cluster with kubecontext:${kubeconfigContext} ..."
  fi
 
+ echo "getting the region of the cluster"
+ clusterRegion=$(az resource show --ids ${clusterResourceId} --query location)
+ echo "cluster region is : ${clusterRegion}"
+
  echo "adding helm repo:" $helmRepoName
  helm repo add $helmRepoName $helmRepoUrl
 
@@ -474,18 +478,18 @@ install_helm_chart()
    echo "using proxy endpoint since proxy configuration passed in"
    if [ -z "$kubeconfigContext" ]; then
      echo "using current kube-context since --kube-context/-k parameter not passed in"
-     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName
+     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion $helmRepoName/$helmChartName
    else
      echo "using --kube-context:${kubeconfigContext} since passed in"
-     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
    fi
  else
    if [ -z "$kubeconfigContext" ]; then
      echo "using current kube-context since --kube-context/-k parameter not passed in"
-     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName
+     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion $helmRepoName/$helmChartName
    else
      echo "using --kube-context:${kubeconfigContext} since passed in"
-     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
    fi
  fi
 
