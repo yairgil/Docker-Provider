@@ -160,11 +160,13 @@ module Fluent
 
                 thresholdPercentage = @@metric_threshold_hash[metricName]
                 @log.info "thresholdPercentage: #{thresholdPercentage}"
-                mdmMetrics.push(MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
+                if percentage_metric_value >= thresholdPercentage
+                  mdmMetrics.push(MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
                                                                              metricName,
                                                                              percentage_metric_value,
                                                                              resourceDimensions,
                                                                              thresholdPercentage))
+                end
               end
             flushMetricTelemetry
             setThresholdExceededTelemetry(metricName)
