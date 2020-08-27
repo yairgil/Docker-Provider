@@ -133,46 +133,39 @@ module Fluent
         @log.info "Tag: #{tag}"
         if @process_incoming_stream
           data_type = record["DataType"]
-          ip_name = record["IPName"]
-          @log.info "Data Type: #{data_type}"
-          @log.info "IP Name: #{data_type}"
 
           if data_type == "INSIGHTS_METRICS_BLOB"
-            @log.info "insights metrics in filter_cadvisor2mdm"
-            @log.info "#{record["DataItems"]}"
             mdmMetrics = []
             record["DataItems"].each do |dataItem|
-              @log.info "dataItem: #{dataItem}"
+
               if dataItem["Name"] == Constants::PV_USED_BYTES
-                @log.info "pv_used_bytes is a data item"
                 metricName = dataItem["Name"]
                 usage = dataItem["Value"]
                 capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
                 if capacity != 0
                   percentage_metric_value = (usage * 100.0) / capacity
-                  @log.info "capacity is not 0"
                 end
                 @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
                 @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
                 resourceDimensions = dataItem["Tags"]
-                @log.info "#{resourceDimensions}"
-
                 thresholdPercentage = @@metric_threshold_hash[metricName]
-                @log.info "thresholdPercentage: #{thresholdPercentage}"
+
+                flushMetricTelemetry
                 if percentage_metric_value >= thresholdPercentage
-                  mdmMetrics.push(MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
+                  setThresholdExceededTelemetry(metricName)
+                  return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
                                                                              metricName,
                                                                              percentage_metric_value,
                                                                              resourceDimensions,
-                                                                             thresholdPercentage))
-                end
-              end
-            flushMetricTelemetry
-            setThresholdExceededTelemetry(metricName)
-            return mdmMetrics[0]
-            end
-          end
+                                                                             thresholdPercentage)
+                else
+                  return []
+                end # end if block for percentage metric > configured threshold % check
+              end # end if block for dataItem name check
+            end # end for block of looping through data items
+            return []
+          end # end if block for insights metrics check
 
           object_name = record["DataItems"][0]["ObjectName"]
           counter_name = record["DataItems"][0]["Collections"][0]["CounterName"]
