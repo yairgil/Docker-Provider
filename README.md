@@ -139,7 +139,7 @@ bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 
 ### Build Docker Provider Shell Bundle and Docker Image and Publish Docker Image
 
-> Note: If you are using WSL2, ensure Docker for windows running Linux containers mode to build Linux agent image successfully
+> Note: If you are using WSL2, ensure `Docker for windows` running with Linux containers mode on your windows machine to build Linux agent image successfully
 
 ```
 cd ~/Docker-Provider/kubernetes/linux/dockerbuild
@@ -166,15 +166,20 @@ docker push <repo>/<imagename>:<imagetag>
 ```
 ## Windows Agent
 
+To build the windows agent, you will have to build .NET and Go code, and docker image for windows agent.
+Docker image for windows agent can only build on Windows machine with `Docker for windows` with Windows containers mode but the .NET code and Go code can be built either on Windows or Linux or WSL2.
+
 ### Install Pre-requisites
 
-If you are planning to build the .net and go code for windows agent on Linux machine and you have already have Docker for Windows on Windows machine, then you may skip this.
+Below pre-requisites not applicable if you are trying to build the .NET and Go code on Linux or WSL2 machine.
 
 ```
 powershell # launch powershell with elevated admin on your windows machine
 Set-ExecutionPolicy -ExecutionPolicy bypass # set the execution policy
 net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app to windows
 cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
+
+
 .\install-build-pre-requisites.ps1 #
 ```
 #### Build Certificate Generator Source code and Out OMS Go plugin code
