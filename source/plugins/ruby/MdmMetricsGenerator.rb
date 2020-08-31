@@ -274,7 +274,7 @@ class MdmMetricsGenerator
           metricName: @@container_metric_name_metric_percentage_name_hash[metricName],
           podUidDimValue: podUid,
           podNameDimValue: podName,
-          nodeNameDimValue: computer,
+          computerNameDimValue: computer,
           namespaceDimValue: podNamespace,
           containerResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
