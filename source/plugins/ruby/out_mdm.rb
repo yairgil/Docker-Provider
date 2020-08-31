@@ -16,6 +16,8 @@ module Fluent
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
+      require_relative "arc_k8s_cluster_identity"
+      require_relative "proxy_utils"
 
       @@token_resource_url = "https://monitoring.azure.com/"
       @@grant_type = "client_credentials"
@@ -45,6 +47,8 @@ module Fluent
       @useMsi = false
       @metrics_flushed_count = 0
 
+      @cluster_identity = nil
+      @isArcK8sCluster = false
       @get_access_token_backoff_expiry = Time.now
     end
 
@@ -76,28 +80,48 @@ module Fluent
         if @can_send_data_to_mdm
           @log.info "MDM Metrics supported in #{aks_region} region"
 
+          if aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
+            @isArcK8sCluster = true
+          end
           @@post_request_url = @@post_request_url_template % { aks_region: aks_region, aks_resource_id: aks_resource_id }
           @post_request_uri = URI.parse(@@post_request_url)
-          @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+          if (!!@isArcK8sCluster)
+            proxy = (ProxyUtils.getProxyConfiguration)
+            if proxy.nil? || proxy.empty?
+              @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+            else
+              @log.info "Proxy configured on this cluster: #{aks_resource_id}"
+              @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
+            end
+          else
+            @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+          end
           @http_client.use_ssl = true
           @log.info "POST Request url: #{@@post_request_url}"
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPluginStart", {})
 
-          # Check to see if SP exists, if it does use SP. Else, use msi
-          sp_client_id = @data_hash["aadClientId"]
-          sp_client_secret = @data_hash["aadClientSecret"]
-
-          if (!sp_client_id.nil? && !sp_client_id.empty? && sp_client_id.downcase != "msi")
-            @useMsi = false
-            aad_token_url = @@aad_token_url_template % { tenant_id: @data_hash["tenantId"] }
-            @parsed_token_uri = URI.parse(aad_token_url)
+          # arc k8s cluster uses cluster identity
+          if (!!@isArcK8sCluster)
+            @log.info "using cluster identity token since cluster is azure arc k8s cluster"
+            @cluster_identity = ArcK8sClusterIdentity.new
+            @cached_access_token = @cluster_identity.get_cluster_identity_token
           else
-            @useMsi = true
-            msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url }
-            @parsed_token_uri = URI.parse(msi_endpoint)
-          end
+            # Check to see if SP exists, if it does use SP. Else, use msi
+            sp_client_id = @data_hash["aadClientId"]
+            sp_client_secret = @data_hash["aadClientSecret"]
 
-          @cached_access_token = get_access_token
+            if (!sp_client_id.nil? && !sp_client_id.empty? && sp_client_id.downcase != "msi")
+              @useMsi = false
+              aad_token_url = @@aad_token_url_template % { tenant_id: @data_hash["tenantId"] }
+              @parsed_token_uri = URI.parse(aad_token_url)
+            else
+              @useMsi = true
+              msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url }
+              @parsed_token_uri = URI.parse(msi_endpoint)
+            end
+
+            @cached_access_token = get_access_token
+          end
         end
       rescue => e
         @log.info "exception when initializing out_mdm #{e}"
@@ -226,7 +250,14 @@ module Fluent
 
     def send_to_mdm(post_body)
       begin
-        access_token = get_access_token
+        if (!!@isArcK8sCluster)
+          if @cluster_identity.nil?
+            @cluster_identity = ArcK8sClusterIdentity.new
+          end
+          access_token = @cluster_identity.get_cluster_identity_token
+        else
+          access_token = get_access_token
+        end
         request = Net::HTTP::Post.new(@post_request_uri.request_uri)
         request["Content-Type"] = "application/x-ndjson"
         request["Authorization"] = "Bearer #{access_token}"
