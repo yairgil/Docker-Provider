@@ -130,13 +130,11 @@ module Fluent
 
     def filter(tag, time, record)
       begin
-        @log.info "Tag: #{tag}"
         if @process_incoming_stream
-          data_type = record["DataType"]
 
+          # Check if insights metrics for PV metrics
+          data_type = record["DataType"]
           if data_type == "INSIGHTS_METRICS_BLOB"
-            @log.info "Insights Metrics"
-            @log.info "record: #{record}"
             return filterPVInsightsMetrics(record)
           end
 
@@ -307,9 +305,7 @@ module Fluent
 
         es.each { |time, record|
           filtered_records = filter(tag, time, record)
-          @log.info "filtered records: #{filtered_records}"
           filtered_records.each { |filtered_record|
-            @log.info "filtered_record: #{filtered_record}"
             new_es.add(time, filtered_record) if filtered_record
           } if filtered_records
         }

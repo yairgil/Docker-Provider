@@ -252,7 +252,6 @@ class MdmMetricsGenerator
           containerResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
-        @log.info "resourceUtilRecord: #{resourceUtilRecord}"
         records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilMetricRecords: #{errorStr}"
@@ -279,7 +278,6 @@ class MdmMetricsGenerator
           containerResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
-        @log.info "resourceUtilRecord: #{resourceUtilRecord}"
         records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
       rescue => errorStr
         @log.info "Error in getPVResourceUtilMetricRecords: #{errorStr}"
@@ -407,7 +405,6 @@ class MdmMetricsGenerator
         end
 
         pvUsagePercentageThreshold = ENV["AZMON_ALERT_PV_USAGE_THRESHOLD"]
-        @log.info "pvUsagePercentageThreshold: #{pvUsagePercentageThreshold}"
         if !pvUsagePercentageThreshold.nil? && !pvUsagePercentageThreshold.empty?
           pvUsagePercentageThresholdFloat = (pvUsagePercentageThreshold.to_f).round(2)
           metric_threshold_hash[Constants::PV_USED_BYTES] = pvUsagePercentageThresholdFloat

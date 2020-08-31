@@ -326,14 +326,9 @@ class CAdvisorMetricsAPIClient
           podNamespace = pod["podRef"]["namespace"]
 
           excludeNamespace = false
-          if (podNamespace.include? "kube-system")
-            if (@pvKubeSystemCollectionMetricsEnabled == "true")
-              excludeNamespace = false
-            else
-              excludeNamespace = true
-            end
+          if (podNamespace.include? "kube-system" && @pvKubeSystemCollectionMetricsEnabled == "false")
+            excludeNamespace = true
           end
-
 
           if (!excludeNamespace)
             if (!pod["volume"].nil?)

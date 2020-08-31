@@ -4,7 +4,6 @@
 module Fluent
   class OutputMDM < BufferedOutput
     config_param :retry_mdm_post_wait_minutes, :integer
-    config_param :log_path, :string, :default => "/var/opt/microsoft/docker-cimprov/log/out_mdm.log"
 
     Plugin.register_output("out_mdm", self)
 
@@ -14,7 +13,6 @@ module Fluent
       require "net/https"
       require "uri"
       require "yajl/json_gem"
-      require "logger"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
@@ -53,7 +51,6 @@ module Fluent
     def configure(conf)
       s = conf.add_element("secondary")
       s["type"] = ChunkErrorHandler::SecondaryName
-      @log = Logger.new(@log_path, 1, 5000000)
       super
     end
 
@@ -188,7 +185,7 @@ module Fluent
     # Convert the event to a raw string.
     def format(tag, time, record)
       if record != {}
-        #@log.trace "Buffering #{tag}"
+        @log.trace "Buffering #{tag}"
         return [tag, record].to_msgpack
       else
         return ""
@@ -237,7 +234,6 @@ module Fluent
         request.body = post_body.join("\n")
         @log.info "REQUEST BODY SIZE #{request.body.bytesize / 1024}"
         response = @http_client.request(request)
-        @log.info "REQUEST RESPONSE: #{response}"
         response.value # this throws for non 200 HTTP response code
         @log.info "HTTP Post Response Code : #{response.code}"
         if @last_telemetry_sent_time.nil? || @last_telemetry_sent_time + 60 * 60 < Time.now
