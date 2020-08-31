@@ -330,48 +330,46 @@ class CAdvisorMetricsAPIClient
             excludeNamespace = true
           end
 
-          if (!excludeNamespace)
-            if (!pod["volume"].nil?)
-              pod["volume"].each do |volume|
-                if (!volume["pvcRef"].nil?)
-                  pvcRef = volume["pvcRef"]
-                  if (!pvcRef["name"].nil?)
+          if (!excludeNamespace && !pod["volume"].nil?)
+            pod["volume"].each do |volume|
+              if (!volume["pvcRef"].nil?)
+                pvcRef = volume["pvcRef"]
+                if (!pvcRef["name"].nil?)
 
-                    # A PVC exists on this volume
-                    pvcName = pvcRef["name"]
-                    pvName = volume["name"]
+                  # A PVC exists on this volume
+                  pvcName = pvcRef["name"]
+                  pvName = volume["name"]
 
-                    metricItem = {}
-                    metricItem["CollectionTime"] = metricPollTime
-                    metricItem["Computer"] = hostName
-                    metricItem["Name"] = metricNameToReturn
-                    metricItem["Value"] = volume[metricNameToCollect]
-                    metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
-                    metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
+                  metricItem = {}
+                  metricItem["CollectionTime"] = metricPollTime
+                  metricItem["Computer"] = hostName
+                  metricItem["Name"] = metricNameToReturn
+                  metricItem["Value"] = volume[metricNameToCollect]
+                  metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
+                  metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
                       
-                    metricTags = {}
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_UID] = podUid
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = podName
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_NAME] = pvName
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_PVC_NAME] = pvcName
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAMESPACE] = podNamespace
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = volume["capacityBytes"]
+                  metricTags = {}
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_UID] = podUid
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = podName
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_NAME] = pvName
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_PVC_NAME] = pvcName
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAMESPACE] = podNamespace
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = volume["capacityBytes"]
 
-                    metricItem["Tags"] = metricTags
+                  metricItem["Tags"] = metricTags
                       
-                    metricItems.push(metricItem)
-                  end
+                  metricItems.push(metricItem)
                 end
               end
             end
           end
         end
       rescue => errorStr
-      @Log.warn("getPersistentVolumeClaimMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
+        @Log.warn("getPersistentVolumeClaimMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
         return metricItems
-        end
+      end
       return metricItems
     end
 
