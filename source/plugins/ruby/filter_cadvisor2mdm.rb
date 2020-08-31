@@ -135,6 +135,8 @@ module Fluent
           data_type = record["DataType"]
 
           if data_type == "INSIGHTS_METRICS_BLOB"
+            @log.info "Insights Metrics"
+            @log.info "record: #{record}"
             return filterPVInsightsMetrics(record)
           end
 

@@ -267,7 +267,7 @@ class MdmMetricsGenerator
         containerName = dims[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
         podNamespace = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAMESPACE]
         podName = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME]
-        podUid = dims[INSIGHTSMETRICS_TAGS_POD_UID]
+        podUid = dims[Constants::INSIGHTSMETRICS_TAGS_POD_UID]
 
         resourceUtilRecord = MdmAlertTemplates::PV_resource_utilization_template % {
           timestamp: recordTimeStamp,
@@ -282,7 +282,7 @@ class MdmMetricsGenerator
         @log.info "resourceUtilRecord: #{resourceUtilRecord}"
         records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
       rescue => errorStr
-        @log.info "Error in getContainerResourceUtilMetricRecords: #{errorStr}"
+        @log.info "Error in getPVResourceUtilMetricRecords: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return records
