@@ -125,7 +125,7 @@ data:
      <filter mdm.cadvisorperf**>
       type filter_cadvisor2mdm
       custom_metrics_azure_regions eastus,southcentralus,westcentralus,westus2,southeastasia,northeurope,westeurope,southafricanorth,centralus,northcentralus,eastus2,koreacentral,eastasia,centralindia,uksouth,canadacentral,francecentral,japaneast,australiaeast
-      metrics_to_collect cpuUsageNanoCores,memoryWorkingSetBytes
+      metrics_to_collect cpuUsageNanoCores,memoryWorkingSetBytes,pvUsedBytes
       log_level info
      </filter>
 
