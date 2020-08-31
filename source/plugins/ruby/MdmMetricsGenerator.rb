@@ -261,19 +261,20 @@ class MdmMetricsGenerator
       return records
     end
 
-    def getPVResourceUtilMetricRecords(recordTimeStamp, metricName, percentageMetricValue, dims, thresholdPercentage)
+    def getPVResourceUtilMetricRecords(recordTimeStamp, metricName, computer, percentageMetricValue, dims, thresholdPercentage)
       records = []
       begin
         containerName = dims[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
         podNamespace = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAMESPACE]
+        podName = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME]
+        podUid = dims[INSIGHTSMETRICS_TAGS_POD_UID]
 
-        # Will need a different MDM Template
-        resourceUtilRecord = MdmAlertTemplates::Container_resource_utilization_template % {
+        resourceUtilRecord = MdmAlertTemplates::PV_resource_utilization_template % {
           timestamp: recordTimeStamp,
           metricName: @@container_metric_name_metric_percentage_name_hash[metricName],
-          containerNameDimValue: containerName,
-          podNameDimValue: "podName",
-          controllerNameDimValue: "controllerName",
+          podUidDimValue: podUid,
+          podNameDimValue: podName,
+          nodeNameDimValue: computer,
           namespaceDimValue: podNamespace,
           containerResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,

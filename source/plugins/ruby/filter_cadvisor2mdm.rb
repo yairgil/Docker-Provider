@@ -135,37 +135,8 @@ module Fluent
           data_type = record["DataType"]
 
           if data_type == "INSIGHTS_METRICS_BLOB"
-            mdmMetrics = []
-            record["DataItems"].each do |dataItem|
-
-              if dataItem["Name"] == Constants::PV_USED_BYTES
-                metricName = dataItem["Name"]
-                usage = dataItem["Value"]
-                capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
-                if capacity != 0
-                  percentage_metric_value = (usage * 100.0) / capacity
-                end
-                @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
-                @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
-
-                resourceDimensions = dataItem["Tags"]
-                thresholdPercentage = @@metric_threshold_hash[metricName]
-
-                flushMetricTelemetry
-                if percentage_metric_value >= thresholdPercentage
-                  setThresholdExceededTelemetry(metricName)
-                  return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
-                                                                             metricName,
-                                                                             percentage_metric_value,
-                                                                             resourceDimensions,
-                                                                             thresholdPercentage)
-                else
-                  return []
-                end # end if block for percentage metric > configured threshold % check
-              end # end if block for dataItem name check
-            end # end for block of looping through data items
-            return []
-          end # end if block for insights metrics check
+            return filterPVInsightsMetrics(record)
+          end
 
           object_name = record["DataItems"][0]["ObjectName"]
           counter_name = record["DataItems"][0]["Collections"][0]["CounterName"]
@@ -246,6 +217,41 @@ module Fluent
         ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
         return [] #return empty array if we ran into any errors
       end
+    end
+
+    def filterPVInsightsMetrics(record)
+      mdmMetrics = []
+      record["DataItems"].each do |dataItem|
+
+        if dataItem["Name"] == Constants::PV_USED_BYTES
+          metricName = dataItem["Name"]
+          usage = dataItem["Value"]
+          capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
+          if capacity != 0
+            percentage_metric_value = (usage * 100.0) / capacity
+          end
+          @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
+          @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
+
+          computer = dataItem["Computer"]
+          resourceDimensions = dataItem["Tags"]
+          thresholdPercentage = @@metric_threshold_hash[metricName]
+
+          flushMetricTelemetry
+          if percentage_metric_value >= thresholdPercentage
+            setThresholdExceededTelemetry(metricName)
+            return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
+                                                                       metricName,
+                                                                       computer,
+                                                                       percentage_metric_value,
+                                                                       resourceDimensions,
+                                                                       thresholdPercentage)
+          else
+            return []
+          end # end if block for percentage metric > configured threshold % check
+        end # end if block for dataItem name check
+      end # end for block of looping through data items
+      return []
     end
 
     def ensure_cpu_memory_capacity_set
