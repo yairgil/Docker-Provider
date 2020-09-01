@@ -387,6 +387,13 @@ spec:
               name: host-log
             - mountPath: /var/lib/docker/containers
               name: containerlog-path
+              readOnly: true
+            - mountPath: /mnt/docker
+              name: containerlog-path-2
+              readOnly: true
+            - mountPath: /mnt/containers
+              name: containerlog-path-3
+              readOnly: true
             - mountPath: /etc/kubernetes/host
               name: azure-json-path
             - mountPath: /etc/omsagent-secret
@@ -444,6 +451,12 @@ spec:
         - name: containerlog-path
           hostPath:
             path: /var/lib/docker/containers
+        - name: containerlog-path-2
+          hostPath:
+            path: /mnt/docker
+        - name: containerlog-path-3
+          hostPath:
+            path: /mnt/containers
         - name: azure-json-path
           hostPath:
             path: /etc/kubernetes
@@ -528,8 +541,6 @@ spec:
               name: docker-sock
             - mountPath: /var/log
               name: host-log
-            - mountPath: /var/lib/docker/containers
-              name: containerlog-path
             - mountPath: /etc/kubernetes/host
               name: azure-json-path
             - mountPath: /etc/omsagent-secret
@@ -588,9 +599,6 @@ spec:
         - name: host-log
           hostPath:
             path: /var/log
-        - name: containerlog-path
-          hostPath:
-            path: /var/lib/docker/containers
         - name: azure-json-path
           hostPath:
             path: /etc/kubernetes
