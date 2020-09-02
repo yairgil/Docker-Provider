@@ -103,6 +103,7 @@ module Fluent
           metricTags = {}
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = KubernetesApiClient.getClusterId
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = KubernetesApiClient.getClusterName
+          metricTags["PVCName"] = item["metadata"]["name"]
           metricTags["Namespace"] = item["metadata"]["namespace"]
           metricTags["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
           metricTags["Kind"] = item["metadata"]["annotations"]["volume.beta.kubernetes.io/storage-provisioner"]
