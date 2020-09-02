@@ -1,6 +1,9 @@
 module Fluent
-  class Kube_PodInventory_Input < Input
+  class Kube_PVInventory_Input < Input
     Plugin.register_input("kubepvinventory", self)
+
+    @@MDMKubePVInventoryTag = "mdm.kubepvinventory"
+
     def initialize
       super
       require "yaml"
@@ -52,7 +55,7 @@ module Fluent
 
         continuationToken = nil
         $log.info("in_kube_pvinventory::enumerate : Getting PVCs from Kube API @ #{Time.now.utc.iso8601}")
-        continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistantvolumeclaims?limit=#{@PVC_CHUNK_SIZE}")
+        continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumeclaims?limit=#{@PVC_CHUNK_SIZE}")
         $log.info("in_kube_pvinventory::enumerate : Done getting PVCs from Kube API @ #{Time.now.utc.iso8601}")
 
         if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
@@ -63,7 +66,7 @@ module Fluent
 
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
-          continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistantvolumeclaims?limit=#{@PVC_CHUNK_SIZE}&continue=#{continuationToken}")
+          continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumeclaims?limit=#{@PVC_CHUNK_SIZE}&continue=#{continuationToken}")
           if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
             parse_and_emit_records(pvInventory, batchTime)
           else
@@ -80,7 +83,7 @@ module Fluent
       end
     end # end enumerate
 
-    def parse_and_emit_records(pvInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
+    def parse_and_emit_records(pvInventory, batchTime = Time.utc.iso8601)
       currentTime = Time.now
       emitTime = currentTime.to_f
       eventStream = MultiEventStream.new
@@ -122,6 +125,7 @@ module Fluent
         end
 
         router.emit_stream(@tag, eventStream) if eventStream
+        router.emit_stream(@@MDMKubePVInventoryTag, eventStream) if eventStream
 
       rescue => errorStr
         $log.warn "Failed in parse_and_emit_record pv inventory: #{errorStr}"
@@ -162,5 +166,5 @@ module Fluent
       @mutex.unlock
     end
 
-  end # Kube_PodInventory_Input
+  end # Kube_PVInventory_Input
 end # module
