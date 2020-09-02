@@ -23,7 +23,7 @@ module Fluent
     config_param :run_interval, :time, :default => 60
     config_param :tag, :string, :default => "oms.containerinsights.KubePVInventory"
 
-    def configure
+    def configure(conf)
       super
     end
 
@@ -92,31 +92,53 @@ module Fluent
       begin
         records = []
         pvInventory["items"].each do |item|
-          record = {}
+          metricItem = {}
+          metricItem["CollectionTime"] = batchTime
+          metricItem["Computer"] = "nodeName"
+          metricItem["Name"] = "pvInventory"
+          metricItem["Value"] = 0
+          metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
+          metricItem["Namespace"] = "container.azm.ms/persistentvolume"
 
-          record["CollectionTime"] = batchTime
-          record["Name"] = item["metadata"]["name"]
-          record["Namespace"] = item["metadata"]["namespace"]
-          record["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-          record["Kind"] = item["metadata"]["annotations"]["volume.beta.kubernetes.io/storage-provisioner"]
-          record["VolumeName"] = item["spec"]["volumeName"]
-          record["StorageClassName"] = item["spec"]["storageClassName"]
-          record["Status"] = item["status"]["phase"]
-          record["AccessMode"] = item["status"]["accessModes"][0]
-          record["RequestSize"] = item["status"]["capacity"]["storage"]
+          metricTags = {}
+          metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = KubernetesApiClient.getClusterId
+          metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = KubernetesApiClient.getClusterName
+          metricTags["Namespace"] = item["metadata"]["namespace"]
+          metricTags["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+          metricTags["Kind"] = item["metadata"]["annotations"]["volume.beta.kubernetes.io/storage-provisioner"]
+          metricTags["VolumeName"] = item["spec"]["volumeName"]
+          metricTags["StorageClassName"] = item["spec"]["storageClassName"]
+          metricTags["Status"] = item["status"]["phase"]
+          metricTags["AccessMode"] = item["status"]["accessModes"][0]
+          metricTags["RequestSize"] = item["status"]["capacity"]["storage"]
 
-          record["PodUid"] = ""
-          record["DiskId"] = ""
-          record["ClusterName"] = KubernetesApiClient.getClusterName
-          record["ClusterId"] = KubernetesApiClient.getClusterId
+          metricItem["Tags"] = metricTags
+          records.push(metricItem)
 
-          records.push(record.dup)
+          #record = {}
+          #record["CollectionTime"] = batchTime
+          #record["Name"] = item["metadata"]["name"]
+          #record["Namespace"] = item["metadata"]["namespace"]
+          #record["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+          #record["Kind"] = item["metadata"]["annotations"]["volume.beta.kubernetes.io/storage-provisioner"]
+          #record["VolumeName"] = item["spec"]["volumeName"]
+          #record["StorageClassName"] = item["spec"]["storageClassName"]
+          #record["Status"] = item["status"]["phase"]
+          #record["AccessMode"] = item["status"]["accessModes"][0]
+          #record["RequestSize"] = item["status"]["capacity"]["storage"]
+
+          #record["PodUid"] = ""
+          #record["DiskId"] = ""
+          #record["ClusterName"] = KubernetesApiClient.getClusterName
+          #record["ClusterId"] = KubernetesApiClient.getClusterId
+
+          #records.push(record.dup)
         end
 
         records.each do |record|
           if !record.nil?
             wrapper = {
-              "DataType" => "KUBE_PV_INVENTORY_BLOB",
+              "DataType" => "INSIGHTS_METRICS_BLOB",
               "IPName" => "ContainerInsights",
               "DataItems" => [record.each { |k, v| record[k] = v }],
             }
@@ -125,7 +147,7 @@ module Fluent
         end
 
         router.emit_stream(@tag, eventStream) if eventStream
-        router.emit_stream(@@MDMKubePVInventoryTag, eventStream) if eventStream
+        router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, eventStream) if eventStream
 
       rescue => errorStr
         $log.warn "Failed in parse_and_emit_record pv inventory: #{errorStr}"
