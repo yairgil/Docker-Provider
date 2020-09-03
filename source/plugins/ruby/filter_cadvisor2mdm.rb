@@ -223,7 +223,7 @@ module Fluent
       mdmMetrics = []
       record["DataItems"].each do |dataItem|
 
-        if dataItem["Name"] == Constants::PV_USED_BYTES
+        if dataItem["Name"] == Constants::PV_USED_BYTES && @metrics_to_collect_hash.key?(dataItem["Name"].downcase)
           metricName = dataItem["Name"]
           usage = dataItem["Value"]
           capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
