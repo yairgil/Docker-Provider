@@ -316,7 +316,7 @@ class CAdvisorMetricsAPIClient
     end
 
     def getPersistentVolumeMetrics(metricJSON, hostName, metricNameToCollect, metricNameToReturn, metricPollTime)
-      telemetryimeDifference = (DateTime.now.to_time.to_i - @@telemetryPVKubeSystemMetricsTimeTracker).abs
+      telemetryTimeDifference = (DateTime.now.to_time.to_i - @@telemetryPVKubeSystemMetricsTimeTracker).abs
       telemetryTimeDifferenceInMinutes = telemetryTimeDifference / 60
 
       metricItems = []
