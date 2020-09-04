@@ -244,7 +244,7 @@ module Fluent
             capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
             if capacity != 0
               percentage_metric_value = (usage * 100.0) / capacity
-           end
+            end
             @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
             @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
