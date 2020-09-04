@@ -81,7 +81,8 @@ class Constants
     CONTAINER_METRICS_HEART_BEAT_EVENT = "ContainerMetricsMdmHeartBeatEvent"
     POD_READY_PERCENTAGE_HEART_BEAT_EVENT = "PodReadyPercentageMdmHeartBeatEvent"
     CONTAINER_RESOURCE_UTIL_HEART_BEAT_EVENT = "ContainerResourceUtilMdmHeartBeatEvent"
-    PV_METRICS_HEART_BEAT_EVENT = "PVUtilMdmHeartBeatEvent"
+    PV_USAGE_HEART_BEAT_EVENT = "PVUsageMdmHeartBeatEvent"
+    PV_KUBE_SYSTEM_METRICS_ENABLED_EVENT = "CollectPVKubeSystemMetricsEnabled"
     TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = 10
     KUBE_STATE_TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = 15
     MDM_TIME_SERIES_FLUSHED_IN_LAST_HOUR = "MdmTimeSeriesFlushedInLastHour"

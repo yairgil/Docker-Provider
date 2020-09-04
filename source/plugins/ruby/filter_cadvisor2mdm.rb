@@ -46,6 +46,7 @@ module Fluent
         @metrics_to_collect_hash = build_metrics_hash
         @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
         @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
+        @@pvUsageTelemetryTimeTracker = DateTime.now.to_time.to_i
 
         # These variables keep track if any resource utilization threshold exceeded in the last 10 minutes
         @containersExceededCpuThreshold = false
@@ -113,21 +114,30 @@ module Fluent
           properties["MemRssThresholdExceededInLastFlushInterval"] = @containersExceededMemRssThreshold
           properties["MemWSetThresholdExceededInLastFlushInterval"] = @containersExceededMemWorkingSetThreshold
           ApplicationInsightsUtility.sendCustomEvent(Constants::CONTAINER_RESOURCE_UTIL_HEART_BEAT_EVENT, properties)
-
-          # Also send for PV usage metrics
-          pvProperties = {}
-          pvProperties["PVUsageThresholdPercentage"] = @@metric_threshold_hash[Constants::PV_USED_BYTES]
-          pvProperties["PVUsageThresholdExceededInLastFlushInterval"] = @pvExceededUsageThreshold
-          ApplicationInsightsUtility.sendCustomEvent(Constants::PV_USAGE_HEART_BEAT_EVENTT, pvProperties)
-
-          @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
           @containersExceededCpuThreshold = false
           @containersExceededMemRssThreshold = false
           @containersExceededMemWorkingSetThreshold = false
-          @pvExceededUsageThreshold = false
+          @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => errorStr
-        @log.info "Error in flushMetricTelemetry: #{errorStr}"
+        @log.info "Error in flushMetricTelemetry: #{errorStr} for container resource util telemetry"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+
+      # Also send for PV usage metrics
+      begin
+        pvTimeDifference = (DateTime.now.to_time.to_i - @@pvUsageTelemetryTimeTracker).abs
+        pvTimeDifferenceInMinutes = pvTimeDifference / 60
+        if (pvTimeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          pvProperties = {}
+          pvProperties["PVUsageThresholdPercentage"] = @@metric_threshold_hash[Constants::PV_USED_BYTES]
+          pvProperties["PVUsageThresholdExceededInLastFlushInterval"] = @pvExceededUsageThreshold
+          ApplicationInsightsUtility.sendCustomEvent(Constants::PV_USAGE_HEART_BEAT_EVENT, pvProperties)
+          @pvExceededUsageThreshold = false
+          @@pvUsageTelemetryTimeTracker = DateTime.now.to_time.to_i
+        end
+      rescue => errorStr
+        @log.info "Error in flushMetricTelemetry: #{errorStr} for PV usage telemetry"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end

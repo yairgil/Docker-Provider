@@ -4,7 +4,6 @@
 require_relative "tomlrb"
 require_relative "ConfigParseErrorLogger"
 require_relative "microsoft/omsagent/plugin/constants"
-require_relative "../../../../source/plugins/ruby/ApplicationInsightsUtility.rb"
 
 @configMapMountPath = "/etc/config/settings/metric_collection_settings"
 @configVersion = ""
@@ -37,18 +36,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   # Get metric collection settings for including or excluding kube-system namespace in PV metrics
   begin
     if !parsedConfig.nil? && !parsedConfig[:metric_collection_settings][:collect_kube_system_pv_metrics].nil? && !parsedConfig[:metric_collection_settings][:collect_kube_system_pv_metrics][:enabled].nil?
-      @collectPVKubeSystemMetrics = parsedConfig[:log_collection_settings][:collect_kube_system_pv_metrics][:enabled]
+      @collectPVKubeSystemMetrics = parsedConfig[:metric_collection_settings][:collect_kube_system_pv_metrics][:enabled]
       puts "config::Using config map setting for PV kube-system collection"
     end
   rescue => errorStr
     ConfigParseErrorLogger.logError("Exception while reading config map settings for PV kube-system collection - #{errorStr}, using defaults, please check config map for errors")
-  end
-
-  begin
-    if @collectPVKubeSystemMetrics
-      ApplicationInsightsUtility.sendCustomEvent("CollectPVKubeSystemMetricsEnabled", {})
-    end
-  rescue => errorStr
   end
 end
 
