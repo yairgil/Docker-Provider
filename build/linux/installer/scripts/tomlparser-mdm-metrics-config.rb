@@ -67,12 +67,20 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "config::Non floating point value or value not convertible to float specified for Memory Working Set threshold, using default "
           @percentageMemoryWorkingSetThreshold = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
         end
-        #Persistent Volume & Persistent Volume Claim
+        #Persistent Volume
+        noPVConfig = false
         pvUsageThreshold = resourceUtilization[:pv_usage_threshold_percentage]
-        pvUsageThresholdFloat = pvUsageThreshold.to_f
-        if pvUsageThresholdFloat.kind_of? Float
-          @percentagePVUsageThreshold = pvUsageThresholdFloat
+        if !pvUsageThreshold.nil?
+          pvUsageThresholdFloat = pvUsageThreshold.to_f
+          if pvUsageThresholdFloat.kind_of? Float
+            @percentagePVUsageThreshold = pvUsageThresholdFloat
+          else 
+            noPVConfig = true
+          end
         else
+          noPVConfig = true
+        end
+        if (noPVConfig)
           puts "config::Non floating point value or value not convertible to float specified for PV threshold, using default "
           @percentagePVUsageThreshold = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
         end

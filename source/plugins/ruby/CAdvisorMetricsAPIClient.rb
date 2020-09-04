@@ -303,7 +303,7 @@ class CAdvisorMetricsAPIClient
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed","containerGpumemoryUsedBytes", metricTime))
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle","containerGpuDutyCycle", metricTime))
 
-          metricDataItems.concat(getPersistentVolumeClaimMetrics(metricInfo, hostName, "usedBytes", Constants::PV_USED_BYTES, metricTime))
+          metricDataItems.concat(getPersistentVolumeMetrics(metricInfo, hostName, "usedBytes", Constants::PV_USED_BYTES, metricTime))
         else
           @Log.warn("Couldn't get Insights metrics information for host: #{hostName} os:#{operatingSystem}")
         end
@@ -314,29 +314,29 @@ class CAdvisorMetricsAPIClient
       return metricDataItems
     end
 
-    def getPersistentVolumeClaimMetrics(metricJSON, hostName, metricNameToCollect, metricNameToReturn, metricPollTime)
+    def getPersistentVolumeMetrics(metricJSON, hostName, metricNameToCollect, metricNameToReturn, metricPollTime)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       clusterName = KubernetesApiClient.getClusterName
       begin
         metricInfo = metricJSON
         metricInfo["pods"].each do |pod|
-          podUid = pod["podRef"]["uid"]
-          podName = pod["podRef"]["name"]
-          podNamespace = pod["podRef"]["namespace"]
 
-          excludeNamespace = false
-          if (podNamespace.include? "kube-system") && @pvKubeSystemCollectionMetricsEnabled == "false"
-            excludeNamespace = true
+          podNamespace = pod["podRef"]["namespace"]
+          includeNamespace = false
+          if (podNamespace.downcase == "kube-system") && @pvKubeSystemCollectionMetricsEnabled == "false"
+            includeNamespace = true
           end
 
-          if (!excludeNamespace && !pod["volume"].nil?)
+          if (!includeNamespace && !pod["volume"].nil?)
             pod["volume"].each do |volume|
               if (!volume["pvcRef"].nil?)
                 pvcRef = volume["pvcRef"]
                 if (!pvcRef["name"].nil?)
 
                   # A PVC exists on this volume
+                  podUid = pod["podRef"]["uid"]
+                  podName = pod["podRef"]["name"]
                   pvcName = pvcRef["name"]
                   pvName = volume["name"]
 
@@ -344,7 +344,7 @@ class CAdvisorMetricsAPIClient
                   metricItem["CollectionTime"] = metricPollTime
                   metricItem["Computer"] = hostName
                   metricItem["Name"] = metricNameToReturn
-                  metricItem["Value"] = volume[metricNameToCollect]
+                  metricItem["Value"] = volume[metricNasmeToCollect]
                   metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
                   metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
                       
@@ -367,7 +367,7 @@ class CAdvisorMetricsAPIClient
           end
         end
       rescue => errorStr
-        @Log.warn("getPersistentVolumeClaimMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
+        @Log.warn("getPersistentVolumeMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
         return metricItems
       end
       return metricItems

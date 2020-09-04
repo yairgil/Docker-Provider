@@ -96,26 +96,24 @@ class MdmAlertTemplates
         "data": {
             "baseData": {
                 "metric": "%{metricName}",
-                "namespace": "insights.container/persistentvolume",
+                "namespace": "insights.container/persistentvolumes",
                 "dimNames": [
-                    "podUID",
                     "podName",
-                    "computerName",
-                    "Kubernetes namespace",
+                    "node",
+                    "kubernetesNamespace",
                     "thresholdPercentage"
                 ],
                 "series": [
                 {
                     "dimValues": [
-                        "%{podUidDimValue}",
                         "%{podNameDimValue}",
                         "%{computerNameDimValue}",
                         "%{namespaceDimValue}",
                         "%{thresholdPercentageDimValue}"
                     ],
-                    "min": %{containerResourceUtilizationPercentage},
-                    "max": %{containerResourceUtilizationPercentage},
-                    "sum": %{containerResourceUtilizationPercentage},
+                    "min": %{pvResourceUtilizationPercentage},
+                    "max": %{pvResourceUtilizationPercentage},
+                    "sum": %{pvResourceUtilizationPercentage},
                     "count": 1
                 }
                 ]
