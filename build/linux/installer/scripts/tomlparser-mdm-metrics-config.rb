@@ -78,20 +78,20 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
     # Get mdm metrics config settings for PV utilization
     begin
-      usingPVThresholdConfig = false
-      pvUtilization = parsedConfig[:alertable_metrics_configuration_settings][:pv_utilization_thresholds]
+      isUsingPVThresholdConfig = false
+      pvUtilizationThresholds = parsedConfig[:alertable_metrics_configuration_settings][:pv_utilization_thresholds]
       if !pvUtilization.nil?
-        pvUsageThreshold = pvUtilization[:pv_usage_threshold_percentage]
+        pvUsageThreshold = pvUtilizationThresholds[:pv_usage_threshold_percentage]
         if !pvUsageThreshold.nil?
           pvUsageThresholdFloat = pvUsageThreshold.to_f
           if pvUsageThresholdFloat.kind_of? Float
             @percentagePVUsageThreshold = pvUsageThresholdFloat
-            usingPVThresholdConfig = true
+            isUsingPVThresholdConfig = true
           end
         end
       end
 
-      if usingPVThresholdConfig
+      if isUsingPVThresholdConfig
         puts "config::Using config map settings for MDM metric configuration settings for PV utilization"
       else
         puts "config::Non floating point value or value not convertible to float specified for PV threshold, using default "
