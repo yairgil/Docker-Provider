@@ -498,7 +498,7 @@ try {
     helm repo add $helmChartRepoName $helmChartRepoUrl
     Write-Host("updating helm repo to get latest version of charts")
     helm repo update
-    $helmParameters = "omsagent.secret.wsid=$workspaceGUID,omsagent.secret.key=$workspacePrimarySharedKey,omsagent.env.clusterId=$clusterResourceId"
+    $helmParameters = "omsagent.secret.wsid=$workspaceGUID,omsagent.secret.key=$workspacePrimarySharedKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion"
     if([string]::IsNullOrEmpty($proxyEndpoint) -eq $false) {
         Write-Host("using proxy endpoint since its provided")
         $helmParameters = $helmParameters + ",omsagent.proxy=$proxyEndpoint"
