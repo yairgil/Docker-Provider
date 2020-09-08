@@ -309,7 +309,9 @@ create_default_log_analytics_workspace()
 
   # extract subscription from cluster resource id
   local subscriptionId="$(echo $clusterResourceId | cut -d'/' -f3)"
-  local clusterRegion=$(az resource show --ids ${clusterResourceId} --query location)
+  local clusterRegion=$(az resource show --ids ${clusterResourceId} --query location -o tsv)
+  # convert cluster region to lower case
+  clusterRegion=$(echo $clusterRegion | tr "[:upper:]" "[:lower:]")
   echo "cluster region:" $clusterRegion
 
   # mapping fors for default Azure Log Analytics workspace
