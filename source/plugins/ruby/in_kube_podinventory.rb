@@ -198,7 +198,7 @@ module Fluent
               if !volume["persistentVolumeClaim"].nil? && !volume["persistentVolumeClaim"]["claimName"].nil?
                 $log.info "pvc on the pod"
 
-                pvc = podNamespace + "/" + volume["persistentVolumeClaim"]["claimName"]
+                pvc = podNameSpace + "/" + volume["persistentVolumeClaim"]["claimName"]
 
                 $log.info "pv: #{pvc}"
                 pvcs.push(pvc)

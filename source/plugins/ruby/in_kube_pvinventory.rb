@@ -119,10 +119,12 @@ module Fluent
         records = []
         pvInventory["items"].each do |item|
 
+          $log.info "item: #{item}"
+
           # Check if the PV has a PVC
           hasPVC = false
           if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
-            item["spec"]["claimRef"].each do |claimRef|
+              claimRef = item["spec"]["claimRef"]
               if claimRef["kind"] == "PersistentVolumeClaim"
                 hasPVC = true
                 namespace = claimRef["namespace"]
