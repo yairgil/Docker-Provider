@@ -3,6 +3,7 @@ module Fluent
     Plugin.register_input("kubepvinventory", self)
 
     @@MDMKubePVInventoryTag = "mdm.kubepvinventory"
+    @@hostName = (OMS::Common.get_hostname)
 
     def initialize
       super
@@ -17,7 +18,9 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      @PVC_CHUNK_SIZE = "1500"
+      @PV_CHUNK_SIZE = "1500"
+      @pvCount = 0
+      @diskCount = 0
     end
 
     config_param :run_interval, :time, :default => 60
@@ -33,7 +36,7 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
-        @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
+        @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
       end
     end
 
@@ -50,12 +53,15 @@ module Fluent
     def enumerate
       begin
         pvInventory = nil
+        telemetryFlush = false
+        @pvCount = 0
+        @diskCount = 0
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
 
         continuationToken = nil
         $log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
-        continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PVC_CHUNK_SIZE}")
+        continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PV_CHUNK_SIZE}")
         $log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
 
         if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
@@ -64,9 +70,9 @@ module Fluent
           $log.warn "in_kube_pvinventory::enumerate:Received empty pvInventory"
         end
 
-        #If we receive a continuation token, make calls, process and flush data until we have processed all data
+        # If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
-          continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PVC_CHUNK_SIZE}&continue=#{continuationToken}")
+          continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PV_CHUNK_SIZE}&continue=#{continuationToken}")
           if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
             parse_and_emit_records(pvInventory, batchTime)
           else
@@ -76,6 +82,24 @@ module Fluent
 
         # Setting this to nil so that we dont hold memory until GC kicks in
         pvInventory = nil
+
+        # Adding telemetry to send pod telemetry every 5 minutes
+        timeDifference = (DateTime.now.to_time.to_i - @@pvTelemetryTimeTracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if (timeDifferenceInMinutes >= 5)
+          telemetryFlush = true
+        end
+        
+        # Flush AppInsights telemetry once all the processing is done
+        if telemetryFlush == true
+          telemetryProperties = {}
+          telemetryProperties["Computer"] = @@hostName
+          ApplicationInsightsUtility.sendCustomEvent("KubePVInventoryHeartBeatEvent", telemetryProperties)
+          ApplicationInsightsUtility.sendMetricTelemetry("PVCount", @pvCount, {})
+          ApplicationInsightsUtility.sendMetricTelemetry("DiskCount", @diskCount, {})
+          @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
+        end
+
       rescue => errorStr
         $log.warn "in_kube_pvinventory::enumerate:Failed in enumerate: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
@@ -93,34 +117,46 @@ module Fluent
         records = []
         pvInventory["items"].each do |item|
 
-          pvHasPVC = false
+          # Check if the PV has a PVC
+          hasPVC = false
           if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
             item["spec"]["claimRef"].each do |claimRef|
               if claimRef["kind"] == "PersistentVolumeClaim"
+                hasPVC = true
                 namespace = claimRef["namespace"]
                 pvcName = claimRef["name"]
-                pvHasPVC = true
               end
             end
           end
-
-          if !pvHasPVC
+          # Return if no PVC
+          if !hasPVC
             return records
+          end
+
+          # Check if the PV is an Azure Disk
+          isAzureDisk = false
+          if !item["spec"].nil? && !item["spec"]["azureDisk"].nil?
+            isAzureDisk = true
+            azureDisk = item["spec"]["azureDisk"]
+            diskName = azureDisk["diskName"]
+            diskUri = azureDisk["diskURI"]
+            @diskCount += 1
           end
 
           metricItem = {}
           metricItem["CollectionTime"] = batchTime
-          metricItem["Computer"] = ""
+          metricItem["Computer"] = @@hostName
           metricItem["Name"] = "pvInventory"
           metricItem["Value"] = 0
           metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
-          metricItem["Namespace"] = "container.azm.ms/pv"
+          metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
 
           metricTags = {}
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = KubernetesApiClient.getClusterId
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = KubernetesApiClient.getClusterName
           metricTags["PVName"] = item["metadata"]["name"]
           metricTags["PVCName"] = pvcName
+          metricTags["PodUID"] = ""
           metricTags["Namespace"] = namespace
           metricTags["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
           metricTags["Kind"] = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"]
@@ -128,29 +164,17 @@ module Fluent
           metricTags["Status"] = item["status"]["phase"]
           metricTags["AccessMode"] = item["spec"]["accessModes"][0]
           metricTags["RequestSize"] = item["spec"]["capacity"]["storage"]
+          if isAzureDisk
+            metricTags["DiskName"] = diskName
+            metricTags["DiskURI"] = diskUri
+          end
 
           metricItem["Tags"] = metricTags
           records.push(metricItem)
-
-          #record = {}
-          #record["CollectionTime"] = batchTime
-          #record["Name"] = item["metadata"]["name"]
-          #record["Namespace"] = item["metadata"]["namespace"]
-          #record["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-          #record["Kind"] = item["metadata"]["annotations"]["volume.beta.kubernetes.io/storage-provisioner"]
-          #record["VolumeName"] = item["spec"]["volumeName"]
-          #record["StorageClassName"] = item["spec"]["storageClassName"]
-          #record["Status"] = item["status"]["phase"]
-          #record["AccessMode"] = item["status"]["accessModes"][0]
-          #record["RequestSize"] = item["status"]["capacity"]["storage"]
-
-          #record["PodUid"] = ""
-          #record["DiskId"] = ""
-          #record["ClusterName"] = KubernetesApiClient.getClusterName
-          #record["ClusterId"] = KubernetesApiClient.getClusterId
-
-          #records.push(record.dup)
+          $log.info("PV inventory record: #{metricItem}")
         end
+
+        @pvCount += records.length
 
         records.each do |record|
           if !record.nil?
@@ -170,7 +194,7 @@ module Fluent
         $log.warn "Failed in parse_and_emit_record pv inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-      end #begin block end
+      end
     end
 
     def run_periodic
