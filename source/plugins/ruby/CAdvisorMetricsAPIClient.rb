@@ -54,6 +54,7 @@ class CAdvisorMetricsAPIClient
   @@winNodePrevMetricRate = {}
   @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
+  @@telemetryPVKubeSystemMetricsTimeTracker = DateTime.now.to_time.to_i
 
   #Containers a hash of node name and the last time telemetry was sent for this node
   @@nodeTelemetryTimeTracker = {}
@@ -303,7 +304,7 @@ class CAdvisorMetricsAPIClient
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed","containerGpumemoryUsedBytes", metricTime))
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle","containerGpuDutyCycle", metricTime))
 
-          metricDataItems.concat(getPersistentVolumeClaimMetrics(metricInfo, hostName, "usedBytes", Constants::PV_USED_BYTES, metricTime))
+          metricDataItems.concat(getPersistentVolumeMetrics(metricInfo, hostName, "usedBytes", Constants::PV_USED_BYTES, metricTime))
         else
           @Log.warn("Couldn't get Insights metrics information for host: #{hostName} os:#{operatingSystem}")
         end
@@ -314,19 +315,20 @@ class CAdvisorMetricsAPIClient
       return metricDataItems
     end
 
-    def getPersistentVolumeClaimMetrics(metricJSON, hostName, metricNameToCollect, metricNameToReturn, metricPollTime)
+    def getPersistentVolumeMetrics(metricJSON, hostName, metricNameToCollect, metricNameToReturn, metricPollTime)
+      telemetryTimeDifference = (DateTime.now.to_time.to_i - @@telemetryPVKubeSystemMetricsTimeTracker).abs
+      telemetryTimeDifferenceInMinutes = telemetryTimeDifference / 60
+
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       clusterName = KubernetesApiClient.getClusterName
       begin
         metricInfo = metricJSON
         metricInfo["pods"].each do |pod|
-          podUid = pod["podRef"]["uid"]
-          podName = pod["podRef"]["name"]
-          podNamespace = pod["podRef"]["namespace"]
 
+          podNamespace = pod["podRef"]["namespace"]
           excludeNamespace = false
-          if (podNamespace.include? "kube-system") && @pvKubeSystemCollectionMetricsEnabled == "false"
+          if (podNamespace.downcase == "kube-system") && @pvKubeSystemCollectionMetricsEnabled == "false"
             excludeNamespace = true
           end
 
@@ -337,8 +339,10 @@ class CAdvisorMetricsAPIClient
                 if (!pvcRef["name"].nil?)
 
                   # A PVC exists on this volume
+                  podUid = pod["podRef"]["uid"]
+                  podName = pod["podRef"]["name"]
                   pvcName = pvcRef["name"]
-                  pvName = volume["name"]
+                  volumeName = volume["name"]
 
                   metricItem = {}
                   metricItem["CollectionTime"] = metricPollTime
@@ -353,7 +357,7 @@ class CAdvisorMetricsAPIClient
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_UID] = podUid
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = podName
-                  metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_NAME] = pvName
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_VOLUME_NAME] = volumeName
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_PVC_NAME] = pvcName
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAMESPACE] = podNamespace
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = volume["capacityBytes"]
@@ -367,9 +371,20 @@ class CAdvisorMetricsAPIClient
           end
         end
       rescue => errorStr
-        @Log.warn("getPersistentVolumeClaimMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
+        @Log.warn("getPersistentVolumeMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
         return metricItems
       end
+
+      # If kube-system metrics collection enabled, send telemetry
+      begin
+        if telemetryTimeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES && @pvKubeSystemCollectionMetricsEnabled == "true"
+          ApplicationInsightsUtility.sendCustomEvent(Constants::PV_KUBE_SYSTEM_METRICS_ENABLED_EVENT, {})
+          @@telemetryPVKubeSystemMetricsTimeTracker = DateTime.now.to_time.to_i
+        end
+      rescue => errorStr
+        @Log.warn("getPersistentVolumeMetrics kube-system metrics enabled telemetry failed: #{errorStr}")
+      end
+
       return metricItems
     end
 

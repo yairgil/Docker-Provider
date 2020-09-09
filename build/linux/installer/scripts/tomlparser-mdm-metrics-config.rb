@@ -36,7 +36,7 @@ end
 # Use the ruby structure created after config parsing to set the right values to be used for MDM metric configuration settings
 def populateSettingValuesFromConfigMap(parsedConfig)
   if !parsedConfig.nil? && !parsedConfig[:alertable_metrics_configuration_settings].nil?
-    # Get mdm metrics config settings for resource utilization
+    # Get mdm metrics config settings for container resource utilization
     begin
       resourceUtilization = parsedConfig[:alertable_metrics_configuration_settings][:container_resource_utilization_thresholds]
       if !resourceUtilization.nil?
@@ -67,22 +67,38 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "config::Non floating point value or value not convertible to float specified for Memory Working Set threshold, using default "
           @percentageMemoryWorkingSetThreshold = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
         end
-        #Persistent Volume & Persistent Volume Claim
-        pvUsageThreshold = resourceUtilization[:pv_usage_threshold_percentage]
-        pvUsageThresholdFloat = pvUsageThreshold.to_f
-        if pvUsageThresholdFloat.kind_of? Float
-          @percentagePVUsageThreshold = pvUsageThresholdFloat
-        else
-          puts "config::Non floating point value or value not convertible to float specified for PV threshold, using default "
-          @percentagePVUsageThreshold = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
-        end
-        puts "config::Using config map settings for MDM metric configuration settings for resource utilization"
+        puts "config::Using config map settings for MDM metric configuration settings for container resource utilization"
       end
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for MDM metric configuration settings for resource utilization - #{errorStr}, using defaults, please check config map for errors")
       @percentageCpuUsageThreshold = Constants::DEFAULT_MDM_CPU_UTILIZATION_THRESHOLD
       @percentageMemoryRssThreshold = Constants::DEFAULT_MDM_MEMORY_RSS_THRESHOLD
       @percentageMemoryWorkingSetThreshold = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
+    end
+
+    # Get mdm metrics config settings for PV utilization
+    begin
+      isUsingPVThresholdConfig = false
+      pvUtilizationThresholds = parsedConfig[:alertable_metrics_configuration_settings][:pv_utilization_thresholds]
+      if !pvUtilization.nil?
+        pvUsageThreshold = pvUtilizationThresholds[:pv_usage_threshold_percentage]
+        if !pvUsageThreshold.nil?
+          pvUsageThresholdFloat = pvUsageThreshold.to_f
+          if pvUsageThresholdFloat.kind_of? Float
+            @percentagePVUsageThreshold = pvUsageThresholdFloat
+            isUsingPVThresholdConfig = true
+          end
+        end
+      end
+
+      if isUsingPVThresholdConfig
+        puts "config::Using config map settings for MDM metric configuration settings for PV utilization"
+      else
+        puts "config::Non floating point value or value not convertible to float specified for PV threshold, using default "
+        @percentagePVUsageThreshold = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
+      end
+    rescue => errorStr
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for MDM metric configuration settings for PV utilization - #{errorStr}, using defaults, please check config map for errors")
       @percentagePVUsageThreshold = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
     end
   end

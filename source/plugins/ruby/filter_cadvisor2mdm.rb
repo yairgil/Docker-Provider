@@ -46,6 +46,7 @@ module Fluent
         @metrics_to_collect_hash = build_metrics_hash
         @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
         @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
+        @@pvUsageTelemetryTimeTracker = DateTime.now.to_time.to_i
 
         # These variables keep track if any resource utilization threshold exceeded in the last 10 minutes
         @containersExceededCpuThreshold = false
@@ -57,7 +58,6 @@ module Fluent
         if @process_incoming_stream
           @cpu_capacity = 0.0
           @memory_capacity = 0.0
-          @pv_capacity = 0.0
           ensure_cpu_memory_capacity_set
           @containerCpuLimitHash = {}
           @containerMemoryLimitHash = {}
@@ -109,21 +109,35 @@ module Fluent
           properties["CpuThresholdPercentage"] = @@metric_threshold_hash[Constants::CPU_USAGE_NANO_CORES]
           properties["MemoryRssThresholdPercentage"] = @@metric_threshold_hash[Constants::MEMORY_RSS_BYTES]
           properties["MemoryWorkingSetThresholdPercentage"] = @@metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES]
-          properties["PVUsageThresholdPercentage"] = @@metric_threshold_hash[Constants::PV_USED_BYTES]
           # Keeping track of any containers that have exceeded threshold in the last flush interval
           properties["CpuThresholdExceededInLastFlushInterval"] = @containersExceededCpuThreshold
           properties["MemRssThresholdExceededInLastFlushInterval"] = @containersExceededMemRssThreshold
           properties["MemWSetThresholdExceededInLastFlushInterval"] = @containersExceededMemWorkingSetThreshold
-          properties["PVUsageThresholdExceededInLastFlushInterval"] = @pvExceededUsageThreshold
           ApplicationInsightsUtility.sendCustomEvent(Constants::CONTAINER_RESOURCE_UTIL_HEART_BEAT_EVENT, properties)
-          @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
           @containersExceededCpuThreshold = false
           @containersExceededMemRssThreshold = false
           @containersExceededMemWorkingSetThreshold = false
-          @pvExceededUsageThreshold = false
+          @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => errorStr
-        @log.info "Error in flushMetricTelemetry: #{errorStr}"
+        @log.info "Error in flushMetricTelemetry: #{errorStr} for container resource util telemetry"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+
+      # Also send for PV usage metrics
+      begin
+        pvTimeDifference = (DateTime.now.to_time.to_i - @@pvUsageTelemetryTimeTracker).abs
+        pvTimeDifferenceInMinutes = pvTimeDifference / 60
+        if (pvTimeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          pvProperties = {}
+          pvProperties["PVUsageThresholdPercentage"] = @@metric_threshold_hash[Constants::PV_USED_BYTES]
+          pvProperties["PVUsageThresholdExceededInLastFlushInterval"] = @pvExceededUsageThreshold
+          ApplicationInsightsUtility.sendCustomEvent(Constants::PV_USAGE_HEART_BEAT_EVENT, pvProperties)
+          @pvExceededUsageThreshold = false
+          @@pvUsageTelemetryTimeTracker = DateTime.now.to_time.to_i
+        end
+      rescue => errorStr
+        @log.info "Error in flushMetricTelemetry: #{errorStr} for PV usage telemetry"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
@@ -220,38 +234,44 @@ module Fluent
     end
 
     def filterPVInsightsMetrics(record)
-      mdmMetrics = []
-      record["DataItems"].each do |dataItem|
+      begin
+        mdmMetrics = []
+        record["DataItems"].each do |dataItem|
 
-        if dataItem["Name"] == Constants::PV_USED_BYTES
-          metricName = dataItem["Name"]
-          usage = dataItem["Value"]
-          capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
-          if capacity != 0
-            percentage_metric_value = (usage * 100.0) / capacity
-          end
-          @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
-          @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
+          if dataItem["Name"] == Constants::PV_USED_BYTES && @metrics_to_collect_hash.key?(dataItem["Name"].downcase)
+            metricName = dataItem["Name"]
+            usage = dataItem["Value"]
+            capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
+            if capacity != 0
+              percentage_metric_value = (usage * 100.0) / capacity
+            end
+            @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
+            @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
-          computer = dataItem["Computer"]
-          resourceDimensions = dataItem["Tags"]
-          thresholdPercentage = @@metric_threshold_hash[metricName]
+            computer = dataItem["Computer"]
+            resourceDimensions = dataItem["Tags"]
+            thresholdPercentage = @@metric_threshold_hash[metricName]
 
-          flushMetricTelemetry
-          if percentage_metric_value >= thresholdPercentage
-            setThresholdExceededTelemetry(metricName)
-            return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
+            flushMetricTelemetry
+            if percentage_metric_value >= thresholdPercentage
+              setThresholdExceededTelemetry(metricName)
+              return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
                                                                        metricName,
                                                                        computer,
                                                                        percentage_metric_value,
                                                                        resourceDimensions,
                                                                        thresholdPercentage)
-          else
-            return []
-          end # end if block for percentage metric > configured threshold % check
-        end # end if block for dataItem name check
-      end # end for block of looping through data items
-      return []
+            else
+              return []
+            end # end if block for percentage metric > configured threshold % check
+          end # end if block for dataItem name check
+        end # end for block of looping through data items
+        return []
+      rescue Exception => e
+        @log.info "Error processing cadvisor insights metrics record Exception: #{e.class} Message: #{e.message}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        return [] #return empty array if we ran into any errors
+      end
     end
 
     def ensure_cpu_memory_capacity_set

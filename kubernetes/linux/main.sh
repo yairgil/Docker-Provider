@@ -236,6 +236,14 @@ cat config_mdm_metrics_env_var | while read line; do
 done
 source config_mdm_metrics_env_var
 
+#Parse the configmap to set the right environment variables for metric collection settings
+/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-metric-collection-config.rb
+
+cat config_metric_collection_env_var | while read line; do
+    echo $line >> ~/.bashrc
+done
+source config_metric_collection_env_var
+
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
 #Defaults to use port 10255

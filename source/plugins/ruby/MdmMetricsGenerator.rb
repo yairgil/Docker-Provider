@@ -35,6 +35,9 @@ class MdmMetricsGenerator
     Constants::CPU_USAGE_NANO_CORES => Constants::MDM_CONTAINER_CPU_UTILIZATION_METRIC,
     Constants::MEMORY_RSS_BYTES => Constants::MDM_CONTAINER_MEMORY_RSS_UTILIZATION_METRIC,
     Constants::MEMORY_WORKING_SET_BYTES => Constants::MDM_CONTAINER_MEMORY_WORKING_SET_UTILIZATION_METRIC,
+  }
+
+  @@pod_metric_name_metric_percentage_name_hash = {
     Constants::PV_USED_BYTES => Constants::MDM_PV_UTILIZATION_METRIC
   }
 
@@ -270,12 +273,11 @@ class MdmMetricsGenerator
 
         resourceUtilRecord = MdmAlertTemplates::PV_resource_utilization_template % {
           timestamp: recordTimeStamp,
-          metricName: @@container_metric_name_metric_percentage_name_hash[metricName],
-          podUidDimValue: podUid,
+          metricName: @@pod_metric_name_metric_percentage_name_hash[metricName],
           podNameDimValue: podName,
           computerNameDimValue: computer,
           namespaceDimValue: podNamespace,
-          containerResourceUtilizationPercentage: percentageMetricValue,
+          pvResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
         records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
