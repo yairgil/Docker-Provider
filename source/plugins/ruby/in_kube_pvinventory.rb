@@ -11,7 +11,6 @@ module Fluent
       require "yajl/json_gem"
       require "yajl"
       require "time"
-
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
@@ -21,6 +20,7 @@ module Fluent
       @PV_CHUNK_SIZE = "1500"
       @pvCount = 0
       @diskCount = 0
+      @pvKindToCountHash = {}
     end
 
     config_param :run_interval, :time, :default => 60
@@ -56,6 +56,7 @@ module Fluent
         telemetryFlush = false
         @pvCount = 0
         @diskCount = 0
+        @pvKindToCountHash = {}
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
 
@@ -94,6 +95,7 @@ module Fluent
         if telemetryFlush == true
           telemetryProperties = {}
           telemetryProperties["Computer"] = @@hostName
+          telemetryProperties["CountsOfPVKinds"] = @pvKindToCountHash
           ApplicationInsightsUtility.sendCustomEvent("KubePVInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PVCount", @pvCount, {})
           ApplicationInsightsUtility.sendMetricTelemetry("DiskCount", @diskCount, {})
@@ -124,12 +126,11 @@ module Fluent
           # Check if the PV has a PVC
           hasPVC = false
           if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
-              claimRef = item["spec"]["claimRef"]
-              if claimRef["kind"] == "PersistentVolumeClaim"
-                hasPVC = true
-                namespace = claimRef["namespace"]
-                pvcName = claimRef["name"]
-              end
+            claimRef = item["spec"]["claimRef"]
+            if claimRef["kind"] == "PersistentVolumeClaim"
+              hasPVC = true
+              namespace = claimRef["namespace"]
+              pvcName = claimRef["name"]
             end
           end
           # Return if no PVC
@@ -151,6 +152,15 @@ module Fluent
 
           $log.info "isAzureDisk: #{isAzureDisk}"
 
+          if !item["metadata"].nil? && !item["metadata"]["annotations"].nil? && !item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"].nil
+            kind = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"]
+            if (@pvKindToCountHash.has_key? kind)
+              @pvKindToCountHash[kind] += 1
+            else
+              @pvKindToCountHash[kind] = 1
+            end
+          end
+
           metricItem = {}
           metricItem["CollectionTime"] = batchTime
           metricItem["Computer"] = @@hostName
@@ -169,10 +179,10 @@ module Fluent
           metricTags["PodUID"] = ""
           metricTags["PVCNamespace"] = namespace
           metricTags["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-          metricTags["Kind"] = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"]
+          metricTags["Kind"] = kind
           metricTags["StorageClassName"] = item["spec"]["storageClassName"]
           metricTags["Status"] = item["status"]["phase"]
-          metricTags["AccessMode"] = item["spec"]["accessModes"][0]
+          metricTags["AccessMode"] = item["spec"]["accessModes"]
           metricTags["RequestSize"] = item["spec"]["capacity"]["storage"]
           if isAzureDisk
             metricTags["DiskName"] = diskName
@@ -190,7 +200,9 @@ module Fluent
 
         @pvCount += records.length
 
-        $log.info "pvCount: #{pvCount}"
+        $log.info "pvCount: #{@pvCount}"
+        $log.info "diskCount: #{@diskCount}"
+        $log.info "pvKindToCountHash: #{@pvKindToCountHash}"
 
         records.each do |record|
           if !record.nil?
@@ -203,7 +215,7 @@ module Fluent
           end
         end
 
-        router.emit_stream(@tag, eventStream) if eventStream
+        #router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, eventStream) if eventStream
 
       rescue => errorStr
