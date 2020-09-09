@@ -54,9 +54,9 @@ module Fluent
         batchTime = currentTime.utc.iso8601
 
         continuationToken = nil
-        $log.info("in_kube_pvinventory::enumerate : Getting PVCs from Kube API @ #{Time.now.utc.iso8601}")
-        continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumeclaims?limit=#{@PVC_CHUNK_SIZE}")
-        $log.info("in_kube_pvinventory::enumerate : Done getting PVCs from Kube API @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
+        continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PVC_CHUNK_SIZE}")
+        $log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
 
         if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
           parse_and_emit_records(pvInventory, batchTime)
@@ -66,7 +66,7 @@ module Fluent
 
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
-          continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumeclaims?limit=#{@PVC_CHUNK_SIZE}&continue=#{continuationToken}")
+          continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PVC_CHUNK_SIZE}&continue=#{continuationToken}")
           if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
             parse_and_emit_records(pvInventory, batchTime)
           else
@@ -92,26 +92,42 @@ module Fluent
       begin
         records = []
         pvInventory["items"].each do |item|
+
+          pvHasPVC = false
+          if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
+            item["spec"]["claimRef"].each do |claimRef|
+              if claimRef["kind"] == "PersistentVolumeClaim"
+                namespace = claimRef["namespace"]
+                pvcName = claimRef["name"]
+                pvHasPVC = true
+              end
+            end
+          end
+
+          if !pvHasPVC
+            return records
+          end
+
           metricItem = {}
           metricItem["CollectionTime"] = batchTime
-          metricItem["Computer"] = "nodeName"
+          metricItem["Computer"] = ""
           metricItem["Name"] = "pvInventory"
           metricItem["Value"] = 0
           metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
-          metricItem["Namespace"] = "container.azm.ms/persistentvolume"
+          metricItem["Namespace"] = "container.azm.ms/pv"
 
           metricTags = {}
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = KubernetesApiClient.getClusterId
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = KubernetesApiClient.getClusterName
-          metricTags["PVCName"] = item["metadata"]["name"]
-          metricTags["Namespace"] = item["metadata"]["namespace"]
+          metricTags["PVName"] = item["metadata"]["name"]
+          metricTags["PVCName"] = pvcName
+          metricTags["Namespace"] = namespace
           metricTags["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-          metricTags["Kind"] = item["metadata"]["annotations"]["volume.beta.kubernetes.io/storage-provisioner"]
-          metricTags["VolumeName"] = item["spec"]["volumeName"]
+          metricTags["Kind"] = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"]
           metricTags["StorageClassName"] = item["spec"]["storageClassName"]
           metricTags["Status"] = item["status"]["phase"]
-          metricTags["AccessMode"] = item["status"]["accessModes"][0]
-          metricTags["RequestSize"] = item["status"]["capacity"]["storage"]
+          metricTags["AccessMode"] = item["spec"]["accessModes"][0]
+          metricTags["RequestSize"] = item["spec"]["capacity"]["storage"]
 
           metricItem["Tags"] = metricTags
           records.push(metricItem)

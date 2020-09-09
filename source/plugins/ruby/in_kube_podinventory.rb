@@ -88,36 +88,36 @@ module Fluent
         end
 
         # Get PVCs first so that we dont need to make a call for every chunk
-        pvInfo = nil
-        $log.info("in_kube_podinventory::enumerate : Getting PVCs from Kube API @ #{Time.now.utc.iso8601}")
-        pvInfo = KubernetesApiClient.getKubeResourceInfo("persistentvolumeclaims")
-        $log.info("in_kube_podinventory::enumerate : Done getting PVCs from Kube API @ #{Time.now.utc.iso8601}")
+        #pvInfo = nil
+        #$log.info("in_kube_podinventory::enumerate : Getting PVCs from Kube API @ #{Time.now.utc.iso8601}")
+        #pvInfo = KubernetesApiClient.getKubeResourceInfo("persistentvolumeclaims")
+        #$log.info("in_kube_podinventory::enumerate : Done getting PVCs from Kube API @ #{Time.now.utc.iso8601}")
 
-        if !pvInfo.nil?
-          $log.info("in_kube_podinventory::enumerate:Start:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
-          pvInventory = Yajl::Parser.parse(StringIO.new(pvInfo.body))
-          $log.info("in_kube_podinventory::enumerate:End:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
-          pvInfo = nil
-        end
+        #if !pvInfo.nil?
+          #$log.info("in_kube_podinventory::enumerate:Start:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
+          #pvInventory = Yajl::Parser.parse(StringIO.new(pvInfo.body))
+          #$log.info("in_kube_podinventory::enumerate:End:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
+          #pvInfo = nil
+        #end
 
-        pvNameToInventoryHash = {}
-        if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
-          pvInventory["items"].each do |item|
-            pvRecord = {}
-            pvRecord["Name"] = item["metadata"]["name"]
-            pvRecord["Namespace"] = item["metadata"]["namespace"]
-            pvRecord["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-            pvRecord["Kind"] = item["metadata"]["annotations"]["volume.beta.kubernetes.io/storage-provisioner"]
-            pvRecord["VolumeName"] = item["spec"]["volumeName"]
-            pvRecord["StorageClassName"] = item["spec"]["storageClassName"]
-            pvRecord["Status"] = item["status"]["phase"]
-            pvRecord["AccessMode"] = item["status"]["accessModes"][0]
-            pvRecord["RequestSize"] = item["status"]["capacity"]["storage"]
+        #pvNameToInventoryHash = {}
+        #if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
+          #pvInventory["items"].each do |item|
+            #pvRecord = {}
+            #pvRecord["Name"] = item["metadata"]["name"]
+            #pvRecord["Namespace"] = item["metadata"]["namespace"]
+            #pvRecord["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+            #pvRecord["Kind"] = item["metadata"]["annotations"]["volume.beta.kubernetes.io/storage-provisioner"]
+            #pvRecord["VolumeName"] = item["spec"]["volumeName"]
+            #pvRecord["StorageClassName"] = item["spec"]["storageClassName"]
+            #pvRecord["Status"] = item["status"]["phase"]
+            #pvRecord["AccessMode"] = item["status"]["accessModes"][0]
+            #pvRecord["RequestSize"] = item["status"]["capacity"]["storage"]
 
-            pvNameToInventoryHash[pvRecord["Name"]] = pvRecord.dup
-        else
-          $log.warn "in_kube_podinventory::enumerate:Received empty pvInventory"
-        end
+            #pvNameToInventoryHash[pvRecord["Name"]] = pvRecord.dup
+        #else
+          #$log.warn "in_kube_podinventory::enumerate:Received empty pvInventory"
+        #end
 
         # Initializing continuation token to nil
         continuationToken = nil
@@ -125,7 +125,7 @@ module Fluent
         continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
         if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-          parse_and_emit_records(podInventory, serviceList, pvNameToInventoryHash, continuationToken, batchTime)
+          parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
         else
           $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
         end
@@ -134,14 +134,14 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-            parse_and_emit_records(podInventory, serviceList, pvNameToInventoryHash, continuationToken, batchTime)
+            parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
           else
             $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
           end
         end
 
         # Setting these to nil so that we dont hold memory until GC kicks in
-        pvInventory = nil
+        #pvInventory = nil
         podInventory = nil
         serviceList = nil
 
@@ -173,7 +173,7 @@ module Fluent
       end
     end    
 
-    def parse_and_emit_records(podInventory, serviceList, pvNameToInventoryHash, continuationToken, batchTime = Time.utc.iso8601)
+    def parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
       currentTime = Time.now
       emitTime = currentTime.to_f
       #batchTime = currentTime.utc.iso8601
@@ -192,17 +192,17 @@ module Fluent
           record["Name"] = items["metadata"]["name"]
           podNameSpace = items["metadata"]["namespace"]
 
-          pvInventoryRecords = []
-          if !items["spec"].nil? && !items["spec"]["volumes"].nil?
-            items["spec"]["volumes"].each do |volume|
-              if !volume["persistentVolumeClaim"].nil? && !volume["persistentVolumeClaim"]["claimName"].nil?
-                pvInventoryRecord = pvNameToInventoryHash[volume["persistentVolumeClaim"]["claimName"]]
-                pvInventoryRecords.push(pvInventoryRecord)
-              end
-            end
-          end
+          #pvInventoryRecords = []
+          #if !items["spec"].nil? && !items["spec"]["volumes"].nil?
+            #items["spec"]["volumes"].each do |volume|
+              #if !volume["persistentVolumeClaim"].nil? && !volume["persistentVolumeClaim"]["claimName"].nil?
+                #pvInventoryRecord = pvNameToInventoryHash[volume["persistentVolumeClaim"]["claimName"]]
+                #pvInventoryRecords.push(pvInventoryRecord)
+              #end
+            #end
+          #end
 
-          record["pvInventories"] = pvInventoryRecords
+          #record["pvInventories"] = pvInventoryRecords
 
           # For ARO v3 cluster, skip the pods scheduled on to master or infra nodes
           if KubernetesApiClient.isAROV3Cluster && !items["spec"].nil? && !items["spec"]["nodeName"].nil? &&
