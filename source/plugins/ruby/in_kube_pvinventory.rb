@@ -18,8 +18,6 @@ module Fluent
       require_relative "constants"
 
       @PV_CHUNK_SIZE = "1500"
-      @pvCount = 0
-      @diskCount = 0
       @pvKindToCountHash = {}
     end
 
@@ -54,8 +52,6 @@ module Fluent
       begin
         pvInventory = nil
         telemetryFlush = false
-        @pvCount = 0
-        @diskCount = 0
         @pvKindToCountHash = {}
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
@@ -97,8 +93,6 @@ module Fluent
           telemetryProperties["Computer"] = @@hostName
           telemetryProperties["CountsOfPVKinds"] = @pvKindToCountHash
           ApplicationInsightsUtility.sendCustomEvent("KubePVInventoryHeartBeatEvent", telemetryProperties)
-          ApplicationInsightsUtility.sendMetricTelemetry("PVCount", @pvCount, {})
-          ApplicationInsightsUtility.sendMetricTelemetry("DiskCount", @diskCount, {})
           @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
 
@@ -116,12 +110,8 @@ module Fluent
       @@istestvar = ENV["ISTEST"]
 
       begin
-        $log.info "pvInventory: #{pvInventory}"
-
         records = []
         pvInventory["items"].each do |item|
-
-          $log.info "item: #{item}"
 
           # Check if the PV has a PVC
           hasPVC = false
@@ -138,8 +128,6 @@ module Fluent
             return records
           end
 
-          $log.info "hasPVC: #{hasPVC}"
-
           # Check if the PV is an Azure Disk
           isAzureDisk = false
           if !item["spec"].nil? && !item["spec"]["azureDisk"].nil?
@@ -147,12 +135,10 @@ module Fluent
             azureDisk = item["spec"]["azureDisk"]
             diskName = azureDisk["diskName"]
             diskUri = azureDisk["diskURI"]
-            @diskCount += 1
           end
 
-          $log.info "isAzureDisk: #{isAzureDisk}"
-
-          if !item["metadata"].nil? && !item["metadata"]["annotations"].nil? && !item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"].nil
+          # Get telemetry on PV kind
+          if !item["metadata"].nil? && !item["metadata"]["annotations"].nil? && !item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"].nil?
             kind = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"]
             if (@pvKindToCountHash.has_key? kind)
               @pvKindToCountHash[kind] += 1
@@ -169,14 +155,11 @@ module Fluent
           metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
           metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
 
-          $log.info "metricItem: #{metricItem}"
-
           metricTags = {}
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = KubernetesApiClient.getClusterId
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = KubernetesApiClient.getClusterName
           metricTags["PVName"] = item["metadata"]["name"]
           metricTags["PVCName"] = pvcName
-          metricTags["PodUID"] = ""
           metricTags["PVCNamespace"] = namespace
           metricTags["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
           metricTags["Kind"] = kind
@@ -184,24 +167,16 @@ module Fluent
           metricTags["Status"] = item["status"]["phase"]
           metricTags["AccessMode"] = item["spec"]["accessModes"]
           metricTags["RequestSize"] = item["spec"]["capacity"]["storage"]
+          
           if isAzureDisk
             metricTags["DiskName"] = diskName
             metricTags["DiskURI"] = diskUri
           end
 
-          $log.info "metricTags: #{metricTags}"
-
           metricItem["Tags"] = metricTags
           records.push(metricItem)
-          $log.info("PV inventory record: #{metricItem}")
         end
 
-        $log.info "went through all pv's"
-
-        @pvCount += records.length
-
-        $log.info "pvCount: #{@pvCount}"
-        $log.info "diskCount: #{@diskCount}"
         $log.info "pvKindToCountHash: #{@pvKindToCountHash}"
 
         records.each do |record|
@@ -215,7 +190,7 @@ module Fluent
           end
         end
 
-        #router.emit_stream(@tag, eventStream) if eventStream
+        router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, eventStream) if eventStream
 
       rescue => errorStr
