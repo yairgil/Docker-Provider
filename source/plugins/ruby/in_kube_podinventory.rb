@@ -192,17 +192,21 @@ module Fluent
           record["Name"] = items["metadata"]["name"]
           podNameSpace = items["metadata"]["namespace"]
 
-          #pvInventoryRecords = []
-          #if !items["spec"].nil? && !items["spec"]["volumes"].nil?
-            #items["spec"]["volumes"].each do |volume|
-              #if !volume["persistentVolumeClaim"].nil? && !volume["persistentVolumeClaim"]["claimName"].nil?
-                #pvInventoryRecord = pvNameToInventoryHash[volume["persistentVolumeClaim"]["claimName"]]
-                #pvInventoryRecords.push(pvInventoryRecord)
-              #end
-            #end
-          #end
+          pvcs = []
+          if !items["spec"].nil? && !items["spec"]["volumes"].nil?
+            items["spec"]["volumes"].each do |volume|
+              if !volume["persistentVolumeClaim"].nil? && !volume["persistentVolumeClaim"]["claimName"].nil?
+                $log.info "pvc on the pod"
 
-          #record["pvInventories"] = pvInventoryRecords
+                pvc = podNamespace + "/" + volume["persistentVolumeClaim"]["claimName"]
+
+                $log.info "pv: #{pvc}"
+                pvcs.push(pvc)
+              end
+            end
+          end
+
+          $log.info "Pod PVCs: #{pvcs}"
 
           # For ARO v3 cluster, skip the pods scheduled on to master or infra nodes
           if KubernetesApiClient.isAROV3Cluster && !items["spec"].nil? && !items["spec"]["nodeName"].nil? &&

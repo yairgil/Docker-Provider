@@ -114,6 +114,8 @@ module Fluent
       @@istestvar = ENV["ISTEST"]
 
       begin
+        $log.info "pvInventory: #{pvInventory}"
+
         records = []
         pvInventory["items"].each do |item|
 
@@ -133,6 +135,8 @@ module Fluent
             return records
           end
 
+          $log.info "hasPVC: #{hasPVC}"
+
           # Check if the PV is an Azure Disk
           isAzureDisk = false
           if !item["spec"].nil? && !item["spec"]["azureDisk"].nil?
@@ -143,6 +147,8 @@ module Fluent
             @diskCount += 1
           end
 
+          $log.info "isAzureDisk: #{isAzureDisk}"
+
           metricItem = {}
           metricItem["CollectionTime"] = batchTime
           metricItem["Computer"] = @@hostName
@@ -151,13 +157,15 @@ module Fluent
           metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
           metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
 
+          $log.info "metricItem: #{metricItem}"
+
           metricTags = {}
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = KubernetesApiClient.getClusterId
           metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = KubernetesApiClient.getClusterName
           metricTags["PVName"] = item["metadata"]["name"]
           metricTags["PVCName"] = pvcName
           metricTags["PodUID"] = ""
-          metricTags["Namespace"] = namespace
+          metricTags["PVCNamespace"] = namespace
           metricTags["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
           metricTags["Kind"] = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"]
           metricTags["StorageClassName"] = item["spec"]["storageClassName"]
@@ -169,12 +177,18 @@ module Fluent
             metricTags["DiskURI"] = diskUri
           end
 
+          $log.info "metricTags: #{metricTags}"
+
           metricItem["Tags"] = metricTags
           records.push(metricItem)
           $log.info("PV inventory record: #{metricItem}")
         end
 
+        $log.info "went through all pv's"
+
         @pvCount += records.length
+
+        $log.info "pvCount: #{pvCount}"
 
         records.each do |record|
           if !record.nil?
