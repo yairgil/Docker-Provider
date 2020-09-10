@@ -106,7 +106,7 @@ usage()
     local basename=`basename $0`
     echo
     echo "Enable Azure Monitor for containers:"
-    echo "$basename --resource-id <cluster resource id> [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>] [--client-id <clientId of service principal>] [--client-secret <client secret of service principal>]"
+    echo "$basename --resource-id <cluster resource id> [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>] [--client-id <clientId of service principal>] [--client-secret <client secret of service principal>] [--tenant-id <tenant id of the service principal>]"
 }
 
 parse_args()
@@ -302,7 +302,7 @@ if [ ! -z "$proxyEndpoint" ]; then
     fi
 fi
 
-if [ ! -z "$servicePrincipalClientId" -a  ! -z "$servicePrincipalClientSecret"  -a  ! -z "$servicePrincipalClientSecret" ]; then
+if [ ! -z "$servicePrincipalClientId" -a  ! -z "$servicePrincipalClientSecret"  -a  ! -z "$servicePrincipalTenantId" ]; then
    echo "using service principal creds (clientId, secret and tenantId) for azure login since provided"
    isUsingServicePrincipal=true
 fi
