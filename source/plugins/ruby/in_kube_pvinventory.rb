@@ -56,31 +56,10 @@ module Fluent
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
 
-        #continuationToken = nil
-        #$log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
-        #continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PV_CHUNK_SIZE}")
-        #$log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
-
-        pvInfo = nil
+        continuationToken = nil
         $log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
-        pvInfo = KubernetesApiClient.getKubeResourceInfo("persistentvolumes")
+        continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PV_CHUNK_SIZE}")
         $log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
-
-        if !pvInfo.nil?
-          $log.info("in_kube_pvinventory::enumerate : Response size of #{pvInfo.size}")
-          $log.info("in_kube_pvinventory::enumerate : Response header size of #{pvInfo.header.size}")
-          $log.info("in_kube_pvinventory::enumerate : Response body size of #{pvInfo.body.size}")
-          $log.info("in_kube_pvinventory::enumerate:Start:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
-          pvInventory = Yajl::Parser.parse(StringIO.new(pvInfo.body))
-          $log.info("in_kube_pvinventory::enumerate:End:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
-          pvInfo = nil
-        end
-
-        if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
-          parse_and_emit_records(pvInventory, batchTime)
-        else
-          $log.warn "in_kube_pvinventory::enumerate:Received empty pvInventory"
-        end
 
         # If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
