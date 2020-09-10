@@ -171,7 +171,7 @@ Docker image for windows agent can only build on Windows machine with `Docker fo
 
 ### Install Pre-requisites
 
-Install pre-requisites based on where you have cloned the source code and which OS platform you are using to build the windows agent code
+Install pre-requisites based on OS platform you will be using to build the windows agent code
 
 #### Option 1 - Using Windows Machine to Build the Windows agent
 
@@ -195,9 +195,9 @@ cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo p
 
 ### Build Windows Agent code and Docker Image
 
-> Note: format of the windows imagetag will be `win-ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
+> Note: format of the windows agent imagetag will be `win-ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
-#### Using Windows Machine to Build the Windows agent
+#### Option 1 - Using Windows Machine to Build the Windows agent
 
 Execute below instructions on elevated command prompt to build windows agent code and docker image, publishing the image to acr or docker hub
 
@@ -228,7 +228,6 @@ cd z:\home\sshadmin\Docker-Provider\kubernetes\windows # based on your repo path
 docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
 ```
-
 
 # Azure DevOps Build Pipeline
 
