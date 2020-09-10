@@ -2,7 +2,6 @@ module Fluent
   class Kube_PVInventory_Input < Input
     Plugin.register_input("kubepvinventory", self)
 
-    @@MDMKubePVInventoryTag = "mdm.kubepvinventory"
     @@hostName = (OMS::Common.get_hostname)
 
     def initialize
@@ -84,9 +83,8 @@ module Fluent
         # Flush AppInsights telemetry once all the processing is done
         if telemetryFlush == true
           telemetryProperties = {}
-          telemetryProperties["Computer"] = @@hostName
           telemetryProperties["CountsOfPVKinds"] = @pvKindToCountHash
-          ApplicationInsightsUtility.sendCustomEvent("KubePVInventoryHeartBeatEvent", telemetryProperties)
+          ApplicationInsightsUtility.sendCustomEvent(Constants::PV_INVENTORY_HEART_BEAT_EVENT, telemetryProperties)
           @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
 
@@ -141,34 +139,36 @@ module Fluent
             end
           end
 
-          metricItem = {}
-          metricItem["CollectionTime"] = batchTime
-          metricItem["Computer"] = @@hostName
-          metricItem["Name"] = "pvInventory"
-          metricItem["Value"] = 0
-          metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
-          metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
-
-          metricTags = {}
-          metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = KubernetesApiClient.getClusterId
-          metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = KubernetesApiClient.getClusterName
-          metricTags["PVName"] = item["metadata"]["name"]
-          metricTags["PVCName"] = pvcName
-          metricTags["PVCNamespace"] = namespace
-          metricTags["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-          metricTags["Kind"] = kind
-          metricTags["StorageClassName"] = item["spec"]["storageClassName"]
-          metricTags["Status"] = item["status"]["phase"]
-          metricTags["AccessMode"] = item["spec"]["accessModes"]
-          metricTags["RequestSize"] = item["spec"]["capacity"]["storage"]
-
+          # Node and Pod info can be found by joining with pvUsedBytes metric using namespace/PVCName
+          record = {}
+          record["CollectionTime"] = batchTime
+          record["ClusterId"] = KubernetesApiClient.getClusterId
+          record["ClusterName"] = KubernetesApiClient.getClusterName
+          # Name or PVName
+          record["Name"] = item["metadata"]["name"]
+          record["PVCName"] = pvcName
+          # Namespace, PodNamespace, or PVNamespace
+          record["Namespace"] = namespace
+          record["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+          # Should kubernetes.io/ be removed?
+          record["Kind"] = kind
+          # This is the storage class name rather than type. Would require another api call to get more storage class info
+          record["StorageClassName"] = item["spec"]["storageClassName"]
+          # Available, Bound, Released, Failed
+          record["Status"] = item["status"]["phase"]
+          # RWO for azure disks; azure files can have multiple in the spec: RWO, ROX, and/or RWX
+          record["AccessModes"] = item["spec"]["accessModes"]
+          # This is a string
+          record["RequestSize"] = item["spec"]["capacity"]["storage"]
+          # Should these be their own columns or tags for PV Kind
+          kindTags = {}
           if isAzureDisk
-            metricTags["DiskName"] = diskName
-            metricTags["DiskURI"] = diskUri
+            kindTags["DiskName"] = diskName
+            kindTags["DiskURI"] = diskUri
           end
+          record["KindInfo"] = kindTags
 
-          metricItem["Tags"] = metricTags
-          records.push(metricItem)
+          records.push(record)
         end
 
         $log.info "pvKindToCountHash: #{@pvKindToCountHash}"
@@ -176,7 +176,7 @@ module Fluent
         records.each do |record|
           if !record.nil?
             wrapper = {
-              "DataType" => "INSIGHTS_METRICS_BLOB",
+              "DataType" => "KUBE_PV_INVENTORY_BLOB",
               "IPName" => "ContainerInsights",
               "DataItems" => [record.each { |k, v| record[k] = v }],
             }
@@ -184,8 +184,7 @@ module Fluent
           end
         end
 
-        #router.emit_stream(@tag, eventStream) if eventStream
-        router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, eventStream) if eventStream
+        router.emit_stream(@tag, eventStream) if eventStream
 
       rescue => errorStr
         $log.warn "Failed in parse_and_emit_record pv inventory: #{errorStr}"
