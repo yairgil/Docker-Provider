@@ -10,11 +10,11 @@
     .PARAMETER clusterResourceId
         Id of the Azure Managed Cluster such as Azure ARC K8s, ARO v4 etc.
     .PARAMETER servicePrincipalClientId
-        client Id of the service principal which will be used for the azure login
+        Client Id of the service principal which will be used for the azure login
     .PARAMETER servicePrincipalClientSecret
-        client secret of the service principal which will be used for the azure login
+        Client secret of the service principal which will be used for the azure login
     .PARAMETER tenantId
-        tenantId of the service principal which will be used for the azure login
+        Azure TenantId of the service principal which will be used for the azure login
     .PARAMETER kubeContext (optional)
         kube-context of the k8 cluster to install Azure Monitor for containers HELM chart
     .PARAMETER workspaceResourceId (optional)
