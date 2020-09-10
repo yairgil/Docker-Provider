@@ -56,10 +56,23 @@ module Fluent
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
 
-        continuationToken = nil
-        $log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
-        continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PV_CHUNK_SIZE}")
-        $log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
+        #continuationToken = nil
+        #$log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
+        #continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PV_CHUNK_SIZE}")
+        #$log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
+
+        pvInfo = nil
+        $log.info("in_kube_podinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
+        pvInfo = KubernetesApiClient.getKubeResourceInfo("persistentvolumes")
+        $log.info("in_kube_podinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
+
+        if !pvInfo.nil?
+          $log.info("in_kube_podinventory::enumerate : Request body size of #{pvInfo.body.size}")
+          $log.info("in_kube_podinventory::enumerate:Start:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
+          pvInventory = Yajl::Parser.parse(StringIO.new(pvInfo.body))
+          $log.info("in_kube_podinventory::enumerate:End:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
+          pvInfo = nil
+        end
 
         if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
           parse_and_emit_records(pvInventory, batchTime)
@@ -139,7 +152,7 @@ module Fluent
 
           # Get telemetry on PV kind
           if !item["metadata"].nil? && !item["metadata"]["annotations"].nil? && !item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"].nil?
-            kind = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"]
+            kind = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"].downcase
             if (@pvKindToCountHash.has_key? kind)
               @pvKindToCountHash[kind] += 1
             else
@@ -167,7 +180,7 @@ module Fluent
           metricTags["Status"] = item["status"]["phase"]
           metricTags["AccessMode"] = item["spec"]["accessModes"]
           metricTags["RequestSize"] = item["spec"]["capacity"]["storage"]
-          
+
           if isAzureDisk
             metricTags["DiskName"] = diskName
             metricTags["DiskURI"] = diskUri
