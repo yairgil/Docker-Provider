@@ -95,7 +95,7 @@ workspaceResourceGroup="DefaultResourceGroup-"$workspaceRegionCode
 workspaceGuid=""
 workspaceKey=""
 
-# sp creds
+# sp details for the login if provided
 servicePrincipalClientId=""
 servicePrincipalClientSecret=""
 servicePrincipalTenantId=""
@@ -106,7 +106,7 @@ usage()
     local basename=`basename $0`
     echo
     echo "Enable Azure Monitor for containers:"
-    echo "$basename --resource-id <cluster resource id> [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>] [--client-id <clientId of service principal>] [--client-secret <client secret of service principal>] [--tenant-id <tenant id of the service principal>]"
+    echo "$basename --resource-id <cluster resource id> [--client-id <clientId of service principal>] [--client-secret <client secret of service principal>] [--tenant-id <tenant id of the service principal>] [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>]"
 }
 
 parse_args()

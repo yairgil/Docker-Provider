@@ -48,12 +48,18 @@ isAroV4Cluster=false
 clusterResourceId=""
 kubeconfigContext=""
 
+# sp details for the login if provided
+servicePrincipalClientId=""
+servicePrincipalClientSecret=""
+servicePrincipalTenantId=""
+isUsingServicePrincipal=false
+
 usage()
 {
     local basename=`basename $0`
     echo
     echo "Disable Azure Monitor for containers:"
-    echo "$basename --resource-id/-r <cluster resource id> [--kube-context/-k <name of the kube context >]"
+    echo "$basename --resource-id/-r <cluster resource id> [--client-id <clientId of service principal>] [--client-secret <client secret of service principal>] [--tenant-id <tenant id of the service principal>] [--kube-context/-k <name of the kube context >]"
 }
 
 delete_helm_release()
@@ -105,8 +111,13 @@ remove_monitoring_tags()
 {
   echo "deleting monitoring tags ..."
 
-  echo "login to the azure interactively"
-  az login --use-device-code
+  if [ "$isUsingServicePrincipal" = true ] ; then
+     echo "login to the azure using provided service principal creds"
+     az login --service-principal --username $servicePrincipalClientId --password $servicePrincipalClientSecret --tenant $servicePrincipalTenantId
+  else
+     echo "login to the azure interactively"
+     az login --use-device-code
+  fi
 
   echo "set the cluster subscription id: ${clusterSubscriptionId}"
   az account set -s ${clusterSubscriptionId}
@@ -159,6 +170,9 @@ for arg in "$@"; do
   case "$arg" in
     "--resource-id") set -- "$@" "-r" ;;
     "--kube-context") set -- "$@" "-k" ;;
+    "--client-id") set -- "$@" "-c" ;;
+    "--client-secret") set -- "$@" "-s" ;;
+    "--tenant-id") set -- "$@" "-t" ;;
     "--help")   set -- "$@" "-h" ;;
     "--"*)   usage ;;
     *)        set -- "$@" "$arg"
@@ -167,7 +181,7 @@ done
 
  local OPTIND opt
 
- while getopts 'hk:r:' opt; do
+ while getopts 'hk:c:s:t:r:' opt; do
     case "$opt" in
       h)
       usage
@@ -181,6 +195,21 @@ done
       r)
         clusterResourceId="$OPTARG"
         echo "clusterResourceId is $OPTARG"
+        ;;
+
+      c)
+        servicePrincipalClientId="$OPTARG"
+        echo "servicePrincipalClientId is $OPTARG"
+        ;;
+
+      s)
+        servicePrincipalClientSecret="$OPTARG"
+        echo "clientSecret is *****"
+        ;;
+
+      t)
+        servicePrincipalTenantId="$OPTARG"
+        echo "service principal tenantId is $OPTARG"
         ;;
 
       ?)
@@ -239,6 +268,11 @@ done
  else
    echo "-e unsupported azure managed cluster type"
    exit 1
+ fi
+
+ if [ ! -z "$servicePrincipalClientId" -a  ! -z "$servicePrincipalClientSecret"  -a  ! -z "$servicePrincipalTenantId" ]; then
+   echo "using service principal creds (clientId, secret and tenantId) for azure login since provided"
+   isUsingServicePrincipal=true
  fi
 
 }
