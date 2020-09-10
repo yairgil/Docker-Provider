@@ -173,7 +173,7 @@ Docker image for windows agent can only build on Windows machine with `Docker fo
 
 Install pre-requisites based on where you have cloned the source code and which OS platform you are using to build the windows agent code
 
-## Option 1 - If the source code cloned on to windows and using Windows machine to build windows agent then install below pre-requisites
+#### Option 1 - Using Windows Machine to Build the Windows agent
 
 ```
 powershell # launch powershell with elevated admin on your windows machine
@@ -182,7 +182,7 @@ cd %userprofile%\Docker-Provider\scripts\build\windows # based on your repo path
 .\install-build-pre-requisites.ps1 #
 ```
 
-## Option 2 - If the source code cloned on to WSL2 and using Windows machine to build windows agent then install below pre-requisites
+#### Option 2 - Using WSL2 to Build the Windows agent
 
 ```
 powershell # launch powershell with elevated admin on your windows machine
@@ -192,24 +192,35 @@ cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo p
 .\install-build-pre-requisites.ps1 #
 ```
 
-## Option 3 - If the source code cloned on to WSL/2 and using WSL/2 machine to build windows agent
 
-Install pre-requisites under Linux agent section and Install `Docker for Desktop` on windows machine to build docker image for windows machine.
+### Build Windows Agent code and Docker Image
 
-#### Build Certificate Generator Source code and Out OMS Go plugin code
+> Note: format of the windows imagetag will be `win-ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
-> Note: .net and go code for windows agent can built on Ubuntu
+#### Using Windows Machine to Build the Windows agent
+
+Execute below instructions on elevated command prompt to build windows agent code and docker image, publishing the image to acr or docker hub
 
 ```
-cd ~/Docker-Provider/build/windows # based on your repo path on ubuntu or WSL2
+cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
+docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
+powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
+.\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
+```
+
+#### Option 2 - Using WSL2 to Build the Windows agent
+
+##### On WSL2, Build Certificate Generator Source code and Out OMS Go plugin code
+
+```
+cd ~/Docker-Provider/build/windows # based on your repo path on WSL2 Ubuntu app
 pwsh #switch to powershell
 .\Makefile.ps1 # trigger build and publish of .net and go code
 ```
-> Note: format of the imagetag will be `win-ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
-####  Build and Push Docker Image
+####  On Windows machine, build and Push Docker Image
 
-> Note: windows container can only built on windows hence you will have to execute below commands on windows via accessing network share or copying published bits omsagentwindows under kubernetes directory on to windows machine
+> Note: Docker image for windows container can only built on windows hence you will have to execute below commands on windows via accessing network share or copying published bits omsagentwindows under kubernetes directory on to windows machine
 
 ```
 net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app to windows
@@ -218,20 +229,6 @@ docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
 docker push <repo>/<imagename>:<imagetag>
 ```
 
-### Build Cert generator, Out OMS Plugin and Docker Image and Publish Docker Image
-
-If you have code cloned on to windows, you can built everything for windows agent on windows machine via below instructions
-
-```
-# install pre-requisites if you havent installed already
-cd %userprofile%\Docker-Provider\kubernetes\windows # based on your repo path
-.\install-build-pre-requisites.ps1
-
-cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
-docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
-powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
-.\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
-```
 
 # Azure DevOps Build Pipeline
 
