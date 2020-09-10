@@ -95,12 +95,18 @@ workspaceResourceGroup="DefaultResourceGroup-"$workspaceRegionCode
 workspaceGuid=""
 workspaceKey=""
 
+# sp creds
+servicePrincipalClientId=""
+servicePrincipalClientSecret=""
+servicePrincipalTenantId=""
+isUsingServicePrincipal=false
+
 usage()
 {
     local basename=`basename $0`
     echo
     echo "Enable Azure Monitor for containers:"
-    echo "$basename --resource-id <cluster resource id> [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>]"
+    echo "$basename --resource-id <cluster resource id> [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>] [--client-id <clientId of service principal>] [--client-secret <client secret of service principal>]"
 }
 
 parse_args()
@@ -120,8 +126,12 @@ for arg in "$@"; do
     "--kube-context") set -- "$@" "-k" ;;
     "--workspace-id") set -- "$@" "-w" ;;
     "--proxy") set -- "$@" "-p" ;;
+    "--client-id") set -- "$@" "-c" ;;
+    "--client-secret") set -- "$@" "-s" ;;
+    "--tenant-id") set -- "$@" "-t" ;;
     "--helm-repo-name") set -- "$@" "-n" ;;
     "--helm-repo-url") set -- "$@" "-u" ;;
+    "--container-log-volume") set -- "$@" "-v" ;;
     "--"*)   usage ;;
     *)        set -- "$@" "$arg"
   esac
@@ -129,7 +139,7 @@ done
 
 local OPTIND opt
 
-while getopts 'hk:r:w:p:n:u:' opt; do
+while getopts 'hk:r:w:p:c:s:t:n:u:v:' opt; do
     case "$opt" in
       h)
       usage
@@ -153,6 +163,21 @@ while getopts 'hk:r:w:p:n:u:' opt; do
       p)
         proxyEndpoint="$OPTARG"
         echo "proxyEndpoint is $OPTARG"
+        ;;
+
+      c)
+        servicePrincipalClientId="$OPTARG"
+        echo "servicePrincipalClientId is $OPTARG"
+        ;;
+
+      s)
+        servicePrincipalClientSecret="$OPTARG"
+        echo "clientSecret is *****"
+        ;;
+
+      t)
+        servicePrincipalTenantId="$OPTARG"
+        echo "service principal tenantId is $OPTARG"
         ;;
 
       n)
@@ -275,6 +300,11 @@ if [ ! -z "$proxyEndpoint" ]; then
     else
       echo "successfully validated provided proxy endpoint is valid and in expected format"
     fi
+fi
+
+if [ ! -z "$servicePrincipalClientId" -a  ! -z "$servicePrincipalClientSecret"  -a  ! -z "$servicePrincipalClientSecret" ]; then
+   echo "using service principal creds (clientId, secret and tenantId) for azure login since provided"
+   isUsingServicePrincipal=true
 fi
 
 }
@@ -501,8 +531,13 @@ install_helm_chart()
 
 login_to_azure()
 {
-  echo "login to the azure interactively"
-  az login --use-device-code
+  if [ "$isUsingServicePrincipal" = true ] ; then
+     echo "login to the azure using provided service principal creds"
+     az login --service-principal --username $servicePrincipalClientId --password $servicePrincipalClientSecret --tenant $servicePrincipalTenantId
+  else
+    echo "login to the azure interactively"
+    az login --use-device-code
+  fi
 }
 
 set_azure_subscription()
