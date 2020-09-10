@@ -171,17 +171,31 @@ Docker image for windows agent can only build on Windows machine with `Docker fo
 
 ### Install Pre-requisites
 
-Below pre-requisites not applicable if you are trying to build the .NET and Go code on Linux or WSL2 machine.
+Install pre-requisites based on where you have cloned the source code and which OS platform you are using to build the windows agent code
+
+## Option 1 - If the source code cloned on to windows and using Windows machine to build windows agent then install below pre-requisites
+
+```
+powershell # launch powershell with elevated admin on your windows machine
+Set-ExecutionPolicy -ExecutionPolicy bypass # set the execution policy
+cd %userprofile%\Docker-Provider\scripts\build\windows # based on your repo path
+.\install-build-pre-requisites.ps1 #
+```
+
+## Option 2 - If the source code cloned on to WSL2 and using Windows machine to build windows agent then install below pre-requisites
 
 ```
 powershell # launch powershell with elevated admin on your windows machine
 Set-ExecutionPolicy -ExecutionPolicy bypass # set the execution policy
 net use z: \\wsl$\Ubuntu-16.04 # map the network drive of the ubuntu app to windows
 cd z:\home\sshadmin\Docker-Provider\scripts\build\windows # based on your repo path
-
-
 .\install-build-pre-requisites.ps1 #
 ```
+
+## Option 3 - If the source code cloned on to WSL/2 and using WSL/2 machine to build windows agent
+
+Install pre-requisites under Linux agent section and Install `Docker for Desktop` on windows machine to build docker image for windows machine.
+
 #### Build Certificate Generator Source code and Out OMS Go plugin code
 
 > Note: .net and go code for windows agent can built on Ubuntu
