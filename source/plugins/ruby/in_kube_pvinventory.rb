@@ -60,6 +60,12 @@ module Fluent
         continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PV_CHUNK_SIZE}")
         $log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
 
+        if (!pvInventory.nil? && !pvInventory.empty? && pvInventory.key?("items") && !pvInventory["items"].nil? && !pvInventory["items"].empty?)
+          parse_and_emit_records(pvInventory, batchTime)
+        else
+          $log.warn "in_kube_pvinventory::enumerate:Received empty pvInventory"
+        end
+
         # If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, pvInventory = KubernetesApiClient.getResourcesAndContinuationToken("persistentvolumes?limit=#{@PV_CHUNK_SIZE}&continue=#{continuationToken}")
@@ -158,7 +164,7 @@ module Fluent
           record["Status"] = item["status"]["phase"]
           # RWO for azure disks; azure files can have multiple in the spec: RWO, ROX, and/or RWX
           record["AccessModes"] = item["spec"]["accessModes"]
-          # This is a string
+          # This is a string 
           record["RequestSize"] = item["spec"]["capacity"]["storage"]
           # Should these be their own columns or tags for PV Kind
           kindTags = {}
