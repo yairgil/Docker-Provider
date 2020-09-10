@@ -20,17 +20,19 @@
 # 1. Using Default Azure Log Analytics and no-proxy with current kube config context
 # bash enable-monitoring.sh --resource-id <clusterResourceId>
 
-# 2. Using Default Azure Log Analytics and no-proxy
+# 2. Using Default Azure Log Analytics and no-proxy with current kube config context, and using service principal creds for the azure login
+# bash enable-monitoring.sh --resource-id <clusterResourceId> --client-id <sp client id> --client-secret <sp client secret> --tenant-id <tenant id of the service principal>
+
+# 3. Using Default Azure Log Analytics and no-proxy
 # bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context>
 
-# 3. Using Default Azure Log Analytics and with proxy endpoint configuration
+# 4. Using Default Azure Log Analytics and with proxy endpoint configuration
 # bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --proxy <proxy-endpoint>
 
-
-# 4. Using Existing Azure Log Analytics and no-proxy
+# 5. Using Existing Azure Log Analytics and no-proxy
 # bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id>
 
-# 5. Using Existing Azure Log Analytics and proxy
+# 6. Using Existing Azure Log Analytics and proxy
 # bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id> --proxy <proxy-endpoint>
 
 set -e

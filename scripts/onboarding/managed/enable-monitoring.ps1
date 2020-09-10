@@ -233,8 +233,10 @@ if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedcluste
     exit
 }
 
-if(([string]::IsNullOrEmpty($servicePrincipalClientId) -eq $false) -and ([string]::IsNullOrEmpty($servicePrincipalClientSecret) -eq $false) -and ([string]::IsNullOrEmpty($tenantId) -eq $false)) {
-   Write-Host("Using service principal creds for the azure login.")
+if(([string]::IsNullOrEmpty($servicePrincipalClientId) -eq $false) -and
+   ([string]::IsNullOrEmpty($servicePrincipalClientSecret) -eq $false) -and
+   ([string]::IsNullOrEmpty($tenantId) -eq $false)) {
+   Write-Host("Using service principal creds for the azure login since these provided.")
    $isUsingServicePrincipal = $true
 }
 

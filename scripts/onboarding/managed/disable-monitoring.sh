@@ -14,7 +14,10 @@
 # 1. disable monitoring using current kube-context
 # bash disable_monitoring.sh --resource-id/-r <clusterResourceId>
 
-# 2. disable monitoring using specific kube-context
+# 2. disable monitoring using specific kube-context using service principal creds for the azure login
+# bash disable_monitoring.sh --resource-id <clusterResourceId> --client-id <sp client id> --client-secret <sp client secret> --tenant-id <tenant id of the service principal>
+
+# 3. disable monitoring using specific kube-context
 # bash disable_monitoring.sh --resource-id/-r <clusterResourceId> --kube-context/-k <kube-context>
 
 
