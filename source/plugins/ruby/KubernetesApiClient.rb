@@ -52,7 +52,7 @@ class KubernetesApiClient
               kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
               @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
               response = http.request(kubeApiRequest)
-              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} with size #{response.content_length} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
             end
           end
         end

@@ -17,7 +17,7 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      @PV_CHUNK_SIZE = "1500"
+      @PV_CHUNK_SIZE = "5000"
       @pvKindToCountHash = {}
     end
 
@@ -62,15 +62,17 @@ module Fluent
         #$log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
 
         pvInfo = nil
-        $log.info("in_kube_podinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
         pvInfo = KubernetesApiClient.getKubeResourceInfo("persistentvolumes")
-        $log.info("in_kube_podinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_pvinventory::enumerate : Done getting PVs from Kube API @ #{Time.now.utc.iso8601}")
 
         if !pvInfo.nil?
-          $log.info("in_kube_podinventory::enumerate : Request body size of #{pvInfo.body.size}")
-          $log.info("in_kube_podinventory::enumerate:Start:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_pvinventory::enumerate : Response size of #{pvInfo.size}")
+          $log.info("in_kube_pvinventory::enumerate : Response header size of #{pvInfo.header.size}")
+          $log.info("in_kube_pvinventory::enumerate : Response body size of #{pvInfo.body.size}")
+          $log.info("in_kube_pvinventory::enumerate:Start:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
           pvInventory = Yajl::Parser.parse(StringIO.new(pvInfo.body))
-          $log.info("in_kube_podinventory::enumerate:End:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_pvinventory::enumerate:End:Parsing pvc data using yajl @ #{Time.now.utc.iso8601}")
           pvInfo = nil
         end
 
@@ -203,7 +205,7 @@ module Fluent
           end
         end
 
-        router.emit_stream(@tag, eventStream) if eventStream
+        #router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, eventStream) if eventStream
 
       rescue => errorStr
