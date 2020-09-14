@@ -342,6 +342,7 @@ class CAdvisorMetricsAPIClient
                   podUid = pod["podRef"]["uid"]
                   podName = pod["podRef"]["name"]
                   pvcName = pvcRef["name"]
+                  pvcNamespace = pvcRef["namespace"]
                   volumeName = volume["name"]
 
                   metricItem = {}
@@ -359,7 +360,7 @@ class CAdvisorMetricsAPIClient
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = podName
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_VOLUME_NAME] = volumeName
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_PVC_NAME] = pvcName
-                  metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAMESPACE] = podNamespace
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE] = pvcNamespace
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = volume["capacityBytes"]
 
                   metricItem["Tags"] = metricTags

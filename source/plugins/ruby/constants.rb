@@ -17,8 +17,8 @@ class Constants
     INSIGTHTSMETRICS_TAGS_PV_NAMESPACE = "container.azm.ms/pv"
     INSIGHTSMETRICS_TAGS_VOLUME_NAME = "volumeName"
     INSIGHTSMETRICS_TAGS_PVC_NAME = "pvcName"
+    INSIGHTSMETRICS_TAGS_PVC_NAMESPACE = "pvcNamespace"
     INSIGHTSMETRICS_TAGS_POD_NAME = "podName"
-    INSIGHTSMETRICS_TAGS_POD_NAMESPACE = "podNamespace"
     INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES = "pvCapacityBytes"
     INSIGHTSMETRICS_FLUENT_TAG = "oms.api.InsightsMetrics"
     REASON_OOM_KILLED = "oomkilled"
@@ -76,6 +76,9 @@ class Constants
     TELEGRAF_DISK_METRICS = "container.azm.ms/disk"
     OMSAGENT_ZERO_FILL = "omsagent"
     KUBESYSTEM_NAMESPACE_ZERO_FILL = "kube-system"
+    PV_TYPES =["azureDisk", "azureFile", "cephfs", "cinder", "csi", "fc", "flexVolume",
+      "flocker", "gcePersistentDisk", "glusterfs", "hostPath", "iscsi", "local", "nfs",
+      "photonPersistentDisk", "portworxVolume", "quaobyte", "rbd", "scaleIO", "storageOS", "vsphereVolume"]
 
     #Telemetry constants
     CONTAINER_METRICS_HEART_BEAT_EVENT = "ContainerMetricsMdmHeartBeatEvent"
