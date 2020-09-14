@@ -79,17 +79,17 @@ module Fluent
         # Setting this to nil so that we dont hold memory until GC kicks in
         pvInventory = nil
 
-        # Adding telemetry to send pod telemetry every 5 minutes
+        # Adding telemetry to send pod telemetry every 10 minutes
         timeDifference = (DateTime.now.to_time.to_i - @@pvTelemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
-        if (timeDifferenceInMinutes >= 5)
+        if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
           telemetryFlush = true
         end
         
         # Flush AppInsights telemetry once all the processing is done
         if telemetryFlush == true
           telemetryProperties = {}
-          telemetryProperties["CountsOfPVKinds"] = @pvKindToCountHash
+          telemetryProperties["CountsOfPVTypes"] = @pvKindToCountHash
           ApplicationInsightsUtility.sendCustomEvent(Constants::PV_INVENTORY_HEART_BEAT_EVENT, telemetryProperties)
           @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
@@ -105,7 +105,6 @@ module Fluent
       currentTime = Time.now
       emitTime = currentTime.to_f
       eventStream = MultiEventStream.new
-      @@istestvar = ENV["ISTEST"]
 
       begin
         records = []
@@ -126,26 +125,37 @@ module Fluent
             return records
           end
 
-          # Check if the PV is an Azure Disk
+          # Check if the PV is an Azure Disk or Azure File
           isAzureDisk = false
+          isAzureFile = false
           if !item["spec"].nil? && !item["spec"]["azureDisk"].nil?
             isAzureDisk = true
             azureDisk = item["spec"]["azureDisk"]
             diskName = azureDisk["diskName"]
             diskUri = azureDisk["diskURI"]
+          elsif !item["spec"].nil? && !item["spec"]["azureFile"].nil?
+            isAzureFile = true
+            azureFileShareName = item["spec"]["azureFile"]["shareName"]
           end
 
-          # Get telemetry on PV kind
+          # Get telemetry on PV Type - if statically provisioned, type not in annotations
           if !item["metadata"].nil? && !item["metadata"]["annotations"].nil? && !item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"].nil?
             kind = item["metadata"]["annotations"]["pv.kubernetes.io/provisioned-by"].downcase
-            if (@pvKindToCountHash.has_key? kind)
-              @pvKindToCountHash[kind] += 1
-            else
-              @pvKindToCountHash[kind] = 1
-            end
+          elsif isAzureDisk
+            kind = "kubernetes.io/azure-disk"
+          elsif isAzureFile
+            kind = "kubernetes.io/azure-file"
+          else
+            kind = "other"
+          end
+          if (@pvKindToCountHash.has_key? kind)
+            @pvKindToCountHash[kind] += 1
+          else
+            @pvKindToCountHash[kind] = 1
           end
 
           # Node and Pod info can be found by joining with pvUsedBytes metric using namespace/PVCName
+          # Kube events can also be found using namespace/PVCName
           record = {}
           record["CollectionTime"] = batchTime
           record["ClusterId"] = KubernetesApiClient.getClusterId
@@ -153,26 +163,28 @@ module Fluent
           # Name or PVName
           record["Name"] = item["metadata"]["name"]
           record["PVCName"] = pvcName
-          # Namespace, PodNamespace, or PVNamespace
+          # Namespace, PodNamespace, or PVCNamespace
           record["Namespace"] = namespace
           record["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-          # Should kubernetes.io/ be removed?
-          record["Kind"] = kind
-          # This is the storage class name rather than type. Would require another api call to get more storage class info
+          # kubernetes.io/azure-disk, kubernetes.io/azure-file
+          record["Type"] = kind
+          # This is the storage class name rather than type (standard / premium). Would require another api call to get more storage class info
           record["StorageClassName"] = item["spec"]["storageClassName"]
           # Available, Bound, Released, Failed
           record["Status"] = item["status"]["phase"]
           # RWO for azure disks; azure files can have multiple in the spec: RWO, ROX, and/or RWX
           record["AccessModes"] = item["spec"]["accessModes"]
-          # This is a string 
+          # This is a string i.e 5Gi, should it be numeric? - This can be different from the PVC request size
           record["RequestSize"] = item["spec"]["capacity"]["storage"]
-          # Should these be their own columns or tags for PV Kind
+          # Should these be their own columns or tags for PV Type
           kindTags = {}
           if isAzureDisk
             kindTags["DiskName"] = diskName
             kindTags["DiskURI"] = diskUri
+          elsif isAzureFile
+            kindTags["FileShareName"] = azureFileShareName
           end
-          record["KindInfo"] = kindTags
+          record["TypeInfo"] = kindTags
 
           records.push(record)
         end
