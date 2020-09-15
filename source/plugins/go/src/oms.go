@@ -193,6 +193,26 @@ type DataItem struct {
 	Computer              string `json:"Computer"`
 }
 
+// AuditLogDataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
+type AuditLogDataItem struct {
+	StageTimestamp               string `json:"StageTimestamp"`
+	Annotations                  string `json:"Annotations"`
+	AuditID                      string `json:"AuditID"`
+	Level                        string `json:"Level"`
+	ObjectRef                    string `json:"ObjectRef"`
+	RequestObject                string `json:"RequestObject"`
+	RequestReceivedTimestamp     string `json:"RequestReceivedTimestamp"`
+	RequestURI                   string `json:"RequestURI"`
+	ResponseObject               string `json:"ResponseObject"`
+	ResponseStatus               string `json:"ResponseStatus"`
+	SourceIPs                    string `json:"SourceIPs"`
+	Stage                        string `json:"Stage"`
+	User                         string `json:"User"`
+	UserAgent                    string `json:"UserAgent"`
+	Verb                         string `json:"Verb"`
+	ImpersonatedUser             string `json:"ImpersonatedUser"`
+}
+
 type DataItemADX struct {
 	LogEntry              string `json:"LogEntry"`
 	LogEntrySource        string `json:"LogEntrySource"`
