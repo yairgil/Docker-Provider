@@ -272,7 +272,7 @@ module Fluent
           @last_telemetry_sent_time = Time.now
         end
       rescue Net::HTTPServerException => e
-        if !response.nil && !response.body.nil? #body will have actual error
+        if !response.nil? && !response.body.nil? #body will have actual error
           @log.info "Failed to Post Metrics to MDM : #{e} Response.body: #{response.body}"
         else
           @log.info "Failed to Post Metrics to MDM : #{e} Response: #{response}"
