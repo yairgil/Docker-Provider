@@ -37,10 +37,6 @@ wget https://github.com/microsoft/Docker-Provider/releases/download/7172020-onea
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 
-#TEMP
-cp -f $TMPDIR/mdsd.xml /etc/default
-cp -f $TMPDIR/envmdsd /etc/default
-
 #Assign permissions to omsagent user to access docker.sock
 sudo apt-get install acl
 

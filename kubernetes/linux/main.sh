@@ -484,13 +484,8 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
-# TEMP: should be removed
-export AZMON_CONTAINER_LOGS_ROUTE="v2"
-echo "export CIWORKSPACE_id=v2" >> ~/.bashrc
-echo "Value: AZMON_CONTAINER_LOGS_ROUTE - $AZMON_CONTAINER_LOGS_ROUTE"
-
 #start oneagent
-if [ -e "/etc/config/kube.conf" ]; then
+if [ ! -e "/etc/config/kube.conf" ]; then
    if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then
       echo "container logs route is defined as $AZMON_CONTAINER_LOGS_ROUTE"
       #trim
@@ -516,7 +511,7 @@ if [ -e "/etc/config/kube.conf" ]; then
             dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
             echo "starting mdsd ..."
-            mdsd -l -A -f 5001 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+            mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
       fi
    fi
 fi

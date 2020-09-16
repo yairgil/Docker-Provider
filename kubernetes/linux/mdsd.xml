@@ -17,7 +17,6 @@
   available, which appears to be untrue for Linux IaaS virtuals.
   -->
   <Accounts>
-      <Account moniker="MONIKER" isDefault="true" autoKey="true"></Account>
     <!-- <Account moniker="MySvcMDS" isDefault="true" autoKey="true" /> -->
 <!--<Account moniker="MySvcMDS" isDefault="true" account="omstestvmdiag" tableEndpoint="https://omstestvmdiag.table.core.windows.net" key=""/>
   </Accounts>-->
@@ -62,8 +61,7 @@
   </Schemas>
 
   <Sources>
-    <!-- <Source name="ContainerLogSource" schema="ContainerLogSchema" /> -->
-    <Source name="kube.audit" dynamic_schema="true" />
+    <Source name="ContainerLogSource" schema="ContainerLogSchema" />  	
   </Sources>
   
   
@@ -99,15 +97,15 @@
     priority events to be delivered sooner than the next five-minute interval.
     -->
     <MdsdEvents>
-    <!--
 	  <MdsdEventSource source="ContainerLogSource">
         <RouteEvent eventName="ContainerLogEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">          
+        </RouteEvent> 
+		    <!-- 
+        <RouteEvent eventName="ContainerLogEvent2File" duration="PT1S" priority="High" storeType="File">          
         </RouteEvent>
-      </MdsdEventSource>-->
-	  	<MdsdEventSource source="kube.audit">
-        <RouteEvent eventName="kube.audit" duration="PT10S" priority="High" storeType="CentralBond" />          
+        -->
       </MdsdEventSource>
-
+	  
     </MdsdEvents>
 
 
@@ -115,19 +113,13 @@
   </Events>
   
   <EventStreamingAnnotations>
-  <!--
     <EventStreamingAnnotation name="ContainerLogEvent">
        <OMS>
          <Content>
+           <!-- <![CDATA[<Config workspaceName="CIWORKSPACE" workspaceId="7ab0f4bc-0d3e-4d05-8a19-e2b5c5bf2dc8" logType="CONTAINER_LOG_BLOB" ipName="Containers"/>]]> -->
+           <!--<![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" flushFrequencyInSeconds="20" ipName="Containers"/>]]>-->
            <![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" ipName="Containers"/>]]>
          </Content>
-       </OMS>
-    </EventStreamingAnnotation>-->
-    <EventStreamingAnnotation name="kube.audit">
-       <OMS>
-         <Content>
-           <![CDATA[<Config workspaceName="CIWORKSPACE" workspaceId="8df83044-9d51-4a05-8c44-366d3c236b1a" logType="Kube_Audit" ipName="Security"/>]]>
-         </Content>   
        </OMS>
     </EventStreamingAnnotation>
 	</EventStreamingAnnotations>
