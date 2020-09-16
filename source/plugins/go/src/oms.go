@@ -836,6 +836,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
+		if strings.EqualFold(ToString(record["kind"]), "Event") {
+			var auditLogEntity = ExtractKubeAuditData(record)
+			Log("AuditData Event received and parsed: %s", ToString(auditLogEntity))
+			continue
+		}
+
 		containerID, k8sNamespace, _ := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
@@ -1125,6 +1131,28 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 func containsKey(currentMap map[string]bool, key string) bool {
 	_, c := currentMap[key]
 	return c
+}
+
+func ExtractKubeAuditData(record map[interface{}]interface{}) AuditLogDataItem {	
+	var auditLogEntity = AuditLogDataItem{
+		StageTimestamp:               ToString(record["StageTimestamp"]),
+		Annotations:                  ToString(record["Annotations"]),
+		AuditID:                      ToString(record["AuditID"]),
+		Level:                        ToString(record["Level"]),
+		ObjectRef:                    ToString(record["ObjectRef"]),
+		RequestObject:                ToString(record["RequestObject"]),
+		RequestReceivedTimestamp:     ToString(record["RequestReceivedTimestamp"]),
+		RequestURI:                   ToString(record["RequestURI"]),
+		ResponseObject:               ToString(record["ResponseObject"]),
+		ResponseStatus:               ToString(record["ResponseStatus"]),
+		SourceIPs:                    ToString(record["SourceIPs"]),
+		Stage:                        ToString(record["Stage"]),
+		User:                         ToString(record["User"]),
+		UserAgent:                    ToString(record["UserAgent"]),
+		Verb:                         ToString(record["Verb"]),
+		ImpersonatedUser:             ToString(record["ImpersonatedUser"]),
+	}
+	return auditLogEntity
 }
 
 // GetContainerIDK8sNamespacePodNameFromFileName Gets the container ID, k8s namespace and pod name From the file Name
