@@ -124,10 +124,13 @@ module Fluent
           # Determine PV Type
           type = "empty"
           hasType = false
+          diskName = ""
+          diskUri = ""
           isAzureDisk = false
+          azureFileShareName = ""
           isAzureFile = false
           if !item["spec"].nil?
-            Constants::PV_TYPE.each do |pvType|
+            (Constants::PV_TYPES).each do |pvType|
 
               # PV is this type
               if !item["spec"][pvType].nil?
@@ -191,6 +194,8 @@ module Fluent
             typeInfo["FileShareName"] = azureFileShareName
           end
           recordTags["PVTypeInfo"] = typeInfo
+          
+          record["Tags"] = recordTags
 
           records.push(record)
         end
@@ -208,6 +213,7 @@ module Fluent
           end
         end
 
+        router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, eventStream) if eventStream
 
       rescue => errorStr

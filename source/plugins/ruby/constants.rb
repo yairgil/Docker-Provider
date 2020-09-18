@@ -76,9 +76,9 @@ class Constants
     TELEGRAF_DISK_METRICS = "container.azm.ms/disk"
     OMSAGENT_ZERO_FILL = "omsagent"
     KUBESYSTEM_NAMESPACE_ZERO_FILL = "kube-system"
-    PV_TYPES =["azureDisk", "azureFile", "cephfs", "cinder", "csi", "fc", "flexVolume",
+    PV_TYPES =["awsElasticBlockStore", "azureDisk", "azureFile", "cephfs", "cinder", "csi", "fc", "flexVolume",
       "flocker", "gcePersistentDisk", "glusterfs", "hostPath", "iscsi", "local", "nfs",
-      "photonPersistentDisk", "portworxVolume", "quaobyte", "rbd", "scaleIO", "storageOS", "vsphereVolume"]
+      "photonPersistentDisk", "portworxVolume", "quobyte", "rbd", "scaleIO", "storageos", "vsphereVolume"]
 
     #Telemetry constants
     CONTAINER_METRICS_HEART_BEAT_EVENT = "ContainerMetricsMdmHeartBeatEvent"
