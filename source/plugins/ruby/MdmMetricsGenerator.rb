@@ -267,7 +267,7 @@ class MdmMetricsGenerator
       records = []
       begin
         containerName = dims[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
-        podNamespace = dims[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE]
+        pvcNamespace = dims[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE]
         podName = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME]
         podUid = dims[Constants::INSIGHTSMETRICS_TAGS_POD_UID]
 
@@ -276,7 +276,7 @@ class MdmMetricsGenerator
           metricName: @@pod_metric_name_metric_percentage_name_hash[metricName],
           podNameDimValue: podName,
           computerNameDimValue: computer,
-          namespaceDimValue: podNamespace,
+          namespaceDimValue: pvcNamespace,
           pvResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
