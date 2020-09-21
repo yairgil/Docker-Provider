@@ -267,7 +267,7 @@ class MdmMetricsGenerator
       records = []
       begin
         containerName = dims[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
-        podNamespace = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAMESPACE]
+        podNamespace = dims[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE]
         podName = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME]
         podUid = dims[Constants::INSIGHTSMETRICS_TAGS_POD_UID]
 
