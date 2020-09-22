@@ -32,6 +32,9 @@ import (
 // DataType for Container Log
 const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 
+// DataType for Container Log
+const AuditLogDataType = "AUDIT_LOG"
+
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
 
@@ -195,22 +198,34 @@ type DataItem struct {
 
 // AuditLogDataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
 type AuditLogDataItem struct {
-	StageTimestamp               string `json:"StageTimestamp"`
-	Annotations                  string `json:"Annotations"`
-	AuditID                      string `json:"AuditID"`
-	Level                        string `json:"Level"`
-	ObjectRef                    string `json:"ObjectRef"`
-	RequestObject                string `json:"RequestObject"`
-	RequestReceivedTimestamp     string `json:"RequestReceivedTimestamp"`
-	RequestURI                   string `json:"RequestURI"`
-	ResponseObject               string `json:"ResponseObject"`
-	ResponseStatus               string `json:"ResponseStatus"`
-	SourceIPs                    string `json:"SourceIPs"`
-	Stage                        string `json:"Stage"`
-	User                         string `json:"User"`
-	UserAgent                    string `json:"UserAgent"`
-	Verb                         string `json:"Verb"`
-	ImpersonatedUser             string `json:"ImpersonatedUser"`
+	Timestamp                string `json:"Timestamp"`
+	StageTimestamp           string `json:"StageTimestamp"`
+	AzureResourceId          string `json:"AzureResourceId"`
+	Region                   string `json:"Region"`
+	Annotations              string `json:"Annotations"`
+	ApiVersion               string `json:"ApiVersion"`
+	AuditID                  string `json:"AuditID"`
+	Level                    string `json:"Level"`
+	Metadata                 string `json:"Metadata"`
+	ObjectRef                string `json:"ObjectRef"`
+	RequestObject            string `json:"RequestObject"`
+	RequestReceivedTimestamp string `json:"RequestReceivedTimestamp"`
+	RequestURI               string `json:"RequestURI"`
+	ResponseObject           string `json:"ResponseObject"`
+	ResponseStatus           string `json:"ResponseStatus"`
+	SourceIPs                string `json:"SourceIPs"`
+	Stage                    string `json:"Stage"`
+	User                     string `json:"User"`
+	UserAgent                string `json:"UserAgent"`
+	Verb                     string `json:"Verb"`
+	ImpersonatedUser         string `json:"ImpersonatedUser"`
+}
+
+// ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
+type DataItemsBlob struct {
+	DataType  string        `json:"DataType"`
+	IPName    string        `json:"IPName"`
+	DataItems []interface{} `json:"DataItems"`
 }
 
 type DataItemADX struct {
@@ -813,7 +828,10 @@ func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
 	var dataItems []DataItem
+	var dataItemsGeneric []interface{}
 	var dataItemsADX []DataItemADX
+
+	var auditLogItems []interface{}
 
 	var msgPackEntries []MsgPackEntry
 	var stringMap map[string]string
@@ -836,9 +854,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-		if strings.EqualFold(ToString(record["kind"]), "Event") {
-			var auditLogEntity = ExtractKubeAuditData(record)
-			Log("AuditData Event received and parsed: %s", ToString(auditLogEntity))
+		recordStringMap := ConvertToStringMap(record)
+		if strings.EqualFold(recordStringMap["kind"], "Event") && strings.EqualFold(recordStringMap["apiVersion"], "audit.k8s.io/v1") {
+			auditLogEntity := ExtractKubeAuditData(recordStringMap)
+			fmt.Printf("AuditData Event received and parsed: %+v\n", auditLogEntity)
+			auditLogItems = append(auditLogItems, auditLogEntity)
 			continue
 		}
 
@@ -921,6 +941,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			//ODS
 			dataItems = append(dataItems, dataItem)
+			dataItemsGeneric = append(dataItemsGeneric, dataItem)
 		}
 
 		if stringMap["LogEntryTimeStamp"] != "" {
@@ -1062,52 +1083,56 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	} else {
 		//flush to ODS
 		if len(dataItems) > 0 {
-			logEntry := ContainerLogBlob{
-				DataType:  ContainerLogDataType,
-				IPName:    IPName,
-				DataItems: dataItems}
+			//niv
+			FlushToODS(dataItemsGeneric, ContainerLogDataType, start)
+			FlushToODS(auditLogItems, AuditLogDataType, start)
 
-			marshalled, err := json.Marshal(logEntry)
-			if err != nil {
-				message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
-				Log(message)
-				SendException(message)
-				return output.FLB_OK
-			}
+			// logEntry := ContainerLogBlob{
+			// 	DataType:  ContainerLogDataType,
+			// 	IPName:    IPName,
+			// 	DataItems: dataItems}
 
-			req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("User-Agent", userAgent)
-			reqId := uuid.New().String()
-			req.Header.Set("X-Request-ID", reqId)
-			//expensive to do string len for every request, so use a flag
-			if ResourceCentric == true {
-				req.Header.Set("x-ms-AzureResourceId", ResourceID)
-			}
+			// marshalled, err := json.Marshal(logEntry)
+			// if err != nil {
+			// 	message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
+			// 	Log(message)
+			// 	SendException(message)
+			// 	return output.FLB_OK
+			// }
 
-			resp, err := HTTPClient.Do(req)
-			elapsed = time.Since(start)
+			// req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+			// req.Header.Set("Content-Type", "application/json")
+			// req.Header.Set("User-Agent", userAgent)
+			// reqId := uuid.New().String()
+			// req.Header.Set("X-Request-ID", reqId)
+			// //expensive to do string len for every request, so use a flag
+			// if ResourceCentric == true {
+			// 	req.Header.Set("x-ms-AzureResourceId", ResourceID)
+			// }
 
-			if err != nil {
-				message := fmt.Sprintf("Error when sending request %s \n", err.Error())
-				Log(message)
-				// Commenting this out for now. TODO - Add better telemetry for ods errors using aggregation
-				//SendException(message)
-				Log("Failed to flush %d records after %s", len(dataItems), elapsed)
+			// resp, err := HTTPClient.Do(req)
+			// elapsed = time.Since(start)
 
-				return output.FLB_RETRY
-			}
+			// if err != nil {
+			// 	message := fmt.Sprintf("Error when sending request %s \n", err.Error())
+			// 	Log(message)
+			// 	// Commenting this out for now. TODO - Add better telemetry for ods errors using aggregation
+			// 	//SendException(message)
+			// 	Log("Failed to flush %d records after %s", len(dataItems), elapsed)
 
-			if resp == nil || resp.StatusCode != 200 {
-				if resp != nil {
-					Log("RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
-				}
-				return output.FLB_RETRY
-			}
+			// 	return output.FLB_RETRY
+			// }
 
-			defer resp.Body.Close()
-			numContainerLogRecords = len(dataItems)
-			Log("PostDataHelper::Info::Successfully flushed %d container log records to ODS in %s", numContainerLogRecords, elapsed)
+			// if resp == nil || resp.StatusCode != 200 {
+			// 	if resp != nil {
+			// 		Log("RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
+			// 	}
+			// 	return output.FLB_RETRY
+			// }
+
+			// defer resp.Body.Close()
+			// numContainerLogRecords = len(dataItems)
+			// Log("PostDataHelper::Info::Successfully flushed %d container log records to ODS in %s", numContainerLogRecords, elapsed)
 
 		}
 	}
@@ -1133,24 +1158,88 @@ func containsKey(currentMap map[string]bool, key string) bool {
 	return c
 }
 
-func ExtractKubeAuditData(record map[interface{}]interface{}) AuditLogDataItem {	
-	var auditLogEntity = AuditLogDataItem{
-		StageTimestamp:               ToString(record["StageTimestamp"]),
-		Annotations:                  ToString(record["Annotations"]),
-		AuditID:                      ToString(record["AuditID"]),
-		Level:                        ToString(record["Level"]),
-		ObjectRef:                    ToString(record["ObjectRef"]),
-		RequestObject:                ToString(record["RequestObject"]),
-		RequestReceivedTimestamp:     ToString(record["RequestReceivedTimestamp"]),
-		RequestURI:                   ToString(record["RequestURI"]),
-		ResponseObject:               ToString(record["ResponseObject"]),
-		ResponseStatus:               ToString(record["ResponseStatus"]),
-		SourceIPs:                    ToString(record["SourceIPs"]),
-		Stage:                        ToString(record["Stage"]),
-		User:                         ToString(record["User"]),
-		UserAgent:                    ToString(record["UserAgent"]),
-		Verb:                         ToString(record["Verb"]),
-		ImpersonatedUser:             ToString(record["ImpersonatedUser"]),
+func ConvertToStringMap(record map[interface{}]interface{}) map[string]string {
+	stringMap := make(map[string]string)
+	for i, v := range record {
+		key := fmt.Sprintf("%v", i)
+		val, err := json.Marshal(v)
+		if err != nil {
+			panic(err)
+		}
+		stringMap[key] = strings.Trim(string(val), "\"") //fmt.Sprintf("%v", v)
+	}
+	return stringMap
+}
+
+func FlushToODS(items []interface{}, dataType string, start time.Time) int {
+	logEntry := DataItemsBlob{
+		DataType:  dataType,
+		IPName:    IPName,
+		DataItems: items}
+
+	marshalled, err := json.Marshal(logEntry)
+	if err != nil {
+		message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
+		Log(message)
+		SendException(message)
+		return output.FLB_OK
+	}
+
+	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", userAgent)
+	reqId := uuid.New().String()
+	req.Header.Set("X-Request-ID", reqId)
+	//expensive to do string len for every request, so use a flag
+	if ResourceCentric == true {
+		req.Header.Set("x-ms-AzureResourceId", ResourceID)
+	}
+
+	resp, err := HTTPClient.Do(req)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		message := fmt.Sprintf("Error when sending request %s \n", err.Error())
+		Log(message)
+		// Commenting this out for now. TODO - Add better telemetry for ods errors using aggregation
+		//SendException(message)
+		Log("Failed to flush %d records after %s", len(items), elapsed)
+
+		return output.FLB_RETRY
+	}
+
+	if resp == nil || resp.StatusCode != 200 {
+		if resp != nil {
+			Log("RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
+		}
+		return output.FLB_RETRY
+	}
+
+	defer resp.Body.Close()
+	numContainerLogRecords := len(items)
+	Log("PostDataHelper::Info::Successfully flushed %d container log records to ODS in %s", numContainerLogRecords, elapsed)
+
+	return output.FLB_OK
+}
+
+func ExtractKubeAuditData(record map[string]string) AuditLogDataItem {
+	auditLogEntity := AuditLogDataItem{
+		StageTimestamp:           record["stageTimestamp"],
+		Annotations:              record["annotations"],
+		AuditID:                  record["auditID"],
+		Level:                    record["level"],
+		ObjectRef:                record["objectRef"],
+		RequestObject:            record["requestObject"],
+		RequestReceivedTimestamp: record["requestReceivedTimestamp"],
+		RequestURI:               record["requestURI"],
+		ResponseObject:           record["responseObject"],
+		ResponseStatus:           record["responseStatus"],
+		SourceIPs:                record["sourceIPs"],
+		Stage:                    record["stage"],
+		User:                     record["user"],
+		UserAgent:                record["userAgent"],
+		Verb:                     record["verb"],
+		ImpersonatedUser:         record["impersonatedUser"],
 	}
 	return auditLogEntity
 }
