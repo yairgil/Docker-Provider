@@ -85,4 +85,7 @@ class Constants
     TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = 10
     KUBE_STATE_TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = 15
     MDM_TIME_SERIES_FLUSHED_IN_LAST_HOUR = "MdmTimeSeriesFlushedInLastHour"
+
+    #Pod Statuses
+    POD_STATUS_TERMINATING = "Terminating"
 end
