@@ -19,6 +19,7 @@ class Constants
     INSIGHTSMETRICS_TAGS_PVC_NAMESPACE = "pvcNamespace"
     INSIGHTSMETRICS_TAGS_POD_NAME = "podName"
     INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES = "pvCapacityBytes"
+    INSIGHTSMETRICS_TAGS_VOLUME_NAME = "volumeName"
     INSIGHTSMETRICS_FLUENT_TAG = "oms.api.InsightsMetrics"
     REASON_OOM_KILLED = "oomkilled"
     #Kubestate (common)
