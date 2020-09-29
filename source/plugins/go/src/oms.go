@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/google/uuid"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/tinylib/msgp/msgp"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
@@ -32,8 +34,11 @@ import (
 // DataType for Container Log
 const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 
-// DataType for Container Log
+// DataType for Audit Logs
 const AuditLogDataType = "AUDIT_LOG"
+
+// DataType for Custom Logs
+const CustomLogDataType = "CUSTOM_LOG_BLOB.NIV"
 
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
@@ -83,6 +88,7 @@ const WindowsContainerLogPluginConfFilePath = "/etc/omsagentwindows/out_oms.conf
 
 // IPName for Container Log
 const IPName = "Containers"
+const IPNameSecurity = "Security"
 const defaultContainerInventoryRefreshInterval = 60
 
 const kubeMonAgentConfigEventFlushInterval = 60
@@ -198,27 +204,27 @@ type DataItem struct {
 
 // AuditLogDataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
 type AuditLogDataItem struct {
-	Timestamp                string `json:"Timestamp"`
-	StageTimestamp           string `json:"StageTimestamp"`
-	AzureResourceId          string `json:"AzureResourceId"`
-	Region                   string `json:"Region"`
-	Annotations              string `json:"Annotations"`
-	ApiVersion               string `json:"ApiVersion"`
-	AuditID                  string `json:"AuditID"`
-	Level                    string `json:"Level"`
-	Metadata                 string `json:"Metadata"`
-	ObjectRef                string `json:"ObjectRef"`
-	RequestObject            string `json:"RequestObject"`
-	RequestReceivedTimestamp string `json:"RequestReceivedTimestamp"`
-	RequestURI               string `json:"RequestURI"`
-	ResponseObject           string `json:"ResponseObject"`
-	ResponseStatus           string `json:"ResponseStatus"`
-	SourceIPs                string `json:"SourceIPs"`
-	Stage                    string `json:"Stage"`
-	User                     string `json:"User"`
-	UserAgent                string `json:"UserAgent"`
-	Verb                     string `json:"Verb"`
-	ImpersonatedUser         string `json:"ImpersonatedUser"`
+	Timestamp                interface{} `json:"Timestamp"`
+	StageTimestamp           interface{} `json:"StageTimestamp"`
+	AzureResourceId          interface{} `json:"AzureResourceId"`
+	Region                   interface{} `json:"Region"`
+	Annotations              interface{} `json:"Annotations"`
+	ApiVersion               interface{} `json:"ApiVersion"`
+	AuditID                  interface{} `json:"AuditID"`
+	Level                    interface{} `json:"Level"`
+	Metadata                 interface{} `json:"Metadata"`
+	ObjectRef                interface{} `json:"ObjectRef"`
+	RequestObject            interface{} `json:"RequestObject"`
+	RequestReceivedTimestamp interface{} `json:"RequestReceivedTimestamp"`
+	RequestURI               interface{} `json:"RequestURI"`
+	ResponseObject           interface{} `json:"ResponseObject"`
+	ResponseStatus           interface{} `json:"ResponseStatus"`
+	SourceIPs                interface{} `json:"SourceIPs"`
+	Stage                    interface{} `json:"Stage"`
+	User                     interface{} `json:"User"`
+	UserAgent                interface{} `json:"UserAgent"`
+	Verb                     interface{} `json:"Verb"`
+	ImpersonatedUser         interface{} `json:"ImpersonatedUser"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -827,7 +833,7 @@ func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int
 // PostDataHelper sends data to the ODS endpoint or oneagent or ADX
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
-	var dataItems []DataItem
+	//var dataItems []DataItem
 	var dataItemsGeneric []interface{}
 	var dataItemsADX []DataItemADX
 
@@ -854,10 +860,15 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-		recordStringMap := ConvertToStringMap(record)
-		if strings.EqualFold(recordStringMap["kind"], "Event") && strings.EqualFold(recordStringMap["apiVersion"], "audit.k8s.io/v1") {
+
+		// 2 gates since 1 applies for local debug and gate2 for fluent bit typed logs.
+		gate1 := strings.EqualFold(fmt.Sprintf("%v", record["kind"]), "Event") && strings.EqualFold(fmt.Sprintf("%v", record["apiVersion"]), "audit.k8s.io/v1")
+		gate2 := strings.EqualFold(ToString(record["kind"]), "Event") && strings.EqualFold(ToString(record["apiVersion"]), "audit.k8s.io/v1")
+		if gate1 || gate2 {
+			recordStringMap := ConvertToStringMap2(record)
 			auditLogEntity := ExtractKubeAuditData(recordStringMap)
-			fmt.Printf("AuditData Event received and parsed: %+v\n", auditLogEntity)
+			//Log("AuditData Event received and parsed: %+v\n", auditLogEntity)
+			//Log("AuditData Event received and parsed, gates: %+v %+v", gate1, gate2)
 			auditLogItems = append(auditLogItems, auditLogEntity)
 			continue
 		}
@@ -940,7 +951,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Name:                  stringMap["Name"],
 			}
 			//ODS
-			dataItems = append(dataItems, dataItem)
+			//dataItems = append(dataItems, dataItem)
 			dataItemsGeneric = append(dataItemsGeneric, dataItem)
 		}
 
@@ -1012,7 +1023,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		elapsed = time.Since(start)
 
 		if er != nil {
-			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(dataItems), elapsed, er.Error())
+			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(dataItemsGeneric), elapsed, er.Error())
 			if MdsdMsgpUnixSocketClient != nil {
 				MdsdMsgpUnixSocketClient.Close()
 				MdsdMsgpUnixSocketClient = nil
@@ -1082,10 +1093,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	} else {
 		//flush to ODS
-		if len(dataItems) > 0 {
-			//niv
-			FlushToODS(dataItemsGeneric, ContainerLogDataType, start)
-			FlushToODS(auditLogItems, AuditLogDataType, start)
+		if len(dataItemsGeneric) > 0 {
+			//FlushToODS(dataItemsGeneric, ContainerLogDataType, IPName, start)
+		}
+		if len(auditLogItems) > 0 {
+			// Niv: custom logs data type temp
+			FlushToODS(auditLogItems, CustomLogDataType, IPNameSecurity, start)
 
 			// logEntry := ContainerLogBlob{
 			// 	DataType:  ContainerLogDataType,
@@ -1158,26 +1171,52 @@ func containsKey(currentMap map[string]bool, key string) bool {
 	return c
 }
 
-func ConvertToStringMap(record map[interface{}]interface{}) map[string]string {
-	stringMap := make(map[string]string)
+func ConvertToStringMap2(record map[interface{}]interface{}) map[string]interface{} {
+	stringMap := make(map[string]interface{})
 	for i, v := range record {
 		key := fmt.Sprintf("%v", i)
-		val, err := json.Marshal(v)
-		if err != nil {
-			panic(err)
-		}
-		stringMap[key] = strings.Trim(string(val), "\"") //fmt.Sprintf("%v", v)
+		stringMap[key] = v
 	}
 	return stringMap
 }
 
-func FlushToODS(items []interface{}, dataType string, start time.Time) int {
+func ConvertToStringMap(record map[interface{}]interface{}) map[string]string {
+	stringMap := make(map[string]string)
+	for i, v := range record {
+		key := fmt.Sprintf("%v", i)
+
+		// json Marshal can't handle complex objects as keys in a map
+		// complexStructure, complexStructureFlag := v.(map[interface{}]interface{})
+		// if complexStructureFlag {
+		// 	Log("Recognized Map[interface{}]interface{}")
+		// 	v = ConvertToStringMap(complexStructure)
+		// }
+		// json Marshal can't handle map[interface{}]interface{}, hence use jsoniter extension
+		val, err := jsoniter.Marshal(&v)
+		valStr := string(val)
+		if err != nil {
+			Log(ToString(v))
+			panic(err)
+		}
+		decodedString, err := base64.StdEncoding.DecodeString(valStr)
+		if err != nil {
+			stringMap[key] = strings.Trim(valStr, "\"") //fmt.Sprintf("%v", v)
+			Log("could not parse %+v", stringMap[key])
+		} else {
+			stringMap[key] = string(decodedString)
+			Log("parsed %+v from %v", decodedString, val)
+		}
+	}
+	return stringMap
+}
+
+func FlushToODS(items []interface{}, dataType string, ipName string, start time.Time) int {
 	logEntry := DataItemsBlob{
 		DataType:  dataType,
-		IPName:    IPName,
+		IPName:    ipName,
 		DataItems: items}
 
-	marshalled, err := json.Marshal(logEntry)
+	marshalled, err := jsoniter.Marshal(&logEntry)
 	if err != nil {
 		message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
 		Log(message)
@@ -1217,13 +1256,14 @@ func FlushToODS(items []interface{}, dataType string, start time.Time) int {
 
 	defer resp.Body.Close()
 	numContainerLogRecords := len(items)
-	Log("PostDataHelper::Info::Successfully flushed %d container log records to ODS in %s", numContainerLogRecords, elapsed)
+	Log("PostDataHelper::Info::Successfully flushed %d %v records to ODS in %s", numContainerLogRecords, dataType, elapsed)
 
 	return output.FLB_OK
 }
 
-func ExtractKubeAuditData(record map[string]string) AuditLogDataItem {
+func ExtractKubeAuditData(record map[string]interface{}) AuditLogDataItem {
 	auditLogEntity := AuditLogDataItem{
+		Timestamp:                record["stageTimestamp"],
 		StageTimestamp:           record["stageTimestamp"],
 		Annotations:              record["annotations"],
 		AuditID:                  record["auditID"],
@@ -1241,6 +1281,35 @@ func ExtractKubeAuditData(record map[string]string) AuditLogDataItem {
 		Verb:                     record["verb"],
 		ImpersonatedUser:         record["impersonatedUser"],
 	}
+
+	Log("AuditId: %v, Timestamp: %v", &auditLogEntity.AuditID, &auditLogEntity.Timestamp)
+
+	// if record["stageTimestamp"] != "" {
+	// 	_, e := time.Parse(time.RFC3339, record["stageTimestamp"])
+	// 	if e != nil {
+	// 		decodedTime, err := base64.StdEncoding.DecodeString(record["stageTimestamp"])
+	// 		if err != nil {
+	// 			message := fmt.Sprintf("Error stageTimestamp is not base64: %s", err)
+	// 			Log(message)
+	// 		} else {
+	// 			decodedTimeParsed := fmt.Sprintf("%q", decodedTime)
+	// 			auditLogEntity.Timestamp = decodedTimeParsed
+	// 			auditLogEntity.StageTimestamp = decodedTimeParsed
+	// 			Log(record["stageTimestamp"])
+	// 			message := fmt.Sprintf("Error while converting stageTimestamp for audit log: %s", e.Error())
+	// 			Log(message)
+	// 		}
+	// 	}
+	// }
+
+	// if record["RequestReceivedTimestamp"] != "" {
+	// 	_, e := time.Parse(time.RFC3339, record["RequestReceivedTimestamp"])
+	// 	if e != nil {
+	// 		message := fmt.Sprintf("Error while converting RequestReceivedTimestamp for audit log: %s", e.Error())
+	// 		Log(message)
+	// 	}
+	// }
+
 	return auditLogEntity
 }
 
