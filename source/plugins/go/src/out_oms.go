@@ -6,9 +6,6 @@ import (
 )
 import (
 	"C"
-	"bufio"
-	"encoding/json"
-	"log"
 	"os"
 	"strings"
 	"unsafe"
@@ -90,35 +87,4 @@ func FLBPluginExit() int {
 }
 
 func main() {
-	var jsonMaps []map[string]interface{}
-
-	file, err := os.Open("/var/log/kube-audit")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		jsonMap := make(map[string]interface{})
-		err := json.Unmarshal([]byte(line), &jsonMap)
-		if err != nil {
-			panic(err)
-		}
-		jsonMaps = append(jsonMaps, jsonMap)
-	}
-
-	jsonMapsParsed := make([]map[interface{}]interface{}, len(jsonMaps))
-	for i, v := range jsonMaps {
-		jsonMapParsed := make(map[interface{}]interface{})
-		for i2, v2 := range v {
-			jsonMapParsed[i2] = v2
-		}
-		jsonMapsParsed[i] = jsonMapParsed
-	}
-	PostDataHelper(jsonMapsParsed)
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
 }

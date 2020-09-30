@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
@@ -204,27 +205,27 @@ type DataItem struct {
 
 // AuditLogDataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
 type AuditLogDataItem struct {
-	Timestamp                interface{} `json:"Timestamp"`
-	StageTimestamp           interface{} `json:"StageTimestamp"`
-	AzureResourceId          interface{} `json:"AzureResourceId"`
-	Region                   interface{} `json:"Region"`
-	Annotations              interface{} `json:"Annotations"`
-	ApiVersion               interface{} `json:"ApiVersion"`
-	AuditID                  interface{} `json:"AuditID"`
-	Level                    interface{} `json:"Level"`
-	Metadata                 interface{} `json:"Metadata"`
-	ObjectRef                interface{} `json:"ObjectRef"`
-	RequestObject            interface{} `json:"RequestObject"`
-	RequestReceivedTimestamp interface{} `json:"RequestReceivedTimestamp"`
-	RequestURI               interface{} `json:"RequestURI"`
-	ResponseObject           interface{} `json:"ResponseObject"`
-	ResponseStatus           interface{} `json:"ResponseStatus"`
-	SourceIPs                interface{} `json:"SourceIPs"`
-	Stage                    interface{} `json:"Stage"`
-	User                     interface{} `json:"User"`
-	UserAgent                interface{} `json:"UserAgent"`
-	Verb                     interface{} `json:"Verb"`
-	ImpersonatedUser         interface{} `json:"ImpersonatedUser"`
+	Timestamp                interface{} `json:"Timestamp,string"`
+	StageTimestamp           interface{} `json:"StageTimestamp,string"`
+	AzureResourceId          interface{} `json:"AzureResourceId,string"`
+	Region                   interface{} `json:"Region,string"`
+	Annotations              interface{} `json:"Annotations,string"`
+	ApiVersion               interface{} `json:"ApiVersion,string"`
+	AuditID                  interface{} `json:"AuditID,string"`
+	Level                    interface{} `json:"Level,string"`
+	Metadata                 interface{} `json:"Metadata,string"`
+	ObjectRef                interface{} `json:"ObjectRef,string"`
+	RequestObject            interface{} `json:"RequestObject,string"`
+	RequestReceivedTimestamp interface{} `json:"RequestReceivedTimestamp,string"`
+	RequestURI               interface{} `json:"RequestURI,string"`
+	ResponseObject           interface{} `json:"ResponseObject,string"`
+	ResponseStatus           interface{} `json:"ResponseStatus,string"`
+	SourceIPs                interface{} `json:"SourceIPs,string"`
+	Stage                    interface{} `json:"Stage,string"`
+	User                     interface{} `json:"User,string"`
+	UserAgent                interface{} `json:"UserAgent,string"`
+	Verb                     interface{} `json:"Verb,string"`
+	ImpersonatedUser         interface{} `json:"ImpersonatedUser,string"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -860,13 +861,29 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-
+		gate3 := fmt.Sprintf("%v", record["log"]) != ""
+		gate4 := ToString(record["log"]) != ""
+		if gate3 || gate4 {
+			Log("got in\n")
+			Log("%v", ToString(record["log"]))
+			Log("gotin2\n")
+			Log("%v", fmt.Sprintf("%v", record["log"]))
+		}
 		// 2 gates since 1 applies for local debug and gate2 for fluent bit typed logs.
 		gate1 := strings.EqualFold(fmt.Sprintf("%v", record["kind"]), "Event") && strings.EqualFold(fmt.Sprintf("%v", record["apiVersion"]), "audit.k8s.io/v1")
 		gate2 := strings.EqualFold(ToString(record["kind"]), "Event") && strings.EqualFold(ToString(record["apiVersion"]), "audit.k8s.io/v1")
 		if gate1 || gate2 {
+			continue
 			recordStringMap := ConvertToStringMap2(record)
 			auditLogEntity := ExtractKubeAuditData(recordStringMap)
+
+			debugStr := spew.Sdump(record)
+			Log("Spew Dump record:")
+			Log(debugStr)
+
+			debugStr = spew.Sdump(auditLogEntity)
+			Log("Spew Dump auditLogEntity:")
+			Log(debugStr)
 			//Log("AuditData Event received and parsed: %+v\n", auditLogEntity)
 			//Log("AuditData Event received and parsed, gates: %+v %+v", gate1, gate2)
 			auditLogItems = append(auditLogItems, auditLogEntity)
@@ -1259,6 +1276,39 @@ func FlushToODS(items []interface{}, dataType string, ipName string, start time.
 	Log("PostDataHelper::Info::Successfully flushed %d %v records to ODS in %s", numContainerLogRecords, dataType, elapsed)
 
 	return output.FLB_OK
+}
+
+// func (item AuditLogDataItem) MarshalJSON() ([]byte, error) {
+// 	var result string
+
+// 	itemReflection := reflect.ValueOf(item)
+// 	itemReflectionType := itemReflection.Type()
+
+// 	for i := 0; i < itemReflection.NumField(); i++ {
+// 		fieldName := itemReflectionType.Field(i).Name
+// 		fieldValue := itemReflection.Field(i).Interface()
+// 		fieldValueType3 := fmt.Sprintf("%T", fieldValue)
+// 		if fieldName == "User" {
+// 			switch fieldValue.(type) {
+// 			case string:
+// 				return []uint8(fieldValue.(string)), nil
+// 			case []uint8:
+// 				return fieldValue.([]uint8), nil
+// 			case map[string]interface{}:
+// 				return []uint8(fieldValue.(string)), nil
+// 			default:
+// 				//return []uint8(fieldValue.(interface{}))
+// 			}
+// 		}
+// 		Log("Field: %s\tValue: %T\t Value2:%v, Value3:%v\n", fieldName, fieldValue, fieldValueType3)
+// 	}
+// 	//result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
+
+// 	return []byte(result), nil
+// }
+
+func MarshalMapInterfaceJson(mapObj map[string]interface{}) {
+
 }
 
 func ExtractKubeAuditData(record map[string]interface{}) AuditLogDataItem {
