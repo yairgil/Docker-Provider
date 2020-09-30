@@ -8,9 +8,11 @@ class MdmMetricsGenerator
   require_relative "MdmAlertTemplates"
   require_relative "ApplicationInsightsUtility"
   require_relative "constants"
+  require_relative "oms_common"
 
   @log_path = "/var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log"
   @log = Logger.new(@log_path, 1, 5000000)
+  @@hostName = (OMS::Common.get_hostname)
 
   @oom_killed_container_count_hash = {}
   @container_restart_count_hash = {}
@@ -38,11 +40,12 @@ class MdmMetricsGenerator
   }
 
   @@pod_metric_name_metric_percentage_name_hash = {
-    Constants::PV_USED_BYTES => Constants::MDM_PV_UTILIZATION_METRIC
+    Constants::PV_USED_BYTES => Constants::MDM_PV_UTILIZATION_METRIC,
   }
 
   # Setting this to true since we need to send zero filled metrics at startup. If metrics are absent alert creation fails
   @sendZeroFilledMetrics = true
+  @zeroFilledMetricsTimeTracker = DateTime.now.to_time.to_i
 
   def initialize
   end
@@ -179,6 +182,19 @@ class MdmMetricsGenerator
         if !containerMemoryWorkingSetRecord.nil? && !containerMemoryWorkingSetRecord.empty? && !containerMemoryWorkingSetRecord[0].nil? && !containerMemoryWorkingSetRecord[0].empty?
           records.push(containerMemoryWorkingSetRecord[0])
         end
+
+        pvZeroFillDims = {}
+        pvZeroFillDims[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE] = Constants::KUBESYSTEM_NAMESPACE_ZERO_FILL
+        pvZeroFillDims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = Constants::OMSAGENT_ZERO_FILL
+        pvResourceUtilMetricRecord = getPVResourceUtilMetricRecords(batch_time,
+                                                                    Constants::PV_USED_BYTES,
+                                                                    @@hostName,
+                                                                    0,
+                                                                    pvZeroFillDims,
+                                                                    metric_threshold_hash[Constants::PV_USED_BYTES])
+        if !pvResourceUtilMetricRecord.nil? && !pvResourceUtilMetricRecord.empty? && !pvResourceUtilMetricRecord[0].nil? && !pvResourceUtilMetricRecord[0].empty?
+          records.push(pvResourceUtilMetricRecord[0])
+        end
       rescue => errorStr
         @log.info "Error in zeroFillMetricRecords: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
@@ -189,10 +205,13 @@ class MdmMetricsGenerator
     def appendAllPodMetrics(records, batch_time)
       begin
         @log.info "in appendAllPodMetrics..."
-        if @sendZeroFilledMetrics == true
+        timeDifference = (DateTime.now.to_time.to_i - @zeroFilledMetricsTimeTracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if @sendZeroFilledMetrics == true || (timeDifferenceInMinutes >= Constants::ZERO_FILL_METRICS_INTERVAL_IN_MINUTES)
           records = zeroFillMetricRecords(records, batch_time)
           # Setting it to false after startup
           @sendZeroFilledMetrics = false
+          @zeroFilledMetricsTimeTracker = DateTime.now.to_time.to_i
         end
         records = appendPodMetrics(records,
                                    Constants::MDM_OOM_KILLED_CONTAINER_COUNT,
@@ -325,22 +344,22 @@ class MdmMetricsGenerator
       begin
         dimNames = String.new "" #mutable string
         dimValues = String.new ""
-        noDimVal ="-"
+        noDimVal = "-"
         metricValue = 0
         if !record["tags"].nil?
-            dimCount = 0
-            record["tags"].each { |k, v| 
-            dimCount = dimCount+1
-              if (dimCount <= 10) #MDM = 10 dims
-                dimNames.concat("\"#{k}\"")
-                dimNames.concat(",")
-                if !v.nil? && v.length >0
-                  dimValues.concat("\"#{v}\"")
-                else
-                  dimValues.concat("\"#{noDimVal}\"")
-                end
-                dimValues.concat(",")
+          dimCount = 0
+          record["tags"].each { |k, v|
+            dimCount = dimCount + 1
+            if (dimCount <= 10) #MDM = 10 dims
+              dimNames.concat("\"#{k}\"")
+              dimNames.concat(",")
+              if !v.nil? && v.length > 0
+                dimValues.concat("\"#{v}\"")
+              else
+                dimValues.concat("\"#{noDimVal}\"")
               end
+              dimValues.concat(",")
+            end
           }
           if (dimNames.end_with?(","))
             dimNames.chomp!(",")
@@ -353,19 +372,19 @@ class MdmMetricsGenerator
         convertedTimestamp = Time.at(timestamp.to_i).utc.iso8601
         if !record["fields"].nil?
           record["fields"].each { |k, v|
-          if is_numeric(v)
-            metricRecord = MdmAlertTemplates::Generic_metric_template % {
-              timestamp: convertedTimestamp,
-              metricName: k,
-              namespaceSuffix: record["name"],
-              dimNames: dimNames,
-              dimValues: dimValues,
-              metricValue: v,
-            }
-            records.push(Yajl::Parser.parse(StringIO.new(metricRecord)))
-            #@log.info "pushed mdmgenericmetric: #{k},#{v}"
-          end
-            }
+            if is_numeric(v)
+              metricRecord = MdmAlertTemplates::Generic_metric_template % {
+                timestamp: convertedTimestamp,
+                metricName: k,
+                namespaceSuffix: record["name"],
+                dimNames: dimNames,
+                dimValues: dimValues,
+                metricValue: v,
+              }
+              records.push(Yajl::Parser.parse(StringIO.new(metricRecord)))
+              #@log.info "pushed mdmgenericmetric: #{k},#{v}"
+            end
+          }
         end
       rescue => errorStr
         @log.info "getMetricRecords:Error: #{errorStr} for record #{record}"
@@ -375,7 +394,7 @@ class MdmMetricsGenerator
     end
 
     def is_numeric(o)
-        true if Float(o) rescue false
+      true if Float(o) rescue false
     end
 
     def getContainerResourceUtilizationThresholds
