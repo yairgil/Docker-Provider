@@ -101,6 +101,7 @@ class MdmAlertTemplates
                     "podName",
                     "node",
                     "kubernetesNamespace",
+                    "volumeName",
                     "thresholdPercentage"
                 ],
                 "series": [
@@ -109,6 +110,7 @@ class MdmAlertTemplates
                         "%{podNameDimValue}",
                         "%{computerNameDimValue}",
                         "%{namespaceDimValue}",
+                        "%{volumeNameDimValue}",
                         "%{thresholdPercentageDimValue}"
                     ],
                     "min": %{pvResourceUtilizationPercentage},

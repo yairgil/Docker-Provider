@@ -186,6 +186,7 @@ class MdmMetricsGenerator
         pvZeroFillDims = {}
         pvZeroFillDims[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE] = Constants::KUBESYSTEM_NAMESPACE_ZERO_FILL
         pvZeroFillDims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = Constants::OMSAGENT_ZERO_FILL
+        pvZeroFillDims[Constants::INSIGHTSMETRICS_TAGS_VOLUME_NAME] = Constants::VOLUME_NAME_ZERO_FILL
         pvResourceUtilMetricRecord = getPVResourceUtilMetricRecords(batch_time,
                                                                     Constants::PV_USED_BYTES,
                                                                     @@hostName,
@@ -289,6 +290,7 @@ class MdmMetricsGenerator
         pvcNamespace = dims[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE]
         podName = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME]
         podUid = dims[Constants::INSIGHTSMETRICS_TAGS_POD_UID]
+        volumeName = dims[Constants::INSIGHTSMETRICS_TAGS_VOLUME_NAME]
 
         resourceUtilRecord = MdmAlertTemplates::PV_resource_utilization_template % {
           timestamp: recordTimeStamp,
@@ -296,6 +298,7 @@ class MdmMetricsGenerator
           podNameDimValue: podName,
           computerNameDimValue: computer,
           namespaceDimValue: pvcNamespace,
+          volumeNameDimValue: volumeName,
           pvResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
