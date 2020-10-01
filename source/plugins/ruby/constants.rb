@@ -76,6 +76,7 @@ class Constants
   TELEGRAF_DISK_METRICS = "container.azm.ms/disk"
   OMSAGENT_ZERO_FILL = "omsagent"
   KUBESYSTEM_NAMESPACE_ZERO_FILL = "kube-system"
+  VOLUME_NAME_ZERO_FILL = "-"
 
   #Telemetry constants
   CONTAINER_METRICS_HEART_BEAT_EVENT = "ContainerMetricsMdmHeartBeatEvent"
