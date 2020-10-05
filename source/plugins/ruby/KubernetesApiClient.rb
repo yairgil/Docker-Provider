@@ -719,6 +719,9 @@ class KubernetesApiClient
           if (metricValue.end_with?("m"))
             metricValue.chomp!("m")
             metricValue = Float(metricValue) * 1000.0 ** 2
+          elsif (metricValue.end_with?("k"))
+            metricValue.chomp!("k")
+            metricValue = Float(metricValue) * 1000.0
           else #assuming no units specified, it is cores that we are converting to nanocores (the below conversion will fail for other unsupported 'units')
             metricValue = Float(metricValue) * 1000.0 ** 3
           end

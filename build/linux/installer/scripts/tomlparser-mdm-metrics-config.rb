@@ -80,7 +80,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
     begin
       isUsingPVThresholdConfig = false
       pvUtilizationThresholds = parsedConfig[:alertable_metrics_configuration_settings][:pv_utilization_thresholds]
-      if !pvUtilization.nil?
+      if !pvUtilizationThresholds.nil?
         pvUsageThreshold = pvUtilizationThresholds[:pv_usage_threshold_percentage]
         if !pvUsageThreshold.nil?
           pvUsageThresholdFloat = pvUsageThreshold.to_f
