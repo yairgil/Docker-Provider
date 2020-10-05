@@ -122,13 +122,13 @@ module Fluent
           end
 
           # Determine PV Type
-          type = "empty"
           hasType = false
+          isAzureDisk = false
+          isAzureFile = false
+          type = "empty"
           diskName = ""
           diskUri = ""
-          isAzureDisk = false
           azureFileShareName = ""
-          isAzureFile = false
           if !item["spec"].nil?
             (Constants::PV_TYPES).each do |pvType|
 
@@ -164,27 +164,20 @@ module Fluent
           record["CollectionTime"] = batchTime
           record["ClusterId"] = KubernetesApiClient.getClusterId
           record["ClusterName"] = KubernetesApiClient.getClusterName
-
-          record["Name"] = "pvInventory"
-          record["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
-          record["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
-          record["Computer"] = @@hostName
-
-          recordTags = {}
-          recordTags["PVName"] = item["metadata"]["name"]
-          recordTags["PVStatus"] = item["status"]["phase"]
-          recordTags["PVAccessModes"] = item["spec"]["accessModes"].join(', ')
-          recordTags["PVStorageClassName"] = item["spec"]["storageClassName"]
-          recordTags["PVCapacityBytes"] = KubernetesApiClient.getMetricNumericValue("memory", item["spec"]["capacity"]["storage"])
-          recordTags["PVCreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+          record["PVName"] = item["metadata"]["name"]
+          record["PVStatus"] = item["status"]["phase"]
+          record["PVAccessModes"] = item["spec"]["accessModes"].join(', ')
+          record["PVStorageClassName"] = item["spec"]["storageClassName"]
+          record["PVCapacityBytes"] = KubernetesApiClient.getMetricNumericValue("memory", item["spec"]["capacity"]["storage"])
+          record["PVCreationTimeStamp"] = item["metadata"]["creationTimestamp"]
 
           # Optional values
           if hasPVC
-            recordTags["PVCName"] = pvcName
-            recordTags["PVCNamespace"] = pvcNamespace
+            record["PVCName"] = pvcName
+            record["PVCNamespace"] = pvcNamespace
           end
           if hasType
-            recordTags["PVType"] = type
+            record["PVType"] = type
           end
           typeInfo = {}
           if isAzureDisk
@@ -193,19 +186,15 @@ module Fluent
           elsif isAzureFile
             typeInfo["FileShareName"] = azureFileShareName
           end
-          recordTags["PVTypeInfo"] = typeInfo
-          
-          record["Tags"] = recordTags
+          record["PVTypeInfo"] = typeInfo
 
           records.push(record)
         end
 
-        $log.info "pvTypeToCountHash: #{@pvTypeToCountHash}"
-
         records.each do |record|
           if !record.nil?
             wrapper = {
-              "DataType" => "INSIGHTS_METRICS_BLOB",
+              "DataType" => "KUBE_PV_INVENTORY_BLOB",
               "IPName" => "ContainerInsights",
               "DataItems" => [record.each { |k, v| record[k] = v }],
             }
@@ -214,7 +203,6 @@ module Fluent
         end
 
         router.emit_stream(@tag, eventStream) if eventStream
-        router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, eventStream) if eventStream
 
       rescue => errorStr
         $log.warn "Failed in parse_and_emit_record pv inventory: #{errorStr}"
