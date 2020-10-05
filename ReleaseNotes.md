@@ -26,7 +26,6 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - Fix CPU capacity/limits metrics being 0 for Virtual nodes (VK)
 - Add new custom metric regions (eastus2,westus,australiasoutheast,brazilsouth,germanywestcentral,northcentralus,switzerlandnorth)
 - Enable strict SSL validation for AppInsights Ruby SDK
-- Add 'kubelet_runtime_operations_total' and 'kubelet_runtime_operations_errors_total' metrics in addition to existing 'kubelet_docker_operations' and 'kubelet_docker_operations_errors' metric
 - Turn off custom metrics upload for unsupported cluster types
 - Install CA certs from wire server for windows (in certain clouds)
 
