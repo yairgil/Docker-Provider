@@ -110,55 +110,6 @@ module Fluent
         records = []
         pvInventory["items"].each do |item|
 
-          # Check if the PV has a PVC
-          hasPVC = false
-          if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
-            claimRef = item["spec"]["claimRef"]
-            if claimRef["kind"] == "PersistentVolumeClaim"
-              hasPVC = true
-              pvcNamespace = claimRef["namespace"]
-              pvcName = claimRef["name"]
-            end
-          end
-
-          # Determine PV Type
-          hasType = false
-          isAzureDisk = false
-          isAzureFile = false
-          type = "empty"
-          diskName = ""
-          diskUri = ""
-          azureFileShareName = ""
-          if !item["spec"].nil?
-            (Constants::PV_TYPES).each do |pvType|
-
-              # PV is this type
-              if !item["spec"][pvType].nil?
-                type = pvType
-                hasType = true
-
-                # Get additional info if azure disk/file
-                if pvType == "azureDisk"
-                  isAzureDisk = true
-                  azureDisk = item["spec"]["azureDisk"]
-                  diskName = azureDisk["diskName"]
-                  diskUri = azureDisk["diskURI"]
-                elsif pvType == "azureFile"
-                  isAzureFile = true
-                  azureFileShareName = item["spec"]["azureFile"]["shareName"]
-                end
-
-              end
-            end
-          end
-
-          # Record telemetry
-          if (@pvTypeToCountHash.has_key? type)
-            @pvTypeToCountHash[type] += 1
-          else
-            @pvTypeToCountHash[type] = 1
-          end
-
           # Node and Pod info can be found by joining with pvUsedBytes metric using PVCNamespace/PVCName
           record = {}
           record["CollectionTime"] = batchTime
@@ -172,13 +123,12 @@ module Fluent
           record["PVCreationTimeStamp"] = item["metadata"]["creationTimestamp"]
 
           # Optional values
-          if hasPVC
-            record["PVCName"] = pvcName
-            record["PVCNamespace"] = pvcNamespace
-          end
-          if hasType
-            record["PVType"] = type
-          end
+          pvcNamespace, pvcName = getPVCInfo(item)
+          type, typeInfo = getTypeInfo(item)
+
+          record["PVCNamespace"] = pvcNamespace
+          record["PVCName"] = pvcName
+          record["PVType"] = (type != "empty" ? type : nil)
           typeInfo = {}
           if isAzureDisk
             typeInfo["DiskName"] = diskName
@@ -189,6 +139,14 @@ module Fluent
           record["PVTypeInfo"] = typeInfo
 
           records.push(record)
+          $log.info("in_kube_pvinventory: record #{record}")
+
+          # Record telemetry
+          if (@pvTypeToCountHash.has_key? type)
+            @pvTypeToCountHash[type] += 1
+          else
+            @pvTypeToCountHash[type] = 1
+          end
         end
 
         records.each do |record|
@@ -210,6 +168,44 @@ module Fluent
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
+
+    def getPVCInfo(item)
+      if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
+        claimRef = item["spec"]["claimRef"]
+            pvcNamespace = claimRef["namespace"]
+            pvcName = claimRef["name"]
+          end
+      end
+      return pvcNamespace, pvcName
+    end
+
+    def getTypeInfo(item)
+      if !item["spec"].nil?
+        (Constants::PV_TYPES).each do |pvType|
+      
+          # PV is this type
+          if !item["spec"][pvType].nil?
+            type = pvType
+      
+            # Get additional info if azure disk/file
+            typeInfo = {}
+            if pvType == "azureDisk"
+              azureDisk = item["spec"]["azureDisk"]
+              typeInfo["DiskName"] = azureDisk["diskName"]
+              typeInfo["DiskUri"] = azureDisk["diskURI"]
+            elsif pvType == "azureFile"
+              typeInfo["FileShareName"] = item["spec"]["azureFile"]["shareName"]
+            end
+
+            return type, typeInfo
+      
+          end
+        end
+      end
+
+      return "empty", {}
+    end
+
 
     def run_periodic
       @mutex.lock
