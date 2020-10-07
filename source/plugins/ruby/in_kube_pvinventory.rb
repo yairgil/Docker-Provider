@@ -18,7 +18,7 @@ module Fluent
 
       # Response size is around 1500 bytes per PV
       @PV_CHUNK_SIZE = "5000"
-      @pvKindToCountHash = {}
+      @pvTypeToCountHash = {}
     end
 
     config_param :run_interval, :time, :default => 60
@@ -90,7 +90,7 @@ module Fluent
         # Flush AppInsights telemetry once all the processing is done
         if telemetryFlush == true
           telemetryProperties = {}
-          telemetryProperties["CountsOfPVTypes"] = @pvKindToCountHash
+          telemetryProperties["CountsOfPVTypes"] = @pvTypeToCountHash
           ApplicationInsightsUtility.sendCustomEvent(Constants::PV_INVENTORY_HEART_BEAT_EVENT, telemetryProperties)
           @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
