@@ -16,6 +16,7 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
+      # Response size is around 1500 bytes per PV
       @PV_CHUNK_SIZE = "5000"
       @pvKindToCountHash = {}
     end
@@ -110,7 +111,7 @@ module Fluent
         records = []
         pvInventory["items"].each do |item|
 
-          # Node and Pod info can be found by joining with pvUsedBytes metric using PVCNamespace/PVCName
+          # Node, pod, & usage info can be found by joining with pvUsedBytes metric using PVCNamespace/PVCName
           record = {}
           record["CollectionTime"] = batchTime
           record["ClusterId"] = KubernetesApiClient.getClusterId
@@ -125,16 +126,18 @@ module Fluent
           # Optional values
           pvcNamespace, pvcName = getPVCInfo(item)
           type, typeInfo = getTypeInfo(item)
-
           record["PVCNamespace"] = pvcNamespace
           record["PVCName"] = pvcName
-          record["PVType"] = (type != "empty" ? type : nil)
+          record["PVType"] = type
           record["PVTypeInfo"] = typeInfo
 
           records.push(record)
           $log.info("in_kube_pvinventory: record #{record}")
 
           # Record telemetry
+          if type == nil
+            type = "empty"
+          end
           if (@pvTypeToCountHash.has_key? type)
             @pvTypeToCountHash[type] += 1
           else
@@ -156,46 +159,62 @@ module Fluent
         router.emit_stream(@tag, eventStream) if eventStream
 
       rescue => errorStr
-        $log.warn "Failed in parse_and_emit_record pv inventory: #{errorStr}"
+        $log.warn "Failed in parse_and_emit_record for in_kube_pvinventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 
     def getPVCInfo(item)
-      if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
-        claimRef = item["spec"]["claimRef"]
-        pvcNamespace = claimRef["namespace"]
-        pvcName = claimRef["name"]
+      begin
+        if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
+          claimRef = item["spec"]["claimRef"]
+          pvcNamespace = claimRef["namespace"]
+          pvcName = claimRef["name"]
+          return pvcNamespace, pvcName
+        end
+      rescue => errorStr
+        $log.warn "Failed in getPVCInfo for in_kube_pvinventory: #{errorStr}"
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-      return pvcNamespace, pvcName
+
+      # No PVC or an error
+      return nil, nil
     end
 
     def getTypeInfo(item)
-      if !item["spec"].nil?
-        (Constants::PV_TYPES).each do |pvType|
+      begin
+        if !item["spec"].nil?
+          (Constants::PV_TYPES).each do |pvType|
       
-          # PV is this type
-          if !item["spec"][pvType].nil?
-            type = pvType
-      
-            # Get additional info if azure disk/file
-            typeInfo = {}
-            if pvType == "azureDisk"
-              azureDisk = item["spec"]["azureDisk"]
-              typeInfo["DiskName"] = azureDisk["diskName"]
-              typeInfo["DiskUri"] = azureDisk["diskURI"]
-            elsif pvType == "azureFile"
-              typeInfo["FileShareName"] = item["spec"]["azureFile"]["shareName"]
-            end
+            # PV is this type
+            if !item["spec"][pvType].nil?
 
-            return type, typeInfo
-      
+              # Get additional info if azure disk/file
+              typeInfo = {}
+              if pvType == "azureDisk"
+                azureDisk = item["spec"]["azureDisk"]
+                typeInfo["DiskName"] = azureDisk["diskName"]
+                typeInfo["DiskUri"] = azureDisk["diskURI"]
+              elsif pvType == "azureFile"
+                typeInfo["FileShareName"] = item["spec"]["azureFile"]["shareName"]
+              end
+
+              # Can only have one type: return right away when found
+              return pvType, typeInfo
+
+            end
           end
         end
+      rescue => errorStr
+        $log.warn "Failed in getTypeInfo for in_kube_pvinventory: #{errorStr}"
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
 
-      return "empty", {}
+      # No matches from list of types or an error
+      return nil, {}
     end
 
 
