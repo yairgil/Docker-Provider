@@ -132,7 +132,6 @@ module Fluent
           record["PVTypeInfo"] = typeInfo
 
           records.push(record)
-          $log.info("in_kube_pvinventory: record #{record}")
 
           # Record telemetry
           if type == nil
