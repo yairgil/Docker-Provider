@@ -6,6 +6,7 @@ require (
 	code.cloudfoundry.org/clock v1.0.1-0.20200131002207-86534f4ca3a5 // indirect
 	github.com/Azure/azure-kusto-go v0.1.4-0.20200427191510-041d4ed55f86
 	github.com/Azure/go-autorest/autorest/azure/auth v0.4.2
+	github.com/davecgh/go-spew v1.1.1
 	github.com/fluent/fluent-bit-go v0.0.0-20171103221316-c4a158a6e3a7
 	github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680 // indirect
 	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e // indirect
@@ -15,7 +16,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d // indirect
 	github.com/gregjones/httpcache v0.0.0-20170728041850-787624de3eb7 // indirect
-	github.com/json-iterator/go v0.0.0-20180612202835-f2b4162afba3 // indirect
+	github.com/json-iterator/go v0.0.0-20180612202835-f2b4162afba3
 	github.com/microsoft/ApplicationInsights-Go v0.4.3
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180320133207-05fbef0ca5da // indirect

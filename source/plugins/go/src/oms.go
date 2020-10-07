@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,7 +39,7 @@ const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 const AuditLogDataType = "AUDIT_LOG"
 
 // DataType for Custom Logs
-const CustomLogDataType = "CUSTOM_LOG_BLOB"
+const CustomLogDataType = "CUSTOM_LOG_BLOB.NIV_8df83044-9d51-4a05-8c44-366d3c236b1a"
 
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
@@ -835,6 +838,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
 	var dataItems []DataItem
 	var auditLogItems []AuditLogDataItem
+	// var auditLogItemsUnParssed []interface{}
 	var dataItemsADX []DataItemADX
 
 	var msgPackEntries []MsgPackEntry
@@ -858,8 +862,25 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-		if ToString(record["AuditLog"]) != "" {
+		gate3 := fmt.Sprintf("%v", record["AuditLog"]) != "" // for debug
+		gate4 := ToString(record["AuditLog"]) != ""
+		if gate3 || gate4 {
+			// jsonMap := make(map[string]interface{})
+			// recordStr := fmt.Sprintf("%v", record["AuditLog"])
+			// err2 := json.Unmarshal([]byte(recordStr), &jsonMap)
+			// if err2 != nil {
+			// 	panic(err2)
+			// }
+			// auditLogItemsUnParssed = append(auditLogItemsUnParssed, jsonMap)
+			// continue
+			//if ToString(record["AuditLog"]) != "" {
 			auditLogItemStr := ToString(record["AuditLog"])
+
+			// REMOVE - FOR DEBUGGING
+			if auditLogItemStr == "" {
+				auditLogItemStr = fmt.Sprintf("%v", record["AuditLog"])
+			}
+
 			var auditLogDataItem AuditLogDataItem
 			err := json.Unmarshal([]byte(auditLogItemStr), &auditLogDataItem)
 			if err != nil {
@@ -1105,9 +1126,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Log("Number of audit logs: %v", len(auditLogItems))
 			logEntry := AuditLogBlob{
 				DataType:  CustomLogDataType,
-				IPName:    IPNameSecurity,
+				IPName:    IPName,
 				DataItems: auditLogItems}
-			FlushToODS(logEntry, CustomLogDataType, len(auditLogItems), start)
+			FlushToODS(logEntry, AuditLogDataType, len(auditLogItems), start)
+			FlushToODSCustomLogs(auditLogItems, start)
 		}
 	}
 
@@ -1141,8 +1163,7 @@ func FlushToODS(logEntry interface{}, dataType string, numberOfItems int, start 
 	req.Header.Set("User-Agent", userAgent)
 	reqId := uuid.New().String()
 
-	Log("requestId: %v", reqId)
-	Log(string(marshalled))
+	//Log(string(marshalled))
 
 	req.Header.Set("X-Request-ID", reqId)
 	//expensive to do string len for every request, so use a flag
@@ -1172,7 +1193,82 @@ func FlushToODS(logEntry interface{}, dataType string, numberOfItems int, start 
 
 	defer resp.Body.Close()
 	numContainerLogRecords := numberOfItems
-	Log("PostDataHelper::Info::Successfully flushed %d %v records to ODS in %s", numContainerLogRecords, dataType, elapsed)
+	Log("PostDataHelper::Info::Successfully flushed %d %v records to ODS in %s. RequestId: %v", numContainerLogRecords, dataType, elapsed, reqId)
+
+	return output.FLB_OK
+}
+
+func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
+	marshalled, err := json.Marshal(dataItems)
+	marshalledStr := string(marshalled)
+	Log(marshalledStr)
+	if err != nil {
+		message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
+		Log(message)
+		SendException(message)
+		return output.FLB_OK
+	}
+
+	customerId := WorkspaceID
+	if customerId == "" {
+		Log("Fallback for tests, %+v", customerId)
+		customerId = "8df83044-9d51-4a05-8c44-366d3c236b1a"
+	}
+
+	customLogsEndPoint := "https://" + customerId + ".ods.opinsights.azure.com/api/logs?api-version=2016-04-01"
+	buffer := bytes.NewBuffer(marshalled)
+	bufferLength := buffer.Len()
+	bufferLengthStr := fmt.Sprintf("%v", bufferLength)
+
+	req, _ := http.NewRequest("POST", customLogsEndPoint, buffer)
+	req.Header.Set("Log-Type", "AuditLogTempV2")
+	req.Header.Set("Content-Type", "application/json")
+	timeNow := time.Now().UTC().Format(time.RFC1123)
+	timeNow = strings.TrimSuffix(timeNow, "UTC") + "GMT"
+	req.Header.Set("x-ms-date", timeNow)
+	req.Header.Set("time-generated-field", "")
+	//req.Header.Set("x-ms-AzureResourceId", ResourceID)
+
+	stringToSign := "POST" + "\n" + bufferLengthStr + "\n" + "application/json" + "\n" + "x-ms-date:" + timeNow + "\n" + "/api/logs"
+
+	omsKey := "JNvxGM/eiebGfe/RkBQcCaFIOwCXzQNPW9amQWJgAFFYNIX1LKfW3ROpA+36Utcj1LKuI+M7UqBpk99JRfzKYA=="
+	secretBytes, err := base64.StdEncoding.DecodeString(omsKey)
+	if err != nil {
+		Log("base64 error:", err)
+		panic(err)
+	}
+
+	// Calculate hash
+	h := hmac.New(sha256.New, secretBytes)
+	h.Write([]byte(stringToSign))
+	hashRes := h.Sum(nil)
+	hashedString := base64.StdEncoding.EncodeToString(hashRes)
+	Log(hashedString)
+	//"SharedKey " + customerId + ":" + hashedString;
+	signature := "SharedKey " + customerId + ":" + hashedString
+	req.Header.Set("Authorization", signature)
+
+	resp, err := HTTPClient.Do(req)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		message := fmt.Sprintf("Error when sending request to ODS CUSTOM LOGS %s \n", err.Error())
+		Log(message)
+		Log("Failed to flush %d records after %s", len(dataItems), elapsed)
+
+		return output.FLB_RETRY
+	}
+
+	if resp == nil || resp.StatusCode != 200 {
+		if resp != nil {
+			Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+		}
+		return output.FLB_RETRY
+	}
+
+	defer resp.Body.Close()
+	numContainerLogRecords := len(dataItems)
+	Log("PostDataHelper::Info::Successfully flushed %d custom logs records to ODS in %s.", numContainerLogRecords, elapsed)
 
 	return output.FLB_OK
 }
@@ -1275,6 +1371,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 		OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
 		WorkspaceID = omsadminConf["WORKSPACE_ID"]
+		Log("Key1: %v", omsadminConf["WORKSPACE_KEY"])
+		Log("Key2: %v", omsadminConf["WSKEY"])
 		// Populate Computer field
 		containerHostName, err1 := ioutil.ReadFile(pluginConfig["container_host_file_path"])
 		if err1 != nil {
