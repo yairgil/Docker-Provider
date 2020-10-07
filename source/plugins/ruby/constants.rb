@@ -77,6 +77,9 @@ class Constants
   OMSAGENT_ZERO_FILL = "omsagent"
   KUBESYSTEM_NAMESPACE_ZERO_FILL = "kube-system"
   VOLUME_NAME_ZERO_FILL = "-"
+  PV_TYPES =["awsElasticBlockStore", "azureDisk", "azureFile", "cephfs", "cinder", "csi", "fc", "flexVolume",
+    "flocker", "gcePersistentDisk", "glusterfs", "hostPath", "iscsi", "local", "nfs",
+    "photonPersistentDisk", "portworxVolume", "quobyte", "rbd", "scaleIO", "storageos", "vsphereVolume"]
 
   #Telemetry constants
   CONTAINER_METRICS_HEART_BEAT_EVENT = "ContainerMetricsMdmHeartBeatEvent"
