@@ -129,13 +129,6 @@ module Fluent
           record["PVCNamespace"] = pvcNamespace
           record["PVCName"] = pvcName
           record["PVType"] = (type != "empty" ? type : nil)
-          typeInfo = {}
-          if isAzureDisk
-            typeInfo["DiskName"] = diskName
-            typeInfo["DiskURI"] = diskUri
-          elsif isAzureFile
-            typeInfo["FileShareName"] = azureFileShareName
-          end
           record["PVTypeInfo"] = typeInfo
 
           records.push(record)
@@ -172,9 +165,8 @@ module Fluent
     def getPVCInfo(item)
       if !item["spec"].nil? && !item["spec"]["claimRef"].nil?
         claimRef = item["spec"]["claimRef"]
-            pvcNamespace = claimRef["namespace"]
-            pvcName = claimRef["name"]
-          end
+        pvcNamespace = claimRef["namespace"]
+        pvcName = claimRef["name"]
       end
       return pvcNamespace, pvcName
     end
