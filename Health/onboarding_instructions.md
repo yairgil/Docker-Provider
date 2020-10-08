@@ -7,8 +7,11 @@ For on-boarding to Health(Tab), you would need to complete two steps
 
 ## Configure agent through ConfigMap
 1. Include the following section in ConfigMap yaml file
-```cmd:agent-settings: |-
-    [agent_settings.health_model]
+```
+agent-settings: |-
+       # agent health model feature settings   
+    [agent_settings.health_model]   
+      # In the absence of this configmap, default value for enabled is false   
       enabled = true
 ```
 2. Run the following kubectl command:
