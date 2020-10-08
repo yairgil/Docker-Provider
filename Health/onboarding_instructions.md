@@ -6,15 +6,28 @@ For on-boarding to Health(Tab), you would need to complete two steps
 
 
 ## Configure agent through ConfigMap
-1. Include the following section in ConfigMap yaml file
+1. If you are configuring your existing ConfigMap, append the following section in your existing ConfigMap yaml file
 ```
+#Append this section in your existing configmap
 agent-settings: |-
        # agent health model feature settings   
     [agent_settings.health_model]   
       # In the absence of this configmap, default value for enabled is false   
       enabled = true
 ```
-2. Run the following kubectl command:
+2. Else if you don't have ConfigMap, download the new ConfigMap from [here.](https://github.com/microsoft/OMS-docker/blob/ci_feature_prod/Kubernetes/container-azm-ms-agentconfig.yaml) & then set `enabled =true`
+      
+```
+#For new downloaded configmap enabled this default setting to true
+agent-settings: |-
+       # agent health model feature settings   
+    [agent_settings.health_model]   
+      # In the absence of this configmap, default value for enabled is false   
+      enabled = true
+```
+
+
+3. Run the following kubectl command:
    `kubectl apply -f <configmap_yaml_file.yaml>`
    
 Example: `kubectl apply -f container-azm-ms-agentconfig.yaml`.
