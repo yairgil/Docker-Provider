@@ -38,9 +38,6 @@ const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 // DataType for Audit Logs
 const AuditLogDataType = "AUDIT_LOG"
 
-// DataType for Custom Logs
-const CustomLogDataType = "CUSTOM_LOG_BLOB.NIV_8df83044-9d51-4a05-8c44-366d3c236b1a"
-
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
 
@@ -862,25 +859,15 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-		gate3 := fmt.Sprintf("%v", record["AuditLog"]) != "" // for debug
-		gate4 := ToString(record["AuditLog"]) != ""
-		if gate3 || gate4 {
-			// jsonMap := make(map[string]interface{})
-			// recordStr := fmt.Sprintf("%v", record["AuditLog"])
-			// err2 := json.Unmarshal([]byte(recordStr), &jsonMap)
-			// if err2 != nil {
-			// 	panic(err2)
-			// }
-			// auditLogItemsUnParssed = append(auditLogItemsUnParssed, jsonMap)
-			// continue
-			//if ToString(record["AuditLog"]) != "" {
-			auditLogItemStr := ToString(record["AuditLog"])
+		// gate3 := fmt.Sprintf("%v", record["AuditLog"]) != "" // for debug
+		// gate4 := ToString(record["AuditLog"]) != ""
+		// if gate3 || gate4 {
+		auditLogItemStr := ToString(record["AuditLog"])
 
-			// REMOVE - FOR DEBUGGING
-			if auditLogItemStr == "" {
-				auditLogItemStr = fmt.Sprintf("%v", record["AuditLog"])
+		if auditLogItemStr != "" && len(auditLogItemStr) > 10 {
+			if len(auditLogItemStr) < 50 {
+				Log("Got in %+v", auditLogItemStr)
 			}
-
 			var auditLogDataItem AuditLogDataItem
 			err := json.Unmarshal([]byte(auditLogItemStr), &auditLogDataItem)
 			if err != nil {
@@ -895,6 +882,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			auditLogItems = append(auditLogItems, auditLogDataItem)
 			continue
 		}
+
+		Log("Did not get in, %+v", auditLogItemStr)
+
 		containerID, k8sNamespace, _ := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
@@ -973,6 +963,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Name:                  stringMap["Name"],
 			}
 			//ODS
+			Log("Appended a dataItem!")
 			dataItems = append(dataItems, dataItem)
 		}
 
@@ -1115,6 +1106,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	} else {
 		//flush to ODS
 		if len(dataItems) > 0 {
+			Log("Number of container logs: %v", len(dataItems))
 			logEntry := ContainerLogBlob{
 				DataType:  ContainerLogDataType,
 				IPName:    IPName,
@@ -1125,7 +1117,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if len(auditLogItems) > 0 {
 			Log("Number of audit logs: %v", len(auditLogItems))
 			logEntry := AuditLogBlob{
-				DataType:  CustomLogDataType,
+				DataType:  AuditLogDataType,
 				IPName:    IPName,
 				DataItems: auditLogItems}
 			FlushToODS(logEntry, AuditLogDataType, len(auditLogItems), start)
@@ -1160,6 +1152,7 @@ func FlushToODS(logEntry interface{}, dataType string, numberOfItems int, start 
 
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Niv", "Niv")
 	req.Header.Set("User-Agent", userAgent)
 	reqId := uuid.New().String()
 
@@ -1200,8 +1193,6 @@ func FlushToODS(logEntry interface{}, dataType string, numberOfItems int, start 
 
 func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
 	marshalled, err := json.Marshal(dataItems)
-	marshalledStr := string(marshalled)
-	Log(marshalledStr)
 	if err != nil {
 		message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
 		Log(message)
@@ -1231,7 +1222,7 @@ func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
 
 	stringToSign := "POST" + "\n" + bufferLengthStr + "\n" + "application/json" + "\n" + "x-ms-date:" + timeNow + "\n" + "/api/logs"
 
-	omsKey := ""
+	omsKey := "2Hd7y0jjLRHN1gVjdHsAIid4EVm3ZKdkoxDq4ymgIynWRdVjfE55txkD3WUkoLHfYec84RiUkCg6ZX7n08VQdg=="
 	secretBytes, err := base64.StdEncoding.DecodeString(omsKey)
 	if err != nil {
 		Log("base64 error:", err)
@@ -1244,7 +1235,7 @@ func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
 	hashRes := h.Sum(nil)
 	hashedString := base64.StdEncoding.EncodeToString(hashRes)
 	Log(hashedString)
-	//"SharedKey " + customerId + ":" + hashedString;
+
 	signature := "SharedKey " + customerId + ":" + hashedString
 	req.Header.Set("Authorization", signature)
 
@@ -1371,8 +1362,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 		OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
 		WorkspaceID = omsadminConf["WORKSPACE_ID"]
-		Log("Key1: %v", omsadminConf["WORKSPACE_KEY"])
-		Log("Key2: %v", omsadminConf["WSKEY"])
+
 		// Populate Computer field
 		containerHostName, err1 := ioutil.ReadFile(pluginConfig["container_host_file_path"])
 		if err1 != nil {
