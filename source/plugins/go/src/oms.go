@@ -1219,7 +1219,7 @@ func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
 
 	stringToSign := "POST" + "\n" + bufferLengthStr + "\n" + "application/json" + "\n" + "x-ms-date:" + timeNow + "\n" + "/api/logs"
 
-	omsKey := "2Hd7y0jjLRHN1gVjdHsAIid4EVm3ZKdkoxDq4ymgIynWRdVjfE55txkD3WUkoLHfYec84RiUkCg6ZX7n08VQdg=="
+	omsKey := ""
 	secretBytes, err := base64.StdEncoding.DecodeString(omsKey)
 	if err != nil {
 		Log("base64 error:", err)
