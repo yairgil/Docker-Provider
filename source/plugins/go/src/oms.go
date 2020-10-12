@@ -36,7 +36,7 @@ import (
 const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 
 // DataType for Audit Logs
-const AuditLogDataType = "AUDIT_LOG"
+const AuditLogDataType = "KUBE_AUDITLOG_BLOB"
 
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
@@ -864,10 +864,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		// if gate3 || gate4 {
 		auditLogItemStr := ToString(record["AuditLog"])
 
-		if auditLogItemStr != "" && len(auditLogItemStr) > 10 {
-			if len(auditLogItemStr) < 50 {
-				Log("Got in %+v", auditLogItemStr)
-			}
+		if auditLogItemStr != "" {
 			var auditLogDataItem AuditLogDataItem
 			err := json.Unmarshal([]byte(auditLogItemStr), &auditLogDataItem)
 			if err != nil {
