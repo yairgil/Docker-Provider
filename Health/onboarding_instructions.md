@@ -15,7 +15,7 @@ agent-settings: |-
       # In the absence of this configmap, default value for enabled is false   
       enabled = true
 ```
-2. Else if you don't have ConfigMap, download the new ConfigMap from [here.](https://github.com/microsoft/OMS-docker/blob/ci_feature_prod/Kubernetes/container-azm-ms-agentconfig.yaml) & then set `enabled =true`
+2. Else if you don't have ConfigMap, download the new ConfigMap from [here.](https://github.com/microsoft/Docker-Provider/blob/ci_dev/kubernetes/container-azm-ms-agentconfig.yaml) & then set `enabled =true`
       
 ```
 #For new downloaded configmap enabled this default setting to true
