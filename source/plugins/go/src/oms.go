@@ -32,16 +32,16 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// DataType for Container Log
+// ContainerLogDataType for Container Log
 const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 
-// DataType for Audit Logs
+// AuditLogDataType for Audit Logs
 const AuditLogDataType = "KUBE_AUDITLOG_BLOB"
 
-// DataType for Insights metric
+// InsightsMetricsDataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
 
-// DataType for KubeMonAgentEvent
+// KubeMonAgentEventDataType for KubeMonAgentEvent
 const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
 
 //env varibale which has ResourceId for LA
@@ -206,7 +206,7 @@ type DataItem struct {
 type AuditLogDataItem struct {
 	Timestamp                interface{} `json:"timestamp"`
 	StageTimestamp           interface{} `json:"stageTimestamp"`
-	AzureResourceId          interface{} `json:"azureResourceId"`
+	AzureResourceID          interface{} `json:"azureResourceId"`
 	Region                   interface{} `json:"region"`
 	Annotations              interface{} `json:"annotations"`
 	ApiVersion               interface{} `json:"apiVersion"`
@@ -224,7 +224,6 @@ type AuditLogDataItem struct {
 	User                     interface{} `json:"user"`
 	UserAgent                interface{} `json:"userAgent"`
 	Verb                     interface{} `json:"verb"`
-	ImpersonatedUser         interface{} `json:"impersonatedUser"`
 }
 
 type DataItemADX struct {
@@ -253,7 +252,7 @@ type laTelegrafMetric struct {
 	Computer       string `json:"Computer"`
 }
 
-// ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
+// InsightsMetricsBlob represents the object corresponding to the payload that is sent to the ODS end point
 type InsightsMetricsBlob struct {
 	DataType  string             `json:"DataType"`
 	IPName    string             `json:"IPName"`
@@ -267,7 +266,7 @@ type ContainerLogBlob struct {
 	DataItems []DataItem `json:"DataItems"`
 }
 
-// ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
+// AuditLogBlob represents the object corresponding to the payload that is sent to the ODS end point
 type AuditLogBlob struct {
 	DataType  string             `json:"DataType"`
 	IPName    string             `json:"IPName"`
@@ -835,7 +834,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
 	var dataItems []DataItem
 	var auditLogItems []AuditLogDataItem
-	// var auditLogItemsUnParssed []interface{}
 	var dataItemsADX []DataItemADX
 
 	var msgPackEntries []MsgPackEntry
@@ -858,13 +856,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	}
 	DataUpdateMutex.Unlock()
 
+	startTime := time.Now()
 	for _, record := range tailPluginRecords {
-		// gate3 := fmt.Sprintf("%v", record["AuditLog"]) != "" // for debug
-		// gate4 := ToString(record["AuditLog"]) != ""
-		// if gate3 || gate4 {
-		auditLogItemStr := ToString(record["AuditLog"])
-
-		if auditLogItemStr != "" {
+		if auditLogItem, exists := record["AuditLog"]; exists {
+			auditLogItemStr := ToString(auditLogItem)
 			var auditLogDataItem AuditLogDataItem
 			err := json.Unmarshal([]byte(auditLogItemStr), &auditLogDataItem)
 			if err != nil {
@@ -873,14 +868,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				continue
 			}
 			auditLogDataItem.Timestamp = auditLogDataItem.StageTimestamp
-			if ResourceCentric == true {
-				auditLogDataItem.AzureResourceId = ResourceID
-			}
+			auditLogDataItem.AzureResourceID = ResourceID
+
 			auditLogItems = append(auditLogItems, auditLogDataItem)
 			continue
 		}
-
-		Log("Did not get in, %+v", auditLogItemStr)
 
 		containerID, k8sNamespace, _ := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
@@ -960,7 +952,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Name:                  stringMap["Name"],
 			}
 			//ODS
-			Log("Appended a dataItem!")
 			dataItems = append(dataItems, dataItem)
 		}
 
@@ -979,6 +970,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 		}
 	}
+
+	Log("Parsing duration: %s", time.Since(startTime))
 
 	numContainerLogRecords := 0
 
@@ -1108,7 +1101,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				DataType:  ContainerLogDataType,
 				IPName:    IPName,
 				DataItems: dataItems}
-			FlushToODS(logEntry, ContainerLogDataType, len(dataItems), start)
+			FlushToODS(logEntry, ContainerLogDataType, len(dataItems))
 		}
 		//flush to ODS
 		if len(auditLogItems) > 0 {
@@ -1117,8 +1110,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				DataType:  AuditLogDataType,
 				IPName:    IPName,
 				DataItems: auditLogItems}
-			FlushToODS(logEntry, AuditLogDataType, len(auditLogItems), start)
-			FlushToODSCustomLogs(auditLogItems, start)
+			FlushToODS(logEntry, AuditLogDataType, len(auditLogItems))
+			//FlushToODSCustomLogs(auditLogItems, start)
 		}
 	}
 
@@ -1138,7 +1131,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	return output.FLB_OK
 }
 
-func FlushToODS(logEntry interface{}, dataType string, numberOfItems int, start time.Time) int {
+// FlushToODS sends data to the ODS endpoint
+func FlushToODS(logEntry interface{}, dataType string, numberOfItems int) int {
+	startTime := time.Now()
 	marshalled, err := json.Marshal(logEntry)
 	if err != nil {
 		message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
@@ -1162,14 +1157,12 @@ func FlushToODS(logEntry interface{}, dataType string, numberOfItems int, start 
 	}
 
 	resp, err := HTTPClient.Do(req)
-	elapsed := time.Since(start)
-
 	if err != nil {
 		message := fmt.Sprintf("Error when sending request %s \n", err.Error())
 		Log(message)
 		// Commenting this out for now. TODO - Add better telemetry for ods errors using aggregation
 		//SendException(message)
-		Log("Failed to flush %d records after %s", numberOfItems, elapsed)
+		Log("Failed to flush %d records after %s", numberOfItems, time.Since(startTime))
 
 		return output.FLB_RETRY
 	}
@@ -1183,11 +1176,12 @@ func FlushToODS(logEntry interface{}, dataType string, numberOfItems int, start 
 
 	defer resp.Body.Close()
 	numContainerLogRecords := numberOfItems
-	Log("PostDataHelper::Info::Successfully flushed %d %v records to ODS in %s. RequestId: %v", numContainerLogRecords, dataType, elapsed, reqId)
+	Log("PostDataHelper::Info::Successfully flushed %d %v records to ODS in %s. RequestId: %v", numContainerLogRecords, dataType, time.Since(startTime), reqId)
 
 	return output.FLB_OK
 }
 
+// FlushToODSCustomLogs sends data to the ODS custom logs endpoint
 func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
 	marshalled, err := json.Marshal(dataItems)
 	if err != nil {
@@ -1197,13 +1191,13 @@ func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
 		return output.FLB_OK
 	}
 
-	customerId := WorkspaceID
-	if customerId == "" {
-		Log("Fallback for tests, %+v", customerId)
-		customerId = "8df83044-9d51-4a05-8c44-366d3c236b1a"
+	customerID := WorkspaceID
+	if customerID == "" {
+		Log("Fallback for tests, %+v", customerID)
+		customerID = "59aee189-e8df-4fb6-a670-1c823b6f9e4f"
 	}
 
-	customLogsEndPoint := "https://" + customerId + ".ods.opinsights.azure.com/api/logs?api-version=2016-04-01"
+	customLogsEndPoint := "https://" + customerID + ".ods.opinsights.azure.com/api/logs?api-version=2016-04-01"
 	buffer := bytes.NewBuffer(marshalled)
 	bufferLength := buffer.Len()
 	bufferLengthStr := fmt.Sprintf("%v", bufferLength)
@@ -1233,7 +1227,7 @@ func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
 	hashedString := base64.StdEncoding.EncodeToString(hashRes)
 	Log(hashedString)
 
-	signature := "SharedKey " + customerId + ":" + hashedString
+	signature := "SharedKey " + customerID + ":" + hashedString
 	req.Header.Set("Authorization", signature)
 
 	resp, err := HTTPClient.Do(req)
@@ -1408,7 +1402,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("ResourceName=%s", ResourceID)
 	}
 	if ResourceCentric == false {
-		//AKS-Engine/hybrid scenario
+		//AKS-Engine/non azure + non arc scenario
 		ResourceName = os.Getenv(ResourceNameEnv)
 		ResourceID = ResourceName
 		Log("ResourceCentric: False")
