@@ -276,7 +276,7 @@ class KubernetesApiClient
     def getWindowsNodes
       winNodes = []
       begin
-        resourceUri = getNodesResourceUri("nodes")
+        resourceUri = getNodesResourceUri("nodes?labelSelector=kubernetes.io%2Fos%3Dwindows")
         nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
         @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
         # Resetting the windows node cache
