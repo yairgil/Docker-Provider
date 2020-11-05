@@ -3,7 +3,7 @@
 
 class MdmMetricsGenerator
   require "logger"
-  require "yajl/json_gem"
+  require "oj"
   require "json"
   require_relative "MdmAlertTemplates"
   require_relative "ApplicationInsightsUtility"
@@ -103,7 +103,7 @@ class MdmMetricsGenerator
               namespaceDimValue: podNamespaceDimValue,
               containerCountMetricValue: value,
             }
-            records.push(Yajl::Parser.parse(StringIO.new(record)))
+            records.push(Oj.load(StringIO.new(record)))
           }
         else
           @log.info "No records found in hash for metric: #{metricName}"
@@ -275,7 +275,7 @@ class MdmMetricsGenerator
           containerResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
-        records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
+        records.push(Oj.load(StringIO.new(resourceUtilRecord)))
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilMetricRecords: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
@@ -302,7 +302,7 @@ class MdmMetricsGenerator
           pvResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
-        records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
+        records.push(Oj.load(StringIO.new(resourceUtilRecord)))
       rescue => errorStr
         @log.info "Error in getPVResourceUtilMetricRecords: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
@@ -333,7 +333,7 @@ class MdmMetricsGenerator
             devicevalue: deviceName,
             diskUsagePercentageValue: usedPercent,
           }
-          records.push(Yajl::Parser.parse(StringIO.new(diskUsedPercentageRecord)))
+          records.push(Oj.load(StringIO.new(diskUsedPercentageRecord)))
         end
       rescue => errorStr
         @log.info "Error in getDiskUsageMetricRecords: #{errorStr}"
@@ -384,7 +384,7 @@ class MdmMetricsGenerator
                 dimValues: dimValues,
                 metricValue: v,
               }
-              records.push(Yajl::Parser.parse(StringIO.new(metricRecord)))
+              records.push(Oj.load(StringIO.new(metricRecord)))
               #@log.info "pushed mdmgenericmetric: #{k},#{v}"
             end
           }
@@ -453,7 +453,7 @@ class MdmMetricsGenerator
           metricmaxvalue: metric_value,
           metricsumvalue: metric_value,
         }
-        records.push(Yajl::Parser.parse(StringIO.new(custommetricrecord)))
+        records.push(Oj.load(StringIO.new(custommetricrecord)))
 
         if !percentage_metric_value.nil?
           additional_record = MdmAlertTemplates::Node_resource_metrics_template % {
@@ -466,7 +466,7 @@ class MdmMetricsGenerator
             metricmaxvalue: percentage_metric_value,
             metricsumvalue: percentage_metric_value,
           }
-          records.push(Yajl::Parser.parse(StringIO.new(additional_record)))
+          records.push(Oj.load(StringIO.new(additional_record)))
         end
       rescue => errorStr
         @log.info "Error in getNodeResourceMetricRecords: #{errorStr}"

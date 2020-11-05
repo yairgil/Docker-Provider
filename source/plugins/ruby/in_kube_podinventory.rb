@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 module Fluent
-  require_relative "podinventory_to_mdm"      
+  require_relative "podinventory_to_mdm"
 
   class Kube_PodInventory_Input < Input
     Plugin.register_input("kubepodinventory", self)
@@ -15,11 +15,10 @@ module Fluent
     def initialize
       super
       require "yaml"
-      require "yajl/json_gem"
-      require "yajl"
+      require "oj"
       require "set"
       require "time"
-      
+
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
@@ -81,9 +80,9 @@ module Fluent
         $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
 
         if !serviceInfo.nil?
-          $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
-          serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
-          $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using oj @ #{Time.now.utc.iso8601}")
+          serviceList = Oj.load(StringIO.new(serviceInfo.body))
+          $log.info("in_kube_podinventory::enumerate:End:Parsing services data using oj @ #{Time.now.utc.iso8601}")
           serviceInfo = nil
         end
 
@@ -138,7 +137,7 @@ module Fluent
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-    end    
+    end
 
     def parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
       currentTime = Time.now
@@ -151,7 +150,7 @@ module Fluent
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
 
-        podInventory["items"].each do |items| #podInventory block start          
+        podInventory["items"].each do |items| #podInventory block start
           containerInventoryRecords = []
           records = []
           record = {}
@@ -194,7 +193,7 @@ module Fluent
 
           if podReadyCondition == false
             record["PodStatus"] = "Unknown"
-          # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
+            # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
           elsif !items["metadata"]["deletionTimestamp"].nil? && !items["metadata"]["deletionTimestamp"].empty?
             record["PodStatus"] = Constants::POD_STATUS_TERMINATING
           else
@@ -219,10 +218,10 @@ module Fluent
             if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
-              containerInventoryRecordsInPodItem = KubernetesContainerInventory.getContainerInventoryRecords(items, batchTime, clusterCollectEnvironmentVar, true)  
+              containerInventoryRecordsInPodItem = KubernetesContainerInventory.getContainerInventoryRecords(items, batchTime, clusterCollectEnvironmentVar, true)
               containerInventoryRecordsInPodItem.each do |containerRecord|
-                containerInventoryRecords.push(containerRecord)          
-              end              
+                containerInventoryRecords.push(containerRecord)
+              end
             end
           end
 
@@ -358,7 +357,7 @@ module Fluent
               end
 
               podRestartCount += containerRestartCount
-              records.push(record.dup)            
+              records.push(record.dup)
             end
           else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
             records.push(record)

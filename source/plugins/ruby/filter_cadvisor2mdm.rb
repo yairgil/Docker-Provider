@@ -4,7 +4,7 @@
 
 module Fluent
   require "logger"
-  require "yajl/json_gem"
+  require "oj"
   require_relative "oms_common"
   require_relative "CustomMetricsUtils"
   require_relative "kubelet_utils"
@@ -237,7 +237,6 @@ module Fluent
       begin
         mdmMetrics = []
         record["DataItems"].each do |dataItem|
-
           if dataItem["Name"] == Constants::PV_USED_BYTES && @metrics_to_collect_hash.key?(dataItem["Name"].downcase)
             metricName = dataItem["Name"]
             usage = dataItem["Value"]
@@ -256,11 +255,11 @@ module Fluent
             if percentage_metric_value >= thresholdPercentage
               setThresholdExceededTelemetry(metricName)
               return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
-                                                                       metricName,
-                                                                       computer,
-                                                                       percentage_metric_value,
-                                                                       resourceDimensions,
-                                                                       thresholdPercentage)
+                                                                        metricName,
+                                                                        computer,
+                                                                        percentage_metric_value,
+                                                                        resourceDimensions,
+                                                                        thresholdPercentage)
             else
               return []
             end # end if block for percentage metric > configured threshold % check

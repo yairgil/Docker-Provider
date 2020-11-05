@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 require "logger"
-require "yajl/json_gem"
+require "oj"
 require_relative "CAdvisorMetricsAPIClient"
 require_relative "KubernetesApiClient"
 require "bigdecimal"
@@ -21,9 +21,9 @@ class KubeletUtils
         response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil?
           all_metrics = response.body.split("\n")
-          cpu_capacity = all_metrics.select{|m| m.start_with?('machine_cpu_cores') && m.split.first.strip == 'machine_cpu_cores' }.first.split.last.to_f * 1000
+          cpu_capacity = all_metrics.select { |m| m.start_with?("machine_cpu_cores") && m.split.first.strip == "machine_cpu_cores" }.first.split.last.to_f * 1000
           @log.info "CPU Capacity #{cpu_capacity}"
-          memory_capacity_e = all_metrics.select{|m| m.start_with?('machine_memory_bytes') && m.split.first.strip == 'machine_memory_bytes' }.first.split.last
+          memory_capacity_e = all_metrics.select { |m| m.start_with?("machine_memory_bytes") && m.split.first.strip == "machine_memory_bytes" }.first.split.last
           memory_capacity = BigDecimal(memory_capacity_e).to_f
           @log.info "Memory Capacity #{memory_capacity}"
           return [cpu_capacity, memory_capacity]
@@ -43,7 +43,7 @@ class KubeletUtils
         containerResourceDimensionHash = {}
         response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil? && !response.body.empty?
-          podInventory = Yajl::Parser.parse(StringIO.new(response.body))
+          podInventory = Oj.load(StringIO.new(response.body))
           podInventory["items"].each do |items|
             @log.info "in pod inventory items..."
             podNameSpace = items["metadata"]["namespace"]

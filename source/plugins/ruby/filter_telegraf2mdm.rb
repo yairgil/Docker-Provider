@@ -4,7 +4,7 @@
 
 module Fluent
   require "logger"
-  require "yajl/json_gem"
+  require "oj"
   require_relative "oms_common"
   require_relative "kubelet_utils"
   require_relative "MdmMetricsGenerator"

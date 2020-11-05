@@ -23,8 +23,7 @@ module Fluent
       begin
         super
         require "yaml"
-        require "yajl/json_gem"
-        require "yajl"
+        require "oj"
         require "time"
 
         @@cluster_id = KubernetesApiClient.getClusterId
@@ -33,7 +32,7 @@ module Fluent
         @@ApiGroupApps = "apps"
         @@KubeInfraNamespace = "kube-system"
       rescue => e
-        ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+        ApplicationInsightsUtility.sendExceptionTelemetry(e, { "FeatureArea" => "Health" })
       end
     end
 
@@ -65,7 +64,7 @@ module Fluent
           end
         end
       rescue => e
-        ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
+        ApplicationInsightsUtility.sendExceptionTelemetry(e, { "FeatureArea" => "Health" })
       end
     end
 
@@ -83,7 +82,7 @@ module Fluent
       if !@@cluster_health_model_enabled
         @@hmlog.info "Cluster Health Model disabled in in_kube_health"
         return MultiEventStream.new
-    end
+      end
       begin
         currentTime = Time.now
         emitTime = currentTime.to_f
@@ -96,20 +95,20 @@ module Fluent
         resourceUri = KubernetesApiClient.getNodesResourceUri("nodes")
         node_inventory_response = KubernetesApiClient.getKubeResourceInfo(resourceUri)
         if !node_inventory_response.nil? && !node_inventory_response.body.nil?
-          node_inventory = Yajl::Parser.parse(StringIO.new(node_inventory_response.body))
+          node_inventory = Oj.load(StringIO.new(node_inventory_response.body))
           @resources.node_inventory = node_inventory
         end
 
         pod_inventory_response = KubernetesApiClient.getKubeResourceInfo("pods?fieldSelector=metadata.namespace%3D#{@@KubeInfraNamespace}")
         if !pod_inventory_response.nil? && !pod_inventory_response.body.nil?
-          pod_inventory = Yajl::Parser.parse(StringIO.new(pod_inventory_response.body))
+          pod_inventory = Oj.load(StringIO.new(pod_inventory_response.body))
           @resources.pod_inventory = pod_inventory
           @resources.build_pod_uid_lookup
         end
 
         replicaset_inventory_response = KubernetesApiClient.getKubeResourceInfo("replicasets?fieldSelector=metadata.namespace%3D#{@@KubeInfraNamespace}", api_group: @@ApiGroupApps)
         if !replicaset_inventory_response.nil? && !replicaset_inventory_response.body.nil?
-          replicaset_inventory = Yajl::Parser.parse(StringIO.new(replicaset_inventory_response.body))
+          replicaset_inventory = Oj.load(StringIO.new(replicaset_inventory_response.body))
           @resources.set_replicaset_inventory(replicaset_inventory)
         end
 
@@ -175,7 +174,7 @@ module Fluent
 
       #CPU
       monitor_id = MonitorId::WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID
-      health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterCpuCapacity" => @@clusterCpuCapacity / 1000000.to_f, "clusterCpuRequests" => subscription / 1000000.to_f}}
+      health_monitor_record = { "timestamp" => timestamp, "state" => state, "details" => { "clusterCpuCapacity" => @@clusterCpuCapacity / 1000000.to_f, "clusterCpuRequests" => subscription / 1000000.to_f } }
       # @@hmlog.info health_monitor_record
 
       monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id])
@@ -202,7 +201,7 @@ module Fluent
 
       #CPU
       monitor_id = MonitorId::WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID
-      health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f}}
+      health_monitor_record = { "timestamp" => timestamp, "state" => state, "details" => { "clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f } }
       hmlog = HealthMonitorUtils.get_log_handle
 
       monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id])
@@ -224,7 +223,7 @@ module Fluent
       monitor_id = MonitorId::KUBE_API_STATUS
       details = response.each_header.to_h
       details["ResponseCode"] = response.code
-      health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
+      health_monitor_record = { "timestamp" => timestamp, "state" => state, "details" => details }
       hmlog = HealthMonitorUtils.get_log_handle
       #hmlog.info health_monitor_record
 
@@ -257,7 +256,7 @@ module Fluent
         timestamp = Time.now.utc.iso8601
 
         state = HealthMonitorUtils.compute_percentage_state(percent, monitor_config)
-        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workload_name" => workload_name, "namespace" => namespace, "workload_kind" => workload_kind}}
+        health_monitor_record = { "timestamp" => timestamp, "state" => state, "details" => { "totalPods" => total_pods, "podsReady" => pods_ready, "workload_name" => workload_name, "namespace" => namespace, "workload_kind" => workload_kind } }
         monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(config_monitor_id, [@@cluster_id, namespace, workload_name])
         health_record = {}
         time_now = Time.now.utc.iso8601
@@ -295,9 +294,9 @@ module Fluent
                 condition_state = HealthMonitorStates::FAIL
               end
             end
-            details[condition["type"]] = {"Reason" => condition["reason"], "Message" => condition["message"], "State" => condition_state}
+            details[condition["type"]] = { "Reason" => condition["reason"], "Message" => condition["message"], "State" => condition_state }
           end
-          health_monitor_record = {"timestamp" => timestamp, "state" => node_state, "details" => details}
+          health_monitor_record = { "timestamp" => timestamp, "state" => node_state, "details" => details }
           monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id, node_name])
           health_record = {}
           time_now = Time.now.utc.iso8601
@@ -319,11 +318,11 @@ module Fluent
       #this is required because there are other components, like the container cpu memory aggregator, that depends on the mapping being initialized
       resourceUri = KubernetesApiClient.getNodesResourceUri("nodes")
       node_inventory_response = KubernetesApiClient.getKubeResourceInfo(resourceUri)
-      node_inventory = Yajl::Parser.parse(StringIO.new(node_inventory_response.body))
+      node_inventory = Oj.load(StringIO.new(node_inventory_response.body))
       pod_inventory_response = KubernetesApiClient.getKubeResourceInfo("pods?fieldSelector=metadata.namespace%3D#{@@KubeInfraNamespace}")
-      pod_inventory = Yajl::Parser.parse(StringIO.new(pod_inventory_response.body))
+      pod_inventory = Oj.load(StringIO.new(pod_inventory_response.body))
       replicaset_inventory_response = KubernetesApiClient.getKubeResourceInfo("replicasets?fieldSelector=metadata.namespace%3D#{@@KubeInfraNamespace}", api_group: @@ApiGroupApps)
-      replicaset_inventory = Yajl::Parser.parse(StringIO.new(replicaset_inventory_response.body))
+      replicaset_inventory = Oj.load(StringIO.new(replicaset_inventory_response.body))
 
       @resources.node_inventory = node_inventory
       @resources.pod_inventory = pod_inventory

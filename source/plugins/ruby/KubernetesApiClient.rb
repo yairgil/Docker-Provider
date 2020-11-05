@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class KubernetesApiClient
-  require "yajl/json_gem"
+  require "oj"
   require "logger"
   require "net/http"
   require "net/https"
@@ -748,9 +748,9 @@ class KubernetesApiClient
         resourceInfo = getKubeResourceInfo(uri, api_group: api_group)
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
         if !resourceInfo.nil?
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
-          resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using oj @ #{Time.now.utc.iso8601}"
+          resourceInventory = Oj.load(StringIO.new(resourceInfo.body))
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using oj @ #{Time.now.utc.iso8601}"
           resourceInfo = nil
         end
         if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
