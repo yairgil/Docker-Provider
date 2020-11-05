@@ -128,7 +128,7 @@ class Inventory2MdmConvertor
             controllerNameDimValue: podControllerNameDimValue,
             podCountMetricValue: value,
           }
-          records.push(JSON.parse(record))
+          records.push(Oj.load(record))
         }
 
         #Add pod metric records

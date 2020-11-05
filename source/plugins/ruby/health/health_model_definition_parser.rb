@@ -22,7 +22,7 @@ module HealthModel
       end
 
       file = File.read(@health_model_definition_path)
-      temp_model = JSON.parse(file)
+      temp_model = Oj.load(file)
       temp_model.each { |entry|
         monitor_id = entry["monitor_id"]
         parent_monitor_id = entry["parent_monitor_id"]

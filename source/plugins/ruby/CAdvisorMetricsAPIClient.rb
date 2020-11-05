@@ -127,7 +127,7 @@ class CAdvisorMetricsAPIClient
       begin
         cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
         if !cAdvisorStats.nil?
-          metricInfo = JSON.parse(cAdvisorStats.body)
+          metricInfo = Oj.load(cAdvisorStats.body)
         end
         if !winNode.nil?
           hostName = winNode["Hostname"]
@@ -289,7 +289,7 @@ class CAdvisorMetricsAPIClient
       begin
         cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
         if !cAdvisorStats.nil?
-          metricInfo = JSON.parse(cAdvisorStats.body)
+          metricInfo = Oj.load(cAdvisorStats.body)
         end
         if !winNode.nil?
           hostName = winNode["Hostname"]

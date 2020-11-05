@@ -89,7 +89,7 @@ class ArcK8sClusterIdentity
       get_response = @http_client.request(get_request)
       @log.info "Got response of #{get_response.code} for #{secret_request_uri} @ #{Time.now.utc.iso8601}"
       if get_response.code.to_i == 200
-        token_secret = JSON.parse(get_response.body)["data"]
+        token_secret = Oj.load(get_response.body)["data"]
         cluster_identity_token = token_secret[token_secret_data_name]
         token = Base64.decode64(cluster_identity_token)
       end
@@ -117,7 +117,7 @@ class ArcK8sClusterIdentity
       get_response = @http_client.request(get_request)
       @log.info "Got response of #{get_response.code} for #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       if get_response.code.to_i == 200
-        status = JSON.parse(get_response.body)["status"]
+        status = Oj.load(get_response.body)["status"]
         tokenReference["expirationTime"] = status["expirationTime"]
         tokenReference["secretName"] = status["tokenReference"]["secretName"]
         tokenReference["dataName"] = status["tokenReference"]["dataName"]
@@ -140,7 +140,7 @@ class ArcK8sClusterIdentity
         cluster_identity_resource_name: @@cluster_identity_resource_name,
       }
       crd_request_body = get_crd_request_body
-      crd_request_body_json = crd_request_body.to_json
+      crd_request_body_json = Oj.dump(crd_request_body)
       update_request = Net::HTTP::Patch.new(crd_request_uri)
       update_request["Content-Type"] = "application/merge-patch+json"
       update_request["Authorization"] = "Bearer #{@service_account_token}"

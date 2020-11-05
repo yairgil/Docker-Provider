@@ -1,12 +1,12 @@
-require_relative '../test_helpers'
-Dir[File.join(File.expand_path(File.dirname(__FILE__)), "../../../../source/plugins/ruby/health/*.rb")].reject{|f| f.include?('health_monitor_utils')}.each { |file| require file }
+require_relative "../test_helpers"
+Dir[File.join(File.expand_path(File.dirname(__FILE__)), "../../../../source/plugins/ruby/health/*.rb")].reject { |f| f.include?("health_monitor_utils") }.each { |file| require file }
 include HealthModel
 
 describe "HealthKubernetesResources spec" do
-    it "returns the right set of nodes and workloads given node and pod inventory" do
+  it "returns the right set of nodes and workloads given node and pod inventory" do
 
-        #arrange
-        nodes_json = '{
+    #arrange
+    nodes_json = '{
             "items": [
                 {
                     "metadata": {
@@ -21,7 +21,7 @@ describe "HealthKubernetesResources spec" do
             ]
         }'
 
-        pods_json = '{
+    pods_json = '{
             "items": [
                 {
                     "metadata": {
@@ -132,7 +132,7 @@ describe "HealthKubernetesResources spec" do
                 }
             ]
         }'
-        deployments_json = '{
+    deployments_json = '{
             "items": [
                 {
                     "metadata": {
@@ -201,22 +201,22 @@ describe "HealthKubernetesResources spec" do
                 }
             ]
         }'
-        nodes = JSON.parse(nodes_json)
-        pods = JSON.parse(pods_json)
-        deployments = JSON.parse(deployments_json)
-        resources = HealthKubernetesResources.instance
-        resources.node_inventory = nodes
-        resources.pod_inventory = pods
-        resources.set_replicaset_inventory(deployments)
-        #act
-        parsed_nodes = resources.get_nodes
-        parsed_workloads = resources.get_workload_names
+    nodes = Oj.load(nodes_json)
+    pods = Oj.load(pods_json)
+    deployments = Oj.load(deployments_json)
+    resources = HealthKubernetesResources.instance
+    resources.node_inventory = nodes
+    resources.pod_inventory = pods
+    resources.set_replicaset_inventory(deployments)
+    #act
+    parsed_nodes = resources.get_nodes
+    parsed_workloads = resources.get_workload_names
 
-        #assert
-        assert_equal parsed_nodes.size, 2
-        assert_equal parsed_workloads.size, 3
+    #assert
+    assert_equal parsed_nodes.size, 2
+    assert_equal parsed_workloads.size, 3
 
-        assert_equal parsed_nodes, ['aks-nodepool1-19574989-0', 'aks-nodepool1-19574989-1']
-        parsed_workloads.sort.must_equal ['default~~diliprdeploymentnodeapps-c4fdfb446', 'default~~rss-site', 'kube-system~~kube-proxy'].sort
-    end
+    assert_equal parsed_nodes, ["aks-nodepool1-19574989-0", "aks-nodepool1-19574989-1"]
+    parsed_workloads.sort.must_equal ["default~~diliprdeploymentnodeapps-c4fdfb446", "default~~rss-site", "kube-system~~kube-proxy"].sort
+  end
 end

@@ -222,9 +222,9 @@ module Fluent
             record = @provider.get_record(all_monitors[key], state)
             if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER
               if !record[HealthMonitorRecordFields::DETAILS].nil?
-                details = JSON.parse(record[HealthMonitorRecordFields::DETAILS])
+                details = Oj.load(record[HealthMonitorRecordFields::DETAILS])
                 details[HealthMonitorRecordFields::HEALTH_MODEL_DEFINITION_VERSION] = "#{ENV["HEALTH_MODEL_DEFINITION_VERSION"]}"
-                record[HealthMonitorRecordFields::DETAILS] = details.to_json
+                record[HealthMonitorRecordFields::DETAILS] = Oj.dump(details)
               end
               if all_monitors.size > 1
                 old_state = record[HealthMonitorRecordFields::OLD_STATE]

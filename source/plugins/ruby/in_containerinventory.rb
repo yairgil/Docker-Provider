@@ -61,7 +61,7 @@ module Fluent
         containerIds = Array.new
         response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil?
-          podList = JSON.parse(response.body)
+          podList = Oj.load(response.body)
           if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
             podList["items"].each do |item|
               containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar)

@@ -76,7 +76,7 @@ module Fluent
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
         serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
-        # serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
+        # serviceList =  Oj.load(KubernetesApiClient.getKubeResourceInfo("services").body)
         $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
 
         if !serviceInfo.nil?
@@ -124,7 +124,7 @@ module Fluent
           telemetryProperties["Computer"] = @@hostName
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
-          telemetryProperties["ControllerData"] = @controllerData.to_json
+          telemetryProperties["ControllerData"] = Oj.dump(@controllerData)
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
           if @winContainerCount > 0
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount

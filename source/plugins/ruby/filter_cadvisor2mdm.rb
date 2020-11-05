@@ -285,7 +285,7 @@ module Fluent
 
         begin
           resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?fieldSelector=metadata.name%3D#{@@hostName}")
-          nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
+          nodeInventory = Oj.load(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
         rescue Exception => e
           @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
           ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)

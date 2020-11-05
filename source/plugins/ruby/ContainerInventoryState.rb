@@ -17,7 +17,7 @@ class ContainerInventoryState
         begin
           file = File.open(@@InventoryDirectory + containerId, "w")
           if !file.nil?
-            file.write(container.to_json)
+            file.write(Oj.dump(container))
             file.close
           else
             $log.warn("Exception while opening file with id: #{containerId}")
@@ -36,7 +36,7 @@ class ContainerInventoryState
         file = File.open(filepath, "r")
         if !file.nil?
           fileContents = file.read
-          containerObject = JSON.parse(fileContents)
+          containerObject = Oj.load(fileContents)
           file.close
           # Delete the file since the state is update to deleted
           File.delete(filepath) if File.exist?(filepath)

@@ -162,7 +162,7 @@ module HealthModel
         begin
           if node_inventory.nil?
             resourceUri = KubernetesApiClient.getNodesResourceUri("nodes")
-            node_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
+            node_inventory = Oj.load(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
           end
           cluster_cpu_capacity = 0.0
           cluster_memory_capacity = 0.0
@@ -209,11 +209,11 @@ module HealthModel
 
         begin
           resourceUri = KubernetesApiClient.getNodesResourceUri("nodes")
-          @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
+          @@nodeInventory = Oj.load(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
           if !hostName.nil?
-            podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("pods?fieldSelector=spec.nodeName%3D#{hostName}").body)
+            podInventory = Oj.load(KubernetesApiClient.getKubeResourceInfo("pods?fieldSelector=spec.nodeName%3D#{hostName}").body)
           else
-            podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("pods").body)
+            podInventory = Oj.load(KubernetesApiClient.getKubeResourceInfo("pods").body)
           end
           podInventory["items"].each do |pod|
             has_owner = !pod["metadata"]["ownerReferences"].nil?
@@ -286,7 +286,7 @@ module HealthModel
           file = File.open("/opt/microsoft/omsagent/plugin/healthmonitorconfig.json", "r")
           if !file.nil?
             fileContents = file.read
-            health_monitor_config = JSON.parse(fileContents)
+            health_monitor_config = Oj.load(fileContents)
             file.close
           end
         rescue => e

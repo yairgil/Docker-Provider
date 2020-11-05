@@ -121,7 +121,7 @@ class KubernetesApiClient
           else
             kubesystemResourceUri = "namespaces/" + @@KubeSystemNamespace + "/pods"
             @Log.info("KubernetesApiClient::getClusterName : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
-            podInfo = JSON.parse(getKubeResourceInfo(kubesystemResourceUri).body)
+            podInfo = Oj.load(getKubeResourceInfo(kubesystemResourceUri).body)
             @Log.info("KubernetesApiClient::getClusterName : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
             podInfo["items"].each do |items|
               if items["metadata"]["name"].include? "kube-controller-manager"
@@ -177,7 +177,7 @@ class KubernetesApiClient
       @@IsNodeMaster = false
       begin
         @Log.info("KubernetesApiClient::isNodeMaster : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-        allNodesInfo = JSON.parse(getKubeResourceInfo("nodes").body)
+        allNodesInfo = Oj.load(getKubeResourceInfo("nodes").body)
         @Log.info("KubernetesApiClient::isNodeMaster : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         if !allNodesInfo.nil? && !allNodesInfo.empty?
           thisNodeName = OMS::Common.get_hostname
@@ -241,7 +241,7 @@ class KubernetesApiClient
     #    @@IsLinuxCluster = true
     #    begin
     #        @Log.info("KubernetesApiClient::isLinuxCluster : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-    #        allNodesInfo = JSON.parse(getKubeResourceInfo('nodes').body)
+    #        allNodesInfo =  Oj.load(getKubeResourceInfo('nodes').body)
     #        @Log.info("KubernetesApiClient::isLinuxCluster : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
     #        if !allNodesInfo.nil? && !allNodesInfo.empty?
     #            allNodesInfo['items'].each do |item|
@@ -262,7 +262,7 @@ class KubernetesApiClient
       pods = []
       begin
         kubesystemResourceUri = "namespaces/" + namespace + "/pods"
-        podInfo = JSON.parse(getKubeResourceInfo(kubesystemResourceUri).body)
+        podInfo = Oj.load(getKubeResourceInfo(kubesystemResourceUri).body)
         podInfo["items"].each do |items|
           pods.push items
         end
@@ -277,7 +277,7 @@ class KubernetesApiClient
       winNodes = []
       begin
         resourceUri = getNodesResourceUri("nodes?labelSelector=kubernetes.io%2Fos%3Dwindows")
-        nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
+        nodeInventory = Oj.load(getKubeResourceInfo(resourceUri).body)
         @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
         # Resetting the windows node cache
         @@WinNodeArray.clear
@@ -322,7 +322,7 @@ class KubernetesApiClient
       begin
         kubesystemResourceUri = "namespaces/" + namespace + "/pods"
         @Log.info("KubernetesApiClient::getContainerIDs : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
-        podInfo = JSON.parse(getKubeResourceInfo(kubesystemResourceUri).body)
+        podInfo = Oj.load(getKubeResourceInfo(kubesystemResourceUri).body)
         @Log.info("KubernetesApiClient::getContainerIDs : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
         podInfo["items"].each do |item|
           if (!item["status"].nil? && !item["status"].empty? && !item["status"]["containerStatuses"].nil? && !item["status"]["containerStatuses"].empty?)

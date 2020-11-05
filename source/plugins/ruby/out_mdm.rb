@@ -110,7 +110,7 @@ module Fluent
           else
             # azure json file only used for aks and doesnt exist in non-azure envs
             file = File.read(@@azure_json_path)
-            @data_hash = JSON.parse(file)
+            @data_hash = Oj.load(file)
             # Check to see if SP exists, if it does use SP. Else, use msi
             sp_client_id = @data_hash["aadClientId"]
             sp_client_secret = @data_hash["aadClientSecret"]
@@ -172,7 +172,7 @@ module Fluent
             @log.info "making request to get token.."
             token_response = http_access_token.request(token_request)
             # Handle the case where the response is not 200
-            parsed_json = JSON.parse(token_response.body)
+            parsed_json = Oj.load(token_response.body)
             @token_expiry_time = Time.now + @@token_refresh_back_off_interval * 60 # set the expiry time to be ~ thirty minutes from current time
             @cached_access_token = parsed_json["access_token"]
             @log.info "Successfully got access token"
@@ -228,7 +228,7 @@ module Fluent
         if (!@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes * 60)) && @can_send_data_to_mdm
           post_body = []
           chunk.msgpack_each { |(tag, record)|
-            post_body.push(record.to_json)
+            post_body.push(Oj.dump(record))
           }
           # the limit of the payload is 1MB. Each record is ~300 bytes. using a batch size of 2600, so that
           # the pay load size becomes approximately 800 Kb.

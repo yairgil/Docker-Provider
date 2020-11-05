@@ -28,7 +28,7 @@ module HealthModel
           metric_value: metric_value,
           timestamp: timestamp,
         }
-        return JSON.parse(health_container_cpu_memory_record)
+        return Oj.load(health_container_cpu_memory_record)
       rescue => e
         @log.info "Error in get_record_from_cadvisor_record #{e.message} #{e.backtrace}"
         return nil

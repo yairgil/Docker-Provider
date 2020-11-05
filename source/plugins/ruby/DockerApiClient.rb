@@ -66,7 +66,7 @@ class DockerApiClient
       end
       begin
         if jsonResponse != nil
-          parsedJsonResponse = JSON.parse(jsonResponse)
+          parsedJsonResponse = Oj.load(jsonResponse)
         end
       rescue => errorStr
         $log.warn("Json parsing for docker response failed: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")

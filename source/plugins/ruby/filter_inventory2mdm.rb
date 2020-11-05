@@ -133,7 +133,7 @@ module Fluent
           statusValue: @@node_status_ready,
           node_status_count: node_ready_count,
         }
-        records.push(JSON.parse(ready_record))
+        records.push(Oj.load(ready_record))
 
         not_ready_record = @@node_inventory_custom_metrics_template % {
           timestamp: timestamp,
@@ -141,7 +141,7 @@ module Fluent
           statusValue: @@node_status_not_ready,
           node_status_count: node_not_ready_count,
         }
-        records.push(JSON.parse(not_ready_record))
+        records.push(Oj.load(not_ready_record))
       rescue Exception => e
         @log.info "Error processing node inventory records Exception: #{e.class} Message: #{e.message}"
         ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
@@ -251,7 +251,7 @@ module Fluent
             controllerNameDimValue: podControllerNameDimValue,
             podCountMetricValue: value,
           }
-          records.push(JSON.parse(record))
+          records.push(Oj.load(record))
         }
       rescue Exception => e
         @log.info "Error processing pod inventory record Exception: #{e.class} Message: #{e.message}"

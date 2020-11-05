@@ -42,8 +42,8 @@ module HealthModel
       update_request["Authorization"] = "Bearer #{@token}"
 
       update_request_body = get_update_request_body
-      update_request_body["state"] = monitor_states_hash.to_json
-      update_request.body = update_request_body.to_json
+      update_request_body["state"] = Oj.dump(monitor_states_hash)
+      update_request.body = Oj.dump(update_request_body)
 
       update_response = @http_client.request(update_request)
       @log.info "Got a response of #{update_response.code} for #{update_request.method}"
@@ -57,7 +57,7 @@ module HealthModel
       @log.info "Got response of #{get_response.code} for #{@uri.request_uri} @ #{Time.now.utc.iso8601}"
 
       if get_response.code.to_i == 200
-        return JSON.parse(JSON.parse(get_response.body)["state"])
+        return Oj.load(Oj.load(get_response.body)["state"])
       else
         return {}
       end

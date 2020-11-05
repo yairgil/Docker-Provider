@@ -60,7 +60,7 @@ module Fluent
           details = ""
 
           begin
-            details = JSON.parse(`sudo docker inspect #{containerId}`)
+            details = Oj.load(`sudo docker inspect #{containerId}`)
           rescue => e
             if @log != nil
               @log.error { "sudo docker inspect " + containerId + " failed" }

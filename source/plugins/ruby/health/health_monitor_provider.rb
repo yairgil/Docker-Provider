@@ -18,7 +18,7 @@ module HealthModel
         file = File.open(@monitor_configuration_path, "r")
         if !file.nil?
           fileContents = file.read
-          @monitor_configuration = JSON.parse(fileContents)
+          @monitor_configuration = Oj.load(fileContents)
           file.close
         end
       rescue => e
@@ -58,13 +58,13 @@ module HealthModel
       monitor_record = {}
 
       monitor_record[HealthMonitorRecordFields::CLUSTER_ID] = @cluster_id
-      monitor_record[HealthMonitorRecordFields::MONITOR_LABELS] = labels.to_json
+      monitor_record[HealthMonitorRecordFields::MONITOR_LABELS] = Oj.dump(labels)
       monitor_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
       monitor_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
       monitor_record[HealthMonitorRecordFields::NEW_STATE] = new_state
       monitor_record[HealthMonitorRecordFields::OLD_STATE] = old_state
-      monitor_record[HealthMonitorRecordFields::DETAILS] = details.to_json
-      monitor_record[HealthMonitorRecordFields::MONITOR_CONFIG] = config.to_json
+      monitor_record[HealthMonitorRecordFields::DETAILS] = Oj.dump(details)
+      monitor_record[HealthMonitorRecordFields::MONITOR_CONFIG] = Oj.dump(config)
       monitor_record[HealthMonitorRecordFields::TIME_GENERATED] = Time.now.utc.iso8601
       monitor_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = time_first_observed
       monitor_record[HealthMonitorRecordFields::PARENT_MONITOR_INSTANCE_ID] = ""

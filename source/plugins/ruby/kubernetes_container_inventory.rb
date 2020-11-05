@@ -4,7 +4,6 @@
 class KubernetesContainerInventory
   require "oj"
   require "time"
-  require "json"
   require_relative "omslog"
   require_relative "ApplicationInsightsUtility"
 
@@ -228,7 +227,7 @@ class KubernetesContainerInventory
               envVars = File.read(environFilePath, 200000)
               if !envVars.nil? && !envVars.empty?
                 envVars = envVars.split("\0")
-                envValueString = envVars.to_json
+                envValueString = Oj.dump(envVars)
                 envValueStringLength = envValueString.length
                 $log.info("KubernetesContainerInventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
                 if envValueStringLength >= 200000
@@ -302,7 +301,7 @@ class KubernetesContainerInventory
             end
             envVars.push("#{key}=#{value}")
           end
-          envValueString = envVars.to_json
+          envValueString = Oj.dump(envVars)
           containerName = container["name"]
           # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
           # Check to see if the environment variable collection is disabled for this container.

@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class ConfigParseErrorLogger
-  require "json"
+  require "oj"
 
   def initialize
   end
@@ -11,7 +11,7 @@ class ConfigParseErrorLogger
     def logError(message)
       begin
         errorMessage = "config::error::" + message
-        jsonMessage = errorMessage.to_json
+        jsonMessage = Oj.dump(errorMessage)
         STDERR.puts jsonMessage
       rescue => errorStr
         puts "Error in ConfigParserErrorLogger::logError: #{errorStr}"
