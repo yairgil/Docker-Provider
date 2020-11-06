@@ -15,9 +15,20 @@ ENV HOST_VAR /hostfs/var
 ENV AZMON_COLLECT_ENV False
 ENV KUBE_CLIENT_BACKOFF_BASE 1
 ENV KUBE_CLIENT_BACKOFF_DURATION 0
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y libc-bin wget openssl curl sudo python-ctypes init-system-helpers  net-tools rsyslog cron vim dmidecode apt-transport-https gnupg && rm -rf /var/lib/apt/lists/*
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y build-essential libc-bin wget openssl curl sudo python-ctypes init-system-helpers  net-tools rsyslog cron vim dmidecode apt-transport-https gnupg && rm -rf /var/lib/apt/lists/*
 COPY setup.sh main.sh defaultpromenvvariables defaultpromenvvariables-rs mdsd.xml envmdsd $tmpdir/
 WORKDIR ${tmpdir}
+
+# jemalloc
+RUN wget -O /tmp/jemalloc-5.2.1.tar.bz2 https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2 \
+ && cd /tmp && tar -xjf jemalloc-5.2.1.tar.bz2 && cd jemalloc-5.2.1/ \
+ && ./configure && make \
+ && mv lib/libjemalloc.so.2 /usr/lib \
+ && rm -rf /tmp/* \
+ && /usr/bin/apt-get remove -y build-essential \
+ && /usr/bin/apt-get autoremove -y
+
+ENV LD_PRELOAD="/usr/lib/libjemalloc.so.2"
 
 # copy docker provider shell bundle to use the agent image
 COPY ./Linux_ULINUX_1.0_x64_64_Release/docker-cimprov-*.*.*-*.x86_64.sh .
