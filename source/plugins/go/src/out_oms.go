@@ -1,14 +1,20 @@
 package main
 
 import (
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/fluent/fluent-bit-go/output"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 import (
 	"C"
 	"os"
 	"strings"
 	"unsafe"
+)
+
+var (
+	EnableKubeAudit string
+	EnablePerf      string
+	EnableFlbPLugin string
 )
 
 //export FLBPluginRegister
@@ -38,6 +44,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		}
 	}
 
+	EnableKubeAudit = output.FLBPluginConfigKey(ctx, "EnableKubeAudit")
+	EnablePerf = output.FLBPluginConfigKey(ctx, "EnablePerf")
+	EnableFlbPLugin = output.FLBPluginConfigKey(ctx, "EnableFlbPLugin")
 	enableTelemetry := output.FLBPluginConfigKey(ctx, "EnableTelemetry")
 	if strings.Compare(strings.ToLower(enableTelemetry), "true") == 0 {
 		telemetryPushInterval := output.FLBPluginConfigKey(ctx, "TelemetryPushIntervalSeconds")
@@ -51,13 +60,45 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 //export FLBPluginFlush
 func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
+
+	// Create Fluent Bit decoder
+	incomingTag := strings.ToLower(C.GoString(tag))
+	Log("EnableKubeAudit: %v", EnableKubeAudit)
+	Log("EnableFlbPLugin: %v", EnableFlbPLugin)
+	Log("EnablePerf: %v", EnablePerf)
+	if strings.HasPrefix(incomingTag, "oms.container.kube.audit") {
+		if strings.Compare(strings.ToLower(EnableKubeAudit), "true") == 0 {
+			// kube audit collection is off, pass the parsing
+			records := GetRecords(data, length)
+			return PostDataHelper(records)
+		}
+	}
+
+	if strings.HasPrefix(incomingTag, "oms.container.log.flbplugin") {
+		if strings.Compare(strings.ToLower(EnableFlbPLugin), "true") == 0 {
+			// This will also include populating cache to be sent as for config events
+			records := GetRecords(data, length)
+			return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
+		}
+	}
+
+	if strings.HasPrefix(incomingTag, "oms.container.perf.telegraf") {
+		if strings.Compare(strings.ToLower(EnablePerf), "true") == 0 {
+			// This will also include populating cache to be sent as for config events
+			records := GetRecords(data, length)
+			return PostTelegrafMetricsToLA(records)
+		}
+	}
+	return output.FLB_OK
+}
+
+// GetRecords
+func GetRecords(data unsafe.Pointer, length C.int) []map[interface{}]interface{} {
 	var ret int
 	var record map[interface{}]interface{}
 	var records []map[interface{}]interface{}
 
-	// Create Fluent Bit decoder
 	dec := output.NewDecoder(data, int(length))
-
 	// Iterate Records
 	for {
 		// Extract Record
@@ -68,15 +109,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 		records = append(records, record)
 	}
 
-	incomingTag := strings.ToLower(C.GoString(tag))
-	if strings.Contains(incomingTag, "oms.container.log.flbplugin") {
-		// This will also include populating cache to be sent as for config events
-		return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
-	} else if strings.Contains(incomingTag, "oms.container.perf.telegraf") {
-		return PostTelegrafMetricsToLA(records)
-	}
-
-	return PostDataHelper(records)
+	return records
 }
 
 // FLBPluginExit exits the plugin

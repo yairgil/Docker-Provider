@@ -21,6 +21,7 @@ import (
 
 // ReadConfiguration reads a property file
 func ReadConfiguration(filename string) (map[string]string, error) {
+	Log("Reading configuration from file %v", filename)
 	config := map[string]string{}
 
 	if len(filename) == 0 {
@@ -56,7 +57,7 @@ func ReadConfiguration(filename string) (map[string]string, error) {
 		log.Fatalf("%s", err.Error())
 		return nil, err
 	}
-
+	Log("Finished reading configuration from file %v", filename)
 	return config, nil
 }
 

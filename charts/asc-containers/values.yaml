@@ -32,6 +32,7 @@ omsagent:
     clusterRegion: <your_cluster_region>
   rbac: true
   logsettings:
+    typesToCollect: "AuditLogs"
     logflushintervalsecs: ""
     tailbufchunksizemegabytes: ""
     tailbufmaxsizemegabytes: ""

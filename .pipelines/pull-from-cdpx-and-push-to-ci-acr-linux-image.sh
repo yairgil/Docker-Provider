@@ -15,10 +15,15 @@ do
            CIAgentRepositoryName) CI_AGENT_REPO=$VALUE ;;
            CIRelease) CI_RELEASE=$VALUE ;;
            CIImageTagSuffix) CI_IMAGE_TAG_SUFFIX=$VALUE ;;
-
+           ImagePath) IMAGE_PATH=$VALUE ;;
            *)
     esac
 done
+
+if [ -z "$IMAGE_PATH" ]
+then
+    IMAGE_PATH = public/azuremonitor/containerinsights
+fi
 
 echo "start: read appid and appsecret"
 ACR_APP_ID=$(cat ~/acrappid)
@@ -41,14 +46,15 @@ echo "CI ACR : ${CI_ACR}"
 echo "CI AGENT REPOSITORY NAME : ${CI_AGENT_REPO}"
 
 echo "tag linux agent image"
-docker tag ${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG} ${CI_ACR}/public/azuremonitor/containerinsights/${CI_AGENT_REPO}:${imagetag}
+fullImagePath = ${CI_ACR}/${IMAGE_PATH}/${CI_AGENT_REPO}:${imagetag}
+docker tag ${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG} ${fullImagePath}
 
 echo "login ciprod acr":$CI_ACR
 docker login $CI_ACR --username $ACR_APP_ID --password $ACR_APP_SECRET
 echo "login to ${CI_ACR} acr completed"
 
 echo "pushing the image to ciprod acr:${CI_ACR}"
-docker push ${CI_ACR}/public/azuremonitor/containerinsights/${CI_AGENT_REPO}:${imagetag}
+docker push ${fullImagePath}
 echo "pushing the image to ciprod acr completed"
 
 echo "end: pull linux agent image from cdpx and push to ciprod acr"

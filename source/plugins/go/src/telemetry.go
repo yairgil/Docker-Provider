@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fluent/fluent-bit-go/output"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-	"github.com/fluent/fluent-bit-go/output"
 )
 
 var (
@@ -44,28 +44,29 @@ var (
 	ContainerLogsMDSDClientCreateErrors float64
 	//Tracks the number of write/send errors to ADX for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsSendErrorsToADXFromFluent float64
-	 //Tracks the number of ADX client create errors for containerlogs (uses ContainerLogTelemetryTicker)
+	//Tracks the number of ADX client create errors for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsADXClientCreateErrors float64
 )
 
 const (
-	clusterTypeACS                                    = "ACS"
-	clusterTypeAKS                                    = "AKS"
-	envAKSResourceID                                  = "AKS_RESOURCE_ID"
-	envACSResourceName                                = "ACS_RESOURCE_NAME"
-	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
-	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
-	metricNameAvgFlushRate                            = "ContainerLogAvgRecordsFlushedPerSec"
-	metricNameAvgLogGenerationRate                    = "ContainerLogsGeneratedPerSec"
-	metricNameLogSize                                 = "ContainerLogsSize"
-	metricNameAgentLogProcessingMaxLatencyMs          = "ContainerLogsAgentSideLatencyMs"
-	metricNameNumberofTelegrafMetricsSentSuccessfully = "TelegrafMetricsSentCount"
-	metricNameNumberofSendErrorsTelegrafMetrics       = "TelegrafMetricsSendErrorCount"
-	metricNameNumberofSend429ErrorsTelegrafMetrics    = "TelegrafMetricsSend429ErrorCount"
-	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent	  = "ContainerLogs2MdsdSendErrorCount"
-	metricNameErrorCountContainerLogsMDSDClientCreateError	  = "ContainerLogsMdsdClientCreateErrorCount"
-	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent	  = "ContainerLogs2ADXSendErrorCount"
-	metricNameErrorCountContainerLogsADXClientCreateError	  = "ContainerLogsADXClientCreateErrorCount"
+	clusterTypeACS                                              = "ACS"
+	clusterTypeAKS                                              = "AKS"
+	envAKSResourceID                                            = "AKS_RESOURCE_ID"
+	envAKSRegion                                                = "AKS_REGION"
+	envACSResourceName                                          = "ACS_RESOURCE_NAME"
+	envAppInsightsAuth                                          = "APPLICATIONINSIGHTS_AUTH"
+	envAppInsightsEndpoint                                      = "APPLICATIONINSIGHTS_ENDPOINT"
+	metricNameAvgFlushRate                                      = "ContainerLogAvgRecordsFlushedPerSec"
+	metricNameAvgLogGenerationRate                              = "ContainerLogsGeneratedPerSec"
+	metricNameLogSize                                           = "ContainerLogsSize"
+	metricNameAgentLogProcessingMaxLatencyMs                    = "ContainerLogsAgentSideLatencyMs"
+	metricNameNumberofTelegrafMetricsSentSuccessfully           = "TelegrafMetricsSentCount"
+	metricNameNumberofSendErrorsTelegrafMetrics                 = "TelegrafMetricsSendErrorCount"
+	metricNameNumberofSend429ErrorsTelegrafMetrics              = "TelegrafMetricsSend429ErrorCount"
+	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent = "ContainerLogs2MdsdSendErrorCount"
+	metricNameErrorCountContainerLogsMDSDClientCreateError      = "ContainerLogsMdsdClientCreateErrorCount"
+	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent  = "ContainerLogs2ADXSendErrorCount"
+	metricNameErrorCountContainerLogsADXClientCreateError       = "ContainerLogsADXClientCreateErrorCount"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -250,15 +251,15 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		}
 		CommonProperties["ClusterType"] = clusterTypeAKS
 
-		region := os.Getenv("AKS_REGION")
+		region := os.Getenv(envAKSRegion)
 		CommonProperties["Region"] = region
 	}
 
 	if isProxyConfigured == true {
-	  CommonProperties["IsProxyConfigured"] = "true"
+		CommonProperties["IsProxyConfigured"] = "true"
 	} else {
-  	   CommonProperties["IsProxyConfigured"] = "false"
-    }
+		CommonProperties["IsProxyConfigured"] = "false"
+	}
 
 	TelemetryClient.Context().CommonProperties = CommonProperties
 	return 0, nil

@@ -118,6 +118,8 @@ var (
 	WorkspaceID string
 	// ResourceID for resource-centric log analytics data
 	ResourceID string
+	// ResourceRegion
+	ResourceRegion string
 	// Resource-centric flag (will be true if we determine if above RseourceID is non-empty - default is false)
 	ResourceCentric bool
 	//ResourceName
@@ -869,6 +871,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			auditLogDataItem.Timestamp = auditLogDataItem.StageTimestamp
 			auditLogDataItem.AzureResourceID = ResourceID
+			auditLogDataItem.Region = ResourceRegion
 
 			auditLogItems = append(auditLogItems, auditLogDataItem)
 			continue
@@ -1391,6 +1394,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	Log("OMSEndpoint %s", OMSEndpoint)
 	ResourceID = os.Getenv(envAKSResourceID)
+	ResourceRegion = os.Getenv(envAKSRegion)
+	Log("ResourceRegion: %v", ResourceRegion)
 
 	if len(ResourceID) > 0 {
 		//AKS Scenario
