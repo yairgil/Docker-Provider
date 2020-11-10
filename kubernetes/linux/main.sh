@@ -152,11 +152,11 @@ fi
 
 # Set environment variable for if public cloud by checking the workspace domain.
 if [-z $DOMAIN]; then
-  $ClOUD_ENVIRONMENT = "unknown"
+  $ClOUD_ENVIRONMENT="unknown"
 elif [$DOMAIN == "opinsights.azure.com"]; then
-  $CLOUD_ENVIRONMENT = "public"
+  $CLOUD_ENVIRONMENT="public"
 else
-  $CLOUD_ENVIRONMENT = "national"
+  $CLOUD_ENVIRONMENT="national"
 fi
 
 #Parse the configmap to set the right environment variables.
