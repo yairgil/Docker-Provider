@@ -150,6 +150,17 @@ else
       echo "LA Onboarding:Workspace Id not mounted, skipping the telemetry check"
 fi
 
+# Set environment variable for if public cloud by checking the workspace domain.
+if [-z $DOMAIN]; then
+  $ClOUD_ENVIRONMENT = "unknown"
+elif [$DOMAIN == "opinsights.azure.com"]; then
+  $CLOUD_ENVIRONMENT = "public"
+else
+  $CLOUD_ENVIRONMENT = "national"
+fi
+export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
+echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
+
 #Parse the configmap to set the right environment variables.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
 
