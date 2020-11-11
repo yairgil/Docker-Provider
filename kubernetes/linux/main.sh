@@ -151,13 +151,15 @@ else
 fi
 
 # Set environment variable for if public cloud by checking the workspace domain.
-if [-z $DOMAIN]; then
-  $ClOUD_ENVIRONMENT="unknown"
-elif [$DOMAIN == "opinsights.azure.com"]; then
-  $CLOUD_ENVIRONMENT="public"
+if [ -z $domain ]; then
+  ClOUD_ENVIRONMENT="unknown"
+elif [ $domain == "opinsights.azure.com" ]; then
+  CLOUD_ENVIRONMENT="public"
 else
-  $CLOUD_ENVIRONMENT="national"
+  CLOUD_ENVIRONMENT="national"
 fi
+export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
+echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
 
 #Parse the configmap to set the right environment variables.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
@@ -547,8 +549,6 @@ else
       telemetry_cluster_type="AKS"
 fi
 
-export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
-echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
 export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id
 echo "export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id" >> ~/.bashrc
 export TELEMETRY_AKS_REGION=$telemetry_aks_region
