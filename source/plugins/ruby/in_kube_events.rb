@@ -11,6 +11,7 @@ module Fluent
       require "yajl/json_gem"
       require "yajl"
       require "time"
+      require "kubeclient"
 
       require_relative "KubernetesApiClient"
       require_relative "oms_common"
@@ -19,6 +20,15 @@ module Fluent
 
       # 30000 events account to approximately 5MB
       @EVENTS_CHUNK_SIZE = 30000
+
+      # 5K events to avoid perf hit
+      @EVENTS_CHUNK_SIZE_5K = 5000
+
+      # 1K records
+      @EVENTS_WATCH_CACHE_SIZE = 1000
+
+      # watch queue size
+      @watchQueue = nil
 
       # Initializing events count for telemetry
       @eventsCount = 0
@@ -36,6 +46,7 @@ module Fluent
 
     def start
       if @run_interval
+        @watchQueue = Queue.new
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -60,6 +71,113 @@ module Fluent
           @condition.signal
         }
         @thread.join
+      end
+    end
+
+    def enumerateV2
+      begin
+        # to hit first interval
+        timeDifference = @run_interval
+        WatchEventsFlushTimeTracker = DateTime.now.to_time.to_i
+        watcherThread = Thread.new do
+            listAndWatch
+        end
+        loop do
+          begin
+            if (@watchQueue.length >= @EVENTS_WATCH_CACHE_SIZE || timeDifference >= @run_interval )
+              if @watchQueue.length > 0
+                $log.info "in_kube_events::enumeratev2:watch queue length : #{@watchQueue.length}"
+                currentTime = Time.now
+                batchTime = currentTime.utc.iso8601
+                newEventQueryState = []
+                eventQueryState = getEventQueryStat
+                eventList = {}
+                eventList["items"] = @watchQueue.size.times.map { queue.pop }
+                # todo - multiple emits in case of large queue size than 4m buffer limit
+                newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
+                writeEventQueryState(newEventQueryState)
+              else
+                $log.warn "in_kube_events::watch queue length is 0"
+              end
+              WatchEventsFlushTimeTracker = DateTime.now.to_time.to_i
+            end
+            sleep 1 # avoid eating full cpu
+          rescue => errorStr
+            $log.warn "in_kube_events::enumeratev2:Failed in enumerate: #{errorStr}"
+            $log.debug_backtrace(errorStr.backtrace)
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+          end
+          timeDifference = (DateTime.now.to_time.to_i - WatchEventsFlushTimeTracker).abs
+        end
+        watcherThread.join
+      rescue => errorStr
+        $log.warn "in_kube_events::enumeratev2:Failed in enumerate: #{errorStr}"
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+
+    end
+
+    def listAndWatch
+      eventList = nil
+      $log.info("in_kube_events::listAndWatch : Getting events from Kube API @ #{Time.now.utc.iso8601}")
+      CaFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+      ssl_options = {
+        ca_file:     '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
+        verify_ssl:  OpenSSL::SSL::VERIFY_PEER
+      }
+      getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
+      auth_options: { bearer_token: KubernetesApiClient.getTokenStr }
+      client = Kubeclient::Client.new('https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/', 'v1', ssl_options: ssl_options, auth_options: auth_options)
+      fieldSelector = ''
+      if !@collectAllKubeEvents
+        fieldSelector = 'type!=Normal'
+      end
+
+      loop  do
+        begin
+          eventList = client.get_events(limit:@EVENTS_CHUNK_SIZE_5K, as: :parsed)
+          collection_version = eventList['metadata']['resourceVersion']
+          continuationToken =  eventList['metadata']['continue']
+          if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+            eventList["items"].each do |items|
+              @watchQueue << items
+            end
+          else
+            $log.warn "in_kube_events::get_events:Received empty eventList"
+          end
+
+          while (!continuationToken.nil? && !continuationToken.empty?)
+            eventList = client.get_events(limit:limit:@EVENTS_CHUNK_SIZE_5K, continue: continuationToken, as: :parsed)
+            collection_version = eventList['metadata']['resourceVersion']
+            continuationToken =  eventList['metadata']['continue']
+            if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+              eventList["items"].each do |items|
+                @watchQueue << items
+              end
+            else
+              $log.warn "in_kube_events::get_events:Received empty eventList"
+            end
+          end
+          # Setting this to nil so that we dont hold memory until GC kicks in
+          eventList = nil
+          $log.info "in_kube_events::listAndWatch:resource version: #{collection_version}"
+          begin
+            client.watch_events(resource_version: collection_version, field_selector:fieldSelector, as: :parsed) do |notice|
+              if !notice["object"].nil? && !notice["object"].empty?
+                @watchQueue << notice["object"]
+              end
+            end
+          rescue => errorStr
+            $log.warn "in_kube_events::listAndWatch: watch_events session got broken and re-establishing the session"
+            $log.debug_backtrace(errorStr.backtrace)
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+          end
+        rescue => errorStr
+          $log.warn "in_kube_events::listAndWatch: watch_events session got broken and re-establishing the session"
+          $log.debug_backtrace(errorStr.backtrace)
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        end
       end
     end
 
@@ -183,11 +301,11 @@ module Fluent
         @mutex.unlock
         if !done
           begin
-            $log.info("in_kube_events::run_periodic.enumerate.start @ #{Time.now.utc.iso8601}")
-            enumerate
-            $log.info("in_kube_events::run_periodic.enumerate.end @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_events::run_periodic.enumerateV2.start @ #{Time.now.utc.iso8601}")
+            enumerateV2
+            $log.info("in_kube_events::run_periodic.enumerateV2.end @ #{Time.now.utc.iso8601}")
           rescue => errorStr
-            $log.warn "in_kube_events::run_periodic: enumerate Failed to retrieve kube events: #{errorStr}"
+            $log.warn "in_kube_events::run_periodic: enumerateV2 Failed to retrieve kube events: #{errorStr}"
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end
         end
