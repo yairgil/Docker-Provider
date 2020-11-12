@@ -100,6 +100,76 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel/event.rb;						source/plugins/ruby/lib/application_insights/channel/event.rb;   644; root; root
 /opt/microsoft/omsagent/plugin/lib/application_insights.rb;     source/plugins/ruby/lib/application_insights.rb; 644; root; root
 
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient.rb;                                            source/plugins/ruby/kubeclient/kubeclient.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/aws_eks_credentials.rb;                        source/plugins/ruby/kubeclient/kubeclient/aws_eks_credentials.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/common.rb;                                     source/plugins/ruby/kubeclient/kubeclient/common.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/config.rb;                                     source/plugins/ruby/kubeclient/kubeclient/config.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/entity_list.rb;                                source/plugins/ruby/kubeclient/kubeclient/entity_list.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/exec_credentials.rb;                           source/plugins/ruby/kubeclient/kubeclient/exec_credentials.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/gcp_auth_provider.rb;                          source/plugins/ruby/kubeclient/kubeclient/gcp_auth_provider.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/gcp_command_credentials.rb;                    source/plugins/ruby/kubeclient/kubeclient/gcp_command_credentials.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/google_application_default_credentials.rb;     source/plugins/ruby/kubeclient/kubeclient/google_application_default_credentials.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/http_error.rb;                                 source/plugins/ruby/kubeclient/kubeclient/http_error.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/missing_kind_compatibility.rb;                 source/plugins/ruby/kubeclient/kubeclient/missing_kind_compatibility.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/oidc_auth_provider.rb;                         source/plugins/ruby/kubeclient/kubeclient/oidc_auth_provider.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/resource.rb;                                   source/plugins/ruby/kubeclient/kubeclient/resource.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/resource_not_found_error.rb;                   source/plugins/ruby/kubeclient/kubeclient/resource_not_found_error.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/version.rb;                                    source/plugins/ruby/kubeclient/kubeclient/version.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient/watch_stream.rb;                               source/plugins/ruby/kubeclient/kubeclient/watch_stream.rb; 644; root; root
+
+
+
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/bin/restclient;                           source/plugins/ruby/kubeclient/rest-client-2.1.0/bin/restclient; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/rest_client.rb;                       source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/rest_client.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/rest-client.rb;                       source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/rest-client.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient.rb;                        source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient.rb; 644; root; root
+
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/abstract_response.rb;      source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/abstract_response.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/exceptions.rb;             source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/exceptions.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/params_array.rb;           source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/params_array.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/payload.rb;                source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/payload.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/platform.rb;               source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/platform.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/raw_response.rb;           source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/raw_response.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/request.rb;                source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/request.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/resource.rb;               source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/resource.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/response.rb;               source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/response.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/utils.rb;                  source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/utils.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/version.rb;                source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/version.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/windows.rb;                source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/windows.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/windows/root_certs.rb;     source/plugins/ruby/kubeclient/rest-client-2.1.0/lib/restclient/windows/root_certs.rb; 644; root; root
+
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept.rb;                         source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/charsets.rb;                source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/charsets.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/content_type.rb;            source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/content_type.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/encodings.rb;               source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/encodings.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/languages.rb;               source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/languages.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/media_types.rb;             source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/media_types.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/parse_error.rb;             source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/parse_error.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/quoted_string.rb;           source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/quoted_string.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/sort.rb;                    source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/sort.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/version.rb;                 source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/version.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/media_types/map.rb;         source/plugins/ruby/kubeclient/http-accept-2.1.1/lib/http/accept/media_types/map.rb; 644; root; root
+
+/opt/microsoft/omsagent/plugin/kubeclient/netrc-0.11.0/lib/netrc.rb;                                        source/plugins/ruby/kubeclient/netrc-0.11.0/lib/netrc.rb; 644; root; root
+
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime-types.rb;                         source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime-types.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types.rb;                         source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/type.rb;                          source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/type.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/type/columnar.rb;                 source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/type/columnar.rb; 644; root; root
+
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/_columnar.rb;               source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/_columnar.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/cache.rb;                   source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/cache.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/columnar.rb;                source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/columnar.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/container.rb;               source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/container.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/deprecations.rb;            source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/deprecations.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/full.rb;                    source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/full.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/loader.rb;                  source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/loader.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/logger.rb;                  source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/logger.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/registry.rb;                source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/registry.rb; 644; root; root
+
+
+
+
 /opt/tomlrb.rb;                                                 source/toml-parser/tomlrb.rb; 644; root; root
 /opt/tomlrb/generated_parser.rb;                                source/toml-parser/tomlrb/generated_parser.rb; 644; root; root
 /opt/tomlrb/handler.rb;                                         source/toml-parser/tomlrb/handler.rb; 644; root; root
@@ -164,6 +234,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/health/monitor_set.rb;                                               source/plugins/ruby/health/monitor_set.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/unit_monitor.rb;                                              source/plugins/ruby/health/unit_monitor.rb; 644; root; root
 
+
+
 %Links
 /opt/omi/lib/libcontainer.${{SHLIB_EXT}}; /opt/microsoft/docker-cimprov/lib/libcontainer.${{SHLIB_EXT}}; 644; root; root
 
@@ -213,6 +285,27 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel;                755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel/contracts;      755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/lib/application_insights/rack;                   755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient;										        755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/kubeclient;							 		  755; root; root; sysdir
+
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0;						  755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/bin;					  755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib;					  755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient;       755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/rest-client-2.1.0/lib/restclient/windows; 755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1;                        755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib;                    755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http;               755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept;              755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-accept-2.1.1/lib/http/accept/media_types;       755; root; root; sysdir
+
+/opt/microsoft/omsagent/plugin/kubeclient/netrc-0.11.0;                                   755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/netrc-0.11.0/lib;                               755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1;                               755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib;                           755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime;                      755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/type;                      755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types;                755; root; root; sysdir
 
 /opt/tomlrb;												755; root; root; sysdir
 

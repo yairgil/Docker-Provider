@@ -11,7 +11,7 @@ module Fluent
       require "yajl/json_gem"
       require "yajl"
       require "time"
-      require_relative "kubeclient"
+      require_relative "kubeclient/kubeclient"
 
       require_relative "KubernetesApiClient"
       require_relative "oms_common"
