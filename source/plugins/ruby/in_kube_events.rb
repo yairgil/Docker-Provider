@@ -78,12 +78,12 @@ module Fluent
     def enumerateV2
       begin
         watcherThread = Thread.new do
-            listAndWatch
+          listAndWatch
         end
         loop do
           begin
             timeDifference = (DateTime.now.to_time.to_i - @@watchEventsFlushTimeTracker).abs
-            if (@watchQueue.length >= @EVENTS_WATCH_CACHE_SIZE || timeDifference >= @run_interval )
+            if (@watchQueue.length >= @EVENTS_WATCH_CACHE_SIZE || timeDifference >= @run_interval)
               if @watchQueue.length > 0
                 $log.info "in_kube_events::enumeratev2:watch queue length : #{@watchQueue.length}"
                 currentTime = Time.now
@@ -113,30 +113,28 @@ module Fluent
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-
     end
 
     def listAndWatch
       eventList = nil
       $log.info("in_kube_events::listAndWatch : Getting events from Kube API @ #{Time.now.utc.iso8601}")
-      CaFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
       ssl_options = {
-        ca_file:     '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt',
-        verify_ssl:  OpenSSL::SSL::VERIFY_PEER
+        ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+        verify_ssl: OpenSSL::SSL::VERIFY_PEER,
       }
       getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
-      auth_options: { bearer_token: KubernetesApiClient.getTokenStr }
-      client = Kubeclient::Client.new('https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/', 'v1', ssl_options: ssl_options, auth_options: auth_options)
-      fieldSelector = ''
+      auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
+      client = Kubeclient::Client.new('https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/', "v1", ssl_options: ssl_options, auth_options: auth_options)
+      fieldSelector = ""
       if !@collectAllKubeEvents
-        fieldSelector = 'type!=Normal'
+        fieldSelector = "type!=Normal"
       end
 
-      loop  do
+      loop do
         begin
-          eventList = client.get_events(limit:@EVENTS_CHUNK_SIZE_5K, as: :parsed)
-          collection_version = eventList['metadata']['resourceVersion']
-          continuationToken =  eventList['metadata']['continue']
+          eventList = client.get_events(limit: @EVENTS_CHUNK_SIZE_5K, as: :parsed)
+          collection_version = eventList["metadata"]["resourceVersion"]
+          continuationToken = eventList["metadata"]["continue"]
           if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
             eventList["items"].each do |items|
               @watchQueue << items
@@ -146,9 +144,9 @@ module Fluent
           end
 
           while (!continuationToken.nil? && !continuationToken.empty?)
-            eventList = client.get_events(limit:limit:@EVENTS_CHUNK_SIZE_5K, continue: continuationToken, as: :parsed)
-            collection_version = eventList['metadata']['resourceVersion']
-            continuationToken =  eventList['metadata']['continue']
+            eventList = client.get_events(limit: @EVENTS_CHUNK_SIZE_5K, continue: continuationToken, as: :parsed)
+            collection_version = eventList["metadata"]["resourceVersion"]
+            continuationToken = eventList["metadata"]["continue"]
             if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
               eventList["items"].each do |items|
                 @watchQueue << items
@@ -161,7 +159,7 @@ module Fluent
           eventList = nil
           $log.info "in_kube_events::listAndWatch:resource version: #{collection_version}"
           begin
-            client.watch_events(resource_version: collection_version, field_selector:fieldSelector, as: :parsed) do |notice|
+            client.watch_events(resource_version: collection_version, field_selector: fieldSelector, as: :parsed) do |notice|
               if !notice["object"].nil? && !notice["object"].empty?
                 @watchQueue << notice["object"]
               end
