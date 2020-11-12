@@ -11,7 +11,7 @@ module Fluent
       require "yajl/json_gem"
       require "yajl"
       require "time"
-      require "kubeclient"
+      require_relative "kubeclient"
 
       require_relative "KubernetesApiClient"
       require_relative "oms_common"
@@ -50,6 +50,7 @@ module Fluent
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
+        @@watchEventsFlushTimeTracker = DateTime.now.to_time.to_i
         @thread = Thread.new(&method(:run_periodic))
         collectAllKubeEventsSetting = ENV["AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS"]
         if !collectAllKubeEventsSetting.nil? && !collectAllKubeEventsSetting.empty?
@@ -76,14 +77,12 @@ module Fluent
 
     def enumerateV2
       begin
-        # to hit first interval
-        timeDifference = @run_interval
-        WatchEventsFlushTimeTracker = DateTime.now.to_time.to_i
         watcherThread = Thread.new do
             listAndWatch
         end
         loop do
           begin
+            timeDifference = (DateTime.now.to_time.to_i - @@watchEventsFlushTimeTracker).abs
             if (@watchQueue.length >= @EVENTS_WATCH_CACHE_SIZE || timeDifference >= @run_interval )
               if @watchQueue.length > 0
                 $log.info "in_kube_events::enumeratev2:watch queue length : #{@watchQueue.length}"
@@ -99,7 +98,7 @@ module Fluent
               else
                 $log.warn "in_kube_events::watch queue length is 0"
               end
-              WatchEventsFlushTimeTracker = DateTime.now.to_time.to_i
+              @@watchEventsFlushTimeTracker = DateTime.now.to_time.to_i
             end
             sleep 1 # avoid eating full cpu
           rescue => errorStr
@@ -107,7 +106,6 @@ module Fluent
             $log.debug_backtrace(errorStr.backtrace)
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end
-          timeDifference = (DateTime.now.to_time.to_i - WatchEventsFlushTimeTracker).abs
         end
         watcherThread.join
       rescue => errorStr
