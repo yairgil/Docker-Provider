@@ -7,7 +7,7 @@ module MIME
   end
 end
 
-require 'mime/type'
+require_relative "type"
 
 # MIME::Types is a registry of MIME types. It is both a class (created with
 # MIME::Types.new) and a default registry (loaded automatically or through
@@ -72,8 +72,8 @@ class MIME::Types
 
   # Creates a new MIME::Types registry.
   def initialize
-    @type_variants    = Container.new
-    @extension_index  = Container.new
+    @type_variants = Container.new
+    @extension_index = Container.new
   end
 
   # Returns the number of known type variants.
@@ -123,13 +123,13 @@ class MIME::Types
   #   6. Sort on name.
   def [](type_id, complete: false, registered: false)
     matches = case type_id
-              when MIME::Type
-                @type_variants[type_id.simplified]
-              when Regexp
-                match(type_id)
-              else
-                @type_variants[MIME::Type.simplified(type_id)]
-              end
+      when MIME::Type
+        @type_variants[type_id.simplified]
+      when Regexp
+        match(type_id)
+      else
+        @type_variants[MIME::Type.simplified(type_id)]
+      end
 
     prune_matches(matches, complete, registered).sort { |a, b|
       a.priority_compare(b)
@@ -155,6 +155,7 @@ class MIME::Types
       a.priority_compare(b)
     }
   end
+
   alias of type_for
 
   # Add one or more MIME::Type objects to the set of known types. If the
@@ -223,9 +224,9 @@ Type #{type} is already registered as a variant of #{type.simplified}.
   end
 end
 
-require 'mime/types/cache'
-require 'mime/types/container'
-require 'mime/types/loader'
-require 'mime/types/logger'
-require 'mime/types/_columnar'
-require 'mime/types/registry'
+require_relative "types/cache"
+require_relative "types/container"
+require_relative "types/loader"
+require_relative "types/logger"
+require_relative "types/_columnar"
+require_relative "types/registry"

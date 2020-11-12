@@ -167,6 +167,40 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/logger.rb;                  source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/logger.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types/registry.rb;                source/plugins/ruby/kubeclient/mime-types-3.3.1/lib/mime/types/registry.rb; 644; root; root
 
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/lib/mime-types-data.rb;                         source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/lib/mime-types-data.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/lib/mime/types/data.rb;                         source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/lib/mime/types/data.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime-types.json;                           source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime-types.json; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime.content_type.column;                  source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime.content_type.column; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime.docs.column;                          source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime.docs.column; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime.encoding.column;                      source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime.encoding.column; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime.flags.column;                         source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime.flags.column; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime.friendly.column;                      source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime.friendly.column; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime.pext.column;                          source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime.pext.column; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime.use_instead.column;                   source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime.use_instead.column; 644; root; root
+ /opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data/mime.xrefs.column;                        source/plugins/ruby/kubeclient/mime-types-data-3.2020.1104/data/mime.xrefs.column; 644; root; root
+
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http-cookie.rb;                         source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http-cookie.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie.rb;                         source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar.rb;                     source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie/ruby_compat.rb;             source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie/ruby_compat.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie/scanner.rb;                 source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie/scanner.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie/version.rb;                 source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie/version.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/abstract_saver.rb;             source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/abstract_saver.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/abstract_store.rb;             source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/abstract_store.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/cookiestxt_saver.rb;           source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/cookiestxt_saver.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/hash_store.rb;             source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/hash_store.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/mozilla_store.rb;             source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/mozilla_store.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/yaml_saver.rb;             source/plugins/ruby/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar/yaml_saver.rb; 644; root; root
+
+
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701/lib/domain_name.rb;                         source/plugins/ruby/kubeclient/domain_name-0.5.20190701/lib/domain_name.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701/lib/domain_name/etld_data.rb;                         source/plugins/ruby/kubeclient/domain_name-0.5.20190701/lib/domain_name/etld_data.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701/lib/domain_name/etld_data.rb.erb;                         source/plugins/ruby/kubeclient/domain_name-0.5.20190701/lib/domain_name/etld_data.rb.erb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701/lib/domain_name/punycode.rb;                         source/plugins/ruby/kubeclient/domain_name-0.5.20190701/lib/domain_name/punycode.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701/lib/domain_name/version.rb;                         source/plugins/ruby/kubeclient/domain_name-0.5.20190701/lib/domain_name/version.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701/lib/domain_name/etld_data.rb.erb;                         source/plugins/ruby/kubeclient/domain_name-0.5.20190701/lib/domain_name/etld_data.rb.erb; 644; root; root
+
+
 
 
 
@@ -304,8 +338,24 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1;                               755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib;                           755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime;                      755; root; root; sysdir
-/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/type;                      755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/type;                 755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/kubeclient/mime-types-3.3.1/lib/mime/types;                755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104;                    755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/lib;                755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/data;               755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/lib/mime;           755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/mime-types-data-3.2020.1104/lib/mime/types;     755; root; root; sysdir
+
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3;                              755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib;                          755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http;                     755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie;              755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/http-cookie-1.0.3/lib/http/cookie_jar;          755; root; root; sysdir
+
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701;                       755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701/lib;                   755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/kubeclient/domain_name-0.5.20190701/lib/domain_name;       755; root; root; sysdir
+
 
 /opt/tomlrb;												755; root; root; sysdir
 

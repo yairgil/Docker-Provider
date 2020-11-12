@@ -16,4 +16,4 @@ module MIME
   end
 end
 
-require 'mime/types'
+require "mime/types"
