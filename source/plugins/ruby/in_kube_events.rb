@@ -11,7 +11,7 @@ module Fluent
       require "yajl/json_gem"
       require "yajl"
       require "time"
-      require_relative "kubeclient/kubeclient"
+      require "kubeclient"
 
       require_relative "KubernetesApiClient"
       require_relative "oms_common"
@@ -28,7 +28,7 @@ module Fluent
       @EVENTS_WATCH_CACHE_SIZE = 1000
 
       # watch queue size
-      @watchQueue = nil
+      # @watchQueue = nil
 
       # Initializing events count for telemetry
       @eventsCount = 0
