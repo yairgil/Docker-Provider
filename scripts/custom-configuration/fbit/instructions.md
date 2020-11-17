@@ -23,11 +23,11 @@ az group deployment create --resource-group <resourceGroupNameofCluster> --templ
 3. Replace the place holders in the omsagent.yaml and deploy the yaml
 
 ```
-# replace the VALUE_AKS_RESOURCE_ID_VALUE, VALUE_AKS_RESOURCE_REGION_VALUE, WSID and Key values in the omsagent.yaml
-> Note: values of WSID and Key has to be base64 encoded and can obtained from azure portal -> log analytics workspace->advanced settings-> agent management
  # verify you have the context of the cluster you want to use
  kubectl config current-context
 
+# replace the VALUE_AKS_RESOURCE_ID_VALUE, VALUE_AKS_RESOURCE_REGION_VALUE, WSID and Key values in the omsagent.yaml
+  > Note: values of WSID and Key has to be base64 encoded and can obtained from azure portal -> log analytics workspace->settings -> advanced settings-> agents management
  # apply the omsagent.yaml
  kubectl apply -f omsagent.yaml
 ```
