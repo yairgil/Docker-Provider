@@ -22,7 +22,7 @@ done
 
 if [ -z "$IMAGE_PATH" ]
 then
-    IMAGE_PATH = public/azuremonitor/containerinsights
+    IMAGE_PATH=public/azuremonitor/containerinsights
 fi
 
 echo "start: read appid and appsecret"
@@ -46,7 +46,7 @@ echo "CI ACR : ${CI_ACR}"
 echo "CI AGENT REPOSITORY NAME : ${CI_AGENT_REPO}"
 
 echo "tag linux agent image"
-fullImagePath = ${CI_ACR}/${IMAGE_PATH}/${CI_AGENT_REPO}:${imagetag}
+fullImagePath=${CI_ACR}/${IMAGE_PATH}/${CI_AGENT_REPO}:${imagetag}
 docker tag ${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG} ${fullImagePath}
 
 echo "login ciprod acr":$CI_ACR
