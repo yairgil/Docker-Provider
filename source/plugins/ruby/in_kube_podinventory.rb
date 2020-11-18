@@ -27,7 +27,7 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      @PODS_CHUNK_SIZE = "500"
+      @PODS_CHUNK_SIZE = "1500"
       @podCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
@@ -96,20 +96,20 @@ module Fluent
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
         continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
-        if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-          parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
-        else
-          $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
-        end
+        # if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
+        #   parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+        # else
+        #   $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
+        # end
 
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
-          if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-            parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
-          else
-            $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
-          end
+          # if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
+          #   parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+          # else
+          #   $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
+          # end
         end
 
         # Setting these to nil so that we dont hold memory until GC kicks in
@@ -405,8 +405,7 @@ module Fluent
           } if pod_inventory_mdm_records
           router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
         end
-=begin
-# disable kubeperf collection to validate perf impact
+
         #:optimize:kubeperf merge
         begin
           #if(!podInventory.empty?)
@@ -465,7 +464,6 @@ module Fluent
         end
         #:optimize:end kubeperf merge
 
-=end
         #:optimize:start kubeservices merge
         begin
           if (!serviceList.nil? && !serviceList.empty?)
