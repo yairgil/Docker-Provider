@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 module Fluent
-  require_relative "podinventory_to_mdm"      
+  require_relative "podinventory_to_mdm"
 
   class Kube_PodInventory_Input < Input
     Plugin.register_input("kubepodinventory", self)
@@ -19,7 +19,7 @@ module Fluent
       require "yajl"
       require "set"
       require "time"
-      
+
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
@@ -27,7 +27,7 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      @PODS_CHUNK_SIZE = "1500"
+      @PODS_CHUNK_SIZE = "500"
       @podCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
@@ -45,6 +45,10 @@ module Fluent
 
     def start
       if @run_interval
+        if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty?
+          @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"]
+        end
+        $log.info("in_kube_podinventory::start : PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -138,7 +142,7 @@ module Fluent
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-    end    
+    end
 
     def parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
       currentTime = Time.now
@@ -151,7 +155,7 @@ module Fluent
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
 
-        podInventory["items"].each do |items| #podInventory block start          
+        podInventory["items"].each do |items| #podInventory block start
           containerInventoryRecords = []
           records = []
           record = {}
@@ -194,7 +198,7 @@ module Fluent
 
           if podReadyCondition == false
             record["PodStatus"] = "Unknown"
-          # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
+            # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
           elsif !items["metadata"]["deletionTimestamp"].nil? && !items["metadata"]["deletionTimestamp"].empty?
             record["PodStatus"] = Constants::POD_STATUS_TERMINATING
           else
@@ -219,10 +223,10 @@ module Fluent
             if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
-              containerInventoryRecordsInPodItem = KubernetesContainerInventory.getContainerInventoryRecords(items, batchTime, clusterCollectEnvironmentVar, true)  
+              containerInventoryRecordsInPodItem = KubernetesContainerInventory.getContainerInventoryRecords(items, batchTime, clusterCollectEnvironmentVar, true)
               containerInventoryRecordsInPodItem.each do |containerRecord|
-                containerInventoryRecords.push(containerRecord)          
-              end              
+                containerInventoryRecords.push(containerRecord)
+              end
             end
           end
 
@@ -358,7 +362,7 @@ module Fluent
               end
 
               podRestartCount += containerRestartCount
-              records.push(record.dup)            
+              records.push(record.dup)
             end
           else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
             records.push(record)
