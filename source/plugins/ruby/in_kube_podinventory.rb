@@ -405,7 +405,8 @@ module Fluent
           } if pod_inventory_mdm_records
           router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
         end
-
+=begin
+# disable kubeperf collection to validate perf impact
         #:optimize:kubeperf merge
         begin
           #if(!podInventory.empty?)
@@ -464,6 +465,7 @@ module Fluent
         end
         #:optimize:end kubeperf merge
 
+=end
         #:optimize:start kubeservices merge
         begin
           if (!serviceList.nil? && !serviceList.empty?)
