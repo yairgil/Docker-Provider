@@ -96,20 +96,20 @@ module Fluent
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
         continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
-        # if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-        #   parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
-        # else
-        #   $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
-        # end
+        if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
+          parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+        else
+          $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
+        end
 
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
-          # if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-          #   parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
-          # else
-          #   $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
-          # end
+          if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
+            parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+          else
+            $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
+          end
         end
 
         # Setting these to nil so that we dont hold memory until GC kicks in
@@ -394,7 +394,9 @@ module Fluent
         end  #podInventory block end
 
         router.emit_stream(@tag, eventStream) if eventStream
-
+        # try setting eventStream to nil and see if that resolves memory pressure
+        $log.info("setting eventStream nil after emitting stream")
+        eventStream = nil
         if continuationToken.nil? #no more chunks in this batch to be sent, get all pod inventory records to send
           @log.info "Sending pod inventory mdm records to out_mdm"
           pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
