@@ -748,9 +748,10 @@ class KubernetesApiClient
         resourceInfo = getKubeResourceInfo(uri, api_group: api_group)
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
         if !resourceInfo.nil?
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          responseSizeInKB = (resourceInfo.body.length) / 1024
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}  with response size in KB: #{responseSizeInKB}"
           resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601} with response size in KB: #{responseSizeInKB}"
           resourceInfo = nil
         end
         if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
