@@ -411,103 +411,103 @@ module Fluent
           # mdm_pod_inventory_es = nil
         end
 
-        #:optimize:kubeperf merge
-        begin
-          #if(!podInventory.empty?)
-          containerMetricDataItems = []
-          #hostName = (OMS::Common.get_hostname)
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "cpu", "cpuRequestNanoCores", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "memory", "memoryRequestBytes", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu", "cpuLimitNanoCores", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory", "memoryLimitBytes", batchTime))
+        # #:optimize:kubeperf merge
+        # begin
+        #   #if(!podInventory.empty?)
+        #   containerMetricDataItems = []
+        #   #hostName = (OMS::Common.get_hostname)
+        #   containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "cpu", "cpuRequestNanoCores", batchTime))
+        #   containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "memory", "memoryRequestBytes", batchTime))
+        #   containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu", "cpuLimitNanoCores", batchTime))
+        #   containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory", "memoryLimitBytes", batchTime))
 
-          kubePerfEventStream = MultiEventStream.new
-          insightsMetricsEventStream = MultiEventStream.new
+        #   kubePerfEventStream = MultiEventStream.new
+        #   insightsMetricsEventStream = MultiEventStream.new
 
-          containerMetricDataItems.each do |record|
-            record["DataType"] = "LINUX_PERF_BLOB"
-            record["IPName"] = "LogManagement"
-            kubePerfEventStream.add(emitTime, record) if record
-          end
-          #end
-          router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-          # $log.info("setting perf containerMetricDataItems  and kubePerfEventStream nil after emitting stream")
-          # containerMetricDataItems = nil
-          # kubePerfEventStream = nil
-          begin
-            #start GPU InsightsMetrics items
+        #   containerMetricDataItems.each do |record|
+        #     record["DataType"] = "LINUX_PERF_BLOB"
+        #     record["IPName"] = "LogManagement"
+        #     kubePerfEventStream.add(emitTime, record) if record
+        #   end
+        #   #end
+        #   router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+        #   # $log.info("setting perf containerMetricDataItems  and kubePerfEventStream nil after emitting stream")
+        #   # containerMetricDataItems = nil
+        #   # kubePerfEventStream = nil
+        #   begin
+        #     #start GPU InsightsMetrics items
 
-            containerGPUInsightsMetricsDataItems = []
-            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
-            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
+        #     containerGPUInsightsMetricsDataItems = []
+        #     containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
+        #     containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
 
-            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
-            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
+        #     containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
+        #     containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
 
-            containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
-              wrapper = {
-                "DataType" => "INSIGHTS_METRICS_BLOB",
-                "IPName" => "ContainerInsights",
-                "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
-              }
-              insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
+        #     containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
+        #       wrapper = {
+        #         "DataType" => "INSIGHTS_METRICS_BLOB",
+        #         "IPName" => "ContainerInsights",
+        #         "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
+        #       }
+        #       insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
 
-              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
-                $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-              end
-            end
+        #       if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+        #         $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+        #       end
+        #     end
 
-            # $log.info("setting perf containerGPUInsightsMetricsDataItems nil")
-            # containerGPUInsightsMetricsDataItems = nil
+        #     # $log.info("setting perf containerGPUInsightsMetricsDataItems nil")
+        #     # containerGPUInsightsMetricsDataItems = nil
 
-            router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
-            # $log.info("setting gpu insightsMetricsEventStream to nil after emitting stream")
-            # insightsMetricsEventStream = nil
-            #end GPU InsightsMetrics items
-          rescue => errorStr
-            $log.warn "Failed when processing GPU metrics in_kube_podinventory : #{errorStr}"
-            $log.debug_backtrace(errorStr.backtrace)
-            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-          end
-        rescue => errorStr
-          $log.warn "Failed in parse_and_emit_record for KubePerf from in_kube_podinventory : #{errorStr}"
-          $log.debug_backtrace(errorStr.backtrace)
-          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-        end
-        #:optimize:end kubeperf merge
+        #     router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+        #     # $log.info("setting gpu insightsMetricsEventStream to nil after emitting stream")
+        #     # insightsMetricsEventStream = nil
+        #     #end GPU InsightsMetrics items
+        #   rescue => errorStr
+        #     $log.warn "Failed when processing GPU metrics in_kube_podinventory : #{errorStr}"
+        #     $log.debug_backtrace(errorStr.backtrace)
+        #     ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        #   end
+        # rescue => errorStr
+        #   $log.warn "Failed in parse_and_emit_record for KubePerf from in_kube_podinventory : #{errorStr}"
+        #   $log.debug_backtrace(errorStr.backtrace)
+        #   ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        # end
+        # #:optimize:end kubeperf merge
 
-        #:optimize:start kubeservices merge
-        begin
-          if (!serviceList.nil? && !serviceList.empty?)
-            kubeServicesEventStream = MultiEventStream.new
-            serviceList["items"].each do |items|
-              kubeServiceRecord = {}
-              kubeServiceRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-              kubeServiceRecord["ServiceName"] = items["metadata"]["name"]
-              kubeServiceRecord["Namespace"] = items["metadata"]["namespace"]
-              kubeServiceRecord["SelectorLabels"] = [items["spec"]["selector"]]
-              kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
-              kubeServiceRecord["ClusterIP"] = items["spec"]["clusterIP"]
-              kubeServiceRecord["ServiceType"] = items["spec"]["type"]
-              #<TODO> : Add ports and status fields
-              kubeServicewrapper = {
-                "DataType" => "KUBE_SERVICES_BLOB",
-                "IPName" => "ContainerInsights",
-                "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
-              }
-              kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
-            end
-            router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
-            # $log.info("setting  kubeServicesEventStream to nil after emitting stream")
-            # kubeServicesEventStream = nil
-          end
-        rescue => errorStr
-          $log.warn "Failed in parse_and_emit_record for KubeServices from in_kube_podinventory : #{errorStr}"
-          $log.debug_backtrace(errorStr.backtrace)
-          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-        end
-        #:optimize:end kubeservices merge
+        # #:optimize:start kubeservices merge
+        # begin
+        #   if (!serviceList.nil? && !serviceList.empty?)
+        #     kubeServicesEventStream = MultiEventStream.new
+        #     serviceList["items"].each do |items|
+        #       kubeServiceRecord = {}
+        #       kubeServiceRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+        #       kubeServiceRecord["ServiceName"] = items["metadata"]["name"]
+        #       kubeServiceRecord["Namespace"] = items["metadata"]["namespace"]
+        #       kubeServiceRecord["SelectorLabels"] = [items["spec"]["selector"]]
+        #       kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+        #       kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+        #       kubeServiceRecord["ClusterIP"] = items["spec"]["clusterIP"]
+        #       kubeServiceRecord["ServiceType"] = items["spec"]["type"]
+        #       #<TODO> : Add ports and status fields
+        #       kubeServicewrapper = {
+        #         "DataType" => "KUBE_SERVICES_BLOB",
+        #         "IPName" => "ContainerInsights",
+        #         "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
+        #       }
+        #       kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+        #     end
+        #     router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+        #     # $log.info("setting  kubeServicesEventStream to nil after emitting stream")
+        #     # kubeServicesEventStream = nil
+        #   end
+        # rescue => errorStr
+        #   $log.warn "Failed in parse_and_emit_record for KubeServices from in_kube_podinventory : #{errorStr}"
+        #   $log.debug_backtrace(errorStr.backtrace)
+        #   ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        # end
+        # #:optimize:end kubeservices merge
 
         #Updating value for AppInsights telemetry
         @podCount += podInventory["items"].length
