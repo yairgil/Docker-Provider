@@ -395,9 +395,9 @@ module Fluent
         end  #podInventory block end
 
         router.emit_stream(@tag, eventStream) if eventStream
-        # try setting eventStream to nil and see if that resolves memory pressure
-        $log.info("setting podinventory eventStream nil after emitting stream")
-        eventStream = nil
+        # # try setting eventStream to nil and see if that resolves memory pressure
+        # $log.info("setting podinventory eventStream nil after emitting stream")
+        # eventStream = nil
         if continuationToken.nil? #no more chunks in this batch to be sent, get all pod inventory records to send
           @log.info "Sending pod inventory mdm records to out_mdm"
           pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
@@ -407,8 +407,8 @@ module Fluent
             mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
           } if pod_inventory_mdm_records
           router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
-          $log.info("setting mdm_pod_inventory_es eventStream nil after emitting stream")
-          mdm_pod_inventory_es = nil
+          # $log.info("setting mdm_pod_inventory_es eventStream nil after emitting stream")
+          # mdm_pod_inventory_es = nil
         end
 
         #:optimize:kubeperf merge
@@ -431,9 +431,9 @@ module Fluent
           end
           #end
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-          $log.info("setting perf containerMetricDataItems  and kubePerfEventStream nil after emitting stream")
-          containerMetricDataItems = nil
-          kubePerfEventStream = nil
+          # $log.info("setting perf containerMetricDataItems  and kubePerfEventStream nil after emitting stream")
+          # containerMetricDataItems = nil
+          # kubePerfEventStream = nil
           begin
             #start GPU InsightsMetrics items
 
@@ -457,12 +457,12 @@ module Fluent
               end
             end
 
-            $log.info("setting perf containerGPUInsightsMetricsDataItems nil")
-            containerGPUInsightsMetricsDataItems = nil
+            # $log.info("setting perf containerGPUInsightsMetricsDataItems nil")
+            # containerGPUInsightsMetricsDataItems = nil
 
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
-            $log.info("setting gpu insightsMetricsEventStream to nil after emitting stream")
-            insightsMetricsEventStream = nil
+            # $log.info("setting gpu insightsMetricsEventStream to nil after emitting stream")
+            # insightsMetricsEventStream = nil
             #end GPU InsightsMetrics items
           rescue => errorStr
             $log.warn "Failed when processing GPU metrics in_kube_podinventory : #{errorStr}"
@@ -499,8 +499,8 @@ module Fluent
               kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
             end
             router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
-            $log.info("setting  kubeServicesEventStream to nil after emitting stream")
-            kubeServicesEventStream = nil
+            # $log.info("setting  kubeServicesEventStream to nil after emitting stream")
+            # kubeServicesEventStream = nil
           end
         rescue => errorStr
           $log.warn "Failed in parse_and_emit_record for KubeServices from in_kube_podinventory : #{errorStr}"
