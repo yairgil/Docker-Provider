@@ -33,6 +33,11 @@ module Fluent
       require_relative "oms_common"
       require_relative "omslog"
       @NODES_CHUNK_SIZE = "400"
+      @NODES_EMIT_STREAM = true
+      @NODES_PERF_EMIT_STREAM = true
+      @GPU_NODES_PERF_EMIT_STREAM = true
+      @CONTAINER_NODE_INVENTORY_EMIT_STREAM = true
+      @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = true
       require_relative "constants"
     end
 
@@ -45,6 +50,36 @@ module Fluent
 
     def start
       if @run_interval
+        if !ENV["NODES_CHUNK_SIZE"].nil? && !ENV["NODES_CHUNK_SIZE"].empty?
+          @NODES_CHUNK_SIZE = ENV["NODES_CHUNK_SIZE"]
+        end
+        $log.info("in_kube_nodes::start : NODES_CHUNK_SIZE  @ #{@NODES_CHUNK_SIZE}")
+
+        if !ENV["NODES_EMIT_STREAM"].nil? && !ENV["NODES_EMIT_STREAM"].empty?
+          @NODES_EMIT_STREAM = ENV["NODES_EMIT_STREAM"]
+        end
+        $log.info("in_kube_nodes::start : NODES_EMIT_STREAM  @ #{@NODES_EMIT_STREAM}")
+
+        if !ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].nil? && !ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].empty?
+          @CONTAINER_NODE_INVENTORY_EMIT_STREAM = ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"]
+        end
+        $log.info("in_kube_nodes::start : CONTAINER_NODE_INVENTORY_EMIT_STREAM  @ #{@CONTAINER_NODE_INVENTORY_EMIT_STREAM}")
+
+        if !ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].nil? && !ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].empty?
+          @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"]
+        end
+        $log.info("in_kube_nodes::start : MDM_KUBE_NODE_INVENTORY_EMIT_STREAM  @ #{@MDM_KUBE_NODE_INVENTORY_EMIT_STREAM}")
+
+        if !ENV["NODES_PERF_EMIT_STREAM"].nil? && !ENV["NODES_PERF_EMIT_STREAM"].empty?
+          @NODES_PERF_EMIT_STREAM = ENV["NODES_PERF_EMIT_STREAM"]
+        end
+        $log.info("in_kube_nodes::start : NODES_PERF_EMIT_STREAM  @ #{@NODES_PERF_EMIT_STREAM}")
+
+        if !ENV["GPU_NODES_PERF_EMIT_STREAM"].nil? && !ENV["GPU_NODES_PERF_EMIT_STREAM"].empty?
+          @GPU_NODES_PERF_EMIT_STREAM = ENV["GPU_NODES_PERF_EMIT_STREAM"]
+        end
+        $log.info("in_kube_nodes::start : GPU_NODES_PERF_EMIT_STREAM  @ #{@GPU_NODES_PERF_EMIT_STREAM}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -247,9 +282,15 @@ module Fluent
             telemetrySent = true
           end
         end
-        router.emit_stream(@tag, eventStream) if eventStream
-        router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
-        router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+        if @NODES_EMIT_STREAM
+          router.emit_stream(@tag, eventStream) if eventStream
+        end
+        if @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM
+          router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
+        end
+        if @CONTAINER_NODE_INVENTORY_EMIT_STREAM
+          router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+        end
         if telemetrySent == true
           @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
@@ -276,7 +317,10 @@ module Fluent
             kubePerfEventStream.add(emitTime, record) if record
           end
           #end
-          router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+          if @NODES_PERF_EMIT_STREAM
+            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+          end
 
           #start GPU InsightsMetrics items
           begin
@@ -296,7 +340,10 @@ module Fluent
               insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
             end
 
-            router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+            if @GPU_NODES_PERF_EMIT_STREAM
+              router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+            end
+
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
               $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
             end

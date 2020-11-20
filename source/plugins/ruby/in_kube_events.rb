@@ -20,6 +20,8 @@ module Fluent
       # 30000 events account to approximately 5MB
       @EVENTS_CHUNK_SIZE = 30000
 
+      @EVENTS_EMIT_STREAM = true
+
       # Initializing events count for telemetry
       @eventsCount = 0
 
@@ -36,6 +38,16 @@ module Fluent
 
     def start
       if @run_interval
+        if !ENV["EVENTS_CHUNK_SIZE"].nil? && !ENV["EVENTS_CHUNK_SIZE"].empty?
+          @EVENTS_CHUNK_SIZE = ENV["EVENTS_CHUNK_SIZE"]
+        end
+        $log.info("in_kube_events::start : EVENTS_CHUNK_SIZE  @ #{@EVENTS_CHUNK_SIZE}")
+
+        if !ENV["EVENTS_EMIT_STREAM"].nil? && !ENV["EVENTS_EMIT_STREAM"].empty?
+          @EVENTS_EMIT_STREAM = ENV["EVENTS_EMIT_STREAM"]
+        end
+        $log.info("in_kube_events::start : EVENTS_EMIT_STREAM  @ #{@EVENTS_EMIT_STREAM}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -80,8 +92,11 @@ module Fluent
         else
           continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?fieldSelector=type!=Normal&limit=#{@EVENTS_CHUNK_SIZE}")
         end
+
         $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
         if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+          eventsCount = eventList["items"].length
+          $log.info "in_kube_events::enumerate:Received number of events is eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
           newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
         else
           $log.warn "in_kube_events::enumerate:Received empty eventList"
@@ -91,6 +106,8 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?fieldSelector=type!=Normal&limit=#{@EVENTS_CHUNK_SIZE}&continue=#{continuationToken}")
           if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+            eventsCount = eventList["items"].length
+            $log.info "in_kube_events::enumerate:Received number of events is eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
             newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
           else
             $log.warn "in_kube_events::enumerate:Received empty eventList"
@@ -156,7 +173,9 @@ module Fluent
           eventStream.add(emitTime, wrapper) if wrapper
           @eventsCount += 1
         end
-        router.emit_stream(@tag, eventStream) if eventStream
+        if @EVENTS_EMIT_STREAM
+          router.emit_stream(@tag, eventStream) if eventStream
+        end
       rescue => errorStr
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)

@@ -751,6 +751,8 @@ class KubernetesApiClient
           responseSizeInKB = (resourceInfo.body.length) / 1024
           @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}  with response size in KB: #{responseSizeInKB}"
           resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+          resourceInventorySizeInKB = (resourceInventory.to_s.length) / 1024
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken: After: Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}  with resource entry size in KB: #{resourceInventorySizeInKB}"
           @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601} with response size in KB: #{responseSizeInKB}"
           resourceInfo = nil
         end
