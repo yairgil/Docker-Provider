@@ -31,6 +31,7 @@ module Fluent
       @PODS_EMIT_STREAM = true
       @MDM_PODS_INVENTORY_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM = true
+      @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = false
       @SERVICES_EMIT_STREAM = true
       @GPU_PERF_EMIT_STREAM = true
       @podCount = 0
@@ -79,6 +80,11 @@ module Fluent
           @MDM_PODS_INVENTORY_EMIT_STREAM = ENV["MDM_PODS_INVENTORY_EMIT_STREAM"]
         end
         $log.info("in_kube_podinventory::start : MDM_PODS_INVENTORY_EMIT_STREAM  @ #{@MDM_PODS_INVENTORY_EMIT_STREAM}")
+
+        if !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].empty?
+          @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"]
+        end
+        $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -455,28 +461,87 @@ module Fluent
         #:optimize:kubeperf merge
         begin
           #if(!podInventory.empty?)
-          containerMetricDataItems = []
           #hostName = (OMS::Common.get_hostname)
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "cpu", "cpuRequestNanoCores", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "memory", "memoryRequestBytes", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu", "cpuLimitNanoCores", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory", "memoryLimitBytes", batchTime))
-
-          $log.info("in_kube_podinventory::parse_and_emit_records : number of perf records #{containerMetricDataItems.length} @ #{Time.now.utc.iso8601}")
-          containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-
-          kubePerfEventStream = MultiEventStream.new
-          insightsMetricsEventStream = MultiEventStream.new
-
-          containerMetricDataItems.each do |record|
-            record["DataType"] = "LINUX_PERF_BLOB"
-            record["IPName"] = "LogManagement"
-            kubePerfEventStream.add(emitTime, record) if record
-          end
-          #end
 
           if @CONTAINER_PERF_EMIT_STREAM
-            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            if @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE
+              containerMetricDataItems = []
+              # cpu requests
+              kubePerfEventStream = MultiEventStream.new
+              containerMetricDataItems = KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "cpu", "cpuRequestNanoCores", batchTime)
+              containerMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+
+              # memory requests
+              kubePerfEventStream = MultiEventStream.new
+              containerMetricDataItems = KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "memory", "memoryRequestBytes", batchTime)
+              containerMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+
+              # cpu limits
+              kubePerfEventStream = MultiEventStream.new
+              containerMetricDataItems = KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu", "cpuLimitNanoCores", batchTime)
+              containerMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu limits records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+
+              # memory limits
+              kubePerfEventStream = MultiEventStream.new
+              containerMetricDataItems = KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory", "memoryLimitBytes", batchTime)
+              containerMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory limits records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+
+              containerMetricDataItems = nil
+              kubePerfEventStream = nil
+            else
+              containerMetricDataItems = []
+              kubePerfEventStream = MultiEventStream.new
+              containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "cpu", "cpuRequestNanoCores", batchTime))
+              containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "memory", "memoryRequestBytes", batchTime))
+              containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu", "cpuLimitNanoCores", batchTime))
+              containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory", "memoryLimitBytes", batchTime))
+
+              containerMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+
+              containerMetricDataItems = nil
+              kubePerfEventStream = nil
+            end
           end
           # $log.info("setting perf containerMetricDataItems  and kubePerfEventStream nil after emitting stream")
           # containerMetricDataItems = nil
@@ -484,6 +549,7 @@ module Fluent
           begin
             #start GPU InsightsMetrics items
 
+            insightsMetricsEventStream = MultiEventStream.new
             containerGPUInsightsMetricsDataItems = []
             containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
             containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(podInventory, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
