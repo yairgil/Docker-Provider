@@ -271,7 +271,7 @@ module Fluent
 
         # Always try to write if can send data to mdm and using MSI since the permissions can update without a token refresh.
         # Still wait the specified timeframe if using SP and encountered a 403.
-        if (@useMsi || !@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes * 60)) && @can_send_data_to_mdm
+        if (!@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes * 60)) && @can_send_data_to_mdm
           post_body = []
           chunk.msgpack_each { |(tag, record)|
             post_body.push(record.to_json)
