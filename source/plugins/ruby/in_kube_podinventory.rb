@@ -460,10 +460,10 @@ module Fluent
               eventStream.add(emitTime, ciwrapper) if ciwrapper
             end
           end
-          if @PODS_EMIT_STREAM && @PODS_EMIT_STREAM_SPLIT_ENABLE && eventStream
-             && eventStream.count >= @PODS_EMIT_STREAM_SPLIT_SIZE
-             router.emit_stream(@tag, eventStream) if eventStream
-             eventStream = MultiEventStream.new
+          if @PODS_EMIT_STREAM && @PODS_EMIT_STREAM_SPLIT_ENABLE && eventStream.count >= @PODS_EMIT_STREAM_SPLIT_SIZE
+            $log.info("in_kube_podinventory::parse_and_emit_records : number of pods records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@tag, eventStream) if eventStream
+            eventStream = MultiEventStream.new
           end
         end  #podInventory block end
 
@@ -645,6 +645,7 @@ module Fluent
               }
               kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
               if @SERVICES_EMIT_STREAM && @SERVICES_EMIT_STREAM_SPLIT_ENABLE && kubeServicewrapper.count >= @SERVICES_EMIT_STREAM_SPLIT_SIZE
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of service records emitted #{kubeServicewrapper.count} @ #{Time.now.utc.iso8601}")
                 router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
                 kubeServicesEventStream = MultiEventStream.new
               end

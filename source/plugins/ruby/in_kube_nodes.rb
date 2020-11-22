@@ -289,12 +289,14 @@ module Fluent
           end
         end
         if @NODES_EMIT_STREAM
+          $log.info("in_kube_node::parse_and_emit_records : number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
         end
         if @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM
           router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
         end
         if @CONTAINER_NODE_INVENTORY_EMIT_STREAM
+          $log.info("in_kube_node::parse_and_emit_records : number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
         end
         if telemetrySent == true
@@ -329,6 +331,7 @@ module Fluent
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
               end
+              $log.info("in_kube_node::parse_and_emit_records : number of node perf cpu allocatable records #{nodeMetricDataItems.length} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
               # memory allocatable
@@ -339,6 +342,7 @@ module Fluent
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
               end
+              $log.info("in_kube_node::parse_and_emit_records : number of node perf memory allocatable records #{nodeMetricDataItems.length} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
               # cpu capacityNanocores
@@ -349,6 +353,7 @@ module Fluent
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
               end
+              $log.info("in_kube_node::parse_and_emit_records : number of node perf cpu cpuCapacityNanoCores records #{nodeMetricDataItems.length} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
               # memory capacity bytes
@@ -359,6 +364,7 @@ module Fluent
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
               end
+              $log.info("in_kube_node::parse_and_emit_records : number of node perf memory cpuCapacityNanoCores records #{nodeMetricDataItems.length} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
             else
               nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
@@ -375,6 +381,7 @@ module Fluent
                 kubePerfEventStream.add(emitTime, record) if record
               end
 
+              $log.info("in_kube_node::parse_and_emit_records : total number of node perf records #{nodeMetricDataItems.length} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
             end
             nodeMetricDataItems = nil
