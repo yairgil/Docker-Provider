@@ -29,10 +29,15 @@ module Fluent
 
       @PODS_CHUNK_SIZE = "1500"
       @PODS_EMIT_STREAM = true
+      @PODS_EMIT_STREAM_SPLIT_ENABLE = false
+      @PODS_EMIT_STREAM_SPLIT_SIZE = "250"
       @MDM_PODS_INVENTORY_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = false
       @SERVICES_EMIT_STREAM = true
+      @SERVICES_EMIT_STREAM_SPLIT_ENABLE = false
+      @SERVICES_EMIT_STREAM_SPLIT_SIZE = "1000"
+
       @GPU_PERF_EMIT_STREAM = true
       @podCount = 0
       @controllerSet = Set.new []
@@ -61,15 +66,40 @@ module Fluent
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM  @ #{@PODS_EMIT_STREAM}")
 
+        if !ENV["PODS_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["PODS_EMIT_STREAM_SPLIT_ENABLE"].empty?
+          @PODS_EMIT_STREAM_SPLIT_ENABLE = ENV["PODS_EMIT_STREAM_SPLIT_ENABLE"]
+        end
+        $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_SPLIT_ENABLE  @ #{@PODS_EMIT_STREAM_SPLIT_ENABLE}")
+
+        if !ENV["PODS_EMIT_STREAM_SPLIT_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_SPLIT_SIZE"].empty?
+          @PODS_EMIT_STREAM_SPLIT_SIZE = ENV["PODS_EMIT_STREAM_SPLIT_SIZE"]
+        end
+        $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_SPLIT_SIZE  @ #{@PODS_EMIT_STREAM_SPLIT_SIZE}")
+
         if !ENV["CONTAINER_PERF_EMIT_STREAM"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM"].empty?
           @CONTAINER_PERF_EMIT_STREAM = ENV["CONTAINER_PERF_EMIT_STREAM"]
         end
         $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM  @ #{@CONTAINER_PERF_EMIT_STREAM}")
 
+        if !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].empty?
+          @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"]
+        end
+        $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE}")
+
         if !ENV["SERVICES_EMIT_STREAM"].nil? && !ENV["SERVICES_EMIT_STREAM"].empty?
           @SERVICES_EMIT_STREAM = ENV["SERVICES_EMIT_STREAM"]
         end
         $log.info("in_kube_podinventory::start : SERVICES_EMIT_STREAM  @ #{@SERVICES_EMIT_STREAM}")
+
+        if !ENV["SERVICES_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["SERVICES_EMIT_STREAM_SPLIT_ENABLE"].empty?
+          @SERVICES_EMIT_STREAM_SPLIT_ENABLE = ENV["SERVICES_EMIT_STREAM_SPLIT_ENABLE"]
+        end
+        $log.info("in_kube_podinventory::start : SERVICES_EMIT_STREAM_SPLIT_ENABLE  @ #{@SERVICES_EMIT_STREAM_SPLIT_ENABLE}")
+
+        if !ENV["SERVICES_EMIT_STREAM_SPLIT_SIZE"].nil? && !ENV["SERVICES_EMIT_STREAM_SPLIT_SIZE"].empty?
+          @SERVICES_EMIT_STREAM_SPLIT_SIZE = ENV["SERVICES_EMIT_STREAM_SPLIT_SIZE"]
+        end
+        $log.info("in_kube_podinventory::start : SERVICES_EMIT_STREAM_SPLIT_SIZE  @ #{@SERVICES_EMIT_STREAM_SPLIT_SIZE}")
 
         if !ENV["GPU_PERF_EMIT_STREAM"].nil? && !ENV["GPU_PERF_EMIT_STREAM"].empty?
           @SERVICES_EMIT_STREAM = ENV["GPU_PERF_EMIT_STREAM"]
@@ -80,11 +110,6 @@ module Fluent
           @MDM_PODS_INVENTORY_EMIT_STREAM = ENV["MDM_PODS_INVENTORY_EMIT_STREAM"]
         end
         $log.info("in_kube_podinventory::start : MDM_PODS_INVENTORY_EMIT_STREAM  @ #{@MDM_PODS_INVENTORY_EMIT_STREAM}")
-
-        if !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].empty?
-          @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"]
-        end
-        $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -435,14 +460,17 @@ module Fluent
               eventStream.add(emitTime, ciwrapper) if ciwrapper
             end
           end
+          if @PODS_EMIT_STREAM && @PODS_EMIT_STREAM_SPLIT_ENABLE && eventStream
+             && eventStream.count >= @PODS_EMIT_STREAM_SPLIT_SIZE
+             router.emit_stream(@tag, eventStream) if eventStream
+             eventStream = MultiEventStream.new
+          end
         end  #podInventory block end
 
-        if @PODS_EMIT_STREAM
+        if @PODS_EMIT_STREAM && !@PODS_EMIT_STREAM_SPLIT_ENABLE
           router.emit_stream(@tag, eventStream) if eventStream
         end
-        # # try setting eventStream to nil and see if that resolves memory pressure
-        # $log.info("setting podinventory eventStream nil after emitting stream")
-        # eventStream = nil
+
         if continuationToken.nil? #no more chunks in this batch to be sent, get all pod inventory records to send
           @log.info "Sending pod inventory mdm records to out_mdm"
           pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
@@ -451,11 +479,10 @@ module Fluent
           pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
             mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
           } if pod_inventory_mdm_records
+
           if @MDM_PODS_INVENTORY_EMIT_STREAM
             router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
           end
-          # $log.info("setting mdm_pod_inventory_es eventStream nil after emitting stream")
-          # mdm_pod_inventory_es = nil
         end
 
         #:optimize:kubeperf merge
@@ -617,8 +644,12 @@ module Fluent
                 "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
               }
               kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+              if @SERVICES_EMIT_STREAM && @SERVICES_EMIT_STREAM_SPLIT_ENABLE && kubeServicewrapper.count >= @SERVICES_EMIT_STREAM_SPLIT_SIZE
+                router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+                kubeServicesEventStream = MultiEventStream.new
+              end
             end
-            if @SERVICES_EMIT_STREAM
+            if @SERVICES_EMIT_STREAM && !@SERVICES_EMIT_STREAM_SPLIT_ENABLE
               router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
             end
             # $log.info("setting  kubeServicesEventStream to nil after emitting stream")

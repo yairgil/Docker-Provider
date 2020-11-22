@@ -35,6 +35,7 @@ module Fluent
       @NODES_CHUNK_SIZE = "400"
       @NODES_EMIT_STREAM = true
       @NODES_PERF_EMIT_STREAM = true
+      @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE = false
       @GPU_NODES_PERF_EMIT_STREAM = true
       @CONTAINER_NODE_INVENTORY_EMIT_STREAM = true
       @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = true
@@ -79,6 +80,11 @@ module Fluent
           @GPU_NODES_PERF_EMIT_STREAM = ENV["GPU_NODES_PERF_EMIT_STREAM"]
         end
         $log.info("in_kube_nodes::start : GPU_NODES_PERF_EMIT_STREAM  @ #{@GPU_NODES_PERF_EMIT_STREAM}")
+
+        if !ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].empty?
+          @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"]
+        end
+        $log.info("in_kube_nodes::start : NODES_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@NODES_PERF_EMIT_STREAM_SPLIT_ENABLE}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -301,15 +307,8 @@ module Fluent
         #:optimize:kubeperf merge
         begin
           #if(!nodeInventory.empty?)
-          nodeMetricDataItems = []
-          #allocatable metrics @ node level
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime))
-          #capacity metrics @ node level
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime))
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime))
 
-          kubePerfEventStream = MultiEventStream.new
+          #allocatable metrics @ node level
 
           nodeMetricDataItems.each do |record|
             record["DataType"] = "LINUX_PERF_BLOB"
@@ -319,7 +318,67 @@ module Fluent
           #end
 
           if @NODES_PERF_EMIT_STREAM
-            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            nodeMetricDataItems = []
+            kubePerfEventStream = MultiEventStream.new
+            if @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE
+              # cpu allocatable
+              kubePerfEventStream = MultiEventStream.new
+              nodeMetricDataItems = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime)
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              # memory allocatable
+              kubePerfEventStream = MultiEventStream.new
+              nodeMetricDataItems = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              # cpu capacityNanocores
+              kubePerfEventStream = MultiEventStream.new
+              nodeMetricDataItems = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              # memory capacity bytes
+              kubePerfEventStream = MultiEventStream.new
+              nodeMetricDataItems = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime)
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            else
+              nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
+              nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime))
+              #capacity metrics @ node level
+              nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime))
+              nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime))
+
+              kubePerfEventStream = MultiEventStream.new
+
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            end
+            nodeMetricDataItems = nil
+            kubePerfEventStream = nil
           end
 
           #start GPU InsightsMetrics items
