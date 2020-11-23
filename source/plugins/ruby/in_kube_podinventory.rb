@@ -29,6 +29,8 @@ module Fluent
 
       @PODS_CHUNK_SIZE = "1500"
       @PODS_EMIT_STREAM = true
+      @PODS_EMIT_STREAM_SPLIT_ENABLE = false
+      @PODS_EMIT_STREAM_SPLIT_SIZE = 500
       @MDM_PODS_INVENTORY_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = false
@@ -57,32 +59,42 @@ module Fluent
         $log.info("in_kube_podinventory::start : PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
 
         if !ENV["PODS_EMIT_STREAM"].nil? && !ENV["PODS_EMIT_STREAM"].empty?
-          @PODS_EMIT_STREAM = ENV["PODS_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @PODS_EMIT_STREAM = ENV["PODS_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM  @ #{@PODS_EMIT_STREAM}")
 
+        if !ENV["PODS_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["PODS_EMIT_STREAM_SPLIT_ENABLE"].empty?
+          @PODS_EMIT_STREAM_SPLIT_ENABLE = ENV["PODS_EMIT_STREAM_SPLIT_ENABLE"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_SPLIT_ENABLE  @ #{@PODS_EMIT_STREAM_SPLIT_ENABLE}")
+
+        if !ENV["PODS_EMIT_STREAM_SPLIT_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_SPLIT_SIZE"].empty?
+          @PODS_EMIT_STREAM_SPLIT_SIZE = ENV["PODS_EMIT_STREAM_SPLIT_ENABLE"].to_i
+        end
+        $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_SPLIT_SIZE  @ #{@PODS_EMIT_STREAM_SPLIT_SIZE}")
+
         if !ENV["CONTAINER_PERF_EMIT_STREAM"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM"].empty?
-          @CONTAINER_PERF_EMIT_STREAM = ENV["CONTAINER_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @CONTAINER_PERF_EMIT_STREAM = ENV["CONTAINER_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM  @ #{@CONTAINER_PERF_EMIT_STREAM}")
 
         if !ENV["SERVICES_EMIT_STREAM"].nil? && !ENV["SERVICES_EMIT_STREAM"].empty?
-          @SERVICES_EMIT_STREAM = ENV["SERVICES_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @SERVICES_EMIT_STREAM = ENV["SERVICES_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_podinventory::start : SERVICES_EMIT_STREAM  @ #{@SERVICES_EMIT_STREAM}")
 
         if !ENV["GPU_PERF_EMIT_STREAM"].nil? && !ENV["GPU_PERF_EMIT_STREAM"].empty?
-          @GPU_PERF_EMIT_STREAM = ENV["GPU_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @GPU_PERF_EMIT_STREAM = ENV["GPU_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_podinventory::start : GPU_PERF_EMIT_STREAM  @ #{@GPU_PERF_EMIT_STREAM}")
 
         if !ENV["MDM_PODS_INVENTORY_EMIT_STREAM"].nil? && !ENV["MDM_PODS_INVENTORY_EMIT_STREAM"].empty?
-          @MDM_PODS_INVENTORY_EMIT_STREAM = ENV["MDM_PODS_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @MDM_PODS_INVENTORY_EMIT_STREAM = ENV["MDM_PODS_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_podinventory::start : MDM_PODS_INVENTORY_EMIT_STREAM  @ #{@MDM_PODS_INVENTORY_EMIT_STREAM}")
 
         if !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].empty?
-          @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].to_s.downcase == "true" ? true : false 
+          @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE}")
 
