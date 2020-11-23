@@ -36,11 +36,10 @@ module Fluent
 
     config_param :run_interval, :time, :default => 60
     config_param :tag, :string, :default => "oms.containerinsights.KubePodInventory"
-    config_param :custom_metrics_azure_regions, :string
 
     def configure(conf)
       super
-      @inventoryToMdmConvertor = Inventory2MdmConvertor.new(@custom_metrics_azure_regions)
+      @inventoryToMdmConvertor = Inventory2MdmConvertor.new()
     end
 
     def start
