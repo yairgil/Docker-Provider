@@ -57,32 +57,32 @@ module Fluent
         $log.info("in_kube_podinventory::start : PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
 
         if !ENV["PODS_EMIT_STREAM"].nil? && !ENV["PODS_EMIT_STREAM"].empty?
-          @PODS_EMIT_STREAM = ENV["PODS_EMIT_STREAM"]
+          @PODS_EMIT_STREAM = ENV["PODS_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM  @ #{@PODS_EMIT_STREAM}")
 
         if !ENV["CONTAINER_PERF_EMIT_STREAM"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM"].empty?
-          @CONTAINER_PERF_EMIT_STREAM = ENV["CONTAINER_PERF_EMIT_STREAM"]
+          @CONTAINER_PERF_EMIT_STREAM = ENV["CONTAINER_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM  @ #{@CONTAINER_PERF_EMIT_STREAM}")
 
         if !ENV["SERVICES_EMIT_STREAM"].nil? && !ENV["SERVICES_EMIT_STREAM"].empty?
-          @SERVICES_EMIT_STREAM = ENV["SERVICES_EMIT_STREAM"]
+          @SERVICES_EMIT_STREAM = ENV["SERVICES_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_podinventory::start : SERVICES_EMIT_STREAM  @ #{@SERVICES_EMIT_STREAM}")
 
         if !ENV["GPU_PERF_EMIT_STREAM"].nil? && !ENV["GPU_PERF_EMIT_STREAM"].empty?
-          @SERVICES_EMIT_STREAM = ENV["GPU_PERF_EMIT_STREAM"]
+          @GPU_PERF_EMIT_STREAM = ENV["GPU_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_podinventory::start : GPU_PERF_EMIT_STREAM  @ #{@GPU_PERF_EMIT_STREAM}")
 
         if !ENV["MDM_PODS_INVENTORY_EMIT_STREAM"].nil? && !ENV["MDM_PODS_INVENTORY_EMIT_STREAM"].empty?
-          @MDM_PODS_INVENTORY_EMIT_STREAM = ENV["MDM_PODS_INVENTORY_EMIT_STREAM"]
+          @MDM_PODS_INVENTORY_EMIT_STREAM = ENV["MDM_PODS_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_podinventory::start : MDM_PODS_INVENTORY_EMIT_STREAM  @ #{@MDM_PODS_INVENTORY_EMIT_STREAM}")
 
         if !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].empty?
-          @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"]
+          @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE}")
 
@@ -438,6 +438,7 @@ module Fluent
         end  #podInventory block end
 
         if @PODS_EMIT_STREAM
+          $log.info("in_kube_podinventory::parse_and_emit_records : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
         end
         # # try setting eventStream to nil and see if that resolves memory pressure

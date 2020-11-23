@@ -35,6 +35,7 @@ module Fluent
       @NODES_CHUNK_SIZE = "400"
       @NODES_EMIT_STREAM = true
       @NODES_PERF_EMIT_STREAM = true
+      @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE = false
       @GPU_NODES_PERF_EMIT_STREAM = true
       @CONTAINER_NODE_INVENTORY_EMIT_STREAM = true
       @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = true
@@ -56,27 +57,34 @@ module Fluent
         $log.info("in_kube_nodes::start : NODES_CHUNK_SIZE  @ #{@NODES_CHUNK_SIZE}")
 
         if !ENV["NODES_EMIT_STREAM"].nil? && !ENV["NODES_EMIT_STREAM"].empty?
-          @NODES_EMIT_STREAM = ENV["NODES_EMIT_STREAM"]
+          @NODES_EMIT_STREAM = ENV["NODES_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_nodes::start : NODES_EMIT_STREAM  @ #{@NODES_EMIT_STREAM}")
 
         if !ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].nil? && !ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].empty?
-          @CONTAINER_NODE_INVENTORY_EMIT_STREAM = ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"]
+          @CONTAINER_NODE_INVENTORY_EMIT_STREAM = ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_nodes::start : CONTAINER_NODE_INVENTORY_EMIT_STREAM  @ #{@CONTAINER_NODE_INVENTORY_EMIT_STREAM}")
 
         if !ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].nil? && !ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].empty?
-          @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"]
+          @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_nodes::start : MDM_KUBE_NODE_INVENTORY_EMIT_STREAM  @ #{@MDM_KUBE_NODE_INVENTORY_EMIT_STREAM}")
 
         if !ENV["NODES_PERF_EMIT_STREAM"].nil? && !ENV["NODES_PERF_EMIT_STREAM"].empty?
-          @NODES_PERF_EMIT_STREAM = ENV["NODES_PERF_EMIT_STREAM"]
+          @NODES_PERF_EMIT_STREAM = ENV["NODES_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_nodes::start : NODES_PERF_EMIT_STREAM  @ #{@NODES_PERF_EMIT_STREAM}")
 
+        
+        if !ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].empty?
+          @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].to_s.downcase == "true" ? true : false 
+        end
+        $log.info("in_kube_nodes::start : NODES_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@NODES_PERF_EMIT_STREAM_SPLIT_ENABLE}")
+
+
         if !ENV["GPU_NODES_PERF_EMIT_STREAM"].nil? && !ENV["GPU_NODES_PERF_EMIT_STREAM"].empty?
-          @GPU_NODES_PERF_EMIT_STREAM = ENV["GPU_NODES_PERF_EMIT_STREAM"]
+          @GPU_NODES_PERF_EMIT_STREAM = ENV["GPU_NODES_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_nodes::start : GPU_NODES_PERF_EMIT_STREAM  @ #{@GPU_NODES_PERF_EMIT_STREAM}")
 
@@ -302,26 +310,100 @@ module Fluent
         end
         #:optimize:kubeperf merge
         begin
-          #if(!nodeInventory.empty?)
-          nodeMetricDataItems = []
-          #allocatable metrics @ node level
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime))
-          #capacity metrics @ node level
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime))
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime))
-
-          kubePerfEventStream = MultiEventStream.new
-
-          nodeMetricDataItems.each do |record|
-            record["DataType"] = "LINUX_PERF_BLOB"
-            record["IPName"] = "LogManagement"
-            kubePerfEventStream.add(emitTime, record) if record
-          end
-          #end
-
+          
           if @NODES_PERF_EMIT_STREAM
-            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            if @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE
+
+              # node cpu allocatable perf records
+              kubePerfEventStream = MultiEventStream.new
+              nodeMetricDataItems = []
+              nodeMetricDataItems = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime)
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node cpu allocatable records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node cpu allocatable records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              # node memory allocatable perf records
+              kubePerfEventStream = MultiEventStream.new
+              nodeMetricDataItems = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node memory allocatable records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node memory allocatable records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              # node cpu capacity perf records
+              kubePerfEventStream = MultiEventStream.new
+              nodeMetricDataItems = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+              
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node cpu capacity records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node cpu capacity records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              # node memory capacity perf records
+              kubePerfEventStream = MultiEventStream.new
+              nodeMetricDataItems = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime)
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end
+
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node memory capacity records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node memory capacity records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              nodeMetricDataItems = nil
+              kubePerfEventStream = nil
+
+            else
+              nodeMetricDataItems = []
+              #allocatable metrics @ node level
+              nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
+              nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime))
+              #capacity metrics @ node level
+              nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime))
+              nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime))
+
+              kubePerfEventStream = MultiEventStream.new
+
+              nodeMetricDataItems.each do |record|
+                record["DataType"] = "LINUX_PERF_BLOB"
+                record["IPName"] = "LogManagement"
+                kubePerfEventStream.add(emitTime, record) if record
+              end             
+                          
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node perf metric records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              
+              $log.info("in_kube_nodes::parse_and_emit_records : number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+
+              nodeMetricDataItems = nil
+              kubePerfEventStream = nil
+            end 
           end
 
           #start GPU InsightsMetrics items

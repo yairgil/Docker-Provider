@@ -44,7 +44,7 @@ module Fluent
         $log.info("in_kube_events::start : EVENTS_CHUNK_SIZE  @ #{@EVENTS_CHUNK_SIZE}")
 
         if !ENV["EVENTS_EMIT_STREAM"].nil? && !ENV["EVENTS_EMIT_STREAM"].empty?
-          @EVENTS_EMIT_STREAM = ENV["EVENTS_EMIT_STREAM"]
+          @EVENTS_EMIT_STREAM = ENV["EVENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kube_events::start : EVENTS_EMIT_STREAM  @ #{@EVENTS_EMIT_STREAM}")
 

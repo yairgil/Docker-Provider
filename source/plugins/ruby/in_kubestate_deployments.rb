@@ -49,7 +49,7 @@ module Fluent
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
 
         if !ENV["DEPLOYMENTS_EMIT_STREAM"].nil? && !ENV["DEPLOYMENTS_EMIT_STREAM"].empty?
-          @DEPLOYMENTS_EMIT_STREAM = ENV["DEPLOYMENTS_EMIT_STREAM"]
+          @DEPLOYMENTS_EMIT_STREAM = ENV["DEPLOYMENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_EMIT_STREAM  @ #{@DEPLOYMENTS_EMIT_STREAM}")
 

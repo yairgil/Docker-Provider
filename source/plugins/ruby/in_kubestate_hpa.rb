@@ -46,7 +46,7 @@ module Fluent
         $log.info("in_kubestate_hpa::start : HPA_CHUNK_SIZE  @ #{@HPA_CHUNK_SIZE}")
 
         if !ENV["HPA_EMIT_STREAM"].nil? && !ENV["HPA_EMIT_STREAM"].empty?
-          @HPA_EMIT_STREAM = ENV["HPA_EMIT_STREAM"]
+          @HPA_EMIT_STREAM = ENV["HPA_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
         end
         $log.info("in_kubestate_hpa::start : HPA_EMIT_STREAM  @ #{@HPA_EMIT_STREAM}")
 
