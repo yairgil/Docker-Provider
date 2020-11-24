@@ -30,7 +30,7 @@ module Fluent
       @PODS_CHUNK_SIZE = "1500"
       @PODS_EMIT_STREAM = true
       @PODS_EMIT_STREAM_SPLIT_ENABLE = false
-      @PODS_EMIT_STREAM_SPLIT_SIZE = 500
+      @PODS_EMIT_STREAM_SPLIT_SIZE = 0
       @MDM_PODS_INVENTORY_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = false
@@ -71,7 +71,7 @@ module Fluent
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_SPLIT_ENABLE  @ #{@PODS_EMIT_STREAM_SPLIT_ENABLE}")
 
         if !ENV["PODS_EMIT_STREAM_SPLIT_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_SPLIT_SIZE"].empty?
-          @PODS_EMIT_STREAM_SPLIT_SIZE = ENV["PODS_EMIT_STREAM_SPLIT_ENABLE"].to_i
+          @PODS_EMIT_STREAM_SPLIT_SIZE = ENV["PODS_EMIT_STREAM_SPLIT_SIZE"].to_i
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_SPLIT_SIZE  @ #{@PODS_EMIT_STREAM_SPLIT_SIZE}")
 
@@ -455,7 +455,7 @@ module Fluent
             end
           end
 
-          if @PODS_EMIT_STREAM && @PODS_EMIT_STREAM_SPLIT_ENABLE
+          if @PODS_EMIT_STREAM && @PODS_EMIT_STREAM_SPLIT_ENABLE && @PODS_EMIT_STREAM_SPLIT_SIZE > 0
             if eventStream.count >= @PODS_EMIT_STREAM_SPLIT_SIZE
               $log.info("in_kube_podinventory::parse_and_emit_records : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@tag, eventStream) if eventStream
