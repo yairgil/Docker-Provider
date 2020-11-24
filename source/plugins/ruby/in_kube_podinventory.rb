@@ -34,6 +34,8 @@ module Fluent
       @MDM_PODS_INVENTORY_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM = true
       @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = false
+      # 0 indicates no micro batch emit allowed
+      @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE = 0
       @SERVICES_EMIT_STREAM = true
       @GPU_PERF_EMIT_STREAM = true
       @podCount = 0
@@ -97,6 +99,11 @@ module Fluent
           @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE}")
+
+        if !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE"].nil? && !ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE"].empty?
+          @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE = ENV["CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE"].to_i
+        end
+        $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE  @ #{@CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -447,9 +454,17 @@ module Fluent
               eventStream.add(emitTime, ciwrapper) if ciwrapper
             end
           end
+
+          if @PODS_EMIT_STREAM && @PODS_EMIT_STREAM_SPLIT_ENABLE
+            if eventStream.count >= @PODS_EMIT_STREAM_SPLIT_SIZE
+              $log.info("in_kube_podinventory::parse_and_emit_records : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@tag, eventStream) if eventStream
+              eventStream = MultiEventStream.new
+            end
+          end
         end  #podInventory block end
 
-        if @PODS_EMIT_STREAM
+        if !@PODS_EMIT_STREAM_SPLIT_ENABLE && @PODS_EMIT_STREAM
           $log.info("in_kube_podinventory::parse_and_emit_records : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
         end
@@ -486,11 +501,18 @@ module Fluent
                 record["DataType"] = "LINUX_PERF_BLOB"
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
+                if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE > 0 && kubePerfEventStream.count >= @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE
+                  $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu requests records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+                  router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+                  kubePerfEventStream = MultiEventStream.new
+                end
               end
-              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
-              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE <= 0
+                router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+                containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              end
 
               # memory requests
               kubePerfEventStream = MultiEventStream.new
@@ -499,11 +521,18 @@ module Fluent
                 record["DataType"] = "LINUX_PERF_BLOB"
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
+                if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE > 0 && kubePerfEventStream.count >= @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE
+                  $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory requests records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+                  router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+                  kubePerfEventStream = MultiEventStream.new
+                end
               end
-              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
-              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE <= 0
+                router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+                containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              end
 
               # cpu limits
               kubePerfEventStream = MultiEventStream.new
@@ -512,11 +541,18 @@ module Fluent
                 record["DataType"] = "LINUX_PERF_BLOB"
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
+                if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE > 0 && kubePerfEventStream.count >= @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE
+                  $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu limits records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+                  router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+                  kubePerfEventStream = MultiEventStream.new
+                end
               end
-              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
-              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu limits records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE <= 0
+                router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+                containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              end
 
               # memory limits
               kubePerfEventStream = MultiEventStream.new
@@ -525,11 +561,18 @@ module Fluent
                 record["DataType"] = "LINUX_PERF_BLOB"
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
+                if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE > 0 && kubePerfEventStream.count >= @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE
+                  $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory limits records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+                  router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+                  kubePerfEventStream = MultiEventStream.new
+                end
               end
-              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
-              containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-              $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory limits records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE <= 0
+                router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+                containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory limits records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+              end
 
               containerMetricDataItems = nil
               kubePerfEventStream = nil
