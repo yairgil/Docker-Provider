@@ -521,7 +521,7 @@ module Fluent
               if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE <= 0 || !isPerfStreamEmitted
                 router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
                 containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu requests records #{eventStream.count} @ #{Time.now.utc.iso8601}")
               end
 
               # memory requests
@@ -543,8 +543,7 @@ module Fluent
 
               if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE <= 0 || !isPerfStreamEmitted
                 router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-                containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory requests records #{eventStream.count} @ #{Time.now.utc.iso8601}")
               end
 
               # cpu limits
@@ -566,8 +565,7 @@ module Fluent
 
               if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE <= 0 || !isPerfStreamEmitted
                 router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-                containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory requests records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf cpu limits records #{eventStream.count} @ #{Time.now.utc.iso8601}")
               end
 
               # memory limits
@@ -589,8 +587,7 @@ module Fluent
 
               if @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE <= 0 || !isPerfStreamEmitted
                 router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-                containerMetricDataItemsSizeInKB = (containerMetricDataItems.to_s.length) / 1024
-                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory limits records #{containerMetricDataItems.length}, size in KB #{containerMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
+                $log.info("in_kube_podinventory::parse_and_emit_records : number of perf memory limits records #{eventStream.count} @ #{Time.now.utc.iso8601}")
               end
 
               containerMetricDataItems = nil
