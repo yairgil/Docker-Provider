@@ -416,9 +416,9 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 60
       # using to avoid ingestion costs from daemonset
-      nodeSelector:
+      # nodeSelector:
         # omsagentRS: aks-ephemeral-86179926-vmss000001 # ephemeral os disk + knode
-        omsagentRS: aks-big-86179926-vmss000004-managed-disk # managed disk
+        # omsagentRS: aks-big-86179926-vmss000004-managed-disk # managed disk
         # omsagentRS: aks-big-86179926-vmss000004-managed-disk-dont-schedule # dont schedule
         # omsagentRS: aks-pool6-86179926-vmss000000-managed-disk-knode # managed disk + knode
         # omsagentRS: aks-pool6-86179926-vmss000009-managed-disk-knode #  managed disk + knode - different node
@@ -644,9 +644,9 @@ spec:
                 - /opt/livenessprobe.sh
             initialDelaySeconds: 60
             periodSeconds: 60
-      nodeSelector:
+      # nodeSelector:
         # omsagentRS: aks-ephemeral-86179926-vmss000001 # ephemeral os disk + knode
-        omsagentRS: aks-big-86179926-vmss000004-managed-disk # managed disk
+        # omsagentRS: aks-big-86179926-vmss000004-managed-disk # managed disk
         # omsagentRS: aks-pool6-86179926-vmss000000-managed-disk-knode # managed disk + knode
         # omsagentRS: aks-pool6-86179926-vmss000009-managed-disk-knode #  managed disk + knode - different node
       affinity:
