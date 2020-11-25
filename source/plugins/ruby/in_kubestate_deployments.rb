@@ -49,7 +49,7 @@ module Fluent
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
 
         if !ENV["DEPLOYMENTS_EMIT_STREAM"].nil? && !ENV["DEPLOYMENTS_EMIT_STREAM"].empty?
-          @DEPLOYMENTS_EMIT_STREAM = ENV["DEPLOYMENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @DEPLOYMENTS_EMIT_STREAM = ENV["DEPLOYMENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_EMIT_STREAM  @ #{@DEPLOYMENTS_EMIT_STREAM}")
 
@@ -103,7 +103,9 @@ module Fluent
         # Setting this to nil so that we dont hold memory until GC kicks in
         deploymentList = nil
 
-        $log.info("successfully emitted a total of #{@deploymentsRunningTotal} kube_state_deployment metrics")
+        if @DEPLOYMENTS_EMIT_STREAM
+          $log.info("successfully emitted a total of #{@deploymentsRunningTotal} kube_state_deployment metrics")
+        end
         # Flush AppInsights telemetry once all the processing is done, only if the number of events flushed is greater than 0
         if (@deploymentsRunningTotal > @@deploymentsCount)
           @@deploymentsCount = @deploymentsRunningTotal
@@ -191,8 +193,8 @@ module Fluent
 
         if @DEPLOYMENTS_EMIT_STREAM
           router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+          $log.info("successfully emitted #{metricItems.length()} kube_state_deployment metrics")
         end
-        $log.info("successfully emitted #{metricItems.length()} kube_state_deployment metrics")
         @deploymentsRunningTotal = @deploymentsRunningTotal + metricItems.length()
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
           $log.info("kubestatedeploymentsInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
