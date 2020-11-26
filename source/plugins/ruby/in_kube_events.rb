@@ -26,7 +26,9 @@ module Fluent
       @eventsCount = 0
 
       # Initilize enable/disable normal event collection
-      @collectAllKubeEvents = false
+      @collectAllKubeEvents =
+
+        @ENABLE_PARSE_AND_EMIT = true
     end
 
     config_param :run_interval, :time, :default => 60
@@ -44,9 +46,14 @@ module Fluent
         $log.info("in_kube_events::start : EVENTS_CHUNK_SIZE  @ #{@EVENTS_CHUNK_SIZE}")
 
         if !ENV["EVENTS_EMIT_STREAM"].nil? && !ENV["EVENTS_EMIT_STREAM"].empty?
-          @EVENTS_EMIT_STREAM = ENV["EVENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @EVENTS_EMIT_STREAM = ENV["EVENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_events::start : EVENTS_EMIT_STREAM  @ #{@EVENTS_EMIT_STREAM}")
+
+        if !ENV["ENABLE_PARSE_AND_EMIT"].nil? && !ENV["ENABLE_PARSE_AND_EMIT"].empty?
+          @ENABLE_PARSE_AND_EMIT = ENV["ENABLE_PARSE_AND_EMIT"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_podinventory::start : ENABLE_PARSE_AND_EMIT  @ #{@ENABLE_PARSE_AND_EMIT}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -97,7 +104,9 @@ module Fluent
         if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
           eventsCount = eventList["items"].length
           $log.info "in_kube_events::enumerate:Received number of events is eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
-          newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
+          if @ENABLE_PARSE_AND_EMIT
+            newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
+          end
         else
           $log.warn "in_kube_events::enumerate:Received empty eventList"
         end
@@ -108,7 +117,9 @@ module Fluent
           if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
             eventsCount = eventList["items"].length
             $log.info "in_kube_events::enumerate:Received number of events is eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
-            newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
+            if @ENABLE_PARSE_AND_EMIT
+              newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
+            end
           else
             $log.warn "in_kube_events::enumerate:Received empty eventList"
           end

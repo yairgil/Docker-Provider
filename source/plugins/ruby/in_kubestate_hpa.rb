@@ -29,6 +29,7 @@ module Fluent
       @NodeName = OMS::Common.get_hostname
       @ClusterId = KubernetesApiClient.getClusterId
       @ClusterName = KubernetesApiClient.getClusterName
+      @ENABLE_PARSE_AND_EMIT = true
     end
 
     config_param :run_interval, :time, :default => 60
@@ -49,6 +50,11 @@ module Fluent
           @HPA_EMIT_STREAM = ENV["HPA_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kubestate_hpa::start : HPA_EMIT_STREAM  @ #{@HPA_EMIT_STREAM}")
+
+        if !ENV["ENABLE_PARSE_AND_EMIT"].nil? && !ENV["ENABLE_PARSE_AND_EMIT"].empty?
+          @ENABLE_PARSE_AND_EMIT = ENV["ENABLE_PARSE_AND_EMIT"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_podinventory::start : ENABLE_PARSE_AND_EMIT  @ #{@ENABLE_PARSE_AND_EMIT}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -81,7 +87,9 @@ module Fluent
         continuationToken, hpaList = KubernetesApiClient.getResourcesAndContinuationToken("horizontalpodautoscalers?limit=#{@HPA_CHUNK_SIZE}", api_group: @HPA_API_GROUP)
         $log.info("in_kubestate_hpa::enumerate : Done getting HPAs from Kube API @ #{Time.now.utc.iso8601}")
         if (!hpaList.nil? && !hpaList.empty? && hpaList.key?("items") && !hpaList["items"].nil? && !hpaList["items"].empty?)
-          parse_and_emit_records(hpaList, batchTime)
+          if @ENABLE_PARSE_AND_EMIT
+            parse_and_emit_records(hpaList, batchTime)
+          end
         else
           $log.warn "in_kubestate_hpa::enumerate:Received empty hpaList"
         end
@@ -90,7 +98,9 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, hpaList = KubernetesApiClient.getResourcesAndContinuationToken("horizontalpodautoscalers?limit=#{@HPA_CHUNK_SIZE}&continue=#{continuationToken}", api_group: @HPA_API_GROUP)
           if (!hpaList.nil? && !hpaList.empty? && hpaList.key?("items") && !hpaList["items"].nil? && !hpaList["items"].empty?)
-            parse_and_emit_records(hpaList, batchTime)
+            if @ENABLE_PARSE_AND_EMIT
+              parse_and_emit_records(hpaList, batchTime)
+            end
           else
             $log.warn "in_kubestate_hpa::enumerate:Received empty hpaList"
           end

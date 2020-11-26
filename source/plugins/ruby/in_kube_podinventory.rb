@@ -36,6 +36,7 @@ module Fluent
       @CONTAINER_PERF_EMIT_STREAM_SPLIT_ENABLE = false
       # 0 indicates no micro batch emit allowed
       @CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE = 0
+      @ENABLE_PARSE_AND_EMIT = true
       @SERVICES_EMIT_STREAM = true
       @GPU_PERF_EMIT_STREAM = true
       @podCount = 0
@@ -105,6 +106,11 @@ module Fluent
         end
         $log.info("in_kube_podinventory::start : CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE  @ #{@CONTAINER_PERF_EMIT_STREAM_SPLIT_SIZE}")
 
+        if !ENV["ENABLE_PARSE_AND_EMIT"].nil? && !ENV["ENABLE_PARSE_AND_EMIT"].empty?
+          @ENABLE_PARSE_AND_EMIT = ENV["ENABLE_PARSE_AND_EMIT"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_podinventory::start : ENABLE_PARSE_AND_EMIT  @ #{@ENABLE_PARSE_AND_EMIT}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -157,7 +163,9 @@ module Fluent
           $log.info("in_kube_podinventory::enumerate : number of items in #{podInventory["items"].length} pods from Kube API @ #{Time.now.utc.iso8601}")
           podInventorySizeInKB = (podInventory.to_s.length) / 1024
           $log.info("in_kube_podinventory::enumerate : pod inventory size in KB #{podInventorySizeInKB} pods from Kube API @ #{Time.now.utc.iso8601}")
-          parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+          if @ENABLE_PARSE_AND_EMIT
+            parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+          end
         else
           $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
         end
@@ -169,7 +177,9 @@ module Fluent
             $log.info("in_kube_podinventory::enumerate : number of items in #{podInventory["items"].length} pods from Kube API @ #{Time.now.utc.iso8601}")
             podInventorySizeInKB = (podInventory.to_s.length) / 1024
             $log.info("in_kube_podinventory::enumerate : pod inventory size in KB #{podInventorySizeInKB} pods from Kube API @ #{Time.now.utc.iso8601}")
-            parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+            if @ENABLE_PARSE_AND_EMIT
+              parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+            end
           else
             $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
           end

@@ -32,6 +32,7 @@ module Fluent
       @NodeName = OMS::Common.get_hostname
       @ClusterId = KubernetesApiClient.getClusterId
       @ClusterName = KubernetesApiClient.getClusterName
+      @ENABLE_PARSE_AND_EMIT = true
     end
 
     config_param :run_interval, :time, :default => 60
@@ -52,6 +53,11 @@ module Fluent
           @DEPLOYMENTS_EMIT_STREAM = ENV["DEPLOYMENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_EMIT_STREAM  @ #{@DEPLOYMENTS_EMIT_STREAM}")
+
+        if !ENV["ENABLE_PARSE_AND_EMIT"].nil? && !ENV["ENABLE_PARSE_AND_EMIT"].empty?
+          @ENABLE_PARSE_AND_EMIT = ENV["ENABLE_PARSE_AND_EMIT"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_podinventory::start : ENABLE_PARSE_AND_EMIT  @ #{@ENABLE_PARSE_AND_EMIT}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -85,7 +91,9 @@ module Fluent
         continuationToken, deploymentList = KubernetesApiClient.getResourcesAndContinuationToken("deployments?limit=#{@DEPLOYMENTS_CHUNK_SIZE}", api_group: @DEPLOYMENTS_API_GROUP)
         $log.info("in_kubestate_deployments::enumerate : Done getting deployments from Kube API @ #{Time.now.utc.iso8601}")
         if (!deploymentList.nil? && !deploymentList.empty? && deploymentList.key?("items") && !deploymentList["items"].nil? && !deploymentList["items"].empty?)
-          parse_and_emit_records(deploymentList, batchTime)
+          if @ENABLE_PARSE_AND_EMIT
+            parse_and_emit_records(deploymentList, batchTime)
+          end
         else
           $log.warn "in_kubestate_deployments::enumerate:Received empty deploymentList"
         end
@@ -94,7 +102,9 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, deploymentList = KubernetesApiClient.getResourcesAndContinuationToken("deployments?limit=#{@DEPLOYMENTS_CHUNK_SIZE}&continue=#{continuationToken}", api_group: @DEPLOYMENTS_API_GROUP)
           if (!deploymentList.nil? && !deploymentList.empty? && deploymentList.key?("items") && !deploymentList["items"].nil? && !deploymentList["items"].empty?)
-            parse_and_emit_records(deploymentList, batchTime)
+            if @ENABLE_PARSE_AND_EMIT
+              parse_and_emit_records(deploymentList, batchTime)
+            end
           else
             $log.warn "in_kubestate_deployments::enumerate:Received empty deploymentList"
           end

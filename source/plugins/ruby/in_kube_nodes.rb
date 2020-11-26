@@ -39,6 +39,7 @@ module Fluent
       @GPU_NODES_PERF_EMIT_STREAM = true
       @CONTAINER_NODE_INVENTORY_EMIT_STREAM = true
       @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = true
+      @ENABLE_PARSE_AND_EMIT = true
       require_relative "constants"
     end
 
@@ -57,36 +58,39 @@ module Fluent
         $log.info("in_kube_nodes::start : NODES_CHUNK_SIZE  @ #{@NODES_CHUNK_SIZE}")
 
         if !ENV["NODES_EMIT_STREAM"].nil? && !ENV["NODES_EMIT_STREAM"].empty?
-          @NODES_EMIT_STREAM = ENV["NODES_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @NODES_EMIT_STREAM = ENV["NODES_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_nodes::start : NODES_EMIT_STREAM  @ #{@NODES_EMIT_STREAM}")
 
         if !ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].nil? && !ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].empty?
-          @CONTAINER_NODE_INVENTORY_EMIT_STREAM = ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @CONTAINER_NODE_INVENTORY_EMIT_STREAM = ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_nodes::start : CONTAINER_NODE_INVENTORY_EMIT_STREAM  @ #{@CONTAINER_NODE_INVENTORY_EMIT_STREAM}")
 
         if !ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].nil? && !ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].empty?
-          @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_nodes::start : MDM_KUBE_NODE_INVENTORY_EMIT_STREAM  @ #{@MDM_KUBE_NODE_INVENTORY_EMIT_STREAM}")
 
         if !ENV["NODES_PERF_EMIT_STREAM"].nil? && !ENV["NODES_PERF_EMIT_STREAM"].empty?
-          @NODES_PERF_EMIT_STREAM = ENV["NODES_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @NODES_PERF_EMIT_STREAM = ENV["NODES_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_nodes::start : NODES_PERF_EMIT_STREAM  @ #{@NODES_PERF_EMIT_STREAM}")
 
-        
         if !ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].nil? && !ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].empty?
-          @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].to_s.downcase == "true" ? true : false 
+          @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE = ENV["NODES_PERF_EMIT_STREAM_SPLIT_ENABLE"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_nodes::start : NODES_PERF_EMIT_STREAM_SPLIT_ENABLE  @ #{@NODES_PERF_EMIT_STREAM_SPLIT_ENABLE}")
 
-
         if !ENV["GPU_NODES_PERF_EMIT_STREAM"].nil? && !ENV["GPU_NODES_PERF_EMIT_STREAM"].empty?
-          @GPU_NODES_PERF_EMIT_STREAM = ENV["GPU_NODES_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false 
+          @GPU_NODES_PERF_EMIT_STREAM = ENV["GPU_NODES_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_nodes::start : GPU_NODES_PERF_EMIT_STREAM  @ #{@GPU_NODES_PERF_EMIT_STREAM}")
+
+        if !ENV["ENABLE_PARSE_AND_EMIT"].nil? && !ENV["ENABLE_PARSE_AND_EMIT"].empty?
+          @ENABLE_PARSE_AND_EMIT = ENV["ENABLE_PARSE_AND_EMIT"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_podinventory::start : ENABLE_PARSE_AND_EMIT  @ #{@ENABLE_PARSE_AND_EMIT}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -120,7 +124,9 @@ module Fluent
 
         $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-          parse_and_emit_records(nodeInventory, batchTime)
+          if @ENABLE_PARSE_AND_EMIT
+            parse_and_emit_records(nodeInventory, batchTime)
+          end
         else
           $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
         end
@@ -129,7 +135,9 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
           if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-            parse_and_emit_records(nodeInventory, batchTime)
+            if @ENABLE_PARSE_AND_EMIT
+              parse_and_emit_records(nodeInventory, batchTime)
+            end
           else
             $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
           end
@@ -310,7 +318,6 @@ module Fluent
         end
         #:optimize:kubeperf merge
         begin
-          
           if @NODES_PERF_EMIT_STREAM
             if @NODES_PERF_EMIT_STREAM_SPLIT_ENABLE
 
@@ -324,9 +331,9 @@ module Fluent
                 kubePerfEventStream.add(emitTime, record) if record
               end
 
-              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length) / 1024
               $log.info("in_kube_nodes::parse_and_emit_records : number of node cpu allocatable records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
-              
+
               $log.info("in_kube_nodes::parse_and_emit_records : number of node cpu allocatable records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
@@ -338,8 +345,8 @@ module Fluent
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
               end
-              
-              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length) / 1024
               $log.info("in_kube_nodes::parse_and_emit_records : number of node memory allocatable records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
 
               $log.info("in_kube_nodes::parse_and_emit_records : number of node memory allocatable records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
@@ -353,8 +360,8 @@ module Fluent
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
               end
-              
-              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length) / 1024
               $log.info("in_kube_nodes::parse_and_emit_records : number of node cpu capacity records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
 
               $log.info("in_kube_nodes::parse_and_emit_records : number of node cpu capacity records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
@@ -369,7 +376,7 @@ module Fluent
                 kubePerfEventStream.add(emitTime, record) if record
               end
 
-              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length) / 1024
               $log.info("in_kube_nodes::parse_and_emit_records : number of node memory capacity records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
 
               $log.info("in_kube_nodes::parse_and_emit_records : number of node memory capacity records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
@@ -377,7 +384,6 @@ module Fluent
 
               nodeMetricDataItems = nil
               kubePerfEventStream = nil
-
             else
               nodeMetricDataItems = []
               #allocatable metrics @ node level
@@ -393,17 +399,17 @@ module Fluent
                 record["DataType"] = "LINUX_PERF_BLOB"
                 record["IPName"] = "LogManagement"
                 kubePerfEventStream.add(emitTime, record) if record
-              end             
-                          
-              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length)/1024
+              end
+
+              nodeMetricDataItemsSizeInKB = (nodeMetricDataItems.to_s.length) / 1024
               $log.info("in_kube_nodes::parse_and_emit_records : number of node perf metric records:#{nodeMetricDataItems.length}, size in KB #{nodeMetricDataItemsSizeInKB} @ #{Time.now.utc.iso8601}")
-              
+
               $log.info("in_kube_nodes::parse_and_emit_records : number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
 
               nodeMetricDataItems = nil
               kubePerfEventStream = nil
-            end 
+            end
           end
 
           #start GPU InsightsMetrics items
