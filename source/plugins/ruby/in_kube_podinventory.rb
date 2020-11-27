@@ -506,7 +506,7 @@ module Fluent
             if !item["spec"]["nodeName"].nil?
               nodeName = item["spec"]["nodeName"]
             end
-            if (winNodes.include? nodeName)
+            if (!nodeName.empty? && (winNodes.include? nodeName))
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
               containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar, true)
