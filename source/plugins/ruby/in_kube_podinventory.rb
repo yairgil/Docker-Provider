@@ -504,7 +504,10 @@ module Fluent
           # on windows nodes and parse environment variables for these containers
           if winNodes.length > 0
             containerInventoryRecords = []
-            nodeName = !item["spec"]["nodeName"].nil? item["spec"]["nodeName"]: ""
+            nodeName = ""
+            if !item["spec"]["nodeName"].nil?
+              nodeName =  item["spec"]["nodeName"]
+            end
             if (winNodes.include? nodeName))
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
