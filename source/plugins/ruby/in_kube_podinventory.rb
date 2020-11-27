@@ -488,7 +488,6 @@ module Fluent
 
         # enumerate pods list
         podInventory["items"].each do |item| #podInventory block start
-          containerInventoryRecords = []
           podInventoryRecords = get_pod_inventory_records(item, serviceRecords, batchTime)
           podInventoryRecords.each do |record|
             if !record.nil?
@@ -504,6 +503,7 @@ module Fluent
           # Setting this flag to true so that we can send ContainerInventory records for containers
           # on windows nodes and parse environment variables for these containers
           if winNodes.length > 0
+            containerInventoryRecords = []
             nodeName = !item["spec"]["nodeName"].nil? item["spec"]["nodeName"]: ""
             if (winNodes.include? nodeName))
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
@@ -525,11 +525,13 @@ module Fluent
           end
 
           if eventStream.count >= @EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_podinventory::parse_and_emit_records_v2: number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
-              $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            if @PODS_EMIT_STREAM
+              $log.info("in_kube_podinventory::parse_and_emit_records_v2: number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
+                $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
+              router.emit_stream(@tag, eventStream) if eventStream
             end
-            router.emit_stream(@tag, eventStream) if eventStream
             eventStream = MultiEventStream.new
           end
 
@@ -547,8 +549,10 @@ module Fluent
           end
 
           if kubePerfEventStream.count >= @EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            if @CONTAINER_PERF_EMIT_STREAM
+              $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            end
             kubePerfEventStream = MultiEventStream.new
           end
 
@@ -568,11 +572,13 @@ module Fluent
           end
 
           if insightsMetricsEventStream.count >= @EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
-              $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            if @GPU_PERF_EMIT_STREAM
+              $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+                $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
+              router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
             end
-            router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
             insightsMetricsEventStream = MultiEventStream.new
           end
         end
@@ -586,20 +592,26 @@ module Fluent
         end
 
         if eventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@tag, eventStream) if eventStream
+          if @PODS_EMIT_STREAM
+            $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@tag, eventStream) if eventStream
+          end
           eventStream = nil
         end
 
         if kubePerfEventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+          if @CONTAINER_PERF_EMIT_STREAM
+            $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+          end
           kubePerfEventStream = nil
         end
 
         if insightsMetricsEventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+          if @GPU_PERF_EMIT_STREAM
+            $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+          end
           insightsMetricsEventStream = nil
         end
 
