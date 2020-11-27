@@ -475,6 +475,8 @@ module Fluent
           end
         end
       end
+
+      return records
     end
 
     def parse_and_emit_records_v2(podInventory, serviceRecords, continuationToken, batchTime = Time.utc.iso8601)
@@ -490,6 +492,7 @@ module Fluent
         # enumerate pods list
         podInventory["items"].each do |item| #podInventory block start
           podInventoryRecords = get_pod_inventory_records(item, serviceRecords, batchTime)
+          $log.info("in_kube_podinventory::parse_and_emit_records_v2: number of pod inventory records #{podInventoryRecords.length} @ #{Time.now.utc.iso8601}")
           podInventoryRecords.each do |record|
             if !record.nil?
               wrapper = {
@@ -546,6 +549,8 @@ module Fluent
           containerMetricDataItems.concat(KubernetesApiClient.getContainerPerfRecords(item, "limits", "cpu", "cpuLimitNanoCores", batchTime))
           containerMetricDataItems.concat(KubernetesApiClient.getContainerPerfRecords(item, "limits", "memory", "memoryLimitBytes", batchTime))
 
+          $log.info("in_kube_podinventory::parse_and_emit_records_v2: number of container metric data items  #{containerMetricDataItems.length} @ #{Time.now.utc.iso8601}")
+
           containerMetricDataItems.each do |record|
             record["DataType"] = "LINUX_PERF_BLOB"
             record["IPName"] = "LogManagement"
@@ -574,6 +579,8 @@ module Fluent
             }
             insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
           end
+
+          $log.info("in_kube_podinventory::parse_and_emit_records_v2: number of container GPU Insights Metric data items  #{containerGPUInsightsMetricsDataItems.length} @ #{Time.now.utc.iso8601}")
 
           if @EMIT_STREAM_BATCH_SIZE > 0 && insightsMetricsEventStream.count >= @EMIT_STREAM_BATCH_SIZE
             if @GPU_PERF_EMIT_STREAM
@@ -634,7 +641,7 @@ module Fluent
               }
               kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
 
-              if @EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count > @EMIT_STREAM_BATCH_SIZE
+              if @EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @EMIT_STREAM_BATCH_SIZE
                 if @SERVICES_EMIT_STREAM
                   $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
                   router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
