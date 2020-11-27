@@ -39,6 +39,7 @@ module Fluent
       @ENABLE_PARSE_AND_EMIT = true
       @SERVICES_EMIT_STREAM = true
       @GPU_PERF_EMIT_STREAM = true
+      @EMIT_STREAM_BATCH_SIZE = 250
       @podCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
@@ -110,6 +111,11 @@ module Fluent
           @ENABLE_PARSE_AND_EMIT = ENV["ENABLE_PARSE_AND_EMIT"].to_s.downcase == "true" ? true : false
         end
         $log.info("in_kube_podinventory::start : ENABLE_PARSE_AND_EMIT  @ #{@ENABLE_PARSE_AND_EMIT}")
+
+        if !ENV["EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["EMIT_STREAM_BATCH_SIZE"].empty?
+          @EMIT_STREAM_BATCH_SIZE = ENV["EMIT_STREAM_BATCH_SIZE"].to_i
+        end
+        $log.info("in_kube_podinventory::start : EMIT_STREAM_BATCH_SIZE  @ #{@EMIT_STREAM_BATCH_SIZE}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -212,6 +218,380 @@ module Fluent
         end
       rescue => errorStr
         $log.warn "in_kube_podinventory::enumerate:Failed in enumerate: #{errorStr}"
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+    end
+
+    def emit_kube_services_inventory(serviceList, batchTime = Time.utc.iso8601)
+      emitTime = currentTime.to_f
+      begin
+        if (!serviceList.nil? && !serviceList.empty?)
+          kubeServicesEventStream = MultiEventStream.new
+          servicesCount = serviceList["items"].length
+          $log.info("in_kube_podinventory::parse_and_emit_records : number of service records #{servicesCount} @ #{Time.now.utc.iso8601}")
+          servicesSizeInKB = (serviceList["items"].to_s.length) / 1024
+          $log.info("in_kube_podinventory::parse_and_emit_records : size of service records in KB #{servicesSizeInKB} @ #{Time.now.utc.iso8601}")
+
+          serviceList["items"].each do |items|
+            kubeServiceRecord = {}
+            kubeServiceRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+            kubeServiceRecord["ServiceName"] = items["metadata"]["name"]
+            kubeServiceRecord["Namespace"] = items["metadata"]["namespace"]
+            kubeServiceRecord["SelectorLabels"] = [items["spec"]["selector"]]
+            kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+            kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+            kubeServiceRecord["ClusterIP"] = items["spec"]["clusterIP"]
+            kubeServiceRecord["ServiceType"] = items["spec"]["type"]
+            #<TODO> : Add ports and status fields
+            kubeServicewrapper = {
+              "DataType" => "KUBE_SERVICES_BLOB",
+              "IPName" => "ContainerInsights",
+              "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
+            }
+            kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+          end
+          if @SERVICES_EMIT_STREAM
+            router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+          end
+          kubeServicesEventStream = nil
+        end
+      rescue => errorStr
+        $log.warn "Failed in parse_and_emit_record for KubeServices from in_kube_podinventory : #{errorStr}"
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+    end
+
+    def get_pod_inventory_records(item, serviceList, batchTime = Time.utc.iso8601)
+      records = []
+      record = {}
+
+      record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+      record["Name"] = item["metadata"]["name"]
+      podNameSpace = item["metadata"]["namespace"]
+      nodeName = ""
+
+      #for unscheduled (non-started) pods nodeName does NOT exist
+      if !item["spec"]["nodeName"].nil?
+        nodeName = item["spec"]["nodeName"]
+      end
+
+      podUid = KubernetesApiClient.getPodUid(podNameSpace, item["metadata"])
+      if !podUid.nil? && !KubernetesApiClient.isAROv3MasterOrInfraPod(nodeName)
+        record["PodUid"] = podUid
+        record["PodLabel"] = [item["metadata"]["labels"]]
+        record["Namespace"] = podNameSpace
+        record["PodCreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+        #for unscheduled (non-started) pods startTime does NOT exist
+        if !item["status"]["startTime"].nil?
+          record["PodStartTime"] = item["status"]["startTime"]
+        else
+          record["PodStartTime"] = ""
+        end
+        #podStatus
+        # the below is for accounting 'NodeLost' scenario, where-in the pod(s) in the lost node is still being reported as running
+        podReadyCondition = true
+        if !item["status"]["reason"].nil? && item["status"]["reason"] == "NodeLost" && !item["status"]["conditions"].nil?
+          item["status"]["conditions"].each do |condition|
+            if condition["type"] == "Ready" && condition["status"] == "False"
+              podReadyCondition = false
+              break
+            end
+          end
+        end
+        if podReadyCondition == false
+          record["PodStatus"] = "Unknown"
+          # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
+        elsif !item["metadata"]["deletionTimestamp"].nil? && !item["metadata"]["deletionTimestamp"].empty?
+          record["PodStatus"] = Constants::POD_STATUS_TERMINATING
+        else
+          record["PodStatus"] = item["status"]["phase"]
+        end
+        #for unscheduled (non-started) pods podIP does NOT exist
+        if !item["status"]["podIP"].nil?
+          record["PodIp"] = item["status"]["podIP"]
+        else
+          record["PodIp"] = ""
+        end
+
+        record["Computer"] = nodeName
+        record["ClusterId"] = KubernetesApiClient.getClusterId
+        record["ClusterName"] = KubernetesApiClient.getClusterName
+        record["ServiceName"] = getServiceNameFromLabels(item["metadata"]["namespace"], item["metadata"]["labels"], serviceList)
+
+        if !item["metadata"]["ownerReferences"].nil?
+          record["ControllerKind"] = item["metadata"]["ownerReferences"][0]["kind"]
+          record["ControllerName"] = item["metadata"]["ownerReferences"][0]["name"]
+          @controllerSet.add(record["ControllerKind"] + record["ControllerName"])
+          #Adding controller kind to telemetry ro information about customer workload
+          if (@controllerData[record["ControllerKind"]].nil?)
+            @controllerData[record["ControllerKind"]] = 1
+          else
+            controllerValue = @controllerData[record["ControllerKind"]]
+            @controllerData[record["ControllerKind"]] += 1
+          end
+        end
+        podRestartCount = 0
+        record["PodRestartCount"] = 0
+
+        #Invoke the helper method to compute ready/not ready mdm metric
+        @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
+
+        podContainers = []
+        if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
+          podContainers = podContainers + item["status"]["containerStatuses"]
+        end
+        # Adding init containers to the record list as well.
+        if item["status"].key?("initContainerStatuses") && !item["status"]["initContainerStatuses"].empty?
+          podContainers = podContainers + item["status"]["initContainerStatuses"]
+        end
+        # if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty? #container status block start
+        if !podContainers.empty? #container status block start
+          podContainers.each do |container|
+            containerRestartCount = 0
+            lastFinishedTime = nil
+            # Need this flag to determine if we need to process container data for mdm metrics like oomkilled and container restart
+            #container Id is of the form
+            #docker://dfd9da983f1fd27432fb2c1fe3049c0a1d25b1c697b2dc1a530c986e58b16527
+            if !container["containerID"].nil?
+              record["ContainerID"] = container["containerID"].split("//")[1]
+            else
+              # for containers that have image issues (like invalid image/tag etc..) this will be empty. do not make it all 0
+              record["ContainerID"] = ""
+            end
+            #keeping this as <PodUid/container_name> which is same as InstanceName in perf table
+            if podUid.nil? || container["name"].nil?
+              next
+            else
+              record["ContainerName"] = podUid + "/" + container["name"]
+            end
+            #Pod restart count is a sumtotal of restart counts of individual containers
+            #within the pod. The restart count of a container is maintained by kubernetes
+            #itself in the form of a container label.
+            containerRestartCount = container["restartCount"]
+            record["ContainerRestartCount"] = containerRestartCount
+
+            containerStatus = container["state"]
+            record["ContainerStatusReason"] = ""
+            # state is of the following form , so just picking up the first key name
+            # "state": {
+            #   "waiting": {
+            #     "reason": "CrashLoopBackOff",
+            #      "message": "Back-off 5m0s restarting failed container=metrics-server pod=metrics-server-2011498749-3g453_kube-system(5953be5f-fcae-11e7-a356-000d3ae0e432)"
+            #   }
+            # },
+            # the below is for accounting 'NodeLost' scenario, where-in the containers in the lost node/pod(s) is still being reported as running
+            if podReadyCondition == false
+              record["ContainerStatus"] = "Unknown"
+            else
+              record["ContainerStatus"] = containerStatus.keys[0]
+            end
+            #TODO : Remove ContainerCreationTimeStamp from here since we are sending it as a metric
+            #Picking up both container and node start time from cAdvisor to be consistent
+            if containerStatus.keys[0] == "running"
+              record["ContainerCreationTimeStamp"] = container["state"]["running"]["startedAt"]
+            else
+              if !containerStatus[containerStatus.keys[0]]["reason"].nil? && !containerStatus[containerStatus.keys[0]]["reason"].empty?
+                record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
+              end
+              # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
+              if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
+                @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
+              end
+            end
+
+            # Record the last state of the container. This may have information on why a container was killed.
+            begin
+              if !container["lastState"].nil? && container["lastState"].keys.length == 1
+                lastStateName = container["lastState"].keys[0]
+                lastStateObject = container["lastState"][lastStateName]
+                if !lastStateObject.is_a?(Hash)
+                  raise "expected a hash object. This could signify a bug or a kubernetes API change"
+                end
+
+                if lastStateObject.key?("reason") && lastStateObject.key?("startedAt") && lastStateObject.key?("finishedAt")
+                  newRecord = Hash.new
+                  newRecord["lastState"] = lastStateName  # get the name of the last state (ex: terminated)
+                  lastStateReason = lastStateObject["reason"]
+                  # newRecord["reason"] = lastStateObject["reason"]  # (ex: OOMKilled)
+                  newRecord["reason"] = lastStateReason  # (ex: OOMKilled)
+                  newRecord["startedAt"] = lastStateObject["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
+                  lastFinishedTime = lastStateObject["finishedAt"]
+                  newRecord["finishedAt"] = lastFinishedTime  # (ex: 2019-07-02T14:58:52Z)
+
+                  # only write to the output field if everything previously ran without error
+                  record["ContainerLastStatus"] = newRecord
+
+                  #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
+                  if lastStateReason.downcase == Constants::REASON_OOM_KILLED
+                    @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                  end
+                  lastStateReason = nil
+                else
+                  record["ContainerLastStatus"] = Hash.new
+                end
+              else
+                record["ContainerLastStatus"] = Hash.new
+              end
+
+              #Populate mdm metric for container restart count if greater than 0
+              if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
+                @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+              end
+            rescue => errorStr
+              $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"
+              $log.debug_backtrace(errorStr.backtrace)
+              ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+              record["ContainerLastStatus"] = Hash.new
+            end
+
+            podRestartCount += containerRestartCount
+            records.push(record.dup)
+          end
+        else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
+          records.push(record)
+        end  #container status block end
+
+        records.each do |record|
+          if !record.nil?
+            record["PodRestartCount"] = podRestartCount
+          end
+        end
+      end
+    end
+
+    def parse_and_emit_records_v2(podInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
+      currentTime = Time.now
+      emitTime = currentTime.to_f
+      eventStream = MultiEventStream.new
+      kubePerfEventStream = MultiEventStream.new
+      @@istestvar = ENV["ISTEST"]
+      begin
+        # Getting windows nodes from kubeapi
+        winNodes = KubernetesApiClient.getWindowsNodesArray
+
+        # enumerate pods list
+        podInventory["items"].each do |item| #podInventory block start
+          containerInventoryRecords = []
+          podInventoryRecords = get_pod_inventory_records(item, serviceList, batchTime)
+          podInventoryRecords.each do |record|
+            if !record.nil?
+              wrapper = {
+                          "DataType" => "KUBE_POD_INVENTORY_BLOB",
+                          "IPName" => "ContainerInsights",
+                          "DataItems" => [record.each { |k, v| record[k] = v }],
+                        }
+              eventStream.add(emitTime, wrapper) if wrapper
+              @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
+            end
+          end
+
+          # Setting this flag to true so that we can send ContainerInventory records for containers
+          # on windows nodes and parse environment variables for these containers
+          if winNodes.length > 0
+            if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
+              clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
+              #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
+              containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar, true)
+            end
+            # Send container inventory records for containers on windows nodes
+            @winContainerCount += containerInventoryRecords.length
+            containerInventoryRecords.each do |cirecord|
+              if !cirecord.nil?
+                ciwrapper = {
+                  "DataType" => "CONTAINER_INVENTORY_BLOB",
+                  "IPName" => "ContainerInsights",
+                  "DataItems" => [cirecord.each { |k, v| cirecord[k] = v }],
+                }
+                eventStream.add(emitTime, ciwrapper) if ciwrapper
+              end
+            end
+          end
+
+          if eventStream.count >= @EMIT_STREAM_BATCH_SIZE
+            $log.info("in_kube_podinventory::parse_and_emit_records : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@tag, eventStream) if eventStream
+            eventStream = MultiEventStream.new
+          end
+
+          # container perf records
+          containerMetricDataItems = []
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerPerfRecords(item, "requests", "cpu", "cpuRequestNanoCores", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerPerfRecords(item, "requests", "memory", "memoryRequestBytes", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerPerfRecords(item, "limits", "cpu", "cpuLimitNanoCores", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerPerfRecords(item, "limits", "memory", "memoryLimitBytes", batchTime))
+
+          containerMetricDataItems.each do |record|
+            record["DataType"] = "LINUX_PERF_BLOB"
+            record["IPName"] = "LogManagement"
+            kubePerfEventStream.add(emitTime, record) if record
+          end
+
+          if kubePerfEventStream.count >= @EMIT_STREAM_BATCH_SIZE
+            $log.info("in_kube_podinventory::parse_and_emit_records : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            kubePerfEventStream = MultiEventStream.new
+          end
+
+          # container GPU records
+          containerGPUInsightsMetricsDataItems = []
+          containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerGPURecords(item, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
+          containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerGPURecords(item, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
+          containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerGPURecords(item, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
+          containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerGPURecords(item, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
+          containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
+            wrapper = {
+              "DataType" => "INSIGHTS_METRICS_BLOB",
+              "IPName" => "ContainerInsights",
+              "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
+            }
+            insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
+          end
+
+          if insightsMetricsEventStream.count >= @EMIT_STREAM_BATCH_SIZE
+            $log.info("in_kube_podinventory::parse_and_emit_records : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+            insightsMetricsEventStream = MultiEventStream.new
+          end
+        end
+
+        if eventStream.count > 0
+          $log.info("in_kube_podinventory::parse_and_emit_records : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+          router.emit_stream(@tag, eventStream) if eventStream
+          eventStream = nil
+        end
+
+        if kubePerfEventStream.count > 0
+          $log.info("in_kube_podinventory::parse_and_emit_records : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+          router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+          kubePerfEventStream = MultiEventStream.new
+        end
+
+        if insightsMetricsEventStream.count > 0
+          $log.info("in_kube_podinventory::parse_and_emit_records : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+          router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+          insightsMetricsEventStream = nil
+        end
+
+        # emit kube services inventory
+        emit_kube_services_inventory(serviceList, batchTime)
+
+        if continuationToken.nil? #no more chunks in this batch to be sent, get all pod inventory records to send
+          @log.info "Sending pod inventory mdm records to out_mdm"
+          pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
+          @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
+          mdm_pod_inventory_es = MultiEventStream.new
+          pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
+            mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
+          } if pod_inventory_mdm_records
+          if @MDM_PODS_INVENTORY_EMIT_STREAM
+            router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
+            mdm_pod_inventory_es = nil
+          end
+        end
+      rescue => errorStr
+        $log.warn "Failed in parse_and_emit_record pod inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
