@@ -634,8 +634,10 @@ module Fluent
             end
           end
           # should we avoid sending large write in case if there are many services in the cluster??
-          $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+          if @SERVICES_EMIT_STREAM
+            $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+          end
           kubeServicesEventStream = nil
 
           @log.info "Sending pod inventory mdm records to out_mdm"
