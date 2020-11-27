@@ -526,6 +526,9 @@ module Fluent
 
           if eventStream.count >= @EMIT_STREAM_BATCH_SIZE
             $log.info("in_kube_podinventory::parse_and_emit_records_v2: number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
+              $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
             router.emit_stream(@tag, eventStream) if eventStream
             eventStream = MultiEventStream.new
           end
@@ -566,9 +569,20 @@ module Fluent
 
           if insightsMetricsEventStream.count >= @EMIT_STREAM_BATCH_SIZE
             $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+              $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
             insightsMetricsEventStream = MultiEventStream.new
           end
+        end
+
+        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
+          $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+        end
+
+        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+          $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
 
         if eventStream.count > 0
