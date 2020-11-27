@@ -40,7 +40,8 @@ module Fluent
       @ENABLE_PARSE_AND_EMIT = true
       @SERVICES_EMIT_STREAM = true
       @GPU_PERF_EMIT_STREAM = true
-      @EMIT_STREAM_BATCH_SIZE = 250
+      # 0 indicates no batch enabled for stream emit
+      @EMIT_STREAM_BATCH_SIZE = 0
       @podCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
@@ -170,7 +171,8 @@ module Fluent
             # service records are much smaller and fixed size than serviceList, mainly starting from >= 1.18.0
             $log.info("in_kube_podinventory::enumerate:Start:get service inventory records @ #{Time.now.utc.iso8601}")
             serviceRecords = get_kube_services_inventory_records(serviceList, batchTime)
-            $log.info("in_kube_podinventory::enumerate:end:get service inventory records @ #{Time.now.utc.iso8601}")
+            serviceRecordsSizeInkb = (serviceRecords.to_s.length) / 1024
+            $log.info("in_kube_podinventory::enumerate:end:got service inventory records #{serviceRecords.length}, size in KB #{serviceRecordsSizeInkb} @ #{Time.now.utc.iso8601}")
             serviceList = nil
           end
         end
@@ -262,8 +264,8 @@ module Fluent
             kubeServiceRecord["Namespace"] = item["metadata"]["namespace"]
             kubeServiceRecord["SelectorLabels"] = [item["spec"]["selector"]]
             # add just before emit to avoid memory footprint
-            # kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-            # kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+            kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+            kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
             kubeServiceRecord["ClusterIP"] = item["spec"]["clusterIP"]
             kubeServiceRecord["ServiceType"] = item["spec"]["type"]
             kubeServiceRecords.push(kubeServiceRecord.dup)
@@ -526,7 +528,7 @@ module Fluent
             end
           end
 
-          if eventStream.count >= @EMIT_STREAM_BATCH_SIZE
+          if @EMIT_STREAM_BATCH_SIZE > 0 && eventStream.count >= @EMIT_STREAM_BATCH_SIZE
             if @PODS_EMIT_STREAM
               $log.info("in_kube_podinventory::parse_and_emit_records_v2: number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
               if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
@@ -550,7 +552,7 @@ module Fluent
             kubePerfEventStream.add(emitTime, record) if record
           end
 
-          if kubePerfEventStream.count >= @EMIT_STREAM_BATCH_SIZE
+          if @EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @EMIT_STREAM_BATCH_SIZE
             if @CONTAINER_PERF_EMIT_STREAM
               $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
               router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
@@ -573,7 +575,7 @@ module Fluent
             insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
           end
 
-          if insightsMetricsEventStream.count >= @EMIT_STREAM_BATCH_SIZE
+          if @EMIT_STREAM_BATCH_SIZE > 0 && insightsMetricsEventStream.count >= @EMIT_STREAM_BATCH_SIZE
             if @GPU_PERF_EMIT_STREAM
               $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
               if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
@@ -623,18 +625,26 @@ module Fluent
           serviceRecords.each do |kubeServiceRecord|
             if !kubeServiceRecord.nil?
               # adding before emit to reduce memory foot print
-              kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+              # kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+              # kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
               kubeServicewrapper = {
                 "DataType" => "KUBE_SERVICES_BLOB",
                 "IPName" => "ContainerInsights",
                 "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
               }
               kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+
+              if @EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count > @EMIT_STREAM_BATCH_SIZE
+                if @SERVICES_EMIT_STREAM
+                  $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
+                  router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+                end
+                kubeServicesEventStream = MultiEventStream.new
+              end
             end
           end
           # should we avoid sending large write in case if there are many services in the cluster??
-          if @SERVICES_EMIT_STREAM
+          if @SERVICES_EMIT_STREAM && kubeServicesEventStream.count > 0
             $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
           end
