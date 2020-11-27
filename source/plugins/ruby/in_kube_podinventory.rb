@@ -58,7 +58,6 @@ module Fluent
 
     def start
       if @run_interval
-
         if !ENV["ENABLE_V2"].nil? && !ENV["ENABLE_V2"].empty?
           @ENABLE_V2 = ENV["ENABLE_V2"].to_s.downcase == "true" ? true : false
         end
@@ -123,7 +122,6 @@ module Fluent
           @EMIT_STREAM_BATCH_SIZE = ENV["EMIT_STREAM_BATCH_SIZE"].to_i
         end
         $log.info("in_kube_podinventory::start : EMIT_STREAM_BATCH_SIZE  @ #{@EMIT_STREAM_BATCH_SIZE}")
-
 
         @finished = false
         @condition = ConditionVariable.new
@@ -506,9 +504,9 @@ module Fluent
             containerInventoryRecords = []
             nodeName = ""
             if !item["spec"]["nodeName"].nil?
-              nodeName =  item["spec"]["nodeName"]
+              nodeName = item["spec"]["nodeName"]
             end
-            if (winNodes.include? nodeName))
+            if (winNodes.include? nodeName)
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
               containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar, true)
