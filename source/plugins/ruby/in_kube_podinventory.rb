@@ -261,8 +261,9 @@ module Fluent
             kubeServiceRecord["ServiceName"] = item["metadata"]["name"]
             kubeServiceRecord["Namespace"] = item["metadata"]["namespace"]
             kubeServiceRecord["SelectorLabels"] = [item["spec"]["selector"]]
-            kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-            kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+            # add just before emit to avoid memory footprint
+            # kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+            # kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
             kubeServiceRecord["ClusterIP"] = item["spec"]["clusterIP"]
             kubeServiceRecord["ServiceType"] = item["spec"]["type"]
             kubeServiceRecords.push(kubeServiceRecord.dup)
@@ -621,6 +622,9 @@ module Fluent
           kubeServicesEventStream = MultiEventStream.new
           serviceRecords.each do |kubeServiceRecord|
             if !kubeServiceRecord.nil?
+              # adding before emit to reduce memory foot print
+              kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
               kubeServicewrapper = {
                 "DataType" => "KUBE_SERVICES_BLOB",
                 "IPName" => "ContainerInsights",
