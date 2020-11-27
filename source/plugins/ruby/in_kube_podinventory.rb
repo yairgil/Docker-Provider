@@ -27,6 +27,7 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
+      @ENABLE_V2 = true
       @PODS_CHUNK_SIZE = "1500"
       @PODS_EMIT_STREAM = true
       @PODS_EMIT_STREAM_SPLIT_ENABLE = false
@@ -117,6 +118,11 @@ module Fluent
         end
         $log.info("in_kube_podinventory::start : EMIT_STREAM_BATCH_SIZE  @ #{@EMIT_STREAM_BATCH_SIZE}")
 
+        if !ENV["ENABLE_V2"].nil? && !ENV["ENABLE_V2"].empty?
+          @ENABLE_V2 = ENV["ENABLE_V2"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_podinventory::start : ENABLE_V2  @ #{@ENABLE_V2}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -145,6 +151,7 @@ module Fluent
         @controllerData = {}
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
+        serviceRecords = []
 
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
@@ -158,6 +165,14 @@ module Fluent
           serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
           $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601} response size in KB #{serviceInfoResponseSizeInKB}")
           serviceInfo = nil
+
+          if @ENABLE_V2
+            # service records are much smaller and fixed size than serviceList, mainly starting from >= 1.18.0
+            $log.info("in_kube_podinventory::enumerate:Start:get service inventory records @ #{Time.now.utc.iso8601}")
+            serviceRecords = get_kube_services_inventory_records(serviceList, batchTime)
+            $log.info("in_kube_podinventory::enumerate:end:get service inventory records @ #{Time.now.utc.iso8601}")
+            serviceList = nil
+          end
         end
 
         # Initializing continuation token to nil
@@ -170,7 +185,11 @@ module Fluent
           podInventorySizeInKB = (podInventory.to_s.length) / 1024
           $log.info("in_kube_podinventory::enumerate : pod inventory size in KB #{podInventorySizeInKB} pods from Kube API @ #{Time.now.utc.iso8601}")
           if @ENABLE_PARSE_AND_EMIT
-            parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+            if @ENABLE_V2
+              parse_and_emit_records_v2(podInventory, serviceRecords, continuationToken, batchTime)
+            else
+              parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+            end
           end
         else
           $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
@@ -184,7 +203,11 @@ module Fluent
             podInventorySizeInKB = (podInventory.to_s.length) / 1024
             $log.info("in_kube_podinventory::enumerate : pod inventory size in KB #{podInventorySizeInKB} pods from Kube API @ #{Time.now.utc.iso8601}")
             if @ENABLE_PARSE_AND_EMIT
-              parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+              if @ENABLE_V2
+                parse_and_emit_records_v2(podInventory, serviceRecords, continuationToken, batchTime)
+              else
+                parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
+              end
             end
           else
             $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
@@ -194,6 +217,7 @@ module Fluent
         # Setting these to nil so that we dont hold memory until GC kicks in
         podInventory = nil
         serviceList = nil
+        serviceRecords = nil
 
         # Adding telemetry to send pod telemetry every 5 minutes
         timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
@@ -223,47 +247,37 @@ module Fluent
       end
     end
 
-    def emit_kube_services_inventory(serviceList, batchTime = Time.utc.iso8601)
-      emitTime = currentTime.to_f
+    def get_kube_services_inventory_records(serviceList, batchTime = Time.utc.iso8601)
+      kubeServiceRecords = []
       begin
         if (!serviceList.nil? && !serviceList.empty?)
           kubeServicesEventStream = MultiEventStream.new
           servicesCount = serviceList["items"].length
-          $log.info("in_kube_podinventory::parse_and_emit_records : number of service records #{servicesCount} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::parse_and_emit_records : number of services in serviceList  #{servicesCount} @ #{Time.now.utc.iso8601}")
           servicesSizeInKB = (serviceList["items"].to_s.length) / 1024
-          $log.info("in_kube_podinventory::parse_and_emit_records : size of service records in KB #{servicesSizeInKB} @ #{Time.now.utc.iso8601}")
-
-          serviceList["items"].each do |items|
+          $log.info("in_kube_podinventory::parse_and_emit_records : size of serviceList in KB #{servicesSizeInKB} @ #{Time.now.utc.iso8601}")
+          serviceList["items"].each do |item|
             kubeServiceRecord = {}
             kubeServiceRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-            kubeServiceRecord["ServiceName"] = items["metadata"]["name"]
-            kubeServiceRecord["Namespace"] = items["metadata"]["namespace"]
-            kubeServiceRecord["SelectorLabels"] = [items["spec"]["selector"]]
+            kubeServiceRecord["ServiceName"] = item["metadata"]["name"]
+            kubeServiceRecord["Namespace"] = item["metadata"]["namespace"]
+            kubeServiceRecord["SelectorLabels"] = [item["spec"]["selector"]]
             kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
             kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
-            kubeServiceRecord["ClusterIP"] = items["spec"]["clusterIP"]
-            kubeServiceRecord["ServiceType"] = items["spec"]["type"]
-            #<TODO> : Add ports and status fields
-            kubeServicewrapper = {
-              "DataType" => "KUBE_SERVICES_BLOB",
-              "IPName" => "ContainerInsights",
-              "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
-            }
-            kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+            kubeServiceRecord["ClusterIP"] = item["spec"]["clusterIP"]
+            kubeServiceRecord["ServiceType"] = item["spec"]["type"]
+            kubeServiceRecords.push(kubeServiceRecord.dup)
           end
-          if @SERVICES_EMIT_STREAM
-            router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
-          end
-          kubeServicesEventStream = nil
         end
       rescue => errorStr
-        $log.warn "Failed in parse_and_emit_record for KubeServices from in_kube_podinventory : #{errorStr}"
+        $log.warn "in_kube_podinventory::get_kube_services_inventory_records:Failed with an error : #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
+      return kubeServiceRecords
     end
 
-    def get_pod_inventory_records(item, serviceList, batchTime = Time.utc.iso8601)
+    def get_pod_inventory_records(item, serviceRecords, batchTime = Time.utc.iso8601)
       records = []
       record = {}
 
@@ -318,7 +332,7 @@ module Fluent
         record["Computer"] = nodeName
         record["ClusterId"] = KubernetesApiClient.getClusterId
         record["ClusterName"] = KubernetesApiClient.getClusterName
-        record["ServiceName"] = getServiceNameFromLabels(item["metadata"]["namespace"], item["metadata"]["labels"], serviceList)
+        record["ServiceName"] = getServiceNameFromLabels_v2(item["metadata"]["namespace"], item["metadata"]["labels"], serviceRecords)
 
         if !item["metadata"]["ownerReferences"].nil?
           record["ControllerKind"] = item["metadata"]["ownerReferences"][0]["kind"]
@@ -461,7 +475,7 @@ module Fluent
       end
     end
 
-    def parse_and_emit_records_v2(podInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
+    def parse_and_emit_records_v2(podInventory, serviceRecords, continuationToken, batchTime = Time.utc.iso8601)
       currentTime = Time.now
       emitTime = currentTime.to_f
       eventStream = MultiEventStream.new
@@ -474,7 +488,7 @@ module Fluent
         # enumerate pods list
         podInventory["items"].each do |item| #podInventory block start
           containerInventoryRecords = []
-          podInventoryRecords = get_pod_inventory_records(item, serviceList, batchTime)
+          podInventoryRecords = get_pod_inventory_records(item, serviceRecords, batchTime)
           podInventoryRecords.each do |record|
             if !record.nil?
               wrapper = {
@@ -486,7 +500,6 @@ module Fluent
               @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
             end
           end
-
           # Setting this flag to true so that we can send ContainerInventory records for containers
           # on windows nodes and parse environment variables for these containers
           if winNodes.length > 0
@@ -510,7 +523,7 @@ module Fluent
           end
 
           if eventStream.count >= @EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_podinventory::parse_and_emit_records : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::parse_and_emit_records_v2: number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@tag, eventStream) if eventStream
             eventStream = MultiEventStream.new
           end
@@ -529,7 +542,7 @@ module Fluent
           end
 
           if kubePerfEventStream.count >= @EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_podinventory::parse_and_emit_records : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
             kubePerfEventStream = MultiEventStream.new
           end
@@ -550,34 +563,48 @@ module Fluent
           end
 
           if insightsMetricsEventStream.count >= @EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_podinventory::parse_and_emit_records : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
             insightsMetricsEventStream = MultiEventStream.new
           end
         end
 
         if eventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
           eventStream = nil
         end
 
         if kubePerfEventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-          kubePerfEventStream = MultiEventStream.new
+          kubePerfEventStream = nil
         end
 
         if insightsMetricsEventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
           insightsMetricsEventStream = nil
         end
 
-        # emit kube services inventory
-        emit_kube_services_inventory(serviceList, batchTime)
+        if continuationToken.nil? #no more chunks in this batch to be sent, all service records and all pod inventory records to send
+          # sending kube services inventory records
+          kubeServicesEventStream = MultiEventStream.new
+          serviceRecords.each do |kubeServiceRecord|
+            if !kubeServiceRecord.nil?
+              kubeServicewrapper = {
+                "DataType" => "KUBE_SERVICES_BLOB",
+                "IPName" => "ContainerInsights",
+                "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
+              }
+              kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+            end
+          end
+          # should we avoid sending large write in case if there are many services in the cluster??
+          $log.info("in_kube_podinventory::parse_and_emit_records_v2 : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
+          router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+          kubeServicesEventStream = nil
 
-        if continuationToken.nil? #no more chunks in this batch to be sent, get all pod inventory records to send
           @log.info "Sending pod inventory mdm records to out_mdm"
           pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
           @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
@@ -591,7 +618,7 @@ module Fluent
           end
         end
       rescue => errorStr
-        $log.warn "Failed in parse_and_emit_record pod inventory: #{errorStr}"
+        $log.warn "in_kube_podinventory::parse_and_emit_records_v2: failed with an error : #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
@@ -1138,6 +1165,36 @@ module Fluent
         @mutex.lock
       end
       @mutex.unlock
+    end
+
+    def getServiceNameFromLabels_v2(namespace, labels, serviceRecords)
+      serviceName = ""
+      begin
+        if !labels.nil? && !labels.empty?
+          serviceRecords.each do |kubeServiceRecord|
+            found = 0
+            if kubeServiceRecord["Namespace"] == namespace
+              selectorLabels = kubeServiceRecord["SelectorLabels"]
+              if !selectorLabels.empty?
+                selectorLabels.each do |key, value|
+                  if !(labels.select { |k, v| k == key && v == value }.length > 0)
+                    break
+                  end
+                  found = found + 1
+                end
+              end
+              if found == selectorLabels.length
+                return kubeServiceRecord["ServiceName"]
+              end
+            end
+          end
+        end
+      rescue => errorStr
+        $log.warn "Failed to retrieve service name from labels: #{errorStr}"
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+      return serviceName
     end
 
     def getServiceNameFromLabels(namespace, labels, serviceList)
