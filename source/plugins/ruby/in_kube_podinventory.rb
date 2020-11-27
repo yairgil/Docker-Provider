@@ -58,6 +58,12 @@ module Fluent
 
     def start
       if @run_interval
+
+        if !ENV["ENABLE_V2"].nil? && !ENV["ENABLE_V2"].empty?
+          @ENABLE_V2 = ENV["ENABLE_V2"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_podinventory::start : ENABLE_V2  @ #{@ENABLE_V2}")
+
         if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty?
           @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"]
         end
@@ -118,10 +124,6 @@ module Fluent
         end
         $log.info("in_kube_podinventory::start : EMIT_STREAM_BATCH_SIZE  @ #{@EMIT_STREAM_BATCH_SIZE}")
 
-        if !ENV["ENABLE_V2"].nil? && !ENV["ENABLE_V2"].empty?
-          @ENABLE_V2 = ENV["ENABLE_V2"].to_s.downcase == "true" ? true : false
-        end
-        $log.info("in_kube_podinventory::start : ENABLE_V2  @ #{@ENABLE_V2}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -251,11 +253,10 @@ module Fluent
       kubeServiceRecords = []
       begin
         if (!serviceList.nil? && !serviceList.empty?)
-          kubeServicesEventStream = MultiEventStream.new
           servicesCount = serviceList["items"].length
-          $log.info("in_kube_podinventory::parse_and_emit_records : number of services in serviceList  #{servicesCount} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::get_kube_services_inventory_records : number of services in serviceList  #{servicesCount} @ #{Time.now.utc.iso8601}")
           servicesSizeInKB = (serviceList["items"].to_s.length) / 1024
-          $log.info("in_kube_podinventory::parse_and_emit_records : size of serviceList in KB #{servicesSizeInKB} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::get_kube_services_inventory_records : size of serviceList in KB #{servicesSizeInKB} @ #{Time.now.utc.iso8601}")
           serviceList["items"].each do |item|
             kubeServiceRecord = {}
             kubeServiceRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
@@ -503,7 +504,8 @@ module Fluent
           # Setting this flag to true so that we can send ContainerInventory records for containers
           # on windows nodes and parse environment variables for these containers
           if winNodes.length > 0
-            if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
+            nodeName = !item["spec"]["nodeName"].nil? item["spec"]["nodeName"]: ""
+            if (winNodes.include? nodeName))
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
               containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar, true)
