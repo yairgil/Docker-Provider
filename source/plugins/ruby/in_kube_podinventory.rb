@@ -27,7 +27,7 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      @ENABLE_V2 = true
+      @PODS_ENABLE_V2 = true
       @PODS_CHUNK_SIZE = "1500"
       @PODS_EMIT_STREAM = true
       @PODS_EMIT_STREAM_SPLIT_ENABLE = false
@@ -59,10 +59,10 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["ENABLE_V2"].nil? && !ENV["ENABLE_V2"].empty?
-          @ENABLE_V2 = ENV["ENABLE_V2"].to_s.downcase == "true" ? true : false
+        if !ENV["PODS_ENABLE_V2"].nil? && !ENV["PODS_ENABLE_V2"].empty?
+          @PODS_ENABLE_V2 = ENV["PODS_ENABLE_V2"].to_s.downcase == "true" ? true : false
         end
-        $log.info("in_kube_podinventory::start : ENABLE_V2  @ #{@ENABLE_V2}")
+        $log.info("in_kube_podinventory::start : PODS_ENABLE_V2  @ #{@PODS_ENABLE_V2}")
 
         if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty?
           @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"]
@@ -167,7 +167,7 @@ module Fluent
           $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601} response size in KB #{serviceInfoResponseSizeInKB}")
           serviceInfo = nil
 
-          if @ENABLE_V2
+          if @PODS_ENABLE_V2
             # service records are much smaller and fixed size than serviceList, mainly starting from >= 1.18.0
             $log.info("in_kube_podinventory::enumerate:Start:get service inventory records @ #{Time.now.utc.iso8601}")
             serviceRecords = get_kube_services_inventory_records(serviceList, batchTime)
@@ -187,7 +187,7 @@ module Fluent
           podInventorySizeInKB = (podInventory.to_s.length) / 1024
           $log.info("in_kube_podinventory::enumerate : pod inventory size in KB #{podInventorySizeInKB} pods from Kube API @ #{Time.now.utc.iso8601}")
           if @ENABLE_PARSE_AND_EMIT
-            if @ENABLE_V2
+            if @PODS_ENABLE_V2
               parse_and_emit_records_v2(podInventory, serviceRecords, continuationToken, batchTime)
             else
               parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
@@ -205,7 +205,7 @@ module Fluent
             podInventorySizeInKB = (podInventory.to_s.length) / 1024
             $log.info("in_kube_podinventory::enumerate : pod inventory size in KB #{podInventorySizeInKB} pods from Kube API @ #{Time.now.utc.iso8601}")
             if @ENABLE_PARSE_AND_EMIT
-              if @ENABLE_V2
+              if @PODS_ENABLE_V2
                 parse_and_emit_records_v2(podInventory, serviceRecords, continuationToken, batchTime)
               else
                 parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)

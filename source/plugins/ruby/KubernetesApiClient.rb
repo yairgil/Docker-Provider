@@ -735,6 +735,42 @@ class KubernetesApiClient
       return metricItems
     end #getContainerResourceRequestAndLimitsAsInsightsMetrics
 
+    def parseNodeLimits_v2(node, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
+      metricItem = {}
+      begin
+        clusterId = getClusterId
+        #Since we are getting all node data at the same time and kubernetes doesnt specify a timestamp for the capacity and allocation metrics,
+        #if we are coming up with the time it should be same for all nodes
+        #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
+        if (!node["status"][metricCategory].nil?)
+          # metricCategory can be "capacity" or "allocatable" and metricNameToCollect can be "cpu" or "memory"
+          metricValue = getMetricNumericValue(metricNameToCollect, node["status"][metricCategory][metricNameToCollect])
+
+          metricItem["DataItems"] = []
+          metricProps = {}
+          metricProps["Timestamp"] = metricTime
+          metricProps["Host"] = node["metadata"]["name"]
+          # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
+          metricProps["Computer"] = node["metadata"]["name"]
+          metricProps["ObjectName"] = "K8SNode"
+          metricProps["InstanceName"] = clusterId + "/" + node["metadata"]["name"]
+          metricProps["Collections"] = []
+          metricCollections = {}
+          metricCollections["CounterName"] = metricNametoReturn
+          metricCollections["Value"] = metricValue
+          metricProps["Collections"].push(metricCollections)
+          metricItem["DataItems"].push(metricProps)
+          #push node level metrics to a inmem hash so that we can use it looking up at container level.
+          #Currently if container level cpu & memory limits are not defined we default to node level limits
+          @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
+          #@Log.info ("Node metric hash: #{@@NodeMetrics}")
+        end
+      rescue => error
+        @Log.warn("parseNodeLimits failed: #{error} for metric #{metricCategory} #{metricNameToCollect}")
+      end
+      return metricItem
+    end #parseNodeLimits_v2
+
     def parseNodeLimits(metricJSON, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
       metricItems = []
       begin
@@ -777,6 +813,45 @@ class KubernetesApiClient
       end
       return metricItems
     end #parseNodeLimits
+
+    def parseNodeLimitsAsInsightsMetrics_v2(node, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
+      metricItem = {}
+      begin
+        clusterId = getClusterId
+        clusterName = getClusterName
+        #Since we are getting all node data at the same time and kubernetes doesnt specify a timestamp for the capacity and allocation metrics,
+        #if we are coming up with the time it should be same for all nodes
+        #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
+        if (!node["status"][metricCategory].nil?) && (!node["status"][metricCategory][metricNameToCollect].nil?)
+
+          # metricCategory can be "capacity" or "allocatable" and metricNameToCollect can be "cpu" or "memory" or "amd.com/gpu" or "nvidia.com/gpu"
+          metricValue = getMetricNumericValue(metricNameToCollect, node["status"][metricCategory][metricNameToCollect])
+
+          metricItem["CollectionTime"] = metricTime
+          metricItem["Computer"] = node["metadata"]["name"]
+          metricItem["Name"] = metricNametoReturn
+          metricItem["Value"] = metricValue
+          metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
+          metricItem["Namespace"] = Constants::INSIGHTSMETRICS_TAGS_GPU_NAMESPACE
+
+          metricTags = {}
+          metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = clusterId
+          metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
+          metricTags[Constants::INSIGHTSMETRICS_TAGS_GPU_VENDOR] = metricNameToCollect
+          metricItem["Tags"] = metricTags
+
+          #push node level metrics (except gpu ones) to a inmem hash so that we can use it looking up at container level.
+          #Currently if container level cpu & memory limits are not defined we default to node level limits
+          if (metricNameToCollect.downcase != "nvidia.com/gpu") && (metricNameToCollect.downcase != "amd.com/gpu")
+            @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
+            #@Log.info ("Node metric hash: #{@@NodeMetrics}")
+          end
+        end
+      rescue => error
+        @Log.warn("parseNodeLimitsAsInsightsMetrics failed: #{error} for metric #{metricCategory} #{metricNameToCollect}")
+      end
+      return metricItem
+    end
 
     def parseNodeLimitsAsInsightsMetrics(metricJSON, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
       metricItems = []
