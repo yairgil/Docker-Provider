@@ -263,9 +263,9 @@ module Fluent
             kubeServiceRecord["ServiceName"] = item["metadata"]["name"]
             kubeServiceRecord["Namespace"] = item["metadata"]["namespace"]
             kubeServiceRecord["SelectorLabels"] = [item["spec"]["selector"]]
-            # add just before emit to avoid memory footprint
-            kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-            kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+            # add these before emit to avoid memory foot print
+            # kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+            # kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
             kubeServiceRecord["ClusterIP"] = item["spec"]["clusterIP"]
             kubeServiceRecord["ServiceType"] = item["spec"]["type"]
             kubeServiceRecords.push(kubeServiceRecord.dup)
@@ -283,199 +283,202 @@ module Fluent
       records = []
       record = {}
 
-      record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-      record["Name"] = item["metadata"]["name"]
-      podNameSpace = item["metadata"]["namespace"]
-      nodeName = ""
+      begin
+        record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+        record["Name"] = item["metadata"]["name"]
+        podNameSpace = item["metadata"]["namespace"]
+        nodeName = ""
 
-      #for unscheduled (non-started) pods nodeName does NOT exist
-      if !item["spec"]["nodeName"].nil?
-        nodeName = item["spec"]["nodeName"]
-      end
-
-      podUid = KubernetesApiClient.getPodUid(podNameSpace, item["metadata"])
-      if !podUid.nil? && !KubernetesApiClient.isAROv3MasterOrInfraPod(nodeName)
-        record["PodUid"] = podUid
-        record["PodLabel"] = [item["metadata"]["labels"]]
-        record["Namespace"] = podNameSpace
-        record["PodCreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-        #for unscheduled (non-started) pods startTime does NOT exist
-        if !item["status"]["startTime"].nil?
-          record["PodStartTime"] = item["status"]["startTime"]
-        else
-          record["PodStartTime"] = ""
-        end
-        #podStatus
-        # the below is for accounting 'NodeLost' scenario, where-in the pod(s) in the lost node is still being reported as running
-        podReadyCondition = true
-        if !item["status"]["reason"].nil? && item["status"]["reason"] == "NodeLost" && !item["status"]["conditions"].nil?
-          item["status"]["conditions"].each do |condition|
-            if condition["type"] == "Ready" && condition["status"] == "False"
-              podReadyCondition = false
-              break
-            end
-          end
-        end
-        if podReadyCondition == false
-          record["PodStatus"] = "Unknown"
-          # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
-        elsif !item["metadata"]["deletionTimestamp"].nil? && !item["metadata"]["deletionTimestamp"].empty?
-          record["PodStatus"] = Constants::POD_STATUS_TERMINATING
-        else
-          record["PodStatus"] = item["status"]["phase"]
-        end
-        #for unscheduled (non-started) pods podIP does NOT exist
-        if !item["status"]["podIP"].nil?
-          record["PodIp"] = item["status"]["podIP"]
-        else
-          record["PodIp"] = ""
+        #for unscheduled (non-started) pods nodeName does NOT exist
+        if !item["spec"]["nodeName"].nil?
+          nodeName = item["spec"]["nodeName"]
         end
 
-        record["Computer"] = nodeName
-        record["ClusterId"] = KubernetesApiClient.getClusterId
-        record["ClusterName"] = KubernetesApiClient.getClusterName
-        record["ServiceName"] = getServiceNameFromLabels_v2(item["metadata"]["namespace"], item["metadata"]["labels"], serviceRecords)
-
-        if !item["metadata"]["ownerReferences"].nil?
-          record["ControllerKind"] = item["metadata"]["ownerReferences"][0]["kind"]
-          record["ControllerName"] = item["metadata"]["ownerReferences"][0]["name"]
-          @controllerSet.add(record["ControllerKind"] + record["ControllerName"])
-          #Adding controller kind to telemetry ro information about customer workload
-          if (@controllerData[record["ControllerKind"]].nil?)
-            @controllerData[record["ControllerKind"]] = 1
+        podUid = KubernetesApiClient.getPodUid(podNameSpace, item["metadata"])
+        if !podUid.nil? && !KubernetesApiClient.isAROv3MasterOrInfraPod(nodeName)
+          record["PodUid"] = podUid
+          record["PodLabel"] = [item["metadata"]["labels"]]
+          record["Namespace"] = podNameSpace
+          record["PodCreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+          #for unscheduled (non-started) pods startTime does NOT exist
+          if !item["status"]["startTime"].nil?
+            record["PodStartTime"] = item["status"]["startTime"]
           else
-            controllerValue = @controllerData[record["ControllerKind"]]
-            @controllerData[record["ControllerKind"]] += 1
+            record["PodStartTime"] = ""
           end
-        end
-        podRestartCount = 0
-        record["PodRestartCount"] = 0
-
-        #Invoke the helper method to compute ready/not ready mdm metric
-        @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
-
-        podContainers = []
-        if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
-          podContainers = podContainers + item["status"]["containerStatuses"]
-        end
-        # Adding init containers to the record list as well.
-        if item["status"].key?("initContainerStatuses") && !item["status"]["initContainerStatuses"].empty?
-          podContainers = podContainers + item["status"]["initContainerStatuses"]
-        end
-        # if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty? #container status block start
-        if !podContainers.empty? #container status block start
-          podContainers.each do |container|
-            containerRestartCount = 0
-            lastFinishedTime = nil
-            # Need this flag to determine if we need to process container data for mdm metrics like oomkilled and container restart
-            #container Id is of the form
-            #docker://dfd9da983f1fd27432fb2c1fe3049c0a1d25b1c697b2dc1a530c986e58b16527
-            if !container["containerID"].nil?
-              record["ContainerID"] = container["containerID"].split("//")[1]
-            else
-              # for containers that have image issues (like invalid image/tag etc..) this will be empty. do not make it all 0
-              record["ContainerID"] = ""
-            end
-            #keeping this as <PodUid/container_name> which is same as InstanceName in perf table
-            if podUid.nil? || container["name"].nil?
-              next
-            else
-              record["ContainerName"] = podUid + "/" + container["name"]
-            end
-            #Pod restart count is a sumtotal of restart counts of individual containers
-            #within the pod. The restart count of a container is maintained by kubernetes
-            #itself in the form of a container label.
-            containerRestartCount = container["restartCount"]
-            record["ContainerRestartCount"] = containerRestartCount
-
-            containerStatus = container["state"]
-            record["ContainerStatusReason"] = ""
-            # state is of the following form , so just picking up the first key name
-            # "state": {
-            #   "waiting": {
-            #     "reason": "CrashLoopBackOff",
-            #      "message": "Back-off 5m0s restarting failed container=metrics-server pod=metrics-server-2011498749-3g453_kube-system(5953be5f-fcae-11e7-a356-000d3ae0e432)"
-            #   }
-            # },
-            # the below is for accounting 'NodeLost' scenario, where-in the containers in the lost node/pod(s) is still being reported as running
-            if podReadyCondition == false
-              record["ContainerStatus"] = "Unknown"
-            else
-              record["ContainerStatus"] = containerStatus.keys[0]
-            end
-            #TODO : Remove ContainerCreationTimeStamp from here since we are sending it as a metric
-            #Picking up both container and node start time from cAdvisor to be consistent
-            if containerStatus.keys[0] == "running"
-              record["ContainerCreationTimeStamp"] = container["state"]["running"]["startedAt"]
-            else
-              if !containerStatus[containerStatus.keys[0]]["reason"].nil? && !containerStatus[containerStatus.keys[0]]["reason"].empty?
-                record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
-              end
-              # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
-              if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
-                @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
+          #podStatus
+          # the below is for accounting 'NodeLost' scenario, where-in the pod(s) in the lost node is still being reported as running
+          podReadyCondition = true
+          if !item["status"]["reason"].nil? && item["status"]["reason"] == "NodeLost" && !item["status"]["conditions"].nil?
+            item["status"]["conditions"].each do |condition|
+              if condition["type"] == "Ready" && condition["status"] == "False"
+                podReadyCondition = false
+                break
               end
             end
+          end
+          if podReadyCondition == false
+            record["PodStatus"] = "Unknown"
+            # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
+          elsif !item["metadata"]["deletionTimestamp"].nil? && !item["metadata"]["deletionTimestamp"].empty?
+            record["PodStatus"] = Constants::POD_STATUS_TERMINATING
+          else
+            record["PodStatus"] = item["status"]["phase"]
+          end
+          #for unscheduled (non-started) pods podIP does NOT exist
+          if !item["status"]["podIP"].nil?
+            record["PodIp"] = item["status"]["podIP"]
+          else
+            record["PodIp"] = ""
+          end
 
-            # Record the last state of the container. This may have information on why a container was killed.
-            begin
-              if !container["lastState"].nil? && container["lastState"].keys.length == 1
-                lastStateName = container["lastState"].keys[0]
-                lastStateObject = container["lastState"][lastStateName]
-                if !lastStateObject.is_a?(Hash)
-                  raise "expected a hash object. This could signify a bug or a kubernetes API change"
+          record["Computer"] = nodeName
+          record["ClusterId"] = KubernetesApiClient.getClusterId
+          record["ClusterName"] = KubernetesApiClient.getClusterName
+          record["ServiceName"] = getServiceNameFromLabels_v2(item["metadata"]["namespace"], item["metadata"]["labels"], serviceRecords)
+
+          if !item["metadata"]["ownerReferences"].nil?
+            record["ControllerKind"] = item["metadata"]["ownerReferences"][0]["kind"]
+            record["ControllerName"] = item["metadata"]["ownerReferences"][0]["name"]
+            @controllerSet.add(record["ControllerKind"] + record["ControllerName"])
+            #Adding controller kind to telemetry ro information about customer workload
+            if (@controllerData[record["ControllerKind"]].nil?)
+              @controllerData[record["ControllerKind"]] = 1
+            else
+              controllerValue = @controllerData[record["ControllerKind"]]
+              @controllerData[record["ControllerKind"]] += 1
+            end
+          end
+          podRestartCount = 0
+          record["PodRestartCount"] = 0
+
+          #Invoke the helper method to compute ready/not ready mdm metric
+          @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
+
+          podContainers = []
+          if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
+            podContainers = podContainers + item["status"]["containerStatuses"]
+          end
+          # Adding init containers to the record list as well.
+          if item["status"].key?("initContainerStatuses") && !item["status"]["initContainerStatuses"].empty?
+            podContainers = podContainers + item["status"]["initContainerStatuses"]
+          end
+          # if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty? #container status block start
+          if !podContainers.empty? #container status block start
+            podContainers.each do |container|
+              containerRestartCount = 0
+              lastFinishedTime = nil
+              # Need this flag to determine if we need to process container data for mdm metrics like oomkilled and container restart
+              #container Id is of the form
+              #docker://dfd9da983f1fd27432fb2c1fe3049c0a1d25b1c697b2dc1a530c986e58b16527
+              if !container["containerID"].nil?
+                record["ContainerID"] = container["containerID"].split("//")[1]
+              else
+                # for containers that have image issues (like invalid image/tag etc..) this will be empty. do not make it all 0
+                record["ContainerID"] = ""
+              end
+              #keeping this as <PodUid/container_name> which is same as InstanceName in perf table
+              if podUid.nil? || container["name"].nil?
+                next
+              else
+                record["ContainerName"] = podUid + "/" + container["name"]
+              end
+              #Pod restart count is a sumtotal of restart counts of individual containers
+              #within the pod. The restart count of a container is maintained by kubernetes
+              #itself in the form of a container label.
+              containerRestartCount = container["restartCount"]
+              record["ContainerRestartCount"] = containerRestartCount
+
+              containerStatus = container["state"]
+              record["ContainerStatusReason"] = ""
+              # state is of the following form , so just picking up the first key name
+              # "state": {
+              #   "waiting": {
+              #     "reason": "CrashLoopBackOff",
+              #      "message": "Back-off 5m0s restarting failed container=metrics-server pod=metrics-server-2011498749-3g453_kube-system(5953be5f-fcae-11e7-a356-000d3ae0e432)"
+              #   }
+              # },
+              # the below is for accounting 'NodeLost' scenario, where-in the containers in the lost node/pod(s) is still being reported as running
+              if podReadyCondition == false
+                record["ContainerStatus"] = "Unknown"
+              else
+                record["ContainerStatus"] = containerStatus.keys[0]
+              end
+              #TODO : Remove ContainerCreationTimeStamp from here since we are sending it as a metric
+              #Picking up both container and node start time from cAdvisor to be consistent
+              if containerStatus.keys[0] == "running"
+                record["ContainerCreationTimeStamp"] = container["state"]["running"]["startedAt"]
+              else
+                if !containerStatus[containerStatus.keys[0]]["reason"].nil? && !containerStatus[containerStatus.keys[0]]["reason"].empty?
+                  record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
                 end
+                # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
+                if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
+                  @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
+                end
+              end
 
-                if lastStateObject.key?("reason") && lastStateObject.key?("startedAt") && lastStateObject.key?("finishedAt")
-                  newRecord = Hash.new
-                  newRecord["lastState"] = lastStateName  # get the name of the last state (ex: terminated)
-                  lastStateReason = lastStateObject["reason"]
-                  # newRecord["reason"] = lastStateObject["reason"]  # (ex: OOMKilled)
-                  newRecord["reason"] = lastStateReason  # (ex: OOMKilled)
-                  newRecord["startedAt"] = lastStateObject["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
-                  lastFinishedTime = lastStateObject["finishedAt"]
-                  newRecord["finishedAt"] = lastFinishedTime  # (ex: 2019-07-02T14:58:52Z)
-
-                  # only write to the output field if everything previously ran without error
-                  record["ContainerLastStatus"] = newRecord
-
-                  #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
-                  if lastStateReason.downcase == Constants::REASON_OOM_KILLED
-                    @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+              # Record the last state of the container. This may have information on why a container was killed.
+              begin
+                if !container["lastState"].nil? && container["lastState"].keys.length == 1
+                  lastStateName = container["lastState"].keys[0]
+                  lastStateObject = container["lastState"][lastStateName]
+                  if !lastStateObject.is_a?(Hash)
+                    raise "expected a hash object. This could signify a bug or a kubernetes API change"
                   end
-                  lastStateReason = nil
+
+                  if lastStateObject.key?("reason") && lastStateObject.key?("startedAt") && lastStateObject.key?("finishedAt")
+                    newRecord = Hash.new
+                    newRecord["lastState"] = lastStateName  # get the name of the last state (ex: terminated)
+                    lastStateReason = lastStateObject["reason"]
+                    # newRecord["reason"] = lastStateObject["reason"]  # (ex: OOMKilled)
+                    newRecord["reason"] = lastStateReason  # (ex: OOMKilled)
+                    newRecord["startedAt"] = lastStateObject["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
+                    lastFinishedTime = lastStateObject["finishedAt"]
+                    newRecord["finishedAt"] = lastFinishedTime  # (ex: 2019-07-02T14:58:52Z)
+
+                    # only write to the output field if everything previously ran without error
+                    record["ContainerLastStatus"] = newRecord
+
+                    #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
+                    if lastStateReason.downcase == Constants::REASON_OOM_KILLED
+                      @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                    end
+                    lastStateReason = nil
+                  else
+                    record["ContainerLastStatus"] = Hash.new
+                  end
                 else
                   record["ContainerLastStatus"] = Hash.new
                 end
-              else
+
+                #Populate mdm metric for container restart count if greater than 0
+                if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
+                  @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                end
+              rescue => errorStr
+                $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"
+                $log.debug_backtrace(errorStr.backtrace)
+                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
                 record["ContainerLastStatus"] = Hash.new
               end
 
-              #Populate mdm metric for container restart count if greater than 0
-              if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
-                @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
-              end
-            rescue => errorStr
-              $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"
-              $log.debug_backtrace(errorStr.backtrace)
-              ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-              record["ContainerLastStatus"] = Hash.new
+              podRestartCount += containerRestartCount
+              records.push(record.dup)
             end
+          else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
+            records.push(record)
+          end  #container status block end
 
-            podRestartCount += containerRestartCount
-            records.push(record.dup)
-          end
-        else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
-          records.push(record)
-        end  #container status block end
-
-        records.each do |record|
-          if !record.nil?
-            record["PodRestartCount"] = podRestartCount
+          records.each do |record|
+            if !record.nil?
+              record["PodRestartCount"] = podRestartCount
+            end
           end
         end
+      rescue => error
+        $log.warn("get_pod_inventory_records failed: #{error}")
       end
-
       return records
     end
 
@@ -633,8 +636,8 @@ module Fluent
           serviceRecords.each do |kubeServiceRecord|
             if !kubeServiceRecord.nil?
               # adding before emit to reduce memory foot print
-              # kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-              # kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+              kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
               kubeServicewrapper = {
                 "DataType" => "KUBE_SERVICES_BLOB",
                 "IPName" => "ContainerInsights",

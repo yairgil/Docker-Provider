@@ -175,78 +175,82 @@ module Fluent
 
     def get_node_inventory_record(item, batchTime = Time.utc.iso8601)
       record = {}
+      begin
+        record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+        record["Computer"] = item["metadata"]["name"]
+        record["ClusterName"] = KubernetesApiClient.getClusterName
+        record["ClusterId"] = KubernetesApiClient.getClusterId
+        record["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+        record["Labels"] = [item["metadata"]["labels"]]
+        record["Status"] = ""
 
-      record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-      record["Computer"] = item["metadata"]["name"]
-      record["ClusterName"] = KubernetesApiClient.getClusterName
-      record["ClusterId"] = KubernetesApiClient.getClusterId
-      record["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
-      record["Labels"] = [item["metadata"]["labels"]]
-      record["Status"] = ""
-
-      if !item["spec"]["providerID"].nil? && !item["spec"]["providerID"].empty?
-        if File.file?(@@AzStackCloudFileName) # existence of this file indicates agent running on azstack
-          record["KubernetesProviderID"] = "azurestack"
-        else
-          #Multicluster kusto query is filtering after splitting by ":" to the left, so do the same here
-          #https://msazure.visualstudio.com/One/_git/AzureUX-Monitoring?path=%2Fsrc%2FMonitoringExtension%2FClient%2FInfraInsights%2FData%2FQueryTemplates%2FMultiClusterKustoQueryTemplate.ts&_a=contents&version=GBdev
-          provider = item["spec"]["providerID"].split(":")[0]
-          if !provider.nil? && !provider.empty?
-            record["KubernetesProviderID"] = provider
+        if !item["spec"]["providerID"].nil? && !item["spec"]["providerID"].empty?
+          if File.file?(@@AzStackCloudFileName) # existence of this file indicates agent running on azstack
+            record["KubernetesProviderID"] = "azurestack"
           else
-            record["KubernetesProviderID"] = item["spec"]["providerID"]
-          end
-        end
-      else
-        record["KubernetesProviderID"] = "onprem"
-      end
-
-      # Refer to https://kubernetes.io/docs/concepts/architecture/nodes/#condition for possible node conditions.
-      # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
-      # populate the KubeNodeInventory Status field. A possible value for this field could be "Ready OutofDisk"
-      # implying that the node is ready for hosting pods, however its out of disk.
-      if item["status"].key?("conditions") && !item["status"]["conditions"].empty?
-        allNodeConditions = ""
-        item["status"]["conditions"].each do |condition|
-          if condition["status"] == "True"
-            if !allNodeConditions.empty?
-              allNodeConditions = allNodeConditions + "," + condition["type"]
+            #Multicluster kusto query is filtering after splitting by ":" to the left, so do the same here
+            #https://msazure.visualstudio.com/One/_git/AzureUX-Monitoring?path=%2Fsrc%2FMonitoringExtension%2FClient%2FInfraInsights%2FData%2FQueryTemplates%2FMultiClusterKustoQueryTemplate.ts&_a=contents&version=GBdev
+            provider = item["spec"]["providerID"].split(":")[0]
+            if !provider.nil? && !provider.empty?
+              record["KubernetesProviderID"] = provider
             else
-              allNodeConditions = condition["type"]
+              record["KubernetesProviderID"] = item["spec"]["providerID"]
             end
           end
-          #collect last transition to/from ready (no matter ready is true/false)
-          if condition["type"] == "Ready" && !condition["lastTransitionTime"].nil?
-            record["LastTransitionTimeReady"] = condition["lastTransitionTime"]
+        else
+          record["KubernetesProviderID"] = "onprem"
+        end
+
+        # Refer to https://kubernetes.io/docs/concepts/architecture/nodes/#condition for possible node conditions.
+        # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
+        # populate the KubeNodeInventory Status field. A possible value for this field could be "Ready OutofDisk"
+        # implying that the node is ready for hosting pods, however its out of disk.
+        if item["status"].key?("conditions") && !item["status"]["conditions"].empty?
+          allNodeConditions = ""
+          item["status"]["conditions"].each do |condition|
+            if condition["status"] == "True"
+              if !allNodeConditions.empty?
+                allNodeConditions = allNodeConditions + "," + condition["type"]
+              else
+                allNodeConditions = condition["type"]
+              end
+            end
+            #collect last transition to/from ready (no matter ready is true/false)
+            if condition["type"] == "Ready" && !condition["lastTransitionTime"].nil?
+              record["LastTransitionTimeReady"] = condition["lastTransitionTime"]
+            end
+          end
+          if !allNodeConditions.empty?
+            record["Status"] = allNodeConditions
           end
         end
-        if !allNodeConditions.empty?
-          record["Status"] = allNodeConditions
-        end
+        nodeInfo = item["status"]["nodeInfo"]
+        record["KubeletVersion"] = nodeInfo["kubeletVersion"]
+        record["KubeProxyVersion"] = nodeInfo["kubeProxyVersion"]
+      rescue => errorStr
+        $log.warn "in_kube_nodes::get_node_inventory_record:Failed: #{errorStr}"
       end
-
-      nodeInfo = item["status"]["nodeInfo"]
-      record["KubeletVersion"] = nodeInfo["kubeletVersion"]
-      record["KubeProxyVersion"] = nodeInfo["kubeProxyVersion"]
-
       return record
     end
 
     def get_container_node_inventory_record(item, batchTime = Time.utc.iso8601)
       # Sending records for ContainerNodeInventory
       containerNodeInventoryRecord = {}
-      containerNodeInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-      containerNodeInventoryRecord["Computer"] = item["metadata"]["name"]
-      nodeInfo = item["status"]["nodeInfo"]
-      containerNodeInventoryRecord["OperatingSystem"] = nodeInfo["osImage"]
-      containerRuntimeVersion = nodeInfo["containerRuntimeVersion"]
-      if containerRuntimeVersion.downcase.start_with?("docker://")
-        containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion.split("//")[1]
-      else
-        # using containerRuntimeVersion as DockerVersion as is for non docker runtimes
-        containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion
+      begin
+        containerNodeInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+        containerNodeInventoryRecord["Computer"] = item["metadata"]["name"]
+        nodeInfo = item["status"]["nodeInfo"]
+        containerNodeInventoryRecord["OperatingSystem"] = nodeInfo["osImage"]
+        containerRuntimeVersion = nodeInfo["containerRuntimeVersion"]
+        if containerRuntimeVersion.downcase.start_with?("docker://")
+          containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion.split("//")[1]
+        else
+          # using containerRuntimeVersion as DockerVersion as is for non docker runtimes
+          containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion
+        end
+      rescue => errorStr
+        $log.warn "in_kube_nodes::get_container_node_inventory_record:Failed: #{errorStr}"
       end
-
       return containerNodeInventoryRecord
     end
 
