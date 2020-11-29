@@ -237,7 +237,7 @@ module Fluent
       containerNodeInventoryRecord = {}
       containerNodeInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
       containerNodeInventoryRecord["Computer"] = item["metadata"]["name"]
-      nodeInfo = items["status"]["nodeInfo"]
+      nodeInfo = item["status"]["nodeInfo"]
       containerNodeInventoryRecord["OperatingSystem"] = nodeInfo["osImage"]
       containerRuntimeVersion = nodeInfo["containerRuntimeVersion"]
       if containerRuntimeVersion.downcase.start_with?("docker://")
