@@ -277,6 +277,47 @@ class KubernetesApiClient
     end
 
     # returns a hash of windows node names and their internal IPs
+    def getWindowsNodes_v2
+      winNodes = []
+      begin
+        resourceUri = getNodesResourceUri("nodes?labelSelector=kubernetes.io%2Fos%3Dwindows")
+        nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
+        @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
+        # Resetting the windows node cache
+        @@WinNodeArray.clear
+        if (!nodeInventory.empty?)
+          nodeInventory["items"].each do |item|
+            # check for windows operating system in node metadata
+            winNode = {}
+            nodeStatus = item["status"]
+            nodeMetadata = item["metadata"]
+            if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
+              operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
+              if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
+                # Adding windows nodes to winNodeArray so that it can be used in kubepodinventory to send ContainerInventory data
+                # to get images and image tags for containers in windows nodes
+                if !nodeMetadata.nil? && !nodeMetadata["name"].nil?
+                  @@WinNodeArray.push(nodeMetadata["name"])
+                end
+                nodeStatusAddresses = nodeStatus["addresses"]
+                if !nodeStatusAddresses.nil?
+                  nodeStatusAddresses.each do |address|
+                    winNode[address["type"]] = address["address"]
+                  end
+                  winNodes.push(winNode)
+                end
+              end
+            end
+          end
+        end
+        return winNodes
+      rescue => error
+        @Log.warn("Error in get windows nodes: #{error}")
+        return nil
+      end
+    end
+
+    # returns a hash of windows node names and their internal IPs
     def getWindowsNodes
       winNodes = []
       begin

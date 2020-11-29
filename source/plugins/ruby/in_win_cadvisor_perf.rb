@@ -60,7 +60,7 @@ module Fluent
         CAdvisorMetricsAPIClient.resetWinContainerIdCache()
         if (timeDifferenceInMinutes >= 5)
           $log.info "in_win_cadvisor_perf: Getting windows nodes"
-          nodes = KubernetesApiClient.getWindowsNodes()
+          nodes = KubernetesApiClient.getWindowsNodes_v2()
           if !nodes.nil?
             @@winNodes = nodes
           end
