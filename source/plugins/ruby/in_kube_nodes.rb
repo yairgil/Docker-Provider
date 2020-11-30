@@ -202,19 +202,19 @@ module Fluent
 
             # node metrics records
             nodeMetricRecords = []
-            nodeMetricRecord = KubernetesApiClient.parseNodeLimits(item, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime)
+            nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime)
             if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
               nodeMetricRecords.push(nodeMetricRecord)
             end
-            nodeMetricRecord = KubernetesApiClient.parseNodeLimits(item, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
+            nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
             if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
               nodeMetricRecords.push(nodeMetricRecord)
             end
-            nodeMetricRecord = KubernetesApiClient.parseNodeLimits(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
+            nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
             if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
               nodeMetricRecords.push(nodeMetricRecord)
             end
-            nodeMetricRecord = KubernetesApiClient.parseNodeLimits(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
+            nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
             if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
               nodeMetricRecords.push(nodeMetricRecord)
             end
