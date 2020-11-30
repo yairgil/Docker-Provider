@@ -340,7 +340,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020-2"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -499,7 +499,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020-2"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -615,14 +615,14 @@ spec:
       affinity:
         nodeAffinity:
         # affinity to schedule on to ephemeral os node if its available
-        # preferredDuringSchedulingIgnoredDuringExecution:
-          # - weight: 1
-          #   preference:
-          #     matchExpressions:
-          #     - key: storageprofile
-          #       operator: NotIn
-          #       values:
-          #       - managed
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: storageprofile
+                operator: NotIn
+                values:
+                - managed
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - labelSelector:
