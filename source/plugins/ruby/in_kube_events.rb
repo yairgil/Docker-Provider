@@ -92,8 +92,10 @@ module Fluent
         end
         $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
         if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+          # debug logs to track the payload size
           eventsCount = eventList["items"].length
-          $log.info "in_kube_events::enumerate:Received number of events is eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
+          eventsInventorySizeInKB = (eventList.to_s.length) / 1024
+          $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} and size in KB #{eventsInventorySizeInKB}  @ #{Time.now.utc.iso8601}"
           newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
         else
           $log.warn "in_kube_events::enumerate:Received empty eventList"
@@ -103,8 +105,10 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?fieldSelector=type!=Normal&limit=#{@EVENTS_CHUNK_SIZE}&continue=#{continuationToken}")
           if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+            # debug logs to track the payload size
             eventsCount = eventList["items"].length
-            $log.info "in_kube_events::enumerate:Received number of events is eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
+            eventsInventorySizeInKB = (eventList.to_s.length) / 1024
+            $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} and size in KB #{eventsInventorySizeInKB}  @ #{Time.now.utc.iso8601}"
             newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
           else
             $log.warn "in_kube_events::enumerate:Received empty eventList"

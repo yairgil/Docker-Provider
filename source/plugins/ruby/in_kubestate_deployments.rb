@@ -86,6 +86,9 @@ module Fluent
         continuationToken, deploymentList = KubernetesApiClient.getResourcesAndContinuationToken("deployments?limit=#{@DEPLOYMENTS_CHUNK_SIZE}", api_group: @DEPLOYMENTS_API_GROUP)
         $log.info("in_kubestate_deployments::enumerate : Done getting deployments from Kube API @ #{Time.now.utc.iso8601}")
         if (!deploymentList.nil? && !deploymentList.empty? && deploymentList.key?("items") && !deploymentList["items"].nil? && !deploymentList["items"].empty?)
+          # debug logs to track the payload size
+          deploymentsSizeInKB = (deploymentList.to_s.length) / 1024
+          $log.info("in_kubestate_deployments::enumerate : number of deployment items :#{deploymentList["items"].length}  and size in KB: #{deploymentsSizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(deploymentList, batchTime)
         else
           $log.warn "in_kubestate_deployments::enumerate:Received empty deploymentList"
@@ -95,6 +98,9 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, deploymentList = KubernetesApiClient.getResourcesAndContinuationToken("deployments?limit=#{@DEPLOYMENTS_CHUNK_SIZE}&continue=#{continuationToken}", api_group: @DEPLOYMENTS_API_GROUP)
           if (!deploymentList.nil? && !deploymentList.empty? && deploymentList.key?("items") && !deploymentList["items"].nil? && !deploymentList["items"].empty?)
+            # debug logs to track the payload size
+            deploymentsSizeInKB = (deploymentList.to_s.length) / 1024
+            $log.info("in_kubestate_deployments::enumerate : number of deployment items :#{deploymentList["items"].length}  and size in KB: #{deploymentsSizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
             parse_and_emit_records(deploymentList, batchTime)
           else
             $log.warn "in_kubestate_deployments::enumerate:Received empty deploymentList"

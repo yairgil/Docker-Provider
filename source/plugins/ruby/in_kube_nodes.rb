@@ -119,6 +119,9 @@ module Fluent
 
         $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
+          # debug logs to track the payload size
+          nodeInventorySizeInKB = (nodeInventory.to_s.length) / 1024
+          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length}  and size in KB: #{nodeInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(nodeInventory, batchTime)
         else
           $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
@@ -128,6 +131,9 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
           if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
+            # debug logs to track the payload size
+            nodeInventorySizeInKB = (nodeInventory.to_s.length) / 1024
+            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length}  and size in KB: #{nodeInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
             parse_and_emit_records(nodeInventory, batchTime)
           else
             $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
