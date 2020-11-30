@@ -33,6 +33,13 @@ module Fluent
       require_relative "oms_common"
       require_relative "omslog"
       @NODES_CHUNK_SIZE = "400"
+      # 0 indicates no batch enabled for stream emit
+      @NODES_EMIT_STREAM_BATCH_SIZE = 0
+      @NODES_EMIT_STREAM = true
+      @NODES_PERF_EMIT_STREAM = true
+      @GPU_NODES_PERF_EMIT_STREAM = true
+      @CONTAINER_NODE_INVENTORY_EMIT_STREAM = true
+      @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = true
       require_relative "constants"
     end
 
@@ -45,6 +52,46 @@ module Fluent
 
     def start
       if @run_interval
+        if !ENV["NODES_CHUNK_SIZE"].nil? && !ENV["NODES_CHUNK_SIZE"].empty?
+          @NODES_CHUNK_SIZE = ENV["NODES_CHUNK_SIZE"]
+        end
+        $log.info("in_kube_nodes::start : NODES_CHUNK_SIZE  @ #{@NODES_CHUNK_SIZE}")
+
+        if !ENV["NODES_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["NODES_EMIT_STREAM_BATCH_SIZE"].empty?
+          @NODES_EMIT_STREAM_BATCH_SIZE = ENV["NODES_EMIT_STREAM_BATCH_SIZE"].to_i
+          NodesChunkSize = @NODES_CHUNK_SIZE.to_i
+          if @NODES_EMIT_STREAM_BATCH_SIZE > NodesChunkSize
+            $log.info("in_kube_nodes::start : NODES_EMIT_STREAM_BATCH_SIZE cant be greater than nodes chunksize @ #{@NODES_CHUNK_SIZE}")
+            @NODES_EMIT_STREAM_BATCH_SIZE = NodesChunkSize
+          end
+        end
+        $log.info("in_kube_nodes::start : NODES_EMIT_STREAM_BATCH_SIZE  @ #{@NODES_EMIT_STREAM_BATCH_SIZE}")
+
+        if !ENV["NODES_EMIT_STREAM"].nil? && !ENV["NODES_EMIT_STREAM"].empty?
+          @NODES_EMIT_STREAM = ENV["NODES_EMIT_STREAM"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_nodes::start : NODES_EMIT_STREAM  @ #{@NODES_EMIT_STREAM}")
+
+        if !ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].nil? && !ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].empty?
+          @CONTAINER_NODE_INVENTORY_EMIT_STREAM = ENV["CONTAINER_NODE_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_nodes::start : CONTAINER_NODE_INVENTORY_EMIT_STREAM  @ #{@CONTAINER_NODE_INVENTORY_EMIT_STREAM}")
+
+        if !ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].nil? && !ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].empty?
+          @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM = ENV["MDM_KUBE_NODE_INVENTORY_EMIT_STREAM"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_nodes::start : MDM_KUBE_NODE_INVENTORY_EMIT_STREAM  @ #{@MDM_KUBE_NODE_INVENTORY_EMIT_STREAM}")
+
+        if !ENV["NODES_PERF_EMIT_STREAM"].nil? && !ENV["NODES_PERF_EMIT_STREAM"].empty?
+          @NODES_PERF_EMIT_STREAM = ENV["NODES_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_nodes::start : NODES_PERF_EMIT_STREAM  @ #{@NODES_PERF_EMIT_STREAM}")
+
+        if !ENV["GPU_NODES_PERF_EMIT_STREAM"].nil? && !ENV["GPU_NODES_PERF_EMIT_STREAM"].empty?
+          @GPU_NODES_PERF_EMIT_STREAM = ENV["GPU_NODES_PERF_EMIT_STREAM"].to_s.downcase == "true" ? true : false
+        end
+        $log.info("in_kube_nodes::start : GPU_NODES_PERF_EMIT_STREAM  @ #{@GPU_NODES_PERF_EMIT_STREAM}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -109,210 +156,179 @@ module Fluent
         eventStream = MultiEventStream.new
         containerNodeInventoryEventStream = MultiEventStream.new
         insightsMetricsEventStream = MultiEventStream.new
+        kubePerfEventStream = MultiEventStream.new
         @@istestvar = ENV["ISTEST"]
         #get node inventory
-        nodeInventory["items"].each do |items|
-          record = {}
-          # Sending records for ContainerNodeInventory
-          containerNodeInventoryRecord = {}
-          containerNodeInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-          containerNodeInventoryRecord["Computer"] = items["metadata"]["name"]
-
-          record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-          record["Computer"] = items["metadata"]["name"]
-          record["ClusterName"] = KubernetesApiClient.getClusterName
-          record["ClusterId"] = KubernetesApiClient.getClusterId
-          record["CreationTimeStamp"] = items["metadata"]["creationTimestamp"]
-          record["Labels"] = [items["metadata"]["labels"]]
-          record["Status"] = ""
-
-          if !items["spec"]["providerID"].nil? && !items["spec"]["providerID"].empty?
-            if File.file?(@@AzStackCloudFileName) # existence of this file indicates agent running on azstack
-              record["KubernetesProviderID"] = "azurestack"
-            else
-              #Multicluster kusto query is filtering after splitting by ":" to the left, so do the same here
-              #https://msazure.visualstudio.com/One/_git/AzureUX-Monitoring?path=%2Fsrc%2FMonitoringExtension%2FClient%2FInfraInsights%2FData%2FQueryTemplates%2FMultiClusterKustoQueryTemplate.ts&_a=contents&version=GBdev
-              provider = items["spec"]["providerID"].split(":")[0]
-              if !provider.nil? && !provider.empty?
-                record["KubernetesProviderID"] = provider
-              else
-                record["KubernetesProviderID"] = items["spec"]["providerID"]
-              end
-            end
-          else
-            record["KubernetesProviderID"] = "onprem"
-          end
-
-          # Refer to https://kubernetes.io/docs/concepts/architecture/nodes/#condition for possible node conditions.
-          # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
-          # populate the KubeNodeInventory Status field. A possible value for this field could be "Ready OutofDisk"
-          # implying that the node is ready for hosting pods, however its out of disk.
-
-          if items["status"].key?("conditions") && !items["status"]["conditions"].empty?
-            allNodeConditions = ""
-            items["status"]["conditions"].each do |condition|
-              if condition["status"] == "True"
-                if !allNodeConditions.empty?
-                  allNodeConditions = allNodeConditions + "," + condition["type"]
-                else
-                  allNodeConditions = condition["type"]
-                end
-              end
-              #collect last transition to/from ready (no matter ready is true/false)
-              if condition["type"] == "Ready" && !condition["lastTransitionTime"].nil?
-                record["LastTransitionTimeReady"] = condition["lastTransitionTime"]
-              end
-            end
-            if !allNodeConditions.empty?
-              record["Status"] = allNodeConditions
-            end
-          end
-
-          nodeInfo = items["status"]["nodeInfo"]
-          record["KubeletVersion"] = nodeInfo["kubeletVersion"]
-          record["KubeProxyVersion"] = nodeInfo["kubeProxyVersion"]
-          containerNodeInventoryRecord["OperatingSystem"] = nodeInfo["osImage"]
-          containerRuntimeVersion = nodeInfo["containerRuntimeVersion"]
-          if containerRuntimeVersion.downcase.start_with?("docker://")
-            containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion.split("//")[1]
-          else
-            # using containerRuntimeVersion as DockerVersion as is for non docker runtimes
-            containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion
-          end
-          # ContainerNodeInventory data for docker version and operating system.
-          containerNodeInventoryWrapper = {
-            "DataType" => "CONTAINER_NODE_INVENTORY_BLOB",
-            "IPName" => "ContainerInsights",
-            "DataItems" => [containerNodeInventoryRecord.each { |k, v| containerNodeInventoryRecord[k] = v }],
-          }
-          containerNodeInventoryEventStream.add(emitTime, containerNodeInventoryWrapper) if containerNodeInventoryWrapper
-
+        nodeInventory["items"].each do |item|
+          # node inventory
+          nodeInventoryRecord = getNodeInventoryRecord(item, batchTime)
           wrapper = {
-            "DataType" => "KUBE_NODE_INVENTORY_BLOB",
-            "IPName" => "ContainerInsights",
-            "DataItems" => [record.each { |k, v| record[k] = v }],
+              "DataType" => "KUBE_NODE_INVENTORY_BLOB",
+              "IPName" => "ContainerInsights",
+              "DataItems" => [nodeInventoryRecord.each { |k, v| nodeInventoryRecord[k] = v }],
           }
           eventStream.add(emitTime, wrapper) if wrapper
-          # Adding telemetry to send node telemetry every 10 minutes
-          timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
-          timeDifferenceInMinutes = timeDifference / 60
-          if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
-            properties = {}
-            properties["Computer"] = record["Computer"]
-            properties["KubeletVersion"] = record["KubeletVersion"]
-            properties["OperatingSystem"] = nodeInfo["operatingSystem"]
-            # DockerVersion field holds docker version if runtime is docker/moby else <runtime>://<version>
-            if containerRuntimeVersion.downcase.start_with?("docker://")
-              properties["DockerVersion"] = containerRuntimeVersion.split("//")[1]
-            else
-              properties["DockerVersion"] = containerRuntimeVersion
-            end
-            properties["KubernetesProviderID"] = record["KubernetesProviderID"]
-            properties["KernelVersion"] = nodeInfo["kernelVersion"]
-            properties["OSImage"] = nodeInfo["osImage"]
-
-            capacityInfo = items["status"]["capacity"]
-            ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
-
-            begin
-              if (!capacityInfo["nvidia.com/gpu"].nil?) && (!capacityInfo["nvidia.com/gpu"].empty?)
-                properties["nvigpus"] = capacityInfo["nvidia.com/gpu"]
+          if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && eventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
+              if @NODES_EMIT_STREAM
+                $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+                router.emit_stream(@tag, eventStream) if eventStream
               end
-
-              if (!capacityInfo["amd.com/gpu"].nil?) && (!capacityInfo["amd.com/gpu"].empty?)
-                properties["amdgpus"] = capacityInfo["amd.com/gpu"]
+              if @MDM_KUBE_NODE_INVENTORY_EMIT_STREAM
+                $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+                router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
               end
-            rescue => errorStr
-              $log.warn "Failed in getting GPU telemetry in_kube_nodes : #{errorStr}"
-              $log.debug_backtrace(errorStr.backtrace)
-              ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-            end
-
-            # Telemetry for data collection config for replicaset
-            if (File.file?(@@configMapMountPath))
-              properties["collectAllKubeEvents"] = @@collectAllKubeEvents
-            end
-
-            #telemetry about prometheus metric collections settings for replicaset
-            if (File.file?(@@promConfigMountPath))
-              properties["rsPromInt"] = @@rsPromInterval
-              properties["rsPromFPC"] = @@rsPromFieldPassCount
-              properties["rsPromFDC"] = @@rsPromFieldDropCount
-              properties["rsPromServ"] = @@rsPromK8sServiceCount
-              properties["rsPromUrl"] = @@rsPromUrlCount
-              properties["rsPromMonPods"] = @@rsPromMonitorPods
-              properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
-            end
-            ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
-            telemetrySent = true
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
+              eventStream = MultiEventStream.new
           end
+
+            # container node inventory
+            containerNodeInventoryRecord = getContainerNodeInventoryRecord(item, batchTime)
+            containerNodeInventoryWrapper = {
+              "DataType" => "CONTAINER_NODE_INVENTORY_BLOB",
+              "IPName" => "ContainerInsights",
+              "DataItems" => [containerNodeInventoryRecord.each { |k, v| containerNodeInventoryRecord[k] = v }],
+            }
+            containerNodeInventoryEventStream.add(emitTime, containerNodeInventoryWrapper) if containerNodeInventoryWrapper
+
+            if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && containerNodeInventoryEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
+              if @CONTAINER_NODE_INVENTORY_EMIT_STREAM
+                $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+                router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+              end
+              containerNodeInventoryEventStream = MultiEventStream.new
+            end
+
+            # node metrics records
+            nodeMetricRecords = []
+            nodeMetricRecord = KubernetesApiClient.parseNodeLimits(item, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime)
+            if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
+              nodeMetricRecords.push(nodeMetricRecord)
+            end
+            nodeMetricRecord = KubernetesApiClient.parseNodeLimits(item, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
+            if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
+              nodeMetricRecords.push(nodeMetricRecord)
+            end
+            nodeMetricRecord = KubernetesApiClient.parseNodeLimits(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
+            if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
+              nodeMetricRecords.push(nodeMetricRecord)
+            end
+            nodeMetricRecord = KubernetesApiClient.parseNodeLimits(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
+            if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
+              nodeMetricRecords.push(nodeMetricRecord)
+            end
+            nodeMetricRecords.each do |metricRecord|
+              metricRecord["DataType"] = "LINUX_PERF_BLOB"
+              metricRecord["IPName"] = "LogManagement"
+              kubePerfEventStream.add(emitTime, metricRecord) if metricRecord
+            end
+            if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
+              if @NODES_PERF_EMIT_STREAM
+                $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+                router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+              end
+              kubePerfEventStream = MultiEventStream.new
+            end
+
+           # node GPU metrics record
+           nodeGPUInsightsMetricsRecords = []
+           insightsMetricsRecord = KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(item, "allocatable", "nvidia.com/gpu", "nodeGpuAllocatable", batchTime)
+           if !insightsMetricsRecord.nil? && !insightsMetricsRecord.empty?
+              nodeGPUInsightsMetricsRecords.push(insightsMetricsRecord)
+           end
+           insightsMetricsRecord = KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(item, "capacity", "nvidia.com/gpu", "nodeGpuCapacity", batchTime)
+           if !insightsMetricsRecord.nil? && !insightsMetricsRecord.empty?
+              nodeGPUInsightsMetricsRecords.push(insightsMetricsRecord)
+           end
+           insightsMetricsRecord = KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(item, "allocatable", "amd.com/gpu", "nodeGpuAllocatable", batchTime)
+           if !insightsMetricsRecord.nil? && !insightsMetricsRecord.empty?
+              nodeGPUInsightsMetricsRecords.push(insightsMetricsRecord)
+           end
+           insightsMetricsRecord = KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(item, "capacity", "amd.com/gpu", "nodeGpuCapacity", batchTime)
+           if !insightsMetricsRecord.nil? && !insightsMetricsRecord.empty?
+              nodeGPUInsightsMetricsRecords.push(insightsMetricsRecord)
+           end
+           nodeGPUInsightsMetricsRecords.each do |insightsMetricsRecord|
+              wrapper = {
+                  "DataType" => "INSIGHTS_METRICS_BLOB",
+                  "IPName" => "ContainerInsights",
+                  "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
+                }
+                insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
+            end
+            if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && insightsMetricsEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
+                if @GPU_NODES_PERF_EMIT_STREAM
+                  $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+                  router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+                end
+              insightsMetricsEventStream = MultiEventStream.new
+            end
+            # Adding telemetry to send node telemetry every 10 minutes
+            timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
+            timeDifferenceInMinutes = timeDifference / 60
+            if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+              properties = getNodeTelemetryProps(item)
+              properties["KubernetesProviderID"] = nodeInventoryRecord["KubernetesProviderID"]
+              capacityInfo = item["status"]["capacity"]
+              ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
+              begin
+                if (!capacityInfo["nvidia.com/gpu"].nil?) && (!capacityInfo["nvidia.com/gpu"].empty?)
+                  properties["nvigpus"] = capacityInfo["nvidia.com/gpu"]
+                end
+
+                if (!capacityInfo["amd.com/gpu"].nil?) && (!capacityInfo["amd.com/gpu"].empty?)
+                  properties["amdgpus"] = capacityInfo["amd.com/gpu"]
+                end
+              rescue => errorStr
+                $log.warn "Failed in getting GPU telemetry in_kube_nodes : #{errorStr}"
+                $log.debug_backtrace(errorStr.backtrace)
+                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+              end
+
+              # Telemetry for data collection config for replicaset
+              if (File.file?(@@configMapMountPath))
+                properties["collectAllKubeEvents"] = @@collectAllKubeEvents
+              end
+
+              #telemetry about prometheus metric collections settings for replicaset
+              if (File.file?(@@promConfigMountPath))
+                properties["rsPromInt"] = @@rsPromInterval
+                properties["rsPromFPC"] = @@rsPromFieldPassCount
+                properties["rsPromFDC"] = @@rsPromFieldDropCount
+                properties["rsPromServ"] = @@rsPromK8sServiceCount
+                properties["rsPromUrl"] = @@rsPromUrlCount
+                properties["rsPromMonPods"] = @@rsPromMonitorPods
+                properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
+              end
+              ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
+              telemetrySent = true
+            end
         end
-        router.emit_stream(@tag, eventStream) if eventStream
-        router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
-        router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
         if telemetrySent == true
           @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
-
-        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
-          $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-        end
-        #:optimize:kubeperf merge
-        begin
-          #if(!nodeInventory.empty?)
-          nodeMetricDataItems = []
-          #allocatable metrics @ node level
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime))
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes", batchTime))
-          #capacity metrics @ node level
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores", batchTime))
-          nodeMetricDataItems.concat(KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes", batchTime))
-
-          kubePerfEventStream = MultiEventStream.new
-
-          nodeMetricDataItems.each do |record|
-            record["DataType"] = "LINUX_PERF_BLOB"
-            record["IPName"] = "LogManagement"
-            kubePerfEventStream.add(emitTime, record) if record
+        if eventStream.count > 0
+          if @NODES_EMIT_STREAM
+            $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@tag, eventStream) if eventStream
           end
-          #end
-          router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-
-          #start GPU InsightsMetrics items
-          begin
-            nodeGPUInsightsMetricsDataItems = []
-            nodeGPUInsightsMetricsDataItems.concat(KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(nodeInventory, "allocatable", "nvidia.com/gpu", "nodeGpuAllocatable", batchTime))
-            nodeGPUInsightsMetricsDataItems.concat(KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(nodeInventory, "capacity", "nvidia.com/gpu", "nodeGpuCapacity", batchTime))
-
-            nodeGPUInsightsMetricsDataItems.concat(KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(nodeInventory, "allocatable", "amd.com/gpu", "nodeGpuAllocatable", batchTime))
-            nodeGPUInsightsMetricsDataItems.concat(KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(nodeInventory, "capacity", "amd.com/gpu", "nodeGpuCapacity", batchTime))
-
-            nodeGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
-              wrapper = {
-                "DataType" => "INSIGHTS_METRICS_BLOB",
-                "IPName" => "ContainerInsights",
-                "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
-              }
-              insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
-            end
-
+          eventStream = nil
+        end
+        if kubePerfEventStream.count > 0
+          if @NODES_PERF_EMIT_STREAM
+            $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+          end
+          kubePerfEventStream = nil
+        end
+        if insightsMetricsEventStream.count > 0
+          if @GPU_NODES_PERF_EMIT_STREAM
+            $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
-              $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-            end
-          rescue => errorStr
-            $log.warn "Failed when processing GPU metrics in_kube_nodes : #{errorStr}"
-            $log.debug_backtrace(errorStr.backtrace)
-            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end
-          #end GPU InsightsMetrics items
-        rescue => errorStr
-          $log.warn "Failed in enumerate for KubePerf from in_kube_nodes : #{errorStr}"
-          $log.debug_backtrace(errorStr.backtrace)
-          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+          insightsMetricsEventStream = nil
         end
-        #:optimize:end kubeperf merge
-
       rescue => errorStr
         $log.warn "Failed to retrieve node inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
@@ -351,6 +367,108 @@ module Fluent
         @mutex.lock
       end
       @mutex.unlock
+    end
+
+    def getNodeInventoryRecord(item, batchTime = Time.utc.iso8601)
+      record = {}
+      begin
+        record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+        record["Computer"] = item["metadata"]["name"]
+        record["ClusterName"] = KubernetesApiClient.getClusterName
+        record["ClusterId"] = KubernetesApiClient.getClusterId
+        record["CreationTimeStamp"] = item["metadata"]["creationTimestamp"]
+        record["Labels"] = [item["metadata"]["labels"]]
+        record["Status"] = ""
+
+        if !item["spec"]["providerID"].nil? && !item["spec"]["providerID"].empty?
+          if File.file?(@@AzStackCloudFileName) # existence of this file indicates agent running on azstack
+            record["KubernetesProviderID"] = "azurestack"
+          else
+            #Multicluster kusto query is filtering after splitting by ":" to the left, so do the same here
+            #https://msazure.visualstudio.com/One/_git/AzureUX-Monitoring?path=%2Fsrc%2FMonitoringExtension%2FClient%2FInfraInsights%2FData%2FQueryTemplates%2FMultiClusterKustoQueryTemplate.ts&_a=contents&version=GBdev
+            provider = item["spec"]["providerID"].split(":")[0]
+            if !provider.nil? && !provider.empty?
+              record["KubernetesProviderID"] = provider
+            else
+              record["KubernetesProviderID"] = item["spec"]["providerID"]
+            end
+          end
+        else
+          record["KubernetesProviderID"] = "onprem"
+        end
+
+        # Refer to https://kubernetes.io/docs/concepts/architecture/nodes/#condition for possible node conditions.
+        # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
+        # populate the KubeNodeInventory Status field. A possible value for this field could be "Ready OutofDisk"
+        # implying that the node is ready for hosting pods, however its out of disk.
+        if item["status"].key?("conditions") && !item["status"]["conditions"].empty?
+          allNodeConditions = ""
+          item["status"]["conditions"].each do |condition|
+            if condition["status"] == "True"
+              if !allNodeConditions.empty?
+                allNodeConditions = allNodeConditions + "," + condition["type"]
+              else
+                allNodeConditions = condition["type"]
+              end
+            end
+            #collect last transition to/from ready (no matter ready is true/false)
+            if condition["type"] == "Ready" && !condition["lastTransitionTime"].nil?
+              record["LastTransitionTimeReady"] = condition["lastTransitionTime"]
+            end
+          end
+          if !allNodeConditions.empty?
+            record["Status"] = allNodeConditions
+          end
+        end
+        nodeInfo = item["status"]["nodeInfo"]
+        record["KubeletVersion"] = nodeInfo["kubeletVersion"]
+        record["KubeProxyVersion"] = nodeInfo["kubeProxyVersion"]
+      rescue => errorStr
+        $log.warn "in_kube_nodes::getNodeInventoryRecord:Failed: #{errorStr}"
+      end
+      return record
+    end
+
+    def getContainerNodeInventoryRecord(item, batchTime = Time.utc.iso8601)
+      containerNodeInventoryRecord = {}
+      begin
+        containerNodeInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+        containerNodeInventoryRecord["Computer"] = item["metadata"]["name"]
+        nodeInfo = item["status"]["nodeInfo"]
+        containerNodeInventoryRecord["OperatingSystem"] = nodeInfo["osImage"]
+        containerRuntimeVersion = nodeInfo["containerRuntimeVersion"]
+        if containerRuntimeVersion.downcase.start_with?("docker://")
+          containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion.split("//")[1]
+        else
+          # using containerRuntimeVersion as DockerVersion as is for non docker runtimes
+          containerNodeInventoryRecord["DockerVersion"] = containerRuntimeVersion
+        end
+      rescue => errorStr
+        $log.warn "in_kube_nodes::getContainerNodeInventoryRecord:Failed: #{errorStr}"
+      end
+      return containerNodeInventoryRecord
+    end
+
+    def getNodeTelemetryProps(item)
+      properties = {}
+      begin
+        properties["Computer"] = item["metadata"]["name"]
+        nodeInfo = item["status"]["nodeInfo"]
+        properties["KubeletVersion"] = nodeInfo["kubeletVersion"]
+        properties["OperatingSystem"] = nodeInfo["osImage"]
+        properties["KernelVersion"] = nodeInfo["kernelVersion"]
+        properties["OSImage"] = nodeInfo["osImage"]
+        containerRuntimeVersion = nodeInfo["containerRuntimeVersion"]
+        if containerRuntimeVersion.downcase.start_with?("docker://")
+          properties["DockerVersion"] = containerRuntimeVersion.split("//")[1]
+        else
+          # using containerRuntimeVersion as DockerVersion as is for non docker runtimes
+          properties["DockerVersion"] = containerRuntimeVersion
+        end
+      rescue => errorStr
+        $log.warn "in_kube_nodes::getContainerNodeIngetNodeTelemetryPropsventoryRecord:Failed: #{errorStr}"
+      end
+     return properties
     end
   end # Kube_Node_Input
 end # module

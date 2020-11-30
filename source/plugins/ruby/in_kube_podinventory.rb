@@ -78,6 +78,11 @@ module Fluent
 
         if !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].empty?
           @PODS_EMIT_STREAM_BATCH_SIZE = ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i
+          PodsChunkSize = @PODS_CHUNK_SIZE.to_i
+          if @PODS_EMIT_STREAM_BATCH_SIZE > PodsChunkSize
+            $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE shouldnt be greater than @ #{@PODS_CHUNK_SIZE} ")
+            @PODS_EMIT_STREAM_BATCH_SIZE = PodsChunkSize
+          end
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
 
@@ -291,19 +296,13 @@ module Fluent
           end
         end  #podInventory block end
 
-        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-          if eventStream.count > 0
-            $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-          end
-          if insightsMetricsEventStream.count > 0
-            $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-          end
-        end
-
         if eventStream.count > 0
           if @PODS_EMIT_STREAM
             $log.info("in_kube_podinventory::parse_and_emit_records: number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@tag, eventStream) if eventStream
+          end
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+            $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
           eventStream = nil
         end
@@ -321,10 +320,13 @@ module Fluent
             $log.info("in_kube_podinventory::parse_and_emit_records: number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
           end
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+            $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
           insightsMetricsEventStream = nil
         end
 
-        if continuationToken.nil? #no more chunks in this batch to be sent, get all pod inventory records to send
+        if continuationToken.nil? #no more chunks in this batch to be sent, get all mdm pod inventory records to send
           @log.info "Sending pod inventory mdm records to out_mdm"
           pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
           @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
@@ -348,7 +350,6 @@ module Fluent
                 "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
               }
               kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
-
               if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
                 if @SERVICES_EMIT_STREAM
                   $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
@@ -415,15 +416,17 @@ module Fluent
         record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
         record["Name"] = item["metadata"]["name"]
         podNameSpace = item["metadata"]["namespace"]
+        podUid = KubernetesApiClient.getPodUid(podNameSpace, item["metadata"])
+        if podUid.nil?
+          return records
+        end
+
         nodeName = ""
         #for unscheduled (non-started) pods nodeName does NOT exist
         if !item["spec"]["nodeName"].nil?
           nodeName = item["spec"]["nodeName"]
         end
-        podUid = KubernetesApiClient.getPodUid(podNameSpace, item["metadata"])
-        if podUid.nil?
-          return records
-        end
+        # For ARO v3 cluster, skip the pods scheduled on to master or infra nodes
         if KubernetesApiClient.isAROv3MasterOrInfraPod(nodeName)
           return records
         end
