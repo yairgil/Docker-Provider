@@ -32,7 +32,8 @@ omsagent:
     clusterRegion: <your_cluster_region>
   rbac: true
   logsettings:
-    auditPath: "/var/log"
+    auditLogsDirectory: "/var/log"
+    auditLogsFilePattern: "kube-audit*"
     typesToCollect: "FLBPlugin, Perf"
     logflushintervalsecs: ""
     tailbufchunksizemegabytes: ""

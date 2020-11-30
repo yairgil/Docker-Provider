@@ -65,8 +65,10 @@ spec:
               fieldPath: status.hostIP
        - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
          value: ""
-       - name: FBIT_KUBE_AUDIT_PATH
-         value: {{ .Values.omsagent.logsettings.auditPath | quote }}
+       - name: FBIT_KUBE_AUDIT_DIRECTORY
+         value: {{ .Values.omsagent.logsettings.auditLogsDirectory | quote }}
+       - name: FBIT_KUBE_AUDIT_FILE_PATTERN
+         value: {{ .Values.omsagent.logsettings.auditLogsFilePattern | quote }}
        - name: FBIT_ENABLE_KUBE_AUDIT
          value: {{ contains "AuditLogs" .Values.omsagent.logsettings.typesToCollect | quote }}
        - name: FBIT_ENABLE_FLBPLUGIN
@@ -100,7 +102,7 @@ spec:
           name: docker-sock
         - mountPath: /var/log
           name: host-log
-        - mountPath: {{ .Values.omsagent.logsettings.auditPath | quote }}
+        - mountPath: {{ .Values.omsagent.logsettings.auditLogsDirectory | quote }}
           name: kube-audit
         - mountPath: /var/lib/docker/containers
           name: containerlog-path
@@ -148,7 +150,7 @@ spec:
        path: /var/log
     - name: kube-audit
       hostPath:
-       path: {{ .Values.omsagent.logsettings.auditPath | quote }}
+       path: {{ .Values.omsagent.logsettings.auditLogsDirectory | quote }}
     - name: containerlog-path
       hostPath:
        path: /var/lib/docker/containers
