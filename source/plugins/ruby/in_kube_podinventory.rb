@@ -78,11 +78,6 @@ module Fluent
 
         if !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].empty?
           @PODS_EMIT_STREAM_BATCH_SIZE = ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i
-          PodsChunkSize = @PODS_CHUNK_SIZE.to_i
-          if @PODS_EMIT_STREAM_BATCH_SIZE > PodsChunkSize
-            $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE shouldnt be greater than @ #{@PODS_CHUNK_SIZE} ")
-            @PODS_EMIT_STREAM_BATCH_SIZE = PodsChunkSize
-          end
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
 
