@@ -544,7 +544,7 @@ spec:
 
             # event inventory plugin settings
             - name: EVENTS_CHUNK_SIZE
-              value: "30000"
+              value: "3000"
             - name: EVENTS_EMIT_STREAM
               value: "true"
 
@@ -614,8 +614,8 @@ spec:
             periodSeconds: 60
       affinity:
         nodeAffinity:
-        # affinity to schedule on to ephemeral os node if its available
-        preferredDuringSchedulingIgnoredDuringExecution:
+          # affinity to schedule on to ephemeral os node if its available
+          preferredDuringSchedulingIgnoredDuringExecution:
           - weight: 1
             preference:
               matchExpressions:
