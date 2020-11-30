@@ -32,6 +32,8 @@ omsagent:
     clusterRegion: <your_cluster_region>
   rbac: true
   logsettings:
+    auditPath: "/var/log"
+    typesToCollect: "FLBPlugin, Perf"
     logflushintervalsecs: ""
     tailbufchunksizemegabytes: ""
     tailbufmaxsizemegabytes: ""
