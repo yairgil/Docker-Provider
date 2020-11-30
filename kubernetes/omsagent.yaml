@@ -514,7 +514,7 @@ spec:
             - name: PODS_CHUNK_SIZE
               value: "500"
             - name: PODS_EMIT_STREAM_BATCH_SIZE
-              value: "250"
+              value: "200"
             - name: PODS_EMIT_STREAM
               value: "true"
             - name: MDM_PODS_INVENTORY_EMIT_STREAM
