@@ -623,7 +623,7 @@ module Fluent
               if !kubeServiceRecord["SelectorLabels"].nil? && kubeServiceRecord["SelectorLabels"].length > 0
                 selectorLabels = kubeServiceRecord["SelectorLabels"][0]
               end
-              if !selectorLabels.empty?
+              if !selectorLabels.nil? && !selectorLabels.empty?
                 selectorLabels.each do |key, value|
                   if !(labels.select { |k, v| k == key && v == value }.length > 0)
                     break
@@ -631,7 +631,8 @@ module Fluent
                   found = found + 1
                 end
               end
-              if found == selectorLabels.length
+              # service can have no selectors to avoid mapping to wrong service check found > 0
+              if found > 0 && found == selectorLabels.length
                 return kubeServiceRecord["ServiceName"]
               end
             end

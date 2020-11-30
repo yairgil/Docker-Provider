@@ -310,6 +310,14 @@ module Fluent
           end
           eventStream = nil
         end
+        if containerNodeInventoryEventStream.count > 0
+          if @CONTAINER_NODE_INVENTORY_EMIT_STREAM
+            $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+          end
+          containerNodeInventoryEventStream = nil
+        end
+
         if kubePerfEventStream.count > 0
           if @NODES_PERF_EMIT_STREAM
             $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
