@@ -638,10 +638,10 @@ module Fluent
                   end
                   found = found + 1
                 end
-              end
-              # service can have no selectors to avoid mapping to wrong service check found > 0
-              if found > 0 && found == selectorLabels.length
-                return kubeServiceRecord["ServiceName"]
+                # service can have no selectors
+                if found == selectorLabels.length
+                  return kubeServiceRecord["ServiceName"]
+                end
               end
             end
           end
