@@ -578,32 +578,9 @@ class KubernetesApiClient
         #if we are coming up with the time it should be same for all nodes
         #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
         metricInfo["items"].each do |node|
-          if (!node["status"][metricCategory].nil?)
-
-            # metricCategory can be "capacity" or "allocatable" and metricNameToCollect can be "cpu" or "memory"
-            metricValue = getMetricNumericValue(metricNameToCollect, node["status"][metricCategory][metricNameToCollect])
-
-            metricItem = {}
-            metricItem["DataItems"] = []
-            metricProps = {}
-            metricProps["Timestamp"] = metricTime
-            metricProps["Host"] = node["metadata"]["name"]
-            # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
-            metricProps["Computer"] = node["metadata"]["name"]
-            metricProps["ObjectName"] = "K8SNode"
-            metricProps["InstanceName"] = clusterId + "/" + node["metadata"]["name"]
-            metricProps["Collections"] = []
-            metricCollections = {}
-            metricCollections["CounterName"] = metricNametoReturn
-            metricCollections["Value"] = metricValue
-
-            metricProps["Collections"].push(metricCollections)
-            metricItem["DataItems"].push(metricProps)
+          metricItem = parseNodeLimitsFromNodeItem(node, metricCategory, metricNameToCollect, metricNametoReturn, metricTime)
+          if !metricItem.nil? && !metricItem.empty?
             metricItems.push(metricItem)
-            #push node level metrics to a inmem hash so that we can use it looking up at container level.
-            #Currently if container level cpu & memory limits are not defined we default to node level limits
-            @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
-            #@Log.info ("Node metric hash: #{@@NodeMetrics}")
           end
         end
       rescue => error
