@@ -122,7 +122,7 @@ module Fluent
           serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
           $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
           serviceInfo = nil
-          # service inventory records much smaller size and fixed compared to serviceList
+          # service inventory records much smaller and fixed size compared to serviceList
           serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
           serviceList = nil
         end
@@ -618,7 +618,11 @@ module Fluent
           serviceRecords.each do |kubeServiceRecord|
             found = 0
             if kubeServiceRecord["Namespace"] == namespace
-              selectorLabels = kubeServiceRecord["SelectorLabels"]
+              selectorLabels = {}
+              # selector labels wrapped in array in kube service records so unwrapping here
+              if !kubeServiceRecord["SelectorLabels"].nil? && kubeServiceRecord["SelectorLabels"].length > 0
+                selectorLabels = kubeServiceRecord["SelectorLabels"][0]
+              end
               if !selectorLabels.empty?
                 selectorLabels.each do |key, value|
                   if !(labels.select { |k, v| k == key && v == value }.length > 0)
