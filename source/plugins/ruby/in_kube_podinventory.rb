@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 module Fluent
-  require_relative "podinventory_to_mdm"      
+  require_relative "podinventory_to_mdm"
 
   class Kube_PodInventory_Input < Input
     Plugin.register_input("kubepodinventory", self)
@@ -19,7 +19,7 @@ module Fluent
       require "yajl"
       require "set"
       require "time"
-      
+
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
@@ -32,6 +32,8 @@ module Fluent
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
+      @podInventoryE2EProcessingLatencyMs = 0
+      @podsAPIE2ELatencyMs = 0
     end
 
     config_param :run_interval, :time, :default => 60
@@ -72,6 +74,7 @@ module Fluent
         @controllerData = {}
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
+        @podInventoryE2EProcessingLatencyMs = 0
 
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
@@ -86,11 +89,17 @@ module Fluent
           serviceInfo = nil
         end
 
+        # to track e2e processing latency
+        @podsAPIE2ELatencyMs = 0
+        podInventoryStartTime = (Time.now.to_f * 1000).to_i
+        podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
         continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
+        podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+        @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
         if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
           parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
         else
@@ -99,7 +108,10 @@ module Fluent
 
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
+          podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
           continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+          podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+          @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
             parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime)
           else
@@ -107,6 +119,7 @@ module Fluent
           end
         end
 
+        @podInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - podInventoryStartTime)
         # Setting these to nil so that we dont hold memory until GC kicks in
         podInventory = nil
         serviceList = nil
@@ -130,6 +143,8 @@ module Fluent
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
             ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
           end
+          ApplicationInsightsUtility.sendMetricTelemetry("PodInventoryE2EProcessingLatencyMs", @podInventoryE2EProcessingLatencyMs, telemetryProperties)
+          ApplicationInsightsUtility.sendMetricTelemetry("PodsAPIE2ELatencyMs", @podsAPIE2ELatencyMs, telemetryProperties)
           @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => errorStr
@@ -137,7 +152,7 @@ module Fluent
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-    end    
+    end
 
     def parse_and_emit_records(podInventory, serviceList, continuationToken, batchTime = Time.utc.iso8601)
       currentTime = Time.now
@@ -150,7 +165,7 @@ module Fluent
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
 
-        podInventory["items"].each do |items| #podInventory block start          
+        podInventory["items"].each do |items| #podInventory block start
           containerInventoryRecords = []
           records = []
           record = {}
@@ -193,7 +208,7 @@ module Fluent
 
           if podReadyCondition == false
             record["PodStatus"] = "Unknown"
-          # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
+            # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
           elsif !items["metadata"]["deletionTimestamp"].nil? && !items["metadata"]["deletionTimestamp"].empty?
             record["PodStatus"] = Constants::POD_STATUS_TERMINATING
           else
@@ -218,10 +233,10 @@ module Fluent
             if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
               clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
-              containerInventoryRecordsInPodItem = KubernetesContainerInventory.getContainerInventoryRecords(items, batchTime, clusterCollectEnvironmentVar, true)  
+              containerInventoryRecordsInPodItem = KubernetesContainerInventory.getContainerInventoryRecords(items, batchTime, clusterCollectEnvironmentVar, true)
               containerInventoryRecordsInPodItem.each do |containerRecord|
-                containerInventoryRecords.push(containerRecord)          
-              end              
+                containerInventoryRecords.push(containerRecord)
+              end
             end
           end
 
@@ -357,7 +372,7 @@ module Fluent
               end
 
               podRestartCount += containerRestartCount
-              records.push(record.dup)            
+              records.push(record.dup)
             end
           else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
             records.push(record)
