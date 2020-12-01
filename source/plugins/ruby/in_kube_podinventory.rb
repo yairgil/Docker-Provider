@@ -35,6 +35,8 @@ module Fluent
       @controllerData = {}
       # 0 indicates no batch enabled for stream emit
       @PODS_EMIT_STREAM_BATCH_SIZE = 0
+      @podInventoryE2EProcessingLatencyInMillis = 0
+      @podsAPIE2ELatencyInMillis = 0
     end
 
     config_param :run_interval, :time, :default => 60
@@ -86,6 +88,7 @@ module Fluent
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
         serviceRecords = []
+        @podInventoryE2EProcessingLatencyInMillis = 0
 
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
@@ -105,11 +108,17 @@ module Fluent
           serviceList = nil
         end
 
+        # to track e2e processing latency
+        @podsAPIE2ELatencyInMillis = 0
+        startTime = (Time.now.to_f * 1000).to_i
+        podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
         continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
+        podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+        @podsAPIE2ELatencyInMillis = (podsAPIChunkEndTime - podsAPIStartTime)
         if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
           # debug logs to track the payload size
           podInventorySizeInKB = (podInventory.to_s.length) / 1024
@@ -121,7 +130,10 @@ module Fluent
 
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
+          podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
           continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+          podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+          @podsAPIE2ELatencyInMillis = @podsAPIE2ELatencyInMillis + (podsAPIChunkEndTime - podsAPIChunkStartTime)
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
             # debug logs to track the payload size
             podInventorySizeInKB = (podInventory.to_s.length) / 1024
@@ -132,6 +144,8 @@ module Fluent
           end
         end
 
+        endTime = (Time.now.to_f * 1000).to_i
+        @podInventoryE2EProcessingLatencyInMillis = endTime - startTime
         # Setting these to nil so that we dont hold memory until GC kicks in
         podInventory = nil
         serviceRecords = nil
@@ -147,6 +161,8 @@ module Fluent
         if telemetryFlush == true
           telemetryProperties = {}
           telemetryProperties["Computer"] = @@hostName
+          telemetryProperties["PODS_CHUNK_SIZE"] = @PODS_CHUNK_SIZE
+          telemetryProperties["PODS_EMIT_STREAM_BATCH_SIZE"] = @PODS_EMIT_STREAM_BATCH_SIZE
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
           telemetryProperties["ControllerData"] = @controllerData.to_json
@@ -155,6 +171,8 @@ module Fluent
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
             ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
           end
+          ApplicationInsightsUtility.sendMetricTelemetry("PodInventoryE2EProcessingLatencyInMillis", @podInventoryE2EProcessingLatencyInMillis, telemetryProperties)
+          ApplicationInsightsUtility.sendMetricTelemetry("PodsAPIE2ELatencyInMillis", @podsAPIE2ELatencyInMillis, telemetryProperties)
           @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => errorStr
