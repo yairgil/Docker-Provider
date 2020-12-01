@@ -30,6 +30,7 @@ module Fluent
       # 500 pod (10KB per pod) account to approximately 5MB
       @PODS_CHUNK_SIZE = "500"
       @podCount = 0
+      @serviceCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
@@ -82,6 +83,7 @@ module Fluent
         podInventory = podList
         telemetryFlush = false
         @podCount = 0
+        @serviceCount = 0
         @controllerSet = Set.new []
         @winContainerCount = 0
         @controllerData = {}
@@ -105,6 +107,8 @@ module Fluent
           serviceInfo = nil
           # service inventory records much smaller and fixed size compared to serviceList
           serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
+          # updating for telemetry
+          @serviceCount += serviceRecords.length
           serviceList = nil
         end
 
@@ -165,6 +169,7 @@ module Fluent
           telemetryProperties["PODS_EMIT_STREAM_BATCH_SIZE"] = @PODS_EMIT_STREAM_BATCH_SIZE
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
+          ApplicationInsightsUtility.sendMetricTelemetry("ServiceCount", @serviceCount, {})
           telemetryProperties["ControllerData"] = @controllerData.to_json
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
           if @winContainerCount > 0
