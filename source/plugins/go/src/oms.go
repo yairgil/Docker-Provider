@@ -85,7 +85,8 @@ const defaultContainerInventoryRefreshInterval = 60
 const kubeMonAgentConfigEventFlushInterval = 60
 
 //Eventsource name in mdsd
-const MdsdSourceName = "ContainerLogSource"
+const ContainerLogMdsdSourceName = "ContainerLogSource"
+const InventoryMdsdSourceName = "InventorySource"
 
 //container logs route - v2 (v2=flush to oneagent, adx= flush to adx ingestion, anything else flush to ODS[default])
 const ContainerLogsV2Route = "v2"
@@ -789,6 +790,77 @@ func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int
 	ContainerLogTelemetryMutex.Unlock()
 }
 
+func PostInventoryToOneAgent(records []map[interface{}]interface{} int) {
+	start := time.Now()
+	var msgPackEntries []MsgPackEntry
+	var elapsed time.Duration
+
+	for _, record := range records {
+		msgPackEntry := MsgPackEntry{
+			Record: record,
+		}
+		msgPackEntries = append(msgPackEntries, msgPackEntry)
+	}
+
+	numRecords := 0
+	fluentForward := MsgPackForward{
+		Tag:     InventoryMdsdSourceName,
+		Entries: msgPackEntries,
+	}
+
+	//determine the size of msgp message
+	msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
+	for i := range fluentForward.Entries {
+		msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
+	}
+
+	//allocate buffer for msgp message
+	var msgpBytes []byte
+	msgpBytes = msgp.Require(nil, msgpSize)
+
+	//construct the stream
+	msgpBytes = append(msgpBytes, 0x92)
+	msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
+	msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+	batchTime := time.Now().Unix()
+	for entry := range fluentForward.Entries {
+		msgpBytes = append(msgpBytes, 0x92)
+		msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
+		msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
+	}
+
+	if MdsdMsgpUnixSocketClient == nil {
+		Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+		CreateMDSDClient()
+		if MdsdMsgpUnixSocketClient == nil {
+			Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+			return output.FLB_RETRY
+		}
+	}
+
+	deadline := 10 * time.Second
+	MdsdMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
+
+	bts, er := MdsdMsgpUnixSocketClient.Write(msgpBytes)
+
+	elapsed = time.Since(start)
+
+	if er != nil {
+		Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(dataItems), elapsed, er.Error())
+		if MdsdMsgpUnixSocketClient != nil {
+			MdsdMsgpUnixSocketClient.Close()
+			MdsdMsgpUnixSocketClient = nil
+		}
+
+		return output.FLB_RETRY
+	} else {
+		numRecords = len(msgPackEntries)
+		Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
+	}
+
+	return output.FLB_OK
+}
+
 // PostDataHelper sends data to the ODS endpoint or oneagent or ADX
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
@@ -920,7 +992,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
 		//flush to mdsd
 		fluentForward := MsgPackForward{
-			Tag:     MdsdSourceName,
+			Tag:     ContainerLogMdsdSourceName,
 			Entries: msgPackEntries,
 		}
 

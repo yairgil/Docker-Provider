@@ -58,10 +58,27 @@
 		<Column name="Image" type="str" mdstype="mt:wstr" />
 		<Column name="Name" type="str" mdstype="mt:wstr" />
   </Schema>
+  <Schema name="InventorySchema">
+		<Column name="PodUid" type="str" mdstype="mt:wstr" />
+		<Column name="PodLabel" type="str" mdstype="mt:wstr" />
+		<Column name="Namespace" type="str" mdstype="mt:wstr" />
+		<Column name="PodCreationTimeStamp" type="str" mdstype="mt:wstr" />
+		<Column name="PodStartTime" type="str" mdstype="mt:wstr" />
+		<Column name="PodStatus" type="str" mdstype="mt:wstr" />
+		<Column name="PodIp" type="str" mdstype="mt:wstr" />
+		<Column name="Computer" type="str" mdstype="mt:wstr" />
+		<Column name="ClusterId" type="str" mdstype="mt:wstr" />
+    <Column name="ClusterName" type="str" mdstype="mt:wstr" />
+    <Column name="ServiceName" type="str" mdstype="mt:wstr" />
+    <Column name="ControllerKind" type="str" mdstype="mt:wstr" />
+    <Column name="ControllerName" type="str" mdstype="mt:wstr" />
+    <Column name="PodRestartCount" type="str" mdstype="mt:wstr" />
+  </Schema>
   </Schemas>
 
   <Sources>
     <Source name="ContainerLogSource" schema="ContainerLogSchema" />  	
+    <Source name="InventorySource" schema="InventorySchema" />  
   </Sources>
   
   
@@ -105,7 +122,10 @@
         </RouteEvent>
         -->
       </MdsdEventSource>
-	  
+	  <MdsdEventSource source="InventorySource">
+      <RouteEvent eventName="InventoryEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">          
+      </RouteEvent> 
+    </MdsdEventSource>
     </MdsdEvents>
 
 
@@ -119,6 +139,15 @@
            <!-- <![CDATA[<Config workspaceName="CIWORKSPACE" workspaceId="7ab0f4bc-0d3e-4d05-8a19-e2b5c5bf2dc8" logType="CONTAINER_LOG_BLOB" ipName="Containers"/>]]> -->
            <!--<![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" flushFrequencyInSeconds="20" ipName="Containers"/>]]>-->
            <![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" ipName="Containers"/>]]>
+         </Content>
+       </OMS>
+    </EventStreamingAnnotation>
+    <EventStreamingAnnotation name="InventoryEvent">
+       <OMS>
+         <Content>
+           <!-- <![CDATA[<Config workspaceName="CIWORKSPACE" workspaceId="7ab0f4bc-0d3e-4d05-8a19-e2b5c5bf2dc8" logType="CONTAINER_LOG_BLOB" ipName="Containers"/>]]> -->
+           <!--<![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" flushFrequencyInSeconds="20" ipName="Containers"/>]]>-->
+           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="KUBE_POD_INVENTORY_BLOB" ipName="Containers"/>]]>
          </Content>
        </OMS>
     </EventStreamingAnnotation>
