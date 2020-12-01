@@ -13,22 +13,27 @@ require_relative "ConfigParseErrorLogger"
 @configMapMountPath = "/etc/config/settings/agent-settings"
 @configSchemaVersion = ""
 @enable_health_model = false
+@nodesChunkSize = 0
+@podsChunkSize = 0
+@eventsChunkSize = 0
+@deploymentsChunkSize = 0
+@hpaChunkSize = 0
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
   begin
     # Check to see if config map is created
     if (File.file?(@configMapMountPath))
-      puts "config::configmap container-azm-ms-agentconfig for agent health settings mounted, parsing values"
+      puts "config::configmap container-azm-ms-agentconfig for agent settings mounted, parsing values"
       parsedConfig = Tomlrb.load_file(@configMapMountPath, symbolize_keys: true)
       puts "config::Successfully parsed mounted config map"
       return parsedConfig
     else
-      puts "config::configmap container-azm-ms-agentconfig for agent health settings not mounted, using defaults"
+      puts "config::configmap container-azm-ms-agentconfig for agent settings not mounted, using defaults"
       return nil
     end
   rescue => errorStr
-    ConfigParseErrorLogger.logError("Exception while parsing config map for enabling health: #{errorStr}, using defaults, please check config map for errors")
+    ConfigParseErrorLogger.logError("Exception while parsing config map for agent settings : #{errorStr}, using defaults, please check config map for errors")
     return nil
   end
 end
@@ -36,9 +41,24 @@ end
 # Use the ruby structure created after config parsing to set the right values to be used as environment variables
 def populateSettingValuesFromConfigMap(parsedConfig)
   begin
-    if !parsedConfig.nil? && !parsedConfig[:agent_settings].nil? && !parsedConfig[:agent_settings][:health_model].nil? && !parsedConfig[:agent_settings][:health_model][:enabled].nil?
+    if !parsedConfig.nil? && !parsedConfig[:agent_settings].nil?
+      if !parsedConfig[:agent_settings][:health_model].nil? && !parsedConfig[:agent_settings][:health_model][:enabled].nil?
         @enable_health_model = parsedConfig[:agent_settings][:health_model][:enabled]
         puts "enable_health_model = #{@enable_health_model}"
+      end
+      chunk_config = parsedConfig[:agent_settings][:chunk_config]
+      if !chunk_config.nil?
+        nodesChunkSize = chunk_config[:NODES_CHUNK_SIZE]
+        if !nodesChunkSize.nil? && !nodesChunkSize.empty? && is_number?(nodesChunkSize)
+          @nodesChunkSize = nodesChunkSize
+        end
+        if !podsChunkSize.nil? && !podsChunkSize.empty? && is_number?(podsChunkSize)
+        end
+        if !eventsChunkSize.nil? && !eventsChunkSize.empty? && is_number?(eventsChunkSize)
+        end
+        deploymentsChunkSize = chunk_config[:DEPLOYMENTS_CHUNK_SIZE]
+        hpaChunkSize = chunk_config[:HPA_CHUNK_SIZE]
+      end
     end
   rescue => errorStr
     puts "config::error:Exception while reading config settings for health_model enabled setting - #{errorStr}, using defaults"
