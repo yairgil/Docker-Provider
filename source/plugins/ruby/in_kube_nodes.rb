@@ -36,6 +36,8 @@ module Fluent
       @NODES_CHUNK_SIZE = "250"
       # 0 indicates no batch enabled for stream emit
       @NODES_EMIT_STREAM_BATCH_SIZE = 0
+      @nodeInventoryE2EProcessingLatencyMs = 0
+      @nodesAPIE2ELatencyMs = 0
       require_relative "constants"
     end
 
@@ -82,13 +84,18 @@ module Fluent
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
 
+        @nodesAPIE2ELatencyMs = 0
+        @nodeInventoryE2EProcessingLatencyMs = 0
+        nodeInventoryStartTime = (Time.now.to_f * 1000).to_i
+        nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
         continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
-
         $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+        nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+        @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
           # debug logs to track the payload size
           nodeInventorySizeInKB = (nodeInventory.to_s.length) / 1024
@@ -100,7 +107,10 @@ module Fluent
 
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
+          nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
           continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
+          nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+          @nodesAPIE2ELatencyMs = @nodesAPIE2ELatencyMs + (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
           if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
             # debug logs to track the payload size
             nodeInventorySizeInKB = (nodeInventory.to_s.length) / 1024
@@ -111,6 +121,7 @@ module Fluent
           end
         end
 
+        @nodeInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - nodeInventoryStartTime)
         # Setting this to nil so that we dont hold memory until GC kicks in
         nodeInventory = nil
       rescue => errorStr
@@ -234,7 +245,10 @@ module Fluent
             properties = getNodeTelemetryProps(item)
             properties["KubernetesProviderID"] = nodeInventoryRecord["KubernetesProviderID"]
             capacityInfo = item["status"]["capacity"]
+
             ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
+            ApplicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, properties)
+            ApplicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, properties)
             begin
               if (!capacityInfo["nvidia.com/gpu"].nil?) && (!capacityInfo["nvidia.com/gpu"].empty?)
                 properties["nvigpus"] = capacityInfo["nvidia.com/gpu"]
@@ -428,6 +442,8 @@ module Fluent
           # using containerRuntimeVersion as DockerVersion as is for non docker runtimes
           properties["DockerVersion"] = containerRuntimeVersion
         end
+        telemetryProperties["NODES_CHUNK_SIZE"] = @NODES_CHUNK_SIZE
+        telemetryProperties["NODES_EMIT_STREAM_BATCH_SIZE"] = @NODES_EMIT_STREAM_BATCH_SIZE
       rescue => errorStr
         $log.warn "in_kube_nodes::getContainerNodeIngetNodeTelemetryPropsventoryRecord:Failed: #{errorStr}"
       end
