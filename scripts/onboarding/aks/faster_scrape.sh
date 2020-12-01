@@ -1,17 +1,15 @@
 #!/bin/bash
 #
 # Execute this directly in Azure Cloud Shell (https://shell.azure.com) by pasting (SHIFT+INS on Windows, CTRL+V on Mac or Linux)
-# the following line (beginning with curl...) at the command prompt and then replacing the args:
-#  This scripts Onboards AKS cluster to mdm alerts private preview
 #      1. Disables monitoring on cluster
-#      2. Installs Azure Monitor for containers mdm alerts private preview HELM chart to the K8s cluster in Kubeconfig
+#      2. Installs Azure Monitor for containers HELM chart to the K8s cluster in Kubeconfig
 #      3. Associates cluster with the LA workspace
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 #     Helm3 : https://helm.sh/docs/intro/install/
 #
 # For example:
-# bash private-preview-onboard.sh <clusterResourceId> <workspaceResourceId>
+# bash faster_scrape.sh <clusterResourceId> <workspaceResourceId>
 
 if [ $# -le 1 ]
 then
@@ -76,14 +74,14 @@ workspaceKey=$(az rest --method post --uri $workspaceResourceId/sharedKeys?api-v
 workspaceKey=$(echo $workspaceKey | tr -d '"')
 echo $workspaceKey
 
-echo "installing Azure Monitor for containers HELM chart for MDM alerts preview..."
+echo "installing Azure Monitor for containers HELM chart..."
 
 echo "adding azmon repo"
 helm repo add microsoft https://microsoft.github.io/charts/repo
 echo "updating helm repo to get latest charts"
 helm repo update
 
-echo "uninstalling existing release if any for azmon-containers-ci-mdm-alert-release"
+echo "uninstalling existing release"
 helm uninstall azmon-containers-deployment
 
 helm upgrade --install azmon-containers-deployment --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion,omsagent.logsettings.tailbufmaxsizemegabytes="20",omsagent.logsettings.logflushintervalsecs="10" microsoft/azuremonitor-containers --kube-context $clusterName
