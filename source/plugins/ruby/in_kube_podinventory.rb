@@ -37,7 +37,7 @@ module Fluent
       # 0 indicates no batch enabled for stream emit
       @PODS_EMIT_STREAM_BATCH_SIZE = 0
       @podInventoryE2EProcessingLatencyMs = 0
-      @podsAPIE2ELatencyInMs = 0
+      @podsAPIE2ELatencyMs = 0
     end
 
     config_param :run_interval, :time, :default => 60
@@ -113,7 +113,7 @@ module Fluent
         end
 
         # to track e2e processing latency
-        @podsAPIE2ELatencyInMs = 0
+        @podsAPIE2ELatencyMs = 0
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
         podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
@@ -122,7 +122,7 @@ module Fluent
         continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
         podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-        @podsAPIE2ELatencyInMs = (podsAPIChunkEndTime - podsAPIStartTime)
+        @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
         if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
           # debug logs to track the payload size
           podInventorySizeInKB = (podInventory.to_s.length) / 1024
@@ -137,7 +137,7 @@ module Fluent
           podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
           continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
           podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-          @podsAPIE2ELatencyInMs = @podsAPIE2ELatencyInMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
+          @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
             # debug logs to track the payload size
             podInventorySizeInKB = (podInventory.to_s.length) / 1024
@@ -176,7 +176,7 @@ module Fluent
             ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
           end
           ApplicationInsightsUtility.sendMetricTelemetry("PodInventoryE2EProcessingLatencyMs", @podInventoryE2EProcessingLatencyMs, telemetryProperties)
-          ApplicationInsightsUtility.sendMetricTelemetry("PodsAPIE2ELatencyInMs", @podsAPIE2ELatencyInMs, telemetryProperties)
+          ApplicationInsightsUtility.sendMetricTelemetry("PodsAPIE2ELatencyMs", @podsAPIE2ELatencyMs, telemetryProperties)
           @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => errorStr
