@@ -17,9 +17,8 @@ module Fluent
       require_relative "omslog"
       require_relative "ApplicationInsightsUtility"
 
-      # 30000 events account to approximately 5MB
-      @EVENTS_CHUNK_SIZE = 30000
-      @EVENTS_EMIT_STREAM = true
+      # 4000 events (1KB per event) account to approximately 4MB
+      @EVENTS_CHUNK_SIZE = 4000
 
       # Initializing events count for telemetry
       @eventsCount = 0
@@ -42,10 +41,6 @@ module Fluent
         end
         $log.info("in_kube_events::start : EVENTS_CHUNK_SIZE  @ #{@EVENTS_CHUNK_SIZE}")
 
-        if !ENV["EVENTS_EMIT_STREAM"].nil? && !ENV["EVENTS_EMIT_STREAM"].empty?
-          @EVENTS_EMIT_STREAM = ENV["EVENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false
-        end
-        $log.info("in_kube_events::start : EVENTS_EMIT_STREAM  @ #{@EVENTS_EMIT_STREAM}")
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -174,9 +169,7 @@ module Fluent
           eventStream.add(emitTime, wrapper) if wrapper
           @eventsCount += 1
         end
-        if @EVENTS_EMIT_STREAM
-          router.emit_stream(@tag, eventStream) if eventStream
-        end
+        router.emit_stream(@tag, eventStream) if eventStream
       rescue => errorStr
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)

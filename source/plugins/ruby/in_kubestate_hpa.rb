@@ -22,7 +22,6 @@ module Fluent
       # 2000 HPAs account to approximately 6-7MB
       @HPA_CHUNK_SIZE = 2000
       @HPA_API_GROUP = "autoscaling"
-      @HPA_EMIT_STREAM = true
 
       # telemetry
       @hpaCount = 0
@@ -46,10 +45,6 @@ module Fluent
         end
         $log.info("in_kubestate_hpa::start : HPA_CHUNK_SIZE  @ #{@HPA_CHUNK_SIZE}")
 
-        if !ENV["HPA_EMIT_STREAM"].nil? && !ENV["HPA_EMIT_STREAM"].empty?
-          @HPA_EMIT_STREAM = ENV["HPA_EMIT_STREAM"].to_s.downcase == "true" ? true : false
-        end
-        $log.info("in_kubestate_hpa::start : HPA_EMIT_STREAM  @ #{@HPA_EMIT_STREAM}")
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -191,10 +186,8 @@ module Fluent
           insightsMetricsEventStream.add(time, wrapper) if wrapper
         end
 
-        if @HPA_EMIT_STREAM
-          router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
-          $log.info("successfully emitted #{metricItems.length()} kube_state_hpa metrics")
-        end
+        router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+        $log.info("successfully emitted #{metricItems.length()} kube_state_hpa metrics")
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
           $log.info("kubestatehpaInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end

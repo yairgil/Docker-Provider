@@ -22,9 +22,8 @@ module Fluent
       require_relative "constants"
 
       # roughly each deployment is 8k
-      # 1000 deployments account to approximately 8MB
-      @DEPLOYMENTS_CHUNK_SIZE = 1000
-      @DEPLOYMENTS_EMIT_STREAM = true
+      # 500 deployments account to approximately 4MB
+      @DEPLOYMENTS_CHUNK_SIZE = 500
       @DEPLOYMENTS_API_GROUP = "apps"
       @@telemetryLastSentTime = DateTime.now.to_time.to_i
 
@@ -48,11 +47,6 @@ module Fluent
           @DEPLOYMENTS_CHUNK_SIZE = ENV["DEPLOYMENTS_CHUNK_SIZE"]
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
-
-        if !ENV["DEPLOYMENTS_EMIT_STREAM"].nil? && !ENV["DEPLOYMENTS_EMIT_STREAM"].empty?
-          @DEPLOYMENTS_EMIT_STREAM = ENV["DEPLOYMENTS_EMIT_STREAM"].to_s.downcase == "true" ? true : false
-        end
-        $log.info("in_kubestate_deployments::start : DEPLOYMENTS_EMIT_STREAM  @ #{@DEPLOYMENTS_EMIT_STREAM}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -196,10 +190,9 @@ module Fluent
           insightsMetricsEventStream.add(time, wrapper) if wrapper
         end
 
-        if @DEPLOYMENTS_EMIT_STREAM
-          router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
-          $log.info("successfully emitted #{metricItems.length()} kube_state_deployment metrics")
-        end
+        router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+        $log.info("successfully emitted #{metricItems.length()} kube_state_deployment metrics")
+
         @deploymentsRunningTotal = @deploymentsRunningTotal + metricItems.length()
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
           $log.info("kubestatedeploymentsInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
