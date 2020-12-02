@@ -18,6 +18,8 @@ require_relative "ConfigParseErrorLogger"
 @eventsChunkSize = 0
 @deploymentsChunkSize = 0
 @hpaChunkSize = 0
+@podsEmitStreamBatchSize = 0
+@nodesEmitStreamBatchSize = 0
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -77,6 +79,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           @hpaChunkSize = hpaChunkSize.to_i
           puts "HPA_CHUNK_SIZE = #{@hpaChunkSize}"
         end
+        podsEmitStreamBatchSize = chunk_config[:PODS_EMIT_STREAM_BATCH_SIZE]
+        if !podsEmitStreamBatchSize.nil? && is_number?(podsEmitStreamBatchSize)
+          @podsEmitStreamBatchSize = podsEmitStreamBatchSize.to_i
+          puts "PODS_EMIT_STREAM_BATCH_SIZE = #{@podsEmitStreamBatchSize}"
+        end
+        nodesEmitStreamBatchSize = chunk_config[:NODES_EMIT_STREAM_BATCH_SIZE]
+        if !nodesEmitStreamBatchSize.nil? && is_number?(nodesEmitStreamBatchSize)
+          @nodesEmitStreamBatchSize = nodesEmitStreamBatchSize.to_i
+          puts "NODES_EMIT_STREAM_BATCH_SIZE = #{@nodesEmitStreamBatchSize}"
+        end
       end
     end
   rescue => errorStr
@@ -118,6 +130,12 @@ if !file.nil?
   end
   if @hpaChunkSize > 0
     file.write("export HPA_CHUNK_SIZE=#{@hpaChunkSize}\n")
+  end
+  if @podsEmitStreamBatchSize > 0
+    file.write("export PODS_EMIT_STREAM_BATCH_SIZE=#{@podsEmitStreamBatchSize}\n")
+  end
+  if @nodesEmitStreamBatchSize > 0
+    file.write("export NODES_EMIT_STREAM_BATCH_SIZE=#{@nodesEmitStreamBatchSize}\n")
   end
   # Close file after writing all environment variables
   file.close
