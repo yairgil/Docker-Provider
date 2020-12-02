@@ -395,6 +395,7 @@ module Fluent
       @mutex.unlock
     end
 
+    # TODO - move this method to KubernetesClient or helper class
     def getPodInventoryRecords(item, serviceRecords, batchTime = Time.utc.iso8601)
       records = []
       record = {}
@@ -603,6 +604,7 @@ module Fluent
       return records
     end
 
+    # TODO - move this method to KubernetesClient or helper class
     def getServiceNameFromLabels(namespace, labels, serviceRecords)
       serviceName = ""
       begin

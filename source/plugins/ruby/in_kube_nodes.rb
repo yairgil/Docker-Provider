@@ -346,6 +346,7 @@ module Fluent
       @mutex.unlock
     end
 
+    # TODO - move this method to KubernetesClient or helper class
     def getNodeInventoryRecord(item, batchTime = Time.utc.iso8601)
       record = {}
       begin
@@ -406,6 +407,7 @@ module Fluent
       return record
     end
 
+    # TODO - move this method to KubernetesClient or helper class
     def getContainerNodeInventoryRecord(item, batchTime = Time.utc.iso8601)
       containerNodeInventoryRecord = {}
       begin
@@ -426,6 +428,7 @@ module Fluent
       return containerNodeInventoryRecord
     end
 
+    # TODO - move this method to KubernetesClient or helper class
     def getNodeTelemetryProps(item)
       properties = {}
       begin
