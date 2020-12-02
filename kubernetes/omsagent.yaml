@@ -340,7 +340,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020-3"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020-4"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -499,7 +499,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020-3"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020-4"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -511,10 +511,10 @@ spec:
           env:
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
              # pod inventory plugin settings
-            - name: PODS_CHUNK_SIZE
-              value: "500"
-            - name: PODS_EMIT_STREAM_BATCH_SIZE
-              value: "200"
+            # - name: PODS_CHUNK_SIZE
+            #   value: "500"
+            # - name: PODS_EMIT_STREAM_BATCH_SIZE
+            #   value: "200"
             # - name: PODS_EMIT_STREAM
             #   value: "true"
             # - name: MDM_PODS_INVENTORY_EMIT_STREAM
@@ -527,10 +527,10 @@ spec:
             #   value: "true"
 
             # node inventory plugin settings
-            - name: NODES_CHUNK_SIZE
-              value: "250"
-            - name: NODES_EMIT_STREAM_BATCH_SIZE
-              value: "100"
+            # - name: NODES_CHUNK_SIZE
+            #   value: "250"
+            # - name: NODES_EMIT_STREAM_BATCH_SIZE
+            #   value: "100"
             # - name: NODES_EMIT_STREAM
             #   value: "true"
             # - name: NODES_PERF_EMIT_STREAM
@@ -543,20 +543,20 @@ spec:
             #   value: "true"
 
             # event inventory plugin settings
-            - name: EVENTS_CHUNK_SIZE
-              value: "4000"
+            # - name: EVENTS_CHUNK_SIZE
+            #   value: "4000"
             # - name: EVENTS_EMIT_STREAM
             #   value: "true"
 
             # kube state deployments
-            - name: DEPLOYMENTS_CHUNK_SIZE
-              value: "500"
+            # - name: DEPLOYMENTS_CHUNK_SIZE
+            #   value: "500"
             # - name: DEPLOYMENTS_EMIT_STREAM
             #   value: "true"
 
             # kube hpa
-            - name: HPA_CHUNK_SIZE
-              value: "2000"
+            # - name: HPA_CHUNK_SIZE
+            #   value: "2000"
             # - name: HPA_EMIT_STREAM
             #   value: "true"
 

@@ -35,7 +35,7 @@ module Fluent
       # 250 Node items (15KB per node) account to approximately 4MB
       @NODES_CHUNK_SIZE = "250"
       # 0 indicates no batch enabled for stream emit
-      @NODES_EMIT_STREAM_BATCH_SIZE = 0
+      @NODES_EMIT_STREAM_BATCH_SIZE = 100
       @nodeInventoryE2EProcessingLatencyMs = 0
       @nodesAPIE2ELatencyMs = 0
       require_relative "constants"

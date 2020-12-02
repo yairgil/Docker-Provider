@@ -35,7 +35,7 @@ module Fluent
       @winContainerCount = 0
       @controllerData = {}
       # 0 indicates no batch enabled for stream emit
-      @PODS_EMIT_STREAM_BATCH_SIZE = 0
+      @PODS_EMIT_STREAM_BATCH_SIZE = 200
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
     end
