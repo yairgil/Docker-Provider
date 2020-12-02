@@ -442,8 +442,8 @@ module Fluent
           # using containerRuntimeVersion as DockerVersion as is for non docker runtimes
           properties["DockerVersion"] = containerRuntimeVersion
         end
-        telemetryProperties["NODES_CHUNK_SIZE"] = @NODES_CHUNK_SIZE
-        telemetryProperties["NODES_EMIT_STREAM_BATCH_SIZE"] = @NODES_EMIT_STREAM_BATCH_SIZE
+        properties["NODES_CHUNK_SIZE"] = @NODES_CHUNK_SIZE
+        properties["NODES_EMIT_STREAM_BATCH_SIZE"] = @NODES_EMIT_STREAM_BATCH_SIZE
       rescue => errorStr
         $log.warn "in_kube_nodes::getContainerNodeIngetNodeTelemetryPropsventoryRecord:Failed: #{errorStr}"
       end
