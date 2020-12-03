@@ -19,6 +19,20 @@ mkdir -p /var/opt/microsoft/docker-cimprov/state
   #sudo setfacl -m user:omsagent:rw /var/run/host/docker.sock
 #fi
 
+#Setting Application Insights key and endpoint
+if [ ! -z "$AI_KEY_URL" ]; then
+      echo "Getting AI key from Storage account"
+      aiIkey=$(curl --max-time 10 $AI_KEY_URL)
+      echo "export APPLICATIONINSIGHTS_AUTH=$aiIkey" >> ~/.bashrc
+fi
+if [ ! -z "$AI_ENDPOINT_URL" ]; then
+      echo "Getting AI endpoint from Storage account"
+      aiEndpoint=$(curl --max-time 10 $AI_ENDPOINT_URL)
+      echo "export APPLICATIONINSIGHTS_ENDPOINT=$aiEndpoint" >> ~/.bashrc
+fi
+source ~/.bashrc
+
+
 # add permissions for omsagent user to access azure.json.
 sudo setfacl -m user:omsagent:r /etc/kubernetes/host/azure.json
 
