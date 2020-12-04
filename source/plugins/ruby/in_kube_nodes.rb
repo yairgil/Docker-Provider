@@ -64,7 +64,8 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
-        @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
+        @@nodeTelemetryTimeTracker = DateTime.now.to_time.
+        @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
       end
     end
 
@@ -122,6 +123,13 @@ module Fluent
         end
 
         @nodeInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - nodeInventoryStartTime)
+        timeDifference = (DateTime.now.to_time.to_i - @@nodeInventoryLatencyTelemetryTimeTracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          ApplicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, {})
+          ApplicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, {})
+          @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
+        end
         # Setting this to nil so that we dont hold memory until GC kicks in
         nodeInventory = nil
       rescue => errorStr
@@ -247,8 +255,6 @@ module Fluent
             capacityInfo = item["status"]["capacity"]
 
             ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
-            ApplicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, properties)
-            ApplicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, properties)
             begin
               if (!capacityInfo["nvidia.com/gpu"].nil?) && (!capacityInfo["nvidia.com/gpu"].empty?)
                 properties["nvigpus"] = capacityInfo["nvidia.com/gpu"]

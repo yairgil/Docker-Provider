@@ -91,7 +91,7 @@ module Fluent
         batchTime = currentTime.utc.iso8601
         serviceRecords = []
         @podInventoryE2EProcessingLatencyMs = 0
-
+        podInventoryStartTime = (Time.now.to_f * 1000).to_i
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
         serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
@@ -114,7 +114,6 @@ module Fluent
 
         # to track e2e processing latency
         @podsAPIE2ELatencyMs = 0
-        podInventoryStartTime = (Time.now.to_f * 1000).to_i
         podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
         continuationToken = nil
