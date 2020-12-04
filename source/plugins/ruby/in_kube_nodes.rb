@@ -64,7 +64,7 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
-        @@nodeTelemetryTimeTracker = DateTime.now.to_time.
+        @@nodeTelemetryTimeTracker = DateTime.now.to_time
         @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
       end
     end
