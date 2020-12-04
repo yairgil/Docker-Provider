@@ -9,8 +9,8 @@ module Fluent
 
     def initialize
       super
-      require "yajl/json_gem"
-      require "time"      
+      require "oj"
+      require "time"
       require_relative "ContainerInventoryState"
       require_relative "ApplicationInsightsUtility"
       require_relative "omslog"
@@ -61,21 +61,21 @@ module Fluent
         containerIds = Array.new
         response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil?
-            podList = JSON.parse(response.body)
-            if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
-              podList["items"].each do |item|
-                containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar)
-                containerInventoryRecords.each do |containerRecord|
-                  ContainerInventoryState.writeContainerState(containerRecord)
-                  if hostName.empty? && !containerRecord["Computer"].empty?
-                    hostName = containerRecord["Computer"]
-                  end
-                  containerIds.push containerRecord["InstanceID"]
-                  containerInventory.push containerRecord
-                end           
+          podList = Oj.load(response.body)
+          if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
+            podList["items"].each do |item|
+              containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar)
+              containerInventoryRecords.each do |containerRecord|
+                ContainerInventoryState.writeContainerState(containerRecord)
+                if hostName.empty? && !containerRecord["Computer"].empty?
+                  hostName = containerRecord["Computer"]
+                end
+                containerIds.push containerRecord["InstanceID"]
+                containerInventory.push containerRecord
               end
-            end  
-        end                          
+            end
+          end
+        end
         # Update the state for deleted containers
         deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
         if !deletedContainers.nil? && !deletedContainers.empty?

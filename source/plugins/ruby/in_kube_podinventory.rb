@@ -15,8 +15,7 @@ module Fluent
     def initialize
       super
       require "yaml"
-      require "yajl/json_gem"
-      require "yajl"
+      require "oj"
       require "set"
       require "time"
 
@@ -95,14 +94,14 @@ module Fluent
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
         serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
-        # serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
+        # serviceList = Oj.load(KubernetesApiClient.getKubeResourceInfo("services").body)
         $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
 
         if !serviceInfo.nil?
           # debug logs to track the payload size
           serviceInfoResponseSizeInKB = (serviceInfo.body.length) / 1024
           $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl serviceInfo size in KB #{serviceInfoResponseSizeInKB} @ #{Time.now.utc.iso8601}")
-          serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
+          serviceList = Oj.load(StringIO.new(serviceInfo.body))
           $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl serviceInfo size in KB #{serviceInfoResponseSizeInKB} @ #{Time.now.utc.iso8601}")
           serviceInfo = nil
           # service inventory records much smaller and fixed size compared to serviceList

@@ -3,9 +3,9 @@
 # frozen_string_literal: true
 
 module Fluent
-	require 'logger'
-	require 'socket'
-	require 'yajl/json_gem'
+  require "logger"
+  require "socket"
+  require "oj"
 
 	class DockerLogFilter < Filter
 		Plugin.register_filter('filter_docker_log', self)
@@ -60,7 +60,7 @@ module Fluent
 					details = ''
 					
 					begin
-						details = JSON.parse(`sudo docker inspect #{containerId}`)
+					   details = Oj.load(`sudo docker inspect #{containerId}`)
 					rescue => e
 						if @log != nil
 							@log.error {'sudo docker inspect ' + containerId + ' failed'}

@@ -65,6 +65,7 @@ class CAdvisorMetricsAPIClient
   #cadvisor ports
   @@CADVISOR_SECURE_PORT = "10250"
   @@CADVISOR_NON_SECURE_PORT = "10255"
+
   def initialize
   end
 
@@ -85,40 +86,40 @@ class CAdvisorMetricsAPIClient
     end
 
     def getBaseCAdvisorUri(winNode)
-        cAdvisorSecurePort = isCAdvisorOnSecurePort()
+      cAdvisorSecurePort = isCAdvisorOnSecurePort()
 
+      if !!cAdvisorSecurePort == true
+        defaultHost = "https://localhost:#{@@CADVISOR_SECURE_PORT}"
+      else
+        defaultHost = "http://localhost:#{@@CADVISOR_NON_SECURE_PORT}"
+      end
+
+      if !winNode.nil?
+        nodeIP = winNode["InternalIP"]
+      else
+        nodeIP = ENV["NODE_IP"]
+      end
+
+      if !nodeIP.nil?
+        @Log.info("Using #{nodeIP} for CAdvisor Host")
         if !!cAdvisorSecurePort == true
-            defaultHost = "https://localhost:#{@@CADVISOR_SECURE_PORT}"
+          return "https://#{nodeIP}:#{@@CADVISOR_SECURE_PORT}"
         else
-            defaultHost = "http://localhost:#{@@CADVISOR_NON_SECURE_PORT}"
+          return "http://#{nodeIP}:#{@@CADVISOR_NON_SECURE_PORT}"
         end
-
+      else
+        @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost}")
         if !winNode.nil?
-            nodeIP = winNode["InternalIP"]
+          return nil
         else
-            nodeIP = ENV["NODE_IP"]
+          return defaultHost
         end
-
-        if !nodeIP.nil?
-            @Log.info("Using #{nodeIP} for CAdvisor Host")
-            if !!cAdvisorSecurePort == true
-                return "https://#{nodeIP}:#{@@CADVISOR_SECURE_PORT}"
-            else
-                return "http://#{nodeIP}:#{@@CADVISOR_NON_SECURE_PORT}"
-            end
-        else
-            @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost}")
-            if !winNode.nil?
-                return nil
-            else
-                return defaultHost
-            end
-        end
+      end
     end
 
     def getCAdvisorUri(winNode, relativeUri)
-        baseUri = getBaseCAdvisorUri(winNode)
-        return baseUri + relativeUri
+      baseUri = getBaseCAdvisorUri(winNode)
+      return baseUri + relativeUri
     end
 
     def getMetrics(winNode: nil, metricTime: Time.now.utc.iso8601)
@@ -126,7 +127,7 @@ class CAdvisorMetricsAPIClient
       begin
         cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
         if !cAdvisorStats.nil?
-          metricInfo = JSON.parse(cAdvisorStats.body)
+          metricInfo = Oj.load(cAdvisorStats.body)
         end
         if !winNode.nil?
           hostName = winNode["Hostname"]
@@ -253,16 +254,16 @@ class CAdvisorMetricsAPIClient
                     elsif (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
                       telemetryProps["containerLogsRoute"] = @containerLogsRoute
                     end
-                     #telemetry about health model
-                     if (!@hmEnabled.nil? && !@hmEnabled.empty?)
+                    #telemetry about health model
+                    if (!@hmEnabled.nil? && !@hmEnabled.empty?)
                       telemetryProps["hmEnabled"] = @hmEnabled
-                     end
-                     #telemetry for npm integration
-                     if (!@npmIntegrationAdvanced.nil? && !@npmIntegrationAdvanced.empty?)
-                       telemetryProps["int-npm-a"] = "1"
-                     elsif (!@npmIntegrationBasic.nil? && !@npmIntegrationBasic.empty?)
-                       telemetryProps["int-npm-b"] = "1"
-                     end
+                    end
+                    #telemetry for npm integration
+                    if (!@npmIntegrationAdvanced.nil? && !@npmIntegrationAdvanced.empty?)
+                      telemetryProps["int-npm-a"] = "1"
+                    elsif (!@npmIntegrationBasic.nil? && !@npmIntegrationBasic.empty?)
+                      telemetryProps["int-npm-b"] = "1"
+                    end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
                 end
@@ -288,7 +289,7 @@ class CAdvisorMetricsAPIClient
       begin
         cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
         if !cAdvisorStats.nil?
-          metricInfo = JSON.parse(cAdvisorStats.body)
+          metricInfo = Oj.load(cAdvisorStats.body)
         end
         if !winNode.nil?
           hostName = winNode["Hostname"]
@@ -303,8 +304,8 @@ class CAdvisorMetricsAPIClient
         end
         if !metricInfo.nil?
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryTotal", "containerGpumemoryTotalBytes", metricTime))
-          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed","containerGpumemoryUsedBytes", metricTime))
-          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle","containerGpuDutyCycle", metricTime))
+          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed", "containerGpumemoryUsedBytes", metricTime))
+          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle", "containerGpuDutyCycle", metricTime))
 
           metricDataItems.concat(getPersistentVolumeMetrics(metricInfo, hostName, "usedBytes", Constants::PV_USED_BYTES, metricTime))
         else
@@ -327,7 +328,6 @@ class CAdvisorMetricsAPIClient
       begin
         metricInfo = metricJSON
         metricInfo["pods"].each do |pod|
-
           podNamespace = pod["podRef"]["namespace"]
           excludeNamespace = false
           if (podNamespace.downcase == "kube-system") && @pvKubeSystemCollectionMetricsEnabled == "false"
@@ -351,11 +351,11 @@ class CAdvisorMetricsAPIClient
                   metricItem["Computer"] = hostName
                   metricItem["Name"] = metricNameToReturn
                   metricItem["Value"] = volume[metricNameToCollect]
-                  metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
+                  metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
                   metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
-                      
+
                   metricTags = {}
-                  metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = clusterId
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_UID] = podUid
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = podName
@@ -365,7 +365,7 @@ class CAdvisorMetricsAPIClient
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = volume["capacityBytes"]
 
                   metricItem["Tags"] = metricTags
-                      
+
                   metricItems.push(metricItem)
                 end
               end
@@ -390,7 +390,6 @@ class CAdvisorMetricsAPIClient
       return metricItems
     end
 
-
     def getContainerGpuMetricsAsInsightsMetrics(metricJSON, hostName, metricNameToCollect, metricNametoReturn, metricPollTime)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
@@ -410,18 +409,17 @@ class CAdvisorMetricsAPIClient
                   if (!accelerator[metricNameToCollect].nil?) #empty check is invalid for non-strings
                     containerName = container["name"]
                     metricValue = accelerator[metricNameToCollect]
-                    
 
                     metricItem = {}
                     metricItem["CollectionTime"] = metricPollTime
                     metricItem["Computer"] = hostName
                     metricItem["Name"] = metricNametoReturn
                     metricItem["Value"] = metricValue
-                    metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
+                    metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
                     metricItem["Namespace"] = Constants::INSIGHTSMETRICS_TAGS_GPU_NAMESPACE
-                    
+
                     metricTags = {}
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
+                    metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = clusterId
                     metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
                     metricTags[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME] = podUid + "/" + containerName
                     #metricTags[Constants::INSIGHTSMETRICS_TAGS_K8SNAMESPACE] = podNameSpace
@@ -437,9 +435,9 @@ class CAdvisorMetricsAPIClient
                     if (!accelerator["id"].nil? && !accelerator["id"].empty?)
                       metricTags[Constants::INSIGHTSMETRICS_TAGS_GPU_ID] = accelerator["id"]
                     end
-                  
+
                     metricItem["Tags"] = metricTags
-                    
+
                     metricItems.push(metricItem)
                   end
                 end
@@ -916,13 +914,13 @@ class CAdvisorMetricsAPIClient
           uri = URI.parse(cAdvisorUri)
           if isCAdvisorOnSecurePort()
             Net::HTTP.start(uri.host, uri.port,
-              :use_ssl => true, :open_timeout => 20, :read_timeout => 40,
-              :ca_file => "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-              :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
-            cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
-            cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
-            response = http.request(cAdvisorApiRequest)
-            @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+                            :use_ssl => true, :open_timeout => 20, :read_timeout => 40,
+                            :ca_file => "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+                            :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+              cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
+              cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
+              response = http.request(cAdvisorApiRequest)
+              @Log.info "Got response code #{response.code} from #{uri.request_uri}"
             end
           else
             Net::HTTP.start(uri.host, uri.port, :use_ssl => false, :open_timeout => 20, :read_timeout => 40) do |http|
@@ -942,12 +940,12 @@ class CAdvisorMetricsAPIClient
     end
 
     def isCAdvisorOnSecurePort
-        cAdvisorSecurePort = false
-        # Check to see whether omsagent needs to use 10255(insecure) port or 10250(secure) port
-        if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
-          cAdvisorSecurePort = true
-        end
-        return cAdvisorSecurePort
+      cAdvisorSecurePort = false
+      # Check to see whether omsagent needs to use 10255(insecure) port or 10250(secure) port
+      if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
+        cAdvisorSecurePort = true
+      end
+      return cAdvisorSecurePort
     end
   end
 end

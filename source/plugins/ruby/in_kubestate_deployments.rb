@@ -10,8 +10,7 @@ module Fluent
 
     def initialize
       super
-      require "yajl/json_gem"
-      require "yajl"
+      require "oj"
       require "date"
       require "time"
 

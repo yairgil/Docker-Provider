@@ -24,8 +24,7 @@ module Fluent
     def initialize
       super
       require "yaml"
-      require "yajl/json_gem"
-      require "yajl"
+      require "oj"
       require "time"
 
       require_relative "KubernetesApiClient"

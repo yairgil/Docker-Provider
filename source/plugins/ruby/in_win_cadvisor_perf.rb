@@ -10,7 +10,7 @@ module Fluent
     def initialize
       super
       require "yaml"
-      require "yajl/json_gem"
+      require "oj"
       require "time"
 
       require_relative "CAdvisorMetricsAPIClient"

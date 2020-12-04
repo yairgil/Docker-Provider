@@ -2,12 +2,12 @@
 # frozen_string_literal: true
 
 module Fluent
-    require 'logger'
-    require 'yajl/json_gem'
-    require_relative 'oms_common'
-    require_relative "ApplicationInsightsUtility"
-    require_relative "KubernetesApiClient"
-    Dir[File.join(__dir__, './health', '*.rb')].each { |file| require file }
+  require "logger"
+  require "oj"
+  require_relative "oms_common"
+  require_relative "ApplicationInsightsUtility"
+  require_relative "KubernetesApiClient"
+  Dir[File.join(__dir__, "./health", "*.rb")].each { |file| require file }
 
     class CAdvisor2NodeHealthFilter < Filter
         include HealthModel
