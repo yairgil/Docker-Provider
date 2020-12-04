@@ -248,7 +248,7 @@ module Fluent
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= Constants::MDM_EXCEPTIONS_METRIC_FLUSH_INTERVAL)
           telemetryProperties = {}
-          telemetryProperties["ExceptionsHashForFlushInterval"] = @mdm_exceptions_hash.to_json
+          telemetryProperties["ExceptionsHashForFlushInterval"] = Oj.dump(@mdm_exceptions_hash)
           telemetryProperties["FlushInterval"] = Constants::MDM_EXCEPTIONS_METRIC_FLUSH_INTERVAL
           ApplicationInsightsUtility.sendMetricTelemetry(Constants::MDM_EXCEPTION_TELEMETRY_METRIC, @mdm_exceptions_count, telemetryProperties)
           # Resetting values after flushing

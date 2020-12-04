@@ -4,7 +4,7 @@ include HealthModel
 
 describe "HealthContainerCpuMemoryAggregator spec" do
   it "dedupes and drops older records" do
-    formatted_records = JSON.parse '[{
+    formatted_records = Oj.load '[{
             "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
             "CounterName": "memoryRssBytes",
             "CounterValue": 14061568,

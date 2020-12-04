@@ -167,7 +167,7 @@ module Fluent
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
           ApplicationInsightsUtility.sendMetricTelemetry("ServiceCount", @serviceCount, {})
-          telemetryProperties["ControllerData"] = @controllerData.to_json
+          telemetryProperties["ControllerData"] = Oj.dump(@controllerData)
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
           if @winContainerCount > 0
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
