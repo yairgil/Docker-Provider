@@ -32,7 +32,7 @@
       {
         "AzureResourceGroupName": "ArcExtension-Dev-CUS",
         "Location": "Central US",
-        "InstanceOf": "AKS-DataFactory-ServiceResourceGroupDefinition",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
         "AzureSubscriptionId": "4009f3ee-43c4-4f19-97e4-32b6f2285a68",
         "ScopeTags": [
           {
@@ -50,7 +50,7 @@
       {
         "AzureResourceGroupName": "ArcExtension-Stage-CUS",
         "Location": "Central US",
-        "InstanceOf": "AKS-DataFactory-ServiceResourceGroupDefinition",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
         "AzureSubscriptionId": "9d352739-a748-4ce6-8d9c-6d864a156e94",
         "ScopeTags": [
           {
@@ -68,7 +68,7 @@
       {
         "AzureResourceGroupName": "ArcExtension-Prod-CUS",
         "Location": "Central US",
-        "InstanceOf": "AKS-DataFactory-ServiceResourceGroupDefinition",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
         "AzureSubscriptionId": "2cda8d31-5571-45ac-b137-0c8e6637dce4",
         "ScopeTags": [
           {
