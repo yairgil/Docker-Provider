@@ -1,0 +1,24 @@
+{
+  "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutSpec.json",
+  "ContentVersion": "1.0.0.0",
+  "RolloutMetadata": {
+    "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",
+    "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json",
+    "Name": "ARCExtension-Prod-CUS",
+    "RolloutType": "Major",
+    "BuildSource": {
+      "Parameters": {
+        "VersionFile": "buildver.txt"
+      }
+    }
+  },
+  "orchestratedSteps": [
+    {
+      "name": "PushImageToACR",
+      "targetType": "ServiceResource",
+      "targetName": "PushImageToACR-Prod",
+      "actions": [ "Shell/PushImageToACR" ],
+      "dependsOn": [ ]
+    }
+  ]
+}
