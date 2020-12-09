@@ -38,31 +38,31 @@
                 "asSecureValue": "true"
             },
             {
-                "name": "CDPX_ACR",
-                "value": "__CDPX_ACR_LINUX__"
+                "name": "CDPX_ACR_RESOURCE_ID",
+                "value": "__CDPX_ACR_RESOURCE_ID__"
             },
             {
-                "name": "CDPX_AGENT_IMAGE_TAG",
-                "value": "__CDPX_ACR_LINUX_AGENT_IMAGE_TAG__"
+                "name": "CDPX_IMAGE_TAG",
+                "value": "__CDPX_IMAGE_TAG__"
             },
             {
                 "name": "CDPX_REPO_NAME",
-                "value": "__CDPX_ACR_LINUX_REPO_NAME__"
+                "value": "__CDPX_REPO_NAME__"
             },
             {
-                "name": "CI_ACR",
+                "name": "ACR_NAME",
                 "value": "__ACR_NAME__" 
             },
             {
-                "name": "CI_AGENT_REPO",
-                "value": "__AGENT_REPO_NAME__" 
+                "name": "IMAGE_REPO",
+                "value": "__IMAGE_REPO__" 
             },
             {
-                "name": "CI_RELEASE",
+                "name": "RELEASE_NAME",
                 "value": "__RELEASE_NAME__" 
             },
             {
-                "name": "CI_IMAGE_TAG_SUFFIX",
+                "name": "IMAGE_TAG_SUFFIX",
                 "value": "__IMAGE_TAG_SUFFIX__" 
             },
             {

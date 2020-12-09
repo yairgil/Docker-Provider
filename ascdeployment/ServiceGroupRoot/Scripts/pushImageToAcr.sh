@@ -1,33 +1,23 @@
 #!/bin/bash
 
-echo "start: pull linux agent image from cdpx and push to acr: ${CIACR}"
+echo "Start: Import linux agent image from cdpx and push to acr: ${ACR_NAME}"
+echo "Target release name: "$RELEASE_NAME
+echo "Target acr: ${ACR_NAME}"
+echo "Target agent repo name: ${IMAGE_REPO}"
 
-echo "login to cdpxlinux acr:${CDPX_ACR}"
-docker login $CDPX_ACR  --username $ACR_APP_ID --password $ACR_APP_SECRET
-echo "login to cdpxlinux acr completed: ${CDPX_ACR}"
+imagetag=$RELEASE_NAME$IMAGE_TAG_SUFFIX
 
-echo "pull agent image from cdpxlinux acr: ${CDPX_ACR}"
-docker pull ${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG}
-echo "pull image from cdpxlinux acr completed: ${CDPX_ACR}"
+echo "Target Agent image tag: "$imagetag
+echo "Creating target agent full image path"
 
-echo "CI Release name is:"$CI_RELEASE
-imagetag=$CI_RELEASE$CI_IMAGE_TAG_SUFFIX
-echo "agentimagetag="$imagetag
+fullImagePath=${IMAGE_PATH}/${IMAGE_REPO}:${imagetag}
 
-echo "CI ACR : ${CI_ACR}"
-echo "CI AGENT REPOSITORY NAME : ${CI_AGENT_REPO}"
+echo "Target image full path: ${fullImagePath}"
+echo "Pushing the image to acr:${ACR_NAME}"
 
-echo "tag linux agent image"
-fullImagePath=${CI_ACR}/${IMAGE_PATH}/${CI_AGENT_REPO}:${imagetag}
-docker tag ${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG} ${fullImagePath}
+az acr import -r ${CDPX_ACR_RESOURCE_ID} --source ${CDPX_REPO_NAME}:${CDPX_IMAGE_TAG} -n ${ACR_NAME} -t ${fullImagePath} 
 
-echo "login ciprod acr":$CI_ACR
-docker login $CI_ACR --username $ACR_APP_ID --password $ACR_APP_SECRET
-echo "login to ${CI_ACR} acr completed"
+echo "Pushing the image to acr completed"
 
-echo "pushing the image to ciprod acr:${CI_ACR}"
-docker push ${fullImagePath}
-echo "pushing the image to ciprod acr completed"
-
-echo "end: pull linux agent image from cdpx and push to ciprod acr"
+echo "Finished: Import linux agent image from cdpx and push to acr: ${CIACR}"
 

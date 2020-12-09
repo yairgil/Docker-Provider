@@ -14,15 +14,15 @@
                     "replaceWith": "https://identity-dev-cus.vault.azure.net/secrets/ARCK8sSecret"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX__",
-                    "replaceWith": "cdpxlinux.azurecr.io"
+                    "find": "__CDPX_ACR_RESOURCE_ID__",
+                    "replaceWith": "/subscriptions/fb0fee9c-b18a-4d61-887c-eb59b04a2b02/resourceGroups/cxprod-acr/providers/Microsoft.ContainerRegistry/registries/cdpxlinux"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX_AGENT_IMAGE_TAG__",
+                    "find": "__CDPX_IMAGE_TAG__",
                     "replaceWith": "cidev"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX_REPO_NAME__",
+                    "find": "__CDPX_REPO_NAME__",
                     "replaceWith": "cdpxlinux"
                 },
                 {
@@ -34,7 +34,7 @@
                     "replaceWith": "$buildVersion()"
                 },
                 {
-                    "find": "__AGENT_REPO_NAME__",
+                    "find": "__IMAGE_REPO__",
                     "replaceWith": "ascagentdev"
                 },
                 {
@@ -59,15 +59,15 @@
                     "replaceWith": "https://identity-stage-cus.vault.azure.net/secrets/Deployment-GeneratedSecret"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX__",
-                    "replaceWith": "cdpxlinuxame.azurecr.io"
+                    "find": "__CDPX_ACR_RESOURCE_ID__",
+                    "replaceWith": "/subscriptions/e9d570ed-cf13-4347-83e3-3938b8d65a41/resourceGroups/cdpx-acr-ame-wus/providers/Microsoft.ContainerRegistry/registries/cdpxlinuxame"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX_AGENT_IMAGE_TAG__",
+                    "find": "__CDPX_IMAGE_TAG__",
                     "replaceWith": "cidev"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX_REPO_NAME__",
+                    "find": "__CDPX_REPO_NAME__",
                     "replaceWith": "cdpxlinuxame"
                 },
                 {
@@ -79,7 +79,7 @@
                     "replaceWith": "$buildVersion()"
                 },
                 {
-                    "find": "__AGENT_REPO_NAME__",
+                    "find": "__IMAGE_REPO__",
                     "replaceWith": "ascagentdev"
                 },
                 {
@@ -104,15 +104,15 @@
                     "replaceWith": "https://identity-prod-cus.vault.azure.net/secrets/Deployment-GeneratedSecret"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX__",
-                    "replaceWith": "cdpxlinuxame.azurecr.io"
+                    "find": "__CDPX_ACR_RESOURCE_ID__",
+                    "replaceWith": "/subscriptions/e9d570ed-cf13-4347-83e3-3938b8d65a41/resourceGroups/cdpx-acr-ame-wus/providers/Microsoft.ContainerRegistry/registries/cdpxlinuxame"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX_AGENT_IMAGE_TAG__",
+                    "find": "__CDPX_IMAGE_TAG__",
                     "replaceWith": "cidev"
                 },
                 {
-                    "find": "__CDPX_ACR_LINUX_REPO_NAME__",
+                    "find": "__CDPX_REPO_NAME__",
                     "replaceWith": "cdpxlinuxame"
                 },
                 {
@@ -124,7 +124,7 @@
                     "replaceWith": "$buildVersion()"
                 },
                 {
-                    "find": "__AGENT_REPO_NAME__",
+                    "find": "__IMAGE_REPO__",
                     "replaceWith": "ascagentdev"
                 },
                 {
