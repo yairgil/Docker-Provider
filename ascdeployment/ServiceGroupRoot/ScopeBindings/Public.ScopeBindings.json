@@ -60,7 +60,7 @@
                 },
                 {
                     "find": "__CDPX_ACR_LINUX__",
-                    "replaceWith": "cdpxlinux.azurecr.io"
+                    "replaceWith": "cdpxlinuxame.azurecr.io"
                 },
                 {
                     "find": "__CDPX_ACR_LINUX_AGENT_IMAGE_TAG__",
@@ -68,7 +68,7 @@
                 },
                 {
                     "find": "__CDPX_ACR_LINUX_REPO_NAME__",
-                    "replaceWith": "cdpxlinux"
+                    "replaceWith": "cdpxlinuxame"
                 },
                 {
                     "find": "__ACR_NAME__",
@@ -105,7 +105,7 @@
                 },
                 {
                     "find": "__CDPX_ACR_LINUX__",
-                    "replaceWith": "cdpxlinux.azurecr.io"
+                    "replaceWith": "cdpxlinuxame.azurecr.io"
                 },
                 {
                     "find": "__CDPX_ACR_LINUX_AGENT_IMAGE_TAG__",
@@ -113,7 +113,7 @@
                 },
                 {
                     "find": "__CDPX_ACR_LINUX_REPO_NAME__",
-                    "replaceWith": "cdpxlinux"
+                    "replaceWith": "cdpxlinuxame"
                 },
                 {
                     "find": "__ACR_NAME__",
