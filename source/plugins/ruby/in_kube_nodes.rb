@@ -294,6 +294,8 @@ module Fluent
         if eventStream.count > 0
           $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
+          $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+          router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
           eventStream = nil
         end
         if containerNodeInventoryEventStream.count > 0
