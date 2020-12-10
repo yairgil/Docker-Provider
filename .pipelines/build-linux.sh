@@ -16,7 +16,5 @@ make
 cd $DIR
 
 echo "------------ Zip Shell Extension Scripts -------------------------"
+tar -czvf $DIR/ascdeployment/ServiceGroupRoot/scripts.tar $DIR/ascdeployment/ServiceGroupRoot/Scripts/pushImageToAcr.sh
 
-cd $DIR/../ascdeployment/ServiceGroupRoot
-tar -czvf scripts.tar ./Scripts/pushImageToAcr.sh
-cd $DIR
