@@ -18,10 +18,6 @@
                     "replaceWith": "/subscriptions/4009f3ee-43c4-4f19-97e4-32b6f2285a68/resourceGroups/Identity-Dev-CUS/providers/Microsoft.ManagedIdentity/userAssignedIdentities/DeploymentApp-Dev-CUS"
                 },
                 {
-                    "find": "__CDPX_ACR_RESOURCE_ID__",
-                    "replaceWith": "/subscriptions/fb0fee9c-b18a-4d61-887c-eb59b04a2b02/resourceGroups/cxprod-acr/providers/Microsoft.ContainerRegistry/registries/cdpxlinux"
-                },
-                {
                     "find": "__CDPX_IMAGE_TAG__",
                     "replaceWith": "cidev"
                 },
@@ -67,10 +63,6 @@
                     "replaceWith": "/subscriptions/9d352739-a748-4ce6-8d9c-6d864a156e94/resourceGroups/Identity-Stage-CUS/providers/Microsoft.ManagedIdentity/userAssignedIdentities/DeploymentApp-Stage-CUS"
                 },
                 {
-                    "find": "__CDPX_ACR_RESOURCE_ID__",
-                    "replaceWith": "/subscriptions/e9d570ed-cf13-4347-83e3-3938b8d65a41/resourceGroups/cdpx-acr-ame-wus/providers/Microsoft.ContainerRegistry/registries/cdpxlinuxame"
-                },
-                {
                     "find": "__CDPX_IMAGE_TAG__",
                     "replaceWith": "cidev"
                 },
@@ -114,10 +106,6 @@
                 {
                     "find": "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__",
                     "replaceWith": "/subscriptions/2cda8d31-5571-45ac-b137-0c8e6637dce4/resourceGroups/Identity-Prod-CUS/providers/Microsoft.ManagedIdentity/userAssignedIdentities/DeploymentApp-Prod-CUS"
-                },
-                {
-                    "find": "__CDPX_ACR_RESOURCE_ID__",
-                    "replaceWith": "/subscriptions/e9d570ed-cf13-4347-83e3-3938b8d65a41/resourceGroups/cdpx-acr-ame-wus/providers/Microsoft.ContainerRegistry/registries/cdpxlinuxame"
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",

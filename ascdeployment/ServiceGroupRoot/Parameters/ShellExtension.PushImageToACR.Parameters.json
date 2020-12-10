@@ -37,10 +37,6 @@
                 "asSecureValue": "true"
             },
             {
-                "name": "CDPX_ACR_RESOURCE_ID",
-                "value": "__CDPX_ACR_RESOURCE_ID__"
-            },
-            {
                 "name": "CDPX_IMAGE_TAG",
                 "value": "__CDPX_IMAGE_TAG__"
             },
