@@ -24,15 +24,10 @@ restore:
 
 build:
   commands:
-    - !!buildcommand
+    - !!defaultcommand
       name: 'Build Docker Provider Shell Bundle'
       command: '.pipelines/build-linux.sh'
       fail_on_stderr: false
-      artifacts:
-        - from: 'ascdeployment'
-          to: 'ascdeployment'
-          include:
-            - '**/ServiceGroupRoot/**
 
 package:
   commands:
