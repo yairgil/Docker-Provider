@@ -13,11 +13,13 @@ echo "Creating target agent full image path"
 fullImagePath=${IMAGE_PATH}/${IMAGE_REPO}:${imagetag}
 
 echo "Target image full path: ${fullImagePath}"
-echo "Pushing the image to acr:${ACR_NAME}"
+echo "Source image full path: ${CDPX_ACR_RESOURCE_ID}/${CDPX_REPO_NAME}:${CDPX_IMAGE_TAG}"
+echo "Pushing the image from  ${CDPX_ACR_RESOURCE_ID}/${CDPX_REPO_NAME} to acr:${ACR_NAME}"
 
+az login --identity
 az acr import -r ${CDPX_ACR_RESOURCE_ID} --source ${CDPX_REPO_NAME}:${CDPX_IMAGE_TAG} -n ${ACR_NAME} -t ${fullImagePath} 
 
 echo "Pushing the image to acr completed"
 
-echo "Finished: Import linux agent image from cdpx and push to acr: ${CIACR}"
+echo "Finished: Import linux agent image from cdpx and push to acr: ${ACR_NAME}"
 
