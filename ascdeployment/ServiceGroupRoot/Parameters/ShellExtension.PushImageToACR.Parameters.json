@@ -10,13 +10,12 @@
         },
         "package": {
           "reference": {
-            "path": "scripts.tar"
+            "path": "scripts.tar.gz"
           }
         },
         "launch": {
           "command": [
             "/bin/bash",
-            "-c",
             "pushImageToAcr.sh"
           ],
           "environmentVariables": [

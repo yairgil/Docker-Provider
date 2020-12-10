@@ -11,10 +11,12 @@ export GOARCH="amd64"
 go env
 
 cd $DIR/../build/linux
+
 echo "----------- Build Docker Provider -------------------------------"
+
 make
-cd $DIR
 
 echo "------------ Zip Shell Extension Scripts -------------------------"
-tar -czvf $DIR/../ascdeployment/ServiceGroupRoot/scripts.tar $DIR/../ascdeployment/ServiceGroupRoot/Scripts/pushImageToAcr.sh
 
+cd $DIR/../ascdeployment/ServiceGroupRoot/Scripts
+tar -czvf ../scripts.tar.gz pushImageToAcr.sh
