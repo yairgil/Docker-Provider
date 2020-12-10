@@ -20,6 +20,23 @@
           ],
           "environmentVariables": [
             {
+              "name": "ACR_APP_ID",
+              "value":"__DEPLOYMENT_APPLICATION_ID__",
+              "enableScopeTagBindings": "true"
+            },
+            {
+                "name" : "ACR_APP_SECRET",
+                "reference" :
+                {
+                  "provider" : "AzureKeyVault",
+                  "parameters":
+                  {
+                    "secretId" : "__DEPLOYMENT_APPLICATION_SECRET_URI__"
+                  }
+                },
+                "asSecureValue": "true"
+            },
+            {
                 "name": "CDPX_ACR_RESOURCE_ID",
                 "value": "__CDPX_ACR_RESOURCE_ID__"
             },

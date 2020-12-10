@@ -6,6 +6,14 @@
             "scopeTagName": "Dev",
             "bindings": [
                 {
+                    "find": "__DEPLOYMENT_APPLICATION_ID__",
+                    "replaceWith": "20487c28-e544-45e7-a130-739156303dbe"
+                },
+                {
+                    "find": "__DEPLOYMENT_APPLICATION_SECRET_URI__",
+                    "replaceWith": "https://identity-dev-cus.vault.azure.net/secrets/ARCK8sSecret"
+                },
+                {
                     "find": "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__",
                     "replaceWith": "/subscriptions/4009f3ee-43c4-4f19-97e4-32b6f2285a68/resourceGroups/Identity-Dev-CUS/providers/Microsoft.ManagedIdentity/userAssignedIdentities/DeploymentApp-Dev-CUS"
                 },
@@ -47,6 +55,14 @@
             "scopeTagName": "Stage",
             "bindings": [
                 {
+                    "find": "__DEPLOYMENT_APPLICATION_ID__",
+                    "replaceWith": "41a16ff6-f2a8-49e8-be30-30010f1ea7c9"
+                },
+                {
+                    "find": "__DEPLOYMENT_APPLICATION_SECRET_URI__",
+                    "replaceWith": "https://identity-stage-cus.vault.azure.net/secrets/Deployment-GeneratedSecret"
+                },
+                {
                     "find": "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__",
                     "replaceWith": "/subscriptions/9d352739-a748-4ce6-8d9c-6d864a156e94/resourceGroups/Identity-Stage-CUS/providers/Microsoft.ManagedIdentity/userAssignedIdentities/DeploymentApp-Stage-CUS"
                 },
@@ -87,6 +103,14 @@
         {
             "scopeTagName": "Prod",
             "bindings": [
+                {
+                    "find": "__DEPLOYMENT_APPLICATION_ID__",
+                    "replaceWith": "6d4d88b4-4b80-4299-add9-73c8952a80df"
+                },
+                {
+                    "find": "__DEPLOYMENT_APPLICATION_SECRET_URI__",
+                    "replaceWith": "https://identity-prod-cus.vault.azure.net/secrets/Deployment-GeneratedSecret"
+                },
                 {
                     "find": "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__",
                     "replaceWith": "/subscriptions/2cda8d31-5571-45ac-b137-0c8e6637dce4/resourceGroups/Identity-Prod-CUS/providers/Microsoft.ManagedIdentity/userAssignedIdentities/DeploymentApp-Prod-CUS"
