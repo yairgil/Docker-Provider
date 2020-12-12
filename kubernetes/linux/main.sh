@@ -171,8 +171,8 @@ done
 source config_env_var
 
 
-#Parse the configmap to set the right environment variables for health feature.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-health-config.rb
+#Parse the configmap to set the right environment variables for agent config.
+/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-agent-config.rb
 
 cat health_config_env_var | while read line; do
     #echo $line
@@ -429,7 +429,7 @@ echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
 #region check to auto-activate oneagent, to route container logs,
 #Intent is to activate one agent routing for all managed clusters with region in the regionllist, unless overridden by configmap
-# AZMON_CONTAINER_LOGS_ROUTE  will have route (if any) specified in the config map 
+# AZMON_CONTAINER_LOGS_ROUTE  will have route (if any) specified in the config map
 # AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE will have the final route that we compute & set, based on our region list logic
 echo "************start oneagent log routing checks************"
 # by default, use configmap route for safer side
@@ -462,9 +462,9 @@ else
   echo "current region is not in oneagent regions..."
 fi
 
-if [ "$isoneagentregion" = true ]; then 
+if [ "$isoneagentregion" = true ]; then
    #if configmap has a routing for logs, but current region is in the oneagent region list, take the configmap route
-   if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then   
+   if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then
       AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
       echo "oneagent region is true for current region:$currentregion and config map logs route is not empty. so using config map logs route as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
    else #there is no configmap route, so route thru oneagent
@@ -511,7 +511,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
 
             echo "starting mdsd ..."
             mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-            
+
             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
       fi
    fi

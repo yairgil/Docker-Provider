@@ -33,7 +33,6 @@ module Fluent
       require_relative "omslog"
       # 250 Node items (15KB per node) account to approximately 4MB
       @NODES_CHUNK_SIZE = "250"
-      # 0 indicates no batch enabled for stream emit
       @NODES_EMIT_STREAM_BATCH_SIZE = 100
       @nodeInventoryE2EProcessingLatencyMs = 0
       @nodesAPIE2ELatencyMs = 0
@@ -293,6 +292,8 @@ module Fluent
         if eventStream.count > 0
           $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
+          $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+          router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
           eventStream = nil
         end
         if containerNodeInventoryEventStream.count > 0

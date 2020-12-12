@@ -13,13 +13,47 @@ require_relative "ConfigParseErrorLogger"
 @configMapMountPath = "/etc/config/settings/agent-settings"
 @configSchemaVersion = ""
 @enable_health_model = false
-@nodesChunkSize = 0
-@podsChunkSize = 0
-@eventsChunkSize = 0
-@deploymentsChunkSize = 0
-@hpaChunkSize = 0
-@podsEmitStreamBatchSize = 0
-@nodesEmitStreamBatchSize = 0
+
+# 250 Node items (15KB per node) account to approximately 4MB
+@nodesChunkSize = 250
+# 500 pods (10KB per pod) account to approximately 5MB
+@podsChunkSize = 500
+# 4000 events (1KB per event) account to approximately 4MB
+@eventsChunkSize = 4000
+# roughly each deployment is 8k
+# 500 deployments account to approximately 4MB
+@deploymentsChunkSize = 500
+# roughly each HPA is 3k
+# 2000 HPAs account to approximately 6-7MB
+@hpaChunkSize = 2000
+# stream batch sizes to avoid large file writes
+# to low will consume disk i/o
+@podsEmitStreamBatchSize = 200
+@nodesEmitStreamBatchSize = 100
+
+# higher the chunk size rs pod memory consumption higher and lower api latency
+# similarly lower the value, helps on the memory consumption but incurrs additional round trip latency
+# these needs to be tuned be based on the workload
+# nodes
+@nodesChunkSizeMin = 100
+@nodesChunkSizeMax = 400
+# pods
+@podsChunkSizeMin = 250
+@podsChunkSizeMax = 1500
+# events
+@eventsChunkSizeMin = 2000
+@eventsChunkSizeMax = 10000
+# deployments
+@deploymentsChunkSizeMin = 500
+@deploymentsChunkSizeMax = 1000
+# hpa
+@hpaChunkSizeMin = 500
+@hpaChunkSizeMax = 1000
+
+# emit stream sizes to prevent lower values which costs disk i/o
+# max will be upto the chunk size
+@podsEmitStreamBatchSizeMin = 50
+@nodesEmitStreamBatchSizeMin = 50
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -55,37 +89,44 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       chunk_config = parsedConfig[:agent_settings][:chunk_config]
       if !chunk_config.nil?
         nodesChunkSize = chunk_config[:NODES_CHUNK_SIZE]
-        if !nodesChunkSize.nil? && is_number?(nodesChunkSize)
+        if !nodesChunkSize.nil? && is_number?(nodesChunkSize) && (@nodesChunkSizeMin..@nodesChunkSizeMax) === nodesChunkSize.to_i
           @nodesChunkSize = nodesChunkSize.to_i
-          puts "NODES_CHUNK_SIZE = #{@nodesChunkSize}"
+          puts "Using config map value: NODES_CHUNK_SIZE = #{@nodesChunkSize}"
         end
+
         podsChunkSize = chunk_config[:PODS_CHUNK_SIZE]
-        if !podsChunkSize.nil? && is_number?(podsChunkSize)
+        if !podsChunkSize.nil? && is_number?(podsChunkSize) && (@podsChunkSizeMin..@podsChunkSizeMax) === podsChunkSize.to_i
           @podsChunkSize = podsChunkSize.to_i
-          puts "PODS_CHUNK_SIZE = #{@podsChunkSize}"
+          puts "Using config map value: PODS_CHUNK_SIZE = #{@podsChunkSize}"
         end
+
         eventsChunkSize = chunk_config[:EVENTS_CHUNK_SIZE]
-        if !eventsChunkSize.nil? && is_number?(eventsChunkSize)
+        if !eventsChunkSize.nil? && is_number?(eventsChunkSize) && (@eventsChunkSizeMin..@eventsChunkSizeMax) === eventsChunkSize.to_i
           @eventsChunkSize = eventsChunkSize.to_i
-          puts "EVENTS_CHUNK_SIZE = #{@eventsChunkSize}"
+          puts "Using config map value: EVENTS_CHUNK_SIZE = #{@eventsChunkSize}"
         end
+
         deploymentsChunkSize = chunk_config[:DEPLOYMENTS_CHUNK_SIZE]
-        if !deploymentsChunkSize.nil? && is_number?(deploymentsChunkSize)
+        if !deploymentsChunkSize.nil? && is_number?(deploymentsChunkSize) && (@deploymentsChunkSizeMin..@deploymentsChunkSizeMax) === deploymentsChunkSize.to_i
           @deploymentsChunkSize = deploymentsChunkSize.to_i
-          puts "DEPLOYMENTS_CHUNK_SIZE = #{@deploymentsChunkSize}"
+          puts "Using config map value: DEPLOYMENTS_CHUNK_SIZE = #{@deploymentsChunkSize}"
         end
+
         hpaChunkSize = chunk_config[:HPA_CHUNK_SIZE]
-        if !hpaChunkSize.nil? && is_number?(hpaChunkSize)
+        if !hpaChunkSize.nil? && is_number?(hpaChunkSize) && (@hpaChunkSizeMin..@hpaChunkSizeMax) === hpaChunkSize.to_i
           @hpaChunkSize = hpaChunkSize.to_i
-          puts "HPA_CHUNK_SIZE = #{@hpaChunkSize}"
+          puts "Using config map value: HPA_CHUNK_SIZE = #{@hpaChunkSize}"
         end
+
         podsEmitStreamBatchSize = chunk_config[:PODS_EMIT_STREAM_BATCH_SIZE]
-        if !podsEmitStreamBatchSize.nil? && is_number?(podsEmitStreamBatchSize)
+        if !podsEmitStreamBatchSize.nil? && is_number?(podsEmitStreamBatchSize) &&
+           podsEmitStreamBatchSize.to_i <= @podsChunkSize && podsEmitStreamBatchSize.to_i >= @podsEmitStreamBatchSizeMin
           @podsEmitStreamBatchSize = podsEmitStreamBatchSize.to_i
           puts "PODS_EMIT_STREAM_BATCH_SIZE = #{@podsEmitStreamBatchSize}"
         end
         nodesEmitStreamBatchSize = chunk_config[:NODES_EMIT_STREAM_BATCH_SIZE]
-        if !nodesEmitStreamBatchSize.nil? && is_number?(nodesEmitStreamBatchSize)
+        if !nodesEmitStreamBatchSize.nil? && is_number?(nodesEmitStreamBatchSize) &&
+           nodesEmitStreamBatchSize.to_i <= @nodesChunkSize && nodesEmitStreamBatchSize.to_i >= @nodesEmitStreamBatchSizeMin
           @nodesEmitStreamBatchSize = nodesEmitStreamBatchSize.to_i
           puts "NODES_EMIT_STREAM_BATCH_SIZE = #{@nodesEmitStreamBatchSize}"
         end
@@ -116,27 +157,13 @@ file = File.open("health_config_env_var", "w")
 
 if !file.nil?
   file.write("export AZMON_CLUSTER_ENABLE_HEALTH_MODEL=#{@enable_health_model}\n")
-  if @nodesChunkSize > 0
-    file.write("export NODES_CHUNK_SIZE=#{@nodesChunkSize}\n")
-  end
-  if @podsChunkSize > 0
-    file.write("export PODS_CHUNK_SIZE=#{@podsChunkSize}\n")
-  end
-  if @eventsChunkSize > 0
-    file.write("export EVENTS_CHUNK_SIZE=#{@eventsChunkSize}\n")
-  end
-  if @deploymentsChunkSize > 0
-    file.write("export DEPLOYMENTS_CHUNK_SIZE=#{@deploymentsChunkSize}\n")
-  end
-  if @hpaChunkSize > 0
-    file.write("export HPA_CHUNK_SIZE=#{@hpaChunkSize}\n")
-  end
-  if @podsEmitStreamBatchSize > 0
-    file.write("export PODS_EMIT_STREAM_BATCH_SIZE=#{@podsEmitStreamBatchSize}\n")
-  end
-  if @nodesEmitStreamBatchSize > 0
-    file.write("export NODES_EMIT_STREAM_BATCH_SIZE=#{@nodesEmitStreamBatchSize}\n")
-  end
+  file.write("export NODES_CHUNK_SIZE=#{@nodesChunkSize}\n")
+  file.write("export PODS_CHUNK_SIZE=#{@podsChunkSize}\n")
+  file.write("export EVENTS_CHUNK_SIZE=#{@eventsChunkSize}\n")
+  file.write("export DEPLOYMENTS_CHUNK_SIZE=#{@deploymentsChunkSize}\n")
+  file.write("export HPA_CHUNK_SIZE=#{@hpaChunkSize}\n")
+  file.write("export PODS_EMIT_STREAM_BATCH_SIZE=#{@podsEmitStreamBatchSize}\n")
+  file.write("export NODES_EMIT_STREAM_BATCH_SIZE=#{@nodesEmitStreamBatchSize}\n")
   # Close file after writing all environment variables
   file.close
 else

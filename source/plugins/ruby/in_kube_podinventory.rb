@@ -26,14 +26,12 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      # 500 pod (10KB per pod) account to approximately 5MB
       @PODS_CHUNK_SIZE = "500"
       @podCount = 0
       @serviceCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
-      # 0 indicates no batch enabled for stream emit
       @PODS_EMIT_STREAM_BATCH_SIZE = 200
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
@@ -58,7 +56,6 @@ module Fluent
           @PODS_EMIT_STREAM_BATCH_SIZE = ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
-
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
