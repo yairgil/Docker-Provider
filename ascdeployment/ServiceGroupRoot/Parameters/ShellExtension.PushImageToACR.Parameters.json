@@ -57,10 +57,6 @@
                 "value": "__RELEASE_NAME__" 
             },
             {
-                "name": "IMAGE_TAG_SUFFIX",
-                "value": "__IMAGE_TAG_SUFFIX__" 
-            },
-            {
                 "name": "IMAGE_PATH",
                 "value": "__IMAGE_PATH__" 
             }

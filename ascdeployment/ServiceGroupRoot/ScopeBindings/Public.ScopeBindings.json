@@ -30,10 +30,6 @@
                     "replaceWith": "ArcSecurityDev"
                 },
                 {
-                    "find": "__IMAGE_TAG_SUFFIX__",
-                    "replaceWith": "$buildVersion()"
-                },
-                {
                     "find": "__IMAGE_REPO__",
                     "replaceWith": "ascagentdev"
                 },
@@ -75,10 +71,6 @@
                     "replaceWith": "ArcSecurityStage"
                 },
                 {
-                    "find": "__IMAGE_TAG_SUFFIX__",
-                    "replaceWith": "$buildVersion()"
-                },
-                {
                     "find": "__IMAGE_REPO__",
                     "replaceWith": "ascagentdev"
                 },
@@ -118,10 +110,6 @@
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "ArcSecurityProd"
-                },
-                {
-                    "find": "__IMAGE_TAG_SUFFIX__",
-                    "replaceWith": "$buildVersion()"
                 },
                 {
                     "find": "__IMAGE_REPO__",
