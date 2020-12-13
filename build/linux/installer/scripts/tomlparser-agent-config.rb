@@ -122,18 +122,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         if !podsEmitStreamBatchSize.nil? && is_number?(podsEmitStreamBatchSize) &&
            podsEmitStreamBatchSize.to_i <= @podsChunkSize && podsEmitStreamBatchSize.to_i >= @podsEmitStreamBatchSizeMin
           @podsEmitStreamBatchSize = podsEmitStreamBatchSize.to_i
-          puts "PODS_EMIT_STREAM_BATCH_SIZE = #{@podsEmitStreamBatchSize}"
+          puts "Using config map value: PODS_EMIT_STREAM_BATCH_SIZE = #{@podsEmitStreamBatchSize}"
         end
         nodesEmitStreamBatchSize = chunk_config[:NODES_EMIT_STREAM_BATCH_SIZE]
         if !nodesEmitStreamBatchSize.nil? && is_number?(nodesEmitStreamBatchSize) &&
            nodesEmitStreamBatchSize.to_i <= @nodesChunkSize && nodesEmitStreamBatchSize.to_i >= @nodesEmitStreamBatchSizeMin
           @nodesEmitStreamBatchSize = nodesEmitStreamBatchSize.to_i
-          puts "NODES_EMIT_STREAM_BATCH_SIZE = #{@nodesEmitStreamBatchSize}"
+          puts "Using config map value: NODES_EMIT_STREAM_BATCH_SIZE = #{@nodesEmitStreamBatchSize}"
         end
       end
     end
   rescue => errorStr
-    puts "config::error:Exception while reading config settings for health_model enabled setting - #{errorStr}, using defaults"
+    puts "config::error:Exception while reading config settings for agent configuration setting - #{errorStr}, using defaults"
     @enable_health_model = false
   end
 end
@@ -153,7 +153,7 @@ else
 end
 
 # Write the settings to file, so that they can be set as environment variables
-file = File.open("health_config_env_var", "w")
+file = File.open("agent_config_env_var", "w")
 
 if !file.nil?
   file.write("export AZMON_CLUSTER_ENABLE_HEALTH_MODEL=#{@enable_health_model}\n")

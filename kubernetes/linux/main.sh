@@ -174,11 +174,11 @@ source config_env_var
 #Parse the configmap to set the right environment variables for agent config.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-agent-config.rb
 
-cat health_config_env_var | while read line; do
+cat agent_config_env_var | while read line; do
     #echo $line
     echo $line >> ~/.bashrc
 done
-source health_config_env_var
+source agent_config_env_var
 
 #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
