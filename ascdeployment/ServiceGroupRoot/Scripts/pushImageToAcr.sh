@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CDPX_ACR="${CDPX_REPO_NAME}.azurecr.io"
+CDPX_ACR="cdpxlinux.azurecr.io"
 
 echo "Using CDPX acr Server: ${CDPX_ACR}"
 echo "Start: Import linux agent image from cdpx and push to acr: ${ACR_NAME}"
