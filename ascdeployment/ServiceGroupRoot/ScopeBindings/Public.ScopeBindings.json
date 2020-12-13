@@ -52,7 +52,7 @@
                 },
                 {
                     "find": "__DEPLOYMENT_APPLICATION_SECRET_URI__",
-                    "replaceWith": "https://identity-stage-cus.vault.azure.net/secrets/Deployment-GeneratedSecret"
+                    "replaceWith": "https://identity-stage-cus.vault.azure.net/secrets/Deployment-ApplicationClientSecret"
                 },
                 {
                     "find": "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__",
@@ -93,7 +93,7 @@
                 },
                 {
                     "find": "__DEPLOYMENT_APPLICATION_SECRET_URI__",
-                    "replaceWith": "https://identity-prod-cus.vault.azure.net/secrets/Deployment-GeneratedSecret"
+                    "replaceWith": "https://identity-prod-cus.vault.azure.net/secrets/Deployment-ApplicationClientSecret"
                 },
                 {
                     "find": "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__",
