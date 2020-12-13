@@ -48,7 +48,7 @@ require_relative "ConfigParseErrorLogger"
 @deploymentsChunkSizeMax = 1000
 # hpa
 @hpaChunkSizeMin = 500
-@hpaChunkSizeMax = 1000
+@hpaChunkSizeMax = 2000
 
 # emit stream sizes to prevent lower values which costs disk i/o
 # max will be upto the chunk size
