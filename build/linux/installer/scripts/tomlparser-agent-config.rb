@@ -16,8 +16,8 @@ require_relative "ConfigParseErrorLogger"
 
 # 250 Node items (15KB per node) account to approximately 4MB
 @nodesChunkSize = 250
-# 500 pods (10KB per pod) account to approximately 5MB
-@podsChunkSize = 500
+# 1000 pods (10KB per pod) account to approximately 10MB
+@podsChunkSize = 1000
 # 4000 events (1KB per event) account to approximately 4MB
 @eventsChunkSize = 4000
 # roughly each deployment is 8k

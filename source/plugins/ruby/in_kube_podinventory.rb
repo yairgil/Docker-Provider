@@ -27,7 +27,7 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      @PODS_CHUNK_SIZE = "500"
+      @PODS_CHUNK_SIZE = "1000"
       @podCount = 0
       @serviceCount = 0
       @controllerSet = Set.new []
