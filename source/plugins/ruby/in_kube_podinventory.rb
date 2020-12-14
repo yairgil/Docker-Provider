@@ -96,11 +96,9 @@ module Fluent
         $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
 
         if !serviceInfo.nil?
-          # debug logs to track the payload size
-          serviceInfoResponseSizeInKB = (serviceInfo.body.length) / 1024
-          $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl serviceInfo size in KB #{serviceInfoResponseSizeInKB} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
           serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
-          $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl serviceInfo size in KB #{serviceInfoResponseSizeInKB} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
           serviceInfo = nil
           # service inventory records much smaller and fixed size compared to serviceList
           serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
@@ -120,9 +118,7 @@ module Fluent
         podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
         if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-          # debug logs to track the payload size
-          podInventorySizeInKB = (podInventory.to_s.length) / 1024
-          $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  and size in KB: #{podInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
         else
           $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
@@ -135,9 +131,7 @@ module Fluent
           podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
           @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-            # debug logs to track the payload size
-            podInventorySizeInKB = (podInventory.to_s.length) / 1024
-            $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  and size in KB: #{podInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
             parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
           else
             $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"

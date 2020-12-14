@@ -97,9 +97,7 @@ module Fluent
         nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-          # debug logs to track the payload size
-          nodeInventorySizeInKB = (nodeInventory.to_s.length) / 1024
-          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length}  and size in KB: #{nodeInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(nodeInventory, batchTime)
         else
           $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
@@ -112,9 +110,7 @@ module Fluent
           nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
           @nodesAPIE2ELatencyMs = @nodesAPIE2ELatencyMs + (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
           if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-            # debug logs to track the payload size
-            nodeInventorySizeInKB = (nodeInventory.to_s.length) / 1024
-            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length}  and size in KB: #{nodeInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
             parse_and_emit_records(nodeInventory, batchTime)
           else
             $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"

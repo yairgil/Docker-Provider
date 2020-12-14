@@ -27,7 +27,7 @@ require_relative "ConfigParseErrorLogger"
 # 2000 HPAs account to approximately 6-7MB
 @hpaChunkSize = 2000
 # stream batch sizes to avoid large file writes
-# to low will consume disk i/o
+# too low will consume higher disk iops
 @podsEmitStreamBatchSize = 200
 @nodesEmitStreamBatchSize = 100
 
