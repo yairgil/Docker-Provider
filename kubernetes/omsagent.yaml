@@ -364,7 +364,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020-9"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomfix12152020"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -523,7 +523,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomtest11282020-9"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cioomfix12152020"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
