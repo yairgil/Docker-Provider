@@ -53,10 +53,6 @@
                 "value": "__IMAGE_REPO__" 
             },
             {
-                "name": "RELEASE_NAME",
-                "value": "__RELEASE_NAME__" 
-            },
-            {
                 "name": "IMAGE_PATH",
                 "value": "__IMAGE_PATH__" 
             }

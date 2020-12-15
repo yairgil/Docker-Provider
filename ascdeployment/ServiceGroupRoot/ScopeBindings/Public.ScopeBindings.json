@@ -31,15 +31,11 @@
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "ascagentdev"
-                },
-                {
-                    "find": "__RELEASE_NAME__",
-                    "replaceWith": "latest"
+                    "replaceWith": "ascagent"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/preview"
+                    "replaceWith": "azuredefender/dev"
                 }
             ]
         },
@@ -72,15 +68,11 @@
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "ascagentdev"
-                },
-                {
-                    "find": "__RELEASE_NAME__",
-                    "replaceWith": "latest"
+                    "replaceWith": "ascagent"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/preview"
+                    "replaceWith": "azuredefender/stage"
                 }
             ]
         },
@@ -113,15 +105,11 @@
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "ascagentdev"
-                },
-                {
-                    "find": "__RELEASE_NAME__",
-                    "replaceWith": "latest"
+                    "replaceWith": "ascagent"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/preview"
+                    "replaceWith": "public/azuredefender/stable"
                 }
             ]
         }

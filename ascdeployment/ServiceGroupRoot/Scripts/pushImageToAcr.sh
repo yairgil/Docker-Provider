@@ -4,12 +4,10 @@ CDPX_ACR="${CDPX_REPO_NAME}.azurecr.io"
 
 echo "Using CDPX acr Server: ${CDPX_ACR}"
 echo "Start: Import linux agent image from cdpx and push to acr: ${ACR_NAME}"
-echo "Target release name: "$RELEASE_NAME
 echo "Target acr: ${ACR_NAME}"
 echo "Target agent repo name: ${IMAGE_REPO}"
 
-IMAGE_TAG_SUFFIX=$(date +"%m%d%y_%H%M")
-IMAGE_TAG=$RELEASE_NAME$IMAGE_TAG_SUFFIX
+IMAGE_TAG=$(date +"%m%d%y_%H%M")
 
 echo "Target image tag: ${IMAGE_TAG}"
 echo "Creating target full image path"
