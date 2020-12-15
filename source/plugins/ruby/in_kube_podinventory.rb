@@ -27,13 +27,16 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      @PODS_CHUNK_SIZE = "1000"
+      # refer tomlparser-agent-config for updating defaults
+      # this configurable via configmap
+      @PODS_CHUNK_SIZE = 0
+      @PODS_EMIT_STREAM_BATCH_SIZE = 0
+
       @podCount = 0
       @serviceCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
-      @PODS_EMIT_STREAM_BATCH_SIZE = 200
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
     end
@@ -48,15 +51,24 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty?
-          @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"]
+        if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty? && ENV["PODS_CHUNK_SIZE"].to_i > 0
+          @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"].to_i
+        else
+          # this shouldnt happen and setting default as safe gauard in case
+          $log.warn("in_kube_podinventory::start: setting to default value since got PODS_CHUNK_SIZE nil or empty")
+          @PODS_CHUNK_SIZE = 1000
         end
         $log.info("in_kube_podinventory::start : PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
 
-        if !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].empty?
+        if !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].empty? && ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i > 0
           @PODS_EMIT_STREAM_BATCH_SIZE = ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i
+        else
+          # this shouldnt happen and setting default as safe gauard in case
+          $log.warn("in_kube_podinventory::start: setting to default value since got PODS_EMIT_STREAM_BATCH_SIZE nil or empty")
+          @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new

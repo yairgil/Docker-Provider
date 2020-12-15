@@ -21,9 +21,10 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
 
-      # roughly each deployment is 8k
-      # 500 deployments account to approximately 4MB
-      @DEPLOYMENTS_CHUNK_SIZE = 500
+      # refer tomlparser-agent-config for defaults
+      # this configurable via configmap
+      @DEPLOYMENTS_CHUNK_SIZE = 0
+
       @DEPLOYMENTS_API_GROUP = "apps"
       @@telemetryLastSentTime = DateTime.now.to_time.to_i
 
@@ -43,8 +44,12 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["DEPLOYMENTS_CHUNK_SIZE"].nil? && !ENV["DEPLOYMENTS_CHUNK_SIZE"].empty?
-          @DEPLOYMENTS_CHUNK_SIZE = ENV["DEPLOYMENTS_CHUNK_SIZE"]
+        if !ENV["DEPLOYMENTS_CHUNK_SIZE"].nil? && !ENV["DEPLOYMENTS_CHUNK_SIZE"].empty? && ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i > 0
+          @DEPLOYMENTS_CHUNK_SIZE = ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i
+        else
+          # this shouldnt happen and setting default as safe gauard in case
+          $log.warn("in_kubestate_deployments::start: setting to default value since got DEPLOYMENTS_CHUNK_SIZE nil or empty")
+          @DEPLOYMENTS_CHUNK_SIZE = 500
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
 

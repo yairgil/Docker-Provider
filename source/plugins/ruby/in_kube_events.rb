@@ -17,8 +17,9 @@ module Fluent
       require_relative "omslog"
       require_relative "ApplicationInsightsUtility"
 
-      # 4000 events (1KB per event) account to approximately 4MB
-      @EVENTS_CHUNK_SIZE = 4000
+      # refer tomlparser-agent-config for defaults
+      # this configurable via configmap
+      @EVENTS_CHUNK_SIZE = 0
 
       # Initializing events count for telemetry
       @eventsCount = 0
@@ -36,8 +37,12 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["EVENTS_CHUNK_SIZE"].nil? && !ENV["EVENTS_CHUNK_SIZE"].empty?
-          @EVENTS_CHUNK_SIZE = ENV["EVENTS_CHUNK_SIZE"]
+        if !ENV["EVENTS_CHUNK_SIZE"].nil? && !ENV["EVENTS_CHUNK_SIZE"].empty? && ENV["EVENTS_CHUNK_SIZE"].to_i > 0
+          @EVENTS_CHUNK_SIZE = ENV["EVENTS_CHUNK_SIZE"].to_i
+        else
+          # this shouldnt happen and setting default just safe gauard
+          $log.warn("in_kube_events::start: setting to default value since got EVENTS_CHUNK_SIZE nil or empty")
+          @EVENTS_CHUNK_SIZE = 4000
         end
         $log.info("in_kube_events::start : EVENTS_CHUNK_SIZE  @ #{@EVENTS_CHUNK_SIZE}")
 
