@@ -54,7 +54,7 @@ module Fluent
         if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty? && ENV["PODS_CHUNK_SIZE"].to_i > 0
           @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"].to_i
         else
-          # this shouldnt happen and setting default as safe gauard in case
+          # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kube_podinventory::start: setting to default value since got PODS_CHUNK_SIZE nil or empty")
           @PODS_CHUNK_SIZE = 1000
         end
@@ -63,7 +63,7 @@ module Fluent
         if !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].empty? && ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i > 0
           @PODS_EMIT_STREAM_BATCH_SIZE = ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i
         else
-          # this shouldnt happen and setting default as safe gauard in case
+          # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kube_podinventory::start: setting to default value since got PODS_EMIT_STREAM_BATCH_SIZE nil or empty")
           @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end

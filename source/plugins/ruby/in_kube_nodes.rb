@@ -53,7 +53,7 @@ module Fluent
         if !ENV["NODES_CHUNK_SIZE"].nil? && !ENV["NODES_CHUNK_SIZE"].empty? && ENV["NODES_CHUNK_SIZE"].to_i > 0
           @NODES_CHUNK_SIZE = ENV["NODES_CHUNK_SIZE"].to_i
         else
-          # this shouldnt happen adding safe gauard
+          # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kube_nodes::start: setting to default value since got NODES_CHUNK_SIZE nil or empty")
           @NODES_CHUNK_SIZE = 250
         end
@@ -62,7 +62,7 @@ module Fluent
         if !ENV["NODES_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["NODES_EMIT_STREAM_BATCH_SIZE"].empty? && ENV["NODES_EMIT_STREAM_BATCH_SIZE"].to_i > 0
           @NODES_EMIT_STREAM_BATCH_SIZE = ENV["NODES_EMIT_STREAM_BATCH_SIZE"].to_i
         else
-          # this shouldnt happen and setting default just safe gauard in case
+          # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kube_nodes::start: setting to default value since got NODES_EMIT_STREAM_BATCH_SIZE nil or empty")
           @NODES_EMIT_STREAM_BATCH_SIZE = 100
         end

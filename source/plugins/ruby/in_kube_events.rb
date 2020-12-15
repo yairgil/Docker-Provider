@@ -40,7 +40,7 @@ module Fluent
         if !ENV["EVENTS_CHUNK_SIZE"].nil? && !ENV["EVENTS_CHUNK_SIZE"].empty? && ENV["EVENTS_CHUNK_SIZE"].to_i > 0
           @EVENTS_CHUNK_SIZE = ENV["EVENTS_CHUNK_SIZE"].to_i
         else
-          # this shouldnt happen and setting default just safe gauard
+          # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kube_events::start: setting to default value since got EVENTS_CHUNK_SIZE nil or empty")
           @EVENTS_CHUNK_SIZE = 4000
         end

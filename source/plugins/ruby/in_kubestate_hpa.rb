@@ -44,7 +44,7 @@ module Fluent
         if !ENV["HPA_CHUNK_SIZE"].nil? && !ENV["HPA_CHUNK_SIZE"].empty? && ENV["HPA_CHUNK_SIZE"].to_i > 0
           @HPA_CHUNK_SIZE = ENV["HPA_CHUNK_SIZE"].to_i
         else
-          # this shouldnt happen and setting default as safe gauard in case
+          # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kubestate_hpa::start: setting to default value since got HPA_CHUNK_SIZE nil or empty")
           @HPA_CHUNK_SIZE = 2000
         end

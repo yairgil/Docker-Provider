@@ -47,7 +47,7 @@ module Fluent
         if !ENV["DEPLOYMENTS_CHUNK_SIZE"].nil? && !ENV["DEPLOYMENTS_CHUNK_SIZE"].empty? && ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i > 0
           @DEPLOYMENTS_CHUNK_SIZE = ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i
         else
-          # this shouldnt happen and setting default as safe gauard in case
+          # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kubestate_deployments::start: setting to default value since got DEPLOYMENTS_CHUNK_SIZE nil or empty")
           @DEPLOYMENTS_CHUNK_SIZE = 500
         end
