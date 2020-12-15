@@ -95,7 +95,7 @@ data:
      <match oms.containerinsights.KubePodInventory**>
       type out_oms
       log_level debug
-      num_threads 5
+      num_threads 2
       buffer_chunk_limit 4m
       buffer_type file
       buffer_path %STATE_DIR_WS%/out_oms_kubepods*.buffer
@@ -108,24 +108,24 @@ data:
      </match>
 
      <match oms.containerinsights.KubePVInventory**>
-     type out_oms
-     log_level debug
-     num_threads 5
-     buffer_chunk_limit 4m
-     buffer_type file
-     buffer_path %STATE_DIR_WS%/state/out_oms_kubepv*.buffer
-     buffer_queue_limit 20
-     buffer_queue_full_action drop_oldest_chunk
-     flush_interval 20s
-     retry_limit 10
-     retry_wait 5s
-     max_retry_wait 5m
+      type out_oms
+      log_level debug
+      num_threads 5
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/state/out_oms_kubepv*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
     </match>
 
      <match oms.containerinsights.KubeEvents**>
       type out_oms
       log_level debug
-      num_threads 5
+      num_threads 2
       buffer_chunk_limit 4m
       buffer_type file
       buffer_path %STATE_DIR_WS%/out_oms_kubeevents*.buffer
@@ -155,7 +155,7 @@ data:
      <match oms.containerinsights.KubeNodeInventory**>
       type out_oms
       log_level debug
-      num_threads 5
+      num_threads 2
       buffer_chunk_limit 4m
       buffer_type file
       buffer_path %STATE_DIR_WS%/state/out_oms_kubenodes*.buffer
@@ -184,7 +184,7 @@ data:
      <match oms.api.KubePerf**>
       type out_oms
       log_level debug
-      num_threads 5
+      num_threads 2
       buffer_chunk_limit 4m
       buffer_type file
       buffer_path %STATE_DIR_WS%/out_oms_kubeperf*.buffer
