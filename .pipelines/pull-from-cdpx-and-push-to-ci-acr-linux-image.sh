@@ -33,7 +33,7 @@ echo "end: read appid and appsecret which has read access on cdpx acr"
 
 # Name of CDPX_ACR should be in this format :Naming convention: 'cdpx' + service tree id without '-' + two digit suffix like'00'/'01
 # suffix 00 primary and 01 secondary, and we only use primary
-# This configured via pipeline
+# This configured via pipeline variable
 echo "login to cdpxlinux acr:${CDPX_ACR}"
 docker login $CDPX_ACR  --username $CDPX_ACR_APP_ID --password $CDPX_ACR_APP_SECRET
 echo "login to cdpxlinux acr completed: ${CDPX_ACR}"
