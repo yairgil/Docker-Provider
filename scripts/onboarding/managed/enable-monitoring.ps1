@@ -22,6 +22,8 @@
     .PARAMETER proxyEndpoint (optional)
         Provide Proxy endpoint if you have K8s cluster behind the proxy and would like to route Azure Monitor for containers outbound traffic via proxy.
         Format of the proxy endpoint should be http(s://<user>:<password>@<proxyhost>:<port>
+    .PARAMETER azureCloudName (optional)
+       Name of the Azure cloud name. Supported Azure cloud Name is AzureCloud or AzureUSGovernment
 
      Pre-requisites:
       -  Azure Managed cluster Resource Id

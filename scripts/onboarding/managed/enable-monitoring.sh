@@ -40,7 +40,7 @@ set -o pipefail
 
 # default to public cloud since only supported cloud is azure public cloud
 defaultAzureCloud="AzureCloud"
-# default domain will be public cloud
+# default domain will be for public cloud
 omsAgentDomainName="opinsights.azure.com"
 
 # released chart version in mcr
@@ -584,7 +584,7 @@ enable_aks_monitoring_addon() {
 # parse and validate args
 parse_args $@
 
-# read the current cloud and validate whether this supported or not
+# validate and configure azure cli for cloud
 validate_and_configure_supported_cloud
 
 # parse cluster resource id
