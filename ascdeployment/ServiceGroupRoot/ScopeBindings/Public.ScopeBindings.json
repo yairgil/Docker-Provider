@@ -35,7 +35,7 @@
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/dev"
+                    "replaceWith": "public/azuredefender/dev/kubernetes"
                 }
             ]
         },
@@ -72,7 +72,7 @@
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/stage"
+                    "replaceWith": "public/azuredefender/stage/kubernetes"
                 }
             ]
         },
@@ -109,7 +109,7 @@
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/stable"
+                    "replaceWith": "public/azuredefender/stable/kubernetes"
                 }
             ]
         }
