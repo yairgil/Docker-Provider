@@ -46,7 +46,9 @@ param(
     [Parameter(mandatory = $false)]
     [string]$workspaceResourceId,
     [Parameter(mandatory = $false)]
-    [string]$proxyEndpoint
+    [string]$proxyEndpoint,
+    [Parameter(mandatory = $false)]
+    [string]$azureCloudName
 )
 
 $solutionTemplateUri = "https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_dev/scripts/onboarding/templates/azuremonitor-containerSolution.json"
@@ -63,6 +65,24 @@ $mcr = "mcr.microsoft.com"
 $mcrChartVersion = "2.7.9"
 $mcrChartRepoPath = "azuremonitor/containerinsights/preview/azuremonitor-containers"
 $helmLocalRepoName = "."
+$omsAgentDomainName="opinsights.azure.com"
+
+if ([string]::IsNullOrEmpty($azureCloudName) -eq $true) {
+    Write-Host("Azure cloud name parameter not passed in so using default cloud as AzureCloud")
+    $azureCloudName = "AzureCloud"
+} else {
+    if(($azureCloudName.ToLower() -eq "azurecloud" ) -eq $true) {
+        Write-Host("Specified Azure Cloud name is : $azureCloudName")
+        $omsAgentDomainName="opinsights.azure.com"
+    } elseif (($azureCloudName.ToLower() -eq "azureusgovernment" ) -eq $true) {
+        Write-Host("Specified Azure Cloud name is : $azureCloudName")
+        $omsAgentDomainName="opinsights.azure.us"
+    } else {
+        Write-Host("Specified Azure Cloud name is : $azureCloudName")
+        Write-Host("Only supported azure clouds are : AzureCloud and AzureUSGovernment")
+        exit
+    }
+}
 
 # checks the required Powershell modules exist and if not exists, request the user permission to install
 $azAccountModule = Get-Module -ListAvailable -Name Az.Accounts
@@ -244,14 +264,15 @@ Write-Host("Cluster SubscriptionId : '" + $clusterSubscriptionId + "' ") -Foregr
 if ($isUsingServicePrincipal) {
     $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
     $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId, $spSecret
-    Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
+    Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId -Environment $azureCloudName
 }
 
 try {
     Write-Host("")
     Write-Host("Trying to get the current Az login context...")
     $account = Get-AzContext -ErrorAction Stop
-    Write-Host("Successfully fetched current AzContext context...") -ForegroundColor Green
+    $azureCloudName = $account.Environment.Name
+    Write-Host("Successfully fetched current AzContext context and azure cloud name: $azureCloudName" ) -ForegroundColor Green
     Write-Host("")
 }
 catch {
@@ -266,11 +287,12 @@ if ($null -eq $account.Account) {
         if ($isUsingServicePrincipal) {
             $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
             $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId, $spSecret
-            Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
+
+            Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId -Environment $azureCloudName
         }
         else {
             Write-Host("Please login...")
-            Connect-AzAccount -subscriptionid $clusterSubscriptionId
+            Connect-AzAccount -subscriptionid $clusterSubscriptionId -Environment $azureCloudName
         }
     }
     catch {
@@ -380,7 +402,8 @@ if ([string]::IsNullOrEmpty($workspaceResourceId)) {
         "westeurope"         = "westeurope" ;
         "westindia"          = "centralindia" ;
         "westus"             = "westus" ;
-        "westus2"            = "westus2"
+        "westus2"            = "westus2";
+        "usgovvirginia"      = "usgovvirginia"
     }
 
     $workspaceRegionCode = "EUS"
@@ -531,7 +554,7 @@ try {
 
     Write-Host("helmChartRepoPath is : ${helmChartRepoPath}")
 
-    $helmParameters = "omsagent.secret.wsid=$workspaceGUID,omsagent.secret.key=$workspacePrimarySharedKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion"
+    $helmParameters = "omsagent.domain=$omsAgentDomainName,omsagent.secret.wsid=$workspaceGUID,omsagent.secret.key=$workspacePrimarySharedKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion"
     if ([string]::IsNullOrEmpty($proxyEndpoint) -eq $false) {
         Write-Host("using proxy endpoint since its provided")
         $helmParameters = $helmParameters + ",omsagent.proxy=$proxyEndpoint"
