@@ -81,6 +81,15 @@ omsagent:
   deployment:
     affinity:
       nodeAffinity:
+        # affinity to schedule on to ephemeral os node if its available
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: storageprofile
+                operator: NotIn
+                values:
+                - managed
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - labelSelector:
