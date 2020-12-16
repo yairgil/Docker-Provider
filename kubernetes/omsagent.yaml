@@ -143,7 +143,7 @@ data:
      <match oms.containerinsights.KubePodInventory**>
       type out_oms
       log_level debug
-      num_threads 5
+      num_threads 2
       buffer_chunk_limit 4m
       buffer_type file
       buffer_path %STATE_DIR_WS%/out_oms_kubepods*.buffer
@@ -173,7 +173,7 @@ data:
      <match oms.containerinsights.KubeEvents**>
       type out_oms
       log_level debug
-      num_threads 5
+      num_threads 2
       buffer_chunk_limit 4m
       buffer_type file
       buffer_path %STATE_DIR_WS%/out_oms_kubeevents*.buffer
@@ -203,7 +203,7 @@ data:
      <match oms.containerinsights.KubeNodeInventory**>
       type out_oms
       log_level debug
-      num_threads 5
+      num_threads 2
       buffer_chunk_limit 4m
       buffer_type file
       buffer_path %STATE_DIR_WS%/state/out_oms_kubenodes*.buffer
@@ -232,7 +232,7 @@ data:
      <match oms.api.KubePerf**>
       type out_oms
       log_level debug
-      num_threads 5
+      num_threads 2
       buffer_chunk_limit 4m
       buffer_type file
       buffer_path %STATE_DIR_WS%/out_oms_kubeperf*.buffer
@@ -533,7 +533,6 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
-            # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
@@ -588,6 +587,15 @@ spec:
             periodSeconds: 60
       affinity:
         nodeAffinity:
+          # affinity to schedule on to ephemeral os node if its available
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: storageprofile
+                operator: NotIn
+                values:
+                - managed
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - labelSelector:
