@@ -252,7 +252,11 @@ try {
     Write-Host("")
     Write-Host("Trying to get the current Az login context...")
     $account = Get-AzContext -ErrorAction Stop
-    $azureCloudName = $account.Environment.Name
+    $ctxCloud = $account.Environment.Name
+    if(($azureCloudName.ToLower() -eq $ctxCloud.ToLower() ) -eq $false) {
+        Write-Host("Specified azure cloud name is not same as current context cloud hence setting account to null to retrigger the login" ) -ForegroundColor Green
+        $account = $null
+    }
     Write-Host("Successfully fetched current AzContext context and azure cloud name: $azureCloudName" ) -ForegroundColor Green
     Write-Host("")
 }
