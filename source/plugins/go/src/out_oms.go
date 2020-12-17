@@ -1,8 +1,10 @@
 package main
 
 import (
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
+	"log"
+
 	"github.com/fluent/fluent-bit-go/output"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 import (
 	"C"
@@ -52,7 +54,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	return output.FLB_OK
 }
 
-//export FLBPluginFlush
+//export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
 	id := output.FLBPluginGetContext(ctx).(string)
 	log.Printf("[oms-multiinstance] Flush called for id: %s", id)
@@ -84,7 +86,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 	return PostDataHelper(records)
 }
 
-// FLBPluginExit exits the plugin
+// FLBPluginExitCtx exits the plugin
 func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 	ContainerLogTelemetryTicker.Stop()
 	ContainerImageNameRefreshTicker.Stop()
