@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require_relative "health_model_constants"
-require "oj"
+require_relative "../oj/oj"
 
 module HealthModel
   class HealthMonitorProvider

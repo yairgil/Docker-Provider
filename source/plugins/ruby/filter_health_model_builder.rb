@@ -4,7 +4,7 @@
 
 module Fluent
   require "logger"
-  require "oj"
+  require_relative "oj/oj"
   Dir[File.join(__dir__, "./health", "*.rb")].each { |file| require file }
 
   class FilterHealthModelBuilder < Filter

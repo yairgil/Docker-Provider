@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "test/unit"
-require "oj"
+require_relative "../../../source/plugins/ruby/oj/oj"
+
 # require_relative '../../../source/plugins/ruby/health'
 
 Dir[File.join(__dir__, "../../../source/plugins/ruby/health", "*.rb")].each { |file| require file }

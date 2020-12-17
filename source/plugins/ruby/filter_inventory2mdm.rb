@@ -4,7 +4,7 @@
 
 module Fluent
   require "logger"
-  require "oj"
+  require_relative "oj/oj"
   require_relative "oms_common"
   require_relative "CustomMetricsUtils"
 

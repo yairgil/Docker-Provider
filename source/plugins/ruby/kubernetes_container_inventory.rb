@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class KubernetesContainerInventory
-  require "oj"
+  require_relative "oj/oj"
   require "time"
   require_relative "omslog"
   require_relative "ApplicationInsightsUtility"

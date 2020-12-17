@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class ConfigParseErrorLogger
-  require "oj"
+  require_relative "../../../../source/plugins/ruby/oj/oj"
 
   def initialize
   end

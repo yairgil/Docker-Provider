@@ -15,7 +15,7 @@ module Fluent
     def initialize
       super
       require "yaml"
-      require "oj"
+      require_relative "oj/oj"
       require "set"
       require "time"
 

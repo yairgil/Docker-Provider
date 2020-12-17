@@ -3,7 +3,7 @@
 require "net/http"
 require "net/https"
 require "uri"
-require "oj"
+require_relative "../oj/oj"
 
 module HealthModel
   class ClusterHealthState

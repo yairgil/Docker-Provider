@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 require "logger"
-require "oj"
+require_relative "oj/oj"
 require "time"
 require_relative "oms_common"
 require_relative "CustomMetricsUtils"

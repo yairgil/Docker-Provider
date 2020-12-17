@@ -5,17 +5,17 @@ module Fluent
   class Container_Inventory_Input < Input
     Plugin.register_input("containerinventory", self)
 
-    @@PluginName = "ContainerInventory"   
+    @@PluginName = "ContainerInventory"
 
     def initialize
       super
-      require "oj"
+      require_relative "oj/oj"
       require "time"
       require_relative "ContainerInventoryState"
       require_relative "ApplicationInsightsUtility"
       require_relative "omslog"
       require_relative "CAdvisorMetricsAPIClient"
-      require_relative "kubernetes_container_inventory"      
+      require_relative "kubernetes_container_inventory"
     end
 
     config_param :run_interval, :time, :default => 60
@@ -43,8 +43,8 @@ module Fluent
         }
         @thread.join
       end
-    end   
-  
+    end
+
     def enumerate
       currentTime = Time.now
       emitTime = currentTime.to_f
@@ -57,7 +57,7 @@ module Fluent
         containerRuntimeEnv = ENV["CONTAINER_RUNTIME"]
         $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")
         clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
-        $log.info("in_container_inventory::enumerate : using cadvisor apis")                    
+        $log.info("in_container_inventory::enumerate : using cadvisor apis")
         containerIds = Array.new
         response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil?
@@ -83,12 +83,12 @@ module Fluent
             container = ContainerInventoryState.readContainerState(deletedContainer)
             if !container.nil?
               container.each { |k, v| container[k] = v }
-              container["State"] = "Deleted"   
+              container["State"] = "Deleted"
               KubernetesContainerInventory.deleteCGroupCacheEntryForDeletedContainer(container["InstanceID"])
               containerInventory.push container
              end
            end
-        end        
+        end
         containerInventory.each do |record|
           wrapper = {
             "DataType" => "CONTAINER_INVENTORY_BLOB",

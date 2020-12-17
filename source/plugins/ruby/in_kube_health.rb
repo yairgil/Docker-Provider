@@ -23,7 +23,7 @@ module Fluent
       begin
         super
         require "yaml"
-        require "oj"
+        require_relative "oj/oj"
         require "time"
 
         @@cluster_id = KubernetesApiClient.getClusterId

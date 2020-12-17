@@ -12,7 +12,7 @@ module Fluent
       require "net/http"
       require "net/https"
       require "uri"
-      require "oj"
+      require_relative "oj/oj"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
