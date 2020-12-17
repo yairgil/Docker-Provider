@@ -16,8 +16,9 @@ module Fluent
       require_relative "omslog"
       require_relative "ApplicationInsightsUtility"
 
-      # 4000 events (1KB per event) account to approximately 4MB
-      @EVENTS_CHUNK_SIZE = 4000
+      # refer tomlparser-agent-config for defaults
+      # this configurable via configmap
+      @EVENTS_CHUNK_SIZE = 0
 
       # Initializing events count for telemetry
       @eventsCount = 0
@@ -35,8 +36,12 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["EVENTS_CHUNK_SIZE"].nil? && !ENV["EVENTS_CHUNK_SIZE"].empty?
-          @EVENTS_CHUNK_SIZE = ENV["EVENTS_CHUNK_SIZE"]
+        if !ENV["EVENTS_CHUNK_SIZE"].nil? && !ENV["EVENTS_CHUNK_SIZE"].empty? && ENV["EVENTS_CHUNK_SIZE"].to_i > 0
+          @EVENTS_CHUNK_SIZE = ENV["EVENTS_CHUNK_SIZE"].to_i
+        else
+          # this shouldnt happen just setting default here as safe guard
+          $log.warn("in_kube_events::start: setting to default value since got EVENTS_CHUNK_SIZE nil or empty")
+          @EVENTS_CHUNK_SIZE = 4000
         end
         $log.info("in_kube_events::start : EVENTS_CHUNK_SIZE  @ #{@EVENTS_CHUNK_SIZE}")
 
@@ -86,10 +91,8 @@ module Fluent
         end
         $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
         if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
-          # debug logs to track the payload size
           eventsCount = eventList["items"].length
-          eventsInventorySizeInKB = (eventList.to_s.length) / 1024
-          $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} and size in KB #{eventsInventorySizeInKB}  @ #{Time.now.utc.iso8601}"
+          $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
           newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
         else
           $log.warn "in_kube_events::enumerate:Received empty eventList"
@@ -99,10 +102,8 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?fieldSelector=type!=Normal&limit=#{@EVENTS_CHUNK_SIZE}&continue=#{continuationToken}")
           if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
-            # debug logs to track the payload size
             eventsCount = eventList["items"].length
-            eventsInventorySizeInKB = (eventList.to_s.length) / 1024
-            $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} and size in KB #{eventsInventorySizeInKB}  @ #{Time.now.utc.iso8601}"
+            $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
             newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
           else
             $log.warn "in_kube_events::enumerate:Received empty eventList"

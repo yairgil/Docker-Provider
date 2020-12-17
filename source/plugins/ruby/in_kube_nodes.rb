@@ -31,9 +31,10 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
       require_relative "omslog"
-      # 250 Node items (15KB per node) account to approximately 4MB
-      @NODES_CHUNK_SIZE = "250"
-      @NODES_EMIT_STREAM_BATCH_SIZE = 100
+      # refer tomlparser-agent-config for the defaults
+      @NODES_CHUNK_SIZE = 0
+      @NODES_EMIT_STREAM_BATCH_SIZE = 0
+
       @nodeInventoryE2EProcessingLatencyMs = 0
       @nodesAPIE2ELatencyMs = 0
       require_relative "constants"
@@ -48,13 +49,21 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["NODES_CHUNK_SIZE"].nil? && !ENV["NODES_CHUNK_SIZE"].empty?
-          @NODES_CHUNK_SIZE = ENV["NODES_CHUNK_SIZE"]
+        if !ENV["NODES_CHUNK_SIZE"].nil? && !ENV["NODES_CHUNK_SIZE"].empty? && ENV["NODES_CHUNK_SIZE"].to_i > 0
+          @NODES_CHUNK_SIZE = ENV["NODES_CHUNK_SIZE"].to_i
+        else
+          # this shouldnt happen just setting default here as safe guard
+          $log.warn("in_kube_nodes::start: setting to default value since got NODES_CHUNK_SIZE nil or empty")
+          @NODES_CHUNK_SIZE = 250
         end
         $log.info("in_kube_nodes::start : NODES_CHUNK_SIZE  @ #{@NODES_CHUNK_SIZE}")
 
-        if !ENV["NODES_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["NODES_EMIT_STREAM_BATCH_SIZE"].empty?
+        if !ENV["NODES_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["NODES_EMIT_STREAM_BATCH_SIZE"].empty? && ENV["NODES_EMIT_STREAM_BATCH_SIZE"].to_i > 0
           @NODES_EMIT_STREAM_BATCH_SIZE = ENV["NODES_EMIT_STREAM_BATCH_SIZE"].to_i
+        else
+          # this shouldnt happen just setting default here as safe guard
+          $log.warn("in_kube_nodes::start: setting to default value since got NODES_EMIT_STREAM_BATCH_SIZE nil or empty")
+          @NODES_EMIT_STREAM_BATCH_SIZE = 100
         end
         $log.info("in_kube_nodes::start : NODES_EMIT_STREAM_BATCH_SIZE  @ #{@NODES_EMIT_STREAM_BATCH_SIZE}")
 
@@ -96,9 +105,7 @@ module Fluent
         nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-          # debug logs to track the payload size
-          nodeInventorySizeInKB = (nodeInventory.to_s.length) / 1024
-          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length}  and size in KB: #{nodeInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(nodeInventory, batchTime)
         else
           $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
@@ -111,9 +118,7 @@ module Fluent
           nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
           @nodesAPIE2ELatencyMs = @nodesAPIE2ELatencyMs + (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
           if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-            # debug logs to track the payload size
-            nodeInventorySizeInKB = (nodeInventory.to_s.length) / 1024
-            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length}  and size in KB: #{nodeInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
             parse_and_emit_records(nodeInventory, batchTime)
           else
             $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"

@@ -20,9 +20,10 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
 
-      # roughly each deployment is 8k
-      # 500 deployments account to approximately 4MB
-      @DEPLOYMENTS_CHUNK_SIZE = 500
+      # refer tomlparser-agent-config for defaults
+      # this configurable via configmap
+      @DEPLOYMENTS_CHUNK_SIZE = 0
+
       @DEPLOYMENTS_API_GROUP = "apps"
       @@telemetryLastSentTime = DateTime.now.to_time.to_i
 
@@ -42,8 +43,12 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["DEPLOYMENTS_CHUNK_SIZE"].nil? && !ENV["DEPLOYMENTS_CHUNK_SIZE"].empty?
-          @DEPLOYMENTS_CHUNK_SIZE = ENV["DEPLOYMENTS_CHUNK_SIZE"]
+        if !ENV["DEPLOYMENTS_CHUNK_SIZE"].nil? && !ENV["DEPLOYMENTS_CHUNK_SIZE"].empty? && ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i > 0
+          @DEPLOYMENTS_CHUNK_SIZE = ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i
+        else
+          # this shouldnt happen just setting default here as safe guard
+          $log.warn("in_kubestate_deployments::start: setting to default value since got DEPLOYMENTS_CHUNK_SIZE nil or empty")
+          @DEPLOYMENTS_CHUNK_SIZE = 500
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
 
@@ -79,9 +84,7 @@ module Fluent
         continuationToken, deploymentList = KubernetesApiClient.getResourcesAndContinuationToken("deployments?limit=#{@DEPLOYMENTS_CHUNK_SIZE}", api_group: @DEPLOYMENTS_API_GROUP)
         $log.info("in_kubestate_deployments::enumerate : Done getting deployments from Kube API @ #{Time.now.utc.iso8601}")
         if (!deploymentList.nil? && !deploymentList.empty? && deploymentList.key?("items") && !deploymentList["items"].nil? && !deploymentList["items"].empty?)
-          # debug logs to track the payload size
-          deploymentsSizeInKB = (deploymentList.to_s.length) / 1024
-          $log.info("in_kubestate_deployments::enumerate : number of deployment items :#{deploymentList["items"].length}  and size in KB: #{deploymentsSizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+          $log.info("in_kubestate_deployments::enumerate : number of deployment items :#{deploymentList["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(deploymentList, batchTime)
         else
           $log.warn "in_kubestate_deployments::enumerate:Received empty deploymentList"
@@ -91,9 +94,7 @@ module Fluent
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, deploymentList = KubernetesApiClient.getResourcesAndContinuationToken("deployments?limit=#{@DEPLOYMENTS_CHUNK_SIZE}&continue=#{continuationToken}", api_group: @DEPLOYMENTS_API_GROUP)
           if (!deploymentList.nil? && !deploymentList.empty? && deploymentList.key?("items") && !deploymentList["items"].nil? && !deploymentList["items"].empty?)
-            # debug logs to track the payload size
-            deploymentsSizeInKB = (deploymentList.to_s.length) / 1024
-            $log.info("in_kubestate_deployments::enumerate : number of deployment items :#{deploymentList["items"].length}  and size in KB: #{deploymentsSizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kubestate_deployments::enumerate : number of deployment items :#{deploymentList["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
             parse_and_emit_records(deploymentList, batchTime)
           else
             $log.warn "in_kubestate_deployments::enumerate:Received empty deploymentList"

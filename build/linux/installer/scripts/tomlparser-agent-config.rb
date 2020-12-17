@@ -16,8 +16,8 @@ require_relative "ConfigParseErrorLogger"
 
 # 250 Node items (15KB per node) account to approximately 4MB
 @nodesChunkSize = 250
-# 500 pods (10KB per pod) account to approximately 5MB
-@podsChunkSize = 500
+# 1000 pods (10KB per pod) account to approximately 10MB
+@podsChunkSize = 1000
 # 4000 events (1KB per event) account to approximately 4MB
 @eventsChunkSize = 4000
 # roughly each deployment is 8k
@@ -27,7 +27,7 @@ require_relative "ConfigParseErrorLogger"
 # 2000 HPAs account to approximately 6-7MB
 @hpaChunkSize = 2000
 # stream batch sizes to avoid large file writes
-# to low will consume disk i/o
+# too low will consume higher disk iops
 @podsEmitStreamBatchSize = 200
 @nodesEmitStreamBatchSize = 100
 
@@ -48,7 +48,7 @@ require_relative "ConfigParseErrorLogger"
 @deploymentsChunkSizeMax = 1000
 # hpa
 @hpaChunkSizeMin = 500
-@hpaChunkSizeMax = 1000
+@hpaChunkSizeMax = 2000
 
 # emit stream sizes to prevent lower values which costs disk i/o
 # max will be upto the chunk size

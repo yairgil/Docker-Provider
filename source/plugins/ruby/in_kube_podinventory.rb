@@ -26,13 +26,16 @@ module Fluent
       require_relative "omslog"
       require_relative "constants"
 
-      @PODS_CHUNK_SIZE = "500"
+      # refer tomlparser-agent-config for updating defaults
+      # this configurable via configmap
+      @PODS_CHUNK_SIZE = 0
+      @PODS_EMIT_STREAM_BATCH_SIZE = 0
+
       @podCount = 0
       @serviceCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
-      @PODS_EMIT_STREAM_BATCH_SIZE = 200
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
     end
@@ -47,15 +50,24 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty?
-          @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"]
+        if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty? && ENV["PODS_CHUNK_SIZE"].to_i > 0
+          @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"].to_i
+        else
+          # this shouldnt happen just setting default here as safe guard
+          $log.warn("in_kube_podinventory::start: setting to default value since got PODS_CHUNK_SIZE nil or empty")
+          @PODS_CHUNK_SIZE = 1000
         end
         $log.info("in_kube_podinventory::start : PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
 
-        if !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].empty?
+        if !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].empty? && ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i > 0
           @PODS_EMIT_STREAM_BATCH_SIZE = ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i
+        else
+          # this shouldnt happen just setting default here as safe guard
+          $log.warn("in_kube_podinventory::start: setting to default value since got PODS_EMIT_STREAM_BATCH_SIZE nil or empty")
+          @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -119,9 +131,7 @@ module Fluent
         podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
         if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-          # debug logs to track the payload size
-          podInventorySizeInKB = (podInventory.to_s.length) / 1024
-          $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  and size in KB: #{podInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
         else
           $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
@@ -134,9 +144,7 @@ module Fluent
           podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
           @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-            # debug logs to track the payload size
-            podInventorySizeInKB = (podInventory.to_s.length) / 1024
-            $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  and size in KB: #{podInventorySizeInKB} from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
             parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
           else
             $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
@@ -164,7 +172,7 @@ module Fluent
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
           ApplicationInsightsUtility.sendMetricTelemetry("ServiceCount", @serviceCount, {})
-          telemetryProperties["ControllerData"] = Oj.dump(@controllerData)
+          telemetryProperties["ControllerData"] = @controllerData.to_json
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
           if @winContainerCount > 0
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount

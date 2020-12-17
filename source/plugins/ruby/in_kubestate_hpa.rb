@@ -17,9 +17,10 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
 
-      # roughly each HPA is 3k
-      # 2000 HPAs account to approximately 6-7MB
-      @HPA_CHUNK_SIZE = 2000
+      # refer tomlparser-agent-config for defaults
+      # this configurable via configmap
+      @HPA_CHUNK_SIZE = 0
+
       @HPA_API_GROUP = "autoscaling"
 
       # telemetry
@@ -39,8 +40,12 @@ module Fluent
 
     def start
       if @run_interval
-        if !ENV["HPA_CHUNK_SIZE"].nil? && !ENV["HPA_CHUNK_SIZE"].empty?
-          @HPA_CHUNK_SIZE = ENV["HPA_CHUNK_SIZE"]
+        if !ENV["HPA_CHUNK_SIZE"].nil? && !ENV["HPA_CHUNK_SIZE"].empty? && ENV["HPA_CHUNK_SIZE"].to_i > 0
+          @HPA_CHUNK_SIZE = ENV["HPA_CHUNK_SIZE"].to_i
+        else
+          # this shouldnt happen just setting default here as safe guard
+          $log.warn("in_kubestate_hpa::start: setting to default value since got HPA_CHUNK_SIZE nil or empty")
+          @HPA_CHUNK_SIZE = 2000
         end
         $log.info("in_kubestate_hpa::start : HPA_CHUNK_SIZE  @ #{@HPA_CHUNK_SIZE}")
 

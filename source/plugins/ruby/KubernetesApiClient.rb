@@ -596,7 +596,7 @@ class KubernetesApiClient
         #Since we are getting all node data at the same time and kubernetes doesnt specify a timestamp for the capacity and allocation metrics,
         #if we are coming up with the time it should be same for all nodes
         #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
-        if (!node["status"][metricCategory].nil?)
+        if (!node["status"][metricCategory].nil?) && (!node["status"][metricCategory][metricNameToCollect].nil?)
           # metricCategory can be "capacity" or "allocatable" and metricNameToCollect can be "cpu" or "memory"
           metricValue = getMetricNumericValue(metricNameToCollect, node["status"][metricCategory][metricNameToCollect])
 
@@ -794,15 +794,13 @@ class KubernetesApiClient
         if (!serviceList.nil? && !serviceList.empty?)
           servicesCount = serviceList["items"].length
           @Log.info("KubernetesApiClient::getKubeServicesInventoryRecords : number of services in serviceList  #{servicesCount} @ #{Time.now.utc.iso8601}")
-          servicesSizeInKB = (serviceList["items"].to_s.length) / 1024
-          @Log.info("KubernetesApiClient::getKubeServicesInventoryRecords : size of serviceList in KB #{servicesSizeInKB} @ #{Time.now.utc.iso8601}")
           serviceList["items"].each do |item|
             kubeServiceRecord = {}
             kubeServiceRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
             kubeServiceRecord["ServiceName"] = item["metadata"]["name"]
             kubeServiceRecord["Namespace"] = item["metadata"]["namespace"]
             kubeServiceRecord["SelectorLabels"] = [item["spec"]["selector"]]
-            # add these before emit to avoid memory foot print
+            # added these before emit to avoid memory foot print
             # kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
             # kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
             kubeServiceRecord["ClusterIP"] = item["spec"]["clusterIP"]
