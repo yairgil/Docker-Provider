@@ -13,13 +13,16 @@ import (
 
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
-	return output.FLBPluginRegister(ctx, "oms", "OMS GO!")
+	return output.FLBPluginRegister(ctx, "oms-multiinstance", "OMS GO multiinstance!")
 }
 
 //export FLBPluginInit
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
+	id := output.FLBPluginConfigKey(plugin, "id")
+	log.Printf("[oms-multiinstance] id = %q", id)
+	output.FLBPluginSetContext(plugin, id)
 	Log("Initializing out_oms go plugin for fluentbit")
 	var agentVersion string
 	agentVersion = os.Getenv("AGENT_VERSION")
@@ -50,7 +53,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 }
 
 //export FLBPluginFlush
-func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
+func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
+	id := output.FLBPluginGetContext(ctx).(string)
+	log.Printf("[oms-multiinstance] Flush called for id: %s", id)
 	var ret int
 	var record map[interface{}]interface{}
 	var records []map[interface{}]interface{}
@@ -80,7 +85,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 }
 
 // FLBPluginExit exits the plugin
-func FLBPluginExit() int {
+func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 	ContainerLogTelemetryTicker.Stop()
 	ContainerImageNameRefreshTicker.Stop()
 	return output.FLB_OK
