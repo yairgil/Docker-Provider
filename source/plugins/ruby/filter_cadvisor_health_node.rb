@@ -3,7 +3,6 @@
 
 module Fluent
   require "logger"
-  require "oj"
   require_relative "oms_common"
   require_relative "ApplicationInsightsUtility"
   require_relative "KubernetesApiClient"

@@ -8,7 +8,6 @@ module Fluent
 
     def initialize
       super
-      require "oj"
       require "time"
 
       require_relative "KubernetesApiClient"

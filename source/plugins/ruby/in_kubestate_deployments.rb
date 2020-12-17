@@ -10,7 +10,6 @@ module Fluent
 
     def initialize
       super
-      require "oj"
       require "date"
       require "time"
 
