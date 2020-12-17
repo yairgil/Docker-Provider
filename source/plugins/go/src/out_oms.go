@@ -22,9 +22,9 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
-	id := output.FLBPluginConfigKey(plugin, "id")
+	id := output.FLBPluginConfigKey(ctx, "id")
 	log.Printf("[oms-multiinstance] id = %q", id)
-	output.FLBPluginSetContext(plugin, id)
+	output.FLBPluginSetContext(ctx, id)
 	Log("Initializing out_oms go plugin for fluentbit")
 	var agentVersion string
 	agentVersion = os.Getenv("AGENT_VERSION")
