@@ -102,6 +102,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/lib/application_insights.rb;     source/plugins/ruby/lib/application_insights.rb; 644; root; root
 
 /opt/microsoft/omsagent/plugin/oj/oj.rb;               source/plugins/ruby/oj/oj.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/oj/oj/oj.so;            source/plugins/ruby/oj/oj/oj.so; 644; root; root
 /opt/microsoft/omsagent/plugin/oj/oj/version.rb;       source/plugins/ruby/oj/oj/version.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/oj/oj/schandler.rb;     source/plugins/ruby/oj/oj/schandler.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/oj/oj/saj.rb;           source/plugins/ruby/oj/oj/saj.rb; 644; root; root
