@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
@@ -23,7 +21,7 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	id := output.FLBPluginConfigKey(ctx, "id")
-	log.Printf("[oms-multiinstance] id = %q", id)
+	Log("[oms-multiinstance] id = %q", id)
 	output.FLBPluginSetContext(ctx, id)
 	Log("Initializing out_oms go plugin for fluentbit")
 	var agentVersion string
@@ -57,7 +55,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
 	id := output.FLBPluginGetContext(ctx).(string)
-	log.Printf("[oms-multiinstance] Flush called for id: %s", id)
+	Log("[oms-multiinstance] Flush called for id: %s", id)
 	var ret int
 	var record map[interface{}]interface{}
 	var records []map[interface{}]interface{}
