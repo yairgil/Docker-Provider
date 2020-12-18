@@ -1,8 +1,10 @@
 package main
 
 import (
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
+	"log"
+
 	"github.com/fluent/fluent-bit-go/output"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 import (
 	"C"
