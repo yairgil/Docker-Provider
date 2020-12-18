@@ -6,7 +6,7 @@ require (
 	code.cloudfoundry.org/clock v1.0.1-0.20200131002207-86534f4ca3a5 // indirect
 	github.com/Azure/azure-kusto-go v0.1.4-0.20200427191510-041d4ed55f86
 	github.com/Azure/go-autorest/autorest/azure/auth v0.4.2
-	github.com/fluent/fluent-bit-go v0.0.0-20171103221316-c4a158a6e3a7
+	github.com/fluent/fluent-bit-go v0.0.0-20200707230002-2a28684e2382
 	github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680 // indirect
 	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e // indirect
 	github.com/golang/glog v0.0.0-20141105023935-44145f04b68c // indirect
