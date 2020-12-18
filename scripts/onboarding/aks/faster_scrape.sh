@@ -84,7 +84,7 @@ helm repo update
 echo "uninstalling existing release"
 helm uninstall azmon-containers-deployment
 
-helm upgrade --install azmon-containers-deployment --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion,omsagent.logsettings.logflushintervalsecs="1",omsagent.logsettings.tailbufchunksizemegabytes="1",omsagent.logsettings.tailbufmaxsizemegabytes="1",omsagent.resources.daemonsetlinux.limits.cpu="3",omsagent.resources.daemonsetlinux.limits.memory="10Gi",omsagent.image.repo="mcr.microsoft.com/azuremonitor/containerinsights/cidev",omsagent.image.tag="fbit-multi-instance-1" microsoft/azuremonitor-containers --kube-context $clusterName
+helm upgrade --install azmon-containers-deployment --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion,omsagent.logsettings.logflushintervalsecs="1",omsagent.logsettings.tailbufchunksizemegabytes="1",omsagent.logsettings.tailbufmaxsizemegabytes="1",omsagent.resources.daemonsetlinux.limits.cpu="3",omsagent.resources.daemonsetlinux.limits.memory="10Gi",omsagent.image.repo="mcr.microsoft.com/azuremonitor/containerinsights/cidev",omsagent.image.tag="fbit-multi-instance-4" microsoft/azuremonitor-containers --kube-context $clusterName
 echo "chart installation completed."
 
 echo "setting the subscription id of the cluster: ${clusterSubscriptionId}"
