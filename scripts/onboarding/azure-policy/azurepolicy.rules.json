@@ -1,0 +1,79 @@
+{
+	"if": {
+		"field": "type",
+		"equals": "Microsoft.ContainerService/managedClusters"
+	},
+	"then": {
+		"effect": "deployIfNotExists",
+		"details": {
+			"type": "Microsoft.ContainerService/managedClusters",
+			"name": "[field('name')]",
+			"roleDefinitionIds": [
+				"/providers/Microsoft.Authorization/roleDefinitions/ed7f3fbd-7b88-4dd4-9017-9adb7ce333f8",
+				"/providers/Microsoft.Authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293",
+				"/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+			],
+			"existenceCondition": {
+				"field": "Microsoft.ContainerService/managedClusters/addonProfiles",
+				"contains": "logAnalyticsWorkspaceResourceID"
+			},
+			"deployment": {
+				"properties": {
+					"mode": "incremental",
+					"template": {
+						"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+						"contentVersion": "1.0.0.0",
+						"parameters": {
+							"clusterName": {
+								"type": "string"
+							},
+							"clusterResourceGroupName": {
+								"type": "string"
+							},
+							"clusterLocation": {
+								"type": "string"
+							},
+							"workspaceResourceId": {
+								"type": "string"
+							}
+						},
+						"resources": [
+							{
+								"name": "[parameters('clusterName')]",
+								"type": "Microsoft.ContainerService/managedClusters",
+								"location": "[parameters('clusterLocation')]",
+								"apiVersion": "2018-03-31",
+								"properties": {
+									"mode": "Incremental",
+									"id": "[resourceId(parameters('clusterResourceGroupName'), 'Microsoft.ContainerService/managedClusters', parameters('clusterName'))]",
+									"addonProfiles": {
+										"omsagent": {
+											"enabled": true,
+											"config": {
+												"logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]"
+											}
+										}
+									}
+								}
+							}
+						]
+					},
+					"parameters": {
+						"clusterName": {
+							"value": "[field('name')]"
+						},
+						"clusterResourceGroupName": {
+							"value": "[resourceGroup().name]"
+						},
+						"clusterLocation": {
+							"value": "[field('location')]"
+						},
+						"workspaceResourceId": {
+							"value": "<workspace-resource-id>"
+						}
+					}
+				}
+			}
+		}
+	}
+}
