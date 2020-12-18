@@ -1,10 +1,8 @@
 package main
 
 import (
-	"log"
-
-	"github.com/fluent/fluent-bit-go/output"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/fluent/fluent-bit-go/output"
 )
 import (
 	"C"
