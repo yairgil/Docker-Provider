@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class ConfigParseErrorLogger
-  require_relative "../../../../source/plugins/ruby/oj/oj"
+  require_relative "microsoft/omsagent/plugin/oj/oj"
 
   def initialize
   end
