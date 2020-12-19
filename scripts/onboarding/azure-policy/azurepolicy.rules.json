@@ -10,12 +10,11 @@
 			"name": "[field('name')]",
 			"roleDefinitionIds": [
 				"/providers/Microsoft.Authorization/roleDefinitions/ed7f3fbd-7b88-4dd4-9017-9adb7ce333f8",
-				"/providers/Microsoft.Authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293",
-				"/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+				"/providers/Microsoft.Authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293"
 			],
 			"existenceCondition": {
 				"field": "Microsoft.ContainerService/managedClusters/addonProfiles",
-				"contains": "logAnalyticsWorkspaceResourceID"
+				"containsKey": "omsagent"
 			},
 			"deployment": {
 				"properties": {
@@ -69,7 +68,7 @@
 							"value": "[field('location')]"
 						},
 						"workspaceResourceId": {
-							"value": "<workspace-resource-id>"
+							"value": "[parameters('workspaceResourceId')]"
 						}
 					}
 				}
