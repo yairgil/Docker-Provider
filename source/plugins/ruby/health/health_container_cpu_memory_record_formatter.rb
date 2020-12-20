@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../oj/oj"
+require "oj"
 
 module HealthModel
   class HealthContainerCpuMemoryRecordFormatter

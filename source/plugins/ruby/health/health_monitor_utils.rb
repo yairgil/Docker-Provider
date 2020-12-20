@@ -2,7 +2,7 @@
 require "logger"
 require "digest"
 require_relative "health_model_constants"
-require_relative "../oj/oj"
+require "oj"
 require_relative "../kubelet_utils"
 
 module HealthModel

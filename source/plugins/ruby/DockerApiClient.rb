@@ -3,7 +3,7 @@
 
 class DockerApiClient
   require "socket"
-  require_relative "oj/oj"
+  require "oj"
   require "timeout"
   require_relative "omslog"
   require_relative "DockerApiRestHelper"

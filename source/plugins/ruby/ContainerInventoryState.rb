@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class ContainerInventoryState
-  require_relative "oj/oj"
+  require "oj"
   require_relative "omslog"
   @@InventoryDirectory = "/var/opt/microsoft/docker-cimprov/state/ContainerInventory/"
 

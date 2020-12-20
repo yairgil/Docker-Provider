@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "test/unit"
-require_relative "../../../source/plugins/ruby/oj/oj"
+require "oj"
 
 # require_relative '../../../source/plugins/ruby/health'
 

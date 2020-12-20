@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 require "logger"
-require_relative "oj/oj"
+require "oj"
 require_relative "CAdvisorMetricsAPIClient"
 require_relative "KubernetesApiClient"
 require "bigdecimal"

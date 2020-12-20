@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class KubernetesApiClient
-  require_relative "oj/oj"
+  require "oj"
   require "logger"
   require "net/http"
   require "net/https"

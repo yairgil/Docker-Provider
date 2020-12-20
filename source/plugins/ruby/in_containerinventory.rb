@@ -9,7 +9,7 @@ module Fluent
 
     def initialize
       super
-      require_relative "oj/oj"
+      require "oj"
       require "time"
       require_relative "ContainerInventoryState"
       require_relative "ApplicationInsightsUtility"

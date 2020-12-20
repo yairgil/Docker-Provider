@@ -5,7 +5,7 @@
 module Fluent
   require "logger"
   require "socket"
-  require_relative "oj/oj"
+  require "oj"
 
 	class DockerLogFilter < Filter
 		Plugin.register_filter('filter_docker_log', self)
