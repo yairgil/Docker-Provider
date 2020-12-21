@@ -1,0 +1,49 @@
+- command: update 
+  path: spec.containers[0].command[+]
+  value:
+    --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+- command: update 
+  path: spec.containers[0].command[+]
+  value:
+    --audit-log-path=/var/log/kube-apiserver/audit
+- command: update 
+  path: spec.containers[0].command[+]
+  value:
+    --audit-log-format=json
+- command: update 
+  path: spec.containers[0].command[+]
+  value:
+    --audit-log-maxage=1
+- command: update 
+  path: spec.containers[0].command[+]
+  value:
+    --audit-log-maxbackup=10
+- command: update 
+  path: spec.containers[0].command[+]
+  value:
+    --audit-log-maxsize=1
+- command: update 
+  path: spec.containers[0].volumeMounts[+]
+  value:
+    mountPath: /etc/kubernetes
+    name: etc-kubernetes
+    readOnly: true
+- command: update 
+  path: spec.containers[0].volumeMounts[+]
+  value:
+    mountPath: /var/log/kube-apiserver
+    name: var-log-kubeapi
+- command: update 
+  path: spec.volumes[+]
+  value:
+    hostPath:
+      path: /etc/kubernetes
+      type: Directory
+    name: etc-kubernetes
+- command: update 
+  path: spec.volumes[+]
+  value:
+    hostPath:
+      path: /var/log/kube-apiserver
+      type: DirectoryOrCreate
+    name: var-log-kubeapi
