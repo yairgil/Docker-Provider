@@ -513,6 +513,13 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-1.conf -e /opt/td-agent-bit/bin/out_oms.so &
             /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-2.conf -e /opt/td-agent-bit/bin/out_oms.so &
             /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-3.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-4.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-5.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-6.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-7.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-8.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-9.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-10.conf -e /opt/td-agent-bit/bin/out_oms.so &
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
       else
             echo "since container run time is $CONTAINER_RUNTIME update the container log fluentbit Parser to cri from docker"

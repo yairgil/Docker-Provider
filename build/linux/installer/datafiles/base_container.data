@@ -114,6 +114,13 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/microsoft/docker-cimprov/td-agent-bit-1.conf;			 build/linux/installer/conf/td-agent-bit-1.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/td-agent-bit-2.conf;			 build/linux/installer/conf/td-agent-bit-2.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/td-agent-bit-3.conf;			 build/linux/installer/conf/td-agent-bit-3.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-4.conf;			 build/linux/installer/conf/td-agent-bit-4.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-5.conf;			 build/linux/installer/conf/td-agent-bit-5.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-6.conf;			 build/linux/installer/conf/td-agent-bit-6.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-7.conf;			 build/linux/installer/conf/td-agent-bit-7.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-8.conf;			 build/linux/installer/conf/td-agent-bit-8.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-9.conf;			 build/linux/installer/conf/td-agent-bit-9.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-10.conf;			 build/linux/installer/conf/td-agent-bit-10.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf;			 build/linux/installer/conf/td-agent-bit-rs.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/azm-containers-parser.conf;	 build/linux/installer/conf/azm-containers-parser.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/out_oms.conf;			          build/linux/installer/conf/out_oms.conf;                    644; root; root
