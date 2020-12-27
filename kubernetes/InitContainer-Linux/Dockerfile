@@ -1,18 +1,19 @@
-FROM ubuntu:21.04
+FROM python:3.8
 MAINTAINER ascdetectionnadav@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Defender"
-ENV tmpdir /opt
+ENV DEBIAN_FRONTEND noninteractive
 
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y wget curl
+WORKDIR /code
 
-RUN wget -O /usr/bin/yq "https://github.com/mikefarah/yq/releases/download/3.3.2/yq_linux_amd64"
-RUN chmod +x /usr/bin/yq
-#RUN /usr/bin/snap install YQ
-#RUN apk add yq
-#RUN wget -O /$tmpdir/EnableAuditLogs.sh https://arcsecuritydev.blob.core.windows.net/extension/EnableAuditLogs.sh
-COPY AuditLogsUpdateRules.yaml EnableAuditLogs.sh $tmpdir/
-WORKDIR ${tmpdir}
+RUN apt-get update && \
+    apt-get install -y \
+    python3 \
+    python3-pip
 
-RUN chmod 775 $tmpdir/*.sh; sync
-CMD [ "/opt/EnableAuditLogs.sh" ]
+RUN pip install --no-cache-dir pyyaml
+RUN pip install --no-cache-dir requests
+
+COPY EnableAuditLogs.py .
+
+CMD [ "python", "./EnableAuditLogs.py" ]
