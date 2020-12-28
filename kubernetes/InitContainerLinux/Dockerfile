@@ -13,7 +13,8 @@ RUN apt-get update && \
 
 RUN pip install --no-cache-dir pyyaml
 RUN pip install --no-cache-dir requests
+RUN pip install --no-cache-dir mock
 
-COPY EnableAuditLogs.py .
+COPY EnableAuditLogs.py audit-policy.yaml .
 
 CMD [ "python", "./EnableAuditLogs.py" ]
