@@ -11,8 +11,8 @@ from io import StringIO
 @dataclass
 class ApiServerComponents:
     commands: list
-    hostPaths: list
     volumeMounts: list
+    hostPaths: list
 
 class AuditLogsEnabler():
     auditPolicyFilePath = "/etc/kubernetes/audit-policy.yaml"
@@ -76,9 +76,9 @@ class AuditLogsEnabler():
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-    def VerifyAuditLogsAreNotEnabled(self, commands, volumeMounts, hostPaths):
+    def VerifyAuditLogsAreNotEnabled(self, apiServerComponents):
         self.logger.info("Checking to see whether there's any sign for audit logs configuration in the api server yaml")
-        commandsJoined = ', '.join(commands)
+        commandsJoined = ', '.join(apiServerComponents.commands)
         commandsTobeAdded = self.commandsToBeAdded
         commandsKeysToBeAdded = list(
             map(lambda x: x[:x.find('=')], commandsTobeAdded))
@@ -88,14 +88,14 @@ class AuditLogsEnabler():
                 self.logger.warning("Potential collision detected: command: " + AuditLogsCommand)
                 return False
 
-        for currentVolumeMount in volumeMounts:
+        for currentVolumeMount in apiServerComponents.volumeMounts:
             for volumeMountToBeAdded in self.volumeMountsToBeAdded:
                 if currentVolumeMount["name"] == volumeMountToBeAdded["name"] or currentVolumeMount["mountPath"] == volumeMountToBeAdded["mountPath"]:
                     self.logger.warning("Potential collision detected: volumeMount: " +
                           volumeMountToBeAdded["name"])
                     return False
 
-        for currentHostPath in hostPaths:
+        for currentHostPath in apiServerComponents.hostPaths:
             for hostPathToBeAdded in self.hostPathsToBeAdded:
                 if currentHostPath["name"] == hostPathToBeAdded["name"] or currentHostPath["hostPath"]["path"] == hostPathToBeAdded["hostPath"]["path"]:
                     self.logger.warning("Potential collision detected: hostPath: " +
@@ -104,12 +104,12 @@ class AuditLogsEnabler():
         self.logger.info("no sign audit logs configuration sign was found in the api server yaml")
         return True
 
-    def EnableAuditLogs(self, commands, volumeMounts, hostPaths):
-        commands.extend(self.commandsToBeAdded)
-        volumeMounts.extend(self.volumeMountsToBeAdded)
-        hostPaths.extend(self.hostPathsToBeAdded)
+    def EnableAuditLogs(self, apiServerComponents):
+        apiServerComponents.commands.extend(self.commandsToBeAdded)
+        apiServerComponents.volumeMounts.extend(self.volumeMountsToBeAdded)
+        apiServerComponents.hostPaths.extend(self.hostPathsToBeAdded)
 
-    def VerifyApiServerIsStillAlive(self):
+    def VerifyApiServerIsStillAlive(self, sleepInterval = 10):
         self.logger.info("Verifying that the API server is alive")
 
         apiServerUrl = "https://kubernetes.default.svc.cluster.local/api/v1/namespaces/kube-system/pods"
@@ -125,11 +125,10 @@ class AuditLogsEnabler():
         currentAttempt = 0
         maxAttempts = 10
         while currentAttempt < maxAttempts:
-            time.sleep(10)
+            time.sleep(sleepInterval)
             response = ""
             try:
-                response = requests.get(
-                    apiServerUrl, headers=header, verify=caCertVerificationPath)
+                response = requests.get(apiServerUrl, headers=header, verify=caCertVerificationPath)
                 response = response.json()
                 response = response["items"]
                 # Get the API server item
@@ -167,7 +166,7 @@ class AuditLogsEnabler():
             return False
         return True
         
-    def ExtractYamlSections(self, yamlResult):
+    def ExtractApiServerYamlSections(self, yamlResult):
         for container in yamlResult["spec"]["containers"]:
             if container["name"] == "kube-apiserver":
                 commands = container["command"]
@@ -191,25 +190,25 @@ class AuditLogsEnabler():
         yamlResult = yaml.full_load(file)
         file.seek(0)
         oldYaml = copy.deepcopy(yamlResult)
-        x = self.ExtractYamlSections(yamlResult)
-        for container in yamlResult["spec"]["containers"]:
-            commands = container["command"]
-            volumeMounts = container["volumeMounts"]
-            hostPaths = yamlResult["spec"]["volumes"]
-            if container["name"] == "kube-apiserver":
-                if self.VerifyAuditLogsAreNotEnabled(commands, volumeMounts, hostPaths):
-                    self.EnableAuditLogs(commands, volumeMounts, hostPaths)
-                    yaml.dump(yamlResult, file)
-                    if self.VerifyApiServerIsStillAlive() == False:
-                        self.logger.info(
-                            "Api server did not come up, reverting the changes")
-                        file.seek(0)
-                        yaml.dump(oldYaml, file)
-                        self.logger.info("Done reverting the changes")
-                else:
-                    self.logger.info(
-                        "Detected potential collision, aborting the altering of the yaml file to avoid damaging the cluster")
-                return 0
+        apiServerYamlSections = self.ExtractApiServerYamlSections(yamlResult)
+
+
+        if self.VerifyAuditLogsAreNotEnabled(apiServerYamlSections):
+            self.EnableAuditLogs(apiServerYamlSections)
+            self.logger.info(
+                "Enabling audit logs on the api server")
+            yaml.dump(yamlResult, file)
+            self.logger.info(
+                "Finished editing the api server configuration")
+            if self.VerifyApiServerIsStillAlive() == False:
+                self.logger.info(
+                    "Api server did not come up, reverting the changes")
+                file.seek(0)
+                yaml.dump(oldYaml, file)
+                self.logger.info("Done reverting the changes")
+        else:
+            self.logger.info(
+                "Detected potential collision, aborting the altering of the yaml file to avoid damaging the cluster")
         return 0
 
 
