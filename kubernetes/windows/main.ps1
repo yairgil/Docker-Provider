@@ -75,7 +75,7 @@ function Set-EnvironmentVariables {
     }
 
     # Set KEY
-    #[System.Environment]::SetEnvironmentVariable("", $wsKey, "Process")
+    #[System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Process")
     #[System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Machine")
 
     $proxy = ""
