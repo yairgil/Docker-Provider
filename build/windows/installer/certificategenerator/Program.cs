@@ -414,10 +414,11 @@ namespace certificategenerator
 
             try
             {
-                if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("WSKEY")))
-                {
-                    logAnalyticsWorkspaceSharedKey = Environment.GetEnvironmentVariable("WSKEY");
-                }
+              logAnalyticsWorkspaceSharedKey = File.ReadAllText("C:/etc/omsagent-secret/KEY");
+                //if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("WSKEY")))
+                //{
+                    //logAnalyticsWorkspaceSharedKey = Environment.GetEnvironmentVariable("WSKEY");
+                //}
             }
             catch (Exception ex)
             {

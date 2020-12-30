@@ -75,8 +75,8 @@ function Set-EnvironmentVariables {
     }
 
     # Set KEY
-    [System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Process")
-    [System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Machine")
+    #[System.Environment]::SetEnvironmentVariable("", $wsKey, "Process")
+    #[System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Machine")
 
     $proxy = ""
     if (Test-Path /etc/omsagent-secret/PROXY) {
