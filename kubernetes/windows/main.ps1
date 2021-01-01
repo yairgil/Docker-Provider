@@ -64,19 +64,11 @@ function Set-EnvironmentVariables {
         $wsID = Get-Content /etc/omsagent-secret/WSID
     }
 
-    # Set DOMAIN
+    # Set WSID
     [System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Process")
     [System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Machine")
 
-    $wsKey = ""
-    if (Test-Path /etc/omsagent-secret/KEY) {
-        # TODO: Change to omsagent-secret before merging
-        $wsKey = Get-Content /etc/omsagent-secret/KEY
-    }
-
-    # Set KEY
-    #[System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Process")
-    #[System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Machine")
+    # Don't store WSKEY as environment variable
 
     $proxy = ""
     if (Test-Path /etc/omsagent-secret/PROXY) {

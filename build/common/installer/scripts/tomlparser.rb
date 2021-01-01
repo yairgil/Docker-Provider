@@ -228,7 +228,7 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     file.write(commands)
     commands = get_command_windows('AZMON_LOG_TAIL_PATH', @logTailPath)
     file.write(commands)
-    commands = get_command_windows('AZMON_LOG_EXCLUSION_REGEX_PATTERN', @stdoutExcludeNamespaces)
+    commands = get_command_windows('AZMON_LOG_EXCLUSION_REGEX_PATTERN', @logExclusionRegexPattern)
     file.write(commands)
     commands = get_command_windows('AZMON_STDOUT_EXCLUDED_NAMESPACES', @stdoutExcludeNamespaces)
     file.write(commands)

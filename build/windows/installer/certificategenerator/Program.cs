@@ -364,7 +364,7 @@ namespace certificategenerator
 
             try
             {
-                agentCert = CreateSelfSignedCertificate(agentGuid, logAnalyticsWorkspaceId);
+              agentCert = CreateSelfSignedCertificate(agentGuid, logAnalyticsWorkspaceId);
 
                 if (agentCert == null)
                 {
@@ -414,15 +414,12 @@ namespace certificategenerator
 
             try
             {
-              logAnalyticsWorkspaceSharedKey = File.ReadAllText("C:/etc/omsagent-secret/KEY");
-                //if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("WSKEY")))
-                //{
-                    //logAnalyticsWorkspaceSharedKey = Environment.GetEnvironmentVariable("WSKEY");
-                //}
+              // WSKEY isn't stored as an environment variable
+              logAnalyticsWorkspaceSharedKey = File.ReadAllText("C:/etc/omsagent-secret/KEY").Trim();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Failed to read env variables (WSKEY)" + ex.Message);
+                Console.WriteLine("Failed to read secret (WSKEY)" + ex.Message);
             }
 
             try
