@@ -364,7 +364,7 @@ namespace certificategenerator
 
             try
             {
-              agentCert = CreateSelfSignedCertificate(agentGuid, logAnalyticsWorkspaceId);
+                agentCert = CreateSelfSignedCertificate(agentGuid, logAnalyticsWorkspaceId);
 
                 if (agentCert == null)
                 {
