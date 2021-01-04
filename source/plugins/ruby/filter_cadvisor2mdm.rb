@@ -315,7 +315,7 @@ module Fluent
           @memory_capacity = capacity_from_kubelet[1]
         else
           # cpu_capacity and memory_capacity keep initialized value of 0.0
-          @log.info "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
+          @log.error "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
         end
 
       end
