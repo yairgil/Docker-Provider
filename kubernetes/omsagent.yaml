@@ -362,6 +362,10 @@ spec:
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
+      dnsConfig:    
+        options:
+          - name: ndots
+            value: "3"       
       containers:
         - name: omsagent
           image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020"
@@ -675,6 +679,10 @@ spec:
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
+     dnsConfig:    
+        options:
+          - name: ndots
+            value: "3"     
      containers:
        - name: omsagent-win
          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod11092020"
