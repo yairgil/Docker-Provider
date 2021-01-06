@@ -27,15 +27,15 @@
                 },
                 {
                     "find": "__ACR_NAME__",
-                    "replaceWith": "ArcSecurityDev"
+                    "replaceWith": "azuredefendermcrdev"
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "ascagent"
+                    "replaceWith": "dev"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/dev/kubernetes"
+                    "replaceWith": "public/azuredefender/azuredefenderagent/"
                 }
             ]
         },
@@ -64,15 +64,15 @@
                 },
                 {
                     "find": "__ACR_NAME__",
-                    "replaceWith": "ArcSecurityStage"
+                    "replaceWith": "azuredefendermcrstage"
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "ascagent"
+                    "replaceWith": "stage"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/stage/kubernetes"
+                    "replaceWith": "public/azuredefender/azuredefenderagent/"
                 }
             ]
         },
@@ -101,15 +101,15 @@
                 },
                 {
                     "find": "__ACR_NAME__",
-                    "replaceWith": "ArcSecurityProd"
+                    "replaceWith": "azuredefendermcrprod"
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "ascagent"
+                    "replaceWith": "prod"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/stable/kubernetes"
+                    "replaceWith": "public/azuredefender/azuredefenderagent/"
                 }
             ]
         }
