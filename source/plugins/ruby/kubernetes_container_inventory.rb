@@ -193,15 +193,32 @@ class KubernetesContainerInventory
       $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars @ #{Time.now.utc.iso8601}")
       envValueString = ""
       begin
-        unless @@containerCGroupCache.has_key?(containerId)
+       
+        isCGroupPidFetchRequired = false 
+        if !@@containerCGroupCache.has_key?(containerId)
+          isCGroupPidFetchRequired = true 
+        else
+          cGroupPid = @@containerCGroupCache[containerId]
+          if cGroupPid.nil? || cGroupPid.empty? 
+            isCGroupPidFetchRequired = true
+          else 
+            if !File.exist?("/hostfs/proc/#{cGroupPid}/environ")
+              isCGroupPidFetchRequired = true
+            end
+          end
+        end
+
+        if isCGroupPidFetchRequired
           $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars fetching cGroup parent pid @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
           Dir["/hostfs/proc/*/cgroup"].each do |filename|
             begin
               if File.file?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
                 # file full path is /hostfs/proc/<cGroupPid>/cgroup
                 cGroupPid = filename.split("/")[3]
+                $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars matching filename: #{filename} cGroup parent pid #{cGroupPid} @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
                 if @@containerCGroupCache.has_key?(containerId)
                   tempCGroupPid = @@containerCGroupCache[containerId]
+                  $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars tempCGroupPid #{tempCGroupPid} cGroupPid #{cGroupPid} and @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
                   if tempCGroupPid > cGroupPid
                     @@containerCGroupCache[containerId] = cGroupPid
                   end
@@ -210,8 +227,10 @@ class KubernetesContainerInventory
                 end
               end
             rescue SystemCallError # ignore Error::ENOENT,Errno::ESRCH which is expected if any of the container gone while we read
-            end
+              $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars exception while enumerating cproc files @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
+            end          
           end
+          $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars final cGroup parent pid #{@@containerCGroupCache[containerId]} @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
         end
         cGroupPid = @@containerCGroupCache[containerId]
         if !cGroupPid.nil? && !cGroupPid.empty?
@@ -240,6 +259,8 @@ class KubernetesContainerInventory
                 end
               end
             end
+          else 
+            $log.warn("EnvironFilePath #{environFilePath} for container: #{containerId} doesnt exist any more")
           end
         else
           $log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: cGroupPid is NIL or empty for containerId: #{containerId}")
