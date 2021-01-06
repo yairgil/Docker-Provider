@@ -471,6 +471,138 @@ spec:
           secret:
             secretName: omsagent-adx-secret
             optional: true
+        - name: omsagent-prometheus
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 250m
+              memory: 600Mi
+            requests:
+              cpu: 75m
+              memory: 225Mi
+          env:
+            # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
+            - name: AKS_RESOURCE_ID
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
+            - name: AKS_REGION
+              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+            #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
+            #- name: ACS_RESOURCE_NAME
+            #  value: "my_acs_cluster_name"
+            - name: CONTROLLER_TYPE
+              value: "DaemonSet-Prometheus"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            # Update this with the user assigned msi client id for omsagent
+            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+              value: ""
+            - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
+              value: "koreacentral,norwayeast"
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 25225
+              protocol: TCP
+            - containerPort: 25224
+              protocol: UDP
+          volumeMounts:
+            - mountPath: /hostfs
+              name: host-root
+              readOnly: true
+            - mountPath: /var/run/host
+              name: docker-sock
+            - mountPath: /var/log
+              name: host-log
+            - mountPath: /var/lib/docker/containers
+              name: containerlog-path
+              readOnly: true
+            - mountPath: /mnt/docker
+              name: containerlog-path-2
+              readOnly: true
+            - mountPath: /mnt/containers
+              name: containerlog-path-3
+              readOnly: true
+            - mountPath: /etc/kubernetes/host
+              name: azure-json-path
+            - mountPath: /etc/omsagent-secret
+              name: omsagent-secret
+              readOnly: true
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+            - mountPath: /etc/config/settings/adx
+              name: omsagent-adx-secret
+              readOnly: true
+          #livenessProbe:
+            #exec:
+              #command:
+                #- /bin/bash
+                #- -c
+                #- /opt/livenessprobe.sh
+            #initialDelaySeconds: 60
+            #periodSeconds: 60
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - labelSelector:
+                matchExpressions:
+      # kubernetes.io/os label doesnt exist in k8s versions < 1.14  so make sure to choose label based on k8s version in aks yaml
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                    - linux
+                  - key: type
+                    operator: NotIn
+                    values:
+                      - virtual-kubelet
+      # Tolerate a NoSchedule taint on master that ACS Engine sets.
+      tolerations:
+        - operator: "Exists"
+          effect: "NoSchedule"
+        - operator: "Exists"
+          effect: "NoExecute"
+        - operator: "Exists"
+          effect: "PreferNoSchedule"
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+        - name: docker-sock
+          hostPath:
+            path: /var/run
+        - name: container-hostname
+          hostPath:
+            path: /etc/hostname
+        - name: host-log
+          hostPath:
+            path: /var/log
+        - name: containerlog-path
+          hostPath:
+            path: /var/lib/docker/containers
+        - name: containerlog-path-2
+          hostPath:
+            path: /mnt/docker
+        - name: containerlog-path-3
+          hostPath:
+            path: /mnt/containers
+        - name: azure-json-path
+          hostPath:
+            path: /etc/kubernetes
+        - name: omsagent-secret
+          secret:
+            secretName: omsagent-secret
+        - name: settings-vol-config
+          configMap:
+            name: container-azm-ms-agentconfig
+            optional: true
+        - name: omsagent-adx-secret
+          secret:
+            secretName: omsagent-adx-secret
+            optional: true
 ---
 apiVersion: apps/v1
 kind: Deployment
