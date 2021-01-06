@@ -202,14 +202,15 @@ class KubernetesContainerInventory
           if cGroupPid.nil? || cGroupPid.empty? 
             $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars refetching cGroup parent pid since cGroupPid is NIL or Empty @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
             isCGroupPidFetchRequired = true
+            @@containerCGroupCache.delete(containerId)
           else 
             cGroupPidFileName = "/hostfs/proc/#{cGroupPid}/environ"
             if !File.exist?(cGroupPidFileName)
               $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars refetching cGroupPid parent pid since cgroup file: #{cGroupPidFileName} doenst exist @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
               isCGroupPidFetchRequired = true
-            end
-          end
-          @@containerCGroupCache.delete(containerId)
+              @@containerCGroupCache.delete(containerId)
+            end            
+          end        
         end
 
         if isCGroupPidFetchRequired
@@ -224,7 +225,7 @@ class KubernetesContainerInventory
                   if @@containerCGroupCache.has_key?(containerId)
                     tempCGroupPid = @@containerCGroupCache[containerId]
                     $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars tempCGroupPid #{tempCGroupPid} cGroupPid #{cGroupPid} and @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
-                    if tempCGroupPid > cGroupPid
+                    if tempCGroupPid.to_i > cGroupPid.to_i
                       @@containerCGroupCache[containerId] = cGroupPid
                     end
                   else
