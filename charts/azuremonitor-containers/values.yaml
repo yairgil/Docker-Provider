@@ -58,7 +58,7 @@ omsagent:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - labelSelector:
-              matchExpressions:            
+              matchExpressions:           
                 - key: kubernetes.io/os
                   operator: In
                   values:
