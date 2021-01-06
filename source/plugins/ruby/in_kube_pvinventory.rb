@@ -90,7 +90,7 @@ module Fluent
         # Flush AppInsights telemetry once all the processing is done
         if telemetryFlush == true
           telemetryProperties = {}
-          telemetryProperties["CountsOfPVTypes"] = @pvTypeToCountHash
+          telemetryProperties["CountsOfPVTypes"] = @pvTypeToCountHash.to_json
           ApplicationInsightsUtility.sendCustomEvent(Constants::PV_INVENTORY_HEART_BEAT_EVENT, telemetryProperties)
           @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
