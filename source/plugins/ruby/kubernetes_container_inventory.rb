@@ -199,17 +199,12 @@ class KubernetesContainerInventory
           isCGroupPidFetchRequired = true 
         else
           cGroupPid = @@containerCGroupCache[containerId]
-          if cGroupPid.nil? || cGroupPid.empty? 
-            $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars refetching cGroup parent pid since cGroupPid is NIL or Empty @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
+          if cGroupPid.nil? || cGroupPid.empty?            
             isCGroupPidFetchRequired = true
             @@containerCGroupCache.delete(containerId)
-          else 
-            cGroupPidFileName = "/hostfs/proc/#{cGroupPid}/environ"
-            if !File.exist?(cGroupPidFileName)
-              $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars refetching cGroupPid parent pid since cgroup file: #{cGroupPidFileName} doenst exist @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
-              isCGroupPidFetchRequired = true
-              @@containerCGroupCache.delete(containerId)
-            end            
+          elsif !File.exist?("/hostfs/proc/#{cGroupPid}/environ")              
+            isCGroupPidFetchRequired = true
+            @@containerCGroupCache.delete(containerId)                       
           end        
         end
 
@@ -220,29 +215,23 @@ class KubernetesContainerInventory
               if File.file?(filename) && File.exist?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
                 # file full path is /hostfs/proc/<cGroupPid>/cgroup
                 cGroupPid = filename.split("/")[3]  
-                if is_number?(cGroupPid)              
-                  $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars matching filename: #{filename} cGroup parent pid #{cGroupPid} @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
+                if is_number?(cGroupPid)                              
                   if @@containerCGroupCache.has_key?(containerId)
-                    tempCGroupPid = @@containerCGroupCache[containerId]
-                    $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars tempCGroupPid #{tempCGroupPid} cGroupPid #{cGroupPid} and @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
+                    tempCGroupPid = @@containerCGroupCache[containerId]                  
                     if tempCGroupPid.to_i > cGroupPid.to_i
                       @@containerCGroupCache[containerId] = cGroupPid
                     end
                   else
                     @@containerCGroupCache[containerId] = cGroupPid
-                  end
-                else 
-                  $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars ignoring non-numeric cgroup pid - #{cGroupPid} @ #{Time.now.utc.iso8601} for containerId: #{containerId}")             
+                  end                        
                 end
               end
-            rescue SystemCallError # ignore Error::ENOENT,Errno::ESRCH which is expected if any of the container gone while we read
-              $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars exception while enumerating cproc files @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
+            rescue SystemCallError # ignore Error::ENOENT,Errno::ESRCH which is expected if any of the container gone while we read              
             end          
-          end
-          $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars final cGroup parent pid #{@@containerCGroupCache[containerId]} @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
+          end        
         end
         cGroupPid = @@containerCGroupCache[containerId]
-        if !cGroupPid.nil? && !cGroupPid.empty? && is_number?(cGroupPid)
+        if !cGroupPid.nil? && !cGroupPid.empty? 
           environFilePath = "/hostfs/proc/#{cGroupPid}/environ"
           $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars cGroupPid: #{cGroupPid} environFilePath: #{environFilePath} for containerId: #{containerId}")
           if File.exist?(environFilePath)
@@ -267,9 +256,7 @@ class KubernetesContainerInventory
                   end
                 end
               end
-            end
-          else 
-            $log.warn("EnvironFilePath #{environFilePath} for container: #{containerId} doesnt exist any more")
+            end         
           end
         else
           $log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: cGroupPid is NIL or empty for containerId: #{containerId}")
