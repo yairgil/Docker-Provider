@@ -244,7 +244,7 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     file.write(commands)
     commands = get_command_windows('AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS', @collectAllKubeEvents)
     file.write(commands)
-    commands = get_command_windows('AZMON_CONTAINER_LOGS_ROUTE', @containerLogsRoute)
+    commands = get_command_windows('AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE', @containerLogsRoute)
     file.write(commands)
 
     # Close file after writing all environment variables
