@@ -31,11 +31,11 @@
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "dev"
+                    "replaceWith": "security-agent"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/azuredefenderagent/"
+                    "replaceWith": "public/azuredefender/dev"
                 }
             ]
         },
@@ -68,11 +68,11 @@
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "stage"
+                    "replaceWith": "security-agent"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/azuredefenderagent/"
+                    "replaceWith": "public/azuredefender/stage"
                 }
             ]
         },
@@ -105,11 +105,11 @@
                 },
                 {
                     "find": "__IMAGE_REPO__",
-                    "replaceWith": "prod"
+                    "replaceWith": "security-agent"
                 },
                 {
                     "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/azuredefenderagent/"
+                    "replaceWith": "public/azuredefender/stable"
                 }
             ]
         }
