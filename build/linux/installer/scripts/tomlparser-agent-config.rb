@@ -56,7 +56,7 @@ require_relative "ConfigParseErrorLogger"
 @nodesEmitStreamBatchSizeMin = 50
 
 # configmap settings related fbit config
-@fbitFlushIntervalSecsSecs = 0
+@fbitFlushIntervalSecs = 0
 @fbitTailBufferChunkSizeMBs = 0
 @fbitTailBufferMaxSizeMBs = 0
 
