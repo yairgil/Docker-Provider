@@ -137,6 +137,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "Using config map value: NODES_EMIT_STREAM_BATCH_SIZE = #{@nodesEmitStreamBatchSize}"
         end
       end
+      # fbit config settings
       fbit_config = parsedConfig[:agent_settings][:fbit_config]
       if !fbit_config.nil?
         fbitFlushInterval = fbit_config[:FBIT_SERVICE_FLUSH_INTERVAL]
@@ -165,7 +166,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         if @fbitTailBufferMaxSize > 0 && @fbitTailBufferChunkSize == 0
           @fbitTailBufferChunkSize = @fbitTailBufferMaxSize
         end 
-
       end
     end
   rescue => errorStr
@@ -200,6 +200,16 @@ if !file.nil?
   file.write("export HPA_CHUNK_SIZE=#{@hpaChunkSize}\n")
   file.write("export PODS_EMIT_STREAM_BATCH_SIZE=#{@podsEmitStreamBatchSize}\n")
   file.write("export NODES_EMIT_STREAM_BATCH_SIZE=#{@nodesEmitStreamBatchSize}\n")
+  # fbit settings
+  if @fbitFlushInterval > 0
+    file.write("export FBIT_SERVICE_FLUSH_INTERVAL=#{@fbitFlushInterval}\n")
+  end
+  if @fbitTailBufferChunkSize > 0
+    file.write("export FBIT_TAIL_BUFFER_CHUNK_SIZE=#{@fbitTailBufferChunkSize}\n")
+  end
+  if @fbitTailBufferMaxSize > 0
+    file.write("export FBIT_TAIL_BUFFER_MAX_SIZE=#{@fbitTailBufferMaxSize}\n")
+  end 
   # Close file after writing all environment variables
   file.close
 else
