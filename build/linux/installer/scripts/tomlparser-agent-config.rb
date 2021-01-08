@@ -165,6 +165,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
          # in scenario - FBIT_TAIL_BUFFER_MAX_SIZE provided but not FBIT_TAIL_BUFFER_CHUNK_SIZE
         if @fbitTailBufferMaxSize > 0 && @fbitTailBufferChunkSize == 0
           @fbitTailBufferChunkSize = @fbitTailBufferMaxSize
+          puts "config::warn: since FBIT_TAIL_BUFFER_CHUNK_SIZE not provided hence using FBIT_TAIL_BUFFER_CHUNK_SIZE=#{@fbitTailBufferChunkSize} which is same as the value of FBIT_TAIL_BUFFER_MAX_SIZE"
         end 
       end
     end
