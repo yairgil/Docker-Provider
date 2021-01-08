@@ -55,6 +55,12 @@ require_relative "ConfigParseErrorLogger"
 @podsEmitStreamBatchSizeMin = 50
 @nodesEmitStreamBatchSizeMin = 50
 
+# configmap settings related fbit config
+@fbitFlushInterval = 0
+@fbitTailBufferChunkSize = 0
+@fbitTailBufferMaxSize = 0
+
+
 def is_number?(value)
   true if Integer(value) rescue false
 end
@@ -130,6 +136,36 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           @nodesEmitStreamBatchSize = nodesEmitStreamBatchSize.to_i
           puts "Using config map value: NODES_EMIT_STREAM_BATCH_SIZE = #{@nodesEmitStreamBatchSize}"
         end
+      end
+      fbit_config = parsedConfig[:agent_settings][:fbit_config]
+      if !fbit_config.nil?
+        fbitFlushInterval = fbit_config[:FBIT_SERVICE_FLUSH_INTERVAL]
+        if !fbitFlushInterval.nil? && is_number?(fbitFlushInterval) && fbitFlushInterval.to_i > 0
+          @fbitFlushInterval = fbitFlushInterval.to_i
+          puts "Using config map value: FBIT_SERVICE_FLUSH_INTERVAL = #{@fbitFlushInterval}"
+        end
+
+        fbitTailBufferChunkSize = fbit_config[:FBIT_TAIL_BUFFER_CHUNK_SIZE]
+        if !fbitTailBufferChunkSize.nil? && is_number?(fbitTailBufferChunkSize) && fbitTailBufferChunkSize.to_i > 0
+          @fbitTailBufferChunkSize = fbitTailBufferChunkSize.to_i
+          puts "Using config map value: FBIT_TAIL_BUFFER_CHUNK_SIZE = #{@fbitTailBufferChunkSize}"
+        end
+
+        fbitTailBufferMaxSize = fbit_config[:FBIT_TAIL_BUFFER_MAX_SIZE]
+        if !fbitTailBufferMaxSize.nil? && is_number?(fbitTailBufferMaxSize) && fbitTailBufferMaxSize.to_i > 0 
+          if fbitTailBufferMaxSize.to_i >= @fbitTailBufferChunkSize
+            @fbitTailBufferMaxSize = fbitTailBufferMaxSize.to_i
+            puts "Using config map value: FBIT_TAIL_BUFFER_MAX_SIZE = #{@fbitTailBufferMaxSize}"
+          else
+            @fbitTailBufferMaxSize = @fbitTailBufferChunkSize
+            puts "config::warn: FBIT_TAIL_BUFFER_MAX_SIZE should be greater or equal to value of FBIT_TAIL_BUFFER_CHUNK_SIZE. Using FBIT_TAIL_BUFFER_MAX_SIZE = #{@fbitTailBufferMaxSize} since provodided config value not valid"
+          end
+        end
+         # in scenario - FBIT_TAIL_BUFFER_MAX_SIZE provided but not FBIT_TAIL_BUFFER_CHUNK_SIZE
+        if @fbitTailBufferMaxSize > 0 && @fbitTailBufferChunkSize == 0
+          @fbitTailBufferChunkSize = @fbitTailBufferMaxSize
+        end 
+
       end
     end
   rescue => errorStr
