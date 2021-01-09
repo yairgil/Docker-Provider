@@ -159,7 +159,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "Using config map value: tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs}"
           else
             @fbitTailBufferMaxSizeMBs = @fbitTailBufferChunkSizeMBs
-            puts "config::warn: tail_buf_maxsize_megabytes should be greater or equal to value of tail_buf_chunksize_megabytes. Using tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs} since provodided config value not valid"
+            puts "config::warn: tail_buf_maxsize_megabytes should be greater or equal to value of tail_buf_chunksize_megabytes. Using tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs} since provided config value not valid"
           end
         end
          # in scenario - tail_buf_maxsize_megabytes provided but not tail_buf_chunksize_megabytes and vice versa
