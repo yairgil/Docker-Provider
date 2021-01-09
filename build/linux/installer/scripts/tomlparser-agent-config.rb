@@ -140,35 +140,35 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       # fbit config settings
       fbit_config = parsedConfig[:agent_settings][:fbit_config]
       if !fbit_config.nil?
-        fbitFlushIntervalSecs = fbit_config[:logflushintervalsecs]
+        fbitFlushIntervalSecs = fbit_config[:log_flush_interval_secs]
         if !fbitFlushIntervalSecs.nil? && is_number?(fbitFlushIntervalSecs) && fbitFlushIntervalSecs.to_i > 0
           @fbitFlushIntervalSecs = fbitFlushIntervalSecs.to_i
-          puts "Using config map value: logflushintervalsecs = #{@fbitFlushIntervalSecs}"
+          puts "Using config map value: log_flush_interval_secs = #{@fbitFlushIntervalSecs}"
         end
 
-        fbitTailBufferChunkSizeMBs = fbit_config[:tailbufchunksizemegabytes ]
+        fbitTailBufferChunkSizeMBs = fbit_config[:tail_buf_chunksize_megabytes]
         if !fbitTailBufferChunkSizeMBs.nil? && is_number?(fbitTailBufferChunkSizeMBs) && fbitTailBufferChunkSizeMBs.to_i > 0
           @fbitTailBufferChunkSizeMBs = fbitTailBufferChunkSizeMBs.to_i
-          puts "Using config map value: tailbufchunksizemegabytes  = #{@fbitTailBufferChunkSizeMBs}"
+          puts "Using config map value: tail_buf_chunksize_megabytes  = #{@fbitTailBufferChunkSizeMBs}"
         end
 
-        fbitTailBufferMaxSizeMBs = fbit_config[:tailbufmaxsizemegabytes ]
+        fbitTailBufferMaxSizeMBs = fbit_config[:tail_buf_maxsize_megabytes]
         if !fbitTailBufferMaxSizeMBs.nil? && is_number?(fbitTailBufferMaxSizeMBs) && fbitTailBufferMaxSizeMBs.to_i > 0 
           if fbitTailBufferMaxSizeMBs.to_i >= @fbitTailBufferChunkSizeMBs
             @fbitTailBufferMaxSizeMBs = fbitTailBufferMaxSizeMBs.to_i
-            puts "Using config map value: tailbufmaxsizemegabytes = #{@fbitTailBufferMaxSizeMBs}"
+            puts "Using config map value: tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs}"
           else
             @fbitTailBufferMaxSizeMBs = @fbitTailBufferChunkSizeMBs
-            puts "config::warn: tailbufmaxsizemegabytes should be greater or equal to value of tailbufchunksizemegabytes. Using tailbufmaxsizemegabytes = #{@fbitTailBufferMaxSizeMBs} since provodided config value not valid"
+            puts "config::warn: tail_buf_maxsize_megabytes should be greater or equal to value of tail_buf_chunksize_megabytes. Using tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs} since provodided config value not valid"
           end
         end
-         # in scenario - tailbufmaxsizemegabytes provided but not tailbufchunksizemegabytes and vice versa
+         # in scenario - tail_buf_maxsize_megabytes provided but not tail_buf_chunksize_megabytes and vice versa
         if @fbitTailBufferMaxSizeMBs > 0 && @fbitTailBufferChunkSizeMBs == 0
           @fbitTailBufferChunkSizeMBs = @fbitTailBufferMaxSizeMBs
-          puts "config::warn: since tailbufchunksizemegabytes not provided hence using tailbufchunksizemegabytes=#{@fbitTailBufferChunkSizeMBs} which is same as the value of tailbufmaxsizemegabytes"
+          puts "config::warn: since tail_buf_chunksize_megabytes not provided hence using tail_buf_chunksize_megabytes=#{@fbitTailBufferChunkSizeMBs} which is same as the value of tail_buf_maxsize_megabytes"
         elsif  @fbitTailBufferChunkSizeMBs > 0  && @fbitTailBufferMaxSizeMBs == 0
           @fbitTailBufferMaxSizeMBs = @fbitTailBufferChunkSizeMBs
-          puts "config::warn: since tailbufmaxsizemegabytes not provided hence using tailbufmaxsizemegabytes=#{@fbitTailBufferMaxSizeMBs} which is same as the value of tailbufchunksizemegabytes"
+          puts "config::warn: since tail_buf_maxsize_megabytes not provided hence using tail_buf_maxsize_megabytes=#{@fbitTailBufferMaxSizeMBs} which is same as the value of tail_buf_chunksize_megabytes"
         end 
       end
     end
