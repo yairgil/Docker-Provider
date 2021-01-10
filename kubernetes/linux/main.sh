@@ -210,6 +210,17 @@ else
       echo "LA Onboarding:Workspace Id not mounted, skipping the telemetry check"
 fi
 
+# Set environment variable for if public cloud by checking the workspace domain.
+if [ -z $domain ]; then
+  ClOUD_ENVIRONMENT="unknown"
+elif [ $domain == "opinsights.azure.com" ]; then
+  CLOUD_ENVIRONMENT="public"
+else
+  CLOUD_ENVIRONMENT="national"
+fi
+export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
+echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
+
 #Parse the configmap to set the right environment variables.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
 
@@ -220,14 +231,15 @@ done
 source config_env_var
 
 
-#Parse the configmap to set the right environment variables for health feature.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-health-config.rb
+#Parse the configmap to set the right environment variables for agent config.
+#Note > tomlparser-agent-config.rb has to be parsed first before td-agent-bit-conf-customizer.rb for fbit agent settings
+/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-agent-config.rb
 
-cat health_config_env_var | while read line; do
+cat agent_config_env_var | while read line; do
     #echo $line
     echo $line >> ~/.bashrc
 done
-source health_config_env_var
+source agent_config_env_var
 
 #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
@@ -296,12 +308,74 @@ cat config_mdm_metrics_env_var | while read line; do
 done
 source config_mdm_metrics_env_var
 
+#Parse the configmap to set the right environment variables for metric collection settings
+/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-metric-collection-config.rb
 
-# enable these metrics in next agent release
-# export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
-# echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
-# export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
-# echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
+cat config_metric_collection_env_var | while read line; do
+    echo $line >> ~/.bashrc
+done
+source config_metric_collection_env_var
+
+#Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
+echo "Making wget request to cadvisor endpoint with port 10250"
+#Defaults to use port 10255
+cAdvisorIsSecure=false
+RET_CODE=`wget --server-response https://$NODE_IP:10250/stats/summary --no-check-certificate --header="Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" 2>&1 | awk '/^  HTTP/{print $2}'`
+if [ $RET_CODE -eq 200 ]; then
+      cAdvisorIsSecure=true
+fi
+
+# default to docker since this is default in AKS as of now and change to containerd once this becomes default in AKS
+export CONTAINER_RUNTIME="docker"
+export NODE_NAME=""
+
+if [ "$cAdvisorIsSecure" = true ]; then
+      echo "Wget request using port 10250 succeeded. Using 10250"
+      export IS_SECURE_CADVISOR_PORT=true
+      echo "export IS_SECURE_CADVISOR_PORT=true" >> ~/.bashrc
+      export CADVISOR_METRICS_URL="https://$NODE_IP:10250/metrics"
+      echo "export CADVISOR_METRICS_URL=https://$NODE_IP:10250/metrics" >> ~/.bashrc
+      echo "Making curl request to cadvisor endpoint /pods with port 10250 to get the configured container runtime on kubelet"
+      podWithValidContainerId=$(curl -s -k -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://$NODE_IP:10250/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
+else
+      echo "Wget request using port 10250 failed. Using port 10255"
+      export IS_SECURE_CADVISOR_PORT=false
+      echo "export IS_SECURE_CADVISOR_PORT=false" >> ~/.bashrc
+      export CADVISOR_METRICS_URL="http://$NODE_IP:10255/metrics"
+      echo "export CADVISOR_METRICS_URL=http://$NODE_IP:10255/metrics" >> ~/.bashrc
+      echo "Making curl request to cadvisor endpoint with port 10255 to get the configured container runtime on kubelet"
+      podWithValidContainerId=$(curl -s http://$NODE_IP:10255/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
+fi
+
+if [ ! -z "$podWithValidContainerId" ]; then
+      containerRuntime=$(echo $podWithValidContainerId | jq -r '.status.containerStatuses[0].containerID' | cut -d ':' -f 1)
+      nodeName=$(echo $podWithValidContainerId | jq -r '.spec.nodeName')
+      # convert to lower case so that everywhere else can be used in lowercase
+      containerRuntime=$(echo $containerRuntime | tr "[:upper:]" "[:lower:]")
+      nodeName=$(echo $nodeName | tr "[:upper:]" "[:lower:]")
+      # update runtime only if its not empty, not null and not startswith docker
+      if [ -z "$containerRuntime" -o "$containerRuntime" == null  ]; then
+            echo "using default container runtime as $CONTAINER_RUNTIME since got containeRuntime as empty or null"
+      elif [[ $containerRuntime != docker* ]]; then
+            export CONTAINER_RUNTIME=$containerRuntime
+      fi
+
+      if [ -z "$nodeName" -o "$nodeName" == null  ]; then
+            echo "-e error nodeName in /pods API response is empty"
+      else
+            export NODE_NAME=$nodeName
+      fi
+else
+      echo "-e error either /pods API request failed or no running pods"
+fi
+
+echo "configured container runtime on kubelet is : "$CONTAINER_RUNTIME
+echo "export CONTAINER_RUNTIME="$CONTAINER_RUNTIME >> ~/.bashrc
+
+export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
+echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
+export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
+echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
 
 # default to docker metrics
 export KUBELET_RUNTIME_OPERATIONS_METRIC="kubelet_docker_operations"
@@ -414,6 +488,97 @@ echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
+#region check to auto-activate oneagent, to route container logs,
+#Intent is to activate one agent routing for all managed clusters with region in the regionllist, unless overridden by configmap
+# AZMON_CONTAINER_LOGS_ROUTE  will have route (if any) specified in the config map
+# AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE will have the final route that we compute & set, based on our region list logic
+echo "************start oneagent log routing checks************"
+# by default, use configmap route for safer side
+AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
+
+#trim region list
+oneagentregions="$(echo $AZMON_CONTAINERLOGS_ONEAGENT_REGIONS | xargs)"
+#lowercase region list
+typeset -l oneagentregions=$oneagentregions
+echo "oneagent regions: $oneagentregions"
+#trim current region
+currentregion="$(echo $AKS_REGION | xargs)"
+#lowercase current region
+typeset -l currentregion=$currentregion
+echo "current region: $currentregion"
+
+#initilze isoneagentregion as false
+isoneagentregion=false
+
+#set isoneagentregion as true if matching region is found
+if [ ! -z $oneagentregions ] && [ ! -z $currentregion ]; then
+  for rgn in $(echo $oneagentregions | sed "s/,/ /g"); do
+    if [ "$rgn" == "$currentregion" ]; then
+          isoneagentregion=true
+          echo "current region is in oneagent regions..."
+          break
+    fi
+  done
+else
+  echo "current region is not in oneagent regions..."
+fi
+
+if [ "$isoneagentregion" = true ]; then
+   #if configmap has a routing for logs, but current region is in the oneagent region list, take the configmap route
+   if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then
+      AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
+      echo "oneagent region is true for current region:$currentregion and config map logs route is not empty. so using config map logs route as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+   else #there is no configmap route, so route thru oneagent
+      AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE="v2"
+      echo "oneagent region is true for current region:$currentregion and config map logs route is empty. so using oneagent as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+   fi
+else
+   echo "oneagent region is false for current region:$currentregion"
+fi
+
+
+#start oneagent
+if [ ! -e "/etc/config/kube.conf" ]; then
+   if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
+      echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
+      echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+      #trim
+      containerlogsroute="$(echo $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE | xargs)"
+      # convert to lowercase
+      typeset -l containerlogsroute=$containerlogsroute
+
+      echo "setting AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE as :$containerlogsroute"
+      export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute
+      echo "export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute" >> ~/.bashrc
+      source ~/.bashrc
+
+      if [ "$containerlogsroute" == "v2" ]; then
+            echo "activating oneagent..."
+            echo "configuring mdsd..."
+            cat /etc/mdsd.d/envmdsd | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source /etc/mdsd.d/envmdsd
+
+            echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+            export CIWORKSPACE_id=$CIWORKSPACE_id
+            echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
+            export CIWORKSPACE_key=$CIWORKSPACE_key
+            echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
+
+            source ~/.bashrc
+
+            dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+
+            echo "starting mdsd ..."
+            mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+
+            touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
+      fi
+   fi
+fi
+echo "************end oneagent log routing checks************"
+
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "$CONTAINER_RUNTIME" == "docker" ]; then
@@ -489,37 +654,13 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
-#start oneagent
-if [ ! -e "/etc/config/kube.conf" ]; then
-   if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then
-      echo "container logs route is defined as $AZMON_CONTAINER_LOGS_ROUTE"
-      #trim
-      containerlogsroute="$(echo $AZMON_CONTAINER_LOGS_ROUTE | xargs)"
-      # convert to lowercase
-      typeset -l containerlogsroute=$containerlogsroute
-      if [ "$containerlogsroute" == "v2" ]; then
-            echo "containerlogsroute $containerlogsroute"
-            echo "configuring mdsd..."
-            cat /etc/mdsd.d/envmdsd | while read line; do
-                  echo $line >> ~/.bashrc
-            done
-            source /etc/mdsd.d/envmdsd
 
-            echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
-            export CIWORKSPACE_id=$CIWORKSPACE_id
-            echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
-            export CIWORKSPACE_key=$CIWORKSPACE_key
-            echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
 
-            source ~/.bashrc
+echo "stopping rsyslog..."
+service rsyslog stop
 
-            dpkg -l | grep mdsd | awk '{print $2 " " $3}'
-
-            echo "starting mdsd ..."
-            mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-      fi
-   fi
-fi
+echo "getting rsyslog status..."
+service rsyslog status
 
 shutdown() {
 	/opt/microsoft/omsagent/bin/service_control stop

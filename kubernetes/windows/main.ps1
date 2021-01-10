@@ -43,14 +43,20 @@ function Start-FileSystemWatcher {
 
 function Set-EnvironmentVariables {
     $domain = "opinsights.azure.com"
+    $cloud_environment = "public"
     if (Test-Path /etc/omsagent-secret/DOMAIN) {
         # TODO: Change to omsagent-secret before merging
         $domain = Get-Content /etc/omsagent-secret/DOMAIN
+        $cloud_environment = "national"
     }
 
     # Set DOMAIN
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Machine")
+
+    # Set CLOUD_ENVIRONMENT
+    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
+    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")
 
     $wsID = ""
     if (Test-Path /etc/omsagent-secret/WSID) {
@@ -58,19 +64,11 @@ function Set-EnvironmentVariables {
         $wsID = Get-Content /etc/omsagent-secret/WSID
     }
 
-    # Set DOMAIN
+    # Set WSID
     [System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Process")
     [System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Machine")
 
-    $wsKey = ""
-    if (Test-Path /etc/omsagent-secret/KEY) {
-        # TODO: Change to omsagent-secret before merging
-        $wsKey = Get-Content /etc/omsagent-secret/KEY
-    }
-
-    # Set KEY
-    [System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Process")
-    [System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Machine")
+    # Don't store WSKEY as environment variable
 
     $proxy = ""
     if (Test-Path /etc/omsagent-secret/PROXY) {
@@ -263,6 +261,27 @@ function Generate-Certificates {
     C:\\opt\\omsagentwindows\\certgenerator\\certificategenerator.exe
 }
 
+function Bootstrap-CACertificates {
+    try {
+        # This is required when the root CA certs are different for some clouds.
+        $caCerts=Invoke-WebRequest 'http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json' -UseBasicParsing | ConvertFrom-Json
+        if (![string]::IsNullOrEmpty($caCerts)) {
+            $certificates = $caCerts.Certificates
+            for ($index = 0; $index -lt $certificates.Length ; $index++) {
+                $name=$certificates[$index].Name
+                $certificates[$index].CertBody > $name
+                Write-Host "name: $($name)"
+                Import-Certificate -FilePath .\$name  -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
+            }
+        }
+    }
+    catch {
+        $e = $_.Exception
+        Write-Host $e
+        Write-Host "exception occured in Bootstrap-CACertificates..."
+    }
+}
+
 function Test-CertificatePath {
     $certLocation = $env:CI_CERT_LOCATION
     $keyLocation = $env:CI_KEY_LOCATION
@@ -288,6 +307,14 @@ Start-Transcript -Path main.txt
 Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
+
+#Bootstrapping CA certs for non public clouds and AKS clusters
+$aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
+if (![string]::IsNullOrEmpty($aksResourceId) -and $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/"))
+{
+    Bootstrap-CACertificates
+}
+
 Generate-Certificates
 Test-CertificatePath
 Start-Fluent

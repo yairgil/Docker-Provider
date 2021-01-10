@@ -19,7 +19,7 @@ metadata:
     heritage: {{ .Release.Service }}
 rules:
 - apiGroups: [""]
-  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy", "namespaces", "services"]
+  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy", "namespaces", "services", "persistentvolumes"]
   verbs: ["list", "get", "watch"]
 - apiGroups: ["apps", "extensions", "autoscaling"]
   resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
@@ -27,7 +27,15 @@ rules:
 - apiGroups: ["azmon.container.insights"]
   resources: ["healthstates"]
   verbs: ["get", "create", "patch"]
+- apiGroups: ["clusterconfig.azure.com"]
+  resources: ["azureclusteridentityrequests"]
+  resourceNames: ["container-insights-clusteridentityrequest"]
+  verbs: ["get", "create", "patch"]
 - nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["container-insights-clusteridentityrequest-token"]
   verbs: ["get"]
 ---
 kind: ClusterRoleBinding

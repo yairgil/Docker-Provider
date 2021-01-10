@@ -16,6 +16,8 @@ module Fluent
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
+      require_relative "arc_k8s_cluster_identity"
+      require_relative "proxy_utils"
 
       @@token_resource_url = "https://monitoring.azure.com/"
       @@grant_type = "client_credentials"
@@ -45,7 +47,13 @@ module Fluent
       @useMsi = false
       @metrics_flushed_count = 0
 
+      @cluster_identity = nil
+      @isArcK8sCluster = false
       @get_access_token_backoff_expiry = Time.now
+
+      @mdm_exceptions_hash = {}
+      @mdm_exceptions_count = 0
+      @mdm_exception_telemetry_time_tracker = DateTime.now.to_time.to_i
     end
 
     def configure(conf)
@@ -57,15 +65,17 @@ module Fluent
     def start
       super
       begin
-        file = File.read(@@azure_json_path)
-        @data_hash = JSON.parse(file)
         aks_resource_id = ENV["AKS_RESOURCE_ID"]
         aks_region = ENV["AKS_REGION"]
 
         if aks_resource_id.to_s.empty?
           @log.info "Environment Variable AKS_RESOURCE_ID is not set.. "
           @can_send_data_to_mdm = false
+        elsif !aks_resource_id.downcase.include?("/microsoft.containerservice/managedclusters/") && !aks_resource_id.downcase.include?("/microsoft.kubernetes/connectedclusters/")
+          @log.info "MDM Metris not supported for this cluster type resource: #{aks_resource_id}"
+          @can_send_data_to_mdm = false
         end
+
         if aks_region.to_s.empty?
           @log.info "Environment Variable AKS_REGION is not set.. "
           @can_send_data_to_mdm = false
@@ -76,28 +86,51 @@ module Fluent
         if @can_send_data_to_mdm
           @log.info "MDM Metrics supported in #{aks_region} region"
 
+          if aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
+            @isArcK8sCluster = true
+          end
           @@post_request_url = @@post_request_url_template % { aks_region: aks_region, aks_resource_id: aks_resource_id }
           @post_request_uri = URI.parse(@@post_request_url)
-          @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+          if (!!@isArcK8sCluster)
+            proxy = (ProxyUtils.getProxyConfiguration)
+            if proxy.nil? || proxy.empty?
+              @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+            else
+              @log.info "Proxy configured on this cluster: #{aks_resource_id}"
+              @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
+            end
+          else
+            @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+          end
           @http_client.use_ssl = true
           @log.info "POST Request url: #{@@post_request_url}"
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPluginStart", {})
 
-          # Check to see if SP exists, if it does use SP. Else, use msi
-          sp_client_id = @data_hash["aadClientId"]
-          sp_client_secret = @data_hash["aadClientSecret"]
-
-          if (!sp_client_id.nil? && !sp_client_id.empty? && sp_client_id.downcase != "msi")
-            @useMsi = false
-            aad_token_url = @@aad_token_url_template % { tenant_id: @data_hash["tenantId"] }
-            @parsed_token_uri = URI.parse(aad_token_url)
+          # arc k8s cluster uses cluster identity
+          if (!!@isArcK8sCluster)
+            @log.info "using cluster identity token since cluster is azure arc k8s cluster"
+            @cluster_identity = ArcK8sClusterIdentity.new
+            @cached_access_token = @cluster_identity.get_cluster_identity_token
           else
-            @useMsi = true
-            msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url }
-            @parsed_token_uri = URI.parse(msi_endpoint)
-          end
+            # azure json file only used for aks and doesnt exist in non-azure envs
+            file = File.read(@@azure_json_path)
+            @data_hash = JSON.parse(file)
+            # Check to see if SP exists, if it does use SP. Else, use msi
+            sp_client_id = @data_hash["aadClientId"]
+            sp_client_secret = @data_hash["aadClientSecret"]
 
-          @cached_access_token = get_access_token
+            if (!sp_client_id.nil? && !sp_client_id.empty? && sp_client_id.downcase != "msi")
+              @useMsi = false
+              aad_token_url = @@aad_token_url_template % { tenant_id: @data_hash["tenantId"] }
+              @parsed_token_uri = URI.parse(aad_token_url)
+            else
+              @useMsi = true
+              msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url }
+              @parsed_token_uri = URI.parse(msi_endpoint)
+            end
+
+            @cached_access_token = get_access_token
+          end
         end
       rescue => e
         @log.info "exception when initializing out_mdm #{e}"
@@ -192,10 +225,49 @@ module Fluent
       end
     end
 
+    def exception_aggregator(error)
+      begin
+        errorStr = error.to_s
+        if (@mdm_exceptions_hash[errorStr].nil?)
+          @mdm_exceptions_hash[errorStr] = 1
+        else
+          @mdm_exceptions_hash[errorStr] += 1
+        end
+        #Keeping track of all exceptions to send the total in the last flush interval as a metric
+        @mdm_exceptions_count += 1
+      rescue => error
+        @log.info "Error in MDM exception_aggregator method: #{error}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
+      end
+    end
+
+    def flush_mdm_exception_telemetry
+      begin
+        #Flush out exception telemetry as a metric for the last 30 minutes
+        timeDifference = (DateTime.now.to_time.to_i - @mdm_exception_telemetry_time_tracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if (timeDifferenceInMinutes >= Constants::MDM_EXCEPTIONS_METRIC_FLUSH_INTERVAL)
+          telemetryProperties = {}
+          telemetryProperties["ExceptionsHashForFlushInterval"] = @mdm_exceptions_hash.to_json
+          telemetryProperties["FlushInterval"] = Constants::MDM_EXCEPTIONS_METRIC_FLUSH_INTERVAL
+          ApplicationInsightsUtility.sendMetricTelemetry(Constants::MDM_EXCEPTION_TELEMETRY_METRIC, @mdm_exceptions_count, telemetryProperties)
+          # Resetting values after flushing
+          @mdm_exceptions_count = 0
+          @mdm_exceptions_hash = {}
+          @mdm_exception_telemetry_time_tracker = DateTime.now.to_time.to_i
+        end
+      rescue => error
+        @log.info "Error in flush_mdm_exception_telemetry method: #{error}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
+      end
+    end
+
     # This method is called every flush interval. Send the buffer chunk to MDM.
     # 'chunk' is a buffer chunk that includes multiple formatted records
     def write(chunk)
       begin
+        # Adding this before trying to flush out metrics, since adding after can lead to metrics never being sent
+        flush_mdm_exception_telemetry
         if (!@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes * 60)) && @can_send_data_to_mdm
           post_body = []
           chunk.msgpack_each { |(tag, record)|
@@ -218,7 +290,8 @@ module Fluent
           end
         end
       rescue Exception => e
-        ApplicationInsightsUtility.sendExceptionTelemetry(e)
+        # Adding exceptions to hash to aggregate and send telemetry for all write errors
+        exception_aggregator(e)
         @log.info "Exception when writing to MDM: #{e}"
         raise e
       end
@@ -226,7 +299,14 @@ module Fluent
 
     def send_to_mdm(post_body)
       begin
-        access_token = get_access_token
+        if (!!@isArcK8sCluster)
+          if @cluster_identity.nil?
+            @cluster_identity = ArcK8sClusterIdentity.new
+          end
+          access_token = @cluster_identity.get_cluster_identity_token
+        else
+          access_token = get_access_token
+        end
         request = Net::HTTP::Post.new(@post_request_uri.request_uri)
         request["Content-Type"] = "application/x-ndjson"
         request["Authorization"] = "Bearer #{access_token}"
@@ -241,12 +321,11 @@ module Fluent
           @last_telemetry_sent_time = Time.now
         end
       rescue Net::HTTPServerException => e
-        if !response.nil && !response.body.nil? #body will have actual error
+        if !response.nil? && !response.body.nil? #body will have actual error
           @log.info "Failed to Post Metrics to MDM : #{e} Response.body: #{response.body}"
         else
           @log.info "Failed to Post Metrics to MDM : #{e} Response: #{response}"
         end
-        #@log.info "MDM request : #{post_body}"
         @log.debug_backtrace(e.backtrace)
         if !response.code.empty? && response.code == 403.to_s
           @log.info "Response Code #{response.code} Updating @last_post_attempt_time"
@@ -261,15 +340,15 @@ module Fluent
           @log.info "HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
           raise e
         end
+        # Adding exceptions to hash to aggregate and send telemetry for all 400 error codes
+        exception_aggregator(e)
       rescue Errno::ETIMEDOUT => e
         @log.info "Timed out when POSTing Metrics to MDM : #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
-        ApplicationInsightsUtility.sendExceptionTelemetry(e)
         raise e
       rescue Exception => e
         @log.info "Exception POSTing Metrics to MDM : #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
-        ApplicationInsightsUtility.sendExceptionTelemetry(e)
         raise e
       end
     end
