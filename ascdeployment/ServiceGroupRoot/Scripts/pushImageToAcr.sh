@@ -11,7 +11,7 @@ echo "Creating target full image path"
 
 TARGET_FULL_IMAGE_PATH=${IMAGE_PATH}/${IMAGE_REPO}
 
-CDPX_FULL_IMAGE_PATH=${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/cdpxlinux:${CDPX_IMAGE_TAG}
+CDPX_FULL_IMAGE_PATH=${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/${CDPX_IMAGE_TAG}
 
 echo "Target image full path: ${TARGET_FULL_IMAGE_PATH}"
 echo "Source image full path: ${CDPX_FULL_IMAGE_PATH}"

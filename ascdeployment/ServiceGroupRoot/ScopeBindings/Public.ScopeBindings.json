@@ -1,4 +1,4 @@
-{
+z{
     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",
     "contentVersion": "0.0.0.1",
     "scopeBindings": [
@@ -19,11 +19,11 @@
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "ascdev"
+                    "replaceWith": "asc:ascdev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
-                    "replaceWith": "cdpxlinux/asc"
+                    "replaceWith": "cdpxlinux"
                 },
                 {
                     "find": "__ACR_NAME__",
@@ -56,11 +56,11 @@
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "ascdev"
+                    "replaceWith": "asc:ascdev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
-                    "replaceWith": "cdpxlinuxame/asc"
+                    "replaceWith": "cdpxlinuxame"
                 },
                 {
                     "find": "__ACR_NAME__",
@@ -93,11 +93,11 @@
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "ascdev"
+                    "replaceWith": "asc:ascdev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
-                    "replaceWith": "cdpxlinuxame/asc"
+                    "replaceWith": "cdpxlinuxame"
                 },
                 {
                     "find": "__ACR_NAME__",
