@@ -41,8 +41,12 @@
                 "value": "__CDPX_IMAGE_TAG__"
             },
             {
-                "name": "CDPX_REPO_NAME",
-                "value": "__CDPX_REPO_NAME__"
+                "name": "CDPX_ACR",
+                "value": "__CDPX_ACR__"
+            },
+            {
+              "name": "CDPX_REPO",
+              "value": "__CDPX_REPO__"
             },
             {
                 "name": "ACR_NAME",
