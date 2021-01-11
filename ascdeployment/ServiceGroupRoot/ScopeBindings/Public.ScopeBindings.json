@@ -23,7 +23,7 @@
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
-                    "replaceWith": "cdpxlinux"
+                    "replaceWith": "cdpxlinux/asc"
                 },
                 {
                     "find": "__ACR_NAME__",
@@ -60,7 +60,7 @@
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
-                    "replaceWith": "cdpxlinuxame"
+                    "replaceWith": "cdpxlinuxame/asc"
                 },
                 {
                     "find": "__ACR_NAME__",
@@ -97,7 +97,7 @@
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
-                    "replaceWith": "cdpxlinuxame"
+                    "replaceWith": "cdpxlinuxame/asc"
                 },
                 {
                     "find": "__ACR_NAME__",
