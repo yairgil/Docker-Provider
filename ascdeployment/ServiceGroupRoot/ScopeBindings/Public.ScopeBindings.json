@@ -19,7 +19,7 @@ z{
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "asc:ascdev"
+                    "replaceWith": "ascdev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
@@ -56,11 +56,11 @@ z{
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "asc:ascdev"
+                    "replaceWith": "ascdev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
-                    "replaceWith": "cdpxlinuxame"
+                    "replaceWith": "cdpxlinux"
                 },
                 {
                     "find": "__ACR_NAME__",
@@ -93,11 +93,11 @@ z{
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "asc:ascdev"
+                    "replaceWith": "ascdev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
-                    "replaceWith": "cdpxlinuxame"
+                    "replaceWith": "cdpxlinux"
                 },
                 {
                     "find": "__ACR_NAME__",
