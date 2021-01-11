@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/fluent/fluent-bit-go/output"
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 import (
 	"C"
@@ -12,8 +11,11 @@ import (
 )
 
 var (
+	// EnableKubeAudit - Kube Audit Logs Flag
 	EnableKubeAudit string
-	EnablePerf      string
+	// EnablePerf - Perf Telegraf Flag
+	EnablePerf string
+	// EnableFlbPLugin - FLBPlugin Logs Flag
 	EnableFlbPLugin string
 )
 
@@ -44,10 +46,17 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		}
 	}
 
+	// Read configuration keys
 	EnableKubeAudit = output.FLBPluginConfigKey(ctx, "EnableKubeAudit")
 	EnablePerf = output.FLBPluginConfigKey(ctx, "EnablePerf")
 	EnableFlbPLugin = output.FLBPluginConfigKey(ctx, "EnableFlbPLugin")
 	enableTelemetry := output.FLBPluginConfigKey(ctx, "EnableTelemetry")
+
+	Log("EnableKubeAudit: %v", EnableKubeAudit)
+	Log("EnableFlbPLugin: %v", EnableFlbPLugin)
+	Log("EnablePerf: %v", EnablePerf)
+
+	// Telemetry
 	if strings.Compare(strings.ToLower(enableTelemetry), "true") == 0 {
 		telemetryPushInterval := output.FLBPluginConfigKey(ctx, "TelemetryPushIntervalSeconds")
 		go SendContainerLogPluginMetrics(telemetryPushInterval)
@@ -60,12 +69,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 //export FLBPluginFlush
 func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
-
 	// Create Fluent Bit decoder
 	incomingTag := strings.ToLower(C.GoString(tag))
-	Log("EnableKubeAudit: %v", EnableKubeAudit)
-	Log("EnableFlbPLugin: %v", EnableFlbPLugin)
-	Log("EnablePerf: %v", EnablePerf)
+
 	if strings.HasPrefix(incomingTag, "oms.container.kube.audit") {
 		if strings.Compare(strings.ToLower(EnableKubeAudit), "true") == 0 {
 			// kube audit collection is off, pass the parsing
@@ -74,25 +80,10 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 		}
 	}
 
-	if strings.HasPrefix(incomingTag, "oms.container.log.flbplugin") {
-		if strings.Compare(strings.ToLower(EnableFlbPLugin), "true") == 0 {
-			// This will also include populating cache to be sent as for config events
-			records := GetRecords(data, length)
-			return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
-		}
-	}
-
-	if strings.HasPrefix(incomingTag, "oms.container.perf.telegraf") {
-		if strings.Compare(strings.ToLower(EnablePerf), "true") == 0 {
-			// This will also include populating cache to be sent as for config events
-			records := GetRecords(data, length)
-			return PostTelegrafMetricsToLA(records)
-		}
-	}
 	return output.FLB_OK
 }
 
-// GetRecords
+// GetRecords - lazy - getting the data from the buffer
 func GetRecords(data unsafe.Pointer, length C.int) []map[interface{}]interface{} {
 	var ret int
 	var record map[interface{}]interface{}
