@@ -19,7 +19,7 @@
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "ascdev"
+                    "replaceWith": "cidev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
@@ -56,7 +56,7 @@
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "ascdev"
+                    "replaceWith": "cidev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
@@ -93,7 +93,7 @@
                 },
                 {
                     "find": "__CDPX_IMAGE_TAG__",
-                    "replaceWith": "ascdev"
+                    "replaceWith": "cidev"
                 },
                 {
                     "find": "__CDPX_REPO_NAME__",
