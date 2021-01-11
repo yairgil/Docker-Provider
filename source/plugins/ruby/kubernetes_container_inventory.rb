@@ -189,8 +189,7 @@ class KubernetesContainerInventory
       return containersInfoMap
     end
 
-    def obtainContainerEnvironmentVars(containerId)
-      $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars @ #{Time.now.utc.iso8601}")
+    def obtainContainerEnvironmentVars(containerId)    
       envValueString = ""
       begin
         isCGroupPidFetchRequired = false 
@@ -207,8 +206,7 @@ class KubernetesContainerInventory
           end        
         end
 
-        if isCGroupPidFetchRequired
-          $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars fetching cGroup parent pid @ #{Time.now.utc.iso8601} for containerId: #{containerId}")
+        if isCGroupPidFetchRequired         
           Dir["/hostfs/proc/*/cgroup"].each do |filename|
             begin
               if File.file?(filename) && File.exist?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
@@ -231,8 +229,7 @@ class KubernetesContainerInventory
         end
         cGroupPid = @@containerCGroupCache[containerId]
         if !cGroupPid.nil? && !cGroupPid.empty?
-          environFilePath = "/hostfs/proc/#{cGroupPid}/environ"
-          $log.info("KubernetesContainerInventory::obtainContainerEnvironmentVars cGroupPid: #{cGroupPid} environFilePath: #{environFilePath} for containerId: #{containerId}")
+          environFilePath = "/hostfs/proc/#{cGroupPid}/environ"       
           if File.exist?(environFilePath)
             # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
             # Check to see if the environment variable collection is disabled for this container.
@@ -245,8 +242,7 @@ class KubernetesContainerInventory
               if !envVars.nil? && !envVars.empty?
                 envVars = envVars.split("\0")
                 envValueString = envVars.to_json
-                envValueStringLength = envValueString.length
-                $log.info("KubernetesContainerInventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
+                envValueStringLength = envValueString.length              
                 if envValueStringLength >= 200000
                   lastIndex = envValueString.rindex("\",")
                   if !lastIndex.nil?
