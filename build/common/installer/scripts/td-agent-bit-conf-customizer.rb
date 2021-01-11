@@ -25,7 +25,7 @@ def substituteFluentBitPlaceHolders
 
     tailBufferMaxSize = (!bufferMaxSize.nil? && is_number?(bufferMaxSize) && bufferMaxSize.to_i > 0) ? bufferMaxSize : nil
 
-    if ((!tailBufferChunkSize.nil? && tailBufferMaxSize.nil) ||  (!tailBufferChunkSize.nil? && !tailBufferMaxSize.nil? && tailBufferChunkSize.to_i > tailBufferMaxSize.to_i))
+    if ((!tailBufferChunkSize.nil? && tailBufferMaxSize.nil?) ||  (!tailBufferChunkSize.nil? && !tailBufferMaxSize.nil? && tailBufferChunkSize.to_i > tailBufferMaxSize.to_i))
       puts "config:warn buffer max size must be greater or equal to chunk size"
       tailBufferMaxSize = tailBufferChunkSize
     end
