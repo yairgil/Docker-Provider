@@ -7,12 +7,9 @@ echo "Start: Import linux agent image from cdpx and push to acr: ${ACR_NAME}"
 echo "Target acr: ${ACR_NAME}"
 echo "Target agent repo name: ${IMAGE_REPO}"
 
-IMAGE_TAG=$(date +"%m%d%y_%H%M")
-
-echo "Target image tag: ${IMAGE_TAG}"
 echo "Creating target full image path"
 
-TARGET_FULL_IMAGE_PATH=${IMAGE_PATH}/${IMAGE_REPO}:${IMAGE_TAG}
+TARGET_FULL_IMAGE_PATH=${IMAGE_PATH}/${IMAGE_REPO}
 
 CDPX_FULL_IMAGE_PATH=${CDPX_ACR}/artifact/3170cdd2-19f0-4027-912b-1027311691a2/official/cdpxlinux:${CDPX_IMAGE_TAG}
 
