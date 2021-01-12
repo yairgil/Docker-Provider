@@ -2,7 +2,7 @@
 
 if [ -e "/etc/config/kube.conf" ]; then
     cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
-else if [[ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]]; then
+elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
     cat /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 else
     sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
@@ -523,7 +523,7 @@ echo "************end oneagent log routing checks************"
 
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
-      if [[ -z "${CONTAINER_TYPE}" ]]; then
+      if [ -z "${CONTAINER_TYPE}" ]; then
             if [ "$CONTAINER_RUNTIME" == "docker" ]; then
                   /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
                   telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
@@ -533,7 +533,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
                   telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
             fi
-      else if [[ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]]; then
+      elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
             /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
       fi
