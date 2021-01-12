@@ -7,15 +7,15 @@
             "bindings": [
                 {
                     "find": "__DEPLOYMENT_APPLICATION_ID__",
-                    "replaceWith": "41a16ff6-f2a8-49e8-be30-30010f1ea7c9"
+                    "replaceWith": "20487c28-e544-45e7-a130-739156303dbe"
                 },
                 {
                     "find": "__DEPLOYMENT_APPLICATION_SECRET_URI__",
-                    "replaceWith": "https://identity-stage-cus.vault.azure.net/secrets/Deployment-ApplicationClientSecret"
+                    "replaceWith": "https://identity-dev-cus.vault.azure.net/secrets/ARCK8sSecret"
                 },
                 {
                     "find": "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__",
-                    "replaceWith": "/subscriptions/9d352739-a748-4ce6-8d9c-6d864a156e94/resourceGroups/Identity-Stage-CUS/providers/Microsoft.ManagedIdentity/userAssignedIdentities/DeploymentApp-Stage-CUS"
+                    "replaceWith": "/subscriptions/4009f3ee-43c4-4f19-97e4-32b6f2285a68/resourceGroups/Identity-Dev-CUS/providers/Microsoft.ManagedIdentity/userAssignedIdentities/DeploymentApp-Dev-CUS"
                 },
                 {
                     "find": "__CDPX_ACR__",
@@ -34,12 +34,16 @@
                     "replaceWith": "azuredefendermcrdev"
                 },
                 {
+                    "find": "__IMAGE_PATH__",
+                    "replaceWith": "public/azuredefender/dev"
+                },
+                {
                     "find": "__IMAGE_REPO__",
                     "replaceWith": "security-agent"
                 },
                 {
-                    "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/dev"
+                    "find": "__IMAGE_TAG__",
+                    "replaceWith": "0.1.0"
                 }
             ]
         },
@@ -75,12 +79,16 @@
                     "replaceWith": "azuredefendermcrstage"
                 },
                 {
+                    "find": "__IMAGE_PATH__",
+                    "replaceWith": "public/azuredefender/stage"
+                },
+                {
                     "find": "__IMAGE_REPO__",
                     "replaceWith": "security-agent"
                 },
                 {
-                    "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/stage"
+                    "find": "__IMAGE_TAG__",
+                    "replaceWith": "0.1.0"
                 }
             ]
         },
@@ -116,12 +124,16 @@
                     "replaceWith": "azuredefendermcrprod"
                 },
                 {
+                    "find": "__IMAGE_PATH__",
+                    "replaceWith": "public/azuredefender/stable"
+                },
+                {
                     "find": "__IMAGE_REPO__",
                     "replaceWith": "security-agent"
                 },
                 {
-                    "find": "__IMAGE_PATH__",
-                    "replaceWith": "public/azuredefender/stable"
+                    "find": "__IMAGE_TAG__",
+                    "replaceWith": "0.1.0"
                 }
             ]
         }

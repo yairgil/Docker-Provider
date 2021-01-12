@@ -1,73 +1,75 @@
 {
-    "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutParameters.json",
-    "contentVersion": "1.0.0.0",
-    "shellExtensions": [
-      {
-        "name": "PushImageToACR",
-        "type": "ShellExtensionType",
-        "properties": {
-          "maxexecutiontime": "PT1H"
-        },
-        "package": {
-          "reference": {
-            "path": "scripts.tar.gz"
+  "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutParameters.json",
+  "contentVersion": "1.0.0.0",
+  "shellExtensions": [
+    {
+      "name": "PushImageToACR",
+      "type": "ShellExtensionType",
+      "properties": {
+        "maxexecutiontime": "PT1H"
+      },
+      "package": {
+        "reference": {
+          "path": "scripts.tar.gz"
+        }
+      },
+      "launch": {
+        "command": [
+          "/bin/bash",
+          "pushImageToAcr.sh"
+        ],
+        "environmentVariables": [
+          {
+            "name": "ACR_APP_ID",
+            "value": "__DEPLOYMENT_APPLICATION_ID__",
+            "enableScopeTagBindings": "true"
+          },
+          {
+            "name": "ACR_APP_SECRET",
+            "reference": {
+              "provider": "AzureKeyVault",
+              "parameters": {
+                "secretId": "__DEPLOYMENT_APPLICATION_SECRET_URI__"
+              }
+            },
+            "asSecureValue": "true"
+          },
+          {
+            "name": "CDPX_IMAGE_TAG",
+            "value": "__CDPX_IMAGE_TAG__"
+          },
+          {
+            "name": "CDPX_ACR",
+            "value": "__CDPX_ACR__"
+          },
+          {
+            "name": "CDPX_REPO",
+            "value": "__CDPX_REPO__"
+          },
+          {
+            "name": "ACR_NAME",
+            "value": "__ACR_NAME__"
+          },
+          {
+            "name": "IMAGE_PATH",
+            "value": "__IMAGE_PATH__"
+          },
+          {
+            "name": "IMAGE_REPO",
+            "value": "__IMAGE_REPO__"
+          },
+          {
+            "name": "IMAGE_TAG",
+            "value": "__IMAGE_TAG__"
           }
-        },
-        "launch": {
-          "command": [
-            "/bin/bash",
-            "pushImageToAcr.sh"
-          ],
-          "environmentVariables": [
-            {
-              "name": "ACR_APP_ID",
-              "value":"__DEPLOYMENT_APPLICATION_ID__",
-              "enableScopeTagBindings": "true"
-            },
-            {
-                "name" : "ACR_APP_SECRET",
-                "reference" :
-                {
-                  "provider" : "AzureKeyVault",
-                  "parameters":
-                  {
-                    "secretId" : "__DEPLOYMENT_APPLICATION_SECRET_URI__"
-                  }
-                },
-                "asSecureValue": "true"
-            },
-            {
-                "name": "CDPX_IMAGE_TAG",
-                "value": "__CDPX_IMAGE_TAG__"
-            },
-            {
-                "name": "CDPX_ACR",
-                "value": "__CDPX_ACR__"
-            },
-            {
-              "name": "CDPX_REPO",
-              "value": "__CDPX_REPO__"
-            },
-            {
-                "name": "ACR_NAME",
-                "value": "__ACR_NAME__" 
-            },
-            {
-                "name": "IMAGE_REPO",
-                "value": "__IMAGE_REPO__" 
-            },
-            {
-                "name": "IMAGE_PATH",
-                "value": "__IMAGE_PATH__" 
-            }
-          ],
-          "identity": {
-            "type": "UserAssigned",
-            "userAssignedIdentities": [
-              "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__"
-            ]
-          }
+        ],
+        "identity": {
+          "type": "UserAssigned",
+          "userAssignedIdentities": [
+            "__DEPLOYMENT_MANAGED_IDENTITY_RESOURCE_ID__"
+          ]
         }
       }
-    ]
+    }
+  ]
 }

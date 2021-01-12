@@ -7,7 +7,7 @@ echo "Target agent repo name: ${IMAGE_REPO}"
 
 echo "Creating target full image path"
 
-TARGET_FULL_IMAGE_PATH=${IMAGE_PATH}/${IMAGE_REPO}
+TARGET_FULL_IMAGE_PATH=${IMAGE_PATH}/${IMAGE_REPO}:${IMAGE_TAG}
 
 CDPX_FULL_IMAGE_PATH=${CDPX_ACR}/official/${CDPX_REPO}:${CDPX_IMAGE_TAG}
 
