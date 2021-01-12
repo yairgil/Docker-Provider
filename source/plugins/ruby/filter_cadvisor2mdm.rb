@@ -308,8 +308,16 @@ module Fluent
         end
       elsif controller_type.downcase == "daemonset"
         capacity_from_kubelet = KubeletUtils.get_node_capacity
-        @cpu_capacity = capacity_from_kubelet[0]
-        @memory_capacity = capacity_from_kubelet[1]
+
+        # Error handling in case /metrics/cadvsior endpoint fails
+        if !capacity_from_kubelet.nil? && capacity_from_kubelet.length > 1
+          @cpu_capacity = capacity_from_kubelet[0]
+          @memory_capacity = capacity_from_kubelet[1]
+        else
+          # cpu_capacity and memory_capacity keep initialized value of 0.0
+          @log.error "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
+        end
+
       end
     end
 

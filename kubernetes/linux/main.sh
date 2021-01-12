@@ -174,6 +174,7 @@ source config_env_var
 
 
 #Parse the configmap to set the right environment variables for agent config.
+#Note > tomlparser-agent-config.rb has to be parsed first before td-agent-bit-conf-customizer.rb for fbit agent settings
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-agent-config.rb
 
 cat agent_config_env_var | while read line; do
