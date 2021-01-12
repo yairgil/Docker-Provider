@@ -190,6 +190,15 @@ cat integration_npm_config_env_var | while read line; do
 done
 source integration_npm_config_env_var
 
+#Parse the configmap to set the right environment variables for network policy manager (npm) integration.
+/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
+
+cat integration_npm_config_env_var | while read line; do
+    #echo $line
+    echo $line >> ~/.bashrc
+done
+source integration_npm_config_env_var
+
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
 if [ ! -e "/etc/config/kube.conf" ]; then
       /opt/microsoft/omsagent/ruby/bin/ruby td-agent-bit-conf-customizer.rb
@@ -512,7 +521,6 @@ if [ ! -e "/etc/config/kube.conf" ]; then
 
             echo "starting mdsd ..."
             mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-
             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
       fi
    fi
