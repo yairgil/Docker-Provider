@@ -431,8 +431,8 @@ spec:
             #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"
-            - name: CONTROLLER_TYPE
-              value: "DaemonSet-Prometheus"
+            - name: CONTAINER_TYPE
+              value: "Prometheus-Sidecar"
             - name: NODE_IP
               valueFrom:
                 fieldRef:
