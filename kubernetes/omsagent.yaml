@@ -505,14 +505,14 @@ spec:
             - mountPath: /etc/config/settings/adx
               name: omsagent-adx-secret
               readOnly: true
-          #livenessProbe:
-            #exec:
-              #command:
-                #- /bin/bash
-                #- -c
-                #- /opt/livenessprobe.sh
-            #initialDelaySeconds: 60
-            #periodSeconds: 60
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - /opt/livenessprobe.sh
+            initialDelaySeconds: 60
+            periodSeconds: 60
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

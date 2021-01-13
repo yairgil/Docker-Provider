@@ -18,12 +18,14 @@ if [ -e "/opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2" ]; then
   fi
 fi
 
-#test to exit non zero value if fluentbit is not running
-(ps -ef | grep td-agent-bit | grep -v "grep")
-if [ $? -ne 0 ]
-then
- echo "Fluentbit is not running" > /dev/termination-log
- exit 1
+#test to exit non zero value if fluentbit is not running in daemonset
+if [ ! -e "/etc/config/kube.conf" ]; then
+  (ps -ef | grep td-agent-bit | grep -v "grep")
+  if [ $? -ne 0 ]
+  then
+    echo "Fluentbit is not running" > /dev/termination-log
+    exit 1
+  fi
 fi
 
 if [ ! -s "inotifyoutput.txt" ]

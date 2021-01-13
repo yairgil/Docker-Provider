@@ -1,10 +1,13 @@
 #!/bin/bash
 
 if [ -e "/etc/config/kube.conf" ]; then
+    echo "rashmi-in-rs-omsagent-conf"
     cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+    echo "rashmi-in-ds-prom-omsagent-conf"
     cat /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 else
+    echo "rashmi-in-ds-omsagent-conf"
     sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 fi
 sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
@@ -223,15 +226,17 @@ fi
 
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
-      cat defaultpromenvvariables | while read line; do
-            echo $line >> ~/.bashrc
-      done
-      source defaultpromenvvariables
-else
-      cat defaultpromenvvariables-rs | while read line; do
-            echo $line >> ~/.bashrc
-      done
-      source defaultpromenvvariables-rs
+      if [ -z "${CONTAINER_TYPE}" ]; then
+            cat defaultpromenvvariables | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source defaultpromenvvariables
+      elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+            cat defaultpromenvvariables-rs | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source defaultpromenvvariables-rs
+      fi
 fi
 
 #Sourcing telemetry environment variable file if it exists
