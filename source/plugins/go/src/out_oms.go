@@ -48,13 +48,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	// Read configuration keys
 	EnableKubeAudit = output.FLBPluginConfigKey(ctx, "EnableKubeAudit")
-	EnablePerf = output.FLBPluginConfigKey(ctx, "EnablePerf")
-	EnableFlbPLugin = output.FLBPluginConfigKey(ctx, "EnableFlbPLugin")
 	enableTelemetry := output.FLBPluginConfigKey(ctx, "EnableTelemetry")
 
 	Log("EnableKubeAudit: %v", EnableKubeAudit)
-	Log("EnableFlbPLugin: %v", EnableFlbPLugin)
-	Log("EnablePerf: %v", EnablePerf)
 
 	// Telemetry
 	if strings.Compare(strings.ToLower(enableTelemetry), "true") == 0 {
@@ -78,6 +74,11 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 			records := GetRecords(data, length)
 			return PostDataHelper(records)
 		}
+	}
+
+	if strings.HasPrefix(incomingTag, "oms.container.perf.telegraf") {
+		records := GetRecords(data, length)
+		return PostDataHelper(records)
 	}
 
 	return output.FLB_OK

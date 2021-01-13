@@ -3,9 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -1114,7 +1111,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				IPName:    IPName,
 				DataItems: auditLogItems}
 			FlushToODS(logEntry, AuditLogDataType, len(auditLogItems))
-			//FlushToODSCustomLogs(auditLogItems, start)
 		}
 	}
 
@@ -1180,80 +1176,6 @@ func FlushToODS(logEntry interface{}, dataType string, numberOfItems int) int {
 	defer resp.Body.Close()
 	numContainerLogRecords := numberOfItems
 	Log("PostDataHelper::Info::Successfully flushed %d %v records to ODS in %s. RequestId: %v", numContainerLogRecords, dataType, time.Since(startTime), reqId)
-
-	return output.FLB_OK
-}
-
-// FlushToODSCustomLogs sends data to the ODS custom logs endpoint
-func FlushToODSCustomLogs(dataItems []AuditLogDataItem, start time.Time) int {
-	marshalled, err := json.Marshal(dataItems)
-	if err != nil {
-		message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
-		Log(message)
-		SendException(message)
-		return output.FLB_OK
-	}
-
-	customerID := WorkspaceID
-	if customerID == "" {
-		Log("Fallback for tests, %+v", customerID)
-		customerID = "59aee189-e8df-4fb6-a670-1c823b6f9e4f"
-	}
-
-	customLogsEndPoint := "https://" + customerID + ".ods.opinsights.azure.com/api/logs?api-version=2016-04-01"
-	buffer := bytes.NewBuffer(marshalled)
-	bufferLength := buffer.Len()
-	bufferLengthStr := fmt.Sprintf("%v", bufferLength)
-
-	req, _ := http.NewRequest("POST", customLogsEndPoint, buffer)
-	req.Header.Set("Log-Type", "AuditLogTempV2")
-	req.Header.Set("Content-Type", "application/json")
-	timeNow := time.Now().UTC().Format(time.RFC1123)
-	timeNow = strings.TrimSuffix(timeNow, "UTC") + "GMT"
-	req.Header.Set("x-ms-date", timeNow)
-	req.Header.Set("time-generated-field", "")
-	//req.Header.Set("x-ms-AzureResourceId", ResourceID)
-
-	stringToSign := "POST" + "\n" + bufferLengthStr + "\n" + "application/json" + "\n" + "x-ms-date:" + timeNow + "\n" + "/api/logs"
-
-	omsKey := ""
-	secretBytes, err := base64.StdEncoding.DecodeString(omsKey)
-	if err != nil {
-		Log("base64 error:", err)
-		panic(err)
-	}
-
-	// Calculate hash
-	h := hmac.New(sha256.New, secretBytes)
-	h.Write([]byte(stringToSign))
-	hashRes := h.Sum(nil)
-	hashedString := base64.StdEncoding.EncodeToString(hashRes)
-	Log(hashedString)
-
-	signature := "SharedKey " + customerID + ":" + hashedString
-	req.Header.Set("Authorization", signature)
-
-	resp, err := HTTPClient.Do(req)
-	elapsed := time.Since(start)
-
-	if err != nil {
-		message := fmt.Sprintf("Error when sending request to ODS CUSTOM LOGS %s \n", err.Error())
-		Log(message)
-		Log("Failed to flush %d records after %s", len(dataItems), elapsed)
-
-		return output.FLB_RETRY
-	}
-
-	if resp == nil || resp.StatusCode != 200 {
-		if resp != nil {
-			Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
-		}
-		return output.FLB_RETRY
-	}
-
-	defer resp.Body.Close()
-	numContainerLogRecords := len(dataItems)
-	Log("PostDataHelper::Info::Successfully flushed %d custom logs records to ODS in %s.", numContainerLogRecords, elapsed)
 
 	return output.FLB_OK
 }
@@ -1400,11 +1322,20 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	if len(ResourceID) > 0 {
 		//AKS Scenario
 		ResourceCentric = true
-		splitted := strings.Split(ResourceID, "/")
-		ResourceName = splitted[len(splitted)-1]
+		resourceIDParts := strings.Split(ResourceID, "/")
+
+		// Temporary until ARC will remove the /extensions/extensionname suffix from the injected resource id
+		if suspectedExtensionsPart := resourceIDParts[len(resourceIDParts)-2]; strings.Compare(strings.ToLower(suspectedExtensionsPart), "extensions") == 0 {
+			Log("Trimming the suffix of the resource Id %+v", ResourceID)
+			resourceIDParts = resourceIDParts[:len(resourceIDParts)-2]
+			ResourceID = strings.Join(resourceIDParts, "/")
+			Log("Finished trimming the suffix of the resource Id %+v", ResourceID)
+		}
+
+		ResourceName = resourceIDParts[len(resourceIDParts)-1]
 		Log("ResourceCentric: True")
 		Log("ResourceID=%s", ResourceID)
-		Log("ResourceName=%s", ResourceID)
+		Log("ResourceName=%s", ResourceName)
 	}
 	if ResourceCentric == false {
 		//AKS-Engine/non azure + non arc scenario
