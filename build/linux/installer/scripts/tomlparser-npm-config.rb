@@ -16,11 +16,12 @@ require_relative "ConfigParseErrorLogger"
 @collect_advanced_npm_metrics = false
 @npm_default_setting = "[]"
 @npm_node_urls = "[\"http://$NODE_IP:10091/node-metrics\"]"
-@npm_cluster_urls="[\"http://npm-metrics-cluster-service.kube-system:9000/cluster-metrics\"]"
+@npm_cluster_urls = "[\"http://npm-metrics-cluster-service.kube-system:9000/cluster-metrics\"]"
 @npm_basic_drop_metrics_cluster = "[\"npm_ipset_counts\"]"
 @tgfConfigFileDS = "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
 @tgfConfigFileRS = "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
 @replicaset = "replicaset"
+@promSideCar = "prometheus-sidecar"
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -45,14 +46,14 @@ end
 def populateSettingValuesFromConfigMap(parsedConfig)
   begin
     if !parsedConfig.nil? && !parsedConfig[:integrations].nil? && !parsedConfig[:integrations][:azure_network_policy_manager].nil? && !parsedConfig[:integrations][:azure_network_policy_manager][:collect_advanced_metrics].nil?
-        advanced_npm_metrics = parsedConfig[:integrations][:azure_network_policy_manager][:collect_advanced_metrics].to_s
-        puts "config::npm::got:integrations.azure_network_policy_manager.collect_advanced_metrics='#{advanced_npm_metrics}'"
-        if !advanced_npm_metrics.nil? && advanced_npm_metrics.strip.casecmp("true") == 0
-            @collect_advanced_npm_metrics = true
-        else
-            @collect_advanced_npm_metrics = false
-        end
-        puts "config::npm::set:integrations.azure_network_policy_manager.collect_advanced_metrics=#{@collect_advanced_npm_metrics}"
+      advanced_npm_metrics = parsedConfig[:integrations][:azure_network_policy_manager][:collect_advanced_metrics].to_s
+      puts "config::npm::got:integrations.azure_network_policy_manager.collect_advanced_metrics='#{advanced_npm_metrics}'"
+      if !advanced_npm_metrics.nil? && advanced_npm_metrics.strip.casecmp("true") == 0
+        @collect_advanced_npm_metrics = true
+      else
+        @collect_advanced_npm_metrics = false
+      end
+      puts "config::npm::set:integrations.azure_network_policy_manager.collect_advanced_metrics=#{@collect_advanced_npm_metrics}"
     end
   rescue => errorStr
     puts "config::npm::error:Exception while reading config settings for npm advanced setting - #{errorStr}, using defaults"
@@ -60,14 +61,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   end
   begin
     if !parsedConfig.nil? && !parsedConfig[:integrations].nil? && !parsedConfig[:integrations][:azure_network_policy_manager].nil? && !parsedConfig[:integrations][:azure_network_policy_manager][:collect_basic_metrics].nil?
-        basic_npm_metrics = parsedConfig[:integrations][:azure_network_policy_manager][:collect_basic_metrics].to_s
-        puts "config::npm::got:integrations.azure_network_policy_manager.collect_basic_metrics='#{basic_npm_metrics}'"
-        if !basic_npm_metrics.nil? && basic_npm_metrics.strip.casecmp("true") == 0
-            @collect_basic_npm_metrics = true
-        else
-            @collect_basic_npm_metrics = false
-        end
-        puts "config::npm::set:integrations.azure_network_policy_manager.collect_basic_metrics=#{@collect_basic_npm_metrics}"
+      basic_npm_metrics = parsedConfig[:integrations][:azure_network_policy_manager][:collect_basic_metrics].to_s
+      puts "config::npm::got:integrations.azure_network_policy_manager.collect_basic_metrics='#{basic_npm_metrics}'"
+      if !basic_npm_metrics.nil? && basic_npm_metrics.strip.casecmp("true") == 0
+        @collect_basic_npm_metrics = true
+      else
+        @collect_basic_npm_metrics = false
+      end
+      puts "config::npm::set:integrations.azure_network_policy_manager.collect_basic_metrics=#{@collect_basic_npm_metrics}"
     end
   rescue => errorStr
     puts "config::npm::error:Exception while reading config settings for npm basic setting - #{errorStr}, using defaults"
@@ -90,12 +91,11 @@ else
   @collect_advanced_npm_metrics = false
 end
 
-
-
 controller = ENV["CONTROLLER_TYPE"]
+container_type = ENV["CONTAINER_TYPE"]
 tgfConfigFile = @tgfConfigFileDS
 
-if controller.casecmp(@replicaset) == 0
+if ((controller.casecmp(@replicaset) == 0) || (container_type.casecmp(@promSideCar) == 0))
   tgfConfigFile = @tgfConfigFileRS
 end
 
@@ -123,7 +123,7 @@ puts "config::npm::Successfully substituted the NPM placeholders into #{tgfConfi
 telemetryFile = File.open("integration_npm_config_env_var", "w")
 
 if !telemetryFile.nil?
-  if @collect_advanced_npm_metrics == true 
+  if @collect_advanced_npm_metrics == true
     telemetryFile.write("export TELEMETRY_NPM_INTEGRATION_METRICS_ADVANCED=1\n")
   elsif @collect_basic_npm_metrics == true
     telemetryFile.write("export TELEMETRY_NPM_INTEGRATION_METRICS_BASIC=1\n")
