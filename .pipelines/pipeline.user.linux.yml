@@ -44,17 +44,6 @@ package:
       dockerfile_name: 'Dockerfile'                       # OPTIONAL: The name of the dockerfile. Docker client does allow the Dockerfile
                                                           # to be named differently. Defaults to Dockerfile.
                                                           # In effect, the -f option value passed to docker build will be repository_checkout_folder/src/DockerFinal/Foo.dockerfile.
-      repository_name: 'cdpxlinux'                        # only supported ones are cdpx acr repos
-      tag: 'ascdev'                                       # OPTIONAL: Defaults to latest. The tag for the built image. Final tag will be 1.0.0alpha, 1.0.0-timestamp-commitID.
-      latest: false                                       # OPTIONAL: Defaults to false. If tag is not set to latest and this flag is set, then tag as latest as well and push latest as well.
-    - !!dockerbuildcommand                                # REQUIRED: This maps the command data to a concrete type in the CDPX orchestrator.
-      name: 'Publish Docker Image to CDPX Ame Repo'       # REQUIRED: All commands have a name field. All console output captured when
-                                                          # this command runs is tagged with the value of this field.
-      context_folder: 'kubernetes/linux'                  # REQUIRED: The repository root relative path of the folder containing the Dockerfile to build.
-                                                          # In effect, the context folder will be repository_checkout_folder/src/DockerFinal.
-      dockerfile_name: 'Dockerfile'                       # OPTIONAL: The name of the dockerfile. Docker client does allow the Dockerfile
-                                                          # to be named differently. Defaults to Dockerfile.
-                                                          # In effect, the -f option value passed to docker build will be repository_checkout_folder/src/DockerFinal/Foo.dockerfile.
-      repository_name: 'cdpxlinuxame'                     # only supported ones are cdpx acr repos
-      tag: 'ascdev'                                       # OPTIONAL: Defaults to latest. The tag for the built image. Final tag will be 1.0.0alpha, 1.0.0-timestamp-commitID.
+      repository_name: 'azuredefender/agent'              # only supported ones are cdpx acr repos
+      tag: 'dev'                                          # OPTIONAL: Defaults to latest. The tag for the built image. Final tag will be 1.0.0alpha, 1.0.0-timestamp-commitID.
       latest: false                                       # OPTIONAL: Defaults to false. If tag is not set to latest and this flag is set, then tag as latest as well and push latest as well.
