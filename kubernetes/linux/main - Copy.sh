@@ -1,6 +1,7 @@
 #!/bin/bash
 
 if [ -e "/etc/config/kube.conf" ]; then
+    echo "rashmi-in-rs-omsagent-conf"
     cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
     echo "rashmi-in-ds-prom-omsagent-conf"
@@ -225,15 +226,17 @@ fi
 
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
-      cat defaultpromenvvariables | while read line; do
-            echo $line >> ~/.bashrc
-      done
-      source defaultpromenvvariables
-else
-      cat defaultpromenvvariables-rs | while read line; do
-            echo $line >> ~/.bashrc
-      done
-      source defaultpromenvvariables-rs
+      if [ -z "${CONTAINER_TYPE}" ]; then
+            cat defaultpromenvvariables | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source defaultpromenvvariables
+      elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+            cat defaultpromenvvariables-rs | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source defaultpromenvvariables-rs
+      fi
 fi
 
 #Sourcing telemetry environment variable file if it exists
@@ -525,18 +528,23 @@ echo "************end oneagent log routing checks************"
 
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "$CONTAINER_RUNTIME" == "docker" ]; then
-            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
-            telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
-      else
-            echo "since container run time is $CONTAINER_RUNTIME update the container log fluentbit Parser to cri from docker"
-            sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf
-            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
-            telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+      if [ -z "${CONTAINER_TYPE}" ]; then
+            if [ "$CONTAINER_RUNTIME" == "docker" ]; then
+                  /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
+                  telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+            else
+                  echo "since container run time is $CONTAINER_RUNTIME update the container log fluentbit Parser to cri from docker"
+                  sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf
+                  /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
+                  telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+            fi
+      elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
       fi
-else
-      /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
-      telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+# else
+#       /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
+#       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
 fi
 
 #set env vars used by telegraf
