@@ -86,7 +86,7 @@ helm repo update
 echo "uninstalling existing release if any for azmon-containers-ci-mdm-alert-release"
 helm uninstall azmon-containers-ci-mdm-alert-release
 
-helm upgrade --install azmon-containers-ci-mdm-alert-release --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion azmon-preview-mdm-alert/azuremonitor-containers --kube-context $clusterName
+helm upgrade --install azmon-containers-ci-mdm-alert-release --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion,omsagent.logsettings.tailbufmaxsizemegabytes="20" azmon-preview-mdm-alert/azuremonitor-containers --kube-context $clusterName
 echo "chart installation completed."
 
 echo "setting the subscription id of the cluster: ${clusterSubscriptionId}"
