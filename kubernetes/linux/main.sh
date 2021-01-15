@@ -235,7 +235,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   echo $line >> ~/.bashrc
             done
             source defaultpromenvvariables
-      done
+      fi
 else
       cat defaultpromenvvariables-rs | while read line; do
             echo $line >> ~/.bashrc
