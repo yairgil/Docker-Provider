@@ -225,10 +225,17 @@ fi
 
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
-      cat defaultpromenvvariables | while read line; do
-            echo $line >> ~/.bashrc
+      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+            cat defaultpromenvvariables-sidecar | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source defaultpromenvvariables-sidecar
+      else
+            cat defaultpromenvvariables | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source defaultpromenvvariables
       done
-      source defaultpromenvvariables
 else
       cat defaultpromenvvariables-rs | while read line; do
             echo $line >> ~/.bashrc

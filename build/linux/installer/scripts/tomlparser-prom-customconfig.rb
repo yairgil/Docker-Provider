@@ -18,7 +18,11 @@ require "fileutils"
 @defaultRsFieldPass = []
 @defaultRsFieldDrop = []
 @defaultRsK8sServices = []
-@defaultRsMonitorPods = false
+# @defaultRsMonitorPods = false
+@defaultSidecarInterval = "1m"
+@defaultSidecarFieldPass = []
+@defaultSidecarFieldDrop = []
+@defaultSidecarMonitorPods = false
 
 #Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
 @metricVersion = 2
@@ -65,17 +69,17 @@ end
 
 def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
   begin
-    new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
-    new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
   rescue => errorStr
-    puts "Exception while replacing default pod monitor settings: #{errorStr}"
+    puts "Exception while replacing default pod monitor settings for sidecar: #{errorStr}"
   end
   return new_contents
 end
 
 def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
   begin
-    new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_RS_PROM_MONITOR_PODS")
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_SIDECAR_PROM_MONITOR_PODS")
     pluginConfigsWithNamespaces = ""
     monitorKubernetesPodsNamespaces.each do |namespace|
       if !namespace.nil?
@@ -97,10 +101,10 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
         end
       end
     end
-    new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
     return new_contents
   rescue => errorStr
-    puts "Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults"
+    puts "Exception while creating prometheus input plugins to filter namespaces in sidecar: #{errorStr}, using defaults"
     replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
   end
 end
@@ -207,10 +211,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              (monitorKubernetesPods.nil? || (!monitorKubernetesPods.nil? && (!!monitorKubernetesPods == monitorKubernetesPods))) #Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
             puts "config::Successfully passed typecheck for config settings for replicaset"
             #if setting is nil assign default values
-            interval = (interval.nil?) ? @defaultRsInterval : interval
-            fieldPass = (fieldPass.nil?) ? @defaultRsFieldPass : fieldPass
-            fieldDrop = (fieldDrop.nil?) ? @defaultRsFieldDrop : fieldDrop
-            monitorKubernetesPods = (monitorKubernetesPods.nil?) ? @defaultRsMonitorPods : monitorKubernetesPods
+            interval = (interval.nil?) ? @defaultSidecarInterval : interval
+            fieldPass = (fieldPass.nil?) ? @defaultSidecarFieldPass : fieldPass
+            fieldDrop = (fieldDrop.nil?) ? @defaultSidecarFieldDrop : fieldDrop
+            monitorKubernetesPods = (monitorKubernetesPods.nil?) ? @defaultSidecarMonitorPods : monitorKubernetesPods
 
             file_name = "/opt/telegraf-test-prom-side-car.conf"
             # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
@@ -219,11 +223,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Starting to substitute the placeholders in telegraf conf copy file for prometheus side car"
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
-            new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
+            new_contents = text.gsub("$AZMON_SIDECAR_PROM_INTERVAL", interval)
             fieldPassSetting = (fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", fieldPassSetting)
+            new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_FIELDPASS", fieldPassSetting)
             fieldDropSetting = (fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDropSetting)
+            new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_FIELDDROP", fieldDropSetting)
 
             # Check to see if monitor_kubernetes_pods is set to true with a valid setting for monitor_kubernetes_namespaces to enable scraping for specific namespaces
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
@@ -239,14 +243,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             File.open(file_name, "w") { |file| file.puts new_contents }
             puts "config::Successfully substituted the placeholders in telegraf conf file for prometheus side car"
             #Set environment variables for telemetry
-            file = File.open("telemetry_prom_sidecar_config_env_var", "w")
+            file = File.open("telemetry_prom_config_env_var", "w")
             if !file.nil?
-              file.write("export TELEMETRY_RS_PROM_INTERVAL=\"#{interval}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_INTERVAL=\"#{interval}\"\n")
               #Setting array lengths as environment variables for telemetry purposes
-              file.write("export TELEMETRY_RS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
-              file.write("export TELEMETRY_RS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
-              file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
-              file.write("export TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
 
               # Close file after writing all environment variables
               file.close
@@ -258,7 +262,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         rescue => errorStr
           ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for promethues side car: #{errorStr}, using defaults")
           # look into this
-          setRsPromDefaults
+          #setRsPromDefaults
           puts "****************End Prometheus Config Processing********************"
         end
       elsif controller.casecmp(@daemonset) == 0 && !parsedConfig[:prometheus_data_collection_settings][:node].nil?
