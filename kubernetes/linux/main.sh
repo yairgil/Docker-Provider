@@ -535,9 +535,11 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
       fi
 elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+      echo "in side car................"
       /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
 else
+      echo "in ds..............."
       /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
 fi
