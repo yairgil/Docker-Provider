@@ -461,6 +461,8 @@ spec:
             #  value: "my_acs_cluster_name"
             - name: CONTAINER_TYPE
               value: "Prometheus-Sidecar"
+            - name: CONTROLLER_TYPE
+              value: "DaemonSet"
             - name: NODE_IP
               valueFrom:
                 fieldRef:

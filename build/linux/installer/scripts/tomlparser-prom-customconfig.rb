@@ -195,7 +195,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           setRsPromDefaults
           puts "****************End Prometheus Config Processing********************"
         end
-      elsif controller.casecmp(@daemonset) == 0 && containerType.casecmp(@promSideCar) && !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
+      elsif controller.casecmp(@daemonset) == 0 && containerType.casecmp(@promSideCar) == 0 && !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
         #Get prometheus sidecar custom config settings for monitor kubernetes pods
         begin
           interval = parsedConfig[:prometheus_data_collection_settings][:cluster][:interval]
