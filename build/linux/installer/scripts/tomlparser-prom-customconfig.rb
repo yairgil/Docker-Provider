@@ -195,7 +195,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           setRsPromDefaults
           puts "****************End Prometheus Config Processing********************"
         end
-      elsif controller.casecmp(@daemonset) == 0 && containerType.casecmp(@promSideCar) == 0 && !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
+      elsif controller.casecmp(@daemonset) == 0 && !containerType.nil? && containerType.casecmp(@promSideCar) == 0 && !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
         #Get prometheus sidecar custom config settings for monitor kubernetes pods
         begin
           interval = parsedConfig[:prometheus_data_collection_settings][:cluster][:interval]
@@ -254,7 +254,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
               # Close file after writing all environment variables
               file.close
-              puts "config::Successfully created telemetry file for replicaset"
+              puts "config::Successfully created telemetry file for prometheus sidecar"
             end
           else
             ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for prometheus side car, using defaults, please use right types for all settings")
