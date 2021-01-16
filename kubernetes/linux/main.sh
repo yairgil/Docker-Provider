@@ -204,14 +204,6 @@ fi
 
 #If config parsing was successful, a copy of the conf file with replaced custom settings file is created
 if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
-            echo "****************Start Telegraf in Test Mode**************************"
-            /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf -test
-            if [ $? -eq 0 ]; then
-                  mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
-            fi
-            echo "****************End Telegraf Run in Test Mode**************************"
-      else
             if [ -e "/opt/telegraf-test.conf" ]; then
                   echo "****************Start Telegraf in Test Mode**************************"
                   /opt/telegraf --config /opt/telegraf-test.conf -test
@@ -220,7 +212,6 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   fi
                   echo "****************End Telegraf Run in Test Mode**************************"
             fi
-      fi
 else
       if [ -e "/opt/telegraf-test-rs.conf" ]; then
                   echo "****************Start Telegraf in Test Mode**************************"
