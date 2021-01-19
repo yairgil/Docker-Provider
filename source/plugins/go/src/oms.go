@@ -1143,11 +1143,8 @@ func FlushToODS(logEntry interface{}, dataType string, numberOfItems int) int {
 
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Niv", "Niv")
 	req.Header.Set("User-Agent", userAgent)
 	reqId := uuid.New().String()
-
-	//Log(string(marshalled))
 
 	req.Header.Set("X-Request-ID", reqId)
 	//expensive to do string len for every request, so use a flag

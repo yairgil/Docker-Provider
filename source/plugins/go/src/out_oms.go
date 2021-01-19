@@ -76,11 +76,6 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 		}
 	}
 
-	if strings.HasPrefix(incomingTag, "oms.container.perf.telegraf") {
-		records := GetRecords(data, length)
-		return PostDataHelper(records)
-	}
-
 	return output.FLB_OK
 }
 
