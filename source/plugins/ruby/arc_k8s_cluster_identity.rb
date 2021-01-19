@@ -19,6 +19,7 @@ class ArcK8sClusterIdentity
   @@secret_resource_uri_template = "%{kube_api_server_url}/api/v1/namespaces/%{cluster_identity_token_secret_namespace}/secrets/%{token_secret_name}"
   @@azure_monitor_custom_metrics_audience = "https://monitoring.azure.com/"
   @@cluster_identity_request_kind = "AzureClusterIdentityRequest"
+  @@container_insights_extension_name = "azuremonitor-containers"
 
   def initialize
     @LogPath = "/var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log"
@@ -34,6 +35,7 @@ class ArcK8sClusterIdentity
     end
     @http_client = get_http_client
     @service_account_token = get_service_account_token
+    @extensionResourceId = ENV["AKS_RESOURCE_ID"] + "/extensions/" + @@container_insights_extension_name
     @log.info "initialize complete @ #{Time.now.utc.iso8601}"
   end
 
@@ -211,6 +213,7 @@ class ArcK8sClusterIdentity
     body["metadata"]["namespace"] = @@cluster_identity_resource_namespace
     body["spec"] = {}
     body["spec"]["audience"] = @@azure_monitor_custom_metrics_audience
+    body["spec"]["resourceId"] = @extensionResourceId
     return body
   end
 end
