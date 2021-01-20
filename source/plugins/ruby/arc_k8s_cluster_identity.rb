@@ -36,7 +36,7 @@ class ArcK8sClusterIdentity
     @service_account_token = get_service_account_token 
     @extensionResourceName = ENV["ARC_K8S_EXTENSION_RESOURCE_NAME"]   
     @extensionIdentityType = ENV["ARC_K8S_EXTENSION_IDENTITY_TYPE"]   
-    @log.info "extension resource name: #{@extensionResourceName}, extension identity type:#{@extensionIdentityType} @ #{Time.now.utc.iso8601}"
+    @log.info "extension resource name:#{@extensionResourceName}, extension identity type:#{@extensionIdentityType} @ #{Time.now.utc.iso8601}"
     @log.info "initialize complete @ #{Time.now.utc.iso8601}"
   end
 
@@ -151,7 +151,7 @@ class ArcK8sClusterIdentity
       update_response = @http_client.request(update_request)
       @log.info "Got response of #{update_response.code} for PATCH #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       if update_response.code.to_i == 404
-        @log.info "since crd resource doesnt exist since creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
+        @log.info "since crd resource doesnt exist hence creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
         create_request = Net::HTTP::Post.new(crd_request_uri)
         create_request["Content-Type"] = "application/json"
         create_request["Authorization"] = "Bearer #{@service_account_token}"
