@@ -73,8 +73,8 @@ def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubern
   begin
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR", ("kubernetes_label_selector = #{kubernetesLabelSelectors}"))
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR", ("kubernetes_field_selector = #{kubernetesFieldSelectors}"))
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR", kubernetesLabelSelectors)
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR", kubernetesFieldSelectors)
   rescue => errorStr
     puts "Exception while replacing default pod monitor settings for sidecar: #{errorStr}"
   end
