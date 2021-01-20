@@ -71,6 +71,7 @@ end
 
 def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
   begin
+    puts "config::Starting to substitute the placeholders in telegraf conf copy file for prometheus side car with no namespace filters"
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR", kubernetesLabelSelectors)
@@ -83,6 +84,7 @@ end
 
 def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting, kubernetesLabelSelectors, kubernetesFieldSelectors)
   begin
+    puts "config::Starting to substitute the placeholders in telegraf conf copy file for prometheus side car with namespace filters"
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_SIDECAR_PROM_MONITOR_PODS")
     pluginConfigsWithNamespaces = ""
     monitorKubernetesPodsNamespaces.each do |namespace|
