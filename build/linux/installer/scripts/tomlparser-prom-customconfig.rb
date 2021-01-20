@@ -89,6 +89,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
           pluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
   interval = \"#{interval}\"
   monitor_kubernetes_pods = true
+  monitor_kubernetes_pods_version = 2
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
   fieldpass = #{fieldPassSetting}
   fielddrop = #{fieldDropSetting}
