@@ -111,8 +111,6 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
     return new_contents
   rescue => errorStr
-    puts "Exception while creating prometheus input plugins to filter namespaces in sidecar: #{errorStr}, using defaults"
-    replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
     puts "Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults"
     replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
   end
