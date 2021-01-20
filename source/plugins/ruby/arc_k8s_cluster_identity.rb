@@ -215,11 +215,12 @@ class ArcK8sClusterIdentity
     body["spec"] = {}
     body["spec"]["audience"] = @@azure_monitor_custom_metrics_audience
     if !@extensionIdentityType.nil? && !@extensionIdentityType.empty? && @extensionIdentityType.downcase == "systemassigned"
-       if @extensionResourceName.nil? || @extensionResourceName.empty?
-         @log.warn "Got Extension resource name either nil or empty"
-       else 
+       if !@extensionResourceName.nil? && !@extensionResourceName.empty?
           body["spec"]["resourceId"] = @extensionResourceName
+       else 
+          @log.warn "Got Extension resource name either nil or empty"
        end 
+    end 
     return body
   end
 end
