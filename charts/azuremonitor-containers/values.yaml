@@ -14,7 +14,7 @@ Azure:
     IdentityType: "SystemAssigned"  
 omsagent:
   image:
-    repo: "mcr.microsoft.com/azuremonitor/containerinsights/cidev"
+    repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
     tag: "ciprod01112021"
     tagWindows: "win-ciprod01112021"
     pullPolicy: IfNotPresent
