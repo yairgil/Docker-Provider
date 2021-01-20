@@ -60,7 +60,8 @@ sudo apt-get install libcap2-bin -y
 
 #service telegraf stop
 
-wget https://github.com/microsoft/Docker-Provider/releases/download/5.0.0.0/telegraf
+#wget https://github.com/microsoft/Docker-Provider/releases/download/5.0.0.0/telegraf
+wget https://github.com/microsoft/Docker-Provider/releases/download/telegraf-test-1/telegraf
 
 chmod 777 /opt/telegraf
 

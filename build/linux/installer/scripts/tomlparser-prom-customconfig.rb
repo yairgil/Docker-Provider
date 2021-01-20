@@ -209,7 +209,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(fieldPass, String) &&
              checkForTypeArray(fieldDrop, String) &&
              (monitorKubernetesPods.nil? || (!monitorKubernetesPods.nil? && (!!monitorKubernetesPods == monitorKubernetesPods))) #Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
-            puts "config::Successfully passed typecheck for config settings for replicaset"
+            puts "config::Successfully passed typecheck for config settings for prometheus side car"
             #if setting is nil assign default values
             interval = (interval.nil?) ? @defaultSidecarInterval : interval
             fieldPass = (fieldPass.nil?) ? @defaultSidecarFieldPass : fieldPass
