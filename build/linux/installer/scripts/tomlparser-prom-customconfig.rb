@@ -226,8 +226,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             fieldPass = (fieldPass.nil?) ? @defaultSidecarFieldPass : fieldPass
             fieldDrop = (fieldDrop.nil?) ? @defaultSidecarFieldDrop : fieldDrop
             monitorKubernetesPods = (monitorKubernetesPods.nil?) ? @defaultSidecarMonitorPods : monitorKubernetesPods
-            kubernetesLabelSelectors = (kubernetesLabelSelectors.nil?) ? @defaultSidecarLabelSelectors : defaultKubernetesLabelSelectors
-            kubernetesFieldSelectors = (kubernetesFieldSelectors.nil?) ? @defaultSidecarFieldSelectors : defaultKubernetesFieldSelectors
+            kubernetesLabelSelectors = (kubernetesLabelSelectors.nil?) ? @defaultSidecarLabelSelectors : kubernetesLabelSelectors
+            kubernetesFieldSelectors = (kubernetesFieldSelectors.nil?) ? @defaultSidecarFieldSelectors : kubernetesFieldSelectors
 
             file_name = "/opt/telegraf-test-prom-side-car.conf"
             # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
