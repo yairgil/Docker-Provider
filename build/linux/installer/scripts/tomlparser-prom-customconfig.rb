@@ -23,6 +23,8 @@ require "fileutils"
 @defaultSidecarFieldPass = []
 @defaultSidecarFieldDrop = []
 @defaultSidecarMonitorPods = false
+@defaultSidecarLabelSelectors = ""
+@defaultSidecarFieldSelectors = ""
 
 #Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
 @metricVersion = 2
@@ -67,17 +69,19 @@ def checkForType(variable, varType)
   end
 end
 
-def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
+def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
   begin
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR", ("kubernetes_label_selector = #{kubernetesLabelSelectors}"))
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR", ("kubernetes_field_selector = #{kubernetesFieldSelectors}"))
   rescue => errorStr
     puts "Exception while replacing default pod monitor settings for sidecar: #{errorStr}"
   end
   return new_contents
 end
 
-def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
+def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting, kubernetesLabelSelectors, kubernetesFieldSelectors)
   begin
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_SIDECAR_PROM_MONITOR_PODS")
     pluginConfigsWithNamespaces = ""
@@ -91,6 +95,8 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
   monitor_kubernetes_pods = true
   monitor_kubernetes_pods_version = 2
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
+  kubernetes_label_selector = #{kubernetesLabelSelectors}
+  kubernetes_field_selector = #{kubernetesFieldSelectors}
   fieldpass = #{fieldPassSetting}
   fielddrop = #{fieldDropSetting}
   metric_version = #{@metricVersion}
@@ -106,7 +112,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     return new_contents
   rescue => errorStr
     puts "Exception while creating prometheus input plugins to filter namespaces in sidecar: #{errorStr}, using defaults"
-    replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
+    replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
   end
 end
 
@@ -204,6 +210,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           fieldDrop = parsedConfig[:prometheus_data_collection_settings][:cluster][:fielddrop]
           monitorKubernetesPods = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods]
           monitorKubernetesPodsNamespaces = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods_namespaces]
+          kubernetesLabelSelectors = parsedConfig[:prometheus_data_collection_settings][:cluster][:kubernetes_label_selector]
+          kubernetesFieldSelectors = parsedConfig[:prometheus_data_collection_settings][:cluster][:kubernetes_field_selector]
 
           # Check for the right datattypes to enforce right setting values
           if checkForType(interval, String) &&
@@ -216,6 +224,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             fieldPass = (fieldPass.nil?) ? @defaultSidecarFieldPass : fieldPass
             fieldDrop = (fieldDrop.nil?) ? @defaultSidecarFieldDrop : fieldDrop
             monitorKubernetesPods = (monitorKubernetesPods.nil?) ? @defaultSidecarMonitorPods : monitorKubernetesPods
+            kubernetesLabelSelectors = (kubernetesLabelSelectors.nil?) ? @defaultSidecarLabelSelectors : kubernetesLabelSelectors
+            kubernetesFieldSelectors = (kubernetesFieldSelectors.nil?) ? @defaultSidecarFieldSelectors : kubernetesFieldSelectors
 
             file_name = "/opt/telegraf-test-prom-side-car.conf"
             # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
@@ -234,10 +244,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
             # - to use defaults in case of nil settings
             if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
-              new_contents = createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
+              new_contents = createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting, kubernetesLabelSelectors, kubernetesFieldSelectors)
               monitorKubernetesPodsNamespacesLength = monitorKubernetesPodsNamespaces.length
             else
-              new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
+              new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
               monitorKubernetesPodsNamespacesLength = 0
             end
 
@@ -252,6 +262,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.write("export TELEMETRY_SIDECAR_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
               file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
               file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectors.length}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH=\"#{kubernetesFieldSelectors.length}\"\n")
 
               # Close file after writing all environment variables
               file.close
