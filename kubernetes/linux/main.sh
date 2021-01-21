@@ -202,36 +202,6 @@ fi
 #Parse the prometheus configmap to create a file with new custom settings.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prom-customconfig.rb
 
-#If config parsing was successful, a copy of the conf file with replaced custom settings file is created
-if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
-            echo "****************Start Telegraf in Test Mode**************************"
-            /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf -test
-            if [ $? -eq 0 ]; then
-                  mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
-            fi
-            echo "****************End Telegraf Run in Test Mode**************************"
-      else
-            if [ -e "/opt/telegraf-test.conf" ]; then
-                  echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test.conf -test
-                  if [ $? -eq 0 ]; then
-                        mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
-                  fi
-                  echo "****************End Telegraf Run in Test Mode**************************"
-            fi
-      fi
-else
-      if [ -e "/opt/telegraf-test-rs.conf" ]; then
-                  echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test-rs.conf -test
-                  if [ $? -eq 0 ]; then
-                        mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
-                  fi
-                  echo "****************End Telegraf Run in Test Mode**************************"
-      fi
-fi
-
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
@@ -538,6 +508,36 @@ if [ ! -e "/etc/config/kube.conf" ]; then
    fi
 fi
 echo "************end oneagent log routing checks************"
+
+#If config parsing was successful, a copy of the conf file with replaced custom settings file is created
+if [ ! -e "/etc/config/kube.conf" ]; then
+      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
+            echo "****************Start Telegraf in Test Mode**************************"
+            /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf -test
+            if [ $? -eq 0 ]; then
+                  mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+            fi
+            echo "****************End Telegraf Run in Test Mode**************************"
+      else
+            if [ -e "/opt/telegraf-test.conf" ]; then
+                  echo "****************Start Telegraf in Test Mode**************************"
+                  /opt/telegraf --config /opt/telegraf-test.conf -test
+                  if [ $? -eq 0 ]; then
+                        mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+                  fi
+                  echo "****************End Telegraf Run in Test Mode**************************"
+            fi
+      fi
+else
+      if [ -e "/opt/telegraf-test-rs.conf" ]; then
+                  echo "****************Start Telegraf in Test Mode**************************"
+                  /opt/telegraf --config /opt/telegraf-test-rs.conf -test
+                  if [ $? -eq 0 ]; then
+                        mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+                  fi
+                  echo "****************End Telegraf Run in Test Mode**************************"
+      fi
+fi
 
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
