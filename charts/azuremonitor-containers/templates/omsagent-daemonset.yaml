@@ -75,7 +75,7 @@ spec:
        - name: ARC_K8S_EXTENSION_IDENTITY_TYPE
          value: {{ .Values.Azure.Extension.IdentityType | quote }}                      
        - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-         value: ""      
+         value: ""     
        {{- if .Values.omsagent.logsettings.logflushintervalsecs }}
        - name: FBIT_SERVICE_FLUSH_INTERVAL
          value: {{ .Values.omsagent.logsettings.logflushintervalsecs | quote }}

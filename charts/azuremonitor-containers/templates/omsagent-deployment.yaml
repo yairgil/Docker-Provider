@@ -72,7 +72,7 @@ spec:
        - name: ARC_K8S_EXTENSION_IDENTITY_TYPE
          value: {{ .Values.Azure.Extension.IdentityType | quote }}               
        - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-         value: ""     
+         value: ""    
        securityContext:
          privileged: true
        ports:
