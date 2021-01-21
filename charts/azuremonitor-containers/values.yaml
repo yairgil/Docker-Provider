@@ -10,8 +10,8 @@ Azure:
     Region: <your_cluster_region>
     ResourceId: <your_cluster_id>
   Extension:
-    ResourceName: azuremonitor-containers
-    IdentityType: "SystemAssigned"  
+    ResourceName: <extension_resource_name>
+    IdentityType: <extension_identity_type>
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
