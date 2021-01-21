@@ -250,8 +250,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
             # - to use defaults in case of nil settings
             if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
-              new_contents = createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting, kubernetesLabelSelectors, kubernetesFieldSelectors)
-              monitorKubernetesPodsNamespacesLength = monitorKubernetesPodsNamespaces.length
+              # Adding a check to see if an empty array is passed for kubernetes namespaces
+              if (monitorKubernetesPodsNamespaces.length > 0)
+                new_contents = createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting, kubernetesLabelSelectors, kubernetesFieldSelectors)
+                monitorKubernetesPodsNamespacesLength = monitorKubernetesPodsNamespaces.length
+              else
+                new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
+                monitorKubernetesPodsNamespacesLength = 0
+              end
             else
               new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
               monitorKubernetesPodsNamespacesLength = 0
