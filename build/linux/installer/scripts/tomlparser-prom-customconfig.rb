@@ -74,8 +74,8 @@ def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubern
     puts "config::Starting to substitute the placeholders in telegraf conf copy file for prometheus side car with no namespace filters"
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
     new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR", ("kubernetes_label_selector = #{kubernetesLabelSelectors}"))
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR", ("kubernetes_field_selector = #{kubernetesFieldSelectors}"))
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR", ("kubernetes_label_selector = \"#{kubernetesLabelSelectors}\""))
+    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR", ("kubernetes_field_selector = \"#{kubernetesFieldSelectors}\""))
   rescue => errorStr
     puts "Exception while replacing default pod monitor settings for sidecar: #{errorStr}"
   end
@@ -101,8 +101,8 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
   monitor_kubernetes_pods = true
   monitor_kubernetes_pods_version = 2
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
-  kubernetes_label_selector = #{kubernetesLabelSelectors}
-  kubernetes_field_selector = #{kubernetesFieldSelectors}
+  kubernetes_label_selector = \"#{kubernetesLabelSelectors}\"
+  kubernetes_field_selector = \"#{kubernetesFieldSelectors}\"
   fieldpass = #{fieldPassSetting}
   fielddrop = #{fieldDropSetting}
   metric_version = #{@metricVersion}
