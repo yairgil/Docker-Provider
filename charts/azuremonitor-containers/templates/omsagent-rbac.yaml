@@ -33,7 +33,8 @@ rules:
   verbs: ["get", "create", "patch"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
-#extension model grants access as part of the extension msi hence not required
+#arc k8s extension model grants access as part of the extension msi 
+#remove this once the extension available public preview
 {{- if (empty .Values.Azure.Extension.Name) }}
 - apiGroups: [""]
   resources: ["secrets"]

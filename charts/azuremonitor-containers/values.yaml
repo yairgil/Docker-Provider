@@ -8,11 +8,14 @@
 Azure:
   Cluster:
     Region: <your_cluster_region>
-    ResourceId: <your_cluster_id>   
+    ResourceId: <your_cluster_id> 
+  Extension:
+    Name: ""    
+    ResourceId: ""
 omsagent:
   image:
-    repo: "mcr.microsoft.com/azuremonitor/containerinsights/cidev"
-    tag: "ciarcext01182021-3"
+    repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
+    tag: "ciprod01112021"
     tagWindows: "win-ciprod01112021"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "12.0.0-0"
