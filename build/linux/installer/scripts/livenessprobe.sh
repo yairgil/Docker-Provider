@@ -38,3 +38,19 @@ else
     exit 1
   fi
 fi
+
+# Perform the following check only for prometheus sidecar that does OSM scraping
+if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+  if [ ! -s "inotifyoutput-osm.txt" ]
+  then
+    # inotifyoutput-osm file is empty and the grep commands for omsagent, td-agent-bit and inotifyoutput file check succeeded
+    exit 0
+  else
+    if [ -s "inotifyoutput-osm.txt" ]
+    then
+      # inotifyoutput-osm file has data(config map was applied)
+      echo "inotifyoutput-osm.txt has been updated - config changed" > /dev/termination-log
+      exit 1
+    fi
+  fi
+fi

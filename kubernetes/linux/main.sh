@@ -32,6 +32,11 @@ sudo setfacl -m user:omsagent:rwx /var/opt/microsoft/docker-cimprov/log
 #Run inotify as a daemon to track changes to the mounted configmap.
 inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 
+#Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
+if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+      inotifywait /etc/config/osm-settings --daemon --recursive --outfile "/opt/inotifyoutput-osm.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
+fi
+
 #resourceid override for loganalytics data.
 if [ -z $AKS_RESOURCE_ID ]; then
       echo "not setting customResourceId"
