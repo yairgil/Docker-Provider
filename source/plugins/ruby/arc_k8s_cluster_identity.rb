@@ -18,7 +18,7 @@ class ArcK8sClusterIdentity
   @@crd_resource_uri_template = "%{kube_api_server_url}/apis/%{cluster_config_crd_api_version}/namespaces/%{cluster_identity_resource_namespace}/azureclusteridentityrequests/%{cluster_identity_resource_name}"
   @@secret_resource_uri_template = "%{kube_api_server_url}/api/v1/namespaces/%{cluster_identity_token_secret_namespace}/secrets/%{token_secret_name}"
   @@azure_monitor_custom_metrics_audience = "https://monitoring.azure.com/"
-  @@cluster_identity_request_kind = "AzureClusterIdentityRequest"  
+  @@cluster_identity_request_kind = "AzureClusterIdentityRequest" 
 
   def initialize
     @LogPath = "/var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log"
