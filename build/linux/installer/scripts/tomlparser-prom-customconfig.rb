@@ -221,6 +221,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
           # Check for the right datattypes to enforce right setting values
           if checkForType(interval, String) &&
+             checkForType(kubernetesLabelSelectors, String) &&
+             checkForType(kubernetesFieldSelectors, String) &&
              checkForTypeArray(fieldPass, String) &&
              checkForTypeArray(fieldDrop, String) &&
              (monitorKubernetesPods.nil? || (!monitorKubernetesPods.nil? && (!!monitorKubernetesPods == monitorKubernetesPods))) #Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
