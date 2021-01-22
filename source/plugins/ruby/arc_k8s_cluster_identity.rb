@@ -34,9 +34,8 @@ class ArcK8sClusterIdentity
     end
     @http_client = get_http_client
     @service_account_token = get_service_account_token 
-    @extensionResourceName = ENV["ARC_K8S_EXTENSION_RESOURCE_NAME"]   
-    @extensionIdentityType = ENV["ARC_K8S_EXTENSION_IDENTITY_TYPE"]   
-    @log.info "extension resource name:#{@extensionResourceName}, extension identity type:#{@extensionIdentityType} @ #{Time.now.utc.iso8601}"
+    @extensionName = ENV["ARC_K8S_EXTENSION_NAME"]   
+    @log.info "extension name:#{@extensionName} @ #{Time.now.utc.iso8601}"
     @log.info "initialize complete @ #{Time.now.utc.iso8601}"
   end
 
@@ -214,12 +213,8 @@ class ArcK8sClusterIdentity
     body["metadata"]["namespace"] = @@cluster_identity_resource_namespace
     body["spec"] = {}
     body["spec"]["audience"] = @@azure_monitor_custom_metrics_audience
-    if !@extensionIdentityType.nil? && !@extensionIdentityType.empty? && @extensionIdentityType.downcase == "systemassigned"
-       if !@extensionResourceName.nil? && !@extensionResourceName.empty?
-          body["spec"]["resourceId"] = @extensionResourceName
-       else 
-          @log.warn "Got Extension resource name either nil or empty"
-       end 
+    if !@extensionName.nil? && !@extensionName.empty? 
+        body["spec"]["resourceId"] = @extensionName      
     end 
     return body
   end
