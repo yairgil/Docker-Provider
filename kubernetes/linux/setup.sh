@@ -3,7 +3,7 @@ cd $TMPDIR
 
 #Download utf-8 encoding capability on the omsagent container.
 #upgrade apt to latest version
-apt-get update && apt-get install -y --only-upgrade apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
+apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
 sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
