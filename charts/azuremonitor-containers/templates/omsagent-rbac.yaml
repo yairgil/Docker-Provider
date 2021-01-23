@@ -34,7 +34,7 @@ rules:
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
 #arc k8s extension model grants access as part of the extension msi 
-#remove this once the extension available public preview
+#remove this explicit permission once the extension available in public preview
 {{- if (empty .Values.Azure.Extension.Name) }}
 - apiGroups: [""]
   resources: ["secrets"]
