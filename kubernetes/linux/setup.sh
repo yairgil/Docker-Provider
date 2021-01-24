@@ -2,8 +2,8 @@ TMPDIR="/opt"
 cd $TMPDIR
 
 #Download utf-8 encoding capability on the omsagent container.
-
-apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
+#upgrade apt to latest version
+apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
 sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
@@ -71,7 +71,7 @@ chmod 777 /opt/telegraf
 wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
 sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
 sudo apt-get update
-sudo apt-get install td-agent-bit=1.4.2 -y
+sudo apt-get install td-agent-bit=1.6.8 -y
 
 rm -rf $TMPDIR/omsbundle
 rm -f $TMPDIR/omsagent*.sh

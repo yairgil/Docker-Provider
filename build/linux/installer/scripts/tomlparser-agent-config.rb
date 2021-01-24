@@ -55,6 +55,12 @@ require_relative "ConfigParseErrorLogger"
 @podsEmitStreamBatchSizeMin = 50
 @nodesEmitStreamBatchSizeMin = 50
 
+# configmap settings related fbit config
+@fbitFlushIntervalSecs = 0
+@fbitTailBufferChunkSizeMBs = 0
+@fbitTailBufferMaxSizeMBs = 0
+
+
 def is_number?(value)
   true if Integer(value) rescue false
 end
@@ -131,6 +137,38 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "Using config map value: NODES_EMIT_STREAM_BATCH_SIZE = #{@nodesEmitStreamBatchSize}"
         end
       end
+      # fbit config settings
+      fbit_config = parsedConfig[:agent_settings][:fbit_config]
+      if !fbit_config.nil?
+        fbitFlushIntervalSecs = fbit_config[:log_flush_interval_secs]
+        if !fbitFlushIntervalSecs.nil? && is_number?(fbitFlushIntervalSecs) && fbitFlushIntervalSecs.to_i > 0
+          @fbitFlushIntervalSecs = fbitFlushIntervalSecs.to_i
+          puts "Using config map value: log_flush_interval_secs = #{@fbitFlushIntervalSecs}"
+        end
+
+        fbitTailBufferChunkSizeMBs = fbit_config[:tail_buf_chunksize_megabytes]
+        if !fbitTailBufferChunkSizeMBs.nil? && is_number?(fbitTailBufferChunkSizeMBs) && fbitTailBufferChunkSizeMBs.to_i > 0
+          @fbitTailBufferChunkSizeMBs = fbitTailBufferChunkSizeMBs.to_i
+          puts "Using config map value: tail_buf_chunksize_megabytes  = #{@fbitTailBufferChunkSizeMBs}"
+        end
+
+        fbitTailBufferMaxSizeMBs = fbit_config[:tail_buf_maxsize_megabytes]
+        if !fbitTailBufferMaxSizeMBs.nil? && is_number?(fbitTailBufferMaxSizeMBs) && fbitTailBufferMaxSizeMBs.to_i > 0           
+          if fbitTailBufferMaxSizeMBs.to_i >= @fbitTailBufferChunkSizeMBs
+            @fbitTailBufferMaxSizeMBs = fbitTailBufferMaxSizeMBs.to_i
+            puts "Using config map value: tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs}"
+          else
+            # tail_buf_maxsize_megabytes has to be greater or equal to tail_buf_chunksize_megabytes
+            @fbitTailBufferMaxSizeMBs = @fbitTailBufferChunkSizeMBs
+            puts "config::warn: tail_buf_maxsize_megabytes must be greater or equal to value of tail_buf_chunksize_megabytes. Using tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs} since provided config value not valid"
+          end
+        end
+        # in scenario - tail_buf_chunksize_megabytes provided but not tail_buf_maxsize_megabytes to prevent fbit crash
+        if  @fbitTailBufferChunkSizeMBs > 0  && @fbitTailBufferMaxSizeMBs == 0
+          @fbitTailBufferMaxSizeMBs = @fbitTailBufferChunkSizeMBs
+          puts "config::warn: since tail_buf_maxsize_megabytes not provided hence using tail_buf_maxsize_megabytes=#{@fbitTailBufferMaxSizeMBs} which is same as the value of tail_buf_chunksize_megabytes"
+        end 
+      end
     end
   rescue => errorStr
     puts "config::error:Exception while reading config settings for agent configuration setting - #{errorStr}, using defaults"
@@ -164,6 +202,16 @@ if !file.nil?
   file.write("export HPA_CHUNK_SIZE=#{@hpaChunkSize}\n")
   file.write("export PODS_EMIT_STREAM_BATCH_SIZE=#{@podsEmitStreamBatchSize}\n")
   file.write("export NODES_EMIT_STREAM_BATCH_SIZE=#{@nodesEmitStreamBatchSize}\n")
+  # fbit settings
+  if @fbitFlushIntervalSecs > 0
+    file.write("export FBIT_SERVICE_FLUSH_INTERVAL=#{@fbitFlushIntervalSecs}\n")
+  end
+  if @fbitTailBufferChunkSizeMBs > 0
+    file.write("export FBIT_TAIL_BUFFER_CHUNK_SIZE=#{@fbitTailBufferChunkSizeMBs}\n")
+  end
+  if @fbitTailBufferMaxSizeMBs > 0
+    file.write("export FBIT_TAIL_BUFFER_MAX_SIZE=#{@fbitTailBufferMaxSizeMBs}\n")
+  end 
   # Close file after writing all environment variables
   file.close
 else
