@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "arcK8sExtensionResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource Id of the Arc K8s Extension"
+      }
+    },
+    "arcK8sExtensionResourceLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Location of the Arc K8s Extension e.g. \"East US\""
+      }
+    },
+    "workspaceResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Monitor Log Analytics Resource ID"
+      }
+    },
+    "workspaceDomain": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Monitor Log Analytics Workspace Domain e.g. opinsights.azure.com"
+      }
+    }
+  },
+  "resources": [
+    {
+      "name": "[split(parameters('arcK8sExtensionResourceId'),'/')[12]]",
+      "type": "Microsoft.KubernetesConfiguration/extensions",
+      "location": "[parameters('arcK8sExtensionResourceLocation')]",
+      "apiVersion": "2020-07-01-preview",
+      "properties": {
+        "mode": "Incremental",
+        "id": "[parameters('arcK8sExtensionResourceId')]",
+        "properties": {
+          "extensionType": "[split(parameters('arcK8sExtensionResourceId'),'/')[12]]",
+          "type": "Microsoft.KubernetesConfiguration/extensions",
+          "configurationSettings": {
+            "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
+            "omsagent.domain": "[parameters('workspaceDomain')]"
+          },
+          "configurationProtectedSettings": {
+            "omsagent.secret.wsid": "[reference(parameters('workspaceResourceId'), '2015-03-20').customerId]",                        
+            "omsagent.secret.key": "[listKeys(parameters('workspaceResourceId'), '2015-03-20').primarySharedKey]"
+          },
+          "autoUpgradeMinorVersion": true,
+          "releaseTrain": "Stable",
+          "scope": {
+            "Cluster": {
+              "releaseNamespace": "[split(parameters('arcK8sExtensionResourceId'),'/')[12]]"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
