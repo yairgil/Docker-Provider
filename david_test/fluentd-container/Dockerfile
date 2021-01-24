@@ -15,6 +15,12 @@ RUN fluentd --setup ./fluent
 
 COPY td-agent.conf /opt/fluent/fluent.conf
 COPY envmdsd /opt/oneagent/envmdsd
+COPY workspace_creds /opt/workspace_creds
+COPY mdsd.xml /opt/mdsd.xml
+COPY main.sh /opt/main.sh
+RUN chmod +x /opt/main.sh
+
+COPY certificategenerator/ /opt/certificategenerator/
 
 RUN mkdir /var/log/constant_output
 

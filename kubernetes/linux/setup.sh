@@ -13,10 +13,10 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 
 # wget https://github.com/Microsoft/OMS-Agent-for-Linux/releases/download/OMSAgent_v1.10.0-1/omsagent-1.10.0-1.universal.x64.sh
 
-curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-bionic-td-agent4.sh | sh
-# this will put the TD agent config here - /etc/td-agent/td-agent.conf
-# the plugins file si /etc/td-agent/plugin
-# we'll create a symlink from /opt/microsoft/omsagent/plugin to /etc/td-agent/plugin and see if it works
+# curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-bionic-td-agent4.sh | sh
+# # this will put the TD agent config here - /etc/td-agent/td-agent.conf
+# # the plugins file si /etc/td-agent/plugin
+# # we'll create a symlink from /opt/microsoft/omsagent/plugin to /etc/td-agent/plugin and see if it works
 
 
 #create file to disable omi service startup script
