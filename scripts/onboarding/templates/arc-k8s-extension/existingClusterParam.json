@@ -6,10 +6,13 @@
       "value": "/subscriptions/<subscriptionId>/resourceGroups/<resourceGroupName>/providers/Microsoft.Kubernetes/connectedClusters/<clusterName>"
     },
     "clusterRegion": {
-      "value": "eastus2euap"
+      "value": "<clusterRegion>"
     },
     "workspaceResourceId": {
       "value": "/subscriptions/<subscriptionId>/resourcegroups/<resourceGroupName>/providers/microsoft.operationalinsights/workspaces/<workspaceName>"
+    },
+    "workspaceRegion": {
+      "value": "<workspaceRegion>"
     },
     "workspaceDomain": {
       "value": "opinsights.azure.com"
