@@ -14,7 +14,7 @@
 			],
 			"existenceCondition": {
 				"field": "Microsoft.ContainerService/managedClusters/addonProfiles.omsagent.enabled",
-				"containsKey": "true"
+				"equals": "true"
 			},
 			"deployment": {
 				"properties": {
