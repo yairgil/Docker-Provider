@@ -446,6 +446,9 @@ else
       CIWORKSPACE_key="$KEY"
 fi
 
+wget https://github.com/Azure/fluentd-plugin-mdsd/releases/download/0.1.9/fluent-plugin-mdsd-0.1.9.pre.build.master.71-oms.amd64.gem
+opt/microsoft/omsagent/ruby/bin/fluent-gem install fluent-plugin-mdsd-0.1.9.pre.build.master.71-oms.amd64.gem
+
 #start cron daemon for logrotate
 service cron start
 
@@ -484,17 +487,19 @@ echo "current region: $currentregion"
 isoneagentregion=false
 
 #set isoneagentregion as true if matching region is found
-if [ ! -z $oneagentregions ] && [ ! -z $currentregion ]; then
-  for rgn in $(echo $oneagentregions | sed "s/,/ /g"); do
-    if [ "$rgn" == "$currentregion" ]; then
-          isoneagentregion=true
-          echo "current region is in oneagent regions..."
-          break
-    fi
-  done
-else
-  echo "current region is not in oneagent regions..."
-fi
+#if [ ! -z $oneagentregions ] && [ ! -z $currentregion ]; then
+# for rgn in $(echo $oneagentregions | sed "s/,/ /g"); do
+#    if [ "$rgn" == "$currentregion" ]; then
+#          isoneagentregion=true
+#          echo "current region is in oneagent regions..."
+#          break
+#    fi
+#  done
+#else
+#  echo "current region is not in oneagent regions..."
+#fi
+
+isoneagentregion=true
 
 if [ "$isoneagentregion" = true ]; then
    #if configmap has a routing for logs, but current region is in the oneagent region list, take the configmap route
@@ -511,7 +516,7 @@ fi
 
 
 #start oneagent
-if [ ! -e "/etc/config/kube.conf" ]; then
+#if [ ! -e "/etc/config/kube.conf" ]; then
    if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
       echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
       echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
@@ -549,7 +554,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
       fi
    fi
-fi
+#fi
 echo "************end oneagent log routing checks************"
 
 #telegraf & fluentbit requirements
