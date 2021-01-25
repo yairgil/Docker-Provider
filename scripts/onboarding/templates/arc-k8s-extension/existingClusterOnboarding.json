@@ -2,16 +2,16 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "arcK8sExtensionResourceId": {
+    "clusterResourceId": {
       "type": "string",
       "metadata": {
-        "description": "Resource Id of the Arc K8s Extension"
+        "description": "Resource Id of the Azure Arc Connected Cluster"
       }
     },
-    "arcK8sExtensionResourceLocation": {
+    "clusterRegion": {
       "type": "string",
       "metadata": {
-        "description": "Location of the Arc K8s Extension e.g. \"East US\""
+        "description": "Location of the zure Arc Connected Cluster e.g. \"East US\""
       }
     },
     "workspaceResourceId": {
@@ -29,31 +29,45 @@
   },
   "resources": [
     {
-      "name": "[split(parameters('arcK8sExtensionResourceId'),'/')[12]]",
-      "type": "Microsoft.KubernetesConfiguration/extensions",
-      "location": "[parameters('arcK8sExtensionResourceLocation')]",
-      "apiVersion": "2020-07-01-preview",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[Concat('arc-k8s-ci-extension', '-',  uniqueString(parameters('clusterResourceId')))]",
+      "apiVersion": "2019-05-01",
+      "subscriptionId": "[split(parameters('clusterResourceId'),'/')[2]]",
+      "resourceGroup": "[split(parameters('clusterResourceId'),'/')[4]]",
       "properties": {
         "mode": "Incremental",
-        "id": "[parameters('arcK8sExtensionResourceId')]",
-        "properties": {
-          "extensionType": "[split(parameters('arcK8sExtensionResourceId'),'/')[12]]",
-          "type": "Microsoft.KubernetesConfiguration/extensions",
-          "configurationSettings": {
-            "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
-            "omsagent.domain": "[parameters('workspaceDomain')]"
-          },
-          "configurationProtectedSettings": {
-            "omsagent.secret.wsid": "[reference(parameters('workspaceResourceId'), '2015-03-20').customerId]",                        
-            "omsagent.secret.key": "[listKeys(parameters('workspaceResourceId'), '2015-03-20').primarySharedKey]"
-          },
-          "autoUpgradeMinorVersion": true,
-          "releaseTrain": "Stable",
-          "scope": {
-            "Cluster": {
-              "releaseNamespace": "[split(parameters('arcK8sExtensionResourceId'),'/')[12]]"
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "type": "Microsoft.KubernetesConfiguration/extensions",
+              "apiVersion": "2020-07-01-preview",
+              "name": "azuremonitor-containers",
+              "location": "[parameters('clusterRegion')]",
+              "properties": {
+                "extensionType": "azuremonitor-containers",
+                "configurationSettings": {
+                  "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
+                  "omsagent.domain": "[parameters('workspaceDomain')]"
+                },
+                "configurationProtectedSettings": {
+                  "omsagent.secret.wsid": "[reference(parameters('workspaceResourceId'), '2015-03-20').customerId]",
+                  "omsagent.secret.key": "[listKeys(parameters('workspaceResourceId'), '2015-03-20').primarySharedKey]"
+                },
+                "autoUpgradeMinorVersion": true,
+                "releaseTrain": "Stable",
+                "scope": {
+                  "Cluster": {
+                    "releaseNamespace": "azuremonitor-containers"
+                  }
+                }
+              },
+              "scope": "[concat('Microsoft.Kubernetes/connectedClusters/', split(parameters('clusterResourceId'),'/')[8])]"
             }
-          }
+          ]
         }
       }
     }
