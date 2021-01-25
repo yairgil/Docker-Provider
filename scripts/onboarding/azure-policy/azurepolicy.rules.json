@@ -13,8 +13,8 @@
 				"/providers/Microsoft.Authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293"
 			],
 			"existenceCondition": {
-				"field": "Microsoft.ContainerService/managedClusters/addonProfiles",
-				"containsKey": "omsagent"
+				"field": "Microsoft.ContainerService/managedClusters/addonProfiles.omsagent.enabled",
+				"containsKey": "true"
 			},
 			"deployment": {
 				"properties": {
