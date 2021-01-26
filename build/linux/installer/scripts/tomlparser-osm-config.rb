@@ -91,7 +91,7 @@ else
 end
 
 #replace place holders in configuration file
-tgfConfig = File.read(tgfConfigFileSidecar) #read returns only after closing the file
+tgfConfig = File.read(@tgfConfigFileSidecar) #read returns only after closing the file
 
 if @osmMetricNamespaces.length > 0
   osmPluginConfigsWithNamespaces = ""
