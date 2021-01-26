@@ -37,8 +37,13 @@ module Fluent::Plugin
         @running = 1
         
         @burnThread1 = Thread.new(&method(:burnCpuThread))
-        @burnThread2 = Thre ad.new(&method(:burnCpuThread))
+        @burnThread2 = Thread.new(&method(:burnCpuThread))
         @burnThread3 = Thread.new(&method(:burnCpuThread))
+        @burnThread6 = Thread.new(&method(:burnCpuThread))
+        @burnThread7 = Thread.new(&method(:burnCpuThread))
+        @burnThread8 = Thread.new(&method(:burnCpuThread))
+        @burnThread9 = Thread.new(&method(:burnCpuThread))
+        @burnThread10 = Thread.new(&method(:burnCpuThread))
     end
 
     # `shutdown` is called while closing down.
