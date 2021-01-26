@@ -2,22 +2,14 @@ TMPDIR="/opt"
 cd $TMPDIR
 
 #Download utf-8 encoding capability on the omsagent container.
-
-apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
+#upgrade apt to latest version
+apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
 sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
 
-# TODO: omsagent installed here. Intercept OMSagent here
-
-# wget https://github.com/Microsoft/OMS-Agent-for-Linux/releases/download/OMSAgent_v1.10.0-1/omsagent-1.10.0-1.universal.x64.sh
-
-# curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-bionic-td-agent4.sh | sh
-# # this will put the TD agent config here - /etc/td-agent/td-agent.conf
-# # the plugins file si /etc/td-agent/plugin
-# # we'll create a symlink from /opt/microsoft/omsagent/plugin to /etc/td-agent/plugin and see if it works
-
+wget https://github.com/Microsoft/OMS-Agent-for-Linux/releases/download/OMSAgent_v1.10.0-1/omsagent-1.10.0-1.universal.x64.sh
 
 #create file to disable omi service startup script
 touch /etc/.omi_disable_service_control
@@ -87,3 +79,16 @@ rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+
+
+
+# install fluentd
+apt-get install nano less curl sudo apt-utils rubygems ruby-dev gcc make wget ucf -y
+gem install fluentd --no-doc
+fluentd --setup ./fluent
+
+# copy all plugins to the new fluentd
+# rmdir fluent/plugin
+# ln -s /opt/microsoft/omsagent/plugin/ /opt/fluent
+mkdir /etc/fluent
+ln -s /opt/microsoft/omsagent/plugin/ /etc/fluent/.

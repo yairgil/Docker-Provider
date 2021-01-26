@@ -6,7 +6,7 @@
 
 
 # start fluentd
-# fluentd -c /opt/fluent/fluent.conf &
+# fluentd -c /opt/fluent/fluentd4.conf &
 
 
 cat /opt/workspace_creds | while read line; do

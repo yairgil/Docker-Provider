@@ -602,6 +602,13 @@ service rsyslog stop
 echo "getting rsyslog status..."
 service rsyslog status
 
+
+
+# start the new fluentd
+fluentd -c /opt/fluent/fluentd4.conf > /dev/null &
+
+
+
 shutdown() {
 	/opt/microsoft/omsagent/bin/service_control stop
 	}
