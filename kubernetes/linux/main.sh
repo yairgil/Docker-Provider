@@ -77,6 +77,21 @@ if [  -e "/etc/config/settings/config-version" ] && [  -s "/etc/config/settings/
       echo "AZMON_AGENT_CFG_FILE_VERSION:$AZMON_AGENT_CFG_FILE_VERSION"
 fi
 
+#set OSM config schema version
+if [  -e "/etc/config/osm-settings/schema-version" ] && [  -s "/etc/config/osm-settings/schema-version" ]; then
+      #trim
+      osm_config_schema_version="$(cat /etc/config/osm-settings/schema-version | xargs)"
+      #remove all spaces
+      osm_config_schema_version="${osm_config_schema_version//[[:space:]]/}"
+      #take first 10 characters
+      osm_config_schema_version="$(echo $osm_config_schema_version| cut -c1-10)"
+
+      export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version
+      echo "export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version" >> ~/.bashrc
+      source ~/.bashrc
+      echo "AZMON_OSM_CFG_SCHEMA_VERSION:$AZMON_OSM_CFG_SCHEMA_VERSION"
+fi
+
 export PROXY_ENDPOINT=""
 
 # Check for internet connectivity or workspace deletion

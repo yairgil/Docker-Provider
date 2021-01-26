@@ -28,6 +28,7 @@ require "fileutils"
 
 #Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
 @metricVersion = 2
+@monitorKubernetesPodsVersion = 2
 @urlTag = "scrapeUrl"
 @bearerToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 @responseTimeout = "15s"
@@ -99,7 +100,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
           pluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
   interval = \"#{interval}\"
   monitor_kubernetes_pods = true
-  monitor_kubernetes_pods_version = 2
+  monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
   kubernetes_label_selector = \"#{kubernetesLabelSelectors}\"
   kubernetes_field_selector = \"#{kubernetesFieldSelectors}\"
