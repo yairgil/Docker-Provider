@@ -10,7 +10,7 @@ end
 
 require_relative "ConfigParseErrorLogger"
 
-@configMapMountPath = "/etc/config/osm-settings"
+@configMapMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
 @configSchemaVersion = ""
 @tgfConfigFileSidecar = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
 @osmMetricNamespaces = []
@@ -132,5 +132,5 @@ if !telemetryFile.nil?
   telemetryFile.close
 else
   puts "config::npm::Exception while opening file for writing OSM telemetry environment variables"
-  puts "****************End OSM Config Processing********************"
 end
+puts "****************End OSM Config Processing********************"
