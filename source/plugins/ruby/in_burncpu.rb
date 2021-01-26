@@ -19,8 +19,6 @@ module Fluent::Plugin
     # If the configuration is invalid, raise `Fluent::ConfigError`.
     def configure(conf)
       super
-
-      # ...
     end
 
 
@@ -35,11 +33,18 @@ module Fluent::Plugin
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
+
+        @running = 1
+        
+        @burnThread1 = Thread.new(&method(:burnCpuThread))
+        @burnThread2 = Thre ad.new(&method(:burnCpuThread))
+        @burnThread3 = Thread.new(&method(:burnCpuThread))
     end
 
     # `shutdown` is called while closing down.
     def shutdown
       # Shutdown code goes here!
+      @running = 0
       if @run_interval
         @mutex.synchronize {
           @finished = true
@@ -84,6 +89,17 @@ module Fluent::Plugin
         end
         @mutex.unlock
       end
+
+      def burnCpuThread
+        x = 1
+        while @running == 1
+            x = x + 1
+            if x > 10
+                x = -99999
+            end
+        end
+      end
+
 
     def emit_record
         tag = @tag
