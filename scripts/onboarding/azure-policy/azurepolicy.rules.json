@@ -34,28 +34,44 @@
 							},
 							"clusterTags": {
 								"type": "object"
-						     },
+							},
 							"workspaceResourceId": {
 								"type": "string"
 							}
 						},
 						"resources": [
 							{
-								"name": "[parameters('clusterName')]",
-								"type": "Microsoft.ContainerService/managedClusters",
-								"location": "[parameters('clusterLocation')]",
-								"tags": "[parameters('clusterTags')]",
-								"apiVersion": "2018-03-31",
+								"type": "Microsoft.Resources/deployments",
+								"name": "[Concat('aks-monitoring-policy', '-',  uniqueString(parameters('clusterName')))]",
+								"apiVersion": "2019-05-01",
 								"properties": {
 									"mode": "Incremental",
-									"id": "[resourceId(parameters('clusterResourceGroupName'), 'Microsoft.ContainerService/managedClusters', parameters('clusterName'))]",
-									"addonProfiles": {
-										"omsagent": {
-											"enabled": true,
-											"config": {
-												"logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]"
+									"template": {
+										"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+										"contentVersion": "1.0.0.0",
+										"parameters": {},
+										"variables": {},
+										"resources": [
+											{
+												"name": "[parameters('clusterName')]",
+												"type": "Microsoft.ContainerService/managedClusters",
+												"location": "[parameters('clusterLocation')]",
+												"tags": "[parameters('clusterTags')]",
+												"apiVersion": "2018-03-31",
+												"properties": {
+													"mode": "Incremental",
+													"id": "[resourceId(parameters('clusterResourceGroupName'), 'Microsoft.ContainerService/managedClusters', parameters('clusterName'))]",
+													"addonProfiles": {
+														"omsagent": {
+															"enabled": true,
+															"config": {
+																"logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]"
+															}
+														}
+													}
+												}
 											}
-										}
+										]
 									}
 								}
 							}
