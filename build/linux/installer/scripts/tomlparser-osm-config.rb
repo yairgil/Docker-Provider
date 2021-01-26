@@ -13,6 +13,7 @@ require_relative "ConfigParseErrorLogger"
 @configMapMountPath = "/etc/config/osm-settings"
 @configSchemaVersion = ""
 @tgfConfigFileSidecar = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+@osmMetricNamespaces = []
 
 #Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
 @metricVersion = 2
@@ -87,7 +88,6 @@ else
   if (File.file?(@configMapMountPath))
     ConfigParseErrorLogger.logError("config::osm::unsupported/missing config schema version - '#{@osmConfigSchemaVersion}' , using defaults, please use supported schema version")
   end
-  @osmMetricNamespaces = []
 end
 
 #replace place holders in configuration file
@@ -116,7 +116,7 @@ insecure_skip_verify = #{@insecureSkipVerify}\n"
   end
   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", @osmPluginConfigsWithNamespaces)
 else
-  puts "Using defaults for OSM configuration since there was an error in input or no namespaces were set"
+  puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
 end
 
