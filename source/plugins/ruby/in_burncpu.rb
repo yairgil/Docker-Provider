@@ -56,6 +56,16 @@ module Fluent::Plugin
           @condition.signal
         }
         @thread.join
+        @burnThread1.join
+        @burnThread2.join
+        @burnThread3.join
+        @burnThread4.join
+        @burnThread5.join
+        @burnThread6.join
+        @burnThread7.join
+        @burnThread8.join
+        @burnThread9.join
+        @burnThread10.join
       end
       super
     end

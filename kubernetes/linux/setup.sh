@@ -90,5 +90,5 @@ fluentd --setup ./fluent
 # copy all plugins to the new fluentd
 # rmdir fluent/plugin
 # ln -s /opt/microsoft/omsagent/plugin/ /opt/fluent
-mkdir /etc/fluent
-ln -s /opt/microsoft/omsagent/plugin/ /etc/fluent/.
+# mkdir /etc/fluent
+# ln -s /opt/microsoft/omsagent/plugin/ /etc/fluent/.
