@@ -91,7 +91,7 @@
               "name": "azuremonitor-containers",
               "location": "[parameters('clusterRegion')]",
               "properties": {
-                "extensionType": "azuremonitor-containers",
+                "extensionType": "Microsoft.AzureMonitor.Containers",
                 "configurationSettings": {
                   "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
                   "omsagent.domain": "[parameters('workspaceDomain')]"
