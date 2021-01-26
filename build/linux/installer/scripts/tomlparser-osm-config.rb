@@ -120,8 +120,8 @@ else
   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
 end
 
-File.open(tgfConfigFile, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope
-puts "config::osm::Successfully substituted the OSM placeholders in #{tgfConfigFile} file in sidecar container"
+File.open(@tgfConfigFileSidecar, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope
+puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfConfigFileSidecar} file in sidecar container"
 
 # Write the telemetry to file, so that they can be set as environment variables
 telemetryFile = File.open("integration_osm_config_env_var", "w")
