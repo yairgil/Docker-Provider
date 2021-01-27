@@ -83,9 +83,11 @@ rm -f $TMPDIR/envmdsd
 
 
 # install fluentd
-apt-get install nano less curl sudo apt-utils rubygems ruby-dev gcc make wget ucf -y
+apt-get install nano less curl sudo apt-utils rubygems ruby-dev gcc make wget ucf locate -y
 gem install fluentd --no-doc
 fluentd --setup ./fluent
+
+gem install gyoku iso8601 --no-doc
 
 # copy all plugins to the new fluentd
 # rmdir fluent/plugin

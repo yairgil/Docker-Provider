@@ -418,6 +418,7 @@ service cron start
 
 #check if agent onboarded successfully
 /opt/microsoft/omsagent/bin/omsadmin.sh -l
+/opt/microsoft/omsagent/bin/service_control stop
 
 #get omsagent and docker-provider versions
 dpkg -l | grep omsagent | awk '{print $2 " " $3}'
