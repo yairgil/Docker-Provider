@@ -124,7 +124,7 @@ insecure_skip_verify = #{@insecureSkipVerify}\n"
       end
     end
   end
-  tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", @osmPluginConfigsWithNamespaces)
+  tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
 else
   puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")

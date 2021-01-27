@@ -9,7 +9,7 @@ data:
     ver1
   osm-metric-collection-configuration: |-
     # OSM metric collection settings
-    [osm-metric-collection-configuration.settings]
+    [osm_metric_collection_configuration.settings]
         # Namespaces to monitor
         monitor_namespaces = ["namespace1", "namespace2"]
 metadata:
