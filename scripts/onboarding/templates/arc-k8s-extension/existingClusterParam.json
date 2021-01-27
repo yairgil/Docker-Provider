@@ -8,6 +8,9 @@
     "clusterRegion": {
       "value": "<clusterRegion>"
     },
+    "proxyEndpointUrl": {
+      "value": "<proxyEndPointUrl>"
+    },
     "workspaceResourceId": {
       "value": "/subscriptions/<subscriptionId>/resourcegroups/<resourceGroupName>/providers/microsoft.operationalinsights/workspaces/<workspaceName>"
     },
