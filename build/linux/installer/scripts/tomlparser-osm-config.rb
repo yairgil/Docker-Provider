@@ -111,16 +111,16 @@ if @osmMetricNamespaces.length > 0
       namespace.strip!
       if namespace.length > 0
         osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
-monitor_kubernetes_pods = true
-monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
-monitor_kubernetes_pods_namespace = \"#{namespace}\"
-fieldpass = #{@fieldPassSetting}
-metric_version = #{@metricVersion}
-url_tag = \"#{@urlTag}\"
-bearer_token = \"#{@bearerToken}\"
-response_timeout = \"#{@responseTimeout}\"
-tls_ca = \"#{@tlsCa}\"
-insecure_skip_verify = #{@insecureSkipVerify}\n"
+  monitor_kubernetes_pods = true
+  monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
+  monitor_kubernetes_pods_namespace = \"#{namespace}\"
+  fieldpass = #{@fieldPassSetting}
+  metric_version = #{@metricVersion}
+  url_tag = \"#{@urlTag}\"
+  bearer_token = \"#{@bearerToken}\"
+  response_timeout = \"#{@responseTimeout}\"
+  tls_ca = \"#{@tlsCa}\"
+  insecure_skip_verify = #{@insecureSkipVerify}\n"
       end
     end
   end
