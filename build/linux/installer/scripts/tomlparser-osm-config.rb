@@ -13,6 +13,7 @@ require_relative "ConfigParseErrorLogger"
 @configMapMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
 @configSchemaVersion = ""
 @tgfConfigFileSidecar = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+@tgfTestConfigFile = "/opt/telegraf-test.conf"
 @osmMetricNamespaces = []
 
 #Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
@@ -90,8 +91,16 @@ else
   end
 end
 
+# Check to see if the prometheus custom config parser has created a test config file so that we can replace the settings in the test file and run it, If not create
+# a test config file by copying contents of the actual sidecar telegraf config file.
+if (!File.exist?(@tgfTestConfigFile))
+  # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
+  puts "test telegraf sidecar config file #{@tgfTestConfigFile} does not exist, creating new one"
+  FileUtils.cp(@tgfConfigFileSidecar, @tgfTestConfigFile)
+end
+
 #replace place holders in configuration file
-tgfConfig = File.read(@tgfConfigFileSidecar) #read returns only after closing the file
+tgfConfig = File.read(@tgfTestConfigFile) #read returns only after closing the file
 
 if @osmMetricNamespaces.length > 0
   osmPluginConfigsWithNamespaces = ""

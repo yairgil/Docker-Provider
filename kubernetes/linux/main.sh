@@ -267,16 +267,16 @@ done
 source config_metric_collection_env_var
 
 #Parse the OSM configmap to set the right environment variables for metric collection settings
-# if [ ! -e "/etc/config/kube.conf" ]; then
-#       if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
-#             /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
+if [ ! -e "/etc/config/kube.conf" ]; then
+      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+            /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
 
-#             cat integration_osm_config_env_var | while read line; do
-#                   echo $line >> ~/.bashrc
-#             done
-#             source integration_osm_config_env_var
-#       fi
-# fi
+            cat integration_osm_config_env_var | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source integration_osm_config_env_var
+      fi
+fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
