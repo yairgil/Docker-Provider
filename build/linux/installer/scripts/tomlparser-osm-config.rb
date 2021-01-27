@@ -8,12 +8,13 @@ else
   require_relative "tomlrb"
 end
 
+require "fileutils"
 require_relative "ConfigParseErrorLogger"
 
 @configMapMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
 @configSchemaVersion = ""
 @tgfConfigFileSidecar = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
-@tgfTestConfigFile = "/opt/telegraf-test.conf"
+@tgfTestConfigFile = "/opt/telegraf-test-prom-side-car.conf"
 @osmMetricNamespaces = []
 
 #Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
