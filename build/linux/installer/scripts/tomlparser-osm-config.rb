@@ -20,7 +20,9 @@ require_relative "ConfigParseErrorLogger"
 #Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
 @metricVersion = 2
 @monitorKubernetesPodsVersion = 2
-@fieldPassSetting = "[\"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq\"]"
+#@fieldPassSetting = "[\"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq\"]"
+@fieldPassSetting = "[\"go_goroutines\", \"	go_memstats_alloc_bytes\"]"
+
 @urlTag = "scrapeUrl"
 @bearerToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 @responseTimeout = "15s"
