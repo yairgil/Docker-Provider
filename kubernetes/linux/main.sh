@@ -219,6 +219,27 @@ if [ ! -e "/etc/config/kube.conf" ]; then
       /opt/microsoft/omsagent/ruby/bin/ruby td-agent-bit-conf-customizer.rb
 fi
 
+#Parse the OSM configmap to set the right environment variables for metric collection settings
+#This needs to be before the prometheus custom config map parser since we have namespace duplication logic in place.
+if [ ! -e "/etc/config/kube.conf" ]; then
+      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+            /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
+
+            cat integration_osm_config_env_var | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source integration_osm_config_env_var
+
+            #Sourcing prometheus side car config settings if it exists
+            if [ -e "prom_config_shared_settings_env_var" ]; then
+                  cat prom_config_shared_settings_env_var | while read line; do
+                        echo $line >> ~/.bashrc
+                  done
+                  source prom_config_shared_settings_env_var
+            fi
+      fi
+fi
+
 #Parse the prometheus configmap to create a file with new custom settings.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prom-customconfig.rb
 
@@ -250,13 +271,7 @@ if [ -e "telemetry_prom_config_env_var" ]; then
       source telemetry_prom_config_env_var
 fi
 
-#Sourcing prometheus side car config settings if it exists
-if [ -e "prom_config_shared_settings_env_var" ]; then
-      cat prom_config_shared_settings_env_var | while read line; do
-            echo $line >> ~/.bashrc
-      done
-      source prom_config_shared_settings_env_var
-fi
+
 
 
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
@@ -275,17 +290,7 @@ cat config_metric_collection_env_var | while read line; do
 done
 source config_metric_collection_env_var
 
-#Parse the OSM configmap to set the right environment variables for metric collection settings
-if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
-            /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
 
-            cat integration_osm_config_env_var | while read line; do
-                  echo $line >> ~/.bashrc
-            done
-            source integration_osm_config_env_var
-      fi
-fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"

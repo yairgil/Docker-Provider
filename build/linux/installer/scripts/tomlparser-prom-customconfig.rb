@@ -268,15 +268,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               monitorKubernetesPodsNamespacesLength = 0
             end
 
-            # Add fielddrop as environment variable so that OSM parser can append to it if needed
-            file = File.open("prom_config_shared_settings_env_var", "w")
-            if !file.nil?
-              file.write("export AZMON_SIDECAR_PROM_FIELDDROP=#{fieldDropSetting}\n")
-              # Close file after writing all environment variables
-              file.close
-              puts "config::Successfully created prom_config_shared_settings_env_var file for prometheus sidecar"
-            end
-
             File.open(file_name, "w") { |file| file.puts new_contents }
             puts "config::Successfully substituted the placeholders in telegraf conf file for prometheus side car"
             #Set environment variables for telemetry
