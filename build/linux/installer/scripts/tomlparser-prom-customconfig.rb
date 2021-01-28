@@ -247,16 +247,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             fieldPassSetting = (fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"
             new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_FIELDPASS", fieldPassSetting)
             fieldDropSetting = (fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_FIELDDROP", fieldDropSetting)
+            #new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_FIELDDROP", fieldDropSetting)
 
             # Check to see if monitor_kubernetes_pods is set to true with a valid setting for monitor_kubernetes_namespaces to enable scraping for specific namespaces
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
             # - to use defaults in case of nil settings
+            monitorKubernetesPodsNSConfig = []
             if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
               # Adding a check to see if an empty array is passed for kubernetes namespaces
               if (monitorKubernetesPodsNamespaces.length > 0)
                 new_contents = createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting, kubernetesLabelSelectors, kubernetesFieldSelectors)
                 monitorKubernetesPodsNamespacesLength = monitorKubernetesPodsNamespaces.length
+                monitorKubernetesPodsNSConfig = monitorKubernetesPodsNamespaces
               else
                 new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
                 monitorKubernetesPodsNamespacesLength = 0
@@ -264,6 +266,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             else
               new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
               monitorKubernetesPodsNamespacesLength = 0
+            end
+
+            # Add fielddrop as environment variable so that OSM parser can append to it if needed
+            file = File.open("prom_config_shared_settings_env_var", "w")
+            if !file.nil?
+              file.write("export AZMON_SIDECAR_PROM_FIELDDROP=#{fieldDropSetting}\n")
+              # Close file after writing all environment variables
+              file.close
+              puts "config::Successfully created prom_config_shared_settings_env_var file for prometheus sidecar"
             end
 
             File.open(file_name, "w") { |file| file.puts new_contents }

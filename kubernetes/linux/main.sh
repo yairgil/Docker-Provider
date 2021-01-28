@@ -250,6 +250,15 @@ if [ -e "telemetry_prom_config_env_var" ]; then
       source telemetry_prom_config_env_var
 fi
 
+#Sourcing prometheus side car config settings if it exists
+if [ -e "prom_config_shared_settings_env_var" ]; then
+      cat prom_config_shared_settings_env_var | while read line; do
+            echo $line >> ~/.bashrc
+      done
+      source prom_config_shared_settings_env_var
+fi
+
+
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-mdm-metrics-config.rb
 
