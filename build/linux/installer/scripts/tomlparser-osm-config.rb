@@ -23,6 +23,7 @@ require_relative "ConfigParseErrorLogger"
 #@fieldPassSetting = "[\"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq\"]"
 @fieldPassSetting = "[\"go_goroutines\"]"
 
+@scrapeInterval = "1m"
 @urlTag = "scrapeUrl"
 @bearerToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 @responseTimeout = "15s"
@@ -113,6 +114,7 @@ if @osmMetricNamespaces.length > 0
       namespace.strip!
       if namespace.length > 0
         osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
+  interval = \"#{@scrapeInterval}\"
   monitor_kubernetes_pods = true
   monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
