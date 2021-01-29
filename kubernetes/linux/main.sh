@@ -220,7 +220,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
 fi
 
 #Parse the OSM configmap to set the right environment variables for metric collection settings
-#This needs to be before the prometheus custom config map parser since we have namespace duplication logic in place.
+#This needs to be done before the prometheus custom config map parsing since we have namespace duplication logic in place.
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
             /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
@@ -272,8 +272,6 @@ if [ -e "telemetry_prom_config_env_var" ]; then
 fi
 
 
-
-
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-mdm-metrics-config.rb
 
@@ -322,6 +320,7 @@ else
       echo "Making curl request to cadvisor endpoint with port 10255 to get the configured container runtime on kubelet"
       podWithValidContainerId=$(curl -s http://$NODE_IP:10255/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
 fi
+#podWithValidContainerId=$(curl -s -k -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://$NODE_IP:10250/pods | jq -R 'fromjson? | [ .items[] | .metadata.namespace ] ' )
 
 if [ ! -z "$podWithValidContainerId" ]; then
       containerRuntime=$(echo $podWithValidContainerId | jq -r '.status.containerStatuses[0].containerID' | cut -d ':' -f 1)
