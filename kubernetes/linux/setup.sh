@@ -79,3 +79,11 @@ rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+
+
+#TODO: figure out where other gems are installed (a quick search didn't find anything)
+sudo apt install ruby-dev -y
+sudo /opt/microsoft/omsagent/ruby/bin/gem install ruby-protocol-buffers
+
+
+

@@ -12,6 +12,10 @@ class KubernetesApiClient
   require_relative "oms_common"
   require_relative "constants"
 
+  require_relative 'proto_generated/wrapper.pb.rb'
+  require_relative 'k8s.io/api/core/v1/generated.pb.rb'
+  require_relative 'props_to_brackets.rb'
+
   @@ApiVersion = "v1"
   @@ApiVersionApps = "v1"
   @@ApiGroupApps = "apps"
@@ -36,7 +40,54 @@ class KubernetesApiClient
   end
 
   class << self
-    def getKubeResourceInfo(resource, api_group: nil)
+
+    def Bracketify(protobuf_obj)
+      if protobuf_obj.class == 1.class || protobuf_obj.class == 1.1.class || protobuf_obj.class == "a".class || protobuf_obj.class == TrueClass || protobuf_obj.class == FalseClass
+          return protobuf_obj
+      elsif protobuf_obj.class == K8s::Io::Apimachinery::Pkg::Apis::Meta::V1::Time
+          if protobuf_obj.has_seconds?
+              return Time.at(protobuf_obj.seconds + protobuf_obj.nanos * 0.000000001).utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+          else
+              return nil
+          end
+      elsif protobuf_obj.class == ProtocolBuffers::RepeatedField
+          retval = []
+          for item in protobuf_obj
+              begin
+                  retval.push(Bracketify(item))
+              rescue Exception => errorStr
+                  puts errorStr
+                  puts "*** in []"
+                  raise errorStr
+              end
+          end
+          return retval
+      else
+          retval = {}
+          for prop_name in protobuf_obj.public_methods(false)
+              if !prop_name.to_s.include?("=") && !prop_name.to_s.include?("?") && !(prop_name == :pretty_print) && !(prop_name == :&) && !(prop_name == :|) && !(prop_name == :^) && !(prop_name == :pretty_print_cycle)
+                  begin
+                      field_present = eval("protobuf_obj.has_#{prop_name.to_s}?")
+                      if field_present
+                          result = eval("Bracketify(protobuf_obj.#{prop_name.to_s})")
+                          if result != nil
+                              retval[prop_name.to_s] = result
+                          end
+                      end
+                  rescue Exception => errorStr
+                      puts errorStr
+                      puts "*** at #{prop_name}"
+                      raise errorStr
+                  end
+              end
+          end
+          return retval
+      end
+  end
+  
+
+
+    def getKubeResourceInfo(resource, api_group: nil, use_protobuf: false)
       headers = {}
       response = nil
       @Log.info "Getting Kube resource: #{resource}"
@@ -50,6 +101,11 @@ class KubernetesApiClient
             Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
               kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
               kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
+              if use_protobuf
+                kubeApiRequest["Accept"] = "application/vnd.kubernetes.protobuf;type=watch"
+              else
+                kubeApiRequest["Accept"] = "application/json"
+              end
               @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
               response = http.request(kubeApiRequest)
               @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
@@ -750,21 +806,58 @@ class KubernetesApiClient
       return metricValue
     end # getMetricNumericValue
 
-    def getResourcesAndContinuationToken(uri, api_group: nil)
+    def getResourcesAndContinuationToken(uri, api_group: nil, use_protobuf: false)
       continuationToken = nil
       resourceInventory = nil
       begin
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
-        resourceInfo = getKubeResourceInfo(uri, api_group: api_group)
+        resourceInfo = getKubeResourceInfo(uri, api_group: api_group, use_protobuf: use_protobuf)
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
         if !resourceInfo.nil?
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
-          resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
-          resourceInfo = nil
-        end
-        if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
-          continuationToken = resourceInventory["metadata"]["continue"]
+          if use_protobuf
+            @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using protobuf @ #{Time.now.utc.iso8601}"
+            #first check header, make sure it's properly formatted
+            prefix = resourceInfo.body.bytes.to_a[0..3]
+            expected_prefix = [0x6b, 0x38, 0x73, 0x00]
+            for i in 0..3 do
+                if expected_prefix[i] != prefix[i]
+                  @Log.error "protobuf header missmatch at byte #{i} (expected #{expected_prefix[i]}, got #{prefix[i]})"
+                end
+            end
+
+            @Log.info "got past prefix validation"
+
+            # get rid of leading 4 bytes
+            message = resourceInfo.body.slice(4, resourceInfo.body.length())
+            @Log.info "removed prefix"
+            wrapper_message = Unknown.parse(message)
+            @Log.info "parsed unknown message type. wrapper_message.typeMeta.kind=#{wrapper_message.typeMeta.kind}"
+            if wrapper_message.typeMeta.kind == "PodList"
+              @Log.info "about to parse PodList message"
+              resourceInventory = K8s::Io::Api::Core::V1::PodList.parse(wrapper_message.raw)
+            else
+              @Log.error "did not get back resource type PodList when parsing protobuf, actually got #{wrapper_message.typeMeta.kind}"
+            end
+
+            @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using protobuf @ #{Time.now.utc.iso8601}"
+            resourceInfo = nil
+
+            if (!resourceInventory.nil? && !resourceInventory.metadata..nil?)
+              continuationToken = resourceInventory.metadata.continue
+            end
+            
+            resourceInventory = Bracketify(resourceInventory)
+
+          else
+            @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+            resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+            @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+            resourceInfo = nil
+
+            if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
+              continuationToken = resourceInventory["metadata"]["continue"]
+            end
+          end
         end
       rescue => errorStr
         @Log.warn "KubernetesApiClient::getResourcesAndContinuationToken:Failed in get resources for #{uri} and continuation token: #{errorStr}"
