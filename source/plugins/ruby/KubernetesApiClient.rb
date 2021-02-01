@@ -14,7 +14,6 @@ class KubernetesApiClient
 
   require_relative 'proto_generated/wrapper.pb.rb'
   require_relative 'k8s.io/api/core/v1/generated.pb.rb'
-  require_relative 'props_to_brackets.rb'
 
   @@ApiVersion = "v1"
   @@ApiVersionApps = "v1"
@@ -42,49 +41,106 @@ class KubernetesApiClient
   class << self
 
     def Bracketify(protobuf_obj)
-      if protobuf_obj.class == 1.class || protobuf_obj.class == 1.1.class || protobuf_obj.class == "a".class || protobuf_obj.class == TrueClass || protobuf_obj.class == FalseClass
+      if protobuf_obj.class == 1.class || protobuf_obj.class == 1.1.class || protobuf_obj.class == TrueClass || protobuf_obj.class == FalseClass
+        return protobuf_obj
+
+      elsif protobuf_obj.class == "a".class
+        if protobuf_obj == ""
+          return nil
+        else
           return protobuf_obj
+        end
+
       elsif protobuf_obj.class == K8s::Io::Apimachinery::Pkg::Apis::Meta::V1::Time
-          if protobuf_obj.has_seconds?
-              return Time.at(protobuf_obj.seconds + protobuf_obj.nanos * 0.000000001).utc.strftime('%Y-%m-%dT%H:%M:%SZ')
-          else
-              return nil
-          end
+        if protobuf_obj.has_seconds?
+          return Time.at(protobuf_obj.seconds + protobuf_obj.nanos * 0.000000001).utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+        else
+          return nil
+        end
+
+      elsif protobuf_obj.class == K8s::Io::Api::Core::V1::ResourceRequirements
+        retval = {}
+        # limits
+        retval["limits"] = {}
+        for x in protobuf_obj.limits.each
+          retval["limits"][x.key] = x.value.string
+        end
+
+        # requests
+        retval["requests"] = {}
+        for x in protobuf_obj.limits.each
+          retval["requests"][x.key] = x.value.string
+        end
+
+        return retval
+
       elsif protobuf_obj.class == ProtocolBuffers::RepeatedField
-          retval = []
-          for item in protobuf_obj
-              begin
-                  retval.push(Bracketify(item))
-              rescue Exception => errorStr
-                  puts errorStr
-                  puts "*** in []"
-                  raise errorStr
-              end
+        retval = []
+        for item in protobuf_obj
+          begin
+            retval.push(Bracketify(item))
+          rescue Exception => errorStr
+            @Log.error(errorStr)
+            @Log.error("*** in []")
+            raise errorStr
           end
-          return retval
+        end
+        return retval
+
+      # else
+      #   retval = {}
+      #   for prop_name in protobuf_obj.public_methods(false)
+      #     if !prop_name.to_s.include?("=") && !prop_name.to_s.include?("?") && !(prop_name == :pretty_print) && !(prop_name == :&) && !(prop_name == :|) && !(prop_name == :^) && !(prop_name == :pretty_print_cycle)
+      #       begin
+      #         # result = eval("if protobuf_obj.has_#{prop_name.to_s}? ; Bracketify(protobuf_obj.#{prop_name.to_s} ; end")
+      #         # if result != nil
+      #         #   retval[prop_name.to_s] = result
+      #         # end
+
+              
+      #       rescue Exception => errorStr
+      #         @Log.error(errorStr)
+      #         @Log.error("*** at #{prop_name}")
+      #         raise errorStr
+      #       end
+      #     end
+      #   end
       else
-          retval = {}
-          for prop_name in protobuf_obj.public_methods(false)
-              if !prop_name.to_s.include?("=") && !prop_name.to_s.include?("?") && !(prop_name == :pretty_print) && !(prop_name == :&) && !(prop_name == :|) && !(prop_name == :^) && !(prop_name == :pretty_print_cycle)
-                  begin
-                      field_present = eval("protobuf_obj.has_#{prop_name.to_s}?")
-                      if field_present
-                          result = eval("Bracketify(protobuf_obj.#{prop_name.to_s})")
-                          if result != nil
-                              retval[prop_name.to_s] = result
-                          end
-                      end
-                  rescue Exception => errorStr
-                      puts errorStr
-                      puts "*** at #{prop_name}"
-                      raise errorStr
-                  end
+        retval = {}
+        # @Log.warn("********** for prop_name in protobuf_obj.instance_variables \t\t\tprotobuf_obj.instance_variables=#{protobuf_obj.instance_variables}")
+        for prop_name in protobuf_obj.instance_variables
+          # @Log.warn("********** if prop_name!= :@set_fields\t\t\tprop_name=#{prop_name}")
+          if prop_name!= :@set_fields
+            # @Log.warn("********** begin")
+            begin
+              # @Log.warn("********** result = Bracketify(protobuf_obj.instance_variable_get(prop_name))")
+              result = Bracketify(protobuf_obj.instance_variable_get(prop_name))
+              # @Log.warn("********** if result != nil")
+              if result != nil
+                # @Log.warn("********** retval[prop_name.to_s] = result")
+                retval[prop_name.to_s.tr("@", "")] = result
+                # @Log.warn("********** end")
               end
+            rescue Exception => errorStr
+              @Log.warn("********** rescue Exception => errorStr")
+              @Log.error(errorStr)
+              @Log.error("*** at #{prop_name}")
+              raise errorStr
+            end
+            # @Log.warn("********** end")
           end
-          return retval
+          # @Log.warn("********** end")
+        end
+        return retval
       end
-  end
+    end
   
+
+    def Bracketify_wrapper(protobuf_obj)
+      retval = Bracketify(protobuf_obj)
+      # @Log.info("resultant bracketified object: #{retval}")
+      return retval
+    end
 
 
     def getKubeResourceInfo(resource, api_group: nil, use_protobuf: false)
@@ -489,35 +545,16 @@ class KubernetesApiClient
         if (!podContainers.nil? && !podContainers.empty? && !pod["spec"]["nodeName"].nil?)
           podContainers.each do |container|
             containerName = container["name"]
-            #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
-            if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
-              metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
+            begin
+              #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
+              # @Log.warn("!container[\"resources\"].nil? = #{!container["resources"].nil?}")
+              # @Log.warn("!container[\"resources\].empty? = #{!container["resources"].empty?}")
+              # @Log.warn("!container[\"resources\][metricCategory].nil? = #{!container["resources"][metricCategory].nil?}")
+              # @Log.warn("!container[\"resources\][metricCategory][metricNameToCollect].nil? = #{!container["resources"][metricCategory][metricNameToCollect].nil?}")
 
-              metricItem = {}
-              metricItem["DataItems"] = []
+              if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
+                metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
 
-              metricProps = {}
-              metricProps["Timestamp"] = metricTime
-              metricProps["Host"] = nodeName
-              # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
-              metricProps["Computer"] = nodeName
-              metricProps["ObjectName"] = "K8SContainer"
-              metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
-
-              metricProps["Collections"] = []
-              metricCollections = {}
-              metricCollections["CounterName"] = metricNametoReturn
-              metricCollections["Value"] = metricValue
-
-              metricProps["Collections"].push(metricCollections)
-              metricItem["DataItems"].push(metricProps)
-              metricItems.push(metricItem)
-              #No container level limit for the given metric, so default to node level limit
-            else
-              nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
-              if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
-                metricValue = @@NodeMetrics[nodeMetricsHashKey]
-                #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
                 metricItem = {}
                 metricItem["DataItems"] = []
 
@@ -537,13 +574,44 @@ class KubernetesApiClient
                 metricProps["Collections"].push(metricCollections)
                 metricItem["DataItems"].push(metricProps)
                 metricItems.push(metricItem)
+                #No container level limit for the given metric, so default to node level limit
+              else
+                nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
+                if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
+                  metricValue = @@NodeMetrics[nodeMetricsHashKey]
+                  #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
+                  metricItem = {}
+                  metricItem["DataItems"] = []
+
+                  metricProps = {}
+                  metricProps["Timestamp"] = metricTime
+                  metricProps["Host"] = nodeName
+                  # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
+                  metricProps["Computer"] = nodeName
+                  metricProps["ObjectName"] = "K8SContainer"
+                  metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
+
+                  metricProps["Collections"] = []
+                  metricCollections = {}
+                  metricCollections["CounterName"] = metricNametoReturn
+                  metricCollections["Value"] = metricValue
+
+                  metricProps["Collections"].push(metricCollections)
+                  metricItem["DataItems"].push(metricProps)
+                  metricItems.push(metricItem)
+                end
               end
+            rescue => error
+              @Log.warn("getcontainerResourceRequestsAndLimits failed at new trycatch: #{error} for metric #{metricCategory} #{metricNameToCollect}")
+              @Log.warn(error.backtrace.join("\n"))
+              @Log.warn(container.to_s)
+              return metricItems
             end
           end
         end
       rescue => error
         @Log.warn("getcontainerResourceRequestsAndLimits failed: #{error} for metric #{metricCategory} #{metricNameToCollect}")
-        return metricItems
+        @Log.warn(error.backtrace.join("\n"))
       end
       return metricItems
     end #getContainerResourceRequestAndLimits
@@ -842,11 +910,11 @@ class KubernetesApiClient
             @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using protobuf @ #{Time.now.utc.iso8601}"
             resourceInfo = nil
 
-            if (!resourceInventory.nil? && !resourceInventory.metadata..nil?)
+            if (!resourceInventory.nil? && !resourceInventory.metadata.nil?)
               continuationToken = resourceInventory.metadata.continue
             end
             
-            resourceInventory = Bracketify(resourceInventory)
+            resourceInventory = Bracketify_wrapper(resourceInventory)
 
           else
             @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"

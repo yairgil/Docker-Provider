@@ -56,7 +56,7 @@ module Fluent
         else
           # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kube_podinventory::start: setting to default value since got PODS_CHUNK_SIZE nil or empty")
-          @PODS_CHUNK_SIZE = 1000
+          @PODS_CHUNK_SIZE = 5000
         end
         $log.info("in_kube_podinventory::start : PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
 
@@ -65,7 +65,7 @@ module Fluent
         else
           # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kube_podinventory::start: setting to default value since got PODS_EMIT_STREAM_BATCH_SIZE nil or empty")
-          @PODS_EMIT_STREAM_BATCH_SIZE = 200
+          @PODS_EMIT_STREAM_BATCH_SIZE = 1000
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
 
@@ -159,7 +159,7 @@ module Fluent
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
           podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-          continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+          continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}", use_protobuf: true)
           podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
           @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
