@@ -918,12 +918,12 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		requestMetrics = append(requestMetrics, *appMapOsmRequestMetrics[j])
 	}
 
-	appMapOsmRequestMetrics := AppMapOsmRequestBlob{
+	osmRequestMetrics := AppMapOsmRequestBlob{
 		DataType:  AppRequestsDataType,
 		IPName:    "LogManagement",
 		DataItems: requestMetrics}
 
-	requestJsonBytes, err := json.Marshal(appMapOsmRequestMetrics)
+	requestJsonBytes, err := json.Marshal(osmRequestMetrics)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app requests json %q", err)
@@ -953,7 +953,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	reqElapsed := time.Since(start)
 
 	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending apprequest %v metrics. duration:%v err:%q \n", len(appMapOsmRequestMetrics), reqElapsed, err.Error())
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending apprequest %v metrics. duration:%v err:%q \n", len(osmRequestMetrics), reqElapsed, err.Error())
 		Log(message)
 		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
 		return output.FLB_RETRY
@@ -979,16 +979,16 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	var dependencyMetrics []appMapOsmDependencyMetric
 	var myint int
 
-	for myint = 0; myint < len(appMapOsmRequestMetrics); myint++ {
-		dependencyMetrics = append(requestMetrics, *appMapOsmRequestMetrics[myint])
+	for myint = 0; myint < len(appMapOsmDependencyMetrics); myint++ {
+		dependencyMetrics = append(dependencyMetrics, *appMapOsmDependencyMetrics[myint])
 	}
 
-	appMapOsmDependencyMetrics := AppMapOsmDependencyBlob{
+	osmDependencyMetrics := AppMapOsmDependencyBlob{
 		DataType:  AppDependenciesDataType,
 		IPName:    "LogManagement",
 		DataItems: dependencyMetrics}
 
-	dependencyJsonBytes, err := json.Marshal(appMapOsmDependencyMetrics)
+	dependencyJsonBytes, err := json.Marshal(osmDependencyMetrics)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app dependencies json %q", err)
