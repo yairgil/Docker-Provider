@@ -79,3 +79,18 @@ rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+
+
+
+# install fluentd
+apt-get install nano less curl sudo apt-utils rubygems ruby-dev gcc make wget ucf locate -y
+gem install fluentd --no-doc
+fluentd --setup ./fluent
+
+gem install gyoku iso8601 --no-doc
+
+# copy all plugins to the new fluentd
+# rmdir fluent/plugin
+# ln -s /opt/microsoft/omsagent/plugin/ /opt/fluent
+# mkdir /etc/fluent
+# ln -s /opt/microsoft/omsagent/plugin/ /etc/fluent/.

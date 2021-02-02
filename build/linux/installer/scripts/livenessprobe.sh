@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+exit 0
+
+
 #test to exit non zero value if omsagent is not running
 (ps -ef | grep omsagent- | grep -v "grep")
 if [ $? -ne 0 ]

@@ -454,6 +454,7 @@ service cron start
 
 #check if agent onboarded successfully
 /opt/microsoft/omsagent/bin/omsadmin.sh -l
+/opt/microsoft/omsagent/bin/service_control stop
 
 #get omsagent and docker-provider versions
 dpkg -l | grep omsagent | awk '{print $2 " " $3}'
@@ -634,6 +635,13 @@ service rsyslog stop
 
 echo "getting rsyslog status..."
 service rsyslog status
+
+
+
+# start the new fluentd
+fluentd -c /opt/fluent/fluentd4.conf > /dev/null &
+
+
 
 shutdown() {
 	/opt/microsoft/omsagent/bin/service_control stop
