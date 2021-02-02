@@ -691,7 +691,7 @@ func flushKubeMonAgentEventRecords() {
 }
 
 //Translates telegraf time series to one or more Azure loganalytics metric(s)
-func translateTelegrafMetrics(m map[interface{}]interface{}, appMapRequests map[interface{}]interface{}, appMapDependencies map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
+func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, []*appMapOsmRequestMetric, []*appMapOsmDependencyMetric, error) {
 	var laMetrics []*laTelegrafMetric
 	var appMapOsmRequestMetrics []*appMapOsmRequestMetric
 	var appMapOsmDependencyMetrics []*appMapOsmDependencyMetric
@@ -721,7 +721,7 @@ func translateTelegrafMetrics(m map[interface{}]interface{}, appMapRequests map[
 	tagJson, err := json.Marshal(&tagMap)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	for k, v := range fieldMap {
