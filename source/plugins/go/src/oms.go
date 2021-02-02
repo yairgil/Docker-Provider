@@ -36,6 +36,12 @@ const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
 
+// DataType for ApplicationInsights AppRequests
+const AppRequestsDataType = "APPLICATIONINSIGHTS_APPREQUESTS"
+
+// DataType for ApplicationInsights AppDependencies
+const AppDependenciesDataType = "APPLICATIONINSIGHTS_APPDEPENDENCIES"
+
 // DataType for KubeMonAgentEvent
 const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
 
@@ -246,6 +252,18 @@ type InsightsMetricsBlob struct {
 	DataType  string             `json:"DataType"`
 	IPName    string             `json:"IPName"`
 	DataItems []laTelegrafMetric `json:"DataItems"`
+}
+
+type AppMapOsmRequestBlob struct {
+	DataType  string                   `json:"DataType"`
+	IPName    string                   `json:"IPName"`
+	DataItems []appMapOsmRequestMetric `json:"DataItems"`
+}
+
+type AppMapOsmDependencyBlob struct {
+	DataType  string                      `json:"DataType"`
+	IPName    string                      `json:"IPName"`
+	DataItems []appMapOsmDependencyMetric `json:"DataItems"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -674,7 +692,6 @@ func flushKubeMonAgentEventRecords() {
 
 //Translates telegraf time series to one or more Azure loganalytics metric(s)
 func translateTelegrafMetrics(m map[interface{}]interface{}, appMapRequests map[interface{}]interface{}, appMapDependencies map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
-
 	var laMetrics []*laTelegrafMetric
 	var appMapOsmRequestMetrics []*appMapOsmRequestMetric
 	var appMapOsmDependencyMetrics []*appMapOsmDependencyMetric
@@ -785,6 +802,8 @@ func translateTelegrafMetrics(m map[interface{}]interface{}, appMapRequests map[
 // send metrics from Telegraf to LA. 1) Translate telegraf timeseries to LA metric(s) 2) Send it to LA as 'InsightsMetrics' fixed type
 func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int {
 	var laMetrics []*laTelegrafMetric
+	var appMapOsmRequestMetrics []*appMapOsmRequestMetric
+	var appMapOsmDependencyMetrics []*appMapOsmDependencyMetric
 
 	if (telegrafRecords == nil) || !(len(telegrafRecords) > 0) {
 		Log("PostTelegrafMetricsToLA::Error:no timeseries to derive")
@@ -792,13 +811,15 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	for _, record := range telegrafRecords {
-		translatedMetrics, err := translateTelegrafMetrics(record)
+		translatedMetrics, osmRequestMetrics, osmDependencyMetrics, err := translateTelegrafMetrics(record)
 		if err != nil {
 			message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when translating telegraf metric to log analytics metric %q", err)
 			Log(message)
 			//SendException(message) //This will be too noisy
 		}
 		laMetrics = append(laMetrics, translatedMetrics...)
+		appMapOsmRequestMetrics = append(appMapOsmRequestMetrics, osmRequestMetrics...)
+		appMapOsmDependencyMetrics = append(appMapOsmDependencyMetrics, osmDependencyMetrics...)
 	}
 
 	if (laMetrics == nil) || !(len(laMetrics) > 0) {
@@ -806,6 +827,22 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		return output.FLB_OK
 	} else {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived %v metrics from %v timeseries", len(laMetrics), len(telegrafRecords))
+		Log(message)
+	}
+
+	if (appMapOsmRequestMetrics == nil) || !(len(appMapOsmRequestMetrics) > 0) {
+		Log("PostTelegrafMetricsToLA::Info:no OSM request metrics derived from timeseries data")
+		return output.FLB_OK
+	} else {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived osm request %v metrics from %v timeseries", len(appMapOsmRequestMetrics), len(telegrafRecords))
+		Log(message)
+	}
+
+	if (appMapOsmDependencyMetrics == nil) || !(len(appMapOsmDependencyMetrics) > 0) {
+		Log("PostTelegrafMetricsToLA::Info:no OSM dependency metrics derived from timeseries data")
+		return output.FLB_OK
+	} else {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived osm dependency %v metrics from %v timeseries", len(appMapOsmDependencyMetrics), len(telegrafRecords))
 		Log(message)
 	}
 
@@ -872,6 +909,136 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	numMetrics := len(laMetrics)
 	UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0)
 	Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
+
+	// AppMap Requests
+	var requestMetrics []appMapOsmRequestMetric
+	var j int
+
+	for j = 0; j < len(appMapOsmRequestMetrics); j++ {
+		requestMetrics = append(requestMetrics, *appMapOsmRequestMetrics[j])
+	}
+
+	appMapOsmRequestMetrics := AppMapOsmRequestBlob{
+		DataType:  AppRequestsDataType,
+		IPName:    "LogManagement",
+		DataItems: requestMetrics}
+
+	requestJsonBytes, err := json.Marshal(appMapOsmRequestMetrics)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app requests json %q", err)
+		Log(message)
+		SendException(message)
+		return output.FLB_OK
+	}
+
+	//Post metrics data to LA
+	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(requestJsonBytes))
+
+	//req.URL.Query().Add("api-version","2016-04-01")
+
+	//set headers
+	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
+	appRequestReq.Header.Set("User-Agent", userAgent)
+	appRequestReqID := uuid.New().String()
+	appRequestReq.Header.Set("X-Request-ID", appRequestReqID)
+
+	//expensive to do string len for every request, so use a flag
+	if ResourceCentric == true {
+		appRequestReq.Header.Set("x-ms-AzureResourceId", ResourceID)
+	}
+
+	start := time.Now()
+	appRequestResp, err := HTTPClient.Do(appRequestReq)
+	reqElapsed := time.Since(start)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending apprequest %v metrics. duration:%v err:%q \n", len(appMapOsmRequestMetrics), reqElapsed, err.Error())
+		Log(message)
+		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
+		return output.FLB_RETRY
+	}
+
+	if appRequestResp == nil || appRequestResp.StatusCode != 200 {
+		if appRequestResp != nil {
+			Log("PostTelegrafMetricsToLA::Error:(retriable) app requests RequestID %s Response Status %v Status Code %v", appRequestReqID, appRequestResp.Status, appRequestResp.StatusCode)
+		}
+		if appRequestResp != nil && appRequestResp.StatusCode == 429 {
+			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
+		}
+		return output.FLB_RETRY
+	}
+
+	defer appRequestResp.Body.Close()
+
+	appRequestNumMetrics := len(appMapOsmRequestMetrics)
+	UpdateNumTelegrafMetricsSentTelemetry(appRequestNumMetrics, 0, 0)
+	Log("PostTelegrafMetricsToLA::Info:AppRequests:Successfully flushed %v records in %v", appRequestNumMetrics, reqElapsed)
+
+	// AppMap Dependencies
+	var dependencyMetrics []appMapOsmDependencyMetric
+	var myint int
+
+	for myint = 0; myint < len(appMapOsmRequestMetrics); myint++ {
+		dependencyMetrics = append(requestMetrics, *appMapOsmRequestMetrics[myint])
+	}
+
+	appMapOsmDependencyMetrics := AppMapOsmDependencyBlob{
+		DataType:  AppDependenciesDataType,
+		IPName:    "LogManagement",
+		DataItems: dependencyMetrics}
+
+	dependencyJsonBytes, err := json.Marshal(appMapOsmDependencyMetrics)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app dependencies json %q", err)
+		Log(message)
+		SendException(message)
+		return output.FLB_OK
+	}
+
+	//Post metrics data to LA
+	appDependencyReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(dependencyJsonBytes))
+
+	//req.URL.Query().Add("api-version","2016-04-01")
+
+	//set headers
+	appDependencyReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
+	appDependencyReq.Header.Set("User-Agent", userAgent)
+	appDependencyReqID := uuid.New().String()
+	appDependencyReq.Header.Set("X-Request-ID", appDependencyReqID)
+
+	//expensive to do string len for every request, so use a flag
+	if ResourceCentric == true {
+		appDependencyReq.Header.Set("x-ms-AzureResourceId", ResourceID)
+	}
+
+	start := time.Now()
+	appDependencyResp, err := HTTPClient.Do(appDependencyReq)
+	depElapsed := time.Since(start)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending appdependency %v metrics. duration:%v err:%q \n", len(appMapOsmDependencyMetrics), elapsed, err.Error())
+		Log(message)
+		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
+		return output.FLB_RETRY
+	}
+
+	if appDependencyResp == nil || appDependencyResp.StatusCode != 200 {
+		if appDependencyResp != nil {
+			Log("PostTelegrafMetricsToLA::Error:(retriable) app dependency RequestID %s Response Status %v Status Code %v", appDependencyReqID, appDependencyResp.Status, appDependencyResp.StatusCode)
+		}
+		if appDependencyResp != nil && appDependencyResp.StatusCode == 429 {
+			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
+		}
+		return output.FLB_RETRY
+	}
+
+	defer appDependencyResp.Body.Close()
+
+	appDependencyNumMetrics := len(appMapOsmDependencyMetrics)
+	UpdateNumTelegrafMetricsSentTelemetry(appDependencyNumMetrics, 0, 0)
+	Log("PostTelegrafMetricsToLA::Info:AppDependency:Successfully flushed %v records in %v", appDependencyNumMetrics, depElapsed)
 
 	return output.FLB_OK
 }
