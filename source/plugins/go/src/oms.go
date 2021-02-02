@@ -953,7 +953,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	reqElapsed := time.Since(reqStart)
 
 	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending apprequest %v metrics. duration:%v err:%q \n", len(osmRequestMetrics), reqElapsed, err.Error())
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending apprequest %v metrics. duration:%v err:%q \n", len(appMapOsmRequestMetrics), reqElapsed, err.Error())
 		Log(message)
 		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
 		return output.FLB_RETRY
