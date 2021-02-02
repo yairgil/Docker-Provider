@@ -948,9 +948,9 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		appRequestReq.Header.Set("x-ms-AzureResourceId", ResourceID)
 	}
 
-	start := time.Now()
+	reqStart := time.Now()
 	appRequestResp, err := HTTPClient.Do(appRequestReq)
-	reqElapsed := time.Since(start)
+	reqElapsed := time.Since(reqStart)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending apprequest %v metrics. duration:%v err:%q \n", len(osmRequestMetrics), reqElapsed, err.Error())
@@ -1013,9 +1013,9 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		appDependencyReq.Header.Set("x-ms-AzureResourceId", ResourceID)
 	}
 
-	start := time.Now()
+	depStart := time.Now()
 	appDependencyResp, err := HTTPClient.Do(appDependencyReq)
-	depElapsed := time.Since(start)
+	depElapsed := time.Since(depStart)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending appdependency %v metrics. duration:%v err:%q \n", len(appMapOsmDependencyMetrics), elapsed, err.Error())
