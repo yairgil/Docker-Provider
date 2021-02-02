@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -194,16 +195,16 @@ type DataItem struct {
 }
 
 type DataItemADX struct {
-	TimeGenerated         string `json:"TimeGenerated"`
-	Computer              string `json:"Computer"`
-	ContainerID           string `json:"ContainerID"`
-	ContainerName         string `json:"ContainerName"`
-	PodName				  string `json:"PodName"`
-	PodNamespace          string `json:"PodNamespace"`
-	LogMessage            string `json:"LogMessage"`
-	LogSource             string `json:"LogSource"`
+	TimeGenerated string `json:"TimeGenerated"`
+	Computer      string `json:"Computer"`
+	ContainerID   string `json:"ContainerID"`
+	ContainerName string `json:"ContainerName"`
+	PodName       string `json:"PodName"`
+	PodNamespace  string `json:"PodNamespace"`
+	LogMessage    string `json:"LogMessage"`
+	LogSource     string `json:"LogSource"`
 	//PodLabels			  string `json:"PodLabels"`
-	AzureResourceId       string `json:"AzureResourceId"`
+	AzureResourceId string `json:"AzureResourceId"`
 }
 
 // telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
@@ -217,6 +218,27 @@ type laTelegrafMetric struct {
 	// specific required fields for LA
 	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
 	Computer       string `json:"Computer"`
+}
+
+type appMapOsmRequestMetric struct {
+	CollectionTime string  `json:"CollectionTime"`
+	OperationId    string  `json:"OperationId"`
+	ParentId       string  `json:"ParentId"`
+	AppRoleName    string  `json:"AppRoleName"`
+	DurationMs     float64 `json:"DurationMs"`
+	Success        bool    `json:"Success"`
+	ItemCount      int64   `json:"ItemCount"`
+}
+
+type appMapOsmDependencyMetric struct {
+	CollectionTime string  `json:"CollectionTime"`
+	OperationId    string  `json:"OperationId"`
+	Id             string  `json:"Id"`
+	Target         string  `json:"Target"`
+	AppRoleName    string  `json:"AppRoleName"`
+	DurationMs     float64 `json:"DurationMs"`
+	Success        bool    `json:"Success"`
+	ItemCount      int64   `json:"ItemCount"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -324,6 +346,20 @@ func createLogger() *log.Logger {
 
 	logger.SetFlags(log.Ltime | log.Lshortfile | log.LstdFlags)
 	return logger
+}
+
+// newUUID generates a random UUID according to RFC 4122
+func newUUID() (string, error) {
+	uuid := make([]byte, 16)
+	n, err := io.ReadFull(rand.Reader, uuid)
+	if n != len(uuid) || err != nil {
+		return "", err
+	}
+	// variant bits; see section 4.1.1
+	uuid[8] = uuid[8]&^0xc0 | 0x80
+	// version 4 (pseudo-random); see section 4.1.3
+	uuid[6] = uuid[6]&^0xf0 | 0x40
+	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
 }
 
 func updateContainerImageNameMaps() {
@@ -641,8 +677,13 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 
 	var laMetrics []*laTelegrafMetric
 	var tags map[interface{}]interface{}
+	// string appName
+	// string destinationAppName
+	// string id
+	// string operationId
 	tags = m["tags"].(map[interface{}]interface{})
 	tagMap := make(map[string]string)
+	metricNamespace := fmt.Sprintf("%s", m["name"])
 	for k, v := range tags {
 		key := fmt.Sprintf("%s", k)
 		if key == "" {
@@ -683,6 +724,18 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 
 		//Log ("la metric:%v", laMetric)
 		laMetrics = append(laMetrics, &laMetric)
+
+		metricName := fmt.Sprintf("%s", k)
+		if (metricName == "envoy_cluster_upstream_rq_active") && (strings.HasPrefix(metricNamespace, "container.azm.ms.osm")) {
+			appName := tagMap["app"]
+			destinationAppName := tagMap["envoy_cluster_name"]
+			uuid, err := newUUID()
+			if err != nil {
+				Log("translateTelegrafMetrics::error while generating GUID: %v\n", err)
+			}
+			Log("translateTelegrafMetrics::%s\n", uuid)
+
+		}
 	}
 	return laMetrics, nil
 }
@@ -871,15 +924,15 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			stringMap["PodNamespace"] = k8sNamespace
 			stringMap["ContainerName"] = containerName
 			dataItemADX = DataItemADX{
-				TimeGenerated:         stringMap["LogEntryTimeStamp"],
-				Computer:              stringMap["Computer"],
-				ContainerID:           stringMap["Id"],
-				ContainerName:         stringMap["ContainerName"],
-				PodName:               stringMap["PodName"],
-				PodNamespace:          stringMap["PodNamespace"],
-				LogMessage:            stringMap["LogEntry"],
-				LogSource:             stringMap["LogEntrySource"],
-				AzureResourceId:       stringMap["AzureResourceId"],
+				TimeGenerated:   stringMap["LogEntryTimeStamp"],
+				Computer:        stringMap["Computer"],
+				ContainerID:     stringMap["Id"],
+				ContainerName:   stringMap["ContainerName"],
+				PodName:         stringMap["PodName"],
+				PodNamespace:    stringMap["PodNamespace"],
+				LogMessage:      stringMap["LogEntry"],
+				LogSource:       stringMap["LogEntrySource"],
+				AzureResourceId: stringMap["AzureResourceId"],
 			}
 			//ADX
 			dataItemsADX = append(dataItemsADX, dataItemADX)
