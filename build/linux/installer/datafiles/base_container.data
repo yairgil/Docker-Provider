@@ -166,14 +166,14 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/health/unit_monitor.rb;                                              source/plugins/ruby/health/unit_monitor.rb; 644; root; root
 
 
-/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/apis/testapigroup/v1/generated.pb.rb;      source/plugins/ruby/k8s.io/apimachinery/pkg/apis/testapigroup/v1/generated.pb.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/apis/meta/v1/generated.pb.rb;              source/plugins/ruby/k8s.io/apimachinery/pkg/apis/meta/v1/generated.pb.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/util/intstr/generated.pb.rb;               source/plugins/ruby/k8s.io/apimachinery/pkg/util/intstr/generated.pb.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/runtime/schema/generated.pb.rb;            source/plugins/ruby/k8s.io/apimachinery/pkg/runtime/schema/generated.pb.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/runtime/generated.pb.rb;                   source/plugins/ruby/k8s.io/apimachinery/pkg/runtime/generated.pb.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/api/resource/generated.pb.rb;              source/plugins/ruby/k8s.io/apimachinery/pkg/api/resource/generated.pb.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/k8s.io/api/core/v1/generated.pb.rb;                                source/plugins/ruby/k8s.io/api/core/v1/generated.pb.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/proto_generated/wrapper.pb.rb;                                     source/plugins/ruby/proto_generated/wrapper.pb.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/apis/testapigroup/v1/generated_pb.rb;      source/plugins/ruby/k8s.io/apimachinery/pkg/apis/testapigroup/v1/generated_pb.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/apis/meta/v1/generated_pb.rb;              source/plugins/ruby/k8s.io/apimachinery/pkg/apis/meta/v1/generated_pb.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/util/intstr/generated_pb.rb;               source/plugins/ruby/k8s.io/apimachinery/pkg/util/intstr/generated_pb.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/runtime/schema/generated_pb.rb;            source/plugins/ruby/k8s.io/apimachinery/pkg/runtime/schema/generated_pb.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/runtime/generated_pb.rb;                   source/plugins/ruby/k8s.io/apimachinery/pkg/runtime/generated_pb.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/k8s.io/apimachinery/pkg/api/resource/generated_pb.rb;              source/plugins/ruby/k8s.io/apimachinery/pkg/api/resource/generated_pb.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/k8s.io/api/core/v1/generated_pb.rb;                                source/plugins/ruby/k8s.io/api/core/v1/generated_pb.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/wrapper_pb.rb;                                                     source/plugins/ruby/wrapper_pb.rb; 644; root; root
 
 
 
@@ -229,7 +229,6 @@ MAINTAINER:              'Microsoft Corporation'
 
 
 
-/opt/microsoft/omsagent/plugin/proto_generated;                                  755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/k8s.io;                                           755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/k8s.io/api;                                       755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/k8s.io/api/core;                                  755; root; root; sysdir

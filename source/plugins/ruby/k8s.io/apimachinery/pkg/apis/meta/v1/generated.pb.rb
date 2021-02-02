@@ -3,8 +3,8 @@
 
 require 'protocol_buffers'
 
-begin; require_relative '../../../../../../k8s.io/apimachinery/pkg/runtime/generated.pb'; rescue LoadError; end
-begin; require_relative '../../../../../../k8s.io/apimachinery/pkg/runtime/schema/generated.pb'; rescue LoadError; end
+begin; require 'k8s.io/apimachinery/pkg/runtime/generated.pb'; rescue LoadError; end
+begin; require 'k8s.io/apimachinery/pkg/runtime/schema/generated.pb'; rescue LoadError; end
 
 module K8s
   module Io

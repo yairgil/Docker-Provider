@@ -12,8 +12,9 @@ class KubernetesApiClient
   require_relative "oms_common"
   require_relative "constants"
 
-  require_relative 'proto_generated/wrapper.pb.rb'
-  require_relative 'k8s.io/api/core/v1/generated.pb.rb'
+  $LOAD_PATH.push("/opt/microsoft/omsagent/plugin")
+  require_relative 'wrapper_pb.rb'
+  require_relative 'k8s.io/api/core/v1/generated_pb.rb'
 
   @@ApiVersion = "v1"
   @@ApiVersionApps = "v1"
@@ -41,23 +42,23 @@ class KubernetesApiClient
   class << self
 
     def Bracketify(protobuf_obj)
-      if protobuf_obj.class == 1.class || protobuf_obj.class == 1.1.class || protobuf_obj.class == TrueClass || protobuf_obj.class == FalseClass
+      if protobuf_obj.class == Integer || protobuf_obj.class == Float || protobuf_obj.class == TrueClass || protobuf_obj.class == FalseClass || protobuf_obj.class == String
         return protobuf_obj
-
+  
       elsif protobuf_obj.class == "a".class
         if protobuf_obj == ""
           return nil
         else
           return protobuf_obj
         end
-
+  
       elsif protobuf_obj.class == K8s::Io::Apimachinery::Pkg::Apis::Meta::V1::Time
         if protobuf_obj.has_seconds?
           return Time.at(protobuf_obj.seconds + protobuf_obj.nanos * 0.000000001).utc.strftime('%Y-%m-%dT%H:%M:%SZ')
         else
           return nil
         end
-
+  
       elsif protobuf_obj.class == K8s::Io::Api::Core::V1::ResourceRequirements
         retval = {}
         # limits
@@ -65,16 +66,17 @@ class KubernetesApiClient
         for x in protobuf_obj.limits.each
           retval["limits"][x.key] = x.value.string
         end
-
+  
         # requests
         retval["requests"] = {}
         for x in protobuf_obj.limits.each
           retval["requests"][x.key] = x.value.string
         end
-
+  
         return retval
-
-      elsif protobuf_obj.class == ProtocolBuffers::RepeatedField
+  
+      # elsif protobuf_obj.class == ProtocolBuffers::RepeatedField
+      elsif protobuf_obj.class == Google::Protobuf::RepeatedField || protobuf_obj.class == Array
         retval = []
         for item in protobuf_obj
           begin
@@ -86,61 +88,81 @@ class KubernetesApiClient
           end
         end
         return retval
-
-      # else
-      #   retval = {}
-      #   for prop_name in protobuf_obj.public_methods(false)
-      #     if !prop_name.to_s.include?("=") && !prop_name.to_s.include?("?") && !(prop_name == :pretty_print) && !(prop_name == :&) && !(prop_name == :|) && !(prop_name == :^) && !(prop_name == :pretty_print_cycle)
-      #       begin
-      #         # result = eval("if protobuf_obj.has_#{prop_name.to_s}? ; Bracketify(protobuf_obj.#{prop_name.to_s} ; end")
-      #         # if result != nil
-      #         #   retval[prop_name.to_s] = result
-      #         # end
-
-              
-      #       rescue Exception => errorStr
-      #         @Log.error(errorStr)
-      #         @Log.error("*** at #{prop_name}")
-      #         raise errorStr
-      #       end
-      #     end
-      #   end
+  
       else
         retval = {}
-        # @Log.warn("********** for prop_name in protobuf_obj.instance_variables \t\t\tprotobuf_obj.instance_variables=#{protobuf_obj.instance_variables}")
-        for prop_name in protobuf_obj.instance_variables
-          # @Log.warn("********** if prop_name!= :@set_fields\t\t\tprop_name=#{prop_name}")
-          if prop_name!= :@set_fields
-            # @Log.warn("********** begin")
-            begin
-              # @Log.warn("********** result = Bracketify(protobuf_obj.instance_variable_get(prop_name))")
-              result = Bracketify(protobuf_obj.instance_variable_get(prop_name))
-              # @Log.warn("********** if result != nil")
-              if result != nil
-                # @Log.warn("********** retval[prop_name.to_s] = result")
-                retval[prop_name.to_s.tr("@", "")] = result
-                # @Log.warn("********** end")
+          begin
+              protobuf_obj.to_h.each do |prop_name, prop_value|
+                  result = Bracketify(prop_value)
+                  if result != nil
+                      retval[prop_name.to_s.tr("@", "")] = result
+                  end
               end
-            rescue Exception => errorStr
+              rescue Exception => errorStr
               @Log.warn("********** rescue Exception => errorStr")
               @Log.error(errorStr)
               @Log.error("*** at #{prop_name}")
               raise errorStr
-            end
-            # @Log.warn("********** end")
-          end
-          # @Log.warn("********** end")
-        end
-        return retval
+              end
+          return retval
       end
     end
-  
 
     def Bracketify_wrapper(protobuf_obj)
       retval = Bracketify(protobuf_obj)
       # @Log.info("resultant bracketified object: #{retval}")
       return retval
     end
+
+    def symbol_to_string(hashmap)
+      begin
+          if hashmap == nil
+              return nil
+          elsif hashmap.class == Integer || hashmap.class == Float || hashmap.class == TrueClass || hashmap.class == FalseClass || hashmap.class == String
+              return hashmap
+          
+          elsif hashmap.class == Array
+              retval = []
+              for item in hashmap
+              begin
+                  retval.push(symbol_to_string(item))
+              rescue Exception => errorStr
+                  @Log.error(errorStr)
+                  @Log.error("*** in []")
+                  raise errorStr
+              end
+              end
+              return retval
+          
+          elsif hashmap.keys.length == 1 && hashmap.has_key?("string")
+              return hashmap["string"]
+  
+          elsif hashmap.keys.length == 2 && hashmap.has_key?(:seconds) && hashmap.has_key?(:nanos)
+              return Time.at(hashmap[:seconds] + hashmap[:nanos] * 0.000000001).utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+  
+          else
+              retval = {}
+              begin
+                  hashmap.to_h.each do |prop_name, prop_value|
+                      result = symbol_to_string(prop_value)
+                      if result != nil
+                          retval[prop_name.to_s.tr("@", "")] = result
+                      end
+                  end
+              rescue Exception => errorStr
+              @Log.warn("********** rescue Exception => errorStr")
+              @Log.error(errorStr)
+              @Log.error("*** at #{prop_name}")
+              raise errorStr
+              end
+          return retval
+          end
+      rescue Exception => errorStr
+          @Log.warn("********** rescue Exception => errorStr")
+          @Log.error(errorStr)
+          raise errorStr
+      end
+  end
 
 
     def getKubeResourceInfo(resource, api_group: nil, use_protobuf: false)
@@ -328,50 +350,6 @@ class KubernetesApiClient
       end
       return nodesResourceUri
     end
-
-    #def isValidRunningNode
-    #    return @@IsValidRunningNode if !@@IsValidRunningNode.nil?
-    #    @@IsValidRunningNode = false
-    #    begin
-    #        thisNodeName = OMS::Common.get_hostname
-    #        if isLinuxCluster
-    #            # Run on agent node [0]
-    #            @@IsValidRunningNode = !isNodeMaster && thisNodeName.to_s.split('-').last == '0'
-    #        else
-    #            # Run on master node [0]
-    #            @@IsValidRunningNode = isNodeMaster && thisNodeName.to_s.split('-').last == '0'
-    #        end
-    #    rescue => error
-    #        @Log.warn("Checking Node Type failed: #{error}")
-    #    end
-    #    if(@@IsValidRunningNode == true)
-    #        @Log.info("Electing current node to talk to k8 api")
-    #    else
-    #        @Log.info("Not Electing current node to talk to k8 api")
-    #    end
-    #    return @@IsValidRunningNode
-    #end
-
-    #def isLinuxCluster
-    #    return @@IsLinuxCluster if !@@IsLinuxCluster.nil?
-    #    @@IsLinuxCluster = true
-    #    begin
-    #        @Log.info("KubernetesApiClient::isLinuxCluster : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-    #        allNodesInfo = JSON.parse(getKubeResourceInfo('nodes').body)
-    #        @Log.info("KubernetesApiClient::isLinuxCluster : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-    #        if !allNodesInfo.nil? && !allNodesInfo.empty?
-    #            allNodesInfo['items'].each do |item|
-    #                if !(item['status']['nodeInfo']['operatingSystem'].casecmp('linux') == 0)
-    #                    @@IsLinuxCluster = false
-    #                    break
-    #                end
-    #            end
-    #        end
-    #    rescue => error
-    #        @Log.warn("KubernetesApiClient::isLinuxCluster : node role request failed: #{error}")
-    #    end
-    #    return @@IsLinuxCluster
-    #end
 
     # returns an arry of pods (json)
     def getPods(namespace)
@@ -898,11 +876,11 @@ class KubernetesApiClient
             # get rid of leading 4 bytes
             message = resourceInfo.body.slice(4, resourceInfo.body.length())
             @Log.info "removed prefix"
-            wrapper_message = Unknown.parse(message)
+            wrapper_message = Unknown.decode(message)
             @Log.info "parsed unknown message type. wrapper_message.typeMeta.kind=#{wrapper_message.typeMeta.kind}"
             if wrapper_message.typeMeta.kind == "PodList"
               @Log.info "about to parse PodList message"
-              resourceInventory = K8s::Io::Api::Core::V1::PodList.parse(wrapper_message.raw)
+              resourceInventory = K8s::Io::Api::Core::V1::PodList.decode(wrapper_message.raw)
             else
               @Log.error "did not get back resource type PodList when parsing protobuf, actually got #{wrapper_message.typeMeta.kind}"
             end
@@ -914,7 +892,8 @@ class KubernetesApiClient
               continuationToken = resourceInventory.metadata.continue
             end
             
-            resourceInventory = Bracketify_wrapper(resourceInventory)
+            # resourceInventory = Bracketify_wrapper(resourceInventory)
+            resourceInventory = symbol_to_string(resourceInventory.to_h)
 
           else
             @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"

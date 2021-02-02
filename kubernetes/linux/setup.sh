@@ -83,7 +83,8 @@ rm -f $TMPDIR/envmdsd
 
 #TODO: figure out where other gems are installed (a quick search didn't find anything)
 sudo apt install ruby-dev -y
-sudo /opt/microsoft/omsagent/ruby/bin/gem install ruby-protocol-buffers
+# sudo /opt/microsoft/omsagent/ruby/bin/gem install ruby-protocol-buffers
+sudo /opt/microsoft/omsagent/ruby/bin/gem install google-protobuf
 
 
 
