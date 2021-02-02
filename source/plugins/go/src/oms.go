@@ -859,6 +859,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		DataItems: metrics}
 
 	jsonBytes, err := json.Marshal(laTelegrafMetrics)
+	Log("laTelegrafMetrics-json:%v", laTelegrafMetrics)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
