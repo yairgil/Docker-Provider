@@ -931,6 +931,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		SendException(message)
 		return output.FLB_OK
 	}
+	Log("AppMapOSMRequestMetrics-json:%v", osmRequestMetrics)
 
 	//Post metrics data to LA
 	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(requestJsonBytes))
@@ -989,6 +990,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		DataItems: dependencyMetrics}
 
 	dependencyJsonBytes, err := json.Marshal(osmDependencyMetrics)
+	Log("AppMapOSMDependencyMetrics-json:%v", osmDependencyMetrics)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app dependencies json %q", err)
