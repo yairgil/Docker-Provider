@@ -140,13 +140,13 @@ puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfTestCo
 
 # Set OSM namespaces as environment variable so that prometheus custom config parser can read it and add necessary fielddrops to avoid data duplication
 # of OSM metrics
-promSettingsSharedfile = File.open("prom_config_shared_settings_env_var", "w")
-if !promSettingsSharedfile.nil?
-  promSettingsSharedfile.write("export AZMON_OSM_METRIC_NAMESPACES=#{@osmMetricNamespaces}\n")
-  # Close file after writing all environment variables
-  promSettingsSharedfile.close
-  puts "config::Successfully created prom_config_shared_settings_env_var file for prometheus sidecar"
-end
+# promSettingsSharedfile = File.open("prom_config_shared_settings_env_var", "w")
+# if !promSettingsSharedfile.nil?
+#   promSettingsSharedfile.write("export AZMON_OSM_METRIC_NAMESPACES=#{@osmMetricNamespaces}\n")
+#   # Close file after writing all environment variables
+#   promSettingsSharedfile.close
+#   puts "config::Successfully created prom_config_shared_settings_env_var file for prometheus sidecar"
+# end
 
 # Write the telemetry to file, so that they can be set as environment variables
 telemetryFile = File.open("integration_osm_config_env_var", "w")
