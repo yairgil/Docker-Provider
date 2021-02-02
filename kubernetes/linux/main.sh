@@ -447,7 +447,7 @@ else
 fi
 
 wget https://github.com/Azure/fluentd-plugin-mdsd/releases/download/0.1.9/fluent-plugin-mdsd-0.1.9.pre.build.master.71-oms.amd64.gem
-opt/microsoft/omsagent/ruby/bin/fluent-gem install fluent-plugin-mdsd-0.1.9.pre.build.master.71-oms.amd64.gem
+./opt/microsoft/omsagent/ruby/bin/fluent-gem install fluent-plugin-mdsd-0.1.9.pre.build.master.71-oms.amd64.gem
 
 #start cron daemon for logrotate
 service cron start
