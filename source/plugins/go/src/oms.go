@@ -750,9 +750,9 @@ func translateTelegrafMetrics(m map[interface{}]interface{}, appMapRequests map[
 			if fv > 0 {
 				appName := tagMap["app"]
 				destinationAppName := tagMap["envoy_cluster_name"]
-				itemCount := 1
+				itemCount := int64(1)
 				success := true
-				durationMs := 1.0
+				durationMs := float64(1.0)
 				operationId, err := newUUID()
 				if err != nil {
 					Log("translateTelegrafMetrics::error while generating operationId GUID: %v\n", err)
