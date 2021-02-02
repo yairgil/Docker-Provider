@@ -1176,7 +1176,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		Log("PostDataHelper::Info::Successfully flushed %d %s records to ODS in %s", numContainerLogRecords, recordType, elapsed)
 
 		}
-	//}
 
 	ContainerLogTelemetryMutex.Lock()
 	defer ContainerLogTelemetryMutex.Unlock()
