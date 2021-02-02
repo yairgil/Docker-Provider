@@ -673,9 +673,11 @@ func flushKubeMonAgentEventRecords() {
 }
 
 //Translates telegraf time series to one or more Azure loganalytics metric(s)
-func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
+func translateTelegrafMetrics(m map[interface{}]interface{}, appMapRequests map[interface{}]interface{}, appMapDependencies map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
 
 	var laMetrics []*laTelegrafMetric
+	var appMapOsmRequestMetrics []*appMapOsmRequestMetric
+	var appMapOsmDependencyMetrics []*appMapOsmDependencyMetric
 	var tags map[interface{}]interface{}
 	// string appName
 	// string destinationAppName
@@ -725,19 +727,59 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		//Log ("la metric:%v", laMetric)
 		laMetrics = append(laMetrics, &laMetric)
 
+		// OSM metric population for AppMap
 		metricName := fmt.Sprintf("%s", k)
 		if (metricName == "envoy_cluster_upstream_rq_active") && (strings.HasPrefix(metricNamespace, "container.azm.ms.osm")) {
-			appName := tagMap["app"]
-			destinationAppName := tagMap["envoy_cluster_name"]
-			uuid, err := newUUID()
-			if err != nil {
-				Log("translateTelegrafMetrics::error while generating GUID: %v\n", err)
-			}
-			Log("translateTelegrafMetrics::%s\n", uuid)
+			if fv > 0 {
+				appName := tagMap["app"]
+				destinationAppName := tagMap["envoy_cluster_name"]
+				itemCount := 1
+				success := true
+				durationMs := 1.0
+				operationId, err := newUUID()
+				if err != nil {
+					Log("translateTelegrafMetrics::error while generating operationId GUID: %v\n", err)
+				}
+				Log("translateTelegrafMetrics::%s\n", operationId)
 
+				id, err := newUUID()
+				if err != nil {
+					Log("translateTelegrafMetrics::error while generating id GUID: %v\n", err)
+				}
+				Log("translateTelegrafMetrics::%s\n", id)
+				collectionTimeValue := m["timestamp"].(uint64)
+				osmRequestMetric := appMapOsmRequestMetric{
+					OperationId:    fmt.Sprintf("%s", operationId),
+					ParentId:       fmt.Sprintf("%s", id),
+					AppRoleName:    fmt.Sprintf("%s", destinationAppName),
+					DurationMs:     durationMs,
+					Success:        success,
+					ItemCount:      itemCount,
+					CollectionTime: time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
+					// Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
+				}
+
+				Log("osm request metric:%v", osmRequestMetric)
+				appMapOsmRequestMetrics = append(appMapOsmRequestMetrics, &osmRequestMetric)
+
+				osmDependencyMetric := appMapOsmDependencyMetric{
+					OperationId:    fmt.Sprintf("%s", operationId),
+					Id:             fmt.Sprintf("%s", id),
+					AppRoleName:    fmt.Sprintf("%s", appName),
+					Target:         fmt.Sprintf("%s", destinationAppName),
+					DurationMs:     durationMs,
+					Success:        success,
+					ItemCount:      itemCount,
+					CollectionTime: time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
+					// Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
+				}
+
+				Log("osm dependency metric:%v", osmDependencyMetric)
+				appMapOsmDependencyMetrics = append(appMapOsmDependencyMetrics, &osmDependencyMetric)
+			}
 		}
 	}
-	return laMetrics, nil
+	return laMetrics, appMapOsmRequestMetrics, appMapOsmDependencyMetrics, nil
 }
 
 // send metrics from Telegraf to LA. 1) Translate telegraf timeseries to LA metric(s) 2) Send it to LA as 'InsightsMetrics' fixed type
