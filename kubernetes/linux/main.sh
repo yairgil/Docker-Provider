@@ -547,7 +547,7 @@ fi
             dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
             echo "starting mdsd ..."
-            mdsd -l -a -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+            mdsd -l -a -e -T 0x2002 ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
       fi
