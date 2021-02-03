@@ -781,13 +781,13 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 				itemCount := int64(1)
 				success := true
 				durationMs := float64(1.0)
-				operationId, err := uuid.New().String()
+				operationId := uuid.New().String()
 				// if err != nil {
 				// 	Log("translateTelegrafMetrics::error while generating operationId GUID: %v\n", err)
 				// }
 				// Log("translateTelegrafMetrics::%s\n", operationId)
 
-				id, err := uuid.New().String()
+				id := uuid.New().String()
 				// if err != nil {
 				// 	Log("translateTelegrafMetrics::error while generating id GUID: %v\n", err)
 				// }
