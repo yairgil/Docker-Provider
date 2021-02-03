@@ -1034,7 +1034,8 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	appRequestNumMetrics := len(appMapOsmRequestMetrics)
 	UpdateNumTelegrafMetricsSentTelemetry(appRequestNumMetrics, 0, 0)
-	Log("PostTelegrafMetricsToLA::Info:AppRequests:Successfully flushed %v records in %v", appRequestNumMetrics, reqElapsed)
+	Log("PostTelegrafMetricsToLA::Info:AppRequests:Http Request: %v", appRequestReq)
+	Log("PostTelegrafMetricsToLA::Info:AppRequests:Successfully flushed %v records in %v with status code %v", appRequestNumMetrics, reqElapsed, appRequestResp.StatusCode)
 
 	// AppMap Dependencies
 	var dependencyMetrics []appMapOsmDependencyMetric
@@ -1100,7 +1101,8 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	appDependencyNumMetrics := len(appMapOsmDependencyMetrics)
 	UpdateNumTelegrafMetricsSentTelemetry(appDependencyNumMetrics, 0, 0)
-	Log("PostTelegrafMetricsToLA::Info:AppDependency:Successfully flushed %v records in %v", appDependencyNumMetrics, depElapsed)
+	Log("PostTelegrafMetricsToLA::Info:AppDependency:Http Request: %v", appDependencyReq)
+	Log("PostTelegrafMetricsToLA::Info:AppDependency:Successfully flushed %v records in %v with status code - %v", appDependencyNumMetrics, depElapsed, appDependencyResp.StatusCode)
 
 	return output.FLB_OK
 }
