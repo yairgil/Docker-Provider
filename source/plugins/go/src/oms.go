@@ -968,6 +968,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	numMetrics := len(laMetrics)
 	UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0)
+	Log("PostTelegrafMetricsToLA::Info:AppRequests:Http Request: %v", req)
 	Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
 
 	// AppMap Requests
