@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -227,13 +226,42 @@ type laTelegrafMetric struct {
 }
 
 type appMapOsmRequestMetric struct {
-	CollectionTime string  `json:"CollectionTime"`
-	OperationId    string  `json:"OperationId"`
-	ParentId       string  `json:"ParentId"`
-	AppRoleName    string  `json:"AppRoleName"`
-	DurationMs     float64 `json:"DurationMs"`
-	Success        bool    `json:"Success"`
-	ItemCount      int64   `json:"ItemCount"`
+	time                  string  `json:"time"`
+	Id                    string  `json:"Id"`
+	Source                string  `json:"Source"`
+	Name                  string  `json:"Name"`
+	Url                   string  `json:"Url"`
+	Success               bool    `json:"Success"`
+	ResultCode            string  `json:"ResultCode"`
+	DurationMs            float64 `json:"DurationMs"`
+	PerformanceBucket     string  `json:"PerformanceBucket"`
+	Properties            string  `json:"Properties"`
+	Measurements          string  `json:"Measurements"`
+	OperationName         string  `json:"OperationName"`
+	OperationId           string  `json:"OperationId"`
+	ParentId              string  `json:"ParentId"`
+	SyntheticSource       string  `json:"SyntheticSource"`
+	SessionId             string  `json:"SessionId"`
+	UserId                string  `json:"UserId"`
+	UserAuthenticatedId   string  `json:"UserAuthenticatedId"`
+	UserAccountId         string  `json:"UserAccountId"`
+	AppVersion            string  `json:"AppVersion"`
+	AppRoleName           string  `json:"AppRoleName"`
+	AppRoleInstance       string  `json:"AppRoleInstance"`
+	ClientType            string  `json:"ClientType"`
+	ClientModel           string  `json:"ClientModel"`
+	ClientOS              string  `json:"ClientOS"`
+	ClientIP              string  `json:"ClientIP"`
+	ClientCity            string  `json:"ClientCity"`
+	ClientStateOrProvince string  `json:"ClientStateOrProvince"`
+	ClientCountryOrRegion string  `json:"ClientCountryOrRegion"`
+	ClientBrowser         string  `json:"ClientBrowser"`
+	ResourceGUID          string  `json:"ResourceGUID"`
+	IKey                  string  `json:"IKey"`
+	SDKVersion            string  `json:"SDKVersion"`
+	ItemCount             int64   `json:"ItemCount"`
+	ReferencedItemId      string  `json:"ReferencedItemId"`
+	ReferencedType        string  `json:"ReferencedType"`
 }
 
 type appMapOsmDependencyMetric struct {
@@ -367,18 +395,18 @@ func createLogger() *log.Logger {
 }
 
 // newUUID generates a random UUID according to RFC 4122
-func newUUID() (string, error) {
-	uuid := make([]byte, 16)
-	n, err := io.ReadFull(rand.Reader, uuid)
-	if n != len(uuid) || err != nil {
-		return "", err
-	}
-	// variant bits; see section 4.1.1
-	uuid[8] = uuid[8]&^0xc0 | 0x80
-	// version 4 (pseudo-random); see section 4.1.3
-	uuid[6] = uuid[6]&^0xf0 | 0x40
-	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
-}
+// func newUUID() (string, error) {
+// 	uuid := make([]byte, 16)
+// 	n, err := io.ReadFull(rand.Reader, uuid)
+// 	if n != len(uuid) || err != nil {
+// 		return "", err
+// 	}
+// 	// variant bits; see section 4.1.1
+// 	uuid[8] = uuid[8]&^0xc0 | 0x80
+// 	// version 4 (pseudo-random); see section 4.1.3
+// 	uuid[6] = uuid[6]&^0xf0 | 0x40
+// 	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
+// }
 
 func updateContainerImageNameMaps() {
 	for ; true; <-ContainerImageNameRefreshTicker.C {
@@ -753,26 +781,57 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 				itemCount := int64(1)
 				success := true
 				durationMs := float64(1.0)
-				operationId, err := newUUID()
-				if err != nil {
-					Log("translateTelegrafMetrics::error while generating operationId GUID: %v\n", err)
-				}
-				Log("translateTelegrafMetrics::%s\n", operationId)
+				operationId, err := uuid.New().String()
+				// if err != nil {
+				// 	Log("translateTelegrafMetrics::error while generating operationId GUID: %v\n", err)
+				// }
+				// Log("translateTelegrafMetrics::%s\n", operationId)
 
-				id, err := newUUID()
-				if err != nil {
-					Log("translateTelegrafMetrics::error while generating id GUID: %v\n", err)
-				}
+				id, err := uuid.New().String()
+				// if err != nil {
+				// 	Log("translateTelegrafMetrics::error while generating id GUID: %v\n", err)
+				// }
 				Log("translateTelegrafMetrics::%s\n", id)
 				collectionTimeValue := m["timestamp"].(uint64)
 				osmRequestMetric := appMapOsmRequestMetric{
-					OperationId:    fmt.Sprintf("%s", operationId),
-					ParentId:       fmt.Sprintf("%s", id),
-					AppRoleName:    fmt.Sprintf("%s", destinationAppName),
-					DurationMs:     durationMs,
-					Success:        success,
-					ItemCount:      itemCount,
-					CollectionTime: time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
+					// Absolutely needed metrics for topology generation for AppMap
+					time:        time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
+					OperationId: fmt.Sprintf("%s", operationId),
+					ParentId:    fmt.Sprintf("%s", id),
+					AppRoleName: fmt.Sprintf("%s", destinationAppName),
+					DurationMs:  durationMs,
+					Success:     success,
+					ItemCount:   itemCount,
+					//metrics to get ingestion working
+					Id:                    fmt.Sprintf("%s", "id"),
+					Source:                fmt.Sprintf("%s", "Source"),
+					Name:                  fmt.Sprintf("%s", "Name"),
+					Url:                   fmt.Sprintf("%s", "Url"),
+					ResultCode:            fmt.Sprintf("%s", "200"),
+					PerformanceBucket:     fmt.Sprintf("%s", "PerformanceBucket"),
+					Properties:            fmt.Sprintf("%s", ""),
+					Measurements:          fmt.Sprintf("%s", ""),
+					OperationName:         fmt.Sprintf("%s", "GET"),
+					SyntheticSource:       fmt.Sprintf("%s", "SyntheticSource"),
+					SessionId:             fmt.Sprintf("%s", "SessionId"),
+					UserId:                fmt.Sprintf("%s", "UserId"),
+					UserAuthenticatedId:   fmt.Sprintf("%s", "UserAuthenticatedId"),
+					UserAccountId:         fmt.Sprintf("%s", "UserAccountId"),
+					AppVersion:            fmt.Sprintf("%s", "v1"),
+					AppRoleInstance:       fmt.Sprintf("%s", "AppRoleInstance"),
+					ClientType:            fmt.Sprintf("%s", "ClientType"),
+					ClientModel:           fmt.Sprintf("%s", "ClientModel"),
+					ClientOS:              fmt.Sprintf("%s", "ClientOS"),
+					ClientIP:              fmt.Sprintf("%s", "ClientIP"),
+					ClientCity:            fmt.Sprintf("%s", "ClientCity"),
+					ClientStateOrProvince: fmt.Sprintf("%s", "ClientStateOrProvince"),
+					ClientCountryOrRegion: fmt.Sprintf("%s", "ClientCountryOrRegion"),
+					ClientBrowser:         fmt.Sprintf("%s", "ClientBrowser"),
+					ResourceGUID:          fmt.Sprintf("%s", "ResourceGUID"),
+					IKey:                  fmt.Sprintf("%s", "IKey"),
+					SDKVersion:            fmt.Sprintf("%s", "SDKVersion"),
+					ReferencedItemId:      fmt.Sprintf("%s", "ReferencedItemId"),
+					ReferencedType:        fmt.Sprintf("%s", "ReferencedType"),
 					// Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
 				}
 
@@ -859,7 +918,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		DataItems: metrics}
 
 	jsonBytes, err := json.Marshal(laTelegrafMetrics)
-	Log("laTelegrafMetrics-json:%v", laTelegrafMetrics)
+	//Log("laTelegrafMetrics-json:%v", laTelegrafMetrics)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
