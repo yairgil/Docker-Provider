@@ -207,13 +207,13 @@ module Fluent::Plugin
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
           podInventoryRecords.each do |record|
             if !record.nil?
-              wrapper = {
-                          "DataType" => "KUBE_POD_INVENTORY_BLOB",
-                          "IPName" => "ContainerInsights",
-                          "DataItems" => [record.each { |k, v| record[k] = v }],
-                        }
-              eventStream.add(emitTime, wrapper) if wrapper
-              @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
+              #wrapper = {
+               #           "DataType" => "KUBE_POD_INVENTORY_BLOB",
+               #           "IPName" => "ContainerInsights",
+               #           "DataItems" => [record.each { |k, v| record[k] = v }],
+               #         }
+              eventStream.add(Fluent::Engine.now, record)
+              #@inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
             end
           end
           # Setting this flag to true so that we can send ContainerInventory records for containers
