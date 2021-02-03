@@ -164,6 +164,39 @@ class KubernetesApiClient
       end
   end
 
+    
+    def protobuf_timestamp_to_string(timestamp)
+      if timestamp.class == K8s::Io::Apimachinery::Pkg::Apis::Meta::V1::Time
+        if timestamp.has_seconds?
+          return Time.at(timestamp.seconds + timestamp.nanos * 0.000000001).utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+        else
+          return nil
+        end
+      else
+        @Log.Error("KubernetesAPIClient::protobuf_timestamp_to_string : was passed non-Time protobuf object. timestamp.class=#{timestamp}, timestamp.to_h=#{timestamp.to_h}")
+    end
+
+    def protbuf_limits_requests_to_hash(protobuf_obj)
+      if protobuf_obj.class == K8s::Io::Api::Core::V1::ResourceRequirements
+        retval = {}
+        # limits
+        retval["limits"] = {}
+        for x in protobuf_obj.limits.each
+          retval["limits"][x.key] = x.value.string
+        end
+        # requests
+        retval["requests"] = {}
+        for x in protobuf_obj.limits.each
+          retval["requests"][x.key] = x.value.string
+        end
+        return retval
+      else
+        @Log.Error("KubernetesAPIClient::protbuf_limits_requests_to_hash : was passed non-ResourceRequirements protobuf object. protobuf_obj.class=#{protobuf_obj}, protobuf_obj.to_h=#{protobuf_obj.to_h}")
+      end
+    end
+
+
+
 
     def getKubeResourceInfo(resource, api_group: nil, use_protobuf: false)
       headers = {}
@@ -470,19 +503,20 @@ class KubernetesApiClient
     def getPodUid(podNameSpace, podMetadata)
       podUid = nil
       begin
-        if podNameSpace.eql?("kube-system") && !podMetadata.key?("ownerReferences")
+        if podNameSpace.eql?("kube-system") && podMetadata.ownerReferences.nil?
           # The above case seems to be the only case where you have horizontal scaling of pods
           # but no controller, in which case cAdvisor picks up kubernetes.io/config.hash
           # instead of the actual poduid. Since this uid is not being surface into the UX
           # its ok to use this.
           # Use kubernetes.io/config.hash to be able to correlate with cadvisor data
-          if podMetadata["annotations"].nil?
+          if podMetadata.annotations.nil?
             return nil
           else
-            podUid = podMetadata["annotations"]["kubernetes.io/config.hash"]
+            @Log.warn("KubernetesApiClient::getPodUid : podMetadata.annotations=#{podMetadata.annotations}")
+            podUid = podMetadata.annotations["kubernetes.io/config.hash"]
           end
         else
-          podUid = podMetadata["uid"]
+          podUid = podMetadata.uid
         end
       rescue => errorStr
         @Log.warn "KubernetesApiClient::getPodUid:Failed to get poduid: #{errorStr}"
@@ -491,20 +525,20 @@ class KubernetesApiClient
       return podUid
     end
 
-    def getContainerResourceRequestsAndLimits(pod, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
+    def getContainerResourceRequestsAndLimits(pod, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601, podInventory_hash = nil)
       metricItems = []
       begin
         clusterId = getClusterId
-        podNameSpace = pod["metadata"]["namespace"]
-        podUid = getPodUid(podNameSpace, pod["metadata"])
+        podNameSpace = pod.metadata.namespace
+        podUid = getPodUid(podNameSpace, pod.metadata)
         if podUid.nil?
           return metricItems
         end
 
         nodeName = ""
         #for unscheduled (non-started) pods nodeName does NOT exist
-        if !pod["spec"]["nodeName"].nil?
-          nodeName = pod["spec"]["nodeName"]
+        if !pod.spec.nodeName.nil?
+          nodeName = podspec.nodeName
         end
         # For ARO, skip the pods scheduled on to master or infra nodes to ingest
         if isAROv3MasterOrInfraPod(nodeName)
@@ -512,17 +546,17 @@ class KubernetesApiClient
         end
 
         podContainers = []
-        if !pod["spec"]["containers"].nil? && !pod["spec"]["containers"].empty?
-          podContainers = podContainers + pod["spec"]["containers"]
+        if !pod.spec.containers.nil? && !pod.spec.containers.empty?
+          podContainers = podContainers + pod.spec.containers
         end
         # Adding init containers to the record list as well.
-        if !pod["spec"]["initContainers"].nil? && !pod["spec"]["initContainers"].empty?
-          podContainers = podContainers + pod["spec"]["initContainers"]
+        if !pod.spec.initContainers.nil? && !pod.spec.initContainers.empty?
+          podContainers = podContainers + pod.spec.initContainers
         end
 
-        if (!podContainers.nil? && !podContainers.empty? && !pod["spec"]["nodeName"].nil?)
+        if (!podContainers.nil? && !podContainers.empty? && !pod.spec.nodeName.nil?)
           podContainers.each do |container|
-            containerName = container["name"]
+            containerName = container.name
             begin
               #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
               # @Log.warn("!container[\"resources\"].nil? = #{!container["resources"].nil?}")
@@ -530,8 +564,10 @@ class KubernetesApiClient
               # @Log.warn("!container[\"resources\][metricCategory].nil? = #{!container["resources"][metricCategory].nil?}")
               # @Log.warn("!container[\"resources\][metricCategory][metricNameToCollect].nil? = #{!container["resources"][metricCategory][metricNameToCollect].nil?}")
 
-              if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
-                metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
+              if (!container.resources.nil? && !container.resources.empty? && !protbuf_limits_requests_to_hash(container.resources)[metricCategory].nil? && !protbuf_limits_requests_to_hash(container.resources)[metricCategory][metricNameToCollect].nil?)
+
+                resource_hash = protbuf_limits_requests_to_hash(container.resources)
+                metricValue = getMetricNumericValue(metricNameToCollect, protbuf_limits_requests_to_hash[metricCategory][metricNameToCollect])
 
                 metricItem = {}
                 metricItem["DataItems"] = []
@@ -893,7 +929,7 @@ class KubernetesApiClient
             end
             
             # resourceInventory = Bracketify_wrapper(resourceInventory)
-            resourceInventory = symbol_to_string(resourceInventory.to_h)
+            resourceInventory_hash = symbol_to_string(resourceInventory.to_h)
 
           else
             @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
@@ -904,6 +940,7 @@ class KubernetesApiClient
             if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
               continuationToken = resourceInventory["metadata"]["continue"]
             end
+            resourceInventory_hash = resourceInventory
           end
         end
       rescue => errorStr
@@ -911,7 +948,7 @@ class KubernetesApiClient
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
         resourceInventory = nil
       end
-      return continuationToken, resourceInventory
+      return continuationToken, resourceInventory, resourceInventory_hash
     end #getResourcesAndContinuationToken
 
     def getKubeAPIServerUrl
