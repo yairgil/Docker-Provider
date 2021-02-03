@@ -929,7 +929,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
-
+	Log("LA request json bytes: %v", jsonBytes)
 	//req.URL.Query().Add("api-version","2016-04-01")
 
 	//set headers
@@ -968,7 +968,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	numMetrics := len(laMetrics)
 	UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0)
-	Log("PostTelegrafMetricsToLA::Info:AppRequests:Http Request: %v", req)
+	Log("PostTelegrafMetricsToLA::Info:LArequests:Http Request: %v", req)
 	Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
 
 	// AppMap Requests
@@ -985,6 +985,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		DataItems: requestMetrics}
 
 	requestJsonBytes, err := json.Marshal(osmRequestMetrics)
+	Log("app request json bytes: %v", requestJsonBytes)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app requests json %q", err)
@@ -1053,6 +1054,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	dependencyJsonBytes, err := json.Marshal(osmDependencyMetrics)
 	Log("AppMapOSMDependencyMetrics-json:%v", osmDependencyMetrics)
+	Log("app dependency json bytes: %v", dependencyJsonBytes)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app dependencies json %q", err)
