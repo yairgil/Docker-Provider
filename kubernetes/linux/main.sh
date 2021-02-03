@@ -636,7 +636,7 @@ service rsyslog status
 
 
 # start the new fluentd
-fluentd -c /opt/fluent/fluentd4.conf > /dev/null &
+fluentd -c /opt/fluent/fluentd4.conf > /opt/fluent/fluentlog.txt &
 
 
 

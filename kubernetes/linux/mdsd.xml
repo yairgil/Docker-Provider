@@ -46,6 +46,7 @@
   
   Each column has a name, an augmented JSON source type, and a target MDS type.
   -->
+  <Schema>
     <Schema name="KubePodInventorySchema">
       <Column name="ClusterId" type="str" mdstype="mt:wstr" />
       <Column name="ClusterName" type="str" mdstype="mt:wstr" />
