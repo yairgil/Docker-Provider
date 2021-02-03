@@ -76,7 +76,7 @@
   </Schemas>
 
   <Sources>
-    <Source name="ContainerLogSource" schema="ContainerLogSchema" />  
+    <Source name="oms.containerinsights.KubePodInventory" schema="KubePodInventorySchema" />  
   </Sources>
   
   <!--
@@ -112,10 +112,6 @@
     <MdsdEvents>
     <MdsdEventSource source="oms.containerinsights.KubePodInventory">
         <RouteEvent eventName="KubePodInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
-        </RouteEvent>
-    </MdsdEventSource>
-    <MdsdEventSource source="oms.containerinsights.KubePVInventory">
-        <RouteEvent eventName="KubePVInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
         </RouteEvent>
     </MdsdEventSource>
     </MdsdEvents>
