@@ -1020,6 +1020,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	//set headers
 	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("User-Agent", userAgent)
+	appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
 	appRequestReqID := uuid.New().String()
 	appRequestReq.Header.Set("X-Request-ID", appRequestReqID)
 
@@ -1088,6 +1089,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	//set headers
 	appDependencyReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	appDependencyReq.Header.Set("User-Agent", userAgent)
+	appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
 	appDependencyReqID := uuid.New().String()
 	appDependencyReq.Header.Set("X-Request-ID", appDependencyReqID)
 
