@@ -826,7 +826,7 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 				destinationAppName := tagMap["envoy_cluster_name"]
 				itemCount := int64(1)
 				success := true
-				durationMs := float64(1.0)
+				// durationMs := float64(1.0)
 				operationId := uuid.New().String()
 				// if err != nil {
 				// 	Log("translateTelegrafMetrics::error while generating operationId GUID: %v\n", err)
