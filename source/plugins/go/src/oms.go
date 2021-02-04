@@ -773,7 +773,26 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		laMetrics = append(laMetrics, &laMetric)
 
 		// OSM metric population for AppMap
+					Measurements:          fmt.Sprintf("%s", { "AvailableMemory": 42.3 }),
 		metricName := fmt.Sprintf("%s", k)
+		propertyMap := make(map[string]string)
+		propertyMap[fmt.Sprintf("DeploymentId")] = "523a92fea186461581efca83b7b66a0d"
+		propertyMap[fmt.Sprintf("Stamp")] = "Breeze-INT-SCUS"
+		propertiesJson, err := json.Marshal(&propertyMap)
+	
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		measurementsMap := make(map[string]string)
+		measurementsMap[fmt.Sprintf("AvailableMemory")] = "423"
+		measurementsJson, err := json.Marshal(&measurementsMap)
+	
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+
 		if (metricName == "envoy_cluster_upstream_rq_active") && (strings.HasPrefix(metricNamespace, "container.azm.ms.osm")) {
 			if fv > 0 {
 				appName := tagMap["app"]
@@ -809,8 +828,8 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 					Url:                   fmt.Sprintf("%s", "https://portal.azure.com"),
 					ResultCode:            fmt.Sprintf("%s", "200"),
 					PerformanceBucket:     fmt.Sprintf("%s", "500ms-1sec"),
-					Properties:            fmt.Sprintf("%s", { "DeploymentId":"523a92fea186461581efca83b7b66a0d", "Stamp":"Breeze-INT-SCUS" }),
-					Measurements:          fmt.Sprintf("%s", { "AvailableMemory": 42.3 }),
+					Properties:            fmt.Sprintf("%s", propertiesJson),
+					Measurements:          fmt.Sprintf("%s", measurementsJson),
 					OperationName:         fmt.Sprintf("%s", "POST /v2/passthrough"),
 					SyntheticSource:       fmt.Sprintf("%s", "Windows"),
 					SessionId:             fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
