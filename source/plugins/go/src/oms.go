@@ -1015,7 +1015,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	//Post metrics data to LA
 	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(requestJsonBytes))
 
-	//req.URL.Query().Add("api-version","2016-04-01")
+	appRequestReq.URL.Query().Add("api-version", "2016-04-01")
 
 	//set headers
 	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
@@ -1029,6 +1029,9 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
 	appRequestReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
+	appRequestReq.Header.Set("Content-Type", "application/json")
+	// appRequestReq.Header.Set("Content-Encoding", "gzip")
+
 	// appRequestReq.Header.Set("x-ms-ResourceLocation", "records")
 
 	appRequestReqID := uuid.New().String()
@@ -1099,15 +1102,15 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	//set headers
 	appDependencyReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	appDependencyReq.Header.Set("User-Agent", userAgent)
-	appRequestReq.Header.Set("Log-Type", AppDependenciesDataType)
-	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
-	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
-	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
-	appRequestReq.Header.Set("ocp-json-nesting-resolution", "records")
-	appRequestReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
-	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
-	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
-	appRequestReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
+	appDependencyReq.Header.Set("Log-Type", AppDependenciesDataType)
+	appDependencyReq.Header.Set("ocp-workspace-id", WorkspaceID)
+	appDependencyReq.Header.Set("ocp-is-dynamic-data-type", "False")
+	appDependencyReq.Header.Set("ocp-intelligence-pack-name", "Azure")
+	appDependencyReq.Header.Set("ocp-json-nesting-resolution", "records")
+	appDependencyReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
+	appDependencyReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
+	appDependencyReq.Header.Set("x-ms-OboLocation", "North Europe")
+	appDependencyReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
 	appDependencyReqID := uuid.New().String()
 	appDependencyReq.Header.Set("X-Request-ID", appDependencyReqID)
 
