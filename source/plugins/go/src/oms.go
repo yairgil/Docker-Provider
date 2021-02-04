@@ -318,9 +318,9 @@ type AppMapOsmRequestBlob struct {
 }
 
 type AppMapOsmDependencyBlob struct {
-	DataType  string                      `json:"DataType"`
-	IPName    string                      `json:"IPName"`
-	DataItems []appMapOsmDependencyMetric `json:"DataItems"`
+	DataType string                      `json:"DataType"`
+	IPName   string                      `json:"IPName"`
+	records  []appMapOsmDependencyMetric `json:"DataItems"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -1083,7 +1083,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
 	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
 	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
-	appRequestReq.Header.Set("ocp-json-nesting-resolution", "records")
+	appRequestReq.Header.Set("ocp-json-nesting-resolution", "DataItems")
 	appRequestReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
@@ -1138,9 +1138,9 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	osmDependencyMetrics := AppMapOsmDependencyBlob{
-		DataType:  AppDependenciesDataType,
-		IPName:    "LogManagement",
-		DataItems: dependencyMetrics}
+		DataType: AppDependenciesDataType,
+		IPName:   "LogManagement",
+		records:  dependencyMetrics}
 
 	dependencyJsonBytes, err := json.Marshal(osmDependencyMetrics)
 	Log("AppMapOSMDependencyMetrics-json:%v", osmDependencyMetrics)
