@@ -1013,9 +1013,9 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	Log("AppMapOSMRequestMetrics-json:%v", osmRequestMetrics)
 
 	//Post metrics data to LA
-	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(requestJsonBytes))
+	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint+"?api-version=2016-04-01", bytes.NewBuffer(requestJsonBytes))
 
-	appRequestReq.URL.Query().Add("api-version", "2016-04-01")
+	//appRequestReq.URL.Query().Add("api-version", "2016-04-01")
 
 	//set headers
 	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
