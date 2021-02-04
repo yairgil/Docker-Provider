@@ -1021,6 +1021,16 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("User-Agent", userAgent)
 	appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
+	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
+	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
+	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
+	appRequestReq.Header.Set("ocp-json-nesting-resolution", "records")
+	appRequestReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
+	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
+	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
+	appRequestReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
+	// appRequestReq.Header.Set("x-ms-ResourceLocation", "records")
+
 	appRequestReqID := uuid.New().String()
 	appRequestReq.Header.Set("X-Request-ID", appRequestReqID)
 
@@ -1089,7 +1099,15 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	//set headers
 	appDependencyReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	appDependencyReq.Header.Set("User-Agent", userAgent)
-	appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
+	appRequestReq.Header.Set("Log-Type", AppDependenciesDataType)
+	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
+	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
+	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
+	appRequestReq.Header.Set("ocp-json-nesting-resolution", "records")
+	appRequestReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
+	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
+	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
+	appRequestReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
 	appDependencyReqID := uuid.New().String()
 	appDependencyReq.Header.Set("X-Request-ID", appDependencyReqID)
 
