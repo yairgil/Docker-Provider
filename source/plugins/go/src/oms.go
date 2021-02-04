@@ -265,14 +265,43 @@ type appMapOsmRequestMetric struct {
 }
 
 type appMapOsmDependencyMetric struct {
-	CollectionTime string  `json:"CollectionTime"`
-	OperationId    string  `json:"OperationId"`
-	Id             string  `json:"Id"`
-	Target         string  `json:"Target"`
-	AppRoleName    string  `json:"AppRoleName"`
-	DurationMs     float64 `json:"DurationMs"`
-	Success        bool    `json:"Success"`
-	ItemCount      int64   `json:"ItemCount"`
+	time                  string  `json:"time"`
+	Id                    string  `json:"Id"`
+	Target                string  `json:"Target"`
+	DependencyType        string  `json:"DependencyType"`
+	Name                  string  `json:"Name"`
+	Data                  string  `json:"Data"`
+	Success               bool    `json:"Success"`
+	ResultCode            string  `json:"ResultCode"`
+	DurationMs            float64 `json:"DurationMs"`
+	PerformanceBucket     string  `json:"PerformanceBucket"`
+	Properties            string  `json:"Properties"`
+	Measurements          string  `json:"Measurements"`
+	OperationName         string  `json:"OperationName"`
+	OperationId           string  `json:"OperationId"`
+	ParentId              string  `json:"ParentId"`
+	SyntheticSource       string  `json:"SyntheticSource"`
+	SessionId             string  `json:"SessionId"`
+	UserId                string  `json:"UserId"`
+	UserAuthenticatedId   string  `json:"UserAuthenticatedId"`
+	UserAccountId         string  `json:"UserAccountId"`
+	AppVersion            string  `json:"AppVersion"`
+	AppRoleName           string  `json:"AppRoleName"`
+	AppRoleInstance       string  `json:"AppRoleInstance"`
+	ClientType            string  `json:"ClientType"`
+	ClientModel           string  `json:"ClientModel"`
+	ClientOS              string  `json:"ClientOS"`
+	ClientIP              string  `json:"ClientIP"`
+	ClientCity            string  `json:"ClientCity"`
+	ClientStateOrProvince string  `json:"ClientStateOrProvince"`
+	ClientCountryOrRegion string  `json:"ClientCountryOrRegion"`
+	ClientBrowser         string  `json:"ClientBrowser"`
+	ResourceGUID          string  `json:"ResourceGUID"`
+	IKey                  string  `json:"IKey"`
+	SDKVersion            string  `json:"SDKVersion"`
+	ItemCount             int64   `json:"ItemCount"`
+	ReferencedItemId      string  `json:"ReferencedItemId"`
+	ReferencedType        string  `json:"ReferencedType"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -813,8 +842,8 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 				osmRequestMetric := appMapOsmRequestMetric{
 					// Absolutely needed metrics for topology generation for AppMap
 					time:        time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
-					OperationId: fmt.Sprintf("%s", "0d0316964a57404da5f5619287ff2f62"),
-					ParentId:    fmt.Sprintf("%s", "fba578d218224d26a4ca83ba13c354e9"),
+					OperationId: fmt.Sprintf("%s", operationId),
+					ParentId:    fmt.Sprintf("%s", id),
 					AppRoleName: fmt.Sprintf("%s", destinationAppName),
 					DurationMs:  898.42,
 					Success:     success,
@@ -856,15 +885,45 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 				appMapOsmRequestMetrics = append(appMapOsmRequestMetrics, &osmRequestMetric)
 
 				osmDependencyMetric := appMapOsmDependencyMetric{
-					OperationId:    fmt.Sprintf("%s", operationId),
-					Id:             fmt.Sprintf("%s", id),
-					AppRoleName:    fmt.Sprintf("%s", appName),
-					Target:         fmt.Sprintf("%s", destinationAppName),
-					DurationMs:     durationMs,
-					Success:        success,
-					ItemCount:      itemCount,
-					CollectionTime: time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
-					// Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
+					// Absolutely needed metrics for topology generation for AppMap
+					time:        time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
+					Id:          fmt.Sprintf("%s", id),
+					Target:      fmt.Sprintf("%s", destinationAppName),
+					Success:     success,
+					DurationMs:  898.42,
+					OperationId: fmt.Sprintf("%s", operationId),
+					AppRoleName: fmt.Sprintf("%s", appName),
+					ItemCount:   itemCount,
+					//metrics to get ingestion working
+					DependencyType:        fmt.Sprintf("%s", "Ajax"),
+					Name:                  fmt.Sprintf("%s", "TestData-Request-DataGen"),
+					Data:                  fmt.Sprintf("%s", "GET https://n9440-fpj.gmbeelopm.com/HhjmlogpEhiLLL/ECO//GhoppnaBeAelhaekm/3944-40-42J92:22:19.750D/MehgKepmpnlegoDboghnMaedd"),
+					ResultCode:            fmt.Sprintf("%s", "200"),
+					PerformanceBucket:     fmt.Sprintf("%s", "500ms-1sec"),
+					Properties:            fmt.Sprintf("%s", propertiesJson),
+					Measurements:          fmt.Sprintf("%s", measurementsJson),
+					OperationName:         fmt.Sprintf("%s", "POST /v2/passthrough"),
+					ParentId:              fmt.Sprintf("%s", "b1bb1e27-4204-096e-9e89-1f1dfac718fc"),
+					SyntheticSource:       fmt.Sprintf("%s", "Windows"),
+					SessionId:             fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
+					UserId:                fmt.Sprintf("%s", "5bfb5187ff9742fbaec5b19dd7217f40"),
+					UserAuthenticatedId:   fmt.Sprintf("%s", "somebody@microsoft.com"),
+					UserAccountId:         fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
+					AppVersion:            fmt.Sprintf("%s", "4.2-alpha"),
+					AppRoleInstance:       fmt.Sprintf("%s", "Breeze_IN_42"),
+					ClientType:            fmt.Sprintf("%s", "PC"),
+					ClientModel:           fmt.Sprintf("%s", "Other"),
+					ClientOS:              fmt.Sprintf("%s", "Windows 7"),
+					ClientIP:              fmt.Sprintf("%s", "0.0.0.0"),
+					ClientCity:            fmt.Sprintf("%s", "Sydney"),
+					ClientStateOrProvince: fmt.Sprintf("%s", "New South Wales"),
+					ClientCountryOrRegion: fmt.Sprintf("%s", "Australia"),
+					ClientBrowser:         fmt.Sprintf("%s", "Internet Explorer 9.0"),
+					ResourceGUID:          fmt.Sprintf("%s", "d4e6868c-02e8-41d2-a09d-bbb5ae35af5c"),
+					IKey:                  fmt.Sprintf("%s", "0539013c-a321-46fd-b831-1cc16729b449"),
+					SDKVersion:            fmt.Sprintf("%s", "dotnet:2.2.0-54037"),
+					ReferencedItemId:      fmt.Sprintf("%s", "905812ce-48c3-44ee-ab93-33e8768f59f9"),
+					ReferencedType:        fmt.Sprintf("%s", "IoTRequests"),
 				}
 
 				Log("osm dependency metric:%v", osmDependencyMetric)
@@ -1095,7 +1154,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	//Post metrics data to LA
-	appDependencyReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(dependencyJsonBytes))
+	appDependencyReq, _ := http.NewRequest("POST", OMSEndpoint+"?api-version=2016-04-01", bytes.NewBuffer(dependencyJsonBytes))
 
 	//req.URL.Query().Add("api-version","2016-04-01")
 
@@ -1111,6 +1170,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	appDependencyReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
 	appDependencyReq.Header.Set("x-ms-OboLocation", "North Europe")
 	appDependencyReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
+	appDependencyReq.Header.Set("Content-Type", "application/json")
 	appDependencyReqID := uuid.New().String()
 	appDependencyReq.Header.Set("X-Request-ID", appDependencyReqID)
 
