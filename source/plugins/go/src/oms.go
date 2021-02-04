@@ -773,13 +773,12 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		laMetrics = append(laMetrics, &laMetric)
 
 		// OSM metric population for AppMap
-					Measurements:          fmt.Sprintf("%s", { "AvailableMemory": 42.3 }),
 		metricName := fmt.Sprintf("%s", k)
 		propertyMap := make(map[string]string)
 		propertyMap[fmt.Sprintf("DeploymentId")] = "523a92fea186461581efca83b7b66a0d"
 		propertyMap[fmt.Sprintf("Stamp")] = "Breeze-INT-SCUS"
 		propertiesJson, err := json.Marshal(&propertyMap)
-	
+
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -787,11 +786,10 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		measurementsMap := make(map[string]string)
 		measurementsMap[fmt.Sprintf("AvailableMemory")] = "423"
 		measurementsJson, err := json.Marshal(&measurementsMap)
-	
+
 		if err != nil {
 			return nil, nil, nil, err
 		}
-
 
 		if (metricName == "envoy_cluster_upstream_rq_active") && (strings.HasPrefix(metricNamespace, "container.azm.ms.osm")) {
 			if fv > 0 {
