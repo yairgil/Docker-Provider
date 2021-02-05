@@ -1083,7 +1083,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
 	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
 	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
-	//appRequestReq.Header.Set("ocp-json-nesting-resolution", "DataItems")
+	appRequestReq.Header.Set("ocp-json-nesting-resolution", "DataItems")
 	appRequestReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
