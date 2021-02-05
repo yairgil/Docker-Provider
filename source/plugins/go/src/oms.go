@@ -1056,9 +1056,9 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	osmRequestMetrics := AppMapOsmRequestBlob{
-		DataType:  AppRequestsDataType,
-		IPName:    "LogManagement",
-		DataItems: requestMetrics}
+		DataType: AppRequestsDataType,
+		IPName:   "LogManagement",
+		records:  requestMetrics}
 
 	requestJsonBytes, err := json.Marshal(osmRequestMetrics)
 	//Log("app request json bytes: %v", requestJsonBytes)
@@ -1072,18 +1072,19 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	Log("AppMapOSMRequestMetrics-json:%v", osmRequestMetrics)
 
 	//Post metrics data to LA
-	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint+"?api-version=2016-04-01", bytes.NewBuffer(requestJsonBytes))
+	// appRequestReq, _ := http.NewRequest("POST", OMSEndpoint+"?api-version=2016-04-01", bytes.NewBuffer(requestJsonBytes))
+	appRequestReq, _ := http.NewRequest("POST", "https://dd513101-45ad-4dc0-b6dd-42d88361399e.ods.opinsights.azure.com/collector?api-version=2018-05-01", bytes.NewBuffer(requestJsonBytes))
 
 	//appRequestReq.URL.Query().Add("api-version", "2016-04-01")
 
 	//set headers
 	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("User-Agent", userAgent)
-	// appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
+	appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
 	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
 	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
 	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
-	appRequestReq.Header.Set("ocp-json-nesting-resolution", "DataItems")
+	appRequestReq.Header.Set("ocp-json-nesting-resolution", "records")
 	appRequestReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
