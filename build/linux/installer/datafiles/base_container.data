@@ -187,6 +187,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/MdmAlertTemplates.rb;            source/plugins/ruby-fluentd4/MdmAlertTemplates.rb;                644; root; root
 /etc/fluent/plugin/MdmMetricsGenerator.rb;          source/plugins/ruby-fluentd4/MdmMetricsGenerator.rb;            644; root; root
 /etc/fluent/plugin/podinventory_to_mdm.rb;			 source/plugins/ruby-fluentd4/podinventory_to_mdm.rb;			    	644; root; root
+/etc/fluent/plugin/arc_k8s_cluster_identity.rb;       source/plugins/ruby/arc_k8s_cluster_identity.rb; 644; root; root
 
 
 /etc/fluent/plugin/ApplicationInsightsUtility.rb;									source/plugins/ruby-fluentd4/ApplicationInsightsUtility.rb;	644; root; root
