@@ -312,9 +312,9 @@ type InsightsMetricsBlob struct {
 }
 
 type AppMapOsmRequestBlob struct {
-	DataType  string                   `json:"DataType"`
-	IPName    string                   `json:"IPName"`
-	DataItems []appMapOsmRequestMetric `json:"DataItems"`
+	DataType string                   `json:"DataType"`
+	IPName   string                   `json:"IPName"`
+	records  []appMapOsmRequestMetric `json:"DataItems"`
 }
 
 type AppMapOsmDependencyBlob struct {
