@@ -181,7 +181,7 @@ MAINTAINER:              'Microsoft Corporation'
 
 /etc/fluent/plugin/in_kube_podinventory.rb;			source/plugins/ruby-fluentd4/in_kube_podinventory.rb;			644; root; root
 /etc/fluent/plugin/KubernetesApiClient.rb;			source/plugins/ruby-fluentd4/KubernetesApiClient.rb;			644; root; root
-
+/etc/fluent/plugin/out_mdm.rb;			    source/plugins/ruby-fluentd4/out_mdm.rb;			    	644; root; root
 /etc/fluent/plugin/CustomMetricsUtils.rb;			    source/plugins/ruby-fluentd4/CustomMetricsUtils.rb;			    	644; root; root
 /etc/fluent/plugin/constants.rb;			             source/plugins/ruby-fluentd4/constants.rb;			    	644; root; root
 /etc/fluent/plugin/MdmAlertTemplates.rb;            source/plugins/ruby-fluentd4/MdmAlertTemplates.rb;                644; root; root
