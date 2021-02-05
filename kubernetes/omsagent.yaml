@@ -59,14 +59,6 @@ data:
       chunk_size_limit 4m
      </source>
 
-     #Kubernetes pod inventory
-     <source>
-      type kubepodinventory
-      tag oms.containerinsights.KubePodInventory
-      run_interval 60
-      log_level debug
-     </source>
-
      #Kubernetes Persistent Volume inventory
      <source>
       type kubepvinventory
@@ -139,21 +131,6 @@ data:
      <filter kubehealth**>
       type filter_health_model_builder
      </filter>
-
-     <match oms.containerinsights.KubePodInventory**>
-      type out_oms
-      log_level debug
-      num_threads 2
-      buffer_chunk_limit 4m
-      buffer_type file
-      buffer_path %STATE_DIR_WS%/out_oms_kubepods*.buffer
-      buffer_queue_limit 20
-      buffer_queue_full_action drop_oldest_chunk
-      flush_interval 20s
-      retry_limit 10
-      retry_wait 5s
-      max_retry_wait 5m
-     </match>
 
      <match oms.containerinsights.KubePVInventory**>
      type out_oms
@@ -244,7 +221,7 @@ data:
       max_retry_wait 5m
      </match>
 
-     <match mdm.kubepodinventory** mdm.kubenodeinventory** >
+     <match mdm.kubenodeinventory** >
       type out_mdm
       log_level debug
       num_threads 5
