@@ -178,43 +178,23 @@ MAINTAINER:              'Microsoft Corporation'
 
 
 
-/etc/fluent/plugin/filter_docker_log.rb;			source/plugins/ruby-fluentd4/filter_docker_log.rb;			644; root; root
-/etc/fluent/plugin/filter_container.rb;			    source/plugins/ruby-fluentd4/filter_container.rb;				644; root; root
 
 /etc/fluent/plugin/in_kube_podinventory.rb;			source/plugins/ruby-fluentd4/in_kube_podinventory.rb;			644; root; root
-/etc/fluent/plugin/in_kube_pvinventory.rb;			source/plugins/ruby-fluentd4/in_kube_pvinventory.rb;			644; root; root
-/etc/fluent/plugin/in_kube_events.rb;			    source/plugins/ruby-fluentd4/in_kube_events.rb;				644; root; root
 /etc/fluent/plugin/KubernetesApiClient.rb;			source/plugins/ruby-fluentd4/KubernetesApiClient.rb;			644; root; root
 
-/etc/fluent/plugin/in_burncpu.rb;			                  source/plugins/ruby-fluentd4/in_burncpu.rb;			                  644; root; root
-
-/etc/fluent/plugin/CAdvisorMetricsAPIClient.rb;     source/plugins/ruby-fluentd4/CAdvisorMetricsAPIClient.rb;     644; root; root
-/etc/fluent/plugin/in_cadvisor_perf.rb;			        source/plugins/ruby-fluentd4/in_cadvisor_perf.rb;			    	644; root; root
-/etc/fluent/plugin/in_win_cadvisor_perf.rb;			    source/plugins/ruby-fluentd4/in_win_cadvisor_perf.rb;			    644; root; root
-/etc/fluent/plugin/in_kube_nodeinventory.rb;			        source/plugins/ruby-fluentd4/in_kube_nodeinventory.rb;			    	644; root; root
-/etc/fluent/plugin/in_kubestate_deployments.rb;			        source/plugins/ruby-fluentd4/in_kubestate_deployments.rb;			    	644; root; root
-/etc/fluent/plugin/in_kubestate_hpa.rb;			        source/plugins/ruby-fluentd4/in_kubestate_hpa.rb;			    	644; root; root
-/etc/fluent/plugin/filter_inventory2mdm.rb;			     source/plugins/ruby-fluentd4/filter_inventory2mdm.rb;			    	644; root; root
-/etc/fluent/plugin/podinventory_to_mdm.rb;			     source/plugins/ruby-fluentd4/podinventory_to_mdm.rb;			    	644; root; root
-/etc/fluent/plugin/kubelet_utils.rb;			         source/plugins/ruby-fluentd4/kubelet_utils.rb;			    	644; root; root
-/etc/fluent/plugin/CustomMetricsUtils.rb;			     source/plugins/ruby-fluentd4/CustomMetricsUtils.rb;			    	644; root; root
+/etc/fluent/plugin/CustomMetricsUtils.rb;			    source/plugins/ruby-fluentd4/CustomMetricsUtils.rb;			    	644; root; root
 /etc/fluent/plugin/constants.rb;			             source/plugins/ruby-fluentd4/constants.rb;			    	644; root; root
-/etc/fluent/plugin/MdmAlertTemplates.rb;                 source/plugins/ruby-fluentd4/MdmAlertTemplates.rb;                644; root; root
-/etc/fluent/plugin/MdmMetricsGenerator.rb;              source/plugins/ruby-fluentd4/MdmMetricsGenerator.rb;            644; root; root
+/etc/fluent/plugin/MdmAlertTemplates.rb;            source/plugins/ruby-fluentd4/MdmAlertTemplates.rb;                644; root; root
+/etc/fluent/plugin/MdmMetricsGenerator.rb;          source/plugins/ruby-fluentd4/MdmMetricsGenerator.rb;            644; root; root
+/etc/fluent/plugin/podinventory_to_mdm.rb;			 source/plugins/ruby-fluentd4/podinventory_to_mdm.rb;			    	644; root; root
 
 
 /etc/fluent/plugin/ApplicationInsightsUtility.rb;									source/plugins/ruby-fluentd4/ApplicationInsightsUtility.rb;	644; root; root
-/etc/fluent/plugin/ContainerInventoryState.rb;										source/plugins/ruby-fluentd4/ContainerInventoryState.rb;		644; root; root
 /etc/fluent/plugin/DockerApiClient.rb;												source/plugins/ruby-fluentd4/DockerApiClient.rb;				644; root; root
 /etc/fluent/plugin/DockerApiRestHelper.rb;											source/plugins/ruby-fluentd4/DockerApiRestHelper.rb;			644; root; root
-/etc/fluent/plugin/in_containerinventory.rb;										source/plugins/ruby-fluentd4/in_containerinventory.rb;		644; root; root
 /etc/fluent/plugin/kubernetes_container_inventory.rb;							source/plugins/ruby-fluentd4/kubernetes_container_inventory.rb;		644; root; root
 /etc/fluent/plugin/proxy_utils.rb;						                  	source/plugins/ruby-fluentd4/proxy_utils.rb;		644; root; root
 
-/etc/fluent/plugin/arc_k8s_cluster_identity.rb;                                 source/plugins/ruby-fluentd4/arc_k8s_cluster_identity.rb; 644; root; root
-/etc/fluent/plugin/out_mdm.rb;                                                  source/plugins/ruby-fluentd4/out_mdm.rb; 644; root; root
-/etc/fluent/plugin/filter_cadvisor2mdm.rb;                                      source/plugins/ruby-fluentd4/filter_cadvisor2mdm.rb; 644; root; root
-/etc/fluent/plugin/filter_telegraf2mdm.rb;                                      source/plugins/ruby-fluentd4/filter_telegraf2mdm.rb; 644; root; root
 
 /etc/fluent/plugin/lib/application_insights/version.rb;								source/plugins/ruby-fluentd4/lib/application_insights/version.rb; 644; root; root
 /etc/fluent/plugin/lib/application_insights/rack/track_request.rb;					source/plugins/ruby-fluentd4/lib/application_insights/rack/track_request.rb;      644; root; root
@@ -262,58 +242,10 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/lib/application_insights.rb;     source/plugins/ruby-fluentd4/lib/application_insights.rb; 644; root; root
 
 
-/etc/fluent/plugin/filter_cadvisor_health_container.rb;                                 source/plugins/ruby-fluentd4/filter_cadvisor_health_container.rb; 644; root; root
-/etc/fluent/plugin/filter_cadvisor_health_node.rb;                                      source/plugins/ruby-fluentd4/filter_cadvisor_health_node.rb; 644; root; root
-/etc/fluent/plugin/filter_health_model_builder.rb;                                      source/plugins/ruby-fluentd4/filter_health_model_builder.rb; 644; root; root
-/etc/fluent/plugin/in_kube_health.rb;                                                   source/plugins/ruby-fluentd4/in_kube_health.rb; 644; root; root
-/etc/fluent/plugin/out_health_forward.rb;                                               source/plugins/ruby-fluentd4/out_health_forward.rb; 644; root; root
-
-/etc/fluent/plugin/health/aggregate_monitor.rb;                                         source/plugins/ruby-fluentd4/health/aggregate_monitor.rb; 644; root; root
-/etc/fluent/plugin/health/agg_monitor_id_labels.rb;                                     source/plugins/ruby-fluentd4/health/agg_monitor_id_labels.rb; 644; root; root
-/etc/fluent/plugin/health/aggregate_monitor_state_finalizer.rb;                         source/plugins/ruby-fluentd4/health/aggregate_monitor_state_finalizer.rb; 644; root; root
-/etc/fluent/plugin/health/cluster_health_state.rb;                                      source/plugins/ruby-fluentd4/health/cluster_health_state.rb; 644; root; root
-/etc/fluent/plugin/health/health_container_cpu_memory_aggregator.rb;                    source/plugins/ruby-fluentd4/health/health_container_cpu_memory_aggregator.rb; 644; root; root
-/etc/fluent/plugin/health/health_container_cpu_memory_record_formatter.rb;              source/plugins/ruby-fluentd4/health/health_container_cpu_memory_record_formatter.rb; 644; root; root
-/etc/fluent/plugin/health/health_hierarchy_builder.rb;                                  source/plugins/ruby-fluentd4/health/health_hierarchy_builder.rb; 644; root; root
-/etc/fluent/plugin/health/health_kubernetes_resources.rb;                               source/plugins/ruby-fluentd4/health/health_kubernetes_resources.rb; 644; root; root
-/etc/fluent/plugin/health/health_kube_api_down_handler.rb;                              source/plugins/ruby-fluentd4/health/health_kube_api_down_handler.rb; 644; root; root
-/etc/fluent/plugin/health/health_missing_signal_generator.rb;                           source/plugins/ruby-fluentd4/health/health_missing_signal_generator.rb; 644; root; root
-/etc/fluent/plugin/health/health_model_buffer.rb;                                       source/plugins/ruby-fluentd4/health/health_model_buffer.rb; 644; root; root
-/etc/fluent/plugin/health/health_model_builder.rb;                                      source/plugins/ruby-fluentd4/health/health_model_builder.rb; 644; root; root
-/etc/fluent/plugin/health/health_model_constants.rb;                                    source/plugins/ruby-fluentd4/health/health_model_constants.rb; 644; root; root
-/etc/fluent/plugin/health/parent_monitor_provider.rb;                                   source/plugins/ruby-fluentd4/health/parent_monitor_provider.rb; 644; root; root
-/etc/fluent/plugin/health/health_model_definition_parser.rb;                            source/plugins/ruby-fluentd4/health/health_model_definition_parser.rb; 644; root; root
-/etc/fluent/plugin/health/health_monitor_helpers.rb;                                    source/plugins/ruby-fluentd4/health/health_monitor_helpers.rb; 644; root; root
-/etc/fluent/plugin/health/health_monitor_optimizer.rb;                                  source/plugins/ruby-fluentd4/health/health_monitor_optimizer.rb; 644; root; root
-/etc/fluent/plugin/health/health_monitor_provider.rb;                                   source/plugins/ruby-fluentd4/health/health_monitor_provider.rb; 644; root; root
-/etc/fluent/plugin/health/health_monitor_record.rb;                                     source/plugins/ruby-fluentd4/health/health_monitor_record.rb; 644; root; root
-/etc/fluent/plugin/health/health_monitor_state.rb;                                      source/plugins/ruby-fluentd4/health/health_monitor_state.rb; 644; root; root
-/etc/fluent/plugin/health/health_monitor_telemetry.rb;                                  source/plugins/ruby-fluentd4/health/health_monitor_telemetry.rb; 644; root; root
-/etc/fluent/plugin/health/health_monitor_utils.rb;                                      source/plugins/ruby-fluentd4/health/health_monitor_utils.rb; 644; root; root
-/etc/fluent/plugin/health/health_signal_reducer.rb;                                     source/plugins/ruby-fluentd4/health/health_signal_reducer.rb; 644; root; root
-/etc/fluent/plugin/health/monitor_factory.rb;                                           source/plugins/ruby-fluentd4/health/monitor_factory.rb; 644; root; root
-/etc/fluent/plugin/health/monitor_set.rb;                                               source/plugins/ruby-fluentd4/health/monitor_set.rb; 644; root; root
-/etc/fluent/plugin/health/unit_monitor.rb;                                              source/plugins/ruby-fluentd4/health/unit_monitor.rb; 644; root; root
-
-/etc/fluent/plugin/omi_lib.rb;                                             source/plugins/ruby-fluentd4/omi_lib.rb; 644; root; root
-/etc/fluent/plugin/oms_audits.xml;                                         source/plugins/ruby-fluentd4/oms_audits.xml; 644; root; root
 /etc/fluent/plugin/oms_common.rb;                                          source/plugins/ruby-fluentd4/oms_common.rb; 644; root; root
 /etc/fluent/plugin/oms_configuration.rb;                                   source/plugins/ruby-fluentd4/oms_configuration.rb; 644; root; root
-/etc/fluent/plugin/oms_diag_lib.rb;                                        source/plugins/ruby-fluentd4/oms_diag_lib.rb; 644; root; root
-/etc/fluent/plugin/oms_docker_audits.xml;                                  source/plugins/ruby-fluentd4/oms_docker_audits.xml; 644; root; root
 /etc/fluent/plugin/oms_omi_lib.rb;                                         source/plugins/ruby-fluentd4/oms_omi_lib.rb; 644; root; root
-/etc/fluent/plugin/omsbaseline;                                            source/plugins/ruby-fluentd4/omsbaseline; 644; root; root
 /etc/fluent/plugin/omslog.rb;                                              source/plugins/ruby-fluentd4/omslog.rb; 644; root; root
-/etc/fluent/plugin/out_oms_api.rb;                                         source/plugins/ruby-fluentd4/out_oms_api.rb; 644; root; root
-/etc/fluent/plugin/out_oms_blob.rb;                                        source/plugins/ruby-fluentd4/out_oms_blob.rb; 644; root; root
-/etc/fluent/plugin/out_oms_diag.rb;                                        source/plugins/ruby-fluentd4/out_oms_diag.rb; 644; root; root
-/etc/fluent/plugin/out_oms_statsd_aggregator.rb;                           source/plugins/ruby-fluentd4/out_oms_statsd_aggregator.rb; 644; root; root
-/etc/fluent/plugin/out_oms.rb;                                             source/plugins/ruby-fluentd4/out_oms.rb; 644; root; root
-/etc/fluent/plugin/agent_telemetry_script.rb;                              source/plugins/ruby-fluentd4/agent_telemetry_script.rb; 644; root; root
-/etc/fluent/plugin/agent_common.rb;                                        source/plugins/ruby-fluentd4/agent_common.rb; 644; root; root
-/etc/fluent/plugin/agent_maintenance_script.rb;                            source/plugins/ruby-fluentd4/agent_maintenance_script.rb; 644; root; root
-/etc/fluent/plugin/agent_topology_request_script.rb;                       source/plugins/ruby-fluentd4/agent_topology_request_script.rb; 644; root; root
-
 
 
 
