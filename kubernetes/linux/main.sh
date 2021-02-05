@@ -619,7 +619,7 @@ echo "export HOST_VAR=/hostfs/var" >> ~/.bashrc
 
 
 #start telegraf
-/opt/telegraf --config $telegrafConfFile &
+HOST_PROC=/proc /opt/telegraf --config $telegrafConfFile &
 /opt/telegraf --version
 dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
