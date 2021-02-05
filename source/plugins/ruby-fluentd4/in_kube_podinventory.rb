@@ -196,7 +196,7 @@ module Fluent::Plugin
       emitTime = currentTime.to_f
       #batchTime = currentTime.utc.iso8601
       eventStream = Fluent::MultiEventStream.new
-      containerInventoryStream = Fluent::MutiEventStream.new
+      containerInventoryStream = Fluent::MultiEventStream.new
       kubePerfEventStream = Fluent::MultiEventStream.new
       insightsMetricsEventStream = Fluent::MultiEventStream.new
       @@istestvar = ENV["ISTEST"]

@@ -202,7 +202,6 @@
          </Content>
        </OMS>
     </EventStreamingAnnotation>
-	</EventStreamingAnnotations>
   <EventStreamingAnnotation name="KubeServicesEvent">
        <OMS>
          <Content>
@@ -231,4 +230,5 @@
          </Content>
        </OMS>
     </EventStreamingAnnotation>
+  </EventStreamingAnnotations>
 </MonitoringManagement>
