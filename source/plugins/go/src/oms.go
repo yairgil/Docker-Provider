@@ -312,15 +312,15 @@ type InsightsMetricsBlob struct {
 }
 
 type AppMapOsmRequestBlob struct {
-	DataType string                   `json:"DataType"`
-	IPName   string                   `json:"IPName"`
-	records  []appMapOsmRequestMetric `json:"DataItems"`
+	DataType  string                   `json:"DataType"`
+	IPName    string                   `json:"IPName"`
+	DataItems []appMapOsmRequestMetric `json:"DataItems"`
 }
 
 type AppMapOsmDependencyBlob struct {
-	DataType string                      `json:"DataType"`
-	IPName   string                      `json:"IPName"`
-	records  []appMapOsmDependencyMetric `json:"DataItems"`
+	DataType  string                      `json:"DataType"`
+	IPName    string                      `json:"IPName"`
+	DataItems []appMapOsmDependencyMetric `json:"DataItems"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -1056,9 +1056,9 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	osmRequestMetrics := AppMapOsmRequestBlob{
-		DataType: AppRequestsDataType,
-		IPName:   "LogManagement",
-		records:  requestMetrics}
+		DataType:  AppRequestsDataType,
+		IPName:    "LogManagement",
+		DataItems: requestMetrics}
 
 	requestJsonBytes, err := json.Marshal(osmRequestMetrics)
 	//Log("app request json bytes: %v", requestJsonBytes)
@@ -1072,15 +1072,16 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	Log("AppMapOSMRequestMetrics-json:%v", osmRequestMetrics)
 
 	//Post metrics data to LA
+	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(requestJsonBytes))
 	// appRequestReq, _ := http.NewRequest("POST", OMSEndpoint+"?api-version=2016-04-01", bytes.NewBuffer(requestJsonBytes))
-	appRequestReq, _ := http.NewRequest("POST", "https://dd513101-45ad-4dc0-b6dd-42d88361399e.ods.opinsights.azure.com/collector?api-version=2018-05-01", bytes.NewBuffer(requestJsonBytes))
+	//appRequestReq, _ := http.NewRequest("POST", "https://dd513101-45ad-4dc0-b6dd-42d88361399e.ods.opinsights.azure.com/collector?api-version=2018-05-01", bytes.NewBuffer(requestJsonBytes))
 
 	//appRequestReq.URL.Query().Add("api-version", "2016-04-01")
 
 	//set headers
 	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	appRequestReq.Header.Set("User-Agent", userAgent)
-	appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
+	//appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
 	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
 	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
 	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
@@ -1139,9 +1140,9 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	osmDependencyMetrics := AppMapOsmDependencyBlob{
-		DataType: AppDependenciesDataType,
-		IPName:   "LogManagement",
-		records:  dependencyMetrics}
+		DataType:  AppDependenciesDataType,
+		IPName:    "LogManagement",
+		DataItems: dependencyMetrics}
 
 	dependencyJsonBytes, err := json.Marshal(osmDependencyMetrics)
 	Log("AppMapOSMDependencyMetrics-json:%v", osmDependencyMetrics)
@@ -1155,14 +1156,14 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	//Post metrics data to LA
-	appDependencyReq, _ := http.NewRequest("POST", OMSEndpoint+"?api-version=2016-04-01", bytes.NewBuffer(dependencyJsonBytes))
+	appDependencyReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(dependencyJsonBytes))
 
 	//req.URL.Query().Add("api-version","2016-04-01")
 
 	//set headers
 	appDependencyReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 	appDependencyReq.Header.Set("User-Agent", userAgent)
-	appDependencyReq.Header.Set("Log-Type", AppDependenciesDataType)
+	//appDependencyReq.Header.Set("Log-Type", AppDependenciesDataType)
 	appDependencyReq.Header.Set("ocp-workspace-id", WorkspaceID)
 	appDependencyReq.Header.Set("ocp-is-dynamic-data-type", "False")
 	appDependencyReq.Header.Set("ocp-intelligence-pack-name", "Azure")
