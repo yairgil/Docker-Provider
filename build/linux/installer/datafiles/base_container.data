@@ -247,6 +247,11 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/oms_configuration.rb;                                   source/plugins/ruby-fluentd4/oms_configuration.rb; 644; root; root
 /etc/fluent/plugin/oms_omi_lib.rb;                                         source/plugins/ruby-fluentd4/oms_omi_lib.rb; 644; root; root
 /etc/fluent/plugin/omslog.rb;                                              source/plugins/ruby-fluentd4/omslog.rb; 644; root; root
+/etc/fluent/plugin/out_oms.rb;                                             source/plugins/ruby-fluentd4/out_oms.rb; 644; root; root
+/etc/fluent/plugin/agent_telemetry_script.rb;                              source/plugins/ruby-fluentd4/agent_telemetry_script.rb; 644; root; root
+/etc/fluent/plugin/agent_common.rb;                                        source/plugins/ruby-fluentd4/agent_common.rb; 644; root; root
+/etc/fluent/plugin/agent_maintenance_script.rb;                            source/plugins/ruby-fluentd4/agent_maintenance_script.rb; 644; root; root
+/etc/fluent/plugin/agent_topology_request_script.rb;                       source/plugins/ruby-fluentd4/agent_topology_request_script.rb; 644; root; root
 
 
 

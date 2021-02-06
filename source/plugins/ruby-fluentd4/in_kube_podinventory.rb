@@ -233,12 +233,12 @@ module Fluent::Plugin
               @winContainerCount += containerInventoryRecords.length
               containerInventoryRecords.each do |cirecord|
                 if !cirecord.nil?
-                  #ciwrapper = {
-                    #"DataType" => "CONTAINER_INVENTORY_BLOB",
-                    #"IPName" => "ContainerInsights",
-                    #"DataItems" => [cirecord.each { |k, v| cirecord[k] = v }],
-                  #}
-                  containerInventoryStream.add(Fluent::Engine.now, cirecord)
+                  ciwrapper = {
+                    "DataType" => "CONTAINER_INVENTORY_BLOB",
+                    "IPName" => "ContainerInsights",
+                    "DataItems" => [cirecord.each { |k, v| cirecord[k] = v }],
+                  }
+                  containerInventoryStream.add(Fluent::Engine.now, ciwrapper)
                 end
               end
             end
@@ -267,8 +267,8 @@ module Fluent::Plugin
           containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", batchTime))
 
           containerMetricDataItems.each do |record|
-            #record["DataType"] = "LINUX_PERF_BLOB"
-            #record["IPName"] = "LogManagement"
+            record["DataType"] = "LINUX_PERF_BLOB"
+            record["IPName"] = "LogManagement"
             kubePerfEventStream.add(Fluent::Engine.now, record) if record
           end
 
@@ -285,12 +285,12 @@ module Fluent::Plugin
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
           containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
-            #wrapper = {
-            #  "DataType" => "INSIGHTS_METRICS_BLOB",
-            #  "IPName" => "ContainerInsights",
-            #  "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
-            #}
-            insightsMetricsEventStream.add(Fluent::Engine.now, insightsMetricsRecord)
+            wrapper = {
+              "DataType" => "INSIGHTS_METRICS_BLOB",
+              "IPName" => "ContainerInsights",
+              "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
+            }
+            insightsMetricsEventStream.add(Fluent::Engine.now, wrapper)
           end
 
           if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && insightsMetricsEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
@@ -351,11 +351,11 @@ module Fluent::Plugin
               # adding before emit to reduce memory foot print
               kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
               kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
-              #kubeServicewrapper = {
-                #"DataType" => "KUBE_SERVICES_BLOB",
-                #"IPName" => "ContainerInsights",
-                #"DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
-              #}
+              kubeServicewrapper = {
+                "DataType" => "KUBE_SERVICES_BLOB",
+                "IPName" => "ContainerInsights",
+                "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
+              }
               kubeServicesEventStream.add(Fluent::Engine.now, kubeServiceRecord)
               if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
                 $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")

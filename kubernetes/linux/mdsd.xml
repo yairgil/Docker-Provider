@@ -74,67 +74,10 @@
       <Column name="PodUid" type="str" mdstype="mt:wstr" />
       <Column name="ServiceName" type="str" mdstype="mt:wstr" />
     </Schema>
-    <Schema name="PerfSchema">
-      <Column name="Computer" type="str" mdstype="mt:wstr" />
-      <Column name="ObjectName" type="str" mdstype="mt:wstr" />
-      <Column name="CounterName" type="str" mdstype="mt:wstr" />
-      <Column name="InstanceName" type="str" mdstype="mt:wstr" />
-      <Column name="Max" type="str" mdstype="mt:wstr" />
-      <Column name="Min" type="str" mdstype="mt:wstr" />
-      <Column name="SampleCount" type="str" mdstype="mt:wstr" />
-      <Column name="Average" type="str" mdstype="mt:wstr" />
-      <Column name="BucketEndTime" type="str" mdstype="mt:wstr" />
-      <Column name="BucketStartTime" type="str" mdstype="mt:wstr" />
-      <Column name="CounterPath" type="str" mdstype="mt:wstr" />
-      <Column name="StandardDeviation" type="str" mdstype="mt:wstr" />
-    </Schema>
-    <Schema name="KubeServicesSchema">
-      <Column name="ClusterId" type="str" mdstype="mt:wstr" />
-      <Column name="ClusterIp" type="str" mdstype="mt:wstr" />
-      <Column name="ClusterName" type="str" mdstype="mt:wstr" />
-      <Column name="CollectionTime" type="str" mdstype="mt:wstr" />
-      <Column name="Namespace" type="str" mdstype="mt:wstr" />
-      <Column name="SelectorLabels" type="str" mdstype="mt:wstr" />
-      <Column name="ServiceName" type="str" mdstype="mt:wstr" />
-      <Column name="ServiceType" type="str" mdstype="mt:wstr" />
-    </Schema>
-    <Schema name="InsightsMetricsSchema">
-      <Column name="Computer" type="str" mdstype="mt:wstr" />
-      <Column name="Origin" type="str" mdstype="mt:wstr" />
-      <Column name="Namespace" type="str" mdstype="mt:wstr" />
-      <Column name="Name" type="str" mdstype="mt:wstr" />
-      <Column name="Val" type="str" mdstype="mt:wstr" />
-      <Column name="Tags" type="str" mdstype="mt:wstr" />
-    </Schema>
-    <Schema name="ContainerInventorySchema">
-      <Column name="Computer" type="str" mdstype="mt:wstr" />
-      <Column name="CollectionTime" type="str" mdstype="mt:wstr" />
-      <Column name="ContainerID" type="str" mdstype="mt:wstr" />
-      <Column name="Name" type="str" mdstype="mt:wstr" />
-      <Column name="ContainerHostName" type="str" mdstype="mt:wstr" />
-      <Column name="ImageID" type="str" mdstype="mt:wstr" />
-      <Column name="Respository" type="str" mdstype="mt:wstr" />
-      <Column name="Image" type="str" mdstype="mt:wstr" />
-      <Column name="ImageTag" type="str" mdstype="mt:wstr" />
-      <Column name="ContainerState" type="str" mdstype="mt:wstr" />
-      <Column name="ExitCode" type="str" mdstype="mt:wstr" />
-      <Column name="Ports" type="str" mdstype="mt:wstr" />
-      <Column name="Links" type="str" mdstype="mt:wstr" />
-      <Column name="ComposeGroup" type="str" mdstype="mt:wstr" />
-      <Column name="EnvironmentVar" type="str" mdstype="mt:wstr" />
-      <Column name="Command" type="str" mdstype="mt:wstr" />
-      <Column name="CreatedTime" type="str" mdstype="mt:wstr" />
-      <Column name="StartedTime" type="str" mdstype="mt:wstr" />
-      <Column name="FinishedTime" type="str" mdstype="mt:wstr" />
-    </Schema>
   </Schemas>
 
   <Sources>
     <Source name="oms.containerinsights.KubePodInventory" schema="KubePodInventorySchema" />  
-    <Source name="oms.api.KubePerf" schema="PerfSchema" /> 
-    <Source name="oms.api.InsightsMetrics" schema="InsightsMetricsSchema" />
-    <Source name="oms.containerinsights.ContainerInventory" schema="ContainerInventorySchema" />
-    <Source name="oms.containerinsights.KubeServices" schema="KubeServicesSchema" /> 
   </Sources>
   
   <!--
@@ -142,9 +85,6 @@
   eventName; that will cause the corresponding rows to be written to the same table.
   -->
   <Events>
-
-      
-
     <!--
     MdsdEvents are sent by event providers directly to mdsd via loopback socket.
     
@@ -172,61 +112,14 @@
         <RouteEvent eventName="KubePodInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
         </RouteEvent>
     </MdsdEventSource>
-    <MdsdEventSource source="oms.containerinsights.KubeServices">
-        <RouteEvent eventName="KubeServicesEvent" duration="PT10S" priority="High" storeType="Local">          
-        </RouteEvent>
-    </MdsdEventSource>
-    <MdsdEventSource source="oms.api.KubePerf">
-        <RouteEvent eventName="PerfEvent" duration="PT10S" priority="High" storeType="Local">          
-        </RouteEvent>
-    </MdsdEventSource>
-    <MdsdEventSource source="oms.api.InsightsMetrics">
-        <RouteEvent eventName="InsightsMetricsEvent" duration="PT10S" priority="High" storeType="Local">          
-        </RouteEvent>
-    </MdsdEventSource>
-    <MdsdEventSource source="oms.containerinsights.ContainerInventory">
-        <RouteEvent eventName="ContainerInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
-        </RouteEvent>
-    </MdsdEventSource>
     </MdsdEvents>
-
-
-
   </Events>
-  
+
   <EventStreamingAnnotations>
     <EventStreamingAnnotation name="KubePodInventoryEvent">
        <OMS>
          <Content>
            <![CDATA[<Config workspaceName="CIWORKSPACE" logType="KUBE_POD_INVENTORY_BLOB" ipName="ContainerInsights"/>]]>
-         </Content>
-       </OMS>
-    </EventStreamingAnnotation>
-  <EventStreamingAnnotation name="KubeServicesEvent">
-       <OMS>
-         <Content>
-           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="KUBE_SERVICES_BLOB" ipName="ContainerInsights"/>]]>
-         </Content>
-       </OMS>
-    </EventStreamingAnnotation>
-    <EventStreamingAnnotation name="PerfEvent">
-       <OMS>
-         <Content>
-           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="LINUX_PERF_BLOB" ipName="ContainerInsights"/>]]>
-         </Content>
-       </OMS>
-    </EventStreamingAnnotation>
-    <EventStreamingAnnotation name="InsightsMetricsEvent">
-       <OMS>
-         <Content>
-           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="INSIGHTS_METRICS_BLOB" ipName="ContainerInsights"/>]]>
-         </Content>
-       </OMS>
-    </EventStreamingAnnotation>
-    <EventStreamingAnnotation name="ContainerInventoryEvent">
-       <OMS>
-         <Content>
-           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_INVENTORY_BLOB" ipName="ContainerInsights"/>]]>
          </Content>
        </OMS>
     </EventStreamingAnnotation>
