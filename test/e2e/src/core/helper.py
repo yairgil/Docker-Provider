@@ -14,22 +14,6 @@ from kubernetes_namespace_utility import watch_namespace
 from results_utility import append_result_output
 
 
-# Function to fetch the helm chart path.
-def get_helm_registry(token, location, release_train):
-    get_chart_location_url = "https://{}.dp.kubernetesconfiguration.azure.com/azure-arc-k8sagents/GetLatestHelmPackagePath?api-version=2019-11-01-preview".format(location)
-    query_parameters = {}
-    query_parameters['releaseTrain'] = release_train
-    header_parameters = {}
-    header_parameters['Authorization'] = "Bearer {}".format(str(token))
-    try:
-        response = requests.post(get_chart_location_url, params=query_parameters, headers=header_parameters)
-    except Exception as e:
-        pytest.fail("Error while fetching helm chart registry path: " + str(e))
-    if response.status_code == 200:
-        return response.json().get('repositoryPath')
-    pytest.fail("Error while fetching helm chart registry path: {}".format(str(response.json())))
-
-
 # This function checks the status of the namespaces of the kubernetes cluster. The namespaces to be monitored are passed in as a list.
 def check_namespace_status(outfile=None, namespace_list=None, timeout=300):
     namespace_dict = {}
@@ -291,12 +275,3 @@ def check_kubernetes_secret(secret_namespace, secret_name, timeout=300):
     # Checking the kubernetes secret
     api_instance = client.CoreV1Api()
     watch_kubernetes_secret(api_instance, secret_namespace, secret_name, timeout, secret_event_callback)
-
-
-def get_azure_arc_agent_version(api_instance, namespace, configmap_name):
-    configmap = get_namespaced_configmap(api_instance, namespace, configmap_name)
-    azure_arc_agent_version = configmap.data.get('AZURE_ARC_AGENT_VERSION')
-    if not azure_arc_agent_version:
-        pytest.fail("The azure arc configmap does not contain the azure arc agent version.")
-    return azure_arc_agent_version
-

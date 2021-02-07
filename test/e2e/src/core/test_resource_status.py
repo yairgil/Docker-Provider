@@ -9,7 +9,7 @@ from helper import check_kubernetes_pods_status, check_kubernetes_configuration_
 from helper import check_kubernetes_daemonset_status, check_kubernetes_deployments_status
 from helper import check_kubernetes_crd_status
 
-pytestmark = pytest.mark.smoketest
+pytestmark = pytest.mark.e2etest
 
 
 def test_resource_status(env_dict):
@@ -26,19 +26,19 @@ def test_resource_status(env_dict):
 
     # checking the deployment status
     check_kubernetes_deployments_status(constants.AGENT_NAMESPACE,
-                                        env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AGENT_DEPLOYMENT_LABEL_LIST, timeout_seconds)
+                                        env_dict['TEST_AGENT_LOG_FILE'], constants.AGENT_DEPLOYMENT_LABEL_LIST, timeout_seconds)
 
     # checking the daemonset status
     check_kubernetes_daemonset_status(constants.AGENT_NAMESPACE,
-                                      env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AGENT_DAEMONSET_LABEL_LIST, timeout_seconds)
+                                      env_dict['TEST_AGENT_LOG_FILE'], constants.AGENT_DAEMONSET_LABEL_LIST, timeout_seconds)
 
     # Checking the status of deployment pods
     check_kubernetes_pods_status(constants.AGENT_NAMESPACE,
-                                 env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AGENT_DEPLOYMENT_POD_LABEL_LIST, timeout_seconds)
+                                 env_dict['TEST_AGENT_LOG_FILE'], constants.AGENT_DEPLOYMENT_POD_LABEL_LIST, timeout_seconds)
 
     # Checking the status of daemonset pods
     check_kubernetes_pods_status(constants.AGENT_NAMESPACE,
-                                 env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AGENT_DAEMONSET_POD_LABEL_LIST, timeout_seconds)
+                                 env_dict['TEST_AGENT_LOG_FILE'], constants.AGENT_DAEMONSET_POD_LABEL_LIST, timeout_seconds)
   
 
     print("Successfully checked resources status check.")
