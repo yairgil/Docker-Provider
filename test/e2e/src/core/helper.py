@@ -5,6 +5,8 @@ import time
 from kubernetes import client
 from kubernetes_crd_utility import watch_crd_instance
 from kubernetes_pod_utility import watch_pod_status, watch_pod_logs, watch_deployment_status, watch_daemonset_status
+from kubernetes_deployment_utility import watch_deployment_status, watch_daemonset_status
+from kubernetes_deamonset_utility import watch_daemonset_status
 from kubernetes_configmap_utility import get_namespaced_configmap
 from kubernetes_configuration_utility import show_kubernetes_configuration
 from kubernetes_secret_utility import watch_kubernetes_secret

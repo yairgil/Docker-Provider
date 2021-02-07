@@ -57,15 +57,3 @@ def get_pod_logs(api_instance, pod_namespace, pod_name, container_name):
     except Exception as e:
         pytest.fail("Error occurred when fetching pod logs: " + str(e))
 
-
-def watch_daemonset_status(api_instance, namespace, timeout, callback=None):
-    if not callback:
-        return
-    try:
-        w = watch.Watch()
-        for event in w.stream(api_instance.list_namespaced_daemon_set, namespace, timeout_seconds=timeout):
-            if callback(event):
-                return
-    except Exception as e:
-        print("Error occurred when checking daemonset status: " + str(e))
-    print("The watch on the daemonset has timed out. Please see the pod logs for more info.")
