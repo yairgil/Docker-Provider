@@ -10,7 +10,7 @@ COPY ./core/pytest.ini /e2etests/
 COPY ./core/setup.py /e2etests/
 COPY ./core/helper.py /e2etests/
 
-COPY ./core/test_azmon_container_insights_extension.py /e2etests/
+COPY ./core/test_resource_status.py /e2etests/
 
 COPY ./common/ /e2etests/
 
