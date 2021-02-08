@@ -33,7 +33,8 @@ def env_dict():
             env_dict['SETUP_LOG_FILE'] = '/tmp/results/setup'          
             env_dict['TEST_AGENT_LOG_FILE'] = '/tmp/results/agent'
             env_dict['NUM_TESTS_COMPLETED'] = 0
-          
+            env_dict['TIMEOUT'] = int(os.getenv('TIMEOUT')) if os.getenv('TIMEOUT') else constants.TIMEOUT
+
             print("Starting setup...")
             append_result_output("Starting setup...\n", env_dict['SETUP_LOG_FILE'])          
 
