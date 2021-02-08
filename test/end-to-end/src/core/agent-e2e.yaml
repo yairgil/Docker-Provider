@@ -1,9 +1,9 @@
 sonobuoy-config:
   driver: Job
-  plugin-name: e2e
+  plugin-name: agent-e2e
   result-format: junit
 spec:
-  image: ganga1980/agent-e2e:v0.0.7
+  image: ganga1980/agent-e2e:v0.0.8
   imagePullPolicy: Always
   name: plugin
   resources: {}
