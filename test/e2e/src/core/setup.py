@@ -54,33 +54,16 @@ def env_dict():
 
         env_dict['NUM_TESTS_COMPLETED'] = 1 + env_dict.get('NUM_TESTS_COMPLETED')
         if env_dict['NUM_TESTS_COMPLETED'] == int(os.getenv('NUM_TESTS')):
-
-            # Collecting all the agent pod logs.
-            # print('Collecting the agent pod logs')
-            # try:
-            #     config.load_incluster_config()
-            # except Exception as e:
-            #     pytest.fail("Error loading the in-cluster config: " + str(e))
-            
-            # api_instance = client.CoreV1Api()
-            # pod_list = get_pod_list(api_instance, constants.AGENT_NAMESPACE)
-            # for pod in pod_list.items:
-            #     pod_name = pod.metadata.name
-            #     for container in pod.spec.containers:
-            #         container_name = container.name
-            #         log = get_pod_logs(api_instance, constants.AGENT_NAMESPACE, pod_name, container_name)
-            #         append_result_output("Logs for the pod {} and container {}:\n".format(pod_name, container_name), "/tmp/results/{}-{}".format(pod_name, container_name))
-            #         append_result_output("{}\n".format(log), "/tmp/results/{}-{}".format(pod_name, container_name))
-
             # Checking if cleanup is required.
             if os.getenv('SKIP_CLEANUP'):
                 return
 
             print('Starting cleanup...')
             append_result_output("Starting Cleanup...\n", env_dict['SETUP_LOG_FILE'])
-           
+
             print("Cleanup Complete.")
             append_result_output("Cleanup Complete.\n", env_dict['SETUP_LOG_FILE'])
+            
             return
 
         with Path.open(my_file, "wb") as f:
