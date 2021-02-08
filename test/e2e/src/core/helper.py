@@ -8,7 +8,6 @@ from kubernetes_pod_utility import watch_pod_status, watch_pod_logs, watch_deplo
 from kubernetes_deployment_utility import watch_deployment_status, watch_daemonset_status
 from kubernetes_deamonset_utility import watch_daemonset_status
 from kubernetes_configmap_utility import get_namespaced_configmap
-from kubernetes_configuration_utility import show_kubernetes_configuration
 from kubernetes_secret_utility import watch_kubernetes_secret
 from kubernetes_namespace_utility import watch_namespace
 from results_utility import append_result_output
@@ -187,7 +186,6 @@ def check_kubernetes_pods_status(pod_namespace, outfile=None, pod_label_list=Non
         api_instance = client.CoreV1Api()
         watch_pod_status(api_instance, pod_namespace, timeout, pod_event_callback)
 
-
 # Function to check if the crd instance status has been updated with the status fields mentioned in the 'status_list' parameter
 def check_kubernetes_crd_status(crd_group, crd_version, crd_namespace, crd_plural, crd_name, status_dict={}, outfile=None, timeout=300):
     # The callback function to check if the crd event received has been updated with the status fields
@@ -209,7 +207,6 @@ def check_kubernetes_crd_status(crd_group, crd_version, crd_namespace, crd_plura
     # Checking if CRD instance has been updated with status fields
     api_instance = client.CustomObjectsApi()
     watch_crd_instance(api_instance, crd_group, crd_version, crd_namespace, crd_plural, crd_name, timeout, crd_event_callback)
-
 
 # Function to monitor the pod logs. It will ensure that are logs passed in the 'log_list' parameter are present in the container logs.
 def check_kubernetes_pod_logs(pod_namespace, pod_name, container_name, logs_list=None, error_logs_list=None, outfile=None, timeout=300):
@@ -237,28 +234,6 @@ def check_kubernetes_pod_logs(pod_namespace, pod_name, container_name, logs_list
     # Checking the pod logs
     api_instance = client.CoreV1Api()
     watch_pod_logs(api_instance, pod_namespace, pod_name, container_name, timeout, pod_log_event_callback)
-
-
-# Function to check the compliance state of the kubernetes configuration
-def check_kubernetes_configuration_state(kc_client, resource_group, cluster_rp, cluster_type, cluster_name, configuration_name,
-                                         outfile=None, timeout_seconds=300):
-    timeout = time.time() + timeout_seconds
-    while True:
-        get_kc_response = show_kubernetes_configuration(kc_client, resource_group, cluster_rp, cluster_type, cluster_name, configuration_name)
-        provisioning_state = get_kc_response.provisioning_state
-        append_result_output("Provisioning State: {}\n".format(provisioning_state), outfile)
-        compliance_state = get_kc_response.compliance_status.compliance_state
-        append_result_output("Compliance State: {}\n".format(compliance_state), outfile)
-        if (provisioning_state == 'Succeeded' and compliance_state == 'Installed'):
-            break
-        if (provisioning_state == 'Failed' or provisioning_state == 'Cancelled'):
-            pytest.fail("ERROR: The kubernetes configuration creation finished with terminal provisioning state {}. ".format(provisioning_state))
-        if (compliance_state == 'Failed' or compliance_state == 'Noncompliant'):
-            pytest.fail("ERROR: The kubernetes configuration creation finished with terminal provisioning state {}. ".format(compliance_state))
-        if time.time() > timeout:
-            pytest.fail("ERROR: Timeout. The kubernetes configuration is in {} provisioning state and {} compliance state.".format(provisioning_state, compliance_state))
-        time.sleep(10)
-
 
 # Function to monitor the kubernetes secret. It will determine if the secret has been successfully created.
 def check_kubernetes_secret(secret_namespace, secret_name, timeout=300):
