@@ -5,13 +5,13 @@ RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org py
 RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash \
     && helm version
 
-COPY ./core/arc_conformance.sh /
-COPY ./core/pytest.ini /conformancetests/
-COPY ./core/conftest.py /conformancetests/
-COPY ./core/helper.py /conformancetests/
-COPY ./core/test_azmon_container_insights_extension.py /conformancetests/
+COPY ./core/e2e_tests.sh /
+COPY ./core/pytest.ini /e2etests/
+COPY ./core/setup.py /e2etests/
+COPY ./core/helper.py /e2etests/
+COPY ./core/test_resource_status.py /e2etests/
 
-COPY ./common/ /conformancetests/
+COPY ./common/ /e2etests/
 
 RUN ["chmod", "+x", "/arc_conformance.sh"]
 ENTRYPOINT ["./arc_conformance.sh"]

@@ -3,7 +3,7 @@ sonobuoy-config:
   plugin-name: azure-arc-conformance
   result-format: junit
 spec:
-  image: ganga1980/agentest:v0.1.0
+  image: ganga1980/agentest:v0.1.2
   imagePullPolicy: Always
   name: plugin
   resources: {}

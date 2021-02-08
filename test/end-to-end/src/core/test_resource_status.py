@@ -12,7 +12,7 @@ from helper import check_kubernetes_crd_status
 pytestmark = pytest.mark.arcagentstest
 
 
-def test_azmon_container_insights_extension(env_dict):
+def test_resource_status(env_dict):
     print("Starting container insights extension check.")
 
     # if not env_dict.get('AZMON_CI_EXTENSION'):
