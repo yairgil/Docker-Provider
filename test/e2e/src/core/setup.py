@@ -14,7 +14,7 @@ from pathlib import Path
 from results_utility import create_results_dir, append_result_output
 
 
-pytestmark = pytest.mark.e2etest
+pytestmark = pytest.mark.agenttests
 
 # Fixture to collect all the environment variables.It will be run before the tests.
 @pytest.fixture(scope='session', autouse=True)

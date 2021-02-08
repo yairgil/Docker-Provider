@@ -5,7 +5,7 @@ from kubernetes import client, config
 from helper import check_kubernetes_pods_status
 from helper import check_kubernetes_daemonset_status, check_kubernetes_deployments_status
 
-pytestmark = pytest.mark.e2etest
+pytestmark = pytest.mark.agenttests
 
 
 def test_resource_status(env_dict):

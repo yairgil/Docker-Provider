@@ -1,5 +1,5 @@
 import pytest
-
+from kubernetes import watch
 
 # Returns a list of deployments in a given namespace
 def list_deployment(api_instance, namespace, field_selector="", label_selector=""):
