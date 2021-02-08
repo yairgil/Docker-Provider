@@ -1,9 +1,9 @@
 sonobuoy-config:
   driver: Job
-  plugin-name: agent-e2e
+  plugin-name: azure-arc-conformance
   result-format: junit
 spec:
-  image: ganga1980/agent-e2e:citest02082021
+  image: ganga1980/agentest:v0.1.0
   imagePullPolicy: Always
   name: plugin
   resources: {}
