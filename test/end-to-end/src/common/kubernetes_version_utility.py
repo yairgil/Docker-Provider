@@ -1,5 +1,6 @@
 import pytest
 
+
 def get_kubernetes_server_version(api_instance):
     try:
         api_response = api_instance.get_code()

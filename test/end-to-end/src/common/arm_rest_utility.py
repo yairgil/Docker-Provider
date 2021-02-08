@@ -3,6 +3,7 @@ import pytest
 
 from msrestazure.azure_active_directory import AADTokenCredentials
 
+
 # Function to fetch aad token from spn id and password
 def fetch_aad_token(client_id, client_secret, authority_uri, resource_uri):
     """

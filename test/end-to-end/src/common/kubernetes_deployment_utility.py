@@ -1,5 +1,5 @@
 import pytest
-from kubernetes import watch
+
 
 # Returns a list of deployments in a given namespace
 def list_deployment(api_instance, namespace, field_selector="", label_selector=""):
@@ -14,6 +14,7 @@ def delete_deployment(api_instance, namespace, deployment_name):
         return api_instance.delete_namespaced_deployment(deployment_name, namespace)
     except Exception as e:
         pytest.fail("Error occured when deleting deployment: " + str(e))
+
 
 # Read a deployment
 def read_deployment(api_instance, namespace, deployment_name):
@@ -34,3 +35,4 @@ def watch_deployment_status(api_instance, namespace, timeout, callback=None):
     except Exception as e:
         print("Error occurred when checking deployment status: " + str(e))
     print("The watch on the deployment status has timed out. Please see the pod logs for more info.")
+    
