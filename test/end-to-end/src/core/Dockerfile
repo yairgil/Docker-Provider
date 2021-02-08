@@ -7,7 +7,7 @@ RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |
 
 COPY ./core/e2e_tests.sh /
 COPY ./core/pytest.ini /e2etests/
-COPY ./core/agentsetup.py /e2etests/
+COPY ./core/conftest.py /e2etests/
 COPY ./core/helper.py /e2etests/
 COPY ./core/test_resource_status.py /e2etests/
 
