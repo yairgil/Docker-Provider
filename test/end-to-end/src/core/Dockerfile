@@ -7,7 +7,7 @@ RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |
 
 COPY ./core/arc_conformance.sh /
 COPY ./core/pytest.ini /conformancetests/
-COPY ./core/setup.py /conformancetests/
+COPY ./core/conftest.py /conformancetests/
 COPY ./core/helper.py /conformancetests/
 
 COPY ./core/test_resource_status.py /conformancetests/
