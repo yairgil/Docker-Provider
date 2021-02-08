@@ -15,7 +15,6 @@ from kubernetes_deployment_utility import list_deployment, delete_deployment
 from kubernetes_service_utility import list_service, delete_service
 from results_utility import create_results_dir, append_result_output
 from arm_rest_utility import fetch_aad_token, fetch_aad_token_credentials
-from connected_cluster_utility import get_connected_cluster_client, delete_connected_cluster
 from helm_utility import pull_helm_chart, export_helm_chart, add_helm_repo, install_helm_chart, delete_helm_release, list_helm_release
 
 pytestmark = pytest.mark.e2etest
