@@ -19,8 +19,8 @@ trap saveResults EXIT
 
 # The variable 'TEST_LIST' should be provided if we want to run specific tests. If not provided, all tests are run
 
-NUM_PROCESS=$(pytest /e2etests/ --collect-only  -k "$TEST_NAME_LIST" -m "$TEST_MARKER_LIST" | grep "<Function\|<Class" -c)
+NUM_PROCESS=$(pytest /conformancetests/ --collect-only  -k "$TEST_NAME_LIST" -m "$TEST_MARKER_LIST" | grep "<Function\|<Class" -c)
 
 export NUM_TESTS="$NUM_PROCESS"
 
-pytest /e2etests/ --junitxml=/tmp/results/results.xml -d --tx "$NUM_PROCESS"*popen -k "$TEST_NAME_LIST" -m "$TEST_MARKER_LIST"
+pytest /conformancetests/ --junitxml=/tmp/results/results.xml -d --tx "$NUM_PROCESS"*popen -k "$TEST_NAME_LIST" -m "$TEST_MARKER_LIST"

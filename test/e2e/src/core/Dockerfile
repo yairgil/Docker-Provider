@@ -1,18 +1,19 @@
 FROM python:3.6
 
-RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytest pytest-xdist filelock kubernetes adal msrestazure 
+RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytest pytest-xdist filelock kubernetes adal msrestazure azure-mgmt-hybridkubernetes azure-mgmt-kubernetesconfiguration
 
 RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash \
     && helm version
 
-COPY ./core/e2e_tests.sh /
-COPY ./core/pytest.ini /e2etests/
-COPY ./core/setup.py /e2etests/
-COPY ./core/helper.py /e2etests/
+COPY ./core/arc_conformance.sh /
+COPY ./core/pytest.ini /conformancetests/
+COPY ./core/setup.py /conformancetests/
+COPY ./core/helper.py /conformancetests/
 
-COPY ./core/test_resource_status.py /e2etests/
+COPY ./core/test_resource_status.py /conformancetests/
 
-COPY ./common/ /e2etests/
+COPY ./common/ /conformancetests/
 
-RUN ["chmod", "+x", "/e2e_tests.sh"]
-ENTRYPOINT ["./e2e_tests.sh"]
+RUN ["chmod", "+x", "/arc_conformance.sh"]
+ENTRYPOINT ["./arc_conformance.sh"]
+
