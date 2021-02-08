@@ -356,7 +356,7 @@ module Fluent::Plugin
                 "IPName" => "ContainerInsights",
                 "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
               }
-              kubeServicesEventStream.add(Fluent::Engine.now, kubeServiceRecord)
+              kubeServicesEventStream.add(Fluent::Engine.now, kubeServicewrapper)
               if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
                 $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
                 router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
