@@ -3,7 +3,7 @@ sonobuoy-config:
   plugin-name: e2e
   result-format: junit
 spec:
-  image: ganga1980/agent-e2e:v0.0.3
+  image: ganga1980/agent-e2e:v0.0.5
   imagePullPolicy: Always
   name: plugin
   resources: {}

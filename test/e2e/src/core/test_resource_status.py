@@ -2,12 +2,8 @@ import pytest
 import constants
 
 from kubernetes import client, config
-from kubernetes_pod_utility import get_pod_list
-from results_utility import append_result_output
-from helper import check_kubernetes_pod_logs
-from helper import check_kubernetes_pods_status, check_namespace_status
+from helper import check_kubernetes_pods_status
 from helper import check_kubernetes_daemonset_status, check_kubernetes_deployments_status
-from helper import check_kubernetes_crd_status
 
 pytestmark = pytest.mark.e2etest
 
