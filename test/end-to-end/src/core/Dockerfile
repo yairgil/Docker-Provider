@@ -13,6 +13,6 @@ COPY ./core/test_resource_status.py /e2etests/
 
 COPY ./common/ /e2etests/
 
-RUN ["chmod", "+x", "/arc_conformance.sh"]
-ENTRYPOINT ["./arc_conformance.sh"]
+RUN ["chmod", "+x", "/e2e_tests.sh"]
+ENTRYPOINT ["./e2e_tests.sh"]
 
