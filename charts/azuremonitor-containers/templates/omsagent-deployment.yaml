@@ -35,9 +35,9 @@ spec:
    containers:
      - name: omsagent
        {{- if  eq (.Values.omsagent.domain | lower) "opinsights.azure.cn" }}
-       image: "mcr.azk8s.cn/azuremonitor/containerinsights/ciprod:{{ .Values.omsagent.image.tag }}"
+       image: "mcr.azk8s.cn/azuremonitor/containerinsights/ciprod:{{ .Values.omsagent.rsimage.tag }}"
        {{- else }}
-       image: {{ printf "%s:%s" .Values.omsagent.image.repo .Values.omsagent.image.tag }}
+       image: {{ printf "%s:%s" .Values.omsagent.rsimage.repo .Values.omsagent.rsimage.tag }}
        {{- end }}
        imagePullPolicy: IfNotPresent
        resources:

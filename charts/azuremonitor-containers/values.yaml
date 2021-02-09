@@ -20,6 +20,12 @@ omsagent:
     pullPolicy: IfNotPresent
     dockerProviderVersion: "12.0.0-0"
     agentVersion: "1.10.0.1"
+  rsimage:
+    repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
+    tag: "fluentd4a"
+    pullPolicy: IfNotPresent
+    dockerProviderVersion: "12.0.0-0"
+    agentVersion: "1.10.0.1"
 
   # The priority used by the omsagent priority class for the daemonset pods
   # Note that this is not execution piority - it is scheduling priority, as
