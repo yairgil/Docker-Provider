@@ -108,7 +108,7 @@
     priority events to be delivered sooner than the next five-minute interval.
     -->
     <MdsdEvents>
-    <MdsdEventSource source="oms.containerinsights.KubePodInventory">
+    <MdsdEventSource source="oms.containerinsights.KubePodInventory" queryDelay="PT10S">
         <RouteEvent eventName="KubePodInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
         </RouteEvent>
     </MdsdEventSource>
