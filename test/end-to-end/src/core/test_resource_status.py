@@ -16,7 +16,7 @@ def test_resource_status(env_dict):
     print("Starting container insights extension check.")
 
     append_result_output("test_resource_status start: \n", env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'])
-     append_result_output("test_resource_status end: \n", env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'])
+    append_result_output("test_resource_status end: \n", env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'])
 
     # Loading in-cluster kube-config
     # try:
