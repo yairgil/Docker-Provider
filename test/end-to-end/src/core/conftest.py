@@ -4,7 +4,7 @@ import time
 import pickle
 
 import constants
-from helper import check_kubernetes_secret, get_helm_registry
+from helper import check_kubernetes_secret
 
 from filelock import FileLock
 from pathlib import Path
