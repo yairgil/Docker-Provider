@@ -53,7 +53,7 @@ def check_kubernetes_daemonset_status(daemonset_namespace, outfile=None, daemons
     # The callback function to check if the pod is in running state
     def daemonset_event_callback(event):
         try:
-            append_result_output("{}\n".format(event), outfile)
+            # append_result_output("{}\n".format(event), outfile)
             daemonset_status = event['raw_object'].get('status')
             daemonset_metadata = event['raw_object'].get('metadata')
             daemonset_metadata_labels = daemonset_metadata.get('labels')
@@ -105,7 +105,7 @@ def check_kubernetes_deployments_status(deployment_namespace, outfile=None, depl
     # The callback function to check if the pod is in running state
     def deployment_event_callback(event):
         try:
-            append_result_output("{}\n".format(event), outfile)
+            # append_result_output("{}\n".format(event), outfile)
             deployment_status = event['raw_object'].get('status')
             deployment_metadata = event['raw_object'].get('metadata')
             deployment_metadata_labels = deployment_metadata.get('labels')
@@ -151,7 +151,7 @@ def check_kubernetes_pods_status(pod_namespace, outfile=None, pod_label_list=Non
     # The callback function to check if the pod is in running state
     def pod_event_callback(event):
         try:
-            append_result_output("{}\n".format(event), outfile)
+            # append_result_output("{}\n".format(event), outfile)
             pod_status = event['raw_object'].get('status')
             pod_metadata = event['raw_object'].get('metadata')
             pod_metadata_labels = pod_metadata.get('labels')
