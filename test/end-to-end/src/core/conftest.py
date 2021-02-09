@@ -9,18 +9,13 @@ from helper import check_kubernetes_secret, get_helm_registry
 from filelock import FileLock
 from pathlib import Path
 # from kubernetes import client, config
-# from kubernetes_namespace_utility import list_namespace, delete_namespace
-# from kubernetes_pod_utility import get_pod_list, get_pod_logs
-# from kubernetes_deployment_utility import list_deployment, delete_deployment
-# from kubernetes_service_utility import list_service, delete_service
 from results_utility import create_results_dir, append_result_output
 # from arm_rest_utility import fetch_aad_token, fetch_aad_token_credentials
-# from connected_cluster_utility import get_connected_cluster_client, delete_connected_cluster
 # from helm_utility import pull_helm_chart, export_helm_chart, add_helm_repo, install_helm_chart, delete_helm_release, list_helm_release
 
 pytestmark = pytest.mark.arcagentstest
 
-# Fixture to collect all the environment variables, install the helm charts and check the status of azure arc pods. It will be run before the tests.
+# Fixture to collect all the environment variables, install pre-requisites. It will be run before the tests.
 @pytest.fixture(scope='session', autouse=True)
 def env_dict():
     my_file = Path("env.pkl")  # File to store the environment variables.

@@ -8,26 +8,9 @@ from kubernetes_pod_utility import watch_pod_status, watch_pod_logs
 from kubernetes_deployment_utility import watch_deployment_status
 from kubernetes_daemonset_utility import watch_daemon_set_status
 from kubernetes_configmap_utility import get_namespaced_configmap
-from kubernetes_configuration_utility import show_kubernetes_configuration
 from kubernetes_secret_utility import watch_kubernetes_secret
 from kubernetes_namespace_utility import watch_namespace
 from results_utility import append_result_output
-
-
-# Function to fetch the helm chart path.
-def get_helm_registry(token, location, release_train):
-    get_chart_location_url = "https://{}.dp.kubernetesconfiguration.azure.com/azure-arc-k8sagents/GetLatestHelmPackagePath?api-version=2019-11-01-preview".format(location)
-    query_parameters = {}
-    query_parameters['releaseTrain'] = release_train
-    header_parameters = {}
-    header_parameters['Authorization'] = "Bearer {}".format(str(token))
-    try:
-        response = requests.post(get_chart_location_url, params=query_parameters, headers=header_parameters)
-    except Exception as e:
-        pytest.fail("Error while fetching helm chart registry path: " + str(e))
-    if response.status_code == 200:
-        return response.json().get('repositoryPath')
-    pytest.fail("Error while fetching helm chart registry path: {}".format(str(response.json())))
 
 
 # This function checks the status of the namespaces of the kubernetes cluster. The namespaces to be monitored are passed in as a list.
@@ -254,28 +237,6 @@ def check_kubernetes_pod_logs(pod_namespace, pod_name, container_name, logs_list
     api_instance = client.CoreV1Api()
     watch_pod_logs(api_instance, pod_namespace, pod_name, container_name, timeout, pod_log_event_callback)
 
-
-# Function to check the compliance state of the kubernetes configuration
-def check_kubernetes_configuration_state(kc_client, resource_group, cluster_rp, cluster_type, cluster_name, configuration_name,
-                                         outfile=None, timeout_seconds=300):
-    timeout = time.time() + timeout_seconds
-    while True:
-        get_kc_response = show_kubernetes_configuration(kc_client, resource_group, cluster_rp, cluster_type, cluster_name, configuration_name)
-        provisioning_state = get_kc_response.provisioning_state
-        append_result_output("Provisioning State: {}\n".format(provisioning_state), outfile)
-        compliance_state = get_kc_response.compliance_status.compliance_state
-        append_result_output("Compliance State: {}\n".format(compliance_state), outfile)
-        if (provisioning_state == 'Succeeded' and compliance_state == 'Installed'):
-            break
-        if (provisioning_state == 'Failed' or provisioning_state == 'Cancelled'):
-            pytest.fail("ERROR: The kubernetes configuration creation finished with terminal provisioning state {}. ".format(provisioning_state))
-        if (compliance_state == 'Failed' or compliance_state == 'Noncompliant'):
-            pytest.fail("ERROR: The kubernetes configuration creation finished with terminal provisioning state {}. ".format(compliance_state))
-        if time.time() > timeout:
-            pytest.fail("ERROR: Timeout. The kubernetes configuration is in {} provisioning state and {} compliance state.".format(provisioning_state, compliance_state))
-        time.sleep(10)
-
-
 # Function to monitor the kubernetes secret. It will determine if the secret has been successfully created.
 def check_kubernetes_secret(secret_namespace, secret_name, timeout=300):
     # The callback function to check if the secret event received has secret data
@@ -291,12 +252,4 @@ def check_kubernetes_secret(secret_namespace, secret_name, timeout=300):
     # Checking the kubernetes secret
     api_instance = client.CoreV1Api()
     watch_kubernetes_secret(api_instance, secret_namespace, secret_name, timeout, secret_event_callback)
-
-
-def get_azure_arc_agent_version(api_instance, namespace, configmap_name):
-    configmap = get_namespaced_configmap(api_instance, namespace, configmap_name)
-    azure_arc_agent_version = configmap.data.get('AZURE_ARC_AGENT_VERSION')
-    if not azure_arc_agent_version:
-        pytest.fail("The azure arc configmap does not contain the azure arc agent version.")
-    return azure_arc_agent_version
 
