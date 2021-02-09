@@ -15,34 +15,33 @@ pytestmark = pytest.mark.arcagentstest
 def test_resource_status(env_dict):
     print("Starting container insights extension check.")
 
-    # if not env_dict.get('AZMON_CI_EXTENSION'):
-    #    print("container insights extension test not included.")
-    #    return True
+    append_result_output("test_resource_status start: \n", env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'])
+     append_result_output("test_resource_status end: \n", env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'])
 
     # Loading in-cluster kube-config
-    try:
-        config.load_incluster_config()
-        #config.load_kube_config()
-    except Exception as e:
-        pytest.fail("Error loading the in-cluster config: " + str(e))
+    # try:
+    #     config.load_incluster_config()
+    #     #config.load_kube_config()
+    # except Exception as e:
+    #     pytest.fail("Error loading the in-cluster config: " + str(e))
 
-    timeout_seconds = env_dict.get('TIMEOUT')
+    # timeout_seconds = env_dict.get('TIMEOUT')
 
     # checking the deployment status
-    check_kubernetes_deployments_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
-                                        env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AZMON_CI_EXTENSION_DEPLOYMENT_LABEL_LIST, timeout_seconds)
+    # check_kubernetes_deployments_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
+    #                                     env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AZMON_CI_EXTENSION_DEPLOYMENT_LABEL_LIST, timeout_seconds)
 
     # checking the daemonset status
-    check_kubernetes_daemonset_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
-                                      env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AZMON_CI_EXTENSION_DAEMONSET_LABEL_LIST, timeout_seconds)
+    # check_kubernetes_daemonset_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
+    #                                   env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AZMON_CI_EXTENSION_DAEMONSET_LABEL_LIST, timeout_seconds)
 
     # Checking the status of deployment pods
-    check_kubernetes_pods_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
-                                 env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AZMON_CI_EXTENSION_DEPLOYMENT_POD_LABEL_LIST, timeout_seconds)
+    # check_kubernetes_pods_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
+    #                              env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AZMON_CI_EXTENSION_DEPLOYMENT_POD_LABEL_LIST, timeout_seconds)
 
     # Checking the status of daemonset pods
-    check_kubernetes_pods_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
-                                 env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AZMON_CI_EXTENSION_DAEMONSET_POD_LABEL_LIST, timeout_seconds)
+    # check_kubernetes_pods_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
+    #                              env_dict['TEST_CONTAINER_INSIGHTS_LOG_FILE'], constants.AZMON_CI_EXTENSION_DAEMONSET_POD_LABEL_LIST, timeout_seconds)
 
     # check the cluster identity crd status
     # status_dict = {}
