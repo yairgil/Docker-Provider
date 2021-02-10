@@ -12,7 +12,7 @@ from results_utility import create_results_dir, append_result_output
 # from arm_rest_utility import fetch_aad_token, fetch_aad_token_credentials
 # from helm_utility import pull_helm_chart, export_helm_chart, add_helm_repo, install_helm_chart, delete_helm_release, list_helm_release
 
-pytestmark = pytest.mark.arcagentstest
+pytestmark = pytest.mark.agentests
 
 # Fixture to collect all the environment variables, install pre-requisites. It will be run before the tests.
 @pytest.fixture(scope='session', autouse=True)
