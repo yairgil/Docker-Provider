@@ -4,7 +4,7 @@ import constants
 from kubernetes import client, config
 # from kubernetes_pod_utility import get_pod_list
 from results_utility import append_result_output
-# from helper import check_kubernetes_deployment_status
+from helper import check_kubernetes_deployment_status
 # from helper import check_kubernetes_daemonset_status
 # from helper import check_kubernetes_pods_status
 # from helper import check_kubernetes_pod_logs
@@ -28,7 +28,7 @@ def test_resource_status(env_dict):
         pytest.fail("Error loading the in-cluster config: " + str(e))
 
     # checking the deployment status
-    # check_kubernetes_deployment_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DEPLOYMENT_NAME, env_dict['TEST_AGENT_LOG_FILE'])
+    check_kubernetes_deployment_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DEPLOYMENT_NAME, env_dict['TEST_AGENT_LOG_FILE'])
 
     # checking the daemonset status
     # check_kubernetes_daemonset_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DAEMONSET_NAME, env_dict['TEST_AGENT_LOG_FILE'])    
