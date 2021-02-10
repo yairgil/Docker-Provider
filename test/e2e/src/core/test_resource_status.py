@@ -39,7 +39,7 @@ def test_resource_status(env_dict):
     check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'])
     
     # checking daemonset pod status
-    # check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DAEMON_SET_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'] )
+    check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DAEMON_SET_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'] )
         
     append_result_output("test_resource_status end \n", env_dict['TEST_AGENT_LOG_FILE'])
     print("Successfully checked container insights extension.")

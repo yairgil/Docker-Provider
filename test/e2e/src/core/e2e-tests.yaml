@@ -3,7 +3,7 @@ sonobuoy-config:
   plugin-name: agenttests
   result-format: junit
 spec:
-  image: ganga1980/agentest:v0.3.5
+  image: ganga1980/agentest:v0.3.6
   imagePullPolicy: Always
   name: plugin
   resources: {}
