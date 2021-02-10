@@ -1,28 +1,5 @@
 #!/bin/bash
 
-#TODO: REMOVE THIS BEFORE SHIPPING TO ANYONE
-echo LIVENESS PROBE IS DISABLED
-echo here\'s something large and obvious as a reminder to re-enable the liveness probe
-echo ───────────────────────────────────────
-echo ───▐▀▄───────▄▀▌───▄▄▄▄▄▄▄─────────────
-echo ───▌▒▒▀▄▄▄▄▄▀▒▒▐▄▀▀▒██▒██▒▀▀▄──────────
-echo ──▐▒▒▒▒▀▒▀▒▀▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▀▄────────
-echo ──▌▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▄▒▒▒▒▒▒▒▒▒▒▒▒▀▄──────
-echo ▀█▒▒▒█▌▒▒█▒▒▐█▒▒▒▀▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▌─────
-echo ▀▌▒▒▒▒▒▒▀▒▀▒▒▒▒▒▒▀▀▒▒▒▒▒▒▒▒▒▒▒▒▒▒▐───▄▄
-echo ▐▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▌▄█▒█
-echo ▐▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█▒█▀─
-echo ▐▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█▀───
-echo ▐▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▌────
-echo ─▌▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▐─────
-echo ─▐▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▌─────
-echo ──▌▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▐──────
-echo ──▐▄▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▄▌──────
-echo ────▀▄▄▀▀▀▀▀▄▄▀▀▀▀▀▀▀▄▄▀▀▀▀▀▄▄▀────────
-
-exit 0
-
-
 #test to exit non zero value if omsagent is not running
 (ps -ef | grep omsagent- | grep -v "grep")
 if [ $? -ne 0 ]
@@ -46,6 +23,14 @@ fi
 if [ $? -ne 0 ]
 then
  echo "Fluentbit is not running" > /dev/termination-log
+ exit 1
+fi
+
+#test to exit non zero value if fluentd is not running
+(ps -ef | grep fluentd | grep -v "grep")
+if [ $? -ne 0 ]
+then
+ echo "Fluentd is not running" > /dev/termination-log
  exit 1
 fi
 
