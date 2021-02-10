@@ -6,6 +6,7 @@ from kubernetes import client, config
 from results_utility import append_result_output
 from helper import check_kubernetes_deployment_status
 from helper import check_kubernetes_daemonset_status
+from helper import check_kubernetes_pods_status
 # from helper import check_kubernetes_daemonset_status
 # from helper import check_kubernetes_pods_status
 # from helper import check_kubernetes_pod_logs
@@ -35,7 +36,7 @@ def test_resource_status(env_dict):
     check_kubernetes_daemonset_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DAEMONSET_NAME, env_dict['TEST_AGENT_LOG_FILE'])    
     
     # checking deployment pod status
-    # check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'])
+    check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'])
     
     # checking daemonset pod status
     # check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DAEMON_SET_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'] )

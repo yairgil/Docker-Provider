@@ -116,49 +116,51 @@ def check_kubernetes_daemonset_status(daemonset_namespace, daemonset_name, outfi
         pytest.fail("Error occured while checking daemonset status: " + str(e))
 
 # This function checks the status of kubernetes pods
-# def check_kubernetes_pods_status(pod_namespace, label_selector, outfile=None):
-#     try:
-#        api_instance = client.CoreV1Api()
-#        pod_list = get_pod_list(api_instance, pod_namespace, label_selector)
-#        append_result_output("podlist output {}\n".format(pod_list), outfile)
-#        pods = pod_list.items
-#        if not pods:
-#            pytest.fail("pod items shouldnt be null or empty")
-#        if len(pods) <= 0:
-#            pytest.fail("pod count should be greater than 0")
-#        for pod in pods:
-#           status = pod.status
-#           podstatus = status.phase
-#           if not podstatus:
-#               pytest.fail("status should not be null or empty")
-#           if podstatus != "Running":
-#               pytest.fail("pod status should be in running state")
-#           containerStatuses = status.container_statuses
-#           if not containerStatuses:
-#               pytest.fail("containerStatuses shouldnt be nil or empty")
-#           if len(containerStatuses) <= 0:
-#               pytest.fail("length containerStatuses should be greater than 0")
-#           for containerStatus in containerStatuses:
-#               containerId = containerStatus.container_id
-#               if not containerId:
-#                  pytest.fail("containerId shouldnt be nil or empty")
-#               image = containerStatus.image
-#               if not image:
-#                   pytest.fail("image shouldnt be nil or empty")
-#               imageId = containerStatus.image_id
-#               if not imageId:
-#                   pytest.fail("imageId shouldnt be nil or empty")
-#               restartCount = containerStatus.restart_count
-#               if restartCount > 0:
-#                   pytest.fail("restartCount shouldnt be greater than 0")
-#               ready = containerStatus.ready
-#               if not ready:
-#                  pytest.fail("container status should be in ready state")
-#               containerState = containerStatus.state
-#               if not containerState.running:
-#                 pytest.fail("container state should be in running state")
-#     except Exception as e:
-#         pytest.fail("Error occured while checking pods status: " + str(e))
+def check_kubernetes_pods_status(pod_namespace, label_selector, outfile=None):
+    try:
+       api_instance = client.CoreV1Api()
+       pod_list = get_pod_list(api_instance, pod_namespace, label_selector)
+       append_result_output("podlist output {}\n".format(pod_list), outfile)
+       if not pod_list:
+           pytest.fail("pod_list shouldnt be null or empty")
+       pods = pod_list.items
+       if not pods:
+           pytest.fail("pod items shouldnt be null or empty")
+       if len(pods) <= 0:
+           pytest.fail("pod count should be greater than 0")
+       for pod in pods:
+          status = pod.status
+          podstatus = status.phase
+          if not podstatus:
+              pytest.fail("status should not be null or empty")
+          if podstatus != "Running":
+              pytest.fail("pod status should be in running state")
+          containerStatuses = status.container_statuses
+          if not containerStatuses:
+              pytest.fail("containerStatuses shouldnt be nil or empty")
+          if len(containerStatuses) <= 0:
+              pytest.fail("length containerStatuses should be greater than 0")
+          for containerStatus in containerStatuses:
+              containerId = containerStatus.container_id
+              if not containerId:
+                 pytest.fail("containerId shouldnt be nil or empty")
+              image = containerStatus.image
+              if not image:
+                  pytest.fail("image shouldnt be nil or empty")
+              imageId = containerStatus.image_id
+              if not imageId:
+                  pytest.fail("imageId shouldnt be nil or empty")
+              restartCount = containerStatus.restart_count
+              if restartCount > 0:
+                  pytest.fail("restartCount shouldnt be greater than 0")
+              ready = containerStatus.ready
+              if not ready:
+                 pytest.fail("container status should be in ready state")
+              containerState = containerStatus.state
+              if not containerState.running:
+                pytest.fail("container state should be in running state")
+    except Exception as e:
+        pytest.fail("Error occured while checking pods status: " + str(e))
 
 
 def check_namespace_status_using_watch(outfile=None, namespace_list=None, timeout=300):
