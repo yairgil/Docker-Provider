@@ -41,22 +41,25 @@ AZURE_CLOUD_DICT = {"AZURE_PUBLIC_CLOUD" : AZURE_PUBLIC_CLOUD_ENDPOINTS, "AZURE_
 TIMEOUT = 300
 
 # Azure Monitor for Container Extension related
-AZMON_CI_EXTENSION = False
-AZMON_CI_EXTENSION_HELM_RELEASE_NAME  = "azuremonitor-containers"
-AZMON_CI_EXTENSION_HELM_RELEASE_NAMESPACE = "default"
-AZMON_CI_EXTENSION_HELM_REPO_PATH = "mcr.microsoft.com/azuremonitor/containerinsights/canary/preview/azuremonitor-containers"
-AZMON_CI_EXTENSION_HELM_CHART_VERSION = "2.8.6"
-AZMON_CI_EXTENSION_LOG_ANALYTICS_DOMAIN = "opinsights.azure.com"
-AZMON_CI_EXTENSION_HELM_CHART_PATH = 'azuremonitor-containers'
-AZMON_CI_EXTENSION_RESOURCES_NAMESPACE = 'kube-system'
-AZMON_CI_EXTENSION_DEPLOYMENT_LABEL_LIST = ['omsagent']
-AZMON_CI_EXTENSION_DAEMONSET_LABEL_LIST = ['omsagent']
-AZMON_CI_EXTENSION_DEPLOYMENT_POD_LABEL_LIST = ['omsagent-rs']
-AZMON_CI_EXTENSION_DAEMONSET_POD_LABEL_LIST = ['omsagent-ds']
+AGENT_RESOURCES_NAMESPACE = 'kube-system'
+AGENT_DEPLOYMENT_NAME = "omsagent-rs"
+AGENT_DAEMONSET_NAME = "omsagent"
+AGENT_WIN_DAEMONSET_NAME = "omsagent-win"
+
+AGENT_DEPLOYMENT_LABEL_LIST = ['omsagent']
+AGENT_DAEMONSET_LABEL_LIST = ['omsagent']
+AGENT_DEPLOYMENT_POD_LABEL_LIST = ['omsagent-rs']
+AGENT_DAEMONSET_POD_LABEL_LIST = ['omsagent-ds']
 
 
-AZMON_CI_EXTENSION_CLUSTER_IDENTITY_CRD_GROUP = 'clusterconfig.azure.com'
-AZMON_CI_EXTENSION_CLUSTER_IDENTITY_CRD_VERSION = 'v1beta1'
-AZMON_CI_EXTENSION_CLUSTER_IDENTITY_CRD_PLURAL = 'azureclusteridentityrequests'
-AZMON_CI_EXTENSION_CLUSTER_IDENTITY_CRD_NAME = 'container-insights-clusteridentityrequest'
-
+# AGENT_CLUSTER_IDENTITY_CRD_GROUP = 'clusterconfig.azure.com'
+# AGENT_CLUSTER_IDENTITY_CRD_VERSION = 'v1beta1'
+# AGENT_CLUSTER_IDENTITY_CRD_PLURAL = 'azureclusteridentityrequests'
+# AGENT_CLUSTER_IDENTITY_CRD_NAME = 'container-insights-clusteridentityrequest'
+# AGENT = False
+# AGENT_HELM_RELEASE_NAME  = "azuremonitor-containers"
+# AGENT_HELM_RELEASE_NAMESPACE = "default"
+# AGENT_HELM_REPO_PATH = "mcr.microsoft.com/azuremonitor/containerinsights/canary/preview/azuremonitor-containers"
+# AGENT_HELM_CHART_VERSION = "2.8.6"
+# AGENT_LOG_ANALYTICS_DOMAIN = "opinsights.azure.com"
+# AGENT_HELM_CHART_PATH = 'azuremonitor-containers'

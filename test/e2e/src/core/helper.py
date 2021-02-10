@@ -5,16 +5,50 @@ import time
 from kubernetes import client
 from kubernetes_crd_utility import watch_crd_instance
 from kubernetes_pod_utility import watch_pod_status, watch_pod_logs
-from kubernetes_deployment_utility import watch_deployment_status
+from kubernetes_deployment_utility import watch_deployment_status, read_deployment
 from kubernetes_daemonset_utility import watch_daemon_set_status
 from kubernetes_configmap_utility import get_namespaced_configmap
 from kubernetes_secret_utility import watch_kubernetes_secret
 from kubernetes_namespace_utility import watch_namespace
 from results_utility import append_result_output
 
+# This function to check the status of deployment
+def check_kubernetes_deployment_status(deployment_namespace, deployment_name, outfile=None):
+    try:
+       api_instance = client.AppsV1Api()
+       deployment = read_deployment(api_instance, deployment_namespace, deployment_name)
+       append_result_output("deployment output {}\n".format(deployment), outfile)
+
+       if not deployment:
+            pytest.fail("deployment is nil or empty for deployment {}.".format(deployment_name)) 
+
+       deployment_status = deployment.status
+       if not deployment_status:
+            pytest.fail("deployment_status is nil or empty {}.".format(deployment_name)) 
+
+       availableReplicas = deployment_status.available_replicas
+       readyReplicas = deployment_status.ready_replicas
+       replicas = deployment_status.replicas
+
+       if not availableReplicas:
+          pytest.fail("availableReplicas is 0 or empty for deployment: {}".format(deployment_name))
+
+       if not readyReplicas:
+          pytest.fail("readyReplicas is 0 or empty for deployment: {}".format(deployment_name))
+
+       if not replicas:
+          pytest.fail("readyReplicas is 0 or empty for deployment: {}".format(deployment_name))      
+
+       if (replicas != availableReplicas):
+            pytest.fail("availableReplicas doesnt match with expected replicas for the deployment {}.".format(deployment_name))    
+       if (replicas != readyReplicas):
+            pytest.fail("readyReplicas doesnt match with expected replicas for the deployment {}.".format(deployment_name)) 
+
+    except Exception as e:
+        pytest.fail("Error occured while checking deployment status: " + str(e))
 
 # This function checks the status of the namespaces of the kubernetes cluster. The namespaces to be monitored are passed in as a list.
-def check_namespace_status(outfile=None, namespace_list=None, timeout=300):
+def check_namespace_status_using_watch(outfile=None, namespace_list=None, timeout=300):
     namespace_dict = {}
     for namespace in namespace_list:
         namespace_dict[namespace] = 0
@@ -42,7 +76,7 @@ def check_namespace_status(outfile=None, namespace_list=None, timeout=300):
     watch_namespace(api_instance, timeout, namespace_event_callback)
 
 # This function checks the status of daemonset in a given namespace. The daemonset to be monitored are identified using the pod label list parameter.        
-def check_kubernetes_daemonset_status(daemonset_namespace, outfile=None, daemonset_label_list=None, timeout=300):
+def check_kubernetes_daemonset_status_using_watch(daemonset_namespace, outfile=None, daemonset_label_list=None, timeout=300):
     daemonset_label_dict = {}
     if daemonset_label_list:  # This parameter is a list of label values to identify the daemonsets that we want to monitor in the given namespace
         for daemonset_label in daemonset_label_list:
@@ -94,7 +128,7 @@ def check_kubernetes_daemonset_status(daemonset_namespace, outfile=None, daemons
         watch_daemon_set_status(api_instance, daemonset_namespace, timeout, daemonset_event_callback)
 
 # This function checks the status of deployment in a given namespace. The deployment to be monitored are identified using the pod label list parameter.             
-def check_kubernetes_deployments_status(deployment_namespace, outfile=None, deployment_label_list=None, timeout=300):
+def check_kubernetes_deployments_status_using_watch(deployment_namespace, outfile=None, deployment_label_list=None, timeout=300):
     deployment_label_dict = {}
     if deployment_label_list:  # This parameter is a list of label values to identify the deployments that we want to monitor in the given namespace
         for deployment_label in deployment_label_list:
@@ -140,7 +174,7 @@ def check_kubernetes_deployments_status(deployment_namespace, outfile=None, depl
         watch_deployment_status(api_instance, deployment_namespace, timeout, deployment_event_callback)
 
 # This function checks the status of pods in a given namespace. The pods to be monitored are identified using the pod label list parameter.
-def check_kubernetes_pods_status(pod_namespace, outfile=None, pod_label_list=None, timeout=300):
+def check_kubernetes_pods_status_using_watch(pod_namespace, outfile=None, pod_label_list=None, timeout=300):
     pod_label_dict = {}
     if pod_label_list:  # This parameter is a list of label values to identify the pods that we want to monitor in the given namespace
         for pod_label in pod_label_list:
@@ -188,7 +222,7 @@ def check_kubernetes_pods_status(pod_namespace, outfile=None, pod_label_list=Non
 
 
 # Function to check if the crd instance status has been updated with the status fields mentioned in the 'status_list' parameter
-def check_kubernetes_crd_status(crd_group, crd_version, crd_namespace, crd_plural, crd_name, status_dict={}, outfile=None, timeout=300):
+def check_kubernetes_crd_status_using_watch(crd_group, crd_version, crd_namespace, crd_plural, crd_name, status_dict={}, outfile=None, timeout=300):
     # The callback function to check if the crd event received has been updated with the status fields
     def crd_event_callback(event):
         try:
@@ -211,7 +245,7 @@ def check_kubernetes_crd_status(crd_group, crd_version, crd_namespace, crd_plura
 
 
 # Function to monitor the pod logs. It will ensure that are logs passed in the 'log_list' parameter are present in the container logs.
-def check_kubernetes_pod_logs(pod_namespace, pod_name, container_name, logs_list=None, error_logs_list=None, outfile=None, timeout=300):
+def check_kubernetes_pod_logs_using_watch(pod_namespace, pod_name, container_name, logs_list=None, error_logs_list=None, outfile=None, timeout=300):
     logs_dict = {}
     for log in logs_list:
         logs_dict[log] = 0
@@ -238,7 +272,7 @@ def check_kubernetes_pod_logs(pod_namespace, pod_name, container_name, logs_list
     watch_pod_logs(api_instance, pod_namespace, pod_name, container_name, timeout, pod_log_event_callback)
 
 # Function to monitor the kubernetes secret. It will determine if the secret has been successfully created.
-def check_kubernetes_secret(secret_namespace, secret_name, timeout=300):
+def check_kubernetes_secret_using_watch(secret_namespace, secret_name, timeout=300):
     # The callback function to check if the secret event received has secret data
     def secret_event_callback(event):
         try:
