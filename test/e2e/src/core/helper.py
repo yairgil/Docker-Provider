@@ -14,6 +14,8 @@ from kubernetes_namespace_utility import watch_namespace
 from results_utility import append_result_output
 
 # This function to check the status of deployment
+
+
 def check_kubernetes_deployment_status(deployment_namespace, deployment_name, outfile=None):
     try:
        api_instance = client.AppsV1Api()
@@ -58,55 +60,71 @@ def check_kubernetes_deployment_status(deployment_namespace, deployment_name, ou
         pytest.fail("Error occured while checking deployment status: " + str(e))
 
 # This function to check the status of daemonset
+
+
 def check_kubernetes_daemonset_status(daemonset_namespace, daemonset_name, outfile=None):
     try:
        api_instance = client.AppsV1Api()
-       daemonset = read_daemon_set(api_instance, daemonset_namespace, daemonset_name)
+       daemonset = read_daemon_set(
+           api_instance, daemonset_namespace, daemonset_name)
        append_result_output("daemonset output {}\n".format(daemonset), outfile)
 
        if not daemonset:
-           pytest.fail("daemonset is nil or empty for deployment {}.".format(daemonset_name))
+           pytest.fail(
+               "daemonset is nil or empty for deployment {}.".format(daemonset_name))
 
        daemonset_status = daemonset.status
        if not daemonset_status:
-           pytest.fail("daemonset_status is nil or empty {}.".format(daemonset_name))
+           pytest.fail(
+               "daemonset_status is nil or empty {}.".format(daemonset_name))
 
        currentNumberScheduled = daemonset_status.current_number_scheduled
        if not currentNumberScheduled:
-           pytest.fail("currentNumberScheduled shouldnt be null or empty for  daemonset {}.".format(daemonset_name))
-           
+           pytest.fail("currentNumberScheduled shouldnt be null or empty for  daemonset {}.".format(
+               daemonset_name))
+
        desiredNumberScheduled = daemonset_status.desired_number_scheduled
        if not desiredNumberScheduled:
-            pytest.fail("desiredNumberScheduled shouldnt be null or empty for  daemonset {}.".format(daemonset_name))
-            
+           pytest.fail("desiredNumberScheduled shouldnt be null or empty for  daemonset {}.".format(
+               daemonset_name))
+
        numberAvailable = daemonset_status.number_available
        if not numberAvailable:
-           pytest.fail("numberAvailable shouldnt be null or empty for  daemonset {}.".format(daemonset_name))
-            
+           pytest.fail("numberAvailable shouldnt be null or empty for  daemonset {}.".format(
+               daemonset_name))
+
        numberReady = daemonset_status.number_ready
        if not numberReady:
-            pytest.fail("numberReady shouldnt be null or empty for  daemonset {}.".format(daemonset_name))
+           pytest.fail("numberReady shouldnt be null or empty for  daemonset {}.".format(
+               daemonset_name))
        numberMisscheduled = daemonset_status.number_misscheduled
        if not numberMisscheduled:
-            pytest.fail("numberMisscheduled shouldnt be null or empty for  daemonset {}.".format(daemonset_name))
-                        
+           pytest.fail("numberMisscheduled shouldnt be null or empty for  daemonset {}.".format(
+               daemonset_name))
+
        if desiredNumberScheduled <= 0:
-           pytest.fail("desiredNumberScheduled shouldnt less than equal to 0 for the  daemonset {}.".format(daemonset_name))
-           
+           pytest.fail("desiredNumberScheduled shouldnt less than equal to 0 for the  daemonset {}.".format(
+               daemonset_name))
+
        if (currentNumberScheduled != desiredNumberScheduled):
-           pytest.fail("currentNumberScheduled doesnt match with desiredNumberScheduled for the daemonset {}.".format(daemonset_name))
+           pytest.fail("currentNumberScheduled doesnt match with desiredNumberScheduled for the daemonset {}.".format(
+               daemonset_name))
 
        if (numberAvailable != numberReady):
-           pytest.fail("numberAvailable doesnt match with expected numberReady for the daemonset {}.".format(daemonset_name))
+           pytest.fail("numberAvailable doesnt match with expected numberReady for the daemonset {}.".format(
+               daemonset_name))
 
        if (numberMisscheduled > 0):
-           pytest.fail("numberMisscheduled shouldnt be greater than 0 for the daemonset {}.".format(daemonset_name))
-       
+           pytest.fail("numberMisscheduled shouldnt be greater than 0 for the daemonset {}.".format(
+               daemonset_name))
+
     except Exception as e:
         pytest.fail("Error occured while checking daemonset status: " + str(e))
-        
+
 # This function checks the status of kubernetes pods
-def check_kubernetes_pods_status(pod_namespace, label_selector, outfile=None):    
+
+
+def check_kubernetes_pods_status(pod_namespace, label_selector, outfile=None):
     try:
        api_instance = client.CoreV1Api()
        pod_list = get_pod_list(api_instance, pod_namespace, label_selector)
@@ -122,34 +140,34 @@ def check_kubernetes_pods_status(pod_namespace, label_selector, outfile=None):
           if not podstatus:
               pytest.fail("status should not be null or empty")
           if podstatus != "Running":
-              pytest("pod status should be in running state")
-          containerStatuses =  status.container_statuses
+              pytest.fail("pod status should be in running state")
+          containerStatuses = status.container_statuses
           if not containerStatuses:
-              pytest("containerStatuses shouldnt be nil or empty")
+              pytest.fail("containerStatuses shouldnt be nil or empty")
           if len(containerStatuses) <= 0:
-              pytest.fail("length containerStatuses should be greater than 0")     
+              pytest.fail("length containerStatuses should be greater than 0")
           for containerStatus in containerStatuses:
               containerId = containerStatus.container_id
               if not containerId:
-                 pytest("containerId shouldnt be nil or empty")              
-              image  = containerStatus.image
+                 pytest.fail("containerId shouldnt be nil or empty")
+              image = containerStatus.image
               if not image:
-                  pytest("image shouldnt be nil or empty")    
+                  pytest.fail("image shouldnt be nil or empty")
               imageId = containerStatus.image_id
               if not imageId:
-                  pytest("imageId shouldnt be nil or empty")
+                  pytest.fail("imageId shouldnt be nil or empty")
               restartCount = containerStatus.restart_count
               if restartCount > 0:
-                  pytest("restartCount shouldnt be greater than 0")
+                  pytest.fail("restartCount shouldnt be greater than 0")
               ready = containerStatus.ready
-              if not ready: 
-                 pytest("container status should be in ready state")
+              if not ready:
+                 pytest.fail("container status should be in ready state")
               containerState = containerStatus.state
               if not containerState.running:
-                pytest("container state should be in running state")     
+                pytest.fail("container state should be in running state")
     except Exception as e:
         pytest.fail("Error occured while checking pods status: " + str(e))
-          
+
 
 def check_namespace_status_using_watch(outfile=None, namespace_list=None, timeout=300):
     namespace_dict = {}
