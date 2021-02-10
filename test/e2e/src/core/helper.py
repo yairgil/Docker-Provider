@@ -95,11 +95,7 @@ def check_kubernetes_daemonset_status(daemonset_namespace, daemonset_name, outfi
        if not numberReady:
            pytest.fail("numberReady shouldnt be null or empty for  daemonset {}.".format(
                daemonset_name))
-       numberMisscheduled = daemonset_status.number_misscheduled
-       if not numberMisscheduled:
-           pytest.fail("numberMisscheduled shouldnt be null or empty for  daemonset {}.".format(
-               daemonset_name))
-
+       numberMisscheduled = daemonset_status.number_misscheduled     
        if desiredNumberScheduled <= 0:
            pytest.fail("desiredNumberScheduled shouldnt less than equal to 0 for the  daemonset {}.".format(
                daemonset_name))
