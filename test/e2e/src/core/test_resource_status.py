@@ -5,6 +5,7 @@ from kubernetes import client, config
 # from kubernetes_pod_utility import get_pod_list
 from results_utility import append_result_output
 from helper import check_kubernetes_deployment_status
+from helper import check_kubernetes_daemonset_status, check_kubernetes_pods_status
 # from helper import check_kubernetes_pod_logs
 # from helper import check_kubernetes_pods_status, check_namespace_status
 # from helper import check_kubernetes_daemonset_status, check_kubernetes_deployment_status
@@ -30,27 +31,13 @@ def test_resource_status(env_dict):
     check_kubernetes_deployment_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DEPLOYMENT_NAME, env_dict['TEST_AGENT_LOG_FILE'])
 
     # checking the daemonset status
-    # check_kubernetes_daemonset_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
-    #                                   env_dict['TEST_AGENT_LOG_FILE'], constants.AZMON_CI_EXTENSION_DAEMONSET_LABEL_LIST, timeout_seconds)
-
-    # Checking the status of deployment pods
-    # check_kubernetes_pods_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
-    #                              env_dict['TEST_AGENT_LOG_FILE'], constants.AZMON_CI_EXTENSION_DEPLOYMENT_POD_LABEL_LIST, timeout_seconds)
-
-    # Checking the status of daemonset pods
-    # check_kubernetes_pods_status(constants.AZMON_CI_EXTENSION_RESOURCES_NAMESPACE,
-    #                              env_dict['TEST_AGENT_LOG_FILE'], constants.AZMON_CI_EXTENSION_DAEMONSET_POD_LABEL_LIST, timeout_seconds)
-
-    # # check the cluster identity crd status
-    # status_dict = {}
-    # status_dict['tokenReference'] = {}
-    # status_dict['tokenReference']['dataName'] = 'cluster-identity-token'
-    # status_dict['tokenReference']['secretName'] = 'container-insights-clusteridentityrequest-token'
-
-    # check_kubernetes_crd_status(constants.AZMON_CI_EXTENSION_CLUSTER_IDENTITY_CRD_GROUP, constants.AZMON_CI_EXTENSION_CLUSTER_IDENTITY_CRD_VERSION,
-    #                             constants.AZURE_ARC_NAMESPACE, constants.AZMON_CI_EXTENSION_CLUSTER_IDENTITY_CRD_PLURAL,
-    #                             constants.AZMON_CI_EXTENSION_CLUSTER_IDENTITY_CRD_NAME, status_dict, env_dict['TEST_AGENT_LOG_FILE'], timeout_seconds)
-
-    append_result_output("test_resource_status end \n",
-                         env_dict['TEST_AGENT_LOG_FILE'])
+    check_kubernetes_daemonset_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DAEMONSET_NAME, env_dict['TEST_AGENT_LOG_FILE'])    
+    
+    # checking deployment pod status
+    check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'])
+    
+    # checking daemonset pod status
+    check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DAEMON_SET_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'] )
+        
+    append_result_output("test_resource_status end \n", env_dict['TEST_AGENT_LOG_FILE'])
     print("Successfully checked container insights extension.")

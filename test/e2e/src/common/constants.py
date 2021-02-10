@@ -46,10 +46,8 @@ AGENT_DEPLOYMENT_NAME = "omsagent-rs"
 AGENT_DAEMONSET_NAME = "omsagent"
 AGENT_WIN_DAEMONSET_NAME = "omsagent-win"
 
-AGENT_DEPLOYMENT_LABEL_LIST = ['omsagent']
-AGENT_DAEMONSET_LABEL_LIST = ['omsagent']
-AGENT_DEPLOYMENT_POD_LABEL_LIST = ['omsagent-rs']
-AGENT_DAEMONSET_POD_LABEL_LIST = ['omsagent-ds']
+AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR = 'rsName=omsagent-rs'
+AGENT_DAEMON_SET_PODS_LABEL_SELECTOR = 'component=oms-agent'
 
 
 # AGENT_CLUSTER_IDENTITY_CRD_GROUP = 'clusterconfig.azure.com'
