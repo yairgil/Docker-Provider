@@ -13,7 +13,6 @@ from helper import check_kubernetes_daemonset_status, check_kubernetes_pods_stat
 
 pytestmark = pytest.mark.arcagentstest
 
-
 def test_resource_status(env_dict):
     print("Starting container insights extension check.")
 

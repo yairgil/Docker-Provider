@@ -149,7 +149,7 @@ def check_kubernetes_pods_status(pod_namespace, label_selector, outfile=None):
                 pytest("container state should be in running state")     
     except Exception as e:
         pytest.fail("Error occured while checking pods status: " + str(e))
-           
+          
 
 def check_namespace_status_using_watch(outfile=None, namespace_list=None, timeout=300):
     namespace_dict = {}
