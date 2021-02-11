@@ -127,6 +127,7 @@ module Fluent
     def parse_and_emit_records(deployments, batchTime = Time.utc.iso8601)
       metricItems = []
       insightsMetricsEventStream = MultiEventStream.new
+      @@istestvar = ENV["ISTEST"]
       begin
         metricInfo = deployments
         metricInfo["items"].each do |deployment|
@@ -193,11 +194,10 @@ module Fluent
 
         router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
         $log.info("successfully emitted #{metricItems.length()} kube_state_deployment metrics")
-
-        @deploymentsRunningTotal = @deploymentsRunningTotal + metricItems.length()
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
           $log.info("kubestatedeploymentsInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
+        @deploymentsRunningTotal = @deploymentsRunningTotal + metricItems.length()       
       rescue => error
         $log.warn("in_kubestate_deployments::parse_and_emit_records failed: #{error} ")
         ApplicationInsightsUtility.sendExceptionTelemetry("in_kubestate_deployments::parse_and_emit_records failed: #{error}")

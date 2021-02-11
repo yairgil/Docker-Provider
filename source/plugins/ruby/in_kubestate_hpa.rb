@@ -114,6 +114,7 @@ module Fluent
     def parse_and_emit_records(hpas, batchTime = Time.utc.iso8601)
       metricItems = []
       insightsMetricsEventStream = MultiEventStream.new
+      @@istestvar = ENV["ISTEST"]
       begin
         metricInfo = hpas
         metricInfo["items"].each do |hpa|
