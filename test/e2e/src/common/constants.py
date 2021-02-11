@@ -42,22 +42,19 @@ TIMEOUT = 300
 
 # Azure Monitor for Container Extension related
 AGENT_RESOURCES_NAMESPACE = 'kube-system'
-AGENT_DEPLOYMENT_NAME = "omsagent-rs"
-AGENT_DAEMONSET_NAME = "omsagent"
-AGENT_WIN_DAEMONSET_NAME = "omsagent-win"
+AGENT_DEPLOYMENT_NAME = 'omsagent-rs'
+AGENT_DAEMONSET_NAME = 'omsagent'
+AGENT_WIN_DAEMONSET_NAME = 'omsagent-win'
 
 AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR = 'rsName=omsagent-rs'
 AGENT_DAEMON_SET_PODS_LABEL_SELECTOR = 'component=oms-agent'
+AGENT_OMSAGENT_LOG_PATH = '/var/opt/microsoft/omsagent/log/omsagent.log'
+AGENT_REPLICASET_WORKFLOWS = ["kubePodInventoryEmitStreamSuccess", "kubeNodeInventoryEmitStreamSuccess"]
 
+# replicaset workflow streams
+POD_INVENTORY_EMIT_STREAM = "kubePodInventoryEmitStreamSuccess"
+NODE_INVENTORY_EMIT_STREAM = "kubeNodeInventoryEmitStreamSuccess"
+DEPLOYMENT_INVENTORY_EMIT_STREAM = "kubestatedeploymentsInsightsMetricsEmitStreamSuccess"
 
-# AGENT_CLUSTER_IDENTITY_CRD_GROUP = 'clusterconfig.azure.com'
-# AGENT_CLUSTER_IDENTITY_CRD_VERSION = 'v1beta1'
-# AGENT_CLUSTER_IDENTITY_CRD_PLURAL = 'azureclusteridentityrequests'
-# AGENT_CLUSTER_IDENTITY_CRD_NAME = 'container-insights-clusteridentityrequest'
-# AGENT = False
-# AGENT_HELM_RELEASE_NAME  = "azuremonitor-containers"
-# AGENT_HELM_RELEASE_NAMESPACE = "default"
-# AGENT_HELM_REPO_PATH = "mcr.microsoft.com/azuremonitor/containerinsights/canary/preview/azuremonitor-containers"
-# AGENT_HELM_CHART_VERSION = "2.8.6"
-# AGENT_LOG_ANALYTICS_DOMAIN = "opinsights.azure.com"
-# AGENT_HELM_CHART_PATH = 'azuremonitor-containers'
+# daemosnet workflow streams
+

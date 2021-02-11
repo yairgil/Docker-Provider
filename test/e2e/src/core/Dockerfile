@@ -9,8 +9,7 @@ COPY ./core/e2e_tests.sh /
 COPY ./core/pytest.ini /e2etests/
 COPY ./core/conftest.py /e2etests/
 COPY ./core/helper.py /e2etests/
-COPY ./core/test_resource_status.py /e2etests/
-
+COPY ./core/ /e2etests/
 COPY ./common/ /e2etests/
 
 RUN ["chmod", "+x", "/e2e_tests.sh"]

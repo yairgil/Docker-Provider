@@ -2,7 +2,7 @@ import pytest
 import time
 
 from kubernetes import watch
-
+from kubernetes.stream import stream
 
 # Returns a kubernetes pod object in given namespace. Object description at: https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodList.md
 def get_pod(api_instance, namespace, pod_name):
@@ -19,6 +19,13 @@ def get_pod_list(api_instance, namespace, label_selector=""):
     except Exception as e:
         pytest.fail("Error occurred when retrieving pod information: " + str(e))
 
+# get the content of the log file in the container via exec
+def get_log_file_content(api_instance, namespace, podName, logfilePath):
+    try:
+        exec_command = ['tar','cf', '-', logfilePath]
+        return stream(api_instance.connect_get_namespaced_pod_exec, podName, namespace, command=exec_command, stderr=True, stdin=False, stdout=True, tty=False)
+    except Exception as e:
+        pytest.fail("Error occurred when retrieving log file content: " + str(e))      
 
 # Function that watches events corresponding to pods in the given namespace and passes the events to a callback function
 def watch_pod_status(api_instance, namespace, timeout, callback=None):

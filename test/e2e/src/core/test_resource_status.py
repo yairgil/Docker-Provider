@@ -17,7 +17,7 @@ from helper import check_kubernetes_pods_status
 pytestmark = pytest.mark.agentests
 
 def test_resource_status(env_dict):
-    print("Starting container insights extension check.")
+    print("Starting resource status check.")
     append_result_output("test_resource_status start \n", env_dict['TEST_AGENT_LOG_FILE'])
     # Loading in-cluster kube-config
     try:
@@ -39,4 +39,4 @@ def test_resource_status(env_dict):
     check_kubernetes_pods_status(constants.AGENT_RESOURCES_NAMESPACE, constants.AGENT_DAEMON_SET_PODS_LABEL_SELECTOR, env_dict['TEST_AGENT_LOG_FILE'] )
         
     append_result_output("test_resource_status end \n", env_dict['TEST_AGENT_LOG_FILE'])
-    print("Successfully checked container insights extension.")
+    print("Successfully checked resource status check.")
