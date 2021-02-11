@@ -72,28 +72,28 @@ def test_rs_workflows(env_dict):
            IsKubeEventsSuccessful = True
 
     if IsKubePodInventorySuccessful == False:
-       pytest("KubePodInventory stream not emitted successfully")
+       pytest.fail("KubePodInventory stream not emitted successfully")
 
     if IsKubeNodeInventorySuccessful == False:
-        pytest("KubePodInventory stream not emitted successfully")
+        pytest.fail("KubePodInventory stream not emitted successfully")
 
     if IsKubeDeploymentInventorySuccessful == False:
-        pytest("KubeDeploymentInventory stream not emitted successfully")
+        pytest.fail("KubeDeploymentInventory stream not emitted successfully")
 
     if IsKubeContainerPerfInventorySuccessful == False:
-        pytest("KubeContainerPerfInventory stream not emitted successfully")
+        pytest.fail("KubeContainerPerfInventory stream not emitted successfully")
 
     if IsKubeDeploymentInventorySuccessful == False:
-        pytest("KubeDeploymentInventory stream not emitted successfully")
+        pytest.fail("KubeDeploymentInventory stream not emitted successfully")
 
     if IsKubeServicesInventorySuccessful == False:
-        pytest("KubeServicesInventory stream not emitted successfully")
+        pytest.fail("KubeServicesInventory stream not emitted successfully")
 
     if IsContainerNodeInventorySuccessful == False:
-        pytest("ContainerNodeInventory stream not emitted successfully")
+        pytest.fail("ContainerNodeInventory stream not emitted successfully")
 
     if IsKubeEventsSuccessful == False:
-        pytest("KubeEventsInventory stream not emitted successfully")
+        pytest.fail("KubeEventsInventory stream not emitted successfully")
 
     append_result_output("test_resource_status end \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
