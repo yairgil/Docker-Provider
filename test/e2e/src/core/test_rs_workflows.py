@@ -45,7 +45,7 @@ def test_rs_workflows(env_dict):
     if not logcontent:
         pytest.fail("logcontent should not be null or empty")
     loglines = logcontent.split("\n")
-    if len(loglines) > 0:
+    if len(loglines) <= 0:
         pytest.fail("number of log lines should be greater than 0")
 
     IsKubePodInventorySuccessful = False
