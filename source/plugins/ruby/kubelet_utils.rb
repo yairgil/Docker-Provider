@@ -20,10 +20,12 @@ class KubeletUtils
 
         response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil?
-          all_metrics = response.body.split("\n")
-          cpu_capacity = all_metrics.select{|m| m.start_with?('machine_cpu_cores') && m.split.first.strip == 'machine_cpu_cores' }.first.split.last.to_f * 1000
+          all_metrics = response.body.split("\n")   
+          #cadvisor machine metrics can exist with (>=1.19) or without dimensions (<1.19)  
+          #so just checking startswith of metric name would be good enough to pick the metric value from exposition format
+          cpu_capacity = all_metrics.select{|m| m.start_with?('machine_cpu_cores') }.first.split.last.to_f * 1000
           @log.info "CPU Capacity #{cpu_capacity}"
-          memory_capacity_e = all_metrics.select{|m| m.start_with?('machine_memory_bytes') && m.split.first.strip == 'machine_memory_bytes' }.first.split.last
+          memory_capacity_e = all_metrics.select{|m| m.start_with?('machine_memory_bytes') }.first.split.last
           memory_capacity = BigDecimal(memory_capacity_e).to_f
           @log.info "Memory Capacity #{memory_capacity}"
           return [cpu_capacity, memory_capacity]
