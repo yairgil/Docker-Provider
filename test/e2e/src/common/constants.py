@@ -52,9 +52,13 @@ AGENT_OMSAGENT_LOG_PATH = '/var/opt/microsoft/omsagent/log/omsagent.log'
 AGENT_REPLICASET_WORKFLOWS = ["kubePodInventoryEmitStreamSuccess", "kubeNodeInventoryEmitStreamSuccess"]
 
 # replicaset workflow streams
-POD_INVENTORY_EMIT_STREAM = "kubePodInventoryEmitStreamSuccess"
-NODE_INVENTORY_EMIT_STREAM = "kubeNodeInventoryEmitStreamSuccess"
-DEPLOYMENT_INVENTORY_EMIT_STREAM = "kubestatedeploymentsInsightsMetricsEmitStreamSuccess"
-
-# daemosnet workflow streams
-
+KUBE_POD_INVENTORY_EMIT_STREAM = "kubePodInventoryEmitStreamSuccess"
+KUBE_NODE_INVENTORY_EMIT_STREAM = "kubeNodeInventoryEmitStreamSuccess"
+KUBE_DEPLOYMENT_INVENTORY_EMIT_STREAM = "kubestatedeploymentsInsightsMetricsEmitStreamSuccess"
+KUBE_CONTAINER_PERF_EMIT_STREAM = "kubeContainerPerfEventEmitStreamSuccess"
+KUBE_SERVICES_EMIT_STREAM = "kubeServicesEventEmitStreamSuccess"
+KUBE_CONTAINER_NODE_INVENTORY_EMIT_STREAM = "containerNodeInventoryEmitStreamSuccess"
+KUBE_EVENTS_EMIT_STREAM = "kubeEventsInventoryEmitStreamSuccess"
+# daemonset workflow streams
+CONTAINER_PERF_EMIT_STREAM = "cAdvisorPerfEmitStreamSuccess"
+CONTAINER_INVENTORY_EMIT_STREAM = "containerInventoryEmitStreamSuccess"
