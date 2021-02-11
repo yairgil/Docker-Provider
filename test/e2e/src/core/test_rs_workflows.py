@@ -60,7 +60,7 @@ def test_rs_workflows(env_dict):
             IsKubePodInventorySuccessful = True
         if line.find(constants.KUBE_NODE_INVENTORY_EMIT_STREAM) >= 0:
             IsKubeNodeInventorySuccessful = True
-        if line.find(constans.KUBE_DEPLOYMENT_INVENTORY_EMIT_STREAM) >= 0:
+        if line.find(constants.KUBE_DEPLOYMENT_INVENTORY_EMIT_STREAM) >= 0:
             IsKubeDeploymentInventorySuccessful = True
         if line.find(constants.KUBE_CONTAINER_PERF_EMIT_STREAM) >= 0:
             IsKubeContainerPerfInventorySuccessful = True
