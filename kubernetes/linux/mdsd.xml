@@ -74,10 +74,21 @@
       <Column name="PodUid" type="str" mdstype="mt:wstr" />
       <Column name="ServiceName" type="str" mdstype="mt:wstr" />
     </Schema>
+    <Schema name="KubeServicesSchema">
+      <Column name="ClusterId" type="str" mdstype="mt:wstr" />
+      <Column name="ClusterIp" type="str" mdstype="mt:wstr" />
+      <Column name="ClusterName" type="str" mdstype="mt:wstr" />
+      <Column name="CollectionTime" type="str" mdstype="mt:wstr" />
+      <Column name="Namespace" type="str" mdstype="mt:wstr" />
+      <Column name="SelectorLabels" type="str" mdstype="mt:wstr" />
+      <Column name="ServiceName" type="str" mdstype="mt:wstr" />
+      <Column name="ServiceType" type="str" mdstype="mt:wstr" />
+    </Schema>
   </Schemas>
 
   <Sources>
-    <Source name="oms.containerinsights.KubePodInventory" schema="KubePodInventorySchema" />  
+    <Source name="oms.containerinsights.KubePodInventory" schema="KubePodInventorySchema" />
+    <Source name="oms.containerinsights.KubeServices" schema="KubeServicesSchema" />   
   </Sources>
   
   <!--
@@ -112,6 +123,10 @@
         <RouteEvent eventName="KubePodInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
         </RouteEvent>
     </MdsdEventSource>
+    <MdsdEventSource source="oms.containerinsights.KubeServices" queryDelay="PT10S">
+        <RouteEvent eventName="KubeServicesEvent" duration="PT10S" priority="High" storeType="Local">          
+        </RouteEvent>
+    </MdsdEventSource>
     </MdsdEvents>
   </Events>
 
@@ -120,6 +135,13 @@
        <OMS>
          <Content>
            <![CDATA[<Config workspaceName="CIWORKSPACE" logType="KUBE_POD_INVENTORY_BLOB" ipName="ContainerInsights"/>]]>
+         </Content>
+       </OMS>
+    </EventStreamingAnnotation>
+  <EventStreamingAnnotation name="KubeServicesEvent">
+       <OMS>
+         <Content>
+           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="KUBE_SERVICES_BLOB" ipName="ContainerInsights"/>]]>
          </Content>
        </OMS>
     </EventStreamingAnnotation>
