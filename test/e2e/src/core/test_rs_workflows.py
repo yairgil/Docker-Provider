@@ -8,24 +8,17 @@ from helper import check_kubernetes_deployment_status
 from helper import check_kubernetes_daemonset_status
 from helper import check_kubernetes_pods_status
 from kubernetes.stream import stream
-# from helper import check_kubernetes_daemonset_status
-# from helper import check_kubernetes_pods_status
-# from helper import check_kubernetes_pod_logs
-# from helper import check_kubernetes_pods_status, check_namespace_status
-# from helper import check_kubernetes_daemonset_status, check_kubernetes_deployment_status
-# from helper import check_kubernetes_crd_status
 
 pytestmark = pytest.mark.agentests
 
-
+# validation of replicaset agent workflows
 def test_rs_workflows(env_dict):
-    print("Starting replicaset workflows.")
+    print("Starting replicaset agent workflows test.")
     append_result_output("test_resource_status start \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     # Loading in-cluster kube-config
     try:
         config.load_incluster_config()
-        #config.load_kube_config()
     except Exception as e:
         pytest.fail("Error loading the in-cluster config: " + str(e))
 
@@ -54,7 +47,7 @@ def test_rs_workflows(env_dict):
     IsKubeContainerPerfInventorySuccessful = False
     IsKubeServicesInventorySuccessful = False
     IsContainerNodeInventorySuccessful = False
-    IsKubeEventsSuccessful = False
+    # IsKubeEventsSuccessful = False
     for line in loglines:
         if line.find(constants.KUBE_POD_INVENTORY_EMIT_STREAM) >= 0:
             IsKubePodInventorySuccessful = True
@@ -68,33 +61,40 @@ def test_rs_workflows(env_dict):
             IsKubeServicesInventorySuccessful = True
         if line.find(constants.KUBE_CONTAINER_NODE_INVENTORY_EMIT_STREAM) >= 0:
             IsContainerNodeInventorySuccessful = True
-        if line.find(constants.KUBE_EVENTS_EMIT_STREAM) >= 0:
-           IsKubeEventsSuccessful = True
+        # if line.find(constants.KUBE_EVENTS_EMIT_STREAM) >= 0:
+        #    IsKubeEventsSuccessful = True
 
     if IsKubePodInventorySuccessful == False:
-       pytest.fail("KubePodInventory stream not emitted successfully")
+       pytest.fail(
+           "KubePodInventory stream not emitted successfully from pod:" + rspodName)
 
     if IsKubeNodeInventorySuccessful == False:
-        pytest.fail("KubePodInventory stream not emitted successfully")
+        pytest.fail(
+            "KubePodInventory stream not emitted successfully from pod:" + rspodName)
 
     if IsKubeDeploymentInventorySuccessful == False:
-        pytest.fail("KubeDeploymentInventory stream not emitted successfully")
+        pytest.fail(
+            "KubeDeploymentInventory stream not emitted successfully from pod:" + rspodName)
 
     if IsKubeContainerPerfInventorySuccessful == False:
-        pytest.fail("KubeContainerPerfInventory stream not emitted successfully")
+        pytest.fail(
+            "KubeContainerPerfInventory stream not emitted successfully from pod:" + rspodName)
 
     if IsKubeDeploymentInventorySuccessful == False:
-        pytest.fail("KubeDeploymentInventory stream not emitted successfully")
+        pytest.fail(
+            "KubeDeploymentInventory stream not emitted successfully from pod:" + rspodName)
 
     if IsKubeServicesInventorySuccessful == False:
-        pytest.fail("KubeServicesInventory stream not emitted successfully")
+        pytest.fail(
+            "KubeServicesInventory stream not emitted successfully from pod:" + rspodName)
 
     if IsContainerNodeInventorySuccessful == False:
-        pytest.fail("ContainerNodeInventory stream not emitted successfully")
+        pytest.fail(
+            "ContainerNodeInventory stream not emitted successfully from pod:" + rspodName)
 
-    if IsKubeEventsSuccessful == False:
-        pytest.fail("KubeEventsInventory stream not emitted successfully")
+    # if IsKubeEventsSuccessful == False:
+    #     pytest.fail("KubeEventsInventory stream not emitted successfully")
 
     append_result_output("test_resource_status end \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
-    print("Successfully replicaset workflows.")
+    print("Successfully completed replicaset workflows test.")
