@@ -7,10 +7,7 @@ import constants
 
 from filelock import FileLock
 from pathlib import Path
-# from kubernetes import client, config
 from results_utility import create_results_dir, append_result_output
-# from arm_rest_utility import fetch_aad_token, fetch_aad_token_credentials
-# from helm_utility import pull_helm_chart, export_helm_chart, add_helm_repo, install_helm_chart, delete_helm_release, list_helm_release
 
 pytestmark = pytest.mark.agentests
 
@@ -29,6 +26,9 @@ def env_dict():
             env_dict['TEST_AGENT_LOG_FILE'] = '/tmp/results/containerinsights'
             env_dict['NUM_TESTS_COMPLETED'] = 0
             
+            print("Starting setup...")
+            append_result_output("Starting setup...\n", env_dict['SETUP_LOG_FILE'])
+            
             # Collecting environment variables
             env_dict['TENANT_ID'] = os.getenv('TENANT_ID')
             env_dict['CLIENT_ID'] = os.getenv('CLIENT_ID')
@@ -39,18 +39,13 @@ def env_dict():
                                     
             if not env_dict.get('TENANT_ID'):
                 pytest.fail('ERROR: variable TENANT_ID is required.')
-
-            client_id = env_dict.get('CLIENT_ID')
-            if not client_id:
+            
+            if not env_dict.get('CLIENT_ID'):
                 pytest.fail('ERROR: variable CLIENT_ID is required.')
-
-            client_secret = env_dict.get('CLIENT_SECRET')
-            if not client_secret:
+            
+            if not env_dict.get('CLIENT_SECRET'):
                 pytest.fail('ERROR: variable CLIENT_SECRET is required.')
-
-            print("Starting setup...")
-            append_result_output("Starting setup...\n", env_dict['SETUP_LOG_FILE'])
-           
+                       
             print("Setup Complete.")
             append_result_output("Setup Complete.\n", env_dict['SETUP_LOG_FILE'])
 

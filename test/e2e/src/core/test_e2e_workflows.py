@@ -22,11 +22,20 @@ def test_rs_workflows(env_dict):
         pytest.fail("Error loading the in-cluster config: " + str(e))
 
     # get the cluster resource id from replicaset pod envvars
-    config.load_kube_config()
     api_instance = client.CoreV1Api()    
     pod_list = get_pod_list(api_instance, constants.AGENT_RESOURCES_NAMESPACE,
-                            constants.AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR)  
+                            constants.AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR)
+    
+    if not pod_list:
+        pytest.fail("pod_list shouldnt be null or empty")
+
+    if len(pod_list.items) <= 0:
+        pytest.fail("number of items in pod list should be greater than 0")
+          
     envVars = pod_list.items[0].spec.containers[0].env
+    if not envVars:
+        pytest.fail("environment variables should be defined in the replicaset pod")
+        
     clusterResourceId = ''
     for env in envVars:
         if env.name == "AKS_RESOURCE_ID":

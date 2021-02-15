@@ -1,5 +1,5 @@
 import pytest
-
+from kubernetes import watch
 
 # Returns a list of daemon_sets in a given namespace
 def list_daemon_set(api_instance, namespace, field_selector="", label_selector=""):
