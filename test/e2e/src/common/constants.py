@@ -77,7 +77,7 @@ NODE_PERF_MEMORY_CAPCITY_QUERY = "Perf | where ObjectName == 'K8SNode' | where C
 NODE_PERF_CPU_ALLOCATABLE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'cpuAllocatableNanoCores' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
 NODE_PERF_MEMORY_ALLOCATABLE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryAllocatableBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
 NODE_PERF_CPU_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'cpuUsageNanoCores' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-NODE_PERF_MEMORY_RSS_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryRssBytes	' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
+NODE_PERF_MEMORY_RSS_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryRssBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
 NODE_PERF_MEMORY_WS_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName =='memoryWorkingSetBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
 NODE_PERF_RESTART_TIME_EPOCH_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'restartTimeEpoch' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
 # container perf
