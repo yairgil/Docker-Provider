@@ -21,6 +21,11 @@ def test_rs_workflows(env_dict):
     except Exception as e:
         pytest.fail("Error loading the in-cluster config: " + str(e))
 
+    # query time interval for LA queries
+    queryTimeInterval = env_dict['DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES']
+    if not queryTimeInterval:
+        pytest.fail("DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES should not be null or empty")
+        
     # get the cluster resource id from replicaset pod envvars
     api_instance = client.CoreV1Api()    
     pod_list = get_pod_list(api_instance, constants.AGENT_RESOURCES_NAMESPACE,
@@ -66,7 +71,7 @@ def test_rs_workflows(env_dict):
         "Content-Type": "application/json"
     } 
     # KubePodInventory 
-    query = constants.KUBE_POD_INVENTORY_QUERY
+    query = constants.KUBE_POD_INVENTORY_QUERY.format(queryTimeInterval)
     params = { 'query': query}        
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -77,7 +82,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} and workflow: {1}".format(clusterResourceId, 'KUBE_POD_INVENTORY'))
    
     # KubeNodeInventory
-    query = constants.KUBE_NODE_INVENTORY_QUERY
+    query = constants.KUBE_NODE_INVENTORY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -88,7 +93,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'KUBE_NODE_INVENTORY'))
    
     # KubeServices
-    query = constants.KUBE_SERVICES_QUERY
+    query = constants.KUBE_SERVICES_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -99,7 +104,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'KUBE_SERVICES'))
    
     # KubeEvents
-    query = constants.KUBE_EVENTS_QUERY
+    query = constants.KUBE_EVENTS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -110,7 +115,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'KUBE_EVENTS'))
     
     # Container Node Inventory         
-    query = constants.CONTAINER_NODE_INVENTORY_QUERY
+    query = constants.CONTAINER_NODE_INVENTORY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -122,7 +127,7 @@ def test_rs_workflows(env_dict):
     
     # Node Perf 
     # cpu capacity
-    query = constants.NODE_PERF_CPU_CAPCITY_QUERY
+    query = constants.NODE_PERF_CPU_CAPCITY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -133,7 +138,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'NODE_PERF_CPU_CAPCITY'))
     
     # memory capacity
-    query = constants.NODE_PERF_MEMORY_CAPCITY_QUERY
+    query = constants.NODE_PERF_MEMORY_CAPCITY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -144,7 +149,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'NODE_PERF_MEMORY_CAPCITY'))
          
     # cpu allocatable         
-    query = constants.NODE_PERF_CPU_ALLOCATABLE_QUERY
+    query = constants.NODE_PERF_CPU_ALLOCATABLE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -155,7 +160,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'NODE_PERF_CPU_ALLOCATABLE'))
 
     # memory allocatable
-    query = constants.NODE_PERF_MEMORY_ALLOCATABLE_QUERY
+    query = constants.NODE_PERF_MEMORY_ALLOCATABLE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -166,7 +171,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'NODE_PERF_MEMORY_ALLOCATABLE'))
     
     # cpu usage
-    query = constants.NODE_PERF_CPU_USAGE_QUERY
+    query = constants.NODE_PERF_CPU_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -177,7 +182,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'NODE_PERF_CPU_USAGE'))
     
     # memory rss usage
-    query = constants.NODE_PERF_MEMORY_RSS_USAGE_QUERY
+    query = constants.NODE_PERF_MEMORY_RSS_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -188,7 +193,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'NODE_PERF_MEMORY_RSS_USAGE')) 
     
     # memory ws usage
-    query = constants.NODE_PERF_MEMORY_WS_USAGE_QUERY
+    query = constants.NODE_PERF_MEMORY_WS_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -199,7 +204,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'NODE_PERF_MEMORY_WS_USAGE')) 
    
     # restartime epoch
-    query = constants.NODE_PERF_RESTART_TIME_EPOCH_QUERY
+    query = constants.NODE_PERF_RESTART_TIME_EPOCH_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -211,7 +216,7 @@ def test_rs_workflows(env_dict):
          
     # Container Perf
     # container cpu limits         
-    query = constants.CONTAINER_PERF_CPU_LIMITS_QUERY
+    query = constants.CONTAINER_PERF_CPU_LIMITS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -222,7 +227,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_PERF_CPU_LIMITS'))
     
     # container memory limits
-    query = constants.CONTAINER_PERF_MEMORY_LIMITS_QUERY
+    query = constants.CONTAINER_PERF_MEMORY_LIMITS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -233,7 +238,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_PERF_MEMORY_LIMITS'))
     
     # cpu requests
-    query = constants.CONTAINER_PERF_CPU_REQUESTS_QUERY
+    query = constants.CONTAINER_PERF_CPU_REQUESTS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -244,7 +249,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_PERF_CPU_REQUESTS')) 
     
     # memory requests
-    query = constants.CONTAINER_PERF_MEMORY_REQUESTS_QUERY
+    query = constants.CONTAINER_PERF_MEMORY_REQUESTS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -255,7 +260,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_PERF_MEMORY_REQUESTS'))
     
     # cpu usage
-    query = constants.CONTAINER_PERF_CPU_USAGE_QUERY
+    query = constants.CONTAINER_PERF_CPU_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -266,7 +271,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_PERF_CPU_USAGE'))            
                          
     # memory rss usage
-    query = constants.CONTAINER_PERF_MEMORY_RSS_USAGE_QUERY 
+    query = constants.CONTAINER_PERF_MEMORY_RSS_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -277,7 +282,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_PERF_MEMORY_RSS_USAGE'))
    
     # memory ws usage
-    query = constants.CONTAINER_PERF_MEMORY_WS_USAGE_QUERY 
+    query = constants.CONTAINER_PERF_MEMORY_WS_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -288,7 +293,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_PERF_MEMORY_WS_USAGE'))  
   
     # restart time epoch
-    query = constants.CONTAINER_PERF_RESTART_TIME_EPOCH_QUERY 
+    query = constants.CONTAINER_PERF_RESTART_TIME_EPOCH_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -299,7 +304,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_PERF_RESTART_TIME_EPOCH'))                    
         
     # Container log         
-    query = constants.CONTAINER_LOG_QUERY
+    query = constants.CONTAINER_LOG_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:
@@ -310,7 +315,7 @@ def test_rs_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'CONTAINER_LOG'))
     
      # InsightsMetrics
-    query = constants.INSIGHTS_METRICS_QUERY
+    query = constants.INSIGHTS_METRICS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
     if not result:  

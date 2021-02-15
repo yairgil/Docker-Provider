@@ -116,7 +116,7 @@ def check_kubernetes_daemonset_status(daemonset_namespace, daemonset_name, outfi
         pytest.fail("Error occured while checking daemonset status: " + str(e))
 
 # This function checks the status of kubernetes pods
-def check_kubernetes_pods_status(pod_namespace, label_selector, outfile=None):
+def check_kubernetes_pods_status(pod_namespace, label_selector, expectedPodRestartCount, outfile=None):
     try:
        api_instance = client.CoreV1Api()
        pod_list = get_pod_list(api_instance, pod_namespace, label_selector)
@@ -151,8 +151,8 @@ def check_kubernetes_pods_status(pod_namespace, label_selector, outfile=None):
               if not imageId:
                   pytest.fail("imageId shouldnt be nil or empty")
               restartCount = containerStatus.restart_count
-              if restartCount > 0:
-                  pytest.fail("restartCount shouldnt be greater than 0")
+              if restartCount > expectedPodRestartCount:
+                  pytest.fail("restartCount shouldnt be greater than expected pod restart count: {}".format(expectedPodRestartCount))
               ready = containerStatus.ready
               if not ready:
                  pytest.fail("container status should be in ready state")

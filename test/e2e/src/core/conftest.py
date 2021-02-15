@@ -33,6 +33,14 @@ def env_dict():
             env_dict['TENANT_ID'] = os.getenv('TENANT_ID')
             env_dict['CLIENT_ID'] = os.getenv('CLIENT_ID')
             env_dict['CLIENT_SECRET'] = os.getenv('CLIENT_SECRET')
+            
+            # get default query time interval for log analytics queries
+            queryTimeInterval = int(os.getenv('DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES')) if os.getenv('DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES') else constants.DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES
+            # add minute suffix since this format required for LA queries
+            env_dict['DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES'] = str(queryTimeInterval) + "m"
+            
+            # expected agent pod restart count            
+            env_dict['AGENT_POD_EXPECTED_RESTART_COUNT'] = int(os.getenv('AGENT_POD_EXPECTED_RESTART_COUNT')) if os.getenv('AGENT_POD_EXPECTED_RESTART_COUNT') else constants.AGENT_POD_EXPECTED_RESTART_COUNT
 
             # default to azure public cloud if AZURE_CLOUD not specified
             env_dict['AZURE_ENDPOINTS'] = constants.AZURE_CLOUD_DICT.get(os.getenv('AZURE_CLOUD')) if os.getenv('AZURE_CLOUD') else constants.AZURE_PUBLIC_CLOUD_ENDPOINTS

@@ -51,6 +51,9 @@ AGENT_DAEMON_SET_PODS_LABEL_SELECTOR = 'component=oms-agent'
 AGENT_OMSAGENT_LOG_PATH = '/var/opt/microsoft/omsagent/log/omsagent.log'
 AGENT_REPLICASET_WORKFLOWS = ["kubePodInventoryEmitStreamSuccess", "kubeNodeInventoryEmitStreamSuccess"]
 
+# override this through setting enviornment variable if the expected restart count is > 0 for example applying configmap
+AGENT_POD_EXPECTED_RESTART_COUNT = 0
+
 # replicaset workflow streams
 KUBE_POD_INVENTORY_EMIT_STREAM = "kubePodInventoryEmitStreamSuccess"
 KUBE_NODE_INVENTORY_EMIT_STREAM = "kubeNodeInventoryEmitStreamSuccess"
@@ -64,32 +67,32 @@ CONTAINER_PERF_EMIT_STREAM = "cAdvisorPerfEmitStreamSuccess"
 CONTAINER_INVENTORY_EMIT_STREAM = "containerInventoryEmitStreamSuccess"
 
 # simple log analytics queries to validate for e2e workflows
-DEFAULT_QUERY_TIME_INTERVAL = "10m"
-KUBE_POD_INVENTORY_QUERY = "KubePodInventory |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-KUBE_NODE_INVENTORY_QUERY = "KubeNodeInventory |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-KUBE_SERVICES_QUERY = "KubeServices |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-KUBE_EVENTS_QUERY = "KubeEvents |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_NODE_INVENTORY_QUERY = "ContainerNodeInventory |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_INVENTORY_QUERY = "ContainerInventory |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
+DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES = 10
+KUBE_POD_INVENTORY_QUERY = "KubePodInventory |  where TimeGenerated > ago({0}) | count"
+KUBE_NODE_INVENTORY_QUERY = "KubeNodeInventory |  where TimeGenerated > ago({0}) | count"
+KUBE_SERVICES_QUERY = "KubeServices |  where TimeGenerated > ago({0}) | count"
+KUBE_EVENTS_QUERY = "KubeEvents |  where TimeGenerated > ago({0}) | count"
+CONTAINER_NODE_INVENTORY_QUERY = "ContainerNodeInventory |  where TimeGenerated > ago({0}) | count"
+CONTAINER_INVENTORY_QUERY = "ContainerInventory |  where TimeGenerated > ago({0}) | count"
 # node perf
-NODE_PERF_CPU_CAPCITY_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'cpuCapacityNanoCores' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-NODE_PERF_MEMORY_CAPCITY_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryCapacityBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-NODE_PERF_CPU_ALLOCATABLE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'cpuAllocatableNanoCores' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-NODE_PERF_MEMORY_ALLOCATABLE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryAllocatableBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-NODE_PERF_CPU_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'cpuUsageNanoCores' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-NODE_PERF_MEMORY_RSS_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryRssBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-NODE_PERF_MEMORY_WS_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName =='memoryWorkingSetBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-NODE_PERF_RESTART_TIME_EPOCH_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'restartTimeEpoch' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
+NODE_PERF_CPU_CAPCITY_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'cpuCapacityNanoCores' |  where TimeGenerated > ago({0}) | count"
+NODE_PERF_MEMORY_CAPCITY_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryCapacityBytes' |  where TimeGenerated > ago({0}) | count"
+NODE_PERF_CPU_ALLOCATABLE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'cpuAllocatableNanoCores' |  where TimeGenerated > ago({0}) | count"
+NODE_PERF_MEMORY_ALLOCATABLE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryAllocatableBytes' |  where TimeGenerated > ago({0}) | count"
+NODE_PERF_CPU_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'cpuUsageNanoCores' |  where TimeGenerated > ago({0}) | count"
+NODE_PERF_MEMORY_RSS_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'memoryRssBytes' |  where TimeGenerated > ago({0}) | count"
+NODE_PERF_MEMORY_WS_USAGE_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName =='memoryWorkingSetBytes' |  where TimeGenerated > ago({0}) | count"
+NODE_PERF_RESTART_TIME_EPOCH_QUERY = "Perf | where ObjectName == 'K8SNode' | where CounterName == 'restartTimeEpoch' |  where TimeGenerated > ago({0}) | count"
 # container perf
-CONTAINER_PERF_CPU_LIMITS_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'cpuLimitNanoCores' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_PERF_MEMORY_LIMITS_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'memoryLimitBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_PERF_CPU_REQUESTS_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'cpuRequestNanoCores' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_PERF_MEMORY_REQUESTS_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'memoryRequestBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_PERF_CPU_USAGE_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'cpuUsageNanoCores' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_PERF_MEMORY_RSS_USAGE_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'memoryRssBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_PERF_MEMORY_WS_USAGE_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'memoryWorkingSetBytes' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
-CONTAINER_PERF_RESTART_TIME_EPOCH_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'restartTimeEpoch' |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
+CONTAINER_PERF_CPU_LIMITS_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'cpuLimitNanoCores' |  where TimeGenerated > ago({0}) | count"
+CONTAINER_PERF_MEMORY_LIMITS_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'memoryLimitBytes' |  where TimeGenerated > ago({0}) | count"
+CONTAINER_PERF_CPU_REQUESTS_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'cpuRequestNanoCores' |  where TimeGenerated > ago({0}) | count"
+CONTAINER_PERF_MEMORY_REQUESTS_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'memoryRequestBytes' |  where TimeGenerated > ago({0}) | count"
+CONTAINER_PERF_CPU_USAGE_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'cpuUsageNanoCores' |  where TimeGenerated > ago({0}) | count"
+CONTAINER_PERF_MEMORY_RSS_USAGE_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'memoryRssBytes' |  where TimeGenerated > ago({0}) | count"
+CONTAINER_PERF_MEMORY_WS_USAGE_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'memoryWorkingSetBytes' |  where TimeGenerated > ago({0}) | count"
+CONTAINER_PERF_RESTART_TIME_EPOCH_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'restartTimeEpoch' |  where TimeGenerated > ago({0}) | count"
 # container log
-CONTAINER_LOG_QUERY = "ContainerLog |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
+CONTAINER_LOG_QUERY = "ContainerLog |  where TimeGenerated > ago({0}) | count"
 # insights metrics
-INSIGHTS_METRICS_QUERY = "InsightsMetrics |  where TimeGenerated > ago({0}) | count".format(DEFAULT_QUERY_TIME_INTERVAL)
+INSIGHTS_METRICS_QUERY = "InsightsMetrics |  where TimeGenerated > ago({0}) | count"
