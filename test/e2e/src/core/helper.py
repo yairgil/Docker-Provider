@@ -58,8 +58,6 @@ def check_kubernetes_deployment_status(deployment_namespace, deployment_name, ou
         pytest.fail("Error occured while checking deployment status: " + str(e))
 
 # This function to check the status of daemonset
-
-
 def check_kubernetes_daemonset_status(daemonset_namespace, daemonset_name, outfile=None):
     try:
        api_instance = client.AppsV1Api()
@@ -193,8 +191,6 @@ def check_namespace_status_using_watch(outfile=None, namespace_list=None, timeou
     watch_namespace(api_instance, timeout, namespace_event_callback)
 
 # This function checks the status of daemonset in a given namespace. The daemonset to be monitored are identified using the pod label list parameter.
-
-
 def check_kubernetes_daemonset_status_using_watch(daemonset_namespace, outfile=None, daemonset_label_list=None, timeout=300):
     daemonset_label_dict = {}
     if daemonset_label_list:  # This parameter is a list of label values to identify the daemonsets that we want to monitor in the given namespace
@@ -255,8 +251,6 @@ def check_kubernetes_daemonset_status_using_watch(daemonset_namespace, outfile=N
             api_instance, daemonset_namespace, timeout, daemonset_event_callback)
 
 # This function checks the status of deployment in a given namespace. The deployment to be monitored are identified using the pod label list parameter.
-
-
 def check_kubernetes_deployments_status_using_watch(deployment_namespace, outfile=None, deployment_label_list=None, timeout=300):
     deployment_label_dict = {}
     if deployment_label_list:  # This parameter is a list of label values to identify the deployments that we want to monitor in the given namespace
@@ -309,8 +303,6 @@ def check_kubernetes_deployments_status_using_watch(deployment_namespace, outfil
             api_instance, deployment_namespace, timeout, deployment_event_callback)
 
 # This function checks the status of pods in a given namespace. The pods to be monitored are identified using the pod label list parameter.
-
-
 def check_kubernetes_pods_status_using_watch(pod_namespace, outfile=None, pod_label_list=None, timeout=300):
     pod_label_dict = {}
     if pod_label_list:  # This parameter is a list of label values to identify the pods that we want to monitor in the given namespace
@@ -419,8 +411,6 @@ def check_kubernetes_pod_logs_using_watch(pod_namespace, pod_name, container_nam
                    container_name, timeout, pod_log_event_callback)
 
 # Function to monitor the kubernetes secret. It will determine if the secret has been successfully created.
-
-
 def check_kubernetes_secret_using_watch(secret_namespace, secret_name, timeout=300):
     # The callback function to check if the secret event received has secret data
     def secret_event_callback(event):
