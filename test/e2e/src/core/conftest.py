@@ -28,8 +28,26 @@ def env_dict():
             env_dict['SETUP_LOG_FILE'] = '/tmp/results/setup'            
             env_dict['TEST_AGENT_LOG_FILE'] = '/tmp/results/containerinsights'
             env_dict['NUM_TESTS_COMPLETED'] = 0
+            
+            # Collecting environment variables
+            env_dict['TENANT_ID'] = os.getenv('TENANT_ID')
+            env_dict['CLIENT_ID'] = os.getenv('CLIENT_ID')
+            env_dict['CLIENT_SECRET'] = os.getenv('CLIENT_SECRET')
 
-          
+            # default to azure public cloud if AZURE_CLOUD not specified
+            env_dict['AZURE_ENDPOINTS'] = constants.AZURE_CLOUD_DICT.get(os.getenv('AZURE_CLOUD')) if os.getenv('AZURE_CLOUD') else constants.AZURE_PUBLIC_CLOUD_ENDPOINTS
+                                    
+            if not env_dict.get('TENANT_ID'):
+                pytest.fail('ERROR: variable TENANT_ID is required.')
+
+            client_id = env_dict.get('CLIENT_ID')
+            if not client_id:
+                pytest.fail('ERROR: variable CLIENT_ID is required.')
+
+            client_secret = env_dict.get('CLIENT_SECRET')
+            if not client_secret:
+                pytest.fail('ERROR: variable CLIENT_SECRET is required.')
+
             print("Starting setup...")
             append_result_output("Starting setup...\n", env_dict['SETUP_LOG_FILE'])
            
