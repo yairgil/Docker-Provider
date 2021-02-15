@@ -39,8 +39,8 @@ def test_rs_workflows(env_dict):
     clusterResourceId = ''
     for env in envVars:
         if env.name == "AKS_RESOURCE_ID":
-            ClusterResourceId = env.value
-            print("cluster resource id: {}".format(ClusterResourceId))
+            clusterResourceId = env.value
+            print("cluster resource id: {}".format(clusterResourceId))
     
     if not clusterResourceId:
             pytest.fail("failed to get clusterResourceId from replicaset pod environment variables")
