@@ -14,7 +14,7 @@ pytestmark = pytest.mark.agentests
 # validation of replicaset agent workflows
 def test_rs_workflows(env_dict):
     print("Starting replicaset agent workflows test.")
-    append_result_output("test_resource_status start \n",
+    append_result_output("test_rs_workflows start \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     # Loading in-cluster kube-config
     try:
@@ -68,7 +68,7 @@ def test_rs_workflows(env_dict):
             IsKubeEventsSuccessful = True
 
     if IsKubePodInventorySuccessful == False:
-       pytest.fail("KubePodInventory stream not emitted successfully from pod:" + rspodName))
+       pytest.fail("KubePodInventory stream not emitted successfully from pod:" + rspodName)
 
     if IsKubeNodeInventorySuccessful == False:
         pytest.fail("KubePodInventory stream not emitted successfully from pod:" + rspodName)
@@ -79,7 +79,6 @@ def test_rs_workflows(env_dict):
     if IsKubeContainerPerfInventorySuccessful == False:
         pytest.fail("KubeContainerPerfInventory stream not emitted successfully from pod:" + rspodName)
    
-
     if IsKubeServicesInventorySuccessful == False:
         pytest.fail("KubeServicesInventory stream not emitted successfully from pod:" + rspodName)
 
@@ -89,6 +88,6 @@ def test_rs_workflows(env_dict):
     if IsKubeEventsSuccessful == False:
         pytest.fail("KubeEventsInventory stream not emitted successfully from rs pod:" + rspodName)
 
-    append_result_output("test_resource_status end \n",
+    append_result_output("test_rs_workflows end \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     print("Successfully completed replicaset workflows test.")

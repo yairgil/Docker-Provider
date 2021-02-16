@@ -11,9 +11,9 @@ from results_utility import append_result_output
 pytestmark = pytest.mark.agentests
 
 # validation of workflows e2e
-def test_rs_workflows(env_dict):
+def test_e2e_workflows(env_dict):
     print("Starting e2e workflows test.")
-    append_result_output("test_resource_status start \n",
+    append_result_output("test_e2e_workflows start \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     # Loading in-cluster kube-config
     try:
@@ -325,6 +325,6 @@ def test_rs_workflows(env_dict):
     if not rowCount:
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'INSIGHTS_METRICS'))                               
     
-    append_result_output("test_resource_status end \n",
+    append_result_output("test_e2e_workflows end \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     print("Successfully completed e2e workflows test.")

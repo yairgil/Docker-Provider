@@ -39,6 +39,10 @@ def env_dict():
             # add minute suffix since this format required for LA queries
             env_dict['DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES'] = str(queryTimeInterval) + "m"
             
+            # get default query time interval for metrics queries
+            env_dict['DEFAULT_METRICS_QUERY_TIME_INTERVAL_IN_MINUTES'] = int(os.getenv('DEFAULT_METRICS_QUERY_TIME_INTERVAL_IN_MINUTES')) if os.getenv('DEFAULT_METRICS_QUERY_TIME_INTERVAL_IN_MINUTES') else constants.DEFAULT_METRICS_QUERY_TIME_INTERVAL_IN_MINUTES
+            
+            
             # expected agent pod restart count            
             env_dict['AGENT_POD_EXPECTED_RESTART_COUNT'] = int(os.getenv('AGENT_POD_EXPECTED_RESTART_COUNT')) if os.getenv('AGENT_POD_EXPECTED_RESTART_COUNT') else constants.AGENT_POD_EXPECTED_RESTART_COUNT
 

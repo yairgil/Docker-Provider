@@ -96,3 +96,24 @@ CONTAINER_PERF_RESTART_TIME_EPOCH_QUERY = "Perf | where ObjectName == 'K8SContai
 CONTAINER_LOG_QUERY = "ContainerLog |  where TimeGenerated > ago({0}) | count"
 # insights metrics
 INSIGHTS_METRICS_QUERY = "InsightsMetrics |  where TimeGenerated > ago({0}) | count"
+
+# custom metrics
+METRICS_API_VERSION = '2019-07-01'
+DEFAULT_METRICS_QUERY_TIME_INTERVAL_IN_MINUTES = 10
+
+# node metrics
+NODE_METRICS_NAMESPACE = 'insights.container/nodes'
+NODE_METRIC_METRIC_AGGREGATION = 'average'
+NODE_CPU_USAGE_MILLI_CORES_METRIC_NAME = 'cpuUsageMilliCores'
+NODE_CPU_USAGE_PERCENTAGE_METRIC_NAME = 'cpuUsagePercentage'
+NODE_MEMORY_RSS_METRIC_NAME = 'memoryRssBytes'
+NODE_MEMORY_RSS_PERCENTAGE_METRIC_NAME = 'memoryRssPercentage'
+NODE_MEMORY_WS_METRIC_NAME = 'memoryWorkingSetBytes'
+NODE_MEMORY_WS_PERCENTAGE_METRIC_NAME = 'memoryWorkingSetPercentage'
+NODE_COUNT_METRIC_NAME = 'nodesCount'
+
+# pod metrics
+POD_METRICS_NAMESPACE = 'insights.container/pods'
+POD_METRIC_METRIC_AGGREGATION = 'average'
+POD_COUNT_METRIC_NAME = 'PodCount'
+

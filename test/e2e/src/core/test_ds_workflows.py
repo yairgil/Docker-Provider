@@ -14,7 +14,7 @@ pytestmark = pytest.mark.agentests
 # validation of ds agent workflows
 def test_ds_workflows(env_dict):
     print("Starting daemonset workflows test.")
-    append_result_output("test_resource_status start \n",
+    append_result_output("test_ds_workflows start \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     # Loading in-cluster kube-config
     try:
@@ -55,6 +55,6 @@ def test_ds_workflows(env_dict):
         if IsContainerInventoryStream == False:
             pytest.fail("ContainerPerf stream not emitted successfully from pod:" + podName)            
 
-    append_result_output("test_resource_status end \n",
+    append_result_output("test_ds_workflows end \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     print("Successfully completed daemonset workflows test.")
