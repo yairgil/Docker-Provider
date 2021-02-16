@@ -59,9 +59,9 @@ def test_node_metrics_e2e_workflow(env_dict):
         'activeDirectory') + tenant_id
     client_id = env_dict.get('CLIENT_ID')
     client_secret = env_dict.get('CLIENT_SECRET')
-    resource = env_dict.get('AZURE_ENDPOINTS').get('resourceManager')
+    resourceManager = env_dict.get('AZURE_ENDPOINTS').get('resourceManager')
     aad_token = fetch_aad_token(
-        client_id, client_secret, authority_uri,  resource)
+        client_id, client_secret, authority_uri,  resourceManager)
     if not aad_token:
         pytest.fail("failed to fetch AAD token")
 
@@ -81,7 +81,8 @@ def test_node_metrics_e2e_workflow(env_dict):
     }
     params = {}
     # node metric - memoryRssBytes
-    custommetricsUrl = 'https://management.azure.com{0}/providers/microsoft.Insights/metrics?timespan={1}/{2}&interval=FULL&metricnames={3}&aggregation={4}&metricNamespace={5}&validatedimensions=false&api-version={6}'.format(
+    custommetricsUrl = '{0}{1}/providers/microsoft.Insights/metrics?timespan={2}/{3}&interval=FULL&metricnames={4}&aggregation={5}&metricNamespace={6}&validatedimensions=false&api-version={7}'.format(
+        resourceManager.rstrip("/"),
         clusterResourceId,
         starttime,
         endtime,
@@ -129,7 +130,8 @@ def test_node_metrics_e2e_workflow(env_dict):
             pytest.fail("length of timeseries should be greater than for 0 for metric: {0} in namespace :{1}".format(constants.NODE_MEMORY_RSS_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))
     
     # node metric - memoryRssPercentage
-    custommetricsUrl = 'https://management.azure.com{0}/providers/microsoft.Insights/metrics?timespan={1}/{2}&interval=FULL&metricnames={3}&aggregation={4}&metricNamespace={5}&validatedimensions=false&api-version={6}'.format(
+    custommetricsUrl = '{0}{1}/providers/microsoft.Insights/metrics?timespan={2}/{3}&interval=FULL&metricnames={4}&aggregation={5}&metricNamespace={6}&validatedimensions=false&api-version={7}'.format(
+        resourceManager.rstrip("/"),
         clusterResourceId,
         starttime,
         endtime,
@@ -177,7 +179,8 @@ def test_node_metrics_e2e_workflow(env_dict):
             pytest.fail("length of timeseries should be greater than for 0 for metric: {0} in namespace :{1}".format(constants.NODE_MEMORY_RSS_PERCENTAGE_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))
               
     # node metric - memoryWorkingSetBytes
-    custommetricsUrl = 'https://management.azure.com{0}/providers/microsoft.Insights/metrics?timespan={1}/{2}&interval=FULL&metricnames={3}&aggregation={4}&metricNamespace={5}&validatedimensions=false&api-version={6}'.format(
+    custommetricsUrl = '{0}{1}/providers/microsoft.Insights/metrics?timespan={2}/{3}&interval=FULL&metricnames={4}&aggregation={5}&metricNamespace={6}&validatedimensions=false&api-version={7}'.format(
+        resourceManager.rstrip("/"),
         clusterResourceId,
         starttime,
         endtime,
@@ -224,7 +227,8 @@ def test_node_metrics_e2e_workflow(env_dict):
             pytest.fail("length of timeseries should be greater than for 0 for metric: {0} in namespace :{1}".format(constants.NODE_MEMORYE_WS_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))
     
     # node metric - memoryWorkingSetPercentage
-    custommetricsUrl = 'https://management.azure.com{0}/providers/microsoft.Insights/metrics?timespan={1}/{2}&interval=FULL&metricnames={3}&aggregation={4}&metricNamespace={5}&validatedimensions=false&api-version={6}'.format(
+    custommetricsUrl = '{0}{1}/providers/microsoft.Insights/metrics?timespan={2}/{3}&interval=FULL&metricnames={4}&aggregation={5}&metricNamespace={6}&validatedimensions=false&api-version={7}'.format(
+        resourceManager.rstrip("/"),
         clusterResourceId,
         starttime,
         endtime,
@@ -271,7 +275,8 @@ def test_node_metrics_e2e_workflow(env_dict):
             pytest.fail("length of timeseries should be greater than for 0 for metric: {0} in namespace :{1}".format(constants.NODE_MEMORY_WS_PERCENTAGE_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))
             
     # node metric - cpuUsageMilliCores
-    custommetricsUrl = 'https://management.azure.com{0}/providers/microsoft.Insights/metrics?timespan={1}/{2}&interval=FULL&metricnames={3}&aggregation={4}&metricNamespace={5}&validatedimensions=false&api-version={6}'.format(
+    custommetricsUrl = '{0}{1}/providers/microsoft.Insights/metrics?timespan={2}/{3}&interval=FULL&metricnames={4}&aggregation={5}&metricNamespace={6}&validatedimensions=false&api-version={7}'.format(
+        resourceManager.rstrip("/"),
         clusterResourceId,
         starttime,
         endtime,
@@ -317,7 +322,8 @@ def test_node_metrics_e2e_workflow(env_dict):
             pytest.fail("length of timeseries should be greater than for 0 for metric: {0} in namespace :{1}".format(constants.NODE_CPU_USAGE_MILLI_CORES_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))
     
     # node metric - cpuUsagePercentage
-    custommetricsUrl = 'https://management.azure.com{0}/providers/microsoft.Insights/metrics?timespan={1}/{2}&interval=FULL&metricnames={3}&aggregation={4}&metricNamespace={5}&validatedimensions=false&api-version={6}'.format(
+    custommetricsUrl = '{0}{1}/providers/microsoft.Insights/metrics?timespan={2}/{3}&interval=FULL&metricnames={4}&aggregation={5}&metricNamespace={6}&validatedimensions=false&api-version={7}'.format(
+        resourceManager.rstrip("/"),
         clusterResourceId,
         starttime,
         endtime,
@@ -363,7 +369,8 @@ def test_node_metrics_e2e_workflow(env_dict):
             pytest.fail("length of timeseries should be greater than for 0 for metric: {0} in namespace :{1}".format(constants.NODE_CPU_USAGE_PERCENTAGE_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))        
     
     # node metric - nodesCount
-    custommetricsUrl = 'https://management.azure.com{0}/providers/microsoft.Insights/metrics?timespan={1}/{2}&interval=FULL&metricnames={3}&aggregation={4}&metricNamespace={5}&validatedimensions=false&api-version={6}'.format(
+    custommetricsUrl = '{0}{1}/providers/microsoft.Insights/metrics?timespan={2}/{3}&interval=FULL&metricnames={4}&aggregation={5}&metricNamespace={6}&validatedimensions=false&api-version={7}'.format(
+        resourceManager.rstrip("/"),
         clusterResourceId,
         starttime,
         endtime,
@@ -406,8 +413,8 @@ def test_node_metrics_e2e_workflow(env_dict):
             pytest.fail("metric series shouldnt be null or empty for metric:{0} in namespace: {1}".format(
                 constants.NODE_COUNT_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))
         if len(timeseries) <= 0:
-            pytest.fail("length of timeseries should be greater than for 0 for metric: {0} in namespace :{1}".format(constants.NODE_COUNT_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))        
-                            
+            pytest.fail("length of timeseries should be greater than for 0 for metric: {0} in namespace :{1}".format(constants.NODE_COUNT_METRIC_NAME, constants.NODE_METRICS_NAMESPACE))           
+                                    
     append_result_output("test_node_metrics_e2e_workflow end \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     print("Successfully completed node metrics e2e workflow test.")

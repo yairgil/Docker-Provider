@@ -111,6 +111,7 @@ NODE_MEMORY_RSS_PERCENTAGE_METRIC_NAME = 'memoryRssPercentage'
 NODE_MEMORY_WS_METRIC_NAME = 'memoryWorkingSetBytes'
 NODE_MEMORY_WS_PERCENTAGE_METRIC_NAME = 'memoryWorkingSetPercentage'
 NODE_COUNT_METRIC_NAME = 'nodesCount'
+NODE_DISK_USAGE_PERCENTAGE_METRIC_NAME = 'diskUsedPercentage(Preview)'
 
 # pod metrics
 POD_METRICS_NAMESPACE = 'insights.container/pods'

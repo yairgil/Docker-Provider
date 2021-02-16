@@ -12,7 +12,7 @@ pytestmark = pytest.mark.agentests
 
 # validation of pod metrics e2e workflows
 def test_pod_metrics_e2e_workflow(env_dict):
-    print("Starting e2e workflows test.")
+    print("Starting pod metrics e2e workflows test.")
     append_result_output("test_pod_metrics_e2e_workflow start \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     # Loading in-cluster kube-config
@@ -21,7 +21,7 @@ def test_pod_metrics_e2e_workflow(env_dict):
     except Exception as e:
         pytest.fail("Error loading the in-cluster config: " + str(e))
 
-    # query time interval for LA queries
+    # query time interval for metrics queries
     metricQueryIntervalInMins = env_dict['DEFAULT_METRICS_QUERY_TIME_INTERVAL_IN_MINUTES']
     if not metricQueryIntervalInMins:
         pytest.fail(
@@ -59,9 +59,9 @@ def test_pod_metrics_e2e_workflow(env_dict):
         'activeDirectory') + tenant_id
     client_id = env_dict.get('CLIENT_ID')
     client_secret = env_dict.get('CLIENT_SECRET')
-    resource = env_dict.get('AZURE_ENDPOINTS').get('resourceManager')
+    resourceManager = env_dict.get('AZURE_ENDPOINTS').get('resourceManager')
     aad_token = fetch_aad_token(
-        client_id, client_secret, authority_uri,  resource)
+        client_id, client_secret, authority_uri,  resourceManager)
     if not aad_token:
         pytest.fail("failed to fetch AAD token")
 
@@ -81,7 +81,8 @@ def test_pod_metrics_e2e_workflow(env_dict):
     }
     params = {}
     # pod metric - PodCount
-    custommetricsUrl = 'https://management.azure.com{0}/providers/microsoft.Insights/metrics?timespan={1}/{2}&interval=FULL&metricnames={3}&aggregation={4}&metricNamespace={5}&validatedimensions=false&api-version={6}'.format(
+    custommetricsUrl = '{0}{1}/providers/microsoft.Insights/metrics?timespan={2}/{3}&interval=FULL&metricnames={4}&aggregation={5}&metricNamespace={6}&validatedimensions=false&api-version={7}'.format(
+        resourceManager.rstrip("/"),
         clusterResourceId,
         starttime,
         endtime,
