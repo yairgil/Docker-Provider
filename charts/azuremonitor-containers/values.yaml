@@ -17,7 +17,7 @@ omsagent:
     pullPolicy: IfNotPresent
     dockerProviderVersion: "12.0.0-0"
     agentVersion: "1.10.0.1"
-  rs-image:
+  rsimage:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
     tag: "ciprod01112021"
     tagWindows: "win-ciprod01112021"
