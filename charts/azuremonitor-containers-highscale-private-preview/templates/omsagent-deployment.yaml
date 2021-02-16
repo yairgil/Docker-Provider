@@ -1,8 +1,8 @@
 {{- if and (ne .Values.omsagent.secret.key "<your_workspace_key>") (ne .Values.omsagent.secret.wsid "<your_workspace_id>") (or (ne .Values.omsagent.env.clusterName "<your_cluster_name>") (ne .Values.omsagent.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") )}}
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
- name: omsagent
+ name: omsagent-rs
  namespace: kube-system
  labels:
    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
@@ -11,15 +11,16 @@ metadata:
    component: oms-agent
    tier: node
 spec:
- updateStrategy:
-  type: RollingUpdate
+ replicas: 1
  selector:
-   matchLabels:
-     dsName: "omsagent-ds"
+  matchLabels:
+   rsName: "omsagent-rs"
+ strategy:
+  type: RollingUpdate
  template:
   metadata:
    labels:
-    dsName: "omsagent-ds"
+    rsName: "omsagent-rs"
    annotations:
     agentVersion: {{ .Values.omsagent.image.tag }}
     dockerProviderVersion: {{ .Values.omsagent.image.dockerProviderVersion }}
@@ -28,24 +29,19 @@ spec:
     checksum/config: {{ toYaml .Values.omsagent.resources | sha256sum }}
     checksum/logsettings: {{ toYaml .Values.omsagent.logsettings | sha256sum }}
   spec:
-   priorityClassName: omsagent
-   dnsConfig:
-     options:
-       - name: ndots
-         value: "3"
-   {{- if .Values.omsagent.rbac }}
+  {{- if .Values.omsagent.rbac }}
    serviceAccountName: omsagent
-   {{- end }}
+  {{- end }}
    containers:
      - name: omsagent
-       {{- if eq (.Values.omsagent.domain | lower) "opinsights.azure.cn" }}
-       image: "mcr.azk8s.cn/azuremonitor/containerinsights/ciprod:{{ .Values.omsagent.image.tag }}"
+       {{- if  eq (.Values.omsagent.domain | lower) "opinsights.azure.cn" }}
+       image: "mcr.azk8s.cn/azuremonitor/containerinsights/ciprod:{{ .Values.omsagent.rsimage.tag }}"
        {{- else }}
-       image: {{ printf "%s:%s" .Values.omsagent.image.repo .Values.omsagent.image.tag }}
+       image: {{ printf "%s:%s" .Values.omsagent.rsimage.repo .Values.omsagent.rsimage.tag }}
        {{- end }}
        imagePullPolicy: IfNotPresent
        resources:
-{{ toYaml .Values.omsagent.resources.daemonsetlinux | indent 9 }}
+{{ toYaml .Values.omsagent.resources.deployment | indent 9 }}
        env:
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
@@ -66,29 +62,17 @@ spec:
          value: {{ .Values.omsagent.env.clusterName | quote }}
        {{- end }}
        - name: CONTROLLER_TYPE
-         value: "DaemonSet"
+         value: "ReplicaSet"
        - name: NODE_IP
          valueFrom:
             fieldRef:
               fieldPath: status.hostIP
        {{- if not (empty .Values.Azure.Extension.Name) }}
        - name: ARC_K8S_EXTENSION_NAME
-         value: {{ .Values.Azure.Extension.Name | quote }}
-       {{- end }}
+         value: {{ .Values.Azure.Extension.Name | quote }} 
+       {{- end }}                       
        - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-         value: ""
-       {{- if .Values.omsagent.logsettings.logflushintervalsecs }}
-       - name: FBIT_SERVICE_FLUSH_INTERVAL
-         value: {{ .Values.omsagent.logsettings.logflushintervalsecs | quote }}
-       {{- end }}
-       {{- if .Values.omsagent.logsettings.tailbufchunksizemegabytes }}
-       - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
-         value: {{ .Values.omsagent.logsettings.tailbufchunksizemegabytes | quote }}
-       {{- end }}
-       {{- if .Values.omsagent.logsettings.tailbufmaxsizemegabytes }}
-       - name: FBIT_TAIL_BUFFER_MAX_SIZE
-         value: {{ .Values.omsagent.logsettings.tailbufmaxsizemegabytes | quote }}
-       {{- end }}
+         value: ""   
        securityContext:
          privileged: true
        ports:
@@ -96,10 +80,10 @@ spec:
          protocol: TCP
        - containerPort: 25224
          protocol: UDP
+       - containerPort: 25227
+         protocol: TCP
+         name: in-rs-tcp
        volumeMounts:
-        - mountPath: /hostfs
-          name: host-root
-          readOnly: true
         - mountPath: /var/run/host
           name: docker-sock
         - mountPath: /var/log
@@ -111,6 +95,8 @@ spec:
         - mountPath: /etc/omsagent-secret
           name: omsagent-secret
           readOnly: true
+        - mountPath : /etc/config
+          name: omsagent-rs-config
         - mountPath: /etc/config/settings
           name: settings-vol-config
           readOnly: true
@@ -129,16 +115,13 @@ spec:
          - "/opt/livenessprobe.sh"
         initialDelaySeconds: 60
         periodSeconds: 60
-   {{- with .Values.omsagent.daemonset.affinity }}
+   {{- with .Values.omsagent.deployment.affinity }}
    affinity: {{- toYaml . | nindent 8 }}
    {{- end }}
    {{- with .Values.omsagent.tolerations }}
    tolerations: {{- toYaml . | nindent 8 }}
    {{- end }}
    volumes:
-    - name: host-root
-      hostPath:
-       path: /
     - name: docker-sock
       hostPath:
        path: /var/run
@@ -157,6 +140,9 @@ spec:
     - name: omsagent-secret
       secret:
        secretName: omsagent-secret
+    - name: omsagent-rs-config
+      configMap:
+        name: omsagent-rs-config
     - name: settings-vol-config
       configMap:
         name: container-azm-ms-agentconfig
