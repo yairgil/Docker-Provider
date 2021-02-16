@@ -17,6 +17,13 @@ omsagent:
     pullPolicy: IfNotPresent
     dockerProviderVersion: "12.0.0-0"
     agentVersion: "1.10.0.1"
+  rs-image:
+    repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
+    tag: "ciprod01112021"
+    tagWindows: "win-ciprod01112021"
+    pullPolicy: IfNotPresent
+    dockerProviderVersion: "12.0.0-0"
+    agentVersion: "1.10.0.1"
   ## To get your workspace id and key do the following
   ## You can create a Azure Loganalytics workspace from portal.azure.com and get its ID & PRIMARY KEY from 'Advanced Settings' tab in the Ux.
 
@@ -157,5 +164,5 @@ omsagent:
         cpu: 150m
         memory: 250Mi
       limits:
-        cpu: 1
+        cpu: 2
         memory: 1Gi
