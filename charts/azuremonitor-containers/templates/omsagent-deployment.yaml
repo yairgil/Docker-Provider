@@ -35,7 +35,7 @@ spec:
    containers:
      - name: omsagent
        {{- if  eq (.Values.omsagent.domain | lower) "opinsights.azure.cn" }}
-       image: "mcr.azk8s.cn/azuremonitor/containerinsights/ciprod:{{ .Values.omsagent.rs-image.tag }}"
+       image: "mcr.azk8s.cn/azuremonitor/containerinsights/ciprod:{{ .Values.omsagent.rsimage.tag }}"
        {{- else }}
        image: {{ printf "%s:%s" .Values.omsagent.rs-image.repo .Values.omsagent.rs-image.tag }}
        {{- end }}
