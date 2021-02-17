@@ -13,7 +13,7 @@ pytestmark = pytest.mark.agentests
 
 # validation of ds agent workflows
 def test_ds_workflows(env_dict):
-    print("Starting daemonset workflows test.")
+    print("Starting daemonset agent workflows test.")
     append_result_output("test_ds_workflows start \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
     # Loading in-cluster kube-config
@@ -22,15 +22,15 @@ def test_ds_workflows(env_dict):
     except Exception as e:
         pytest.fail("Error loading the in-cluster config: " + str(e))
 
-    print("getting pod list")
+    print("getting daemonset pod list")
     api_instance = client.CoreV1Api()
     pod_list = get_pod_list(api_instance, constants.AGENT_RESOURCES_NAMESPACE,
                             constants.AGENT_DAEMON_SET_PODS_LABEL_SELECTOR)
     if not pod_list:
-        pytest.fail("pod_list shouldnt be null or empty")
+        pytest.fail("daemonset pod_list shouldnt be null or empty")
 
     if len(pod_list.items) <= 0:
-        pytest.fail("number of items in pod list should be greater than 0")
+        pytest.fail("number of items in daemonset pod list should be greater than 0")
   
     for podItem in pod_list.items:
         podName = podItem.metadata.name
