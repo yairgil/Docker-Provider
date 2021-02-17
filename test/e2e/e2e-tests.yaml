@@ -84,14 +84,17 @@ data:
       result-format: junit
     spec:
       env:
+      # Update values of CLIENT_ID, CLIENT_SECRET of the service principal which has permission to query LA ad Metrics API
+      # Update value of TENANT_ID corresponding your Azure Service principal          
       - name: CLIENT_ID
-        value: 3dd89c8a-c883-4654-a446-52430248ac60
+        value: "SP_CLIENT_ID_VALUE"
       - name: CLIENT_SECRET
-        value: 0FWxHGgg.C.OtDuMhzKpIx7Y6vOCxXTx8A
+        value: "CLIENT_SECRET_VALUE"
       - name: TENANT_ID
-        value: 72f988bf-86f1-41af-91ab-2d7cd011db47
-      image: ganga1980/agentest:v0.5.4
-      imagePullPolicy: Always
+        value: "SP_TENANT_ID_VALUE"
+      # image tag should be updated if new tests being added after this image   
+      image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciagenttest02142021
+      imagePullPolicy: IfNotPresent
       name: plugin
       resources: {}
       volumeMounts:
