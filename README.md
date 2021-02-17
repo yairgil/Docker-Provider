@@ -291,7 +291,7 @@ For DEV and PROD branches, automatically deployed latest yaml with latest agent 
 
 ## For adding new tests
 
-1. Add the test file with your test code under `core` directory
+1. Add the test python file with your test code under `core` directory
 2. Build the docker image, prefer to use ACR & MCR 
   ```
    cd ~/Docker-Provider/test/e2e/src # based on your repo path 

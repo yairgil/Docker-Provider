@@ -32,4 +32,4 @@ echo "Service Principal TENANT_ID:$TENANT_ID"
 echo "replace TENANT_ID value"
 sed -i "s=SP_TENANT_ID_VALUE=$TENANT_ID=g" e2e-tests.yaml
 
-echo "start: update placeholders of e2e-tests.yaml ..."
+echo "end: update placeholders of e2e-tests.yaml."
