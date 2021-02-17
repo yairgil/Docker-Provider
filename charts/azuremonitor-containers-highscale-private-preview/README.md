@@ -114,13 +114,13 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 
 $ helm install --name myrelease-1 \
 --set omsagent.secret.wsid=<your_workspace_id>,omsagent.secret.key=<your_workspace_key>,omsagent.env.clusterName=<your_cluster_name>
-  microsoft/azuremonitor-containers
+  microsoft/azuremonitor-containers-highscale-private-preview
 ```
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```bash
 
-$ helm install --name myrelease-1 -f values.yaml microsoft/azuremonitor-containers
+$ helm install --name myrelease-1 -f values.yaml microsoft/azuremonitor-containers-highscale-private-preview
 
 ```
 

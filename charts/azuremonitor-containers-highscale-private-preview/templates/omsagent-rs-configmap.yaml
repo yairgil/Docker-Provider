@@ -3,22 +3,14 @@ kind: ConfigMap
 apiVersion: v1
 data:
   kube.conf: |
-    # Fluentd config file for OMS Docker - cluster components (kubeAPI)
-    #fluent forward plugin
+     # Fluentd config file for OMS Docker - cluster components (kubeAPI)
+     #fluent forward plugin
      <source>
       type forward
       port "#{ENV['HEALTHMODEL_REPLICASET_SERVICE_SERVICE_PORT']}"
       bind 0.0.0.0
       chunk_size_limit 4m
      </source>
-
-     # #Kubernetes pod inventory
-     # <source>
-     #  type kubepodinventory
-     #  tag oms.containerinsights.KubePodInventory
-     #  run_interval 60
-     #  log_level debug
-     # </source>
 
      #Kubernetes Persistent Volume inventory
      <source>
@@ -75,15 +67,16 @@ data:
       run_interval 60
       log_level debug
      </source>
+
      <filter mdm.kubenodeinventory**>
       type filter_inventory2mdm
       log_level info
      </filter>
 
-     # custom_metrics_mdm filter plugin for perf data from windows nodes
+     #custom_metrics_mdm filter plugin for perf data from windows nodes
      <filter mdm.cadvisorperf**>
       type filter_cadvisor2mdm
-      metrics_to_collect cpuUsageNanoCores,memoryWorkingSetBytes
+      metrics_to_collect cpuUsageNanoCores,memoryWorkingSetBytes,pvUsedBytes
       log_level info
      </filter>
 
@@ -92,34 +85,19 @@ data:
       type filter_health_model_builder
      </filter>
 
-     <match oms.containerinsights.KubePodInventory**>
-      type out_oms
-      log_level debug
-      num_threads 2
-      buffer_chunk_limit 4m
-      buffer_type file
-      buffer_path %STATE_DIR_WS%/out_oms_kubepods*.buffer
-      buffer_queue_limit 20
-      buffer_queue_full_action drop_oldest_chunk
-      flush_interval 20s
-      retry_limit 10
-      retry_wait 5s
-      max_retry_wait 5m
-     </match>
-
      <match oms.containerinsights.KubePVInventory**>
-      type out_oms
-      log_level debug
-      num_threads 5
-      buffer_chunk_limit 4m
-      buffer_type file
-      buffer_path %STATE_DIR_WS%/state/out_oms_kubepv*.buffer
-      buffer_queue_limit 20
-      buffer_queue_full_action drop_oldest_chunk
-      flush_interval 20s
-      retry_limit 10
-      retry_wait 5s
-      max_retry_wait 5m
+     type out_oms
+     log_level debug
+     num_threads 5
+     buffer_chunk_limit 4m
+     buffer_type file
+     buffer_path %STATE_DIR_WS%/state/out_oms_kubepv*.buffer
+     buffer_queue_limit 20
+     buffer_queue_full_action drop_oldest_chunk
+     flush_interval 20s
+     retry_limit 10
+     retry_wait 5s
+     max_retry_wait 5m
     </match>
 
      <match oms.containerinsights.KubeEvents**>
@@ -167,7 +145,7 @@ data:
       max_retry_wait 5m
      </match>
 
-     <match oms.api.ContainerNodeInventory**>
+     <match oms.containerinsights.ContainerNodeInventory**>
       type out_oms
       log_level debug
       num_threads 3
@@ -196,7 +174,7 @@ data:
       max_retry_wait 5m
      </match>
 
-     <match mdm.kubepodinventory** mdm.kubenodeinventory** >
+     <match mdm.kubenodeinventory** >
       type out_mdm
       log_level debug
       num_threads 5
@@ -207,8 +185,8 @@ data:
       buffer_queue_full_action drop_oldest_chunk
       flush_interval 20s
       retry_limit 10
-      retry_wait 30s
-      max_retry_wait 9m
+      retry_wait 5s
+      max_retry_wait 5m
       retry_mdm_post_wait_minutes 30
      </match>
 
@@ -243,34 +221,34 @@ data:
       retry_mdm_post_wait_minutes 30
      </match>
 
-     <match kubehealth.Signals**>
-      type out_oms
-      log_level debug
-      num_threads 5
-      buffer_chunk_limit 4m
-      buffer_type file
-      buffer_path %STATE_DIR_WS%/out_oms_kubehealth*.buffer
-      buffer_queue_limit 20
-      buffer_queue_full_action drop_oldest_chunk
-      flush_interval 20s
-      retry_limit 10
-      retry_wait 5s
-      max_retry_wait 5m
-     </match>
+    <match kubehealth.Signals**>
+     type out_oms
+     log_level debug
+     num_threads 5
+     buffer_chunk_limit 4m
+     buffer_type file
+     buffer_path %STATE_DIR_WS%/out_oms_kubehealth*.buffer
+     buffer_queue_limit 20
+     buffer_queue_full_action drop_oldest_chunk
+     flush_interval 20s
+     retry_limit 10
+     retry_wait 5s
+     max_retry_wait 5m
+    </match>
 
-     <match oms.api.InsightsMetrics**>
-      type out_oms
-      log_level debug
-      num_threads 5
-      buffer_chunk_limit 4m
-      buffer_type file
-      buffer_path %STATE_DIR_WS%/out_oms_insightsmetrics*.buffer
-      buffer_queue_limit 20
-      buffer_queue_full_action drop_oldest_chunk
-      flush_interval 20s
-      retry_limit 10
-      retry_wait 5s
-      max_retry_wait 5m
+    <match oms.api.InsightsMetrics**>
+     type out_oms
+     log_level debug
+     num_threads 5
+     buffer_chunk_limit 4m
+     buffer_type file
+     buffer_path %STATE_DIR_WS%/out_oms_insightsmetrics*.buffer
+     buffer_queue_limit 20
+     buffer_queue_full_action drop_oldest_chunk
+     flush_interval 20s
+     retry_limit 10
+     retry_wait 5s
+     max_retry_wait 5m
     </match>
 metadata:
   name: omsagent-rs-config
