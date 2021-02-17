@@ -12,13 +12,13 @@ data:
       chunk_size_limit 4m
      </source>
 
-     #Kubernetes pod inventory
-     <source>
-      type kubepodinventory
-      tag oms.containerinsights.KubePodInventory
-      run_interval 60
-      log_level debug
-     </source>
+     # #Kubernetes pod inventory
+     # <source>
+     #  type kubepodinventory
+     #  tag oms.containerinsights.KubePodInventory
+     #  run_interval 60
+     #  log_level debug
+     # </source>
 
      #Kubernetes Persistent Volume inventory
      <source>
