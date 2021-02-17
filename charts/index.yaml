@@ -3,10 +3,10 @@ entries:
   azuremonitor-containers-highscale-private-preview:
   - apiVersion: v1
     appVersion: 7.0.0-1
-    created: "2021-02-16T16:48:51.3072238-08:00"
+    created: "2021-02-16T16:50:35.5764894-08:00"
     description: Helm chart for deploying Azure Monitor container monitoring agent
       in Kubernetes
-    digest: 5019fc990c33080d236083958a478f1e7161839912f0d156800bde899a90b8dc
+    digest: 6f216a4d5280aed01650eea6979d4cfd143f55eb24171e6059a69316484d5ad2
     home: https://docs.microsoft.com/en-us/azure/monitoring/monitoring-container-health
     icon: https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/img/azuremonitor-containers.svg
     keywords:
@@ -44,4 +44,4 @@ entries:
     urls:
     - https://raw.githubusercontent.com/microsoft/Docker-Provider/grwehner/oneagent/charts/azuremonitor-containers-highscale-private-preview-2.8.0.tgz
     version: 2.8.0
-generated: "2021-02-16T16:48:51.2820229-08:00"
+generated: "2021-02-16T16:50:35.5512358-08:00"
