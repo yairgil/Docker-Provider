@@ -53,7 +53,7 @@ def test_ds_workflows(env_dict):
         if IsContainerPerfEmitStream == False:
             pytest.fail("ContainerPerf stream not emitted successfully from pod:" + podName)
         if IsContainerInventoryStream == False:
-            pytest.fail("ContainerPerf stream not emitted successfully from pod:" + podName)            
+            pytest.fail("ContainerInventory stream not emitted successfully from pod:" + podName)            
 
     append_result_output("test_ds_workflows end \n",
                          env_dict['TEST_AGENT_LOG_FILE'])
