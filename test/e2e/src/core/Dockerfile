@@ -11,6 +11,7 @@ COPY ./core/conftest.py /e2etests/
 COPY ./core/helper.py /e2etests/
 COPY ./core/ /e2etests/
 COPY ./common/ /e2etests/
+COPY ./tests/ /e2etests/
 
 RUN ["chmod", "+x", "/e2e_tests.sh"]
 ENTRYPOINT ["./e2e_tests.sh"]
