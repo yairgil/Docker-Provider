@@ -114,7 +114,7 @@ class KubernetesContainerInventory
            
             if  !imageRepoInSpec.nil? && !imageRepoInSpec.empty?
               containerInventoryRecord["Repository"] = imageRepoInSpec
-            elsif !imageRepo.nil? && !imageRepo.empty? # use repo from status if there is no repo in the spec's image          
+            elsif !imageRepo.nil? && !imageRepo.empty? # use repo from status if there is no repo name in the spec's image          
               containerInventoryRecord["Repository"] = imageRepo
             end               
 
