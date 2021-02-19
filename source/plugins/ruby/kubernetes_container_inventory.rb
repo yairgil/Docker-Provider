@@ -45,35 +45,14 @@ class KubernetesContainerInventory
             end
             # imagedId is of the format - repo@sha256:imageid
             imageIdValue = containerStatus["imageID"]
+            imageRepo = ""
             if !imageIdValue.nil? && !imageIdValue.empty?
               atLocation = imageIdValue.index("@")
               if !atLocation.nil?
                 containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
+                imageRepo = imageIdValue[0..(atLocation - 1)]
               end
-            end
-            # image is of the format - repository/image:imagetag
-            imageValue = containerStatus["image"]
-            if !imageValue.nil? && !imageValue.empty?
-              # Find delimiters in the string of format repository/image:imagetag
-              slashLocation = imageValue.index("/")
-              colonLocation = imageValue.index(":")
-              if !colonLocation.nil?
-                if slashLocation.nil?
-                  # image:imagetag
-                  containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
-                else
-                  # repository/image:imagetag
-                  containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
-                  containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
-                end
-                containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
-              end
-            elsif !imageIdValue.nil? && !imageIdValue.empty?
-              # Getting repo information from imageIdValue when no tag in ImageId
-              if !atLocation.nil?
-                containerInventoryRecord["Repository"] = imageIdValue[0..(atLocation - 1)]
-              end
-            end
+            end            
             containerInventoryRecord["ExitCode"] = 0
             isContainerTerminated = false
             isContainerWaiting = false
@@ -107,6 +86,38 @@ class KubernetesContainerInventory
             end
 
             containerInfoMap = containersInfoMap[containerName]
+            # image can be any one of the format in spec - repository/image:imagetag, image:imagetag, image
+            imageValue = containerInfoMap["image"]
+            imageRepoInSpec = ""
+            if !imageValue.nil? && !imageValue.empty?
+              # Find delimiters in the string of format repository/image:imagetag
+              slashLocation = imageValue.index("/")
+              colonLocation = imageValue.index(":")
+              if !colonLocation.nil?
+                if slashLocation.nil?
+                  # image:imagetag
+                  containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]                 
+                else
+                  # repository/image:imagetag
+                  imageRepoInSpec = imageValue[0..(slashLocation - 1)]
+                  containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
+                end
+                containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
+              else 
+                # image
+                containerInventoryRecord["Image"] = imageValue
+                # if no tag specified, k8s assumes latest as imagetag.
+                # Ref - https://kubernetes.io/docs/concepts/containers/images/#image-names
+                containerInventoryRecord["ImageTag"] = "latest"
+              end           
+            end
+           
+            if  !imageRepoInSpec.nil? && !imageRepoInSpec.empty?
+              containerInventoryRecord["Repository"] = imageRepoInSpec
+            elsif !imageRepo.nil? && !imageRepo.empty? # use repo from status if there is no repo in the spec's image          
+              containerInventoryRecord["Repository"] = imageRepo
+            end               
+
             podName = containerInfoMap["PodName"]
             namespace = containerInfoMap["Namespace"]
             # containername in the format what docker sees
@@ -165,6 +176,7 @@ class KubernetesContainerInventory
             podContainers.each do |container|
               containerInfoMap = {}
               containerName = container["name"]
+              containerInfoMap["image"] = container["image"]
               containerInfoMap["ElementName"] = containerName
               containerInfoMap["Computer"] = nodeName
               containerInfoMap["PodName"] = podName
