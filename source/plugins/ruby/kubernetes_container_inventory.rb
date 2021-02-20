@@ -45,12 +45,10 @@ class KubernetesContainerInventory
             end
             # imagedId is of the format - repo@sha256:imageid
             imageIdValue = containerStatus["imageID"]
-            imageRepo = ""
             if !imageIdValue.nil? && !imageIdValue.empty?
               atLocation = imageIdValue.index("@")
               if !atLocation.nil?
                 containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
-                imageRepo = imageIdValue[0..(atLocation - 1)]
               end
             end            
             containerInventoryRecord["ExitCode"] = 0
@@ -86,11 +84,20 @@ class KubernetesContainerInventory
             end
 
             containerInfoMap = containersInfoMap[containerName]
-            # image can be any one of the format in spec - repository/image:imagetag, image:imagetag, image
+            # image can be in any one of below format in spec 
+            # repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image                       
             imageValue = containerInfoMap["image"]
-            imageRepoInSpec = ""
             if !imageValue.nil? && !imageValue.empty?
-              # Find delimiters in the string of format repository/image:imagetag
+              # Find delimiters in image format
+              atLocation = imageValue.index("@")
+              if !atLocation.nil?
+                # repository/image@digest or repository/image:imagetag@digest, image@digest
+                imageValue = imageValue[0..(atLocation - 1)]
+                # Use Digest from the spec's image in case when the status doesnt get populated i.e. container in pending or image pull back etc.
+                if containerInventoryRecord["ImageId"].nil? || containerInventoryRecord["ImageId"].empty?
+                   containerInventoryRecord["ImageId"] = imageValue[(atLocation + 1)..-1] 
+                end
+              end
               slashLocation = imageValue.index("/")
               colonLocation = imageValue.index(":")
               if !colonLocation.nil?
@@ -99,25 +106,25 @@ class KubernetesContainerInventory
                   containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]                 
                 else
                   # repository/image:imagetag
-                  imageRepoInSpec = imageValue[0..(slashLocation - 1)]
+                  containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
                   containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
                 end
                 containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
               else 
-                # image
-                containerInventoryRecord["Image"] = imageValue
-                # if no tag specified, k8s assumes latest as imagetag.
+                if slashLocation.nil?
+                  # image
+                  containerInventoryRecord["Image"] = imageValue
+                else
+                  # repo/image
+                  containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+                  containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..-1]
+                end 
+                # if no tag specified, k8s assumes latest as imagetag and this is same behavior from docker API and from status.
                 # Ref - https://kubernetes.io/docs/concepts/containers/images/#image-names
                 containerInventoryRecord["ImageTag"] = "latest"
               end           
             end
            
-            if  !imageRepoInSpec.nil? && !imageRepoInSpec.empty?
-              containerInventoryRecord["Repository"] = imageRepoInSpec
-            elsif !imageRepo.nil? && !imageRepo.empty? # use repo from status if there is no repo name in the spec's image          
-              containerInventoryRecord["Repository"] = imageRepo
-            end               
-
             podName = containerInfoMap["PodName"]
             namespace = containerInfoMap["Namespace"]
             # containername in the format what docker sees
