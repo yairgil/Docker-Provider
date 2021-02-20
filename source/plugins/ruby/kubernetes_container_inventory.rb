@@ -90,6 +90,7 @@ class KubernetesContainerInventory
             if !imageValue.nil? && !imageValue.empty?
               # Find delimiters in image format
               atLocation = imageValue.index("@")
+              isDigestSpecified = false 
               if !atLocation.nil?
                 # repository/image@digest or repository/image:imagetag@digest, image@digest
                 imageValue = imageValue[0..(atLocation - 1)]
@@ -97,6 +98,7 @@ class KubernetesContainerInventory
                 if containerInventoryRecord["ImageId"].nil? || containerInventoryRecord["ImageId"].empty?
                    containerInventoryRecord["ImageId"] = imageValue[(atLocation + 1)..-1] 
                 end
+                isDigestSpecified = true
               end
               slashLocation = imageValue.index("/")
               colonLocation = imageValue.index(":")
@@ -121,7 +123,9 @@ class KubernetesContainerInventory
                 end 
                 # if no tag specified, k8s assumes latest as imagetag and this is same behavior from docker API and from status.
                 # Ref - https://kubernetes.io/docs/concepts/containers/images/#image-names
-                containerInventoryRecord["ImageTag"] = "latest"
+                if isDigestSpecified == false 
+                  containerInventoryRecord["ImageTag"] = "latest"
+                end
               end           
             end
            
