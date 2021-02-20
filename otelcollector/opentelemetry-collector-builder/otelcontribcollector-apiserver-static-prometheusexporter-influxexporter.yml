@@ -1,11 +1,12 @@
 exporters:
   file:
     path: /opt/promotel.json
-  logging:
-    loglevel: debug
+  #logging:
+    #loglevel: debug
   prometheus:
     endpoint: "0.0.0.0:9999"
   influx:
+    loglevel: debug
 receivers:
     prometheus:
       config:
@@ -31,4 +32,4 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      exporters: [file,logging,prometheus,influx]
+      exporters: [file,prometheus,influx]

@@ -15,6 +15,7 @@
 package influxexporter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -22,7 +23,7 @@ import (
 	"strings"
 	"syscall"
 	//"math/rand"
-	//"time"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -32,10 +33,36 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	//"github.com/influxdata/influxdb-client-go/v2"
 	//"github.com/influxdata/influxdb-client-go/v2/api/write"
+
+	"github.com/influxdata/line-protocol"
 )
 
 type logDataBuffer struct {
 	str strings.Builder
+}
+
+// Implement influx lp metric interface
+type Metric struct {
+	name   				string
+	tags   				[]*protocol.Tag
+	fields 				[]*protocol.Field
+	timestamp     time.Time
+}
+
+func (m Metric) Name() string {
+	return m.name
+}
+
+func (m Metric) Time() time.Time {
+	return m.timestamp
+}
+
+func (m Metric) FieldList() []*protocol.Field {
+	return m.fields
+}
+
+func(m Metric) TagList() []*protocol.Tag {
+	return m.tags
 }
 
 func (b *logDataBuffer) logEntry(format string, a ...interface{}) {
@@ -392,38 +419,108 @@ func (s *influxExporter) pushTraceData(
 	return 0, nil
 }
 
+// Messy code for only gauges right now
+func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
+	name := m.Name()
+
+	switch m.DataType() {
+	case pdata.MetricDataTypeDoubleGauge:
+		ps := m.DoubleGauge().DataPoints()
+
+		for i := 0; i < ps.Len(); i++ {
+			p := ps.At(i)
+
+			timestamp := time.Unix(0, int64(p.Timestamp()))
+
+			var labels []*protocol.Tag
+			p.LabelsMap().ForEach(func(k string, v string) {
+				label := &protocol.Tag{Key: k, Value: v}
+				labels = append(labels, label)
+			})
+
+			var fields []*protocol.Field
+			field := &protocol.Field {
+				Key: "Value", Value: float64(p.Value()),
+			}
+		  fields = append(fields, field)
+		
+			metric := Metric{
+				timestamp: timestamp, name: name, tags: labels, fields: fields,
+			}
+
+			buf := &bytes.Buffer{}
+			serializer := protocol.NewEncoder(buf)
+			serializer.SetMaxLineBytes(1024)
+			serializer.Encode(metric)
+			fmt.Println(buf.String())
+		}
+	case pdata.MetricDataTypeIntGauge:
+		ps := m.IntGauge().DataPoints()
+
+		for i := 0; i < ps.Len(); i++ {
+			p := ps.At(i)
+
+			timestamp := time.Unix(0, int64(p.Timestamp()))
+
+			var labels []*protocol.Tag
+			p.LabelsMap().ForEach(func(k string, v string) {
+				label := &protocol.Tag{Key: k, Value: v}
+				labels = append(labels, label)
+			})
+
+			var fields []*protocol.Field
+			field := &protocol.Field {
+				Key: "Value", Value: int64(p.Value()),
+			}
+		  fields = append(fields, field)
+		
+			metric := Metric{
+				timestamp: timestamp, name: name, tags: labels, fields: fields,
+			}
+
+			buf := &bytes.Buffer{}
+			serializer := protocol.NewEncoder(buf)
+			serializer.SetMaxLineBytes(1024)
+			serializer.Encode(metric)
+			fmt.Println(buf.String())
+		}
+	default:
+		return
+	}
+
+}
+
 func (s *influxExporter) pushMetricsData(
 	_ context.Context,
 	md pdata.Metrics,
 ) (int, error) {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
-	if !s.debug {
-		return 0, nil
-	}
+	//if !s.debug {
+		//return 0, nil
+	//}
 
 	buf := logDataBuffer{}
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		buf.logEntry("ResourceMetrics #%d", i)
+		//buf.logEntry("ResourceMetrics #%d", i)
 		rm := rms.At(i)
-		buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
+		//buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
-			buf.logEntry("InstrumentationLibraryMetrics #%d", j)
+			//buf.logEntry("InstrumentationLibraryMetrics #%d", j)
 			ilm := ilms.At(j)
-			buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
+			//buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
 			metrics := ilm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
-				buf.logEntry("Metric #%d", k)
+				//buf.logEntry("Metric #%d", k)
 				metric := metrics.At(k)
-				buf.logMetricDescriptor(metric)
-				buf.logMetricDataPoints(metric)
+				buf.logMetricInflux(metric, s)
+				//buf.logMetricDescriptor(metric)
+				//buf.logMetricDataPoints(metric)
 			}
 		}
 	}
-
-	s.logger.Debug(buf.str.String())
 
 	return 0, nil
 }
