@@ -27,7 +27,7 @@ receivers:
           static_configs:
            - targets: [$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT]
              labels:
-               job: apiserver
+               job_name: "apiserver"
 service:
   pipelines:
     metrics:

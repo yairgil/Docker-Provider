@@ -46,7 +46,7 @@ type Metric struct {
 	name   				string
 	tags   				[]*protocol.Tag
 	fields 				[]*protocol.Field
-	timestamp     time.Time
+	timestamp     		time.Time
 }
 
 func (m Metric) Name() string {
@@ -421,7 +421,14 @@ func (s *influxExporter) pushTraceData(
 
 // Messy code for only gauges right now
 func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
-	name := m.Name()
+	
+	var metric *Metric
+	var name string 
+	var timestamp time.Time
+	//var labels []*protocol.Tag
+	//var fields []*protocol.Field
+
+	name = m.Name()
 
 	switch m.DataType() {
 	case pdata.MetricDataTypeDoubleGauge:
@@ -430,7 +437,7 @@ func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
 		for i := 0; i < ps.Len(); i++ {
 			p := ps.At(i)
 
-			timestamp := time.Unix(0, int64(p.Timestamp()))
+			timestamp = time.Unix(0, int64(p.Timestamp()))
 
 			var labels []*protocol.Tag
 			p.LabelsMap().ForEach(func(k string, v string) {
@@ -440,12 +447,12 @@ func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
 
 			var fields []*protocol.Field
 			field := &protocol.Field {
-				Key: "Value", Value: float64(p.Value()),
+				Key: name, Value: float64(p.Value()),
 			}
-		  fields = append(fields, field)
+		    fields = append(fields, field)
 		
-			metric := Metric{
-				timestamp: timestamp, name: name, tags: labels, fields: fields,
+			metric = &Metric{
+				timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
 			}
 
 			buf := &bytes.Buffer{}
@@ -453,6 +460,12 @@ func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
 			serializer.SetMaxLineBytes(1024)
 			serializer.Encode(metric)
 			fmt.Println(buf.String())
+			bytesWritten, er := Write2ME(buf.Bytes())
+			if er == nil {
+				fmt.Println(fmt.Sprintf("Successfully wrote %d bytes to ME", bytesWritten) )
+			} else {
+				fmt.Println("Error writing metric to ME %s", er.Error())
+			}
 		}
 	case pdata.MetricDataTypeIntGauge:
 		ps := m.IntGauge().DataPoints()
@@ -460,7 +473,7 @@ func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
 		for i := 0; i < ps.Len(); i++ {
 			p := ps.At(i)
 
-			timestamp := time.Unix(0, int64(p.Timestamp()))
+			timestamp = time.Unix(0, int64(p.Timestamp()))
 
 			var labels []*protocol.Tag
 			p.LabelsMap().ForEach(func(k string, v string) {
@@ -470,12 +483,12 @@ func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
 
 			var fields []*protocol.Field
 			field := &protocol.Field {
-				Key: "Value", Value: int64(p.Value()),
+				Key: name, Value: int64(p.Value()),
 			}
-		  fields = append(fields, field)
+		  	fields = append(fields, field)
 		
-			metric := Metric{
-				timestamp: timestamp, name: name, tags: labels, fields: fields,
+			metric = &Metric{
+				timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
 			}
 
 			buf := &bytes.Buffer{}
@@ -483,10 +496,31 @@ func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
 			serializer.SetMaxLineBytes(1024)
 			serializer.Encode(metric)
 			fmt.Println(buf.String())
+			bytesWritten, er := Write2ME(buf.Bytes())
+			if er == nil {
+				fmt.Println(fmt.Sprintf("Successfully wrote %d bytes to ME", bytesWritten) )
+			} else {
+				fmt.Println("Error writing metric to ME %s", er.Error())
+			}
 		}
 	default:
 		return
 	}
+
+	/*if metric != nil {
+		buf := &bytes.Buffer{}
+		serializer := protocol.NewEncoder(buf)
+		serializer.SetMaxLineBytes(1024)
+		serializer.Encode(metric)
+		bytesWritten, er := Write2ME(buf.Bytes())
+		if er != nil {
+			fmt.Println("Successfully wrote %d bytes to ME", bytesWritten )
+		} else {
+			fmt.Println("Error writing metric to ME %s", er.Error())
+		}
+	} else {
+		fmt.Println("Empty metric !!! Something is not correct!")
+	}*/
 
 }
 
