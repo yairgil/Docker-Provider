@@ -274,7 +274,7 @@ For DEV and PROD branches, automatically deployed latest yaml with latest agent 
 
 ## For executing tests
 
-1. Deploy the omsagent.yaml with your agent image. In the yaml, makesure `ISTEST` environment variable set to `true` if its not set already
+1. Deploy the omsagent.yaml with your agent image. In the yaml, make sure `ISTEST` environment variable set to `true` if its not set already
 2. Update the Service Principal CLIENT_ID, CLIENT_SECRET and TENANT_ID placeholder values and apply e2e-tests.yaml to execute the tests 
     > Note: Service Principal requires reader role on log analytics workspace and cluster resource to query LA and metrics
    ```
