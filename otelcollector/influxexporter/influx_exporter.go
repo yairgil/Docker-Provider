@@ -419,90 +419,161 @@ func (s *influxExporter) pushTraceData(
 	return 0, nil
 }
 
-// Messy code for only gauges right now
-func (b *logDataBuffer) logMetricInflux(m pdata.Metric, s *influxExporter) {
-	
-	var metric *Metric
-	var name string 
-	var timestamp time.Time
-	//var labels []*protocol.Tag
-	//var fields []*protocol.Field
+func sendToME(metric *Metric) {
+	buf := &bytes.Buffer{}
+	serializer := protocol.NewEncoder(buf)
+	serializer.SetMaxLineBytes(1024)
+	serializer.Encode(metric)
+	fmt.Println(buf.String())
+	bytesWritten, er := Write2ME(buf.Bytes())
+	if er == nil {
+		fmt.Println(fmt.Sprintf("Successfully wrote %d bytes to ME", bytesWritten) )
+	} else {
+		fmt.Println(fmt.Sprintf("Error writing metric to ME %s", er.Error()))
+	}
+}
 
-	name = m.Name()
+func convertTypeDoubleToInflux(ps pdata.DoubleDataPointSlice, name string) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+
+		timestamp := time.Unix(0, int64(p.Timestamp()))
+
+		var labels []*protocol.Tag
+		p.LabelsMap().ForEach(func(k string, v string) {
+			label := &protocol.Tag{Key: k, Value: v}
+			labels = append(labels, label)
+		})
+
+		var fields []*protocol.Field
+		field := &protocol.Field {
+			Key: name, Value: float64(p.Value()),
+		}
+		fields = append(fields, field)
+	
+		metric := &Metric{
+			timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
+		}
+
+		sendToME(metric)
+	}
+}
+
+func convertTypeIntToInflux(ps pdata.IntDataPointSlice, name string) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+
+		timestamp := time.Unix(0, int64(p.Timestamp()))
+
+		var labels []*protocol.Tag
+		p.LabelsMap().ForEach(func(k string, v string) {
+			label := &protocol.Tag{Key: k, Value: v}
+			labels = append(labels, label)
+		})
+
+		var fields []*protocol.Field
+		field := &protocol.Field {
+			Key: name, Value: float64(p.Value()),
+		}
+		fields = append(fields, field)
+	
+		metric := &Metric{
+			timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
+		}
+
+		sendToME(metric)
+	}
+}
+
+func convertTypeDoubleSummaryToInflux(ps pdata.DoubleSummaryDataPointSlice, name string) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		timestamp := time.Unix(0, int64(p.Timestamp()))
+
+		var labels []*protocol.Tag
+		p.LabelsMap().ForEach(func(k string, v string) {
+			label := &protocol.Tag{Key: k, Value: v}
+			labels = append(labels, label)
+		})
+
+		// Series for count
+		var fields []*protocol.Field
+	  countField := &protocol.Field {
+			Key: fmt.Sprintf("%s_count", name), Value: float64(p.Count()),
+		}
+		fields = append(fields, countField)
+		metric := &Metric{
+			timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
+		}
+		sendToME(metric)
+
+		// Series for sum
+		fields = fields[:0]
+		totalField := &protocol.Field {
+			Key: fmt.Sprintf("%s_sum", name), Value: float64(p.Sum()),
+		}
+		fields = append(fields, totalField)
+		metric = &Metric{
+			timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
+		}
+		sendToME(metric)
+
+		// Series for each quantile
+		quantiles := p.QuantileValues()
+		for i := 0; i < quantiles.Len(); i++ {
+			fields = fields[:0]
+			if len(labels) > 0 {
+				labels = labels[:len(labels)-1]
+			}
+			quantile := quantiles.At(i)
+			label := &protocol.Tag{Key: "quantile", Value: fmt.Sprintf("%f", quantile.Quantile())}
+			labels = append(labels, label)
+
+			field := &protocol.Field {
+				Key: fmt.Sprintf(name), Value: float64(quantile.Value()),
+			}
+			fields = append(fields, field)
+			
+			metric = &Metric{
+				timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
+			}
+			sendToME(metric)
+		}
+	}
+}
+
+func (b *logDataBuffer) convertMetricToInflux(m pdata.Metric, s *influxExporter) {
+	var name = m.Name()
 
 	switch m.DataType() {
-	case pdata.MetricDataTypeDoubleGauge:
-		ps := m.DoubleGauge().DataPoints()
-
-		for i := 0; i < ps.Len(); i++ {
-			p := ps.At(i)
-
-			timestamp = time.Unix(0, int64(p.Timestamp()))
-
-			var labels []*protocol.Tag
-			p.LabelsMap().ForEach(func(k string, v string) {
-				label := &protocol.Tag{Key: k, Value: v}
-				labels = append(labels, label)
-			})
-
-			var fields []*protocol.Field
-			field := &protocol.Field {
-				Key: name, Value: float64(p.Value()),
-			}
-		    fields = append(fields, field)
-		
-			metric = &Metric{
-				timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
-			}
-
-			buf := &bytes.Buffer{}
-			serializer := protocol.NewEncoder(buf)
-			serializer.SetMaxLineBytes(1024)
-			serializer.Encode(metric)
-			fmt.Println(buf.String())
-			bytesWritten, er := Write2ME(buf.Bytes())
-			if er == nil {
-				fmt.Println(fmt.Sprintf("Successfully wrote %d bytes to ME", bytesWritten) )
-			} else {
-				fmt.Println("Error writing metric to ME %s", er.Error())
-			}
-		}
 	case pdata.MetricDataTypeIntGauge:
 		ps := m.IntGauge().DataPoints()
+		convertTypeIntToInflux(ps, name)
 
-		for i := 0; i < ps.Len(); i++ {
-			p := ps.At(i)
+	case pdata.MetricDataTypeDoubleGauge:
+		ps := m.DoubleGauge().DataPoints()
+		convertTypeDoubleToInflux(ps, name)
 
-			timestamp = time.Unix(0, int64(p.Timestamp()))
-
-			var labels []*protocol.Tag
-			p.LabelsMap().ForEach(func(k string, v string) {
-				label := &protocol.Tag{Key: k, Value: v}
-				labels = append(labels, label)
-			})
-
-			var fields []*protocol.Field
-			field := &protocol.Field {
-				Key: name, Value: int64(p.Value()),
-			}
-		  	fields = append(fields, field)
-		
-			metric = &Metric{
-				timestamp: timestamp, name: measurementName, tags: labels, fields: fields,
-			}
-
-			buf := &bytes.Buffer{}
-			serializer := protocol.NewEncoder(buf)
-			serializer.SetMaxLineBytes(1024)
-			serializer.Encode(metric)
-			fmt.Println(buf.String())
-			bytesWritten, er := Write2ME(buf.Bytes())
-			if er == nil {
-				fmt.Println(fmt.Sprintf("Successfully wrote %d bytes to ME", bytesWritten) )
-			} else {
-				fmt.Println("Error writing metric to ME %s", er.Error())
-			}
+  // Only if counter
+	case pdata.MetricDataTypeIntSum:
+		data := m.IntSum()
+		if data.IsMonotonic() && data.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+			ps := data.DataPoints()
+			convertTypeIntToInflux(ps, name)
 		}
+
+	// Only if counter
+	case pdata.MetricDataTypeDoubleSum:
+		data := m.DoubleSum()
+		if data.IsMonotonic() && data.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+			ps := data.DataPoints()
+			convertTypeDoubleToInflux(ps, name)
+		}
+
+	case pdata.MetricDataTypeDoubleSummary:
+		ps := m.DoubleSummary().DataPoints()
+		convertTypeDoubleSummaryToInflux(ps, name)
+
 	default:
 		return
 	}
@@ -549,7 +620,7 @@ func (s *influxExporter) pushMetricsData(
 			for k := 0; k < metrics.Len(); k++ {
 				//buf.logEntry("Metric #%d", k)
 				metric := metrics.At(k)
-				buf.logMetricInflux(metric, s)
+				buf.convertMetricToInflux(metric, s)
 				//buf.logMetricDescriptor(metric)
 				//buf.logMetricDataPoints(metric)
 			}
