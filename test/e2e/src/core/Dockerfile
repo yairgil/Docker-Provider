@@ -15,4 +15,3 @@ COPY ./tests/ /e2etests/
 
 RUN ["chmod", "+x", "/e2e_tests.sh"]
 ENTRYPOINT ["./e2e_tests.sh"]
-

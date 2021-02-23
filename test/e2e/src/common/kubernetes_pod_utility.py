@@ -63,4 +63,3 @@ def get_pod_logs(api_instance, pod_namespace, pod_name, container_name):
         return api_instance.read_namespaced_pod_log(pod_name, pod_namespace, container=container_name)
     except Exception as e:
         pytest.fail("Error occurred when fetching pod logs: " + str(e))
-

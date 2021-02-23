@@ -117,4 +117,3 @@ NODE_DISK_USAGE_PERCENTAGE_METRIC_NAME = 'diskUsedPercentage(Preview)'
 POD_METRICS_NAMESPACE = 'insights.container/pods'
 POD_METRIC_METRIC_AGGREGATION = 'average'
 POD_COUNT_METRIC_NAME = 'PodCount'
-

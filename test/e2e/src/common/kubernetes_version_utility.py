@@ -7,4 +7,3 @@ def get_kubernetes_server_version(api_instance):
         return api_response.git_version
     except Exception as e:
         pytest.fail("Error occured when retrieving kubernetes server version: " + str(e))
-
