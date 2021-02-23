@@ -14,7 +14,8 @@ def get_crd_instance(api_instance, group, version, namespace, plural, crd_name):
 # Function that watches events corresponding to given CRD instance and passes the events to a callback function
 def watch_crd_instance(api_instance, group, version, namespace, plural, crd_name, timeout, callback=None):
     if not callback:
-        return
+        pytest.fail("callback should be specified")
+                
     field_selector = "metadata.name={}".format(crd_name) if crd_name else ""
     try:
         w = watch.Watch()
