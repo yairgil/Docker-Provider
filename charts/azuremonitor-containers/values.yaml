@@ -34,8 +34,8 @@ omsagent:
   # Should be some number greater than default (0)
   priority: 10
   
-  # This used for running agent pods in test mode and setting true makes the agent pods running in test mode 
-  # additional agent workflow logs will be emitted which are used for e2e and conformance testing
+  # This used for running agent pods in test mode.
+  # if set to true additional agent workflow logs will be emitted which are used for e2e and arc k8s conformance testing
   ISTEST: false
 
   ## To get your workspace id and key do the following
