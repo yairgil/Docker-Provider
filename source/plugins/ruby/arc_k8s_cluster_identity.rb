@@ -29,6 +29,7 @@ class ArcK8sClusterIdentity
     @token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
     @cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
     @kube_api_server_url = KubernetesApiClient.getKubeAPIServerUrl
+    @isLastTokenRenewalUpdatePending = false 
     if @kube_api_server_url.nil?
       @log.warn "got api server url nil from KubernetesApiClient.getKubeAPIServerUrl @ #{Time.now.utc.iso8601}"
     end
@@ -41,14 +42,19 @@ class ArcK8sClusterIdentity
 
   def get_cluster_identity_token()
     begin
-      # get the cluster msi identity token either if its empty or near expirty. Token is valid 24 hrs.
+      # get the cluster msi identity token either if its empty or near expiry. Token is valid 24 hrs.
       if @cached_access_token.to_s.empty? || (Time.now + 60 * 60 > @token_expiry_time) # Refresh token 1 hr from expiration
         # renew the token if its near expiry
         if !@cached_access_token.to_s.empty? && (Time.now + 60 * 60 > @token_expiry_time)
-          @log.info "renewing the token since its near expiry @ #{Time.now.utc.iso8601}"
-          renew_near_expiry_token
-          # sleep 60 seconds to get the renewed token  available
-          sleep 60
+          if !@isLastTokenRenewalUpdatePending
+            @log.info "renewing the token since its near expiry and last token renewal update not pending @ #{Time.now.utc.iso8601}"
+            renew_near_expiry_token
+            # sleep 60 seconds to get the renewed token  available
+            sleep 60
+            @isLastTokenRenewalUpdatePending = true
+          else 
+            @log.warn "last token renewal update still pending @ #{Time.now.utc.iso8601}"
+          end 
         end
         @log.info "get token reference from crd @ #{Time.now.utc.iso8601}"
         tokenReference = get_token_reference_from_crd
@@ -61,6 +67,7 @@ class ArcK8sClusterIdentity
           token = get_token_from_secret(token_secret_name, token_secret_data_name)
           if !token.nil?
             @cached_access_token = token
+            @isLastTokenRenewalUpdatePending = false 
           else
             @log.warn "got token nil from secret: #{@token_secret_name}"
           end
@@ -123,7 +130,17 @@ class ArcK8sClusterIdentity
         tokenReference["expirationTime"] = status["expirationTime"]
         tokenReference["secretName"] = status["tokenReference"]["secretName"]
         tokenReference["dataName"] = status["tokenReference"]["dataName"]
-      end
+      elsif get_response.code.to_i == 404 # this might happen if the crd resource deleted by user accidently
+        @log.info "since crd resource doesnt exist hence creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
+        crd_request_body = get_crd_request_body
+        crd_request_body_json = crd_request_body.to_json
+        create_request = Net::HTTP::Post.new(crd_request_uri)
+        create_request["Content-Type"] = "application/json"
+        create_request["Authorization"] = "Bearer #{@service_account_token}"
+        create_request.body = crd_request_body_json
+        create_response = @http_client.request(create_request)
+        @log.info "Got response of #{create_response.code} for POST #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+      end      
     rescue => err
       @log.warn "get_token_reference_from_crd call failed: #{err}"
       ApplicationInsightsUtility.sendExceptionTelemetry(err, { "FeatureArea" => "MDM" })
