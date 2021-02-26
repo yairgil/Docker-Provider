@@ -521,14 +521,17 @@ func convertTypeDoubleSummaryToInflux(ps pdata.DoubleSummaryDataPointSlice, name
 		// Series for each quantile
 		quantiles := p.QuantileValues()
 		for i := 0; i < quantiles.Len(); i++ {
-			fields = fields[:0]
-			if len(labels) > 0 {
+
+			// Remove last quantile label
+			if i > 0 && len(labels) > 0 {
 				labels = labels[:len(labels)-1]
 			}
+
 			quantile := quantiles.At(i)
 			label := &protocol.Tag{Key: "quantile", Value: fmt.Sprintf("%f", quantile.Quantile())}
 			labels = append(labels, label)
 
+			fields = fields[:0]
 			field := &protocol.Field {
 				Key: fmt.Sprintf(name), Value: float64(quantile.Value()),
 			}
