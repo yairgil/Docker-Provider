@@ -545,6 +545,186 @@ func convertTypeDoubleSummaryToInflux(ps pdata.DoubleSummaryDataPointSlice, name
 	}
 }
 
+func convertDoubleHistogramToInflux(ps pdata.DoubleHistogramDataPointSlice, name string) {
+	var metrics []*Metric
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		timestamp := time.Unix(0, int64(p.Timestamp()))
+
+		var labels []*protocol.Tag
+		p.LabelsMap().ForEach(func(k string, v string) {
+			label := &protocol.Tag{Key: k, Value: v}
+			labels = append(labels, label)
+		})
+
+		var sumCountFields []*protocol.Field
+		
+		//add sum, count series
+		sumField := &protocol.Field {
+			Key: name + "_sum", Value: float64(p.Sum()),
+		}
+		countField := &protocol.Field {
+			Key: name + "_count", Value: float64(p.Count()),
+		}
+		
+		sumCountFields = append(sumCountFields, sumField, countField)
+	
+		sumCountMetrics := &Metric{
+			timestamp: timestamp, name: measurementName, tags: labels, fields: sumCountFields,
+		}
+
+		metrics = append(metrics,sumCountMetrics)
+
+		//add +Inf series
+		var infSerieslabels []*protocol.Tag
+		var infSeriesFields []*protocol.Field
+		var infSeriesMetric *Metric
+		
+		infSeriesFields = append(infSeriesFields, &protocol.Field{ 
+		Key: name + "_bucket", Value: float64(p.Count())} )
+
+		p.LabelsMap().ForEach(func(k string, v string) {
+			label := &protocol.Tag{Key: k, Value: v}
+			infSerieslabels = append(infSerieslabels, label)
+		})
+		infSerieslabels = append(infSerieslabels, &protocol.Tag{Key: "le", Value: fmt.Sprint("+Inf")})
+		infSeriesMetric = &Metric{
+			timestamp: timestamp, name: measurementName, tags: infSerieslabels, fields: infSeriesFields,
+		}
+		metrics = append(metrics,infSeriesMetric)
+
+		//add all explicit le series
+		
+		for index, _ :=range p.ExplicitBounds() {
+			var leSerieslabels []*protocol.Tag
+			
+			var leSeriesMetric *Metric
+			
+
+			var cumulativeValue uint64
+			if index >= len(p.BucketCounts()) { //take only explicit bounds
+				break
+			}
+			for bucketIndex, _ := range p.BucketCounts() {
+				if bucketIndex > index {
+					break
+				}
+				cumulativeValue +=  p.BucketCounts()[index] //bucketValue
+			}
+			var fields []*protocol.Field
+			fields = append(fields, &protocol.Field{ 
+			Key: name + "_bucket", Value: float64(cumulativeValue)} )
+			
+			//var leSerieslabels []*protocol.Tag
+			p.LabelsMap().ForEach(func(k string, v string) {
+				label := &protocol.Tag{Key: k, Value: v}
+				leSerieslabels = append(leSerieslabels, label)
+			})
+
+			leSerieslabels = append(leSerieslabels, &protocol.Tag{Key: "le", Value: fmt.Sprint(p.ExplicitBounds()[index])})
+			//Value: strconv.FormatFloat(p.ExplicitBounds()[index], 'f',-1, 64)})//(bound, 'f',-1, 64)})
+			leSeriesMetric = &Metric{
+				timestamp: timestamp, name: measurementName, tags: leSerieslabels, fields: fields,
+			}
+			metrics = append(metrics,leSeriesMetric)
+		}
+	}
+	for _, metric:= range metrics {
+		sendToME(metric)
+	}
+
+}
+
+func convertIntHistogramToInflux(ps pdata.IntHistogramDataPointSlice, name string) {
+	var metrics []*Metric
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		timestamp := time.Unix(0, int64(p.Timestamp()))
+
+		var labels []*protocol.Tag
+		p.LabelsMap().ForEach(func(k string, v string) {
+			label := &protocol.Tag{Key: k, Value: v}
+			labels = append(labels, label)
+		})
+
+		var sumCountFields []*protocol.Field
+		
+		//add sum, count series
+		sumField := &protocol.Field {
+			Key: name + "_sum", Value: float64(p.Sum()),
+		}
+		countField := &protocol.Field {
+			Key: name + "_count", Value: float64(p.Count()),
+		}
+		
+		sumCountFields = append(sumCountFields, sumField, countField)
+	
+		sumCountMetrics := &Metric{
+			timestamp: timestamp, name: measurementName, tags: labels, fields: sumCountFields,
+		}
+
+		metrics = append(metrics,sumCountMetrics)
+
+		//add +Inf series
+		var infSerieslabels []*protocol.Tag
+		var infSeriesFields []*protocol.Field
+		var infSeriesMetric *Metric
+		
+		infSeriesFields = append(infSeriesFields, &protocol.Field{ 
+		Key: name + "_bucket", Value: float64(p.Count())} )
+
+		p.LabelsMap().ForEach(func(k string, v string) {
+			label := &protocol.Tag{Key: k, Value: v}
+			infSerieslabels = append(infSerieslabels, label)
+		})
+		infSerieslabels = append(infSerieslabels, &protocol.Tag{Key: "le", Value: fmt.Sprint("+Inf")})
+		infSeriesMetric = &Metric{
+			timestamp: timestamp, name: measurementName, tags: infSerieslabels, fields: infSeriesFields,
+		}
+		metrics = append(metrics,infSeriesMetric)
+
+		//add all explicit le series
+		
+		for index, _ :=range p.ExplicitBounds() {
+			var leSerieslabels []*protocol.Tag
+			
+			var leSeriesMetric *Metric
+			
+
+			var cumulativeValue uint64
+			if index >= len(p.BucketCounts()) { //take only explicit bounds
+				break
+			}
+			for bucketIndex, _ := range p.BucketCounts() {
+				if bucketIndex > index {
+					break
+				}
+				cumulativeValue +=  p.BucketCounts()[index] //bucketValue
+			}
+			var fields []*protocol.Field
+			fields = append(fields, &protocol.Field{ 
+			Key: name + "_bucket", Value: float64(cumulativeValue)} )
+			
+			//var leSerieslabels []*protocol.Tag
+			p.LabelsMap().ForEach(func(k string, v string) {
+				label := &protocol.Tag{Key: k, Value: v}
+				leSerieslabels = append(leSerieslabels, label)
+			})
+
+			leSerieslabels = append(leSerieslabels, &protocol.Tag{Key: "le", Value: fmt.Sprint(p.ExplicitBounds()[index])})
+			//Value: strconv.FormatFloat(p.ExplicitBounds()[index], 'f',-1, 64)})//(bound, 'f',-1, 64)})
+			leSeriesMetric = &Metric{
+				timestamp: timestamp, name: measurementName, tags: leSerieslabels, fields: fields,
+			}
+			metrics = append(metrics,leSeriesMetric)
+		}
+	}
+	for _, metric:= range metrics {
+		sendToME(metric)
+	}
+
+}
+
 func (b *logDataBuffer) convertMetricToInflux(m pdata.Metric, s *influxExporter) {
 	var name = m.Name()
 
@@ -576,7 +756,12 @@ func (b *logDataBuffer) convertMetricToInflux(m pdata.Metric, s *influxExporter)
 	case pdata.MetricDataTypeDoubleSummary:
 		ps := m.DoubleSummary().DataPoints()
 		convertTypeDoubleSummaryToInflux(ps, name)
-
+	case pdata.MetricDataTypeDoubleHistogram:
+		ps := m.DoubleHistogram().DataPoints()
+		convertDoubleHistogramToInflux(ps, name)
+	case pdata.MetricDataTypeIntHistogram:
+		ps := m.IntHistogram().DataPoints()
+		convertIntHistogramToInflux(ps, name)
 	default:
 		return
 	}
