@@ -141,20 +141,23 @@ class ArcK8sClusterIdentity
         cluster_identity_resource_namespace: @@cluster_identity_resource_namespace,
         cluster_identity_resource_name: @@cluster_identity_resource_name,
       }
-      crd_request_body = get_crd_request_body
-      crd_request_body_json = crd_request_body.to_json
-      update_request = Net::HTTP::Patch.new(crd_request_uri)
+      update_crd_request_body = { 'status': {'expirationTime': ''} }
+      update_crd_request_body_json = update_crd_request_body.to_json
+      update_crd_request_uri = crd_request_uri + "/status"
+      update_request = Net::HTTP::Patch.new(update_crd_request_uri)
       update_request["Content-Type"] = "application/merge-patch+json"
       update_request["Authorization"] = "Bearer #{@service_account_token}"
-      update_request.body = crd_request_body_json
+      update_request.body = update_crd_request_body_json
       update_response = @http_client.request(update_request)
-      @log.info "Got response of #{update_response.code} for PATCH #{crd_request_uri} @ #{Time.now.utc.iso8601}"
+      @log.info "Got response of #{update_response.code} for PATCH #{update_crd_request_uri} @ #{Time.now.utc.iso8601}"
       if update_response.code.to_i == 404
         @log.info "since crd resource doesnt exist hence creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
         create_request = Net::HTTP::Post.new(crd_request_uri)
         create_request["Content-Type"] = "application/json"
         create_request["Authorization"] = "Bearer #{@service_account_token}"
-        create_request.body = crd_request_body_json
+        create_crd_request_body = get_crd_request_body
+        create_crd_request_body_json = create_crd_request_body.to_json
+        create_request.body = create_crd_request_body_json
         create_response = @http_client.request(create_request)
         @log.info "Got response of #{create_response.code} for POST #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       end
