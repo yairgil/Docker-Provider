@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"regexp"
 
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/google/uuid"
@@ -190,6 +191,10 @@ var (
 	agentName            = "ContainerAgent"
 	userAgent            = ""
 )
+
+// will beif multiline and containerd not both enabled
+var stripMultilineHeaders bool = false;
+var multilineContainerdRegex = regexp.MustCompile(`\n\d+-\d+\d+-\d+T\d+:\d+:\d+.\d+Z ((stdout)|(stderr)) [FP] `);
 
 // DataItemLAv1 == ContainerLog table in LA
 type DataItemLAv1 struct {
@@ -869,6 +874,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	    name := ""
 
 		logEntry := ToString(record["log"])
+
+		if (stripMultilineHeaders) {
+			logEntry = multilineContainerdRegex.ReplaceAllString(logEntry, "\n")
+		}
+
 		logEntryTimeStamp := ToString(record["time"])
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
 		if (ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true) {
@@ -1491,4 +1501,13 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
 
+
+	//TODO: here
+	if (os.Getenv("AZMON_LOG_STITCH_MULTILINE") == "true" && os.Getenv("CONTAINER_RUNTIME") == "containerd") {
+		stripMultilineHeaders = true
+	}
 }
+
+
+// if stitching multiline log messages and Containerd, then strip out the containerd header here
+// Make sure the environment variables AZMON_LOG_STITCH_MULTILINE=true and CONTAINER_RUNTIME=containerd

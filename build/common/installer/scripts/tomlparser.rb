@@ -120,16 +120,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       ConfigParseErrorLogger.logError("Exception while reading config map settings for stderr log collection - #{errorStr}, using defaults, please check config map for errors")
     end
 
-    #Get log multiline stitching setting
-    begin
-      if !parsedConfig[:log_collection_settings][:stitch_multiline_logs].nil? && !parsedConfig[:log_collection_settings][:stitch_multiline_logs][:enabled].nil?
-        @logStitchMultiline = parsedConfig[:log_collection_settings][:stitch_multiline_logs][:enabled]
-        puts "config::Using config map setting for multiline stitching"
-      end
-    rescue => errorStr
-      ConfigParseErrorLogger.logError("Exception while reading config map settings for stitching multiline logs - #{errorStr}, using defaults, please check config map for errors")
-    end
-
     #Get environment variables log config settings
     begin
       if !parsedConfig[:log_collection_settings][:env_var].nil? && !parsedConfig[:log_collection_settings][:env_var][:enabled].nil?
@@ -158,6 +148,24 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       end
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for container log schema version - #{errorStr}, using defaults, please check config map for errors")
+    end
+    
+    #Get multiline log stitching setting
+    begin
+      if !parsedConfig[:log_collection_settings][:stitch_multiline_logs].nil? && !parsedConfig[:log_collection_settings][:stitch_multiline_logs][:enabled].nil?
+        @logStitchMultiline = parsedConfig[:log_collection_settings][:stitch_multiline_logs][:enabled]
+        puts "config::Using config map setting for multiline stitching"
+      else
+        # turn on multiline by default if using containerlog v2 schema
+        # TODO: figure out allowed values for containerLogSchemaVersion, is "v2" the only value that will mean the new log schema?
+        if @containerLogSchemaVersion.strip.casecmp("v2")
+          @logStitchMultiline = true
+        else
+          @logStitchMultiline = false
+        end
+      end
+    rescue => errorStr
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for stitching multiline logs - #{errorStr}, using defaults, please check config map for errors")
     end
 
     #Get kube events enrichment setting

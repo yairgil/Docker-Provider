@@ -58,7 +58,6 @@ def substituteFluentBitPlaceHolders
       else
         puts "config::multiline -------------------------------- 4"
         new_contents = new_contents.gsub("#${CONTAINTERD_MULTILINE_LOGGING}", "")
-        new_contents = new_contents.gsub("#${MULTILINE-FILTER}", "")
       end
     else
       puts "config::multiline -------------------------------- 4"

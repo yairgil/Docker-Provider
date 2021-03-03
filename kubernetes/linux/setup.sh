@@ -1,9 +1,16 @@
 TMPDIR="/opt"
 cd $TMPDIR
 
+#download and install fluent-bit(td-agent-bit)
+wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
+sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
+sudo apt-get update
+sudo apt-get install td-agent-bit=1.6.8 -y
+
+
 #Download utf-8 encoding capability on the omsagent container.
 #upgrade apt to latest version
-apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
+apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
 sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
@@ -37,11 +44,10 @@ wget https://github.com/microsoft/Docker-Provider/releases/download/10182020-one
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 
-#Assign permissions to omsagent user to access docker.sock
+# Assign permissions to omsagent user to access docker.sock
 sudo apt-get install acl
 
 #download inotify tools for watching configmap changes
-sudo apt-get update
 sudo apt-get install inotify-tools -y
 
 #used to parse response of kubelet apis
@@ -66,12 +72,6 @@ chmod 777 /opt/telegraf
 
 # Use wildcard version so that it doesnt require to touch this file
 /$TMPDIR/docker-cimprov-*.*.*-*.x86_64.sh --install
-
-#download and install fluent-bit(td-agent-bit)
-wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
-sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
-sudo apt-get update
-sudo apt-get install td-agent-bit=1.6.8 -y
 
 rm -rf $TMPDIR/omsbundle
 rm -f $TMPDIR/omsagent*.sh
