@@ -609,7 +609,7 @@ func convertDoubleHistogramToInflux(ps pdata.DoubleHistogramDataPointSlice, name
 				if bucketIndex > index {
 					break
 				}
-				cumulativeValue +=  p.BucketCounts()[index] //bucketValue
+				cumulativeValue +=  p.BucketCounts()[bucketIndex] //bucketValue
 			}
 			var fields []*protocol.Field
 			fields = append(fields, &protocol.Field{ 
@@ -699,7 +699,7 @@ func convertIntHistogramToInflux(ps pdata.IntHistogramDataPointSlice, name strin
 				if bucketIndex > index {
 					break
 				}
-				cumulativeValue +=  p.BucketCounts()[index] //bucketValue
+				cumulativeValue +=  p.BucketCounts()[bucketIndex] //bucketValue
 			}
 			var fields []*protocol.Field
 			fields = append(fields, &protocol.Field{ 
@@ -732,27 +732,21 @@ func (b *logDataBuffer) convertMetricToInflux(m pdata.Metric, s *influxExporter)
 	case pdata.MetricDataTypeIntGauge:
 		ps := m.IntGauge().DataPoints()
 		convertTypeIntToInflux(ps, name)
-
 	case pdata.MetricDataTypeDoubleGauge:
 		ps := m.DoubleGauge().DataPoints()
 		convertTypeDoubleToInflux(ps, name)
-
-  // Only if counter
 	case pdata.MetricDataTypeIntSum:
 		data := m.IntSum()
 		if data.IsMonotonic() && data.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			ps := data.DataPoints()
 			convertTypeIntToInflux(ps, name)
 		}
-
-	// Only if counter
 	case pdata.MetricDataTypeDoubleSum:
 		data := m.DoubleSum()
 		if data.IsMonotonic() && data.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			ps := data.DataPoints()
 			convertTypeDoubleToInflux(ps, name)
 		}
-
 	case pdata.MetricDataTypeDoubleSummary:
 		ps := m.DoubleSummary().DataPoints()
 		convertTypeDoubleSummaryToInflux(ps, name)
