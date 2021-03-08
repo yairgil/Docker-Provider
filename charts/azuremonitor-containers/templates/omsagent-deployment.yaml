@@ -109,6 +109,14 @@ spec:
         - mountPath: /etc/config/settings/adx
           name: omsagent-adx-secret
           readOnly: true
+        {{- if  and .Values.Azure.proxySettings.isProxyEnabled .Values.Azure.proxySettings.proxyCert }}          
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs/
+          readOnly: false
+        - name: proxy-certstore  
+          mountPath: /usr/local/share/ca-certificates/proxy-cert.crt
+          subPath: proxy-cert.crt              
+        {{- end }}   
        livenessProbe:
         exec:
          command:
@@ -158,4 +166,11 @@ spec:
       secret:
        secretName: omsagent-adx-secret
        optional: true
+    {{- if  and .Values.Azure.proxySettings.isProxyEnabled .Values.Azure.proxySettings.proxyCert }}
+    - name: proxy-certstore
+      secret:
+       secretName: omsagent-proxy-cert
+    - name: ssl-certs
+      emptyDir: {}
+    {{- end }}   
 {{- end }}
