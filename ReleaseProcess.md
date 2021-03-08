@@ -23,7 +23,7 @@ Here are the high-level instructions to get the CIPROD`<MM><DD><YYYY>` image for
 
 # 2. Perf and scale testing
 
-Deploy latest omsagent yaml with release candidate agent image in to supported k8s versions and validate all the critical scenarios. In perticular, throughly validate the updates going as part of this release and also make sure no regressions. If  this passes, deploy onto scale cluster and  validate perf and scale aspects. Scale cluster in AME cloud and co-ordinate with agent team who has access to this cluster to deploy  the release candiate onto this cluster.
+Deploy latest omsagent yaml with release candidate agent image in to supported k8s versions and validate all the critical scenarios. In perticular, throughly validate the updates going as part of this release and also make sure no regressions. If this passes, deploy onto scale cluster and validate perf and scale aspects. The scale cluster in AME and co-ordinate with agent team who has access to this cluster to deploy the release candiate onto this cluster.
 
 # 3. Production Image to MCR CN for Azure China Cloud
 

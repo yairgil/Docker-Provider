@@ -68,7 +68,7 @@ data:
       containers: []
       restartPolicy: Never
       serviceAccountName: sonobuoy-serviceaccount
-      nodeSelector:    
+      nodeSelector:
         kubernetes.io/os: linux
       tolerations:
       - effect: NoSchedule
@@ -78,6 +78,7 @@ data:
         operator: Exists
       - key: kubernetes.io/e2e-evict-taint-key
         operator: Exists
+      terminationGracePeriodSeconds: 1
     sonobuoy-config:
       driver: Job
       plugin-name: agenttests
@@ -85,23 +86,23 @@ data:
     spec:
       env:
       # Update values of CLIENT_ID, CLIENT_SECRET of the service principal which has permission to query LA ad Metrics API
-      # Update value of TENANT_ID corresponding your Azure Service principal          
+      # Update value of TENANT_ID corresponding your Azure Service principal
       - name: CLIENT_ID
-        value: "SP_CLIENT_ID_VALUE"
+        value: "7792e32b-e5b3-4e0e-9907-679fd1af5460"
       - name: CLIENT_SECRET
-        value: "CLIENT_SECRET_VALUE"
+        value: "wRrANrc4nxP7Xm-xJk9sRXb8M8Qrh.QjLF"
       - name: TENANT_ID
-        value: "SP_TENANT_ID_VALUE"
+        value: "72f988bf-86f1-41af-91ab-2d7cd011db47"
       - name: DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES
-        value: "10"  
+        value: "10"
       - name: DEFAULT_METRICS_QUERY_TIME_INTERVAL_IN_MINUTES
-        value: "10" 
+        value: "10"
       - name: AGENT_POD_EXPECTED_RESTART_COUNT
-        value: "0"   
+        value: "0"
       - name: AZURE_CLOUD
-        value: "AZURE_PUBLIC_CLOUD"  
-      # image tag should be updated if new tests being added after this image   
-      image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciagenttest02152021
+        value: "AZURE_PUBLIC_CLOUD"
+      # image tag should be updated if new tests being added after this image
+      image: davidmichelman/sonobuoy_plugin:<tag>
       imagePullPolicy: IfNotPresent
       name: plugin
       resources: {}
@@ -144,7 +145,7 @@ spec:
       name: output-volume
   restartPolicy: Never
   serviceAccountName: sonobuoy-serviceaccount
-  nodeSelector:    
+  nodeSelector:
     kubernetes.io/os: linux
   tolerations:
   - key: "kubernetes.io/e2e-evict-taint-key"
@@ -175,4 +176,28 @@ spec:
   selector:
     sonobuoy-component: aggregator
   type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multiline-test-pod
+  namespace: sonobuoy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      rsName: "multiline-test-pod"
+  template:
+    metadata:
+      labels:
+        rsName: "multiline-test-pod"
+    spec:
+      containers:
+        - name: log-writer-pod
+          image: "davidmichelman/multiline-log-writer:<tag>"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 20m
+              memory: 60Mi
 

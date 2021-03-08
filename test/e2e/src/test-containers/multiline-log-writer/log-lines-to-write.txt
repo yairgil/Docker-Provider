@@ -1,0 +1,42 @@
+asdfasdfasdf
+test from log-lines-to-write.txt
+
+	
+Mar 04, 2021 11:41:32 PM someClassNameame someMethodName()
+FINER: THROW
+java.lang.NullPointerException: exception text
+	at Program.printSomeStuff(Program.java:86)
+	at Program.main(Program.java:52)
+
+	
+Mar 04, 2021 11:41:32 PM someClassNameame someMethodName()
+FINER: THROW
+java.lang.NullPointerException: exception text
+	at Program.printSomeStuff(Program.java:18)
+	at Program.main(Program.java:17)
+	at Program.main(Program.java:16)
+	at Program.main(Program.java:15)
+	at Program.main(Program.java:14)
+	at Program.main(Program.java:13)
+	at Program.main(Program.java:12)
+	at Program.main(Program.java:11)
+	at Program.main(Program.java:10)
+	at Program.main(Program.java:9)
+	at Program.main(Program.java:8)
+	at Program.main(Program.java:7)
+	at Program.main(Program.java:6)
+	at Program.main(Program.java:5)
+	at Program.main(Program.java:4)
+	at Program.main(Program.java:3)
+	at Program.main(Program.java:2)
+	at Program.main(Program.java:1)
+    <end>
+
+asdfasfdkjlasdjlasdjklvasdjklf13242#RQAE FAJFIUoui12957!#$%#@)t@*$#)!*_~(_*)wqitpak
+
+Mar 04, 2021 11:41:32 PM this should be a single line
+Mar 04, 2021 11:41:32 PM this should be a single line
+
+Mar 04, 2021 11:41:32 PM line 1/2
+line 2/2
+
