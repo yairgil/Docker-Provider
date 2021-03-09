@@ -107,12 +107,6 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             else
                echo "successfully validated provided proxy endpoint is valid and expected format"
             fi
-
-            # update ca-certs if proxy-cert is set
-            if [ -f "/usr/local/share/ca-certificates/proxy-cert.crt" ]; then
-               echo "Running update-ca-certificates since proxy-cert configured"
-               update-ca-certificates
-            fi
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
