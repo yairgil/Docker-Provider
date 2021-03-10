@@ -79,3 +79,8 @@ rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+
+apt-get install python-pip -y
+pip install prometheus-client
+apt-get purge python-pip -y  # pip is a big package, remove unneded files after installing the prometheus client
+apt autoremove -y
