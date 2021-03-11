@@ -1,0 +1,53 @@
+{
+    "location": "eastus2euap",
+    "properties": {
+      "dataSources": {
+        "performanceCounters": [
+          {
+            "name": "ciTeamPOCPerfCounters",
+            "streams": [
+              "Microsoft-Perf"
+            ],
+            "scheduledTransferPeriod": "PT1M",
+            "samplingFrequencyInSeconds": 60,
+            "counterSpecifiers": [
+                "memoryLimitBytes",
+                "cpuLimitNanoCores",
+                "memoryRequestBytes",
+                "cpuRequestNanoCores",
+                "memoryCapacityBytes",
+                "cpuCapacityNanoCores",	
+                "memoryAllocatableBytes",	
+                "cpuAllocatableNanoCores",	
+                "memoryWorkingSetBytes",	
+                "memoryRssBytes",	
+                "restartTimeEpoch",
+                "cpuUsageNanoCores",	
+                "restartTimeEpoch",	
+                "memoryWorkingSetBytes",	
+                "memoryRssBytes",
+                "cpuUsageNanoCores"	              
+            ]
+          }        
+        ]         
+      },
+      "destinations": {
+        "logAnalytics": [
+          {
+            "workspaceResourceId": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/my-resource-group/providers/Microsoft.OperationalInsights/workspaces/my-workspace",
+            "name": "ciworkspace"
+          }
+        ]
+      },
+      "dataFlows": [
+        {
+          "streams": [
+            "Microsoft-Perf"         
+          ],
+          "destinations": [
+            "ciworkspace"
+          ]
+        }
+      ]
+    }
+  }
