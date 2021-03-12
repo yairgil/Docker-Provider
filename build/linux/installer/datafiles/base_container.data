@@ -128,7 +128,10 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/td-agent-bit-conf-customizer.rb;                           build/common/installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
 /opt/ConfigParseErrorLogger.rb;                                 build/common/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
+/opt/tomlparser-otelcollector-config.rb;                        build/linux/installer/scripts/tomlparser-otelcollector-config.rb;     755; root; root
 
+/opt/otelcollector/bin;                                       intermediate/${{BUILD_CONFIGURATION}}/otelcollector;  	755; root; root
+/opt/otelcollector/otelcollector-config.yml;               otelcollector/opentelemetry-collector-builder/otelcontribcollector-apiserver-static-prometheusexporter-influxexporter.yml; 755; root; root;
 
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_container.rb;                                 source/plugins/ruby/filter_cadvisor_health_container.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_node.rb;                                      source/plugins/ruby/filter_cadvisor_health_node.rb; 644; root; root
@@ -207,6 +210,8 @@ MAINTAINER:              'Microsoft Corporation'
 
 /opt/td-agent-bit;                          755; root; root;sysdir
 /opt/td-agent-bit/bin;                      755; root; root;sysdir
+/opt/otelcollector;                         755; root; root;sysdir
+/opt/otelcollector/bin;                     755; root; root;sysdir
 /etc/telegraf;                              755; root; root;sysdir
 
 /opt/microsoft/omsagent/plugin/lib;												755; root; root; sysdir

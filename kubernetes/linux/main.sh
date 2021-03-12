@@ -289,6 +289,16 @@ cat config_metric_collection_env_var | while read line; do
 done
 source config_metric_collection_env_var
 
+#Parse the configmap to set the right environment variables for otel collector settings
+if [ -e "/etc/config/kube.conf" ]; then
+  /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-otelcollector-config.rb
+
+  cat config_otelcollector_env_var | while read line; do
+    echo $line >> ~/.bashrc
+  done
+  source config_otelcollector_env_var
+fi
+
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
 #Defaults to use port 10255
@@ -622,7 +632,17 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
+#start otelcollector
+echo "otel collector env var at main.sh runtime"
+echo "$AZMON_OTELCOLLECTOR_ENABLED"
 
+if [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ]; then
+  echo "starting otelcollector in rs"
+
+  # will need to rotate log file
+  /opt/otelcollector/bin/otelcollector --config /opt/otelcollector/otelcollector-config.yml --log-level DEBUG --metrics-level none &> /opt/otelcollector/otelcollector-log.txt &
+  echo "started otelcollector in rs"
+fi
 
 echo "stopping rsyslog..."
 service rsyslog stop

@@ -106,7 +106,7 @@ endif
 # Build targets
 # TODO - fix plugintests and enable it back
 # all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin rubypluginstests
-all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin
+all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin otelcollector
 
 clean :
 	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target
@@ -133,6 +133,12 @@ fluentbitplugin :
 	make -C $(GO_SOURCE_DIR) fbplugin
 	$(COPY) $(GO_SOURCE_DIR)/out_oms.so $(INTERMEDIATE_DIR)
 
+otelcollector :
+	@echo "========================= Building otelcollector for prometheus scraping"
+	$(MKPATH) $(INTERMEDIATE_DIR)
+	make -C $(BASE_DIR)/otelcollector/opentelemetry-collector-builder otelcollector
+	$(COPY) $(BASE_DIR)/otelcollector/opentelemetry-collector-builder/otelcollector $(INTERMEDIATE_DIR)
+
 rubypluginstests :
 	@echo "========================= Installing pre-reqs for running tests"
 	sudo apt-add-repository ppa:brightbox/ruby-ng -y
@@ -141,6 +147,7 @@ rubypluginstests :
 	sudo gem install minitest
 	@echo "========================= Running tests..."
 	rake test
+	
 
 #--------------------------------------------------------------------------------
 # Build the distribution kit
@@ -152,6 +159,7 @@ rubypluginstests :
 
 kit : CONTAINERLIB_FILENAME = libcontainer.so
 kit : fluentbitplugin
+kit : otelcollector
 
 
 	@echo "========================= Performing Building RPM and DPKG packages"
