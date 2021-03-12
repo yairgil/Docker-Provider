@@ -1,0 +1,3 @@
+[submodule "otelcollector/opentelemetry-collector"]
+	path = otelcollector/opentelemetry-collector
+	url = https://github.com/gracewehner/opentelemetry-collector.git
