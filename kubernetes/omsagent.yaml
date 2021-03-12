@@ -230,18 +230,16 @@ data:
      </match>
 
      <match oms.api.KubePerf**>
-      type out_oms
-      log_level debug
-      num_threads 2
-      buffer_chunk_limit 4m
-      buffer_type file
-      buffer_path %STATE_DIR_WS%/out_oms_kubeperf*.buffer
-      buffer_queue_limit 20
-      buffer_queue_full_action drop_oldest_chunk
-      flush_interval 20s
-      retry_limit 10
-      retry_wait 5s
-      max_retry_wait 5m
+      @type forward
+      @log_level debug
+      <server>
+        host 0.0.0.0
+        port 29230
+      </server>
+      keepalive true
+      <format>
+        @type msgpack
+      </format>
      </match>
 
      <match mdm.kubepodinventory** mdm.kubenodeinventory** >

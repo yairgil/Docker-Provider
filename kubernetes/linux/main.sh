@@ -511,7 +511,8 @@ fi
 
 
 #start oneagent
-if [ ! -e "/etc/config/kube.conf" ]; then
+# POC - enable oneagent in rs pod as well 
+#if [ ! -e "/etc/config/kube.conf" ]; then
    if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
       echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
       echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
@@ -543,13 +544,23 @@ if [ ! -e "/etc/config/kube.conf" ]; then
 
             dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
+            # envvars required to operate in AMCS + DCR mode
+            # this should be set for AAD auth MSI mode
+            # export MCS_ENDPOINT=handler.control.monitor.azure.com
+            # export AZURE_ENDPOINT=https://monitor.azure.com/
+            # export ADD_REGION_TO_MCS_ENDPOINT=true
+            # export ENABLE_MCS=true
+            # this flag to indicate AMA to use UAI instead of SAI
+            # export USER_ASSIGNED_IDENTITY_CLIENT_ID=USER_ASSIGNED_IDENTITY_CLIENT_ID
+           
+
             echo "starting mdsd ..."
             mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
       fi
    fi
-fi
+#fi
 echo "************end oneagent log routing checks************"
 
 #telegraf & fluentbit requirements
