@@ -130,8 +130,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
 /opt/tomlparser-otelcollector-config.rb;                        build/linux/installer/scripts/tomlparser-otelcollector-config.rb;     755; root; root
 
-/opt/otelcollector/bin;                                       intermediate/${{BUILD_CONFIGURATION}}/otelcollector;  	755; root; root
-/opt/otelcollector/otelcollector-config.yml;               otelcollector/opentelemetry-collector-builder/otelcontribcollector-apiserver-static-prometheusexporter-influxexporter.yml; 755; root; root;
+/opt/otelcollector/bin;                                         intermediate/${{BUILD_CONFIGURATION}}/otelcollector;  	755; root; root
+/opt/otelcollector/otelcollector-config.yml;                    otelcollector/opentelemetry-collector-builder/collector.yml; 755; root; root;
 
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_container.rb;                                 source/plugins/ruby/filter_cadvisor_health_container.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_node.rb;                                      source/plugins/ruby/filter_cadvisor_health_node.rb; 644; root; root

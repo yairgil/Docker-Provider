@@ -5,10 +5,16 @@ import (
 	"time"
 	"fmt"
 	"errors"
+	"os"
+	"log"
+	"strings"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
 	MEInfluxUnixSocketClient net.Conn
+	FileLogger = createFileLogger()
+	Log = FileLogger.Printf
 )
 
 //ME client to write influx data
@@ -20,16 +26,16 @@ func CreateMEClient() {
 	conn, err := net.DialTimeout("tcp",
 		"0.0.0.0:8089", 10*time.Second)
 	if err != nil {
-		fmt.Println("Error::ME::Unable to open ME influx TCP socket connection %s", err.Error())
+		Log("Error::ME::Unable to open ME influx TCP socket connection %s", err.Error())
 	} else {
-		fmt.Println("Successfully created ME influx TCP socket connection")
+		Log("Successfully created ME influx TCP socket connection")
 		MEInfluxUnixSocketClient = conn
 	}
 }
 
 func Write2ME(messages []byte) (numBytesWritten int, e error) {
 	if MEInfluxUnixSocketClient == nil {
-		fmt.Println("ME connection does not exist. Creating...")
+		Log("ME connection does not exist. Creating...")
 		CreateMEClient()
 	}
 	if MEInfluxUnixSocketClient != nil {
@@ -41,4 +47,49 @@ func Write2ME(messages []byte) (numBytesWritten int, e error) {
 		}
 	} 
 	return 0, errors.New("Error opening TCP connection to ME")
+}
+
+func createFileLogger() *log.Logger {
+	var logfile *os.File
+
+	osType := os.Getenv("OS_TYPE")
+
+	var logPath string
+
+	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
+		logPath = "/var/opt/microsoft/docker-cimprov/log/influx-exporter.log"
+	} else {
+		logPath = "/etc/omsagentwindows/influx-exporter.log"
+	}
+
+	if _, err := os.Stat(logPath); err == nil {
+		fmt.Printf("Log file Exists. Opening file in append mode...\n")
+		logfile, err = os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0600)
+		if err != nil {
+			//SendException(err.Error())
+			fmt.Printf(err.Error())
+		}
+	}
+
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		fmt.Printf("Log file doesn't Exist. Creating file...\n")
+		logfile, err = os.Create(logPath)
+		if err != nil {
+			//SendException(err.Error())
+			fmt.Printf(err.Error())
+		}
+	}
+
+	logger := log.New(logfile, "", 0)
+
+	logger.SetOutput(&lumberjack.Logger{
+		Filename:   logPath,
+		MaxSize:    10, //megabytes
+		MaxBackups: 1,
+		MaxAge:     28,   //days
+		Compress:   true, // false by default
+	})
+
+	logger.SetFlags(log.Ltime | log.Lshortfile | log.LstdFlags)
+	return logger
 }

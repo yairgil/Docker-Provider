@@ -424,12 +424,12 @@ func sendToME(metric *Metric) {
 	serializer := protocol.NewEncoder(buf)
 	serializer.SetMaxLineBytes(1024)
 	serializer.Encode(metric)
-	fmt.Println(buf.String())
+	Log(fmt.Sprintf(buf.String()))
 	bytesWritten, er := Write2ME(buf.Bytes())
 	if er == nil {
-		fmt.Println(fmt.Sprintf("Successfully wrote %d bytes to ME", bytesWritten) )
+		Log(fmt.Sprintf("Successfully wrote %d bytes to ME", bytesWritten) )
 	} else {
-		fmt.Println(fmt.Sprintf("Error writing metric to ME %s", er.Error()))
+		Log(fmt.Sprintf("Error writing metric to ME : %s", er.Error()))
 	}
 }
 
@@ -621,7 +621,7 @@ func convertDoubleHistogramToInflux(ps pdata.DoubleHistogramDataPointSlice, name
 				leSerieslabels = append(leSerieslabels, label)
 			})
 
-			leSerieslabels = append(leSerieslabels, &protocol.Tag{Key: "le", Value: fmt.Sprint(p.ExplicitBounds()[index])})
+			leSerieslabels = append(leSerieslabels, &protocol.Tag{Key: "le", Value: strconv.FormatFloat(p.ExplicitBounds()[index], 'f',-1, 64)})
 			//Value: strconv.FormatFloat(p.ExplicitBounds()[index], 'f',-1, 64)})//(bound, 'f',-1, 64)})
 			leSeriesMetric = &Metric{
 				timestamp: timestamp, name: measurementName, tags: leSerieslabels, fields: fields,

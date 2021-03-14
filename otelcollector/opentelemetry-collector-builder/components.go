@@ -2,28 +2,72 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/filterprocessor"
+	"go.opentelemetry.io/collector/processor/memorylimiter"
+	"go.opentelemetry.io/collector/processor/resourceprocessor"
+	"go.opentelemetry.io/collector/exporter/loggingexporter"
+	"go.opentelemetry.io/collector/exporter/prometheusexporter"
+	"go.opentelemetry.io/collector/exporter/fileexporter"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"github.com/vishiy/influxexporter"
+	privatepromreceiver "github.com/gracewehner/prometheusreceiver"
+	"go.opentelemetry.io/collector/extension/healthcheckextension"
+	"go.opentelemetry.io/collector/extension/pprofextension"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
 )
 
 func components() (component.Factories, error) {
 	var errs []error
-	factories, err := defaultcomponents.Components()
+
+	processors, err := component.MakeProcessorFactoryMap (
+		batchprocessor.NewFactory(),
+		memorylimiter.NewFactory(),
+		resourceprocessor.NewFactory(),
+		filterprocessor.NewFactory(),
+	)
+
 	if err != nil {
-		return component.Factories{}, err
+		errs = append(errs,err)
 	}
 
-	exporters := []component.ExporterFactory{
+	receivers, err := component.MakeReceiverFactoryMap (
+		privatepromreceiver.NewFactory(),
+	)
+
+	if err != nil {
+		errs = append(errs,err)
+	}
+
+	exporters, err := component.MakeExporterFactoryMap (
+		loggingexporter.NewFactory(),
+		prometheusexporter.NewFactory(),
+		fileexporter.NewFactory(),
+		otlpexporter.NewFactory(),
+		otlphttpexporter.NewFactory(),
 		influxexporter.NewFactory(),
-	}
-	for _, pr := range factories.Exporters {
-		exporters = append(exporters, pr)
-	}
-	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
+	)
+
 	if err != nil {
-		errs = append(errs, err)
+		errs = append(errs,err)
 	}
 
-	return factories, componenterror.CombineErrors(errs)
+	extensions, err := component.MakeExtensionFactoryMap (
+		healthcheckextension.NewFactory(),
+		pprofextension.NewFactory(),
+		zpagesextension.NewFactory(),
+	)
+
+	if err != nil {
+		errs = append(errs,err)
+	}
+	factories := component.Factories{
+		Processors : processors,
+		Receivers : receivers,
+		Exporters : exporters,
+		Extensions : extensions,
+	}
+	return factories, consumererror.CombineErrors(errs)
 }
