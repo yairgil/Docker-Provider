@@ -1,10 +1,6 @@
 exporters:
   file:
     path: /opt/promotel.json
-  #logging:
-    #loglevel: debug
-  prometheus:
-    endpoint: "0.0.0.0:9999"
   influx:
     loglevel: debug
 receivers:
@@ -23,18 +19,8 @@ receivers:
            - source_labels: [__meta_kubernetes_service_name]
              action: keep
              regex: "prometheus-reference-service"
-        - job_name: apiserver
-          scheme: https
-          kubernetes_sd_configs:
-          tls_config:
-            insecure_skip_verify: true
-            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-          static_configs:
-           - targets: [$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT]
-
 service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      exporters: [prometheus,influx]
+      exporters: [influx]
