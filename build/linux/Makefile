@@ -106,7 +106,7 @@ endif
 # Build targets
 # TODO - fix plugintests and enable it back
 # all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin rubypluginstests
-all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin otelcollector
+all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin otelcollectortarget
 
 clean :
 	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target
@@ -133,10 +133,10 @@ fluentbitplugin :
 	make -C $(GO_SOURCE_DIR) fbplugin
 	$(COPY) $(GO_SOURCE_DIR)/out_oms.so $(INTERMEDIATE_DIR)
 
-otelcollector :
-	@echo "========================= Building otelcollector for prometheus scraping"
+otelcollectortarget :
+	@echo "========================= Building otelcollectortarget for prometheus scraping"
 	$(MKPATH) $(INTERMEDIATE_DIR)
-	make -C $(BASE_DIR)/otelcollector/opentelemetry-collector-builder otelcollector
+	make -C $(BASE_DIR)/otelcollector/opentelemetry-collector-builder otelcollectortarget
 	$(COPY) $(BASE_DIR)/otelcollector/opentelemetry-collector-builder/otelcollector $(INTERMEDIATE_DIR)
 
 rubypluginstests :
@@ -159,7 +159,7 @@ rubypluginstests :
 
 kit : CONTAINERLIB_FILENAME = libcontainer.so
 kit : fluentbitplugin
-kit : otelcollector
+kit : otelcollectortarget
 
 
 	@echo "========================= Performing Building RPM and DPKG packages"
