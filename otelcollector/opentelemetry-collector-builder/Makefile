@@ -1,6 +1,7 @@
 BASE_DIR := $(subst /build/linux,,$(PWD))
 
-otelcollectortarget:
+.PHONY: otelcollector
+otelcollector:
 	rm -rf otelcollector
 	go get
 	go build -o otelcollector .
