@@ -683,10 +683,6 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
 
-# start the file rotation counter
-python /opt/count_file_rotations.py &
-
-
 echo "stopping rsyslog..."
 service rsyslog stop
 
