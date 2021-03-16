@@ -540,19 +540,23 @@ fi
             export CIWORKSPACE_key=$CIWORKSPACE_key
             echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
 
+            # setting env vars for AAD auth MSI mode
+            echo "setting mdsd env vars for aad auth msi mode"
+            export MCS_ENDPOINT=handler.control.monitor.azure.com
+            echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
+            export AZURE_ENDPOINT=https://monitor.azure.com/
+            echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
+            export ADD_REGION_TO_MCS_ENDPOINT=true
+            echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
+            export ENABLE_MCS=true
+            echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
+            # this flag to indicate AMA to use UAI instead of SAI
+            # export USER_ASSIGNED_IDENTITY_CLIENT_ID=$USER_ASSIGNED_IDENTITY_CLIENT_ID
+            # echo "export USER_ASSIGNED_IDENTITY_CLIENT_ID=$USER_ASSIGNED_IDENTITY_CLIENT_ID" >> ~/.bashrc            
+
             source ~/.bashrc
 
-            dpkg -l | grep mdsd | awk '{print $2 " " $3}'
-
-            # envvars required to operate in AMCS + DCR mode
-            # this should be set for AAD auth MSI mode
-            # export MCS_ENDPOINT=handler.control.monitor.azure.com
-            # export AZURE_ENDPOINT=https://monitor.azure.com/
-            # export ADD_REGION_TO_MCS_ENDPOINT=true
-            # export ENABLE_MCS=true
-            # this flag to indicate AMA to use UAI instead of SAI
-            # export USER_ASSIGNED_IDENTITY_CLIENT_ID=USER_ASSIGNED_IDENTITY_CLIENT_ID
-           
+            dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
 
             echo "starting mdsd ..."
             mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
