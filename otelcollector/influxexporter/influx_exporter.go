@@ -37,6 +37,15 @@ import (
 	"github.com/influxdata/line-protocol"
 )
 
+var measurementName string = strings.TrimSpace(os.Getenv("METRICS_NAMESPACE"))
+
+func init() {
+	if !(len(measurementName) > 0) {
+		measurementName = measurementNameDefault
+	}
+	Log(fmt.Sprintf("Using measurement name as '%s'", measurementName))
+}
+
 type logDataBuffer struct {
 	str strings.Builder
 }

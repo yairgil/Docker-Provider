@@ -73,6 +73,21 @@ sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/
 sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
 
+#install Metrics Extension
+# Accept Microsoft public keys
+wget -qO - https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+wget -qO - https://packages.microsoft.com/keys/msopentech.asc | sudo apt-key add -
+# Determine OS distro and code name
+os_id=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2)
+os_code=$(cat /etc/os-release | grep VERSION_CODENAME | cut -d '=' -f2)
+#Add Azure repos
+echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-${os_id}-${os_code}-prod ${os_code} main" | sudo tee /etc/apt/sources.list.d/azure.list
+echo "deb [arch=amd64] https://packages.microsoft.com/repos/azurecore ${os_code} main" | sudo tee -a /etc/apt/sources.list.d/azure.list
+# Fetch the package index
+sudo apt-get update
+#forceSilent='-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
+sudo apt-get install metricsext2=2.2021.302.1751-2918e9-~bionic -y
+
 rm -rf $TMPDIR/omsbundle
 rm -f $TMPDIR/omsagent*.sh
 rm -f $TMPDIR/docker-cimprov*.sh

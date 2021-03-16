@@ -638,10 +638,14 @@ echo "$AZMON_OTELCOLLECTOR_ENABLED"
 
 if [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ]; then
   echo "starting otelcollector in rs"
-
   # will need to rotate log file
   /opt/otelcollector/bin/otelcollector --config /opt/otelcollector/otelcollector-config.yml --log-level DEBUG --metrics-level none &> /opt/otelcollector/otelcollector-log.txt &
   echo "started otelcollector in rs"
+
+  echo "starting metricsextension in rs"
+  # will need to rotate the entire log location
+  # will need to remove accountname fetching from env
+  /usr/sbin/MetricsExtension -Logger File -LogLevel Debug -DataDirectory /opt/MetricsExtensionData -Input influxdb_tcp -PrivateKeyFile /etc/config/settings/metricstore/tls.key -CertFile /etc/config/settings/metricstore/tls.crt  -MonitoringAccount $METRICS_ACCOUNT &
 fi
 
 echo "stopping rsyslog..."
