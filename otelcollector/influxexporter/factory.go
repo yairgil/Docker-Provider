@@ -30,7 +30,7 @@ const (
 	typeStr                   = "influx"
 	defaultSamplingInitial    = 1 //= 2
 	defaultSamplingThereafter = 1 //500
-	measurementName			  = "prom2mdm1"
+	measurementNameDefault	  = "prometheus"
 )
 
 // NewFactory creates a factory for Logging exporter
