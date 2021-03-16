@@ -297,6 +297,13 @@ if [ -e "/etc/config/kube.conf" ]; then
     echo $line >> ~/.bashrc
   done
   source config_otelcollector_env_var
+
+  /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prometheus-config.rb
+
+  cat config_prometheus_config_env_var | while read line; do
+    echo $line >> ~/.bashrc
+  done
+  source config_prometheus_config_env_var
 fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
@@ -635,8 +642,10 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 #start otelcollector
 echo "otel collector env var at main.sh runtime"
 echo "$AZMON_OTELCOLLECTOR_ENABLED"
+echo "prometheus config specified for otel collector"
+echo "$AZMON_PROMETHEUS_CONFIG"
 
-if [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ]; then
+if [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ] && [ "$AZMON_PROMETHEUS_CONFIG" != "" ]; then
   echo "starting otelcollector in rs"
 
   # will need to rotate log file

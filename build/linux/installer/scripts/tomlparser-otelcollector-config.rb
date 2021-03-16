@@ -67,6 +67,6 @@ if !file.nil?
   file.close
   puts "****************End OpenTelemetryCollector Settings Processing********************"
 else
-  puts "Exception while opening file for writing MDM metric config environment variables"
+  puts "Exception while opening file for writing otelcollector config environment variables"
   puts "****************End OpenTelemetryCollector Settings Processing********************"
 end

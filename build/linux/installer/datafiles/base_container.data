@@ -129,6 +129,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/ConfigParseErrorLogger.rb;                                 build/common/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
 /opt/tomlparser-otelcollector-config.rb;                        build/linux/installer/scripts/tomlparser-otelcollector-config.rb;     755; root; root
+/opt/tomlparser-prometheus-config.rb;                        build/linux/installer/scripts/tomlparser-prometheus-config.rb;     755; root; root
 
 /opt/otelcollector/bin;                                         intermediate/${{BUILD_CONFIGURATION}}/otelcollector;  	755; root; root
 /opt/otelcollector/otelcollector-config.yml;                    otelcollector/opentelemetry-collector-builder/collector.yml; 755; root; root;

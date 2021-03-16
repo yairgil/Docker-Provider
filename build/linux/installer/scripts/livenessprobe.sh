@@ -28,7 +28,7 @@ fi
 
 #test to exit non zero value if otelcollector is not running
 (ps -ef | grep otelcollector | grep -v "grep")
-if [ $? -ne 0 ] && [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ]
+if [ $? -ne 0 ] && [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ] && [ "$AZMON_PROMETHEUS_CONFIG" != "" ]
 then
  echo "OtelCollector is not running" > /dev/termination-log
  exit 1
