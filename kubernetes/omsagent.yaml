@@ -553,6 +553,10 @@ spec:
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: ""
+            - name: METRICS_ACCOUNT
+              value: ""
+            - name: METRICS_NAMESPACE
+              value: ""
           securityContext:
             privileged: true
           ports:
@@ -580,6 +584,9 @@ spec:
               readOnly: true
             - mountPath: /etc/config/settings/adx
               name: omsagent-adx-secret
+              readOnly: true
+            - mountPath: /etc/config/settings/metricstore
+              name: metricstore-secret
               readOnly: true
           livenessProbe:
             exec:
@@ -652,6 +659,10 @@ spec:
           secret:
             secretName: omsagent-adx-secret
             optional: true
+        - name: metricstore-secret
+          secret:
+            secretName: metricstore-secret
+
 ---
   apiVersion: apps/v1
   kind: DaemonSet
