@@ -566,6 +566,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
    fi
 else 
    echo "activating oneagent in replicaset pod..."
+   echo "enable debug logs..."
    echo "configuring mdsd..."
    cat /etc/mdsd.d/envmdsd | while read line; do
       echo $line >> ~/.bashrc
@@ -582,6 +583,8 @@ else
    export ENABLE_MCS=true
    echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
 
+   source ~/.bashrc
+   
    dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
 
    echo "starting mdsd in replicaset..."

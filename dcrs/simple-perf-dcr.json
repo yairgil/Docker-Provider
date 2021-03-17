@@ -1,32 +1,17 @@
 {
     "location": "westus",
     "properties": {
-      "dataSources": {
-        "performanceCounters": [
-          {
-            "name": "ciTeamPOCPerfCounters",
-            "streams": [
-              "Microsoft-Perf"
-            ],
-            "scheduledTransferPeriod": "PT1M",
-            "samplingFrequencyInSeconds": 60,
-            "counterSpecifiers": [
-              "memoryLimitBytes",
-              "cpuLimitNanoCores",
-              "memoryRequestBytes",
-              "cpuRequestNanoCores",
-              "memoryCapacityBytes",
-              "cpuCapacityNanoCores",
-              "memoryAllocatableBytes",
-              "cpuAllocatableNanoCores",
-              "memoryWorkingSetBytes",
-              "memoryRssBytes",
-              "restartTimeEpoch",
-              "cpuUsageNanoCores"
-            ]
-          }        
-        ]         
-      },
+      "dataSources": {       
+          "extensions": [
+              {
+                  "name": "ContainerInsightsExtension",
+                  "streams": [
+                      "Microsoft-Perf"
+                  ],
+                  "extensionName": "ContainerInsights"
+              }
+          ]
+      }, 
       "destinations": {
         "logAnalytics": [
           {
@@ -46,4 +31,4 @@
         }
       ]
     }
-  }
+}
