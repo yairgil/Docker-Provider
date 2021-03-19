@@ -572,16 +572,22 @@ else
       echo $line >> ~/.bashrc
    done
    source /etc/mdsd.d/envmdsd   
-   # setting env vars for AAD auth MSI mode
+   # setting env vars for AAD auth MSI mode    
    echo "setting mdsd env vars for aad auth msi mode"
-   export MCS_ENDPOINT=handler.control.monitor.azure.com
+   export MCS_ENDPOINT="handler.control.monitor.azure.com"
    echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
-   export AZURE_ENDPOINT=https://monitor.azure.com/
+   export AZURE_ENDPOINT="https://monitor.azure.com/"
    echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
-   export ADD_REGION_TO_MCS_ENDPOINT=true
+   export ADD_REGION_TO_MCS_ENDPOINT="true"
    echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
-   export ENABLE_MCS=true
+   export ENABLE_MCS="true"
    echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
+   export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
+   echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
+   export MDSD_USE_LOCAL_PERSISTENCY="false"
+   echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
+
+
 
    source ~/.bashrc
    
