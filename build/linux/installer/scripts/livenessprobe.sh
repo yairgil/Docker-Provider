@@ -26,6 +26,15 @@ then
  exit 1
 fi
 
+#test to exit non zero value if telegraf is not running
+(ps -ef | grep telegraf | grep -v "grep")
+if [ $? -ne 0 ]
+then
+ echo "Telegraf is not running" > /dev/termination-log
+ echo "Telegraf is not running" > /dev/write-to-traces  # this file is tailed and printed to stdout
+ exit 1
+fi
+
 if [ ! -s "inotifyoutput.txt" ]
 then
   # inotifyoutput file is empty and the grep commands for omsagent and td-agent-bit succeeded
