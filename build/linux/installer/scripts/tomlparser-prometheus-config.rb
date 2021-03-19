@@ -11,7 +11,8 @@ require_relative "microsoft/omsagent/plugin/constants"
 @configSchemaVersion = ""
 
 # Setting default values which will be used in case they are not set in the configmap or if configmap doesnt exist
-@prometheusConfig = ""
+@indentedConfig = ""
+@configExists = false
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -36,7 +37,8 @@ end
 # Get the prometheus config and indent correctly for otelcollector config
 def populateSettingValuesFromConfigMap(configString)
   begin
-    @prometheusConfig = configString.gsub(/\R+/, "\n        ")
+    # Indent for the otelcollector config
+    @indentedConfig = configString.gsub(/\R+/, "\n        ")
     puts "config::Using config map setting for prometheus config"
   rescue => errorStr
     ConfigParseErrorLogger.logError("Exception while reading prometheus config - #{errorStr}, using defaults, please check config map for errors")
@@ -58,20 +60,21 @@ end
 
 begin
   puts "config::Starting to substitute the placeholders in collector.yml"
-  #Replace the placeholder config values with values from custom config
+  #Replace the placeholder value in the otelcollector with values from custom config
   text = File.read(@collectorConfigPath)
-  new_contents = text.gsub("$AZMON_PROMETHEUS_CONFIG", @prometheusConfig)
+  new_contents = text.gsub("$AZMON_PROMETHEUS_CONFIG", @indentedConfig)
   File.open(@collectorConfigPath, "w") { |file| file.puts new_contents }
+  @configExists = true
 rescue => errorStr
   ConfigParseErrorLogger.logError("Exception while substituing placeholders for prometheus config - #{errorStr}")
 end
 
 # Write the settings to file, so that they can be set as environment variables
-file = File.open("config_prometheus_config_env_var", "w")
+file = File.open("config_prometheusconfig_env_var", "w")
 
 if !file.nil?
-  # Just write the original without the spacing needed for the otelcollector config
-  file.write("export AZMON_PROMETHEUS_CONFIG=`cat #{@configMapMountPath}`\n")
+  file.write("export AZMON_PROMETHEUS_CONFIG_EXISTS=#{@configExists}\n")
+  # Close file after writing all metric collection setting environment variables
   file.close
   puts "****************End Prometheus Config Processing********************"
 else

@@ -298,12 +298,13 @@ if [ -e "/etc/config/kube.conf" ]; then
   done
   source config_otelcollector_env_var
 
+  # Get prometheus config and replace in otelcollector config
   /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prometheus-config.rb
 
-  cat config_prometheus_config_env_var | while read line; do
+  cat config_prometheusconfig_env_var | while read line; do
     echo $line >> ~/.bashrc
   done
-  source config_prometheus_config_env_var
+  source config_prometheusconfig_env_var
 fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
@@ -643,13 +644,16 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 echo "otel collector env var at main.sh runtime"
 echo "$AZMON_OTELCOLLECTOR_ENABLED"
 echo "prometheus config specified for otel collector"
-echo "$AZMON_PROMETHEUS_CONFIG"
+cat /etc/config/settings/prometheus-config
 
-if [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ] && [ "$AZMON_PROMETHEUS_CONFIG" != "" ]; then
+if [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ] && [ "$AZMON_PROMETHEUS_CONFIG_EXISTS" = "true" ]; then
   echo "starting otelcollector in rs"
   # will need to rotate log file
   /opt/otelcollector/bin/otelcollector --config /opt/otelcollector/otelcollector-config.yml --log-level DEBUG --metrics-level none &> /opt/otelcollector/otelcollector-log.txt &
   echo "started otelcollector in rs"
+
+  # if this file exists, liveness probe will check that the collector is running
+  touch /opt/OTELCOLLECTOR
 
   echo "starting metricsextension in rs"
   # will need to rotate the entire log location

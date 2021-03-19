@@ -26,12 +26,14 @@ then
  exit 1
 fi
 
-#test to exit non zero value if otelcollector is not running
-(ps -ef | grep otelcollector | grep -v "grep")
-if [ $? -ne 0 ] && [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ] && [ "$AZMON_PROMETHEUS_CONFIG" != "" ]
-then
- echo "OtelCollector is not running" > /dev/termination-log
- exit 1
+#optionally test to exit non zero value if otelcollector is not running
+if [ -e "/etc/config/kube.conf" ] && [ -e "/opt/OTELCOLLECTOR" ]; then
+  (ps -ef | grep otelcollector | grep -v "grep")
+  if [ $? -ne 0 ]
+  then
+    echo "OpenTelemetryCollector is not running" > /dev/termination-log
+    exit 1
+  fi
 fi
 
 if [ ! -s "inotifyoutput.txt" ]
