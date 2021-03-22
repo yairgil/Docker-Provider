@@ -67,15 +67,16 @@ Instructions to create PR
    helm package . 
 
 # 2. clone your fork repo and checkout gh_pages branch # gh_pages branch used as release branch 
+   cd ~ 
    git clone <your-forked-repo-of-microsoft-charts-repo>
+   cd  ~/charts # assumed the root dir of the clone is charts
    git checkout gh_pages
 
 # 3. copy release candidate helm package 
-   cd ~/charts # assumed you have cloned you have forked repo 
-   cd ~/charts-1/repo/azuremonitor-containers
+   cd ~/charts/repo/azuremonitor-containers 
    # update chart version value with the version of chart being released
    cp ~/Docker-Provider/charts/azuremonitor-containers/azuremonitor-containers-<chart-version>.tgz  .  
-   cd ~/charts-1/repo
+   cd ~/charts/repo
    # update repo index file 
    helm repo index  .
     
