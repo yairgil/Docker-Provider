@@ -14,3 +14,8 @@ cd $DIR/../build/linux
 echo "----------- Build Docker Provider -------------------------------"
 make
 cd $DIR
+
+echo "------------ Zip Shell Extension Scripts -------------------------"
+
+cd $DIR/../deployment/ServiceGroupRoot/Scripts
+tar -czvf ../scripts.tar.gz pushChartToAcr.sh

@@ -1,0 +1,35 @@
+{
+    "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",
+    "contentVersion": "0.0.0.1",
+    "scopeBindings": [       
+        {
+            "scopeTagName": "Stage",
+            "bindings": [
+                {
+                    "find": "__ACR_APP_ID__",
+                    "replaceWith": "$(ACRAppId)"
+                },
+                {
+                    "find": "__ACR_APP_SECRET__",
+                    "replaceWith": "$(ACRAppSecret)"
+                },
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },
+                {
+                    "find": "__REPO_PATH__",
+                    "replaceWith": "$(ACRRepoPath)"
+                },
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                },
+                {
+                    "find": "__RELEASE_SOURCE_BRANCH__",
+                    "replaceWith": "$(ReleaseSourceBranch)"                    
+                }
+            ]
+        }        
+    ]
+}

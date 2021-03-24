@@ -1,0 +1,50 @@
+{
+  "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutParameters.json",
+  "contentVersion": "1.0.0.0",
+  "shellExtensions": [
+    {
+      "name": "PushChartToACR",
+      "type": "ShellExtensionType",
+      "properties": {
+        "maxexecutiontime": "PT1H"
+      },
+      "package": {
+        "reference": {
+          "path": "scripts.tar.gz"
+        }
+      },
+      "launch": {
+        "command": [
+          "/bin/bash",
+          "pushChartToAcr.sh"
+        ],
+        "environmentVariables": [
+          {
+            "name": "ACR_APP_ID",
+            "value": "__ACR_APP_ID__"            
+          },
+          {
+            "name": "ACR_APP_SECRET",
+            "value": "__ACR_APP_SECRET__"            
+          },         
+          {
+            "name": "ACR_NAME",
+            "value": "__ACR_NAME__"
+          },
+          {
+            "name": "REPO_PATH",
+            "value": "__REPO_PATH__"
+          },         
+          {
+            "name": "CHART_VERSION",
+            "value": "__CHART_VERSION__"
+          },
+          {
+            "name": "RELEASE_SOURCE_BRANCH",
+            "value": "__RELEASE_SOURCE_BRANCH__"
+          }
+        ]      
+      }
+    }
+  ]
+}
