@@ -2,7 +2,8 @@
   "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutSpec.json",
   "ContentVersion": "1.0.0.0",
   "RolloutMetadata": {
-    "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",    
+    "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",   
+    "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json", 
     "Name": "ContainerInsightsExtension-Stage",
     "RolloutType": "Major",
     "BuildSource": {
