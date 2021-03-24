@@ -28,11 +28,6 @@ build:
       name: 'Build Docker Provider Shell Bundle'
       command: '.pipelines/build-linux.sh'
       fail_on_stderr: false
-      artifacts:
-        - from: 'deployment'
-          to: 'build'
-          include:
-            - '**'
 
 package:
   commands:
