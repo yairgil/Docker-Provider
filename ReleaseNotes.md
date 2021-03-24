@@ -9,6 +9,15 @@ additional questions or comments.
 
 ## Release History
 
+### 03/23/2021 -
+> Note: This agent release targetted ONLY for Azure Arc Enabled Kubernetes
+##### Version microsoft/oms:ciprod03232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03232021 (linux)
+##### Version microsoft/oms:win-ciprod03232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03232021 (windows)
+##### Code change log
+- Add support for collection of kubelet_running_pods metric since kubelet_running_pods_count metric name got renamed
+- Add support for ProxySettings contract from Arc K8s RP to get populate proxysettings automatically by RP before extension chart deployment
+- Fix identity token renewal issue for Arc K8s 
+
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 ### 02/23/2021 -
 ##### Version microsoft/oms:ciprod02232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021 (linux)
