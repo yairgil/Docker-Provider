@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 	"regexp"
+	"bufio"
 
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/google/uuid"
@@ -195,6 +196,7 @@ var (
 // will beif multiline and containerd not both enabled
 var stripMultilineHeaders bool = false;
 var multilineContainerdRegex = regexp.MustCompile(`\n\d+-\d+\d+-\d+T\d+:\d+:\d+.\d+Z ((stdout)|(stderr)) [FP] `);
+var seqNumRegex = regexp.MustCompile(`Sequence number=([0-9]+)`);
 
 // DataItemLAv1 == ContainerLog table in LA
 type DataItemLAv1 struct {
@@ -874,9 +876,26 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	    name := ""
 
 		logEntry := ToString(record["log"])
+		// Log("logEntry: %s\n", logEntry)
 
 		if (stripMultilineHeaders) {
 			logEntry = multilineContainerdRegex.ReplaceAllString(logEntry, "\n")
+		}
+
+		// look for and print sequence numbers
+		//TODO: add flag to turn this off (for performance testing, to see if this has a performance impact)
+		matches := seqNumRegex.FindAllString(logEntry, -1)
+		for _, v := range matches {
+			Log("found sequence number in oms.go: %d\n", v)
+
+			var file, err = os.OpenFile("/opt/write-to-traces", os.O_APPEND|os.O_WRONLY, 0666)
+			if err != nil {
+				Log(err.Error())
+			}
+			w := bufio.NewWriter(file)
+			_, err = fmt.Fprintf(w, "found sequence number in oms.go: %s\n", v)
+			w.Flush()
+			file.Close()	
 		}
 
 		logEntryTimeStamp := ToString(record["time"])

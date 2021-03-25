@@ -31,7 +31,7 @@ fi
 if [ $? -ne 0 ]
 then
  echo "Telegraf is not running" > /dev/termination-log
- echo "Telegraf is not running" > /dev/write-to-traces  # this file is tailed and printed to stdout
+ echo "Telegraf is not running" > /opt/write-to-traces  # this file is tailed and printed to stdout
  exit 1
 fi
 

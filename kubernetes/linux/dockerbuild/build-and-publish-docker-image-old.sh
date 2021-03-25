@@ -103,13 +103,8 @@ build_docker_image()
 {
   echo "build docker image: $image and image tage is $imageTag"
   cd $baseDir/kubernetes/linux
-  
-  cd stage_1_dockerbuild_jail
-  docker build --file Dockerfile_stage_1 -t "halfway" --build-arg IMAGE_TAG=$imageTag  .
-  cd ..
+  docker build -t $image --build-arg IMAGE_TAG=$imageTag  .
 
-  echo "done building first stage, starting second stage"
-  docker build --file Dockerfile_stage_2 -t $image --build-arg IMAGE_TAG=$imageTag  .
   echo "build docker image completed"
 }
 

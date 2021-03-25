@@ -1,0 +1,124 @@
+
+
+// find missing logs
+ContainerLogV2
+| where TimeGenerated > ago(2h)
+| sort by TimeGenerated desc
+| where ContainerName == "highscale"
+| where LogMessage contains "Sequence number="
+| parse LogMessage with * "Sequence number=" seq_number " " *
+| project seq_number = toint(seq_number), TimeGenerated, PodName
+| order by seq_number asc
+// | extend up_diff = next(seq_number) - seq_number
+| extend down_diff = seq_number - prev(seq_number)
+// | summarize count(), any(seq_number), min(TimeGenerated), max(TimeGenerated) by up_diff, down_diff
+| where down_diff > 1
+// | project-away seq_number
+| sort by TimeGenerated desc
+
+
+
+InsightsMetrics
+| where TimeGenerated > ago(10m)
+| where Name startswith "fluentbit_" or Name == "file_rotation_count"
+| where not(Name contains "bytes")
+| where not(Name contains "records")
+// | summarize max(Val) by Name, bin(TimeGenerated, 10s)
+| make-series max(Val) default=int(null) on TimeGenerated from ago(10m) to now() step 10s by Name
+| extend dummy = 1
+| as T
+| union (
+    T
+    | where Name == "file_rotation_count"
+    | join (T | where Name == "fluentbit_input_files_opened_total") on dummy
+    | extend diff = series_subtract(max_Val, max_Val1)
+    | project-away Name, Name1, max_Val, max_Val1
+    | extend Name = "fluentbit-missed-files"
+    | project-rename max_Val = diff )
+| render timechart
+
+
+
+
+
+
+// Compare telemetry on bytes rotated to bytes recieved in LA
+let timerange = 60m;
+InsightsMetrics
+| where TimeGenerated > ago(timerange + 2m) and TimeGenerated < ago(2m)
+| where Name == "bytes_rotated"
+| extend pod = tostring(todynamic(Tags)["pod_name"]), ContainerName = tostring(todynamic(Tags)["container_name"])
+// take derivative for logs per minute
+| summarize (maxTime, maxVal) = arg_max(TimeGenerated, Val), (minTime, minVal) = arg_min(TimeGenerated, Val) by pod, ContainerName
+| extend diff = (maxVal - minVal) / ((maxTime - minTime) / 1m)
+// | where diff != 0
+| summarize calculated_sent_bytes=avg(toreal(diff)) by pod, ContainerName
+| extend PodName = tostring(split(pod, "_")[1])
+| project-away pod
+//
+| join kind=inner (ContainerLogV2
+    | where TimeGenerated > ago(timerange + 2m) and TimeGenerated < ago(2m)
+    | extend bytes = strlen(tostring(LogMessage))
+    | summarize received_bytes=sum(bytes) by tostring(PodName), ContainerName, bin(TimeGenerated, 1m)
+    | summarize measured_received_bytes=avg(received_bytes) by PodName, ContainerName
+) on PodName, ContainerName
+
+
+
+
+// in process:
+//
+let timerange = 2h;
+// found sequence number in log file: 94628
+ContainerLogV2
+| where TimeGenerated > ago(timerange)
+| sort by TimeGenerated desc
+| where ContainerName == "omsagent"
+| where LogMessage startswith "found sequence number in log file"
+| parse LogMessage with "found sequence number in log file: " seq_number
+| project seq_number = toint(seq_number), TimeGenerated, PodName
+| extend source = "containerd"
+| order by seq_number asc
+| extend down_diff_containerd = seq_number - prev(seq_number)
+| project-away PodName
+| where down_diff_containerd > 1
+| union (
+    // found sequence number in oms.go: Sequence number=94636	
+    ContainerLogV2
+    | where TimeGenerated > ago(timerange)
+    | sort by TimeGenerated desc
+    | where ContainerName == "omsagent"
+    | where LogMessage contains "found sequence number in oms.go: Sequence number="
+    | parse LogMessage with "found sequence number in oms.go: Sequence number=" seq_number
+    | project seq_number = toint(seq_number), TimeGenerated, PodName
+    | extend source = "oms.go"
+    | order by seq_number asc
+    | extend down_diff_oms = seq_number - prev(seq_number)
+    | project-away PodName
+    | summarize TimeGenerated=any(TimeGenerated), source=any(source), down_diff_oms=any(down_diff_oms) by seq_number
+    | where down_diff_oms > 1
+)
+| union (
+    ContainerLogV2
+    | where TimeGenerated > ago(timerange)
+    | sort by TimeGenerated desc
+    | where ContainerName == "highscale"
+    | where LogMessage contains "Sequence number="
+    | parse LogMessage with * "Sequence number=" seq_number " " *
+    | project seq_number = toint(seq_number), TimeGenerated, PodName
+    | extend source = "LA"
+    | order by seq_number asc
+    | extend down_diff_LA = seq_number - prev(seq_number)
+    | project-away PodName
+    | where down_diff_LA > 1
+)
+| sort by seq_number
+
+
+
+//TODO:
+// try docker so rotations come at a regular time
+// try large chunks, 10k (daimler), 1k (bank of brazil)  (also try smaller log lines for fun)
+// try 1mb chunk
+// try increasing input plugin chunk and buffer size. Increasing mem_buf_limit doesn't help
+// 

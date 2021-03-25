@@ -9,12 +9,11 @@ bytes_logged_gauge = Gauge('bytes_rotated', 'number of bytes logged since startu
 
 # set up the regex to strip the containerd log headder
 header_regex = re.compile("^(.+) (stdout|stderr) (F|P) ", re.MULTILINE)
+seq_number_regex = re.compile("Sequence number=([0-9]+)")
 
 
 if __name__ == '__main__':
-    # Start up the server to expose the metrics.
-    start_http_server(4200)
-    # Generate some requests.
+    start_http_server(4200)  # Exponse the prometheus metrics
     prev_log_file_names = {}
     gauge_created_containers = set()
     bytes_logged = 0
@@ -41,15 +40,20 @@ if __name__ == '__main__':
                         file_rotation_gauge.labels(container_name=sub_folder, pod_name=top_folder).inc()
 
                         # add the file size to the total bytes logged count
-                        # f = open(os.path.join(key, rotated_file_name), "r")
-                        # data = f.read()  # (reads entire file)
-                        # data_filtered = re.sub(header_regex, "", data)
-                        # bytes_logged += len(data_filtered.encode("utf-8"))
+                        f = open(os.path.join(key, rotated_file_name), "r")
+                        data = f.read()  # (reads entire file)
+                        data_filtered = re.sub(header_regex, "", data)
+                        bytes_logged += len(data_filtered)
 
-                        bytes_logged += os.stat(os.path.join(key, rotated_file_name)).st_size
+                        # bytes_logged += os.stat(os.path.join(key, rotated_file_name)).st_size
                         bytes_logged_gauge.labels(container_name=sub_folder, pod_name=top_folder).set(bytes_logged)
 
-                        print("updated rotated file:", key)
+                        # print("updated rotated file:", key)
+
+                        # print all sequence numbers found
+                        with open("/opt/write-to-traces", "a") as output_log_file:
+                            for seq_num in seq_number_regex.findall(data):
+                                output_log_file.write("found sequence number in log file: " + str(seq_num) + "\n")
                 else:
                     prev_log_file_names[key] = rotated_file_name
-                    print("added rotated file:", key)
+                    # print("added rotated file:", key)

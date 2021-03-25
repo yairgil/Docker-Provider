@@ -689,8 +689,11 @@ python /opt/count_file_rotations.py &
 
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 (
-touch /dev/write-to-traces
-tail -f /dev/write-to-traces
+      mkfifo /opt/write-to-traces
+      while true
+      do
+            tail -f /opt/write-to-traces
+      done
 ) &
 
 
