@@ -20,16 +20,137 @@
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "$(ACRName)"
-                },
-                {
-                    "find": "__REPO_PATH__",
-                    "replaceWith": "$(ACRRepoPath)"
-                },
+                },            
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
                 }                
             ]
-        }        
+        },
+        {
+            "scopeTagName": "Pilot",
+            "bindings": [
+                {
+                    "name": "__RELEASE_STAGE__",
+                    "value": "$(ReleaseStage)"
+                },
+                {
+                    "find": "__ACR_APP_ID__",
+                    "replaceWith": "$(ACRAppId)"
+                },
+                {
+                    "find": "__ACR_APP_SECRET__",
+                    "replaceWith": "$(ACRAppSecret)"
+                },
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                
+            ]
+        },
+        {
+            "scopeTagName": "Prod1",
+            "bindings": [
+                {
+                    "name": "__RELEASE_STAGE__",
+                    "value": "$(ReleaseStage)"
+                },
+                {
+                    "find": "__ACR_APP_ID__",
+                    "replaceWith": "$(ACRAppId)"
+                },
+                {
+                    "find": "__ACR_APP_SECRET__",
+                    "replaceWith": "$(ACRAppSecret)"
+                },
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                
+            ]
+        },
+        {
+            "scopeTagName": "Prod2",
+            "bindings": [
+                {
+                    "name": "__RELEASE_STAGE__",
+                    "value": "$(ReleaseStage)"
+                },
+                {
+                    "find": "__ACR_APP_ID__",
+                    "replaceWith": "$(ACRAppId)"
+                },
+                {
+                    "find": "__ACR_APP_SECRET__",
+                    "replaceWith": "$(ACRAppSecret)"
+                },
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                
+            ]
+        },
+        {
+            "scopeTagName": "Prod3",
+            "bindings": [
+                {
+                    "name": "__RELEASE_STAGE__",
+                    "value": "$(ReleaseStage)"
+                },
+                {
+                    "find": "__ACR_APP_ID__",
+                    "replaceWith": "$(ACRAppId)"
+                },
+                {
+                    "find": "__ACR_APP_SECRET__",
+                    "replaceWith": "$(ACRAppSecret)"
+                },
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                
+            ]
+        },
+        {
+            "scopeTagName": "FF",
+            "bindings": [
+                {
+                    "name": "__RELEASE_STAGE__",
+                    "value": "$(ReleaseStage)"
+                },
+                {
+                    "find": "__ACR_APP_ID__",
+                    "replaceWith": "$(ACRAppId)"
+                },
+                {
+                    "find": "__ACR_APP_SECRET__",
+                    "replaceWith": "$(ACRAppSecret)"
+                },
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                
+            ]
+        }                                                                                                                          
     ]
 }

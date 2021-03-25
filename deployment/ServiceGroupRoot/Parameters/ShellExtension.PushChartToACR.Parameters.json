@@ -34,11 +34,7 @@
           {
             "name": "ACR_NAME",
             "value": "__ACR_NAME__"
-          },
-          {
-            "name": "REPO_PATH",
-            "value": "__REPO_PATH__"
-          },         
+          },       
           {
             "name": "CHART_VERSION",
             "value": "__CHART_VERSION__"
