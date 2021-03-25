@@ -30,7 +30,7 @@
     ],
     "ServiceResourceGroups": [     
       {
-        "AzureResourceGroupName": "ContainerInsightsExtension-Canary",
+        "AzureResourceGroupName": "ContainerInsightsExtension-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
         "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
@@ -46,6 +46,114 @@
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
         ]
-      }     
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
+        "ScopeTags": [
+          {
+            "Name": "Pilot"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-Pilot",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
+        "ScopeTags": [
+          {
+            "Name": "Prod1"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-Prod1",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
+        "ScopeTags": [
+          {
+            "Name": "Prod2"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-Prod2",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
+        "ScopeTags": [
+          {
+            "Name": "Prod3"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-Prod3",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
+        "ScopeTags": [
+          {
+            "Name": "FF"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-FF",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
+        "ScopeTags": [
+          {
+            "Name": "MC"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-MC",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+          }
+        ]
+      }                                                                                                  
     ]
   }

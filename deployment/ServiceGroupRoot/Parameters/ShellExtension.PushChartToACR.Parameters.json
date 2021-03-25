@@ -20,6 +20,10 @@
         ],
         "environmentVariables": [
           {
+            "name": "RELEASE_STAGE",
+            "value": "__RELEASE_STAGE__"
+          },        
+          {
             "name": "ACR_APP_ID",
             "value": "__ACR_APP_ID__"            
           },

@@ -6,6 +6,10 @@
             "scopeTagName": "Canary",
             "bindings": [
                 {
+                    "name": "__RELEASE_STAGE__",
+                    "value": "$(ReleaseStage)"
+                },
+                {
                     "find": "__ACR_APP_ID__",
                     "replaceWith": "$(ACRAppId)"
                 },
