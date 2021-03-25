@@ -443,6 +443,59 @@ spec:
                 - /opt/livenessprobe.sh
             initialDelaySeconds: 60
             periodSeconds: 60
+#Only in sidecar scraping mode
+        - name: omsagent-prometheus
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 500m
+              memory: 400Mi
+            requests:
+              cpu: 75m
+              memory: 225Mi
+          env:
+            # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
+            - name: AKS_RESOURCE_ID
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
+            - name: AKS_REGION
+              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+            #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
+            #- name: ACS_RESOURCE_NAME
+            #  value: "my_acs_cluster_name"
+            - name: CONTAINER_TYPE
+              value: "PrometheusSidecar"
+            - name: CONTROLLER_TYPE
+              value: "DaemonSet"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            # Update this with the user assigned msi client id for omsagent
+            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+              value: ""
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /etc/kubernetes/host
+              name: azure-json-path
+            - mountPath: /etc/omsagent-secret
+              name: omsagent-secret
+              readOnly: true
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+            - mountPath: /etc/config/osm-settings
+              name: osm-settings-vol-config
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - /opt/livenessprobe.sh
+            initialDelaySeconds: 60
+            periodSeconds: 60
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -502,6 +555,10 @@ spec:
           secret:
             secretName: omsagent-adx-secret
             optional: true
+        - name: osm-settings-vol-config
+          configMap:
+            name: container-azm-ms-osmconfig
+            optional: true
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -559,6 +616,9 @@ spec:
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: ""
+            # Add the below environment variable to true only in sidecar enabled regions, else set it to false
+            - name: SIDECAR_SCRAPING_ENABLED
+              value: "true"
           securityContext:
             privileged: true
           ports:
@@ -586,6 +646,8 @@ spec:
               readOnly: true
             - mountPath: /etc/config/settings/adx
               name: omsagent-adx-secret
+            - mountPath: /etc/config/osm-settings
+              name: osm-settings-vol-config
               readOnly: true
           livenessProbe:
             exec:
@@ -658,6 +720,10 @@ spec:
           secret:
             secretName: omsagent-adx-secret
             optional: true
+        - name: osm-settings-vol-config
+          configMap:
+            name: container-azm-ms-osmconfig
+            optional: true
 ---
   apiVersion: apps/v1
   kind: DaemonSet
@@ -711,10 +777,16 @@ spec:
             valueFrom:
                fieldRef:
                  fieldPath: spec.nodeName
+          - name: PODNAME
+            valueFrom:
+               fieldRef:
+                 fieldPath: metadata.name
           - name: NODE_IP
             valueFrom:
                fieldRef:
                  fieldPath: status.hostIP
+          - name: SIDECAR_SCRAPING_ENABLED
+            value: "true"
          volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers

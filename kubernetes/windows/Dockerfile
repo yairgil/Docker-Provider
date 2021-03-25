@@ -47,6 +47,7 @@ RUN ./setup.ps1
 COPY main.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
+COPY setdefaulttelegrafenvvariables.ps1 /opt/omsagentwindows/scripts/powershell
 
 # copy ruby scripts to /opt folder
 COPY ./omsagentwindows/installer/scripts/*.rb /opt/omsagentwindows/scripts/ruby/
@@ -61,6 +62,9 @@ COPY ./omsagentwindows/installer/conf/fluent-cri-parser.conf /etc/fluent/
 COPY ./omsagentwindows/installer/conf/fluent-docker-parser.conf /etc/fluent/
 COPY ./omsagentwindows/installer/conf/fluent-bit.conf /etc/fluent-bit
 COPY ./omsagentwindows/installer/conf/out_oms.conf /etc/omsagentwindows
+
+# copy telegraf conf file
+COPY ./omsagentwindows/installer/conf/telegraf.conf /etc/telegraf/
 
 # copy keepcert alive ruby scripts
 COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
