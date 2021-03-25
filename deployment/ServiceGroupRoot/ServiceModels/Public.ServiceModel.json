@@ -33,7 +33,7 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-Stage",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
-        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",       
+        "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",       
         "ServiceResources": [
           {
             "Name": "PushChartToACR-Stage",
