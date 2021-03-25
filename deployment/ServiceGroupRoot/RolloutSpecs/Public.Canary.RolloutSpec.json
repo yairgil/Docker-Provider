@@ -4,7 +4,7 @@
   "RolloutMetadata": {
     "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",   
     "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json", 
-    "Name": "ContainerInsightsExtension-Stage",
+    "Name": "ContainerInsightsExtension-Canary",
     "RolloutType": "Major",
     "BuildSource": {
       "Parameters": {
@@ -16,7 +16,7 @@
     {
       "name": "PushChartToACR",
       "targetType": "ServiceResource",
-      "targetName": "PushChartToACR-Stage",
+      "targetName": "PushChartToACR-Canary",
       "actions": [ "Shell/PushChartToACR" ],
       "dependsOn": [ ]
     }

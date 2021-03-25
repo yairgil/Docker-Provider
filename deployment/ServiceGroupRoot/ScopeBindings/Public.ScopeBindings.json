@@ -3,7 +3,7 @@
     "contentVersion": "0.0.0.1",
     "scopeBindings": [       
         {
-            "scopeTagName": "Stage",
+            "scopeTagName": "Canary",
             "bindings": [
                 {
                     "find": "__ACR_APP_ID__",
