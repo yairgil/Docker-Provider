@@ -4,10 +4,6 @@ export HELM_EXPERIMENTAL_OCI=1
 
 echo "Using acr : ${ACR_NAME}"
 
-# echo "start: clone ci_prod repo"
-# git clone --single-branch --branch ${RELEASE_SOURCE_BRANCH} https://github.com/microsoft/Docker-Provider.git
-# echo "end: successfully cloned ci_prod repo"
-
 echo "login to acr:${ACR_NAME} using helm"
 helm registry login $ACR_NAME  --username $ACR_APP_ID --password $ACR_APP_SECRET
 

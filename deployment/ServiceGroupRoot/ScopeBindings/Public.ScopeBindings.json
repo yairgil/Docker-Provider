@@ -24,11 +24,7 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
-                },
-                {
-                    "find": "__RELEASE_SOURCE_BRANCH__",
-                    "replaceWith": "$(ReleaseSourceBranch)"                    
-                }
+                }                
             ]
         }        
     ]

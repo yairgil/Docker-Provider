@@ -38,11 +38,7 @@
           {
             "name": "CHART_VERSION",
             "value": "__CHART_VERSION__"
-          },
-          {
-            "name": "RELEASE_SOURCE_BRANCH",
-            "value": "__RELEASE_SOURCE_BRANCH__"
-          }
+          }         
         ]      
       }
     }
