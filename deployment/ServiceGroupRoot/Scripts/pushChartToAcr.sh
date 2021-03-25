@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export HELM_EXPERIMENTAL_OCI=1
+
 echo "Using acr : ${ACR_NAME}"
 
 echo "start: clone ci_prod repo"
