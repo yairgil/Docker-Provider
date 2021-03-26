@@ -5,14 +5,15 @@ require_relative "tomlrb"
 require_relative "ConfigParseErrorLogger"
 require_relative "microsoft/omsagent/plugin/constants"
 
-@configMapMountPath = "/etc/config/settings/prometheus-config"
+@configMapMountPath = "/etc/config/settings/prometheus/prometheus-config"
+@collectorConfigTemplatePath = "/opt/otelcollector/otelcollector-config-template.yml"
 @collectorConfigPath = "/opt/otelcollector/otelcollector-config.yml"
 @configVersion = ""
 @configSchemaVersion = ""
 
 # Setting default values which will be used in case they are not set in the configmap or if configmap doesnt exist
 @indentedConfig = ""
-@configExists = false
+@useDefaultConfig = true
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -61,10 +62,10 @@ end
 begin
   puts "config::Starting to substitute the placeholders in collector.yml"
   #Replace the placeholder value in the otelcollector with values from custom config
-  text = File.read(@collectorConfigPath)
+  text = File.read(@collectorConfigTemplatePath)
   new_contents = text.gsub("$AZMON_PROMETHEUS_CONFIG", @indentedConfig)
   File.open(@collectorConfigPath, "w") { |file| file.puts new_contents }
-  @configExists = true
+  @useDefaultConfig = false
 rescue => errorStr
   ConfigParseErrorLogger.logError("Exception while substituing placeholders for prometheus config - #{errorStr}")
 end
@@ -73,7 +74,7 @@ end
 file = File.open("config_prometheusconfig_env_var", "w")
 
 if !file.nil?
-  file.write("export AZMON_PROMETHEUS_CONFIG_EXISTS=#{@configExists}\n")
+  file.write("export AZMON_USE_DEFAULT_PROMETHEUS_CONFIG=#{@configExists}\n")
   # Close file after writing all metric collection setting environment variables
   file.close
   puts "****************End Prometheus Config Processing********************"

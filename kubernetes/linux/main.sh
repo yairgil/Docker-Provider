@@ -298,13 +298,23 @@ if [ -e "/etc/config/kube.conf" ]; then
   done
   source config_otelcollector_env_var
 
-  # Get prometheus config and replace in otelcollector config
-  /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prometheus-config.rb
+  if [ -e "/etc/config/settings/prometheus/prometheus-config" ]; then
+    # Currently only logs the success or failure
+    /opt/promtool check config /etc/config/settings/prometheus/prometheus-config
 
-  cat config_prometheusconfig_env_var | while read line; do
-    echo $line >> ~/.bashrc
-  done
-  source config_prometheusconfig_env_var
+    # Use default config if specified config is invalid
+    if [ $? -ne 0 ]; then
+      export AZMON_USE_DEFAULT_PROMETHEUS_CONFIG=true
+    # Get prometheus config and replace in otelcollector config
+    else 
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prometheus-config.rb
+
+      cat config_prometheusconfig_env_var | while read line; do
+      echo $line >> ~/.bashrc
+      done
+      source config_prometheusconfig_env_var
+    fi
+  fi 
 fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
@@ -641,12 +651,13 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
 #start otelcollector
-echo "otel collector env var at main.sh runtime"
-echo "$AZMON_OTELCOLLECTOR_ENABLED"
-echo "prometheus config specified for otel collector"
-cat /etc/config/settings/prometheus-config
+echo "otel collector env var at main.sh runtime: ${AZMON_OTELCOLLECTOR_ENABLED}"
+echo "prometheus config specified for otel collector:"
+cat /etc/config/settings/prometheus/prometheus-config
+echo
+echo "otel collector using default prometheus config: ${AZMON_USE_DEFAULT_PROMETHEUS_CONFIG}"
 
-if [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ] && [ "$AZMON_PROMETHEUS_CONFIG_EXISTS" = "true" ]; then
+if [ -e "/etc/config/kube.conf" ] && [ "$AZMON_OTELCOLLECTOR_ENABLED" = "true" ]; then
   echo "starting otelcollector in rs"
   # will need to rotate log file
   /opt/otelcollector/bin/otelcollector --config /opt/otelcollector/otelcollector-config.yml --log-level DEBUG --metrics-level none &> /opt/otelcollector/otelcollector-log.txt &

@@ -122,19 +122,6 @@ data:
   otel-collector-settings: |-
     [otel_collector_settings.prometheus_collection_settings]
       #enabled = true
-  prometheus-config: |-
-    #global:
-      #evaluation_interval: 60s
-      #scrape_interval: 60s
-    #scrape_configs:
-    #- job_name: prometheus_ref_app
-      #scheme: http
-      #kubernetes_sd_configs:
-        #- role: service
-      #relabel_configs:
-        #- source_labels: [__meta_kubernetes_service_name]
-          #action: keep
-          #regex: "prometheus-reference-service"
 
 metadata:
   name: container-azm-ms-agentconfig

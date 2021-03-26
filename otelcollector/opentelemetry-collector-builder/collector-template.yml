@@ -7,9 +7,7 @@ receivers:
     prometheus:
       include_resource_labels: true
       config:
-        scrape_configs:
-        # scrape_configs must be non-null for collector to start
-        - job_name: empty_job
+        $AZMON_PROMETHEUS_CONFIG
 service:
   pipelines:
     metrics:

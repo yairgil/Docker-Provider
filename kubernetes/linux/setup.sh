@@ -88,9 +88,17 @@ sudo apt-get update
 #forceSilent='-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"'
 sudo apt-get install metricsext2=2.2021.302.1751-2918e9-~bionic -y
 
+# Install promtools for prometheus config validation
+wget https://github.com/prometheus/prometheus/releases/download/v2.25.2/prometheus-2.25.2.linux-amd64.tar.gz
+tar -xf $TMPDIR/prometheus-2.25.2.linux-amd64.tar.gz
+cp -f $TMPDIR/prometheus-2.25.2.linux-amd64/promtool /opt/promtool
+chmod 777 /opt/promtool
+
 rm -rf $TMPDIR/omsbundle
 rm -f $TMPDIR/omsagent*.sh
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+rm -f $TMPDIR/prometheus-2.25.2.linux-amd64.tar.gz
+rm -rf $TMPDIR/prometheus-2.25.2.linux-amd64
