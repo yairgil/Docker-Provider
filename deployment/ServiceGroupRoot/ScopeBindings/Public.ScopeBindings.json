@@ -53,7 +53,7 @@
             ]
         },
         {
-            "scopeTagName": "Prod1",
+            "scopeTagName": "MediumLow",
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
@@ -78,7 +78,7 @@
             ]
         },
         {
-            "scopeTagName": "Prod2",
+            "scopeTagName": "MediumHigh",
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
@@ -103,7 +103,7 @@
             ]
         },
         {
-            "scopeTagName": "Prod3",
+            "scopeTagName": "HighLoad",
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
@@ -151,6 +151,31 @@
                     "replaceWith": "$(ChartVersion)"
                 }                
             ]
-        }                                                                                                                          
+        },
+        {
+            "scopeTagName": "MC",
+            "bindings": [
+                {
+                    "name": "__RELEASE_STAGE__",
+                    "value": "$(ReleaseStage)"
+                },
+                {
+                    "find": "__ACR_APP_ID__",
+                    "replaceWith": "$(ACRAppId)"
+                },
+                {
+                    "find": "__ACR_APP_SECRET__",
+                    "replaceWith": "$(ACRAppSecret)"
+                },
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                
+            ]
+        }                                                                                                                                                   
     ]
 }
