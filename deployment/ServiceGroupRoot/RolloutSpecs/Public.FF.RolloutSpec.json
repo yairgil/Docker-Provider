@@ -16,7 +16,7 @@
     {
       "name": "PushChartToACR",
       "targetType": "ServiceResource",
-      "targetName": "PushChartToACR",
+      "targetName": "PushChartToACR-FF",
       "actions": [ "Shell/PushChartToACR" ],
       "dependsOn": [ ]
     }

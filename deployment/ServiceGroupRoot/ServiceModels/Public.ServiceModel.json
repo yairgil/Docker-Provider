@@ -41,7 +41,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR",
+            "Name": "PushChartToACR-Canary",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -59,7 +59,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR",
+            "Name": "PushChartToACR-Pilot",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -72,12 +72,12 @@
         "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
         "ScopeTags": [
           {
-            "Name": "Prod2"
+            "Name": "MediumLow"
           }
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR",
+            "Name": "PushChartToACR-MediumLow",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -90,12 +90,12 @@
         "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
         "ScopeTags": [
           {
-            "Name": "Prod3"
+            "Name": "MediumHigh"
           }
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR",
+            "Name": "PushChartToACR-MediumHigh",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -108,12 +108,12 @@
         "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
         "ScopeTags": [
           {
-            "Name": "Prod4"
+            "Name": "HighLoad"
           }
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR",
+            "Name": "PushChartToACR-HighLoad",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -131,7 +131,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR",
+            "Name": "PushChartToACR-FF",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -149,7 +149,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR",
+            "Name": "PushChartToACR-MC",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
