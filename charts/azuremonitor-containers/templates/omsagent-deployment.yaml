@@ -122,6 +122,7 @@ spec:
          - "/opt/livenessprobe.sh"
         initialDelaySeconds: 60
         periodSeconds: 60
+        timeoutSeconds: 15
    {{- with .Values.omsagent.deployment.affinity }}
    affinity: {{- toYaml . | nindent 8 }}
    {{- end }}
