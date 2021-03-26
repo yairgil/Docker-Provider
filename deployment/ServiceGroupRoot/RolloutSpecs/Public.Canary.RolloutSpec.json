@@ -16,7 +16,7 @@
     {
       "name": "PushChartToACR",
       "targetType": "ServiceResource",
-      "targetName": "PushChartToACR-Canary",
+      "targetName": "PushChartToACR",
       "actions": [ "Shell/PushChartToACR" ],
       "dependsOn": [ ]
     }

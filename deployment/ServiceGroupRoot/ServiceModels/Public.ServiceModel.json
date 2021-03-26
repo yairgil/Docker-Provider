@@ -41,7 +41,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-Canary",
+            "Name": "PushChartToACR",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -59,7 +59,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-Pilot",
+            "Name": "PushChartToACR",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -77,7 +77,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-Prod2",
+            "Name": "PushChartToACR",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -95,7 +95,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-Prod3",
+            "Name": "PushChartToACR",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -113,7 +113,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-Prod3",
+            "Name": "PushChartToACR",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -131,7 +131,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-FF",
+            "Name": "PushChartToACR",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
@@ -149,7 +149,7 @@
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-MC",
+            "Name": "PushChartToACR",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
