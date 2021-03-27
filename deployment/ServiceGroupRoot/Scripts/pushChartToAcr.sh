@@ -63,7 +63,7 @@ case $RELEASE_STAGE in
 
   Prod2 | LightLoad)
     # prod 2
-    echo -n "start: Release stage - Medium Low Laod Regions - Prod2"    
+    echo -n "start: Release stage - Light Load Regions - Prod2"    
     mcrFullPath=${MCR_NAME}/${PILOT_REGION_REPO_PATH}:${CHART_VERSION}
     echo "Pull Prod1 region chart from MCR:${mcrFullPath} to push to Prod2 regions"
     helm chart pull ${mcrFullPath}
@@ -75,12 +75,12 @@ case $RELEASE_STAGE in
     echo "start: push the chart version: ${acrFullPath}"
     helm chart push ${acrFullPath} 
     echo "end: push the chart version: ${acrFullPath}"
-    echo -n "end: Release stage - Medium Low Laod Regions - Prod2"    
+    echo -n "end: Release stage - Light Load Regions - Prod2"    
     ;;
    
   Prod3 | MediumLoad)
     # prod 3
-    echo -n "start: Release stage - Medium High Laod Regions - Prod3"
+    echo -n "start: Release stage - Medium Load Regions - Prod3"
     echo "Pull Prod2 region chart from MCR to push to Prod3 regions"
     mcrFullPath=${MCR_NAME}/${PROD2_REGION_REPO_PATH}:${CHART_VERSION}
     helm chart pull ${mcrFullPath}
@@ -92,12 +92,12 @@ case $RELEASE_STAGE in
     echo "start: push the chart version: ${acrFullPath}"
     helm chart push ${acrFullPath} 
     echo "end: push the chart version: ${acrFullPath}"        
-    echo -n "end: Release stage - Medium High Laod Regions - Prod3"
+    echo -n "end: Release stage - Medium Load Regions - Prod3"
     ;;
 
   Prod4 | HighLoad)
     # prod 4    
-    echo -n "start: Release stage - High Laod Regions - Prod4"
+    echo -n "start: Release stage - High Load Regions - Prod4"
     echo "Pull Prod3 region chart from MCR to push to Prod4 regions"
     mcrFullPath=${MCR_NAME}/${PROD3_REGION_REPO_PATH}:${CHART_VERSION}    
     helm chart pull ${mcrFullPath}
@@ -109,7 +109,7 @@ case $RELEASE_STAGE in
     echo "start: push the chart version: ${acrFullPath}"
     helm chart push ${acrFullPath} 
     echo "end: push the chart version: ${acrFullPath}"  
-    echo -n "end: Release stage - High Laod Regions - Prod4"  
+    echo -n "end: Release stage - High Load Regions - Prod4"  
     ;;  
 
   FF | Prod5)
