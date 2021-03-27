@@ -18,7 +18,7 @@ export PROD4_REGION_REPO_PATH="azuremonitor/containerinsights/prod4/${REPO_TYPE}
 # FF
 export PROD5_REGION_REPO_PATH="azuremonitor/containerinsights/prod5/${REPO_TYPE}/azuremonitor-containers"
 # MC 
-export PROD6_REGION_REPO_PATH="azuremonitor/containerinsights/prod5/${REPO_TYPE}/azuremonitor-containers"
+export PROD6_REGION_REPO_PATH="azuremonitor/containerinsights/prod6/${REPO_TYPE}/azuremonitor-containers"
 
 echo "START - Release stage : ${RELEASE_STAGE}"
 
@@ -132,6 +132,18 @@ case $RELEASE_STAGE in
   MC | Prod6)
     echo -n "Release stage - MC"
     echo "Pull MC region chart from MCR"
+    mcrFullPath=${MCR_NAME}/${PROD5_REGION_REPO_PATH}:${CHART_VERSION}        
+    echo "Pull Prod5 region chart from MCR:${mcrFullPath} to push to Prod6 regions"    
+    helm chart pull ${mcrFullPath}
+    echo "Exporting chart"    
+    helm chart export ${mcrFullPath}
+    echo "save the chart locally with acr full path"
+    acrFullPath=${ACR_NAME}/public/${PROD6_REGION_REPO_PATH}:${CHART_VERSION}
+    helm chart save azuremonitor-containers/ ${acrFullPath}    
+    echo "start: push the chart version: ${acrFullPath}"
+    helm chart push ${acrFullPath} 
+    echo "end: push the chart version: ${acrFullPath}"   
+    echo -n "end: Release stage - MC"     
     ;;    
 
   *)
