@@ -8,15 +8,7 @@
                 {
                     "find": "__RELEASE_STAGE__",
                     "replaceWith": "Canary"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                },
+                },               
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "$(ACRName)"
@@ -33,15 +25,7 @@
                 {
                     "find": "__RELEASE_STAGE__",
                     "replaceWith": "Pilot"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                },
+                },                
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "$(ACRName)"
@@ -58,15 +42,7 @@
                 {
                     "find": "__RELEASE_STAGE__",
                     "replaceWith": "MediumLow"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                },
+                },               
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "$(ACRName)"
@@ -83,15 +59,7 @@
                 {
                     "find": "__RELEASE_STAGE__",
                     "replaceWith": "MediumHigh"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                },
+                },                
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "$(ACRName)"
@@ -108,15 +76,7 @@
                 {
                     "find": "__RELEASE_STAGE__",
                     "replaceWith": "HighLoad"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                },
+                },               
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "$(ACRName)"
@@ -133,15 +93,7 @@
                 {
                     "find": "__RELEASE_STAGE__",
                     "replaceWith": "FF"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                },
+                },              
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "$(ACRName)"
@@ -158,15 +110,7 @@
                 {
                     "find": "__RELEASE_STAGE__",
                     "replaceWith": "MC"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                },
+                },              
                 {
                     "find": "__ACR_NAME__",
                     "replaceWith": "$(ACRName)"
