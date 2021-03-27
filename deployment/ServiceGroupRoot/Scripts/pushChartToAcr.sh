@@ -61,7 +61,7 @@ case $RELEASE_STAGE in
     echo -n "end: Release stage - Pilot"    
     ;;
 
-  Prod2 | MediumLow)
+  Prod2 | LightLoad)
     # prod 2
     echo -n "start: Release stage - Medium Low Laod Regions - Prod2"    
     mcrFullPath=${MCR_NAME}/${PILOT_REGION_REPO_PATH}:${CHART_VERSION}
@@ -78,7 +78,7 @@ case $RELEASE_STAGE in
     echo -n "end: Release stage - Medium Low Laod Regions - Prod2"    
     ;;
    
-  Prod3 | MediumHigh)
+  Prod3 | MediumLoad)
     # prod 3
     echo -n "start: Release stage - Medium High Laod Regions - Prod3"
     echo "Pull Prod2 region chart from MCR to push to Prod3 regions"
@@ -95,7 +95,7 @@ case $RELEASE_STAGE in
     echo -n "end: Release stage - Medium High Laod Regions - Prod3"
     ;;
 
-  Prod4 | High)
+  Prod4 | HighLoad)
     # prod 4    
     echo -n "start: Release stage - High Laod Regions - Prod4"
     echo "Pull Prod3 region chart from MCR to push to Prod4 regions"

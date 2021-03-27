@@ -53,7 +53,7 @@
             ]
         },
         {
-            "scopeTagName": "MediumLow",
+            "scopeTagName": "LightLoad",
             "bindings": [
                 {
                     "find": "__RELEASE_STAGE__",
@@ -78,7 +78,7 @@
             ]
         },
         {
-            "scopeTagName": "MediumHigh",
+            "scopeTagName": "MediumLoad",
             "bindings": [
                 {
                     "find": "__RELEASE_STAGE__",

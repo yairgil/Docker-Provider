@@ -4,7 +4,7 @@
   "RolloutMetadata": {
     "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",   
     "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json", 
-    "Name": "ContainerInsightsExtension-Prod4",
+    "Name": "ContainerInsightsExtension-Prod3",
     "RolloutType": "Major",
     "BuildSource": {
       "Parameters": {

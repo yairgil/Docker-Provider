@@ -66,36 +66,36 @@
         ]
       },
       {
-        "AzureResourceGroupName": "ContainerInsightsExtension-MediumLow-Release",
+        "AzureResourceGroupName": "ContainerInsightsExtension-LightLoad-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
         "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
         "ScopeTags": [
           {
-            "Name": "MediumLow"
+            "Name": "LightLoad"
           }
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-MediumLow",
+            "Name": "PushChartToACR-LightLoad",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }
         ]
       },
       {
-        "AzureResourceGroupName": "ContainerInsightsExtension-MediumHigh-Release",
+        "AzureResourceGroupName": "ContainerInsightsExtension-MediumLoad-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
         "AzureSubscriptionId": "692aea0b-2d89-4e7e-ae30-fffe40782ee2",  
         "ScopeTags": [
           {
-            "Name": "MediumHigh"
+            "Name": "MediumLoad"
           }
         ],     
         "ServiceResources": [
           {
-            "Name": "PushChartToACR-MediumHigh",
+            "Name": "PushChartToACR-MediumLoad",
             "InstanceOf": "ShellExtension",
             "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
           }

@@ -16,7 +16,7 @@
     {
       "name": "PushChartToACR",
       "targetType": "ServiceResource",
-      "targetName": "PushChartToACR-MediumLow",
+      "targetName": "PushChartToACR-MediumLoad",
       "actions": [ "Shell/PushChartToACR" ],
       "dependsOn": [ ]
     }
