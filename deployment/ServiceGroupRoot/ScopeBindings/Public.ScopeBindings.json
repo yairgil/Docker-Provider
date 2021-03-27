@@ -7,7 +7,7 @@
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
-                    "value": "$(ReleaseStage)"
+                    "value": "Canary"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -32,7 +32,7 @@
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
-                    "value": "$(ReleaseStage)"
+                    "value": "Pilot"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -57,7 +57,7 @@
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
-                    "value": "$(ReleaseStage)"
+                    "value": "MediumLow"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -82,7 +82,7 @@
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
-                    "value": "$(ReleaseStage)"
+                    "value": "MediumHigh"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -107,7 +107,7 @@
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
-                    "value": "$(ReleaseStage)"
+                    "value": "HighLoad"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -132,7 +132,7 @@
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
-                    "value": "$(ReleaseStage)"
+                    "value": "FF"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -157,7 +157,7 @@
             "bindings": [
                 {
                     "name": "__RELEASE_STAGE__",
-                    "value": "$(ReleaseStage)"
+                    "value": "MC"
                 },
                 {
                     "find": "__ACR_APP_ID__",
