@@ -43,7 +43,7 @@
           {
             "Name": "PushChartToACR-Canary",
             "InstanceOf": "ShellExtension",
-            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
           }
         ]
       },
@@ -61,7 +61,7 @@
           {
             "Name": "PushChartToACR-Pilot",
             "InstanceOf": "ShellExtension",
-            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
           }
         ]
       },
@@ -79,7 +79,7 @@
           {
             "Name": "PushChartToACR-LightLoad",
             "InstanceOf": "ShellExtension",
-            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
           }
         ]
       },
@@ -97,7 +97,7 @@
           {
             "Name": "PushChartToACR-MediumLoad",
             "InstanceOf": "ShellExtension",
-            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
           }
         ]
       },
@@ -115,7 +115,7 @@
           {
             "Name": "PushChartToACR-HighLoad",
             "InstanceOf": "ShellExtension",
-            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
           }
         ]
       },
@@ -133,7 +133,7 @@
           {
             "Name": "PushChartToACR-FF",
             "InstanceOf": "ShellExtension",
-            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
           }
         ]
       },
@@ -151,7 +151,7 @@
           {
             "Name": "PushChartToACR-MC",
             "InstanceOf": "ShellExtension",
-            "RolloutParametersPath": "Parameters\\ShellExtension.PushChartToACR.Parameters.json"
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
           }
         ]
       }                                                                                                  
