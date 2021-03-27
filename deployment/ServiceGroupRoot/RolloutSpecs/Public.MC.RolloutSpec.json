@@ -17,7 +17,7 @@
       "name": "PushChartToACR",
       "targetType": "ServiceResource",
       "targetName": "PushChartToACR-MC",
-      "actions": [ "Shell/PushChartToACR" ],
+      "actions": [ "wait/waitSdpBakeTime", "Shell/PushChartToACR" ],
       "dependsOn": [ ]
     }
   ]

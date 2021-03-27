@@ -17,7 +17,7 @@
       "name": "PushChartToACR",
       "targetType": "ServiceResource",
       "targetName": "PushChartToACR-Canary",
-      "actions": [ "Shell/PushChartToACR", "wait/wait1Hour" ],
+      "actions": [ "Shell/PushChartToACR" ],
       "dependsOn": [ ]
     }
   ]
