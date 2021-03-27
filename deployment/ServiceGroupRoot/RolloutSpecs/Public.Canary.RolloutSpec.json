@@ -10,14 +10,14 @@
       "Parameters": {
         "VersionFile": "buildver.txt"
       }
-    }
+    }  
   },
   "orchestratedSteps": [
     {
       "name": "PushChartToACR",
       "targetType": "ServiceResource",
       "targetName": "PushChartToACR-Canary",
-      "actions": [ "Shell/PushChartToACR" ],
+      "actions": [ "Shell/PushChartToACR", "wait/wait1Hour" ],
       "dependsOn": [ ]
     }
   ]

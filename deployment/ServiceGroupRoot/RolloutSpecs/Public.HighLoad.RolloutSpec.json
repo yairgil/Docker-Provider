@@ -17,7 +17,7 @@
       "name": "PushChartToACR",
       "targetType": "ServiceResource",
       "targetName": "PushChartToACR-HighLoad",
-      "actions": [ "Shell/PushChartToACR" ],
+      "actions": [ "Shell/PushChartToACR", "wait/wait1Hour" ],
       "dependsOn": [ ]
     }
   ]
