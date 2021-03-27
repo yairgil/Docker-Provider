@@ -17,6 +17,8 @@ export PROD3_REGION_REPO_PATH="azuremonitor/containerinsights/prod3/${REPO_TYPE}
 export PROD4_REGION_REPO_PATH="azuremonitor/containerinsights/prod4/${REPO_TYPE}/azuremonitor-containers"
 # FF
 export PROD5_REGION_REPO_PATH="azuremonitor/containerinsights/prod5/${REPO_TYPE}/azuremonitor-containers"
+# MC 
+export PROD6_REGION_REPO_PATH="azuremonitor/containerinsights/prod5/${REPO_TYPE}/azuremonitor-containers"
 
 echo "START - Release stage : ${RELEASE_STAGE}"
 
@@ -50,7 +52,7 @@ case $RELEASE_STAGE in
     helm chart pull ${mcrFullPath}
     echo "Exporting chart"    
     helm chart export ${mcrFullPath}    
-    acrFullPath=${ACR_NAME}/public/${PILOT_REPO_PATH}:${CHART_VERSION} 
+    acrFullPath=${ACR_NAME}/public/${PILOT_REGION_REPO_PATH}:${CHART_VERSION} 
     echo "save the chart locally with acr full path: ${acrFullPath}"    
     helm chart save azuremonitor-containers/ ${acrFullPath} 
     echo "start: push the chart version: ${acrFullPath}"
@@ -67,7 +69,7 @@ case $RELEASE_STAGE in
     helm chart pull ${mcrFullPath}
     echo "Exporting chart"    
     helm chart export ${mcrFullPath}
-    acrFullPath=${ACR_NAME}/public/${PROD2_REPO_PATH}:${CHART_VERSION}
+    acrFullPath=${ACR_NAME}/public/${PROD2_REGION_REPO_PATH}:${CHART_VERSION}
     echo "save the chart locally with acr full path: ${acrFullPath}"    
     helm chart save azuremonitor-containers/ ${acrFullPath}    
     echo "start: push the chart version: ${acrFullPath}"
@@ -85,7 +87,7 @@ case $RELEASE_STAGE in
     echo "Exporting chart"    
     helm chart export ${mcrFullPath}
     echo "save the chart locally with acr full path"
-    acrFullPath=${ACR_NAME}/public/${PROD3_REPO_PATH}:${CHART_VERSION}
+    acrFullPath=${ACR_NAME}/public/${PROD3_REGION_REPO_PATH}:${CHART_VERSION}
     helm chart save azuremonitor-containers/ ${acrFullPath}    
     echo "start: push the chart version: ${acrFullPath}"
     helm chart push ${acrFullPath} 
@@ -101,7 +103,7 @@ case $RELEASE_STAGE in
     helm chart pull ${mcrFullPath}
     echo "Exporting chart"    
     helm chart export ${mcrFullPath}
-    acrFullPath=${ACR_NAME}/public/${PROD4_REPO_PATH}:${CHART_VERSION}
+    acrFullPath=${ACR_NAME}/public/${PROD4_REGION_REPO_PATH}:${CHART_VERSION}
     echo "save the chart locally with acr full path: ${acrFullPath}"    
     helm chart save azuremonitor-containers/ ${acrFullPath}    
     echo "start: push the chart version: ${acrFullPath}"
@@ -119,7 +121,7 @@ case $RELEASE_STAGE in
     echo "Exporting chart"    
     helm chart export ${mcrFullPath}
     echo "save the chart locally with acr full path"
-    acrFullPath=${ACR_NAME}/public/${PROD5_REPO_PATH}:${CHART_VERSION}
+    acrFullPath=${ACR_NAME}/public/${PROD5_REGION_REPO_PATH}:${CHART_VERSION}
     helm chart save azuremonitor-containers/ ${acrFullPath}    
     echo "start: push the chart version: ${acrFullPath}"
     helm chart push ${acrFullPath} 
