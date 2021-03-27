@@ -6,8 +6,8 @@
             "scopeTagName": "Canary",
             "bindings": [
                 {
-                    "name": "__RELEASE_STAGE__",
-                    "value": "Canary"
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "Canary"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -31,8 +31,8 @@
             "scopeTagName": "Pilot",
             "bindings": [
                 {
-                    "name": "__RELEASE_STAGE__",
-                    "value": "Pilot"
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "Pilot"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -56,8 +56,8 @@
             "scopeTagName": "MediumLow",
             "bindings": [
                 {
-                    "name": "__RELEASE_STAGE__",
-                    "value": "MediumLow"
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "MediumLow"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -81,8 +81,8 @@
             "scopeTagName": "MediumHigh",
             "bindings": [
                 {
-                    "name": "__RELEASE_STAGE__",
-                    "value": "MediumHigh"
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "MediumHigh"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -106,8 +106,8 @@
             "scopeTagName": "HighLoad",
             "bindings": [
                 {
-                    "name": "__RELEASE_STAGE__",
-                    "value": "HighLoad"
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "HighLoad"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -131,8 +131,8 @@
             "scopeTagName": "FF",
             "bindings": [
                 {
-                    "name": "__RELEASE_STAGE__",
-                    "value": "FF"
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "FF"
                 },
                 {
                     "find": "__ACR_APP_ID__",
@@ -156,8 +156,8 @@
             "scopeTagName": "MC",
             "bindings": [
                 {
-                    "name": "__RELEASE_STAGE__",
-                    "value": "MC"
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "MC"
                 },
                 {
                     "find": "__ACR_APP_ID__",
