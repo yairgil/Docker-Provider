@@ -84,70 +84,63 @@ echo "login to acr:${ACR_NAME} using helm completed."
 case $RELEASE_STAGE in
 
   Canary)
-    echo -n "start: Release stage - Canary"
+    echo "START: Release stage - Canary"
     destAcrFullPath=${ACR_NAME}/public/${CANARY_REGION_REPO_PATH}:${CHART_VERSION}  
     push_local_chart_to_canary_region $destAcrFullPath     
-    echo -n "end: Release stage - Canary"
+    echo "END: Release stage - Canary"
     ;;
 
-  Pilot | Prod1)
-    # prod 1
-    echo -n "start: Release stage - Pilot"    
+  Pilot | Prod1)    
+    echo "START: Release stage - Pilot"    
     srcMcrFullPath=${MCR_NAME}/${CANARY_REGION_REPO_PATH}:${CHART_VERSION}   
     destAcrFullPath=${ACR_NAME}/public/${PILOT_REGION_REPO_PATH}:${CHART_VERSION}   
     pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath          
-    echo -n "end: Release stage - Pilot"    
+    echo "END: Release stage - Pilot"    
     ;;
 
-  LightLoad | Pord2)
-    # prod 2
-    echo -n "start: Release stage - Light Load Regions - Prod2"    
+  LightLoad | Pord2)    
+    echo "START: Release stage - Light Load Regions"    
     srcMcrFullPath=${MCR_NAME}/${PILOT_REGION_REPO_PATH}:${CHART_VERSION}
     destAcrFullPath=${ACR_NAME}/public/${LIGHT_LOAD_REGION_REPO_PATH}:${CHART_VERSION}
     pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath              
-    echo -n "end: Release stage - Light Load Regions - Prod2"    
+    echo "END: Release stage - Light Load Regions"    
     ;;
    
-  MediumLoad | Prod3)
-    # prod 3
-    echo -n "start: Release stage - Medium Load Regions - Prod3"
-    echo "Pull Prod2 region chart from MCR to push to Prod3 regions"
+  MediumLoad | Prod3)    
+    echo  "START: Release stage - Medium Load Regions"    
     srcMcrFullPath=${MCR_NAME}/${LIGHT_LOAD_REGION_REPO_PATH}:${CHART_VERSION}
     destAcrFullPath=${ACR_NAME}/public/${MEDIUM_LOAD_REGION_REPO_PATH}:${CHART_VERSION}
     pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath     
-    echo -n "end: Release stage - Medium Load Regions - Prod3"
+    echo  "END: Release stage - Medium Load Regions"
     ;;
 
-  HighLoad | Prod4)
-    # prod 4    
-    echo -n "start: Release stage - High Load Regions - Prod4"
-    echo "Pull Prod3 region chart from MCR to push to Prod4 regions"
+  HighLoad | Prod4)    
+    echo  "START: Release stage - High Load Regions"    
     srcMcrFullPath=${MCR_NAME}/${MEDIUM_LOAD_REGION_REPO_PATH}:${CHART_VERSION} 
     destAcrFullPath=${ACR_NAME}/public/${HIGH_LOAD_REGION_REPO_PATH}:${CHART_VERSION}   
     pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath         
-    echo -n "end: Release stage - High Load Regions - Prod4"  
+    echo  "END: Release stage - High Load Regions"  
     ;;  
 
-  FF | Prod5)
-    # prod 5
-    echo -n "start: Release stage - FF"    
+  FF | Prod5)    
+    echo  "START: Release stage - FF"    
     srcMcrFullPath=${MCR_NAME}/${HIGH_LOAD_REGION_REPO_PATH}:${CHART_VERSION}        
     destAcrFullPath=${ACR_NAME}/public/${FF_REGION_REPO_PATH}:${CHART_VERSION}
     pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath                   
-    echo -n "end: Release stage - FF"     
+    echo  "END: Release stage - FF"     
     ;;    
 
   MC | Prod6)
-    echo -n "Release stage - MC"
-    echo "Pull MC region chart from MCR"
+    echo "START: Release stage - MC"    
     srcMcrFullPath=${MCR_NAME}/${FF_REGION_REPO_PATH}:${CHART_VERSION}            
     destAcrFullPath=${ACR_NAME}/public/${MC_REGION_REPO_PATH}:${CHART_VERSION}
     pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath
-    echo -n "end: Release stage - MC"     
+    echo "END: Release stage - MC"     
     ;;    
 
   *)
     echo -n "unknown release stage"
+    exit 1
     ;;
 esac
 
