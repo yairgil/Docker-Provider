@@ -24,6 +24,8 @@ echo "START - Release stage : ${RELEASE_STAGE}"
 
 # login to acr
 echo "Using acr : ${ACR_NAME}"
+echo "Using acr repo type: ${REPO_TYPE}"
+
 echo "login to acr:${ACR_NAME} using helm"
 helm registry login $ACR_NAME  --username $ACR_APP_ID --password $ACR_APP_SECRET
 
@@ -61,7 +63,7 @@ case $RELEASE_STAGE in
     echo -n "end: Release stage - Pilot"    
     ;;
 
-  Prod2 | LightLoad)
+  LightLoad | Pord2)
     # prod 2
     echo -n "start: Release stage - Light Load Regions - Prod2"    
     mcrFullPath=${MCR_NAME}/${PILOT_REGION_REPO_PATH}:${CHART_VERSION}
@@ -78,7 +80,7 @@ case $RELEASE_STAGE in
     echo -n "end: Release stage - Light Load Regions - Prod2"    
     ;;
    
-  Prod3 | MediumLoad)
+  MediumLoad | Prod3)
     # prod 3
     echo -n "start: Release stage - Medium Load Regions - Prod3"
     echo "Pull Prod2 region chart from MCR to push to Prod3 regions"
@@ -95,7 +97,7 @@ case $RELEASE_STAGE in
     echo -n "end: Release stage - Medium Load Regions - Prod3"
     ;;
 
-  Prod4 | HighLoad)
+  HighLoad | Prod4)
     # prod 4    
     echo -n "start: Release stage - High Load Regions - Prod4"
     echo "Pull Prod3 region chart from MCR to push to Prod4 regions"
