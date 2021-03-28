@@ -78,7 +78,7 @@ echo "Using acr : ${ACR_NAME}"
 echo "Using acr repo type: ${REPO_TYPE}"
 
 echo "login to acr:${ACR_NAME} using helm ..."
-helm registry login $ACR_NAME  --username $ACR_APP_ID --password $ACR_APP_SECRET
+echo $ACR_APP_SECRET | helm registry login $ACR_NAME  --username $ACR_APP_ID --password-stdin 
 echo "login to acr:${ACR_NAME} using helm completed."
 
 case $RELEASE_STAGE in
