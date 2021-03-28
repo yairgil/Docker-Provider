@@ -38,7 +38,8 @@
               "parameters": {
                 "secretId": "https://cdpxacrcredskv.vault.azure.net/secrets/ContainerInsightsProdACRAADAppId/f92f2264af2a417ea4f521fc3999910a"
               }
-            }
+            },
+            "asSecureValue": "true"
           },
           {
             "name": "ACR_APP_SECRET",
@@ -47,7 +48,8 @@
               "parameters": {
                 "secretId": "https://cdpxacrcredskv.vault.azure.net/secrets/ContainerInsightsProdACRAADAppSecret/e5d15982508d4ceda190a388d25308ef"
               }
-            }
+            },
+            "asSecureValue": "true"
           },
           {
             "name": "ACR_NAME",
