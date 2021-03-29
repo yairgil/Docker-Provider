@@ -33,23 +33,11 @@
           },
           {
             "name": "ACR_APP_ID",
-            "reference": {
-              "provider": "AzureKeyVault",
-              "parameters": {
-                "secretId": "https://cdpxacrcredskv.vault.azure.net/secrets/ContainerInsightsProdACRAADAppId/f92f2264af2a417ea4f521fc3999910a"
-              }
-            },
-            "asSecureValue": "true"
+             "value": "__ACR_APP_ID__"            
           },
           {
             "name": "ACR_APP_SECRET",
-            "reference": {
-              "provider": "AzureKeyVault",
-              "parameters": {
-                "secretId": "https://cdpxacrcredskv.vault.azure.net/secrets/ContainerInsightsProdACRAADAppSecret/e5d15982508d4ceda190a388d25308ef"
-              }
-            },
-            "asSecureValue": "true"
+            "value": "__ACR_APP_SECRET__"
           },
           {
             "name": "ACR_NAME",
