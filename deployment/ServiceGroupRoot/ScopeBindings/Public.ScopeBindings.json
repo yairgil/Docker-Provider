@@ -16,14 +16,6 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
                 }               
             ]
         },
@@ -41,15 +33,7 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
-                }, 
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                }                           
+                }       
             ]
         },
         {
@@ -66,15 +50,7 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
-                }, 
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                }                                       
+                }                           
             ]
         },
         {
@@ -91,15 +67,7 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                }                                       
+                }                     
             ]
         },
         {
@@ -116,15 +84,7 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                }                                            
+                }                                 
             ]
         },
         {
@@ -141,15 +101,7 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                }                                          
+                }                          
             ]
         },
         {
@@ -166,15 +118,7 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
-                },
-                {
-                    "find": "__ACR_APP_ID__",
-                    "replaceWith": "$(ACRAppId)"
-                },
-                {
-                    "find": "__ACR_APP_SECRET__",
-                    "replaceWith": "$(ACRAppSecret)"
-                }                                
+                }                
             ]
         }                                                                                                                                                   
     ]

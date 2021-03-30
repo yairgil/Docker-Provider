@@ -5,7 +5,7 @@
     {
       "name": "waitSdpBakeTime",
       "properties": {
-        "duration": "PT1H"
+        "duration": "PT6H"
       }
     }
   ],
