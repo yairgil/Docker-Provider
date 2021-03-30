@@ -17,7 +17,7 @@ export MEDIUM_LOAD_REGION_REPO_PATH="azuremonitor/containerinsights/prod3/${REPO
 export HIGH_LOAD_REGION_REPO_PATH="azuremonitor/containerinsights/prod4/${REPO_TYPE}/azuremonitor-containers"
 # FairFax regions
 export FF_REGION_REPO_PATH="azuremonitor/containerinsights/prod5/${REPO_TYPE}/azuremonitor-containers"
-# Mooncake regions
+# Mooncake regions 
 export MC_REGION_REPO_PATH="azuremonitor/containerinsights/prod6/${REPO_TYPE}/azuremonitor-containers"
 
 # pull chart from previous stage mcr and push chart to next stage acr
@@ -40,7 +40,7 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
     if [ $? -eq 0 ]; then
       echo "Pulling chart from MCR:${srcMcrFullPath} completed successfully."
     else
-      echo "Pulling chart from MCR:${srcMcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+      echo "-e error Pulling chart from MCR:${srcMcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
       exit 1
     fi   
 
@@ -49,7 +49,7 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
     if [ $? -eq 0 ]; then
       echo "Exporting chart to current directory completed successfully."
     else
-      echo "Exporting chart to current directory failed. Please review Ev2 pipeline logs for more details on the error."
+      echo "-e error Exporting chart to current directory failed. Please review Ev2 pipeline logs for more details on the error."
       exit 1
     fi      
 
@@ -58,7 +58,7 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
     if [ $? -eq 0 ]; then      
       echo "save the chart locally with dest acr full path : ${destAcrFullPath} completed successfully."
     else     
-      echo "save the chart locally with dest acr full path : ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+      echo "-e error save the chart locally with dest acr full path : ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
       exit 1
     fi      
     
@@ -67,7 +67,7 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
     if [ $? -eq 0 ]; then            
       echo "pushing the chart to acr path: ${destAcrFullPath} completed successfully."
     else     
-      echo "pushing the chart to acr path: ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+      echo "-e error pushing the chart to acr path: ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
       exit 1
     fi       
 }
@@ -85,7 +85,7 @@ push_local_chart_to_canary_region() {
   if [ $? -eq 0 ]; then            
     echo "save the chart locally with dest acr full path : ${destAcrFullPath} completed."
   else     
-    echo "save the chart locally with dest acr full path : ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+    echo "-e error save the chart locally with dest acr full path : ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
     exit 1
   fi       
 
@@ -94,7 +94,7 @@ push_local_chart_to_canary_region() {
   if [ $? -eq 0 ]; then            
     echo "pushing the chart to acr path: ${destAcrFullPath} completed successfully."
   else     
-    echo "pushing the chart to acr path: ${destAcrFullPath} failed.Please review Ev2 pipeline logs for more details on the error."
+    echo "-e error pushing the chart to acr path: ${destAcrFullPath} failed.Please review Ev2 pipeline logs for more details on the error."
     exit 1
   fi       
 }
@@ -110,11 +110,9 @@ echo $ACR_APP_SECRET | helm registry login $ACR_NAME  --username $ACR_APP_ID --p
 if [ $? -eq 0 ]; then
   echo "login to acr:${ACR_NAME} using helm completed successfully."
 else
-  echo "login to acr:${ACR_NAME} using helm failed. Please review Ev2 pipeline logs for more details on the error."
+  echo "-e error login to acr:${ACR_NAME} using helm failed. Please review Ev2 pipeline logs for more details on the error."
   exit 1
 fi   
-
-echo "login to acr:${ACR_NAME} using helm completed."
 
 case $RELEASE_STAGE in
 
