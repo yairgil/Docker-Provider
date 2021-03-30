@@ -37,20 +37,39 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
     
     echo "Pulling chart from MCR:${srcMcrFullPath} ..."
     helm chart pull ${srcMcrFullPath}
-    echo "Pulling chart from MCR:${srcMcrFullPath} completed."
+    if [ $? -eq 0 ]; then
+      echo "Pulling chart from MCR:${srcMcrFullPath} completed successfully."
+    else
+      echo "Pulling chart from MCR:${srcMcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+      exit 1
+    fi   
 
     echo "Exporting chart to current directory ..."    
     helm chart export ${srcMcrFullPath}
-    echo "Exporting chart to current directory completed."    
+    if [ $? -eq 0 ]; then
+      echo "Exporting chart to current directory completed successfully."
+    else
+      echo "Exporting chart to current directory failed. Please review Ev2 pipeline logs for more details on the error."
+      exit 1
+    fi      
 
-    
     echo "save the chart locally with dest acr full path : ${destAcrFullPath} ..."    
     helm chart save azuremonitor-containers/ ${destAcrFullPath} 
-    echo "save the chart locally with dest acr full path : ${destAcrFullPath} completed."
-
+    if [ $? -eq 0 ]; then      
+      echo "save the chart locally with dest acr full path : ${destAcrFullPath} completed successfully."
+    else     
+      echo "save the chart locally with dest acr full path : ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+      exit 1
+    fi      
+    
     echo "pushing the chart to acr path: ${destAcrFullPath} ..."
     helm chart push ${destAcrFullPath} 
-    echo "pushing the chart to acr path: ${destAcrFullPath} completed."
+    if [ $? -eq 0 ]; then            
+      echo "pushing the chart to acr path: ${destAcrFullPath} completed successfully."
+    else     
+      echo "pushing the chart to acr path: ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+      exit 1
+    fi       
 }
 
 # push to local release candidate chart to canary region
@@ -63,12 +82,21 @@ push_local_chart_to_canary_region() {
 
   echo "save the chart locally with dest acr full path : ${destAcrFullPath} ..."    
   helm chart save charts/azuremonitor-containers/ $destAcrFullPath
-  echo "save the chart locally with dest acr full path : ${destAcrFullPath} completed."
+  if [ $? -eq 0 ]; then            
+    echo "save the chart locally with dest acr full path : ${destAcrFullPath} completed."
+  else     
+    echo "save the chart locally with dest acr full path : ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+    exit 1
+  fi       
 
   echo "pushing the chart to acr path: ${destAcrFullPath} ..."
   helm chart push $destAcrFullPath
-  echo "pushing the chart to acr path: ${destAcrFullPath} completed."
-
+  if [ $? -eq 0 ]; then            
+    echo "pushing the chart to acr path: ${destAcrFullPath} completed successfully."
+  else     
+    echo "pushing the chart to acr path: ${destAcrFullPath} failed.Please review Ev2 pipeline logs for more details on the error."
+    exit 1
+  fi       
 }
 
 echo "START - Release stage : ${RELEASE_STAGE}"
@@ -79,6 +107,13 @@ echo "Using acr repo type: ${REPO_TYPE}"
 
 echo "login to acr:${ACR_NAME} using helm ..."
 echo $ACR_APP_SECRET | helm registry login $ACR_NAME  --username $ACR_APP_ID --password-stdin 
+if [ $? -eq 0 ]; then
+  echo "login to acr:${ACR_NAME} using helm completed successfully."
+else
+  echo "login to acr:${ACR_NAME} using helm failed. Please review Ev2 pipeline logs for more details on the error."
+  exit 1
+fi   
+
 echo "login to acr:${ACR_NAME} using helm completed."
 
 case $RELEASE_STAGE in
