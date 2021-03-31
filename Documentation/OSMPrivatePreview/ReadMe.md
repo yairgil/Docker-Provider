@@ -17,7 +17,12 @@ OSM exposes Prometheus metrics which container insights collect, for container i
 
 
 ## Validate the metrics flow
-1.	Kusto query insight metrics name contains envoy.
+1.	Query cluster's workspace InsightsMetrics table to see metrics are flowing or not
+```
+InsightsMetrics
+| where Name contains "envoy"
+| take 10
+```
 
 ## How to consume OSM monitoring dashboard?
 1.	Access your AKS cluster & container insights through this [link.](https://aka.ms/azmon/osmux)
@@ -43,10 +48,8 @@ OSM exposes Prometheus metrics which container insights collect, for container i
 
 
 ### Known Issues
-1.	Scale 50 pods; can select namespace; cost issue
-2.	Large scale UX limit.
-3.	Local here.
-4.	OSM controller no latency & for internal services no resource utilization. 
+1.	The workbook has scale limits of 50 pods per namespace. If you have more than 50 pods in mesh you can have workbook loading issues.
+2.	When source or destination is osmcontroller we show no latency & for internal services we show no resource utilization. 
 
 Feedback: This is private preview, the goal for us is to get feedback. Feel free to reach out to us at [askcoin@microsoft.com](mailto:askcoin@microsoft.com) for any feedback and questions!
 
