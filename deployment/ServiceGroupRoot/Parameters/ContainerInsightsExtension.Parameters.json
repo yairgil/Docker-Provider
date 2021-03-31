@@ -36,7 +36,7 @@
             "reference": {
               "provider": "AzureKeyVault",
               "parameters": {
-                "secretId": "https://cdpxacrcredskv.vault.azure.net/secrets/ContainerInsightsProdACRAADAppId/f92f2264af2a417ea4f521fc3999910a"
+                "secretId": "https://cibuildandreleasekv.vault.azure.net/secrets/ciprodacrappid/e8f47bf7505741ebaf65a4db16ff9fa7"
               }
             },
             "asSecureValue": "true"
@@ -46,7 +46,7 @@
             "reference": {
               "provider": "AzureKeyVault",
               "parameters": {
-                "secretId": "https://cdpxacrcredskv.vault.azure.net/secrets/ContainerInsightsProdACRAADAppSecret/e5d15982508d4ceda190a388d25308ef"
+                "secretId": "https://cibuildandreleasekv.vault.azure.net/secrets/ciprodacrappsecret/8718afcdac114accb8b26f613cef1e1e"
               }
             },
             "asSecureValue": "true"
