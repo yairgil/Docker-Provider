@@ -8,14 +8,12 @@ Azure Monitor container insights now supporting preview of Open Service Mesh(OSM
 ## How to onboard Container Insights OSM monitoring?
 OSM exposes Prometheus metrics which container insights collect, for container insights agent to collect OSM metrics follow the following steps.
 1.	Enable OSM to expose Prometheus metrics https://github.com/openservicemesh/osm/blob/main/docs/patterns/observability/metrics.md#configuring-prometheus-metrics-scraping
-2.	If you are using Azure Monitor container insights, if not on-board here.
-3.	If you are configuring your existing ConfigMap, append the following section in your existing ConfigMap yaml file
-a.	Set the setting here for monitor_kubernetes_pods to true
-4.	 Else if you don't have ConfigMap, download the new ConfigMap from here. & then
-a.	Set the setting here for monitor_kubernetes_pods to true
-5.	Run the following kubectl command: kubectl apply -f<configmap_yaml_file.yaml>
-               Example: kubectl apply -f container-azm-ms-agentconfig.yaml.
-The configuration change can take a few minutes //15 mins to finish before taking effect, and all omsagent pods in the cluster will restart. The restart is a rolling restart for all omsagent pods, not all restart at the same time.
+2.	If you are using Azure Monitor container insights follow steps below, if not on-board [here.](https://docs.microsoft.com/azure/azure-monitor/containers/container-insights-overview)
+     * Download the configmap from [here](https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/container-azm-ms-osmconfig.yaml)
+     * Add the namespaces you want to monitor in configmap `monitor_namespaces = ["namespace1", "namespace2"]`
+     * Run the following kubectl command: kubectl apply -f<configmap_yaml_file.yaml>
+         * Example: `kubectl apply -f container-azm-ms-agentconfig.yaml`
+3. The configuration change can take upto 15 mins to finish before taking effect, and all omsagent pods in the cluster will restart. The restart is a rolling restart for all omsagent pods, not all restart at the same time.
 
 
 ## Validate the metrics flow
