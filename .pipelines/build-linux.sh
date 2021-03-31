@@ -15,7 +15,7 @@ echo "----------- Build Docker Provider -------------------------------"
 make
 cd $DIR
 
-echo "------------ Zip Shell Extension Scripts & HELM chart -------------------------"
+echo "------------ Bundle Shell Extension Scripts & HELM chart -------------------------"
 cd $DIR/../deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
-tar -czvf ../scripts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
 
