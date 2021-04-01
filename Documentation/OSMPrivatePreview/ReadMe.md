@@ -7,13 +7,23 @@ Azure Monitor container insights now supporting preview of [Open Service Mesh(OS
 
 ## How to onboard Container Insights OSM monitoring?
 OSM exposes Prometheus metrics which Container Insights can collect, for container insights agent to collect OSM metrics follow the following steps.
-1.	Enable OSM to expose Prometheus metrics. Link [here](https://github.com/openservicemesh/osm/blob/main/docs/content/docs/tasks_usage/observability/_index.md)
-2.	If you are using Azure Monitor Container Insights follow steps below, if not on-board [here.](https://docs.microsoft.com/azure/azure-monitor/containers/container-insights-overview)
+1.	Configure OSM to allow Prometheus scrapping, follow steps from [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#configure-osm-to-allow-prometheus-scraping)
+2. Enable one or more namespaces for metrics scraping:
+
+```bash
+# With osm
+osm metrics enable --namespace test
+osm metrics enable --namespace "test1, test2"
+
+# With kubectl
+kubectl patch namespace test --type=merge -p '{"metadata": {"annotations": {"openservicemesh.io/metrics": "enabled"}}}'
+```
+3.	If you are using Azure Monitor Container Insights follow steps below, if not on-board [here.](https://docs.microsoft.com/azure/azure-monitor/containers/container-insights-overview)
      * Download the configmap from [here](https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/container-azm-ms-osmconfig.yaml)
      * Add the namespaces you want to monitor in configmap `monitor_namespaces = ["namespace1", "namespace2"]`
      * Run the following kubectl command: kubectl apply -f<configmap_yaml_file.yaml>
          * Example: `kubectl apply -f container-azm-ms-agentconfig.yaml`
-3. The configuration change can take upto 15 mins to finish before taking effect, and all omsagent pods in the cluster will restart. The restart is a rolling restart for all omsagent pods, not all restart at the same time.
+4. The configuration change can take upto 15 mins to finish before taking effect, and all omsagent pods in the cluster will restart. The restart is a rolling restart for all omsagent pods, not all restart at the same time.
 
 
 ## Validate the metrics flow
