@@ -7,8 +7,10 @@ Azure Monitor container insights now supporting preview of [Open Service Mesh(OS
 
 ## How to onboard Container Insights OSM monitoring?
 OSM exposes Prometheus metrics which Container Insights can collect, for container insights agent to collect OSM metrics follow the following steps.
-1.	Configure OSM to allow Prometheus scrapping, follow steps from [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#configure-osm-to-allow-prometheus-scraping)
-2. Enable one or more namespaces for metrics scraping:
+
+1.	Deploy OSM to your AKS cluster, follow instructions [here] (https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#osm-service-quotas-and-limits-preview)
+2.	Configure OSM to allow Prometheus scrapping, follow steps from [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#configure-osm-to-allow-prometheus-scraping)
+3. Enable one or more namespaces for metrics scraping:
 
 ```bash
 # With osm
