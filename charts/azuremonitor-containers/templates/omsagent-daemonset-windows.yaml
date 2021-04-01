@@ -86,7 +86,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
        - name: SIDECAR_SCRAPING_ENABLED
-         value: "false"
+         value: "true"
        volumeMounts:
         - mountPath: C:\ProgramData\docker\containers
           name: docker-windows-containers
