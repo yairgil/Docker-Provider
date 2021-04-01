@@ -599,7 +599,7 @@ else
    dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
 
    echo "starting mdsd in replicaset..."
-   mdsd -T  0xFFFF -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+   mdsd -A -T  0xFFFF -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 fi
 echo "************end oneagent log routing checks************"
 
