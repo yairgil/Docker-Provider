@@ -17,7 +17,7 @@ OSM exposes Prometheus metrics which container insights collect, for container i
 
 
 ## Validate the metrics flow
-1.	Query cluster's workspace InsightsMetrics table to see metrics are flowing or not
+1.	Query cluster's Log Analytics workspace InsightsMetrics table to see metrics are flowing or not
 ```
 InsightsMetrics
 | where Name contains "envoy"
