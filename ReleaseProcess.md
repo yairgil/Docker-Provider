@@ -44,11 +44,11 @@ Make PR against [AKS-Engine](https://github.com/Azure/aks-engine). Refer PR http
 Ev2 pipeline used to deploy the chart of the Arc K8s Container Insights Extension as per Safe Deployment Process. 
 Here is the high level process
 ```
- 1. Specify chart version of the release candidate and trigger [ci-arc-k8s-extension-prod-release](https://github-private.visualstudio.com/microsoft/_release?_a=releases&view=all)
+ 1. Specify chart version of the release candidate and trigger [container-insights-arc-k8s-extension-ci_prod-release](https://github-private.visualstudio.com/microsoft/_release?_a=releases&view=all)
  2. Get the approval from one of team member for the release
  3. Once the approved, release should be triggered automatically 
  4. use `cimon-arck8s-eastus2euap` for validating latest release in canary region
- 5. TBD - Notify vendor team for the validation on Arc K8s supported platforms
+ 5. TBD - Notify vendor team for the validation on all Arc K8s supported platforms
 ```
 
 ## Microsoft Charts Repo release for On-prem K8s
