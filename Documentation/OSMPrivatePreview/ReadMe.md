@@ -1,13 +1,13 @@
 # Azure Monitor Container Insights Open Service Mesh Monitoring
 
-Azure Monitor container insights now supporting preview of Open Service Mesh(OSM) Monitoring. As part of this support. Customer can
+Azure Monitor container insights now supporting preview of [Open Service Mesh(OSM)](https://docs.microsoft.com/azure/aks/servicemesh-osm-about) Monitoring. As part of this support, customer can:
 1.	Filter & view inventory of all the services that are part of your service mesh.
 2.	Visualize and monitor requests between services in your service mesh, with request latency, error rate & resource utilization by services.
 3.	Provides connection summary for OSM infrastructure running on AKS.
 
 ## How to onboard Container Insights OSM monitoring?
 OSM exposes Prometheus metrics which container insights collect, for container insights agent to collect OSM metrics follow the following steps.
-1.	Enable OSM to expose Prometheus metrics https://github.com/openservicemesh/osm/blob/main/docs/patterns/observability/metrics.md#configuring-prometheus-metrics-scraping
+1.	Enable OSM to expose Prometheus metrics. Link [here](https://github.com/openservicemesh/osm/blob/main/docs/content/docs/tasks_usage/observability/_index.md)
 2.	If you are using Azure Monitor container insights follow steps below, if not on-board [here.](https://docs.microsoft.com/azure/azure-monitor/containers/container-insights-overview)
      * Download the configmap from [here](https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/container-azm-ms-osmconfig.yaml)
      * Add the namespaces you want to monitor in configmap `monitor_namespaces = ["namespace1", "namespace2"]`
@@ -26,7 +26,7 @@ InsightsMetrics
 
 ## How to consume OSM monitoring dashboard?
 1.	Access your AKS cluster & container insights through this [link.](https://aka.ms/azmon/osmux)
-2.	Go to reports tab and access Open Service Mesh (OSM) workbook (screen below)
+2.	Go to reports tab and access Open Service Mesh (OSM) workbook.
 3.	Select the time-range & namespace to scope your services. By default, we only show services deployed by customers and we exclude internal service communication. In case you want to view that you select Show All in the filter. Please note OSM is managed service mesh, we show all internal connections for transparency. 
 
 ### Requests Tab
