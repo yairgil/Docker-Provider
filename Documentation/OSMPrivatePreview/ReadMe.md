@@ -6,9 +6,9 @@ Azure Monitor container insights now supporting preview of [Open Service Mesh(OS
 3.	Provides connection summary for OSM infrastructure running on AKS.
 
 ## How to onboard Container Insights OSM monitoring?
-OSM exposes Prometheus metrics which container insights collect, for container insights agent to collect OSM metrics follow the following steps.
+OSM exposes Prometheus metrics which Container Insights can collect, for container insights agent to collect OSM metrics follow the following steps.
 1.	Enable OSM to expose Prometheus metrics. Link [here](https://github.com/openservicemesh/osm/blob/main/docs/content/docs/tasks_usage/observability/_index.md)
-2.	If you are using Azure Monitor container insights follow steps below, if not on-board [here.](https://docs.microsoft.com/azure/azure-monitor/containers/container-insights-overview)
+2.	If you are using Azure Monitor Container Insights follow steps below, if not on-board [here.](https://docs.microsoft.com/azure/azure-monitor/containers/container-insights-overview)
      * Download the configmap from [here](https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/container-azm-ms-osmconfig.yaml)
      * Add the namespaces you want to monitor in configmap `monitor_namespaces = ["namespace1", "namespace2"]`
      * Run the following kubectl command: kubectl apply -f<configmap_yaml_file.yaml>
@@ -21,11 +21,11 @@ OSM exposes Prometheus metrics which container insights collect, for container i
 ```
 InsightsMetrics
 | where Name contains "envoy"
-| take 10
+| summarize count() by Name
 ```
 
 ## How to consume OSM monitoring dashboard?
-1.	Access your AKS cluster & container insights through this [link.](https://aka.ms/azmon/osmux)
+1.	Access your AKS cluster & Container Insights through this [link.](https://aka.ms/azmon/osmux)
 2.	Go to reports tab and access Open Service Mesh (OSM) workbook.
 3.	Select the time-range & namespace to scope your services. By default, we only show services deployed by customers and we exclude internal service communication. In case you want to view that you select Show All in the filter. Please note OSM is managed service mesh, we show all internal connections for transparency. 
 
@@ -52,5 +52,4 @@ InsightsMetrics
 1.	The workbook has scale limits of 50 pods per namespace. If you have more than 50 pods in mesh you can have workbook loading issues.
 2.	When source or destination is osmcontroller we show no latency & for internal services we show no resource utilization. 
 
-Feedback: This is private preview, the goal for us is to get feedback. Feel free to reach out to us at [askcoin@microsoft.com](mailto:askcoin@microsoft.com) for any feedback and questions!
-
+This is private preview, the goal for us is to get feedback. Please feel free to reach out to us at [askcoin@microsoft.com](mailto:askcoin@microsoft.com) for any feedback and questions!
