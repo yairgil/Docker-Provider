@@ -29,6 +29,7 @@ InsightsMetrics
 2.	Go to reports tab and access Open Service Mesh (OSM) workbook.
 3.	Select the time-range & namespace to scope your services. By default, we only show services deployed by customers and we exclude internal service communication. In case you want to view that you select Show All in the filter. Please note OSM is managed service mesh, we show all internal connections for transparency. 
 
+![alt text](https://github.com/microsoft/Docker-Provider/blob/saarorOSMdoc/Documentation/OSMPrivatePreview/Image1.jpg)
 ### Requests Tab
 1.	This tab provides you the summary of all the http requests sent via service to service in OSM.
 2.	You can view all the services and all the services it is communicating to by selecting the service in grid.
