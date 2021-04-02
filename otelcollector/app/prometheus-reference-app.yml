@@ -18,6 +18,8 @@ spec:
           ports:
             - containerPort: 2112
               protocol: TCP
+      nodeSelector:
+          beta.kubernetes.io/os: linux
 ---
 apiVersion: v1
 kind: Service

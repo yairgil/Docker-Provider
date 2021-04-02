@@ -1,8 +1,11 @@
 exporters:
   file:
-    path: /opt/promotel.json
+    path: /opt/microsoft/otelcollector/promotel.json
   influx:
     loglevel: debug
+  otlp:
+    endpoint: 127.0.0.1:55680
+    insecure: true
 receivers:
     prometheus:
       include_resource_labels: true
@@ -12,4 +15,4 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      exporters: [influx]
+      exporters: [otlp]
