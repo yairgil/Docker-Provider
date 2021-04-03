@@ -415,9 +415,6 @@ spec:
               name: docker-sock
             - mountPath: /var/log
               name: host-log
-              readOnly: true
-            - mountPath: /var/log/container-insights
-              name: container-insights-state
             - mountPath: /var/lib/docker/containers
               name: containerlog-path
               readOnly: true
@@ -564,9 +561,6 @@ spec:
           configMap:
             name: container-azm-ms-osmconfig
             optional: true
-        - name: container-insights-state
-          hostPath:
-            path: /var/log/container-insights
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -642,7 +636,6 @@ spec:
               name: docker-sock
             - mountPath: /var/log
               name: host-log
-              readOnly: true
             - mountPath: /etc/kubernetes/host
               name: azure-json-path
             - mountPath: /etc/omsagent-secret
