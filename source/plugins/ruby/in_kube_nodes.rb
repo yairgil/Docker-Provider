@@ -10,7 +10,10 @@ module Fluent
     @@configMapMountPath = "/etc/config/settings/log-data-collection-settings"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
     @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
-    @@kubeperfTag = "oms.api.KubePerf"
+    # use dcr tag
+    # @@kubeperfTag = "oms.api.KubePerf"
+    @@kubeperfTag = "dcr-7976a68fa3ac4c28ae6a0ea5745e304a:ContainerInsightsExtension:LINUX_PERF_BLOB"
+    
 
     @@rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
     @@rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]

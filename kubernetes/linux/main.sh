@@ -600,7 +600,8 @@ else
 
    echo "starting mdsd in replicaset..."
    # specify port -29230 to ensure both modes have same mdsd port
-   mdsd -A  -p 29230 -T  0xFFFF -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+   # use inmem
+   mdsd -A  -p 29230 -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 fi
 echo "************end oneagent log routing checks************"
 
