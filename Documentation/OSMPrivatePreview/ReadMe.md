@@ -8,17 +8,18 @@ Azure Monitor container insights now supporting preview of [Open Service Mesh(OS
 ## How to onboard Container Insights OSM monitoring?
 OSM exposes Prometheus metrics which Container Insights can collect, for container insights agent to collect OSM metrics follow the following steps.
 
-1.	Deploy OSM to your AKS cluster, follow instructions [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#osm-service-quotas-and-limits-preview)
-2.	Configure OSM to allow Prometheus scrapping, follow steps from [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#configure-osm-to-allow-prometheus-scraping)
-3. Enable one or more namespaces for metrics scraping:
+1.  Follow this [link](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#register-the-aks-openservicemesh-preview-feature) as a prereq before enabling the addon. 
 
+2.  Enable AKS OSM addon on your 
+     - [New AKS cluster](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#install-open-service-mesh-osm-azure-kubernetes-service-aks-add-on-for-a-new-aks-cluster)
+     - [Existing AKS cluster](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#enable-open-service-mesh-osm-azure-kubernetes-service-aks-add-on-for-an-existing-aks-cluster)
+2.	Configure OSM to allow Prometheus scraping, follow steps from [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#configure-osm-to-allow-prometheus-scraping)
+3.  To enable namespace(s), download the osm client library [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#osm-service-quotas-and-limits-preview) & then enable metrics on namespaces
 ```bash
 # With osm
 osm metrics enable --namespace test
 osm metrics enable --namespace "test1, test2"
 
-# With kubectl
-kubectl patch namespace test --type=merge -p '{"metadata": {"annotations": {"openservicemesh.io/metrics": "enabled"}}}'
 ```
 3.	If you are using Azure Monitor Container Insights follow steps below, if not on-board [here.](https://docs.microsoft.com/azure/azure-monitor/containers/container-insights-overview)
      * Download the configmap from [here](https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/container-azm-ms-osmconfig.yaml)
