@@ -9,7 +9,7 @@ data:
     ver1
   prometheus-collector-settings: |-
     [prometheus_collector_settings.default_metric_account]
-      account_name = "containerinsightsgenevaaccount2"
+      account_name = "mymetricaccountname"
   prometheus-config: |-
     global:
       evaluation_interval: 60s
