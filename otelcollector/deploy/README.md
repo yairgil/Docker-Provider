@@ -15,7 +15,7 @@ Example :
 
 Below are the 3 sub-steps to do for this step -
 
-- 3.1) Ensure below line in the configmap shows MDM default account set to 'mymetricsaccountname'
+- 3.1) Ensure below line in the configmap has your MDM account name (which will be used as default MDM account to send metrics to)
 ```account_name = "mymetricsacountname"```
 - 3.2) Change the scrape config as needed in the default configmap, save the file, and apply the configmap to the cluster
 ```kubectl apply -f prometheus-collector-configmap.yaml```
