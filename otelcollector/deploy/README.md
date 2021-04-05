@@ -4,7 +4,7 @@
 
 #### Step 1 : You would need to create a MDM account and have name of the MDM account along with its cert & key file(s)
 
-#### Step 2 : In your Kubernetes cluster where you want to collect prometheus metrics from, create kubernetes secret (called ```metricstore-secret``` [see below for example] ) for MDM account to shich want to ship metrics to
+#### Step 2 : In your Kubernetes cluster where you want to collect prometheus metrics from, create kubernetes secret (called ```metricstore-secret``` [see below for example] ) for MDM account to which you want to ship metrics to from your kubernetes cluster
 
 ```kubectl create secret tls metricstore-secret --cert=<full_path_to_my_cert_file_including_file_name> --key=<full_path_to_my_key_file_including_file_name> -n=kube-system```
 
