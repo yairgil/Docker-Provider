@@ -82,13 +82,13 @@ source ~/.bashrc
 
 ruby /opt/microsoft/configmapparser/tomlparser-prometheus-collector-settings.rb
 
-if [ -e "/etc/config/settings/prometheus-collector-settings" ]; then
-      cat /opt/microsoft/configmapparser/config_prometheus_collector_settings_env_var | while read line; do
-            echo $line >> ~/.bashrc
-      done
-      source /opt/microsoft/configmapparser/config_prometheus_collector_settings_env_var
-      source ~/.bashrc
-fi
+
+cat /opt/microsoft/configmapparser/config_prometheus_collector_settings_env_var | while read line; do
+      echo $line >> ~/.bashrc
+done
+source /opt/microsoft/configmapparser/config_prometheus_collector_settings_env_var
+source ~/.bashrc
+
 
 if [ -e "/etc/config/settings/prometheus-config" ]; then
       # Currently only logs the success or failure
@@ -147,7 +147,11 @@ echo "starting metricsextension"
 
 #get ME version
 dpkg -l | grep metricsext | awk '{print $2 " " $3}'
+#get ruby version
 ruby --version
+
+echo "starting telegraf"
+/opt/telegraf/telegraf --config /opt/telegraf/telegraf-prometheus-collector.conf &
 
 shutdown() {
 	echo "shutting down"
