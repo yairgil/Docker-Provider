@@ -35,7 +35,12 @@ else
       export customResourceId=$AKS_RESOURCE_ID
       echo "export customResourceId=$AKS_RESOURCE_ID" >> ~/.bashrc
       source ~/.bashrc
-      echo "customResourceId:$customResourceId"
+      echo "customResourceId:$customResourceId"      
+
+      export customRegion=$AKS_REGION 
+      echo "export customRegion=$AKS_REGION" >> ~/.bashrc
+      source ~/.bashrc
+      echo "customRegion:$customRegion"  
 fi
 
 #set agent config schema version
@@ -514,7 +519,8 @@ fi
 
 
 #start oneagent
-#if [ ! -e "/etc/config/kube.conf" ]; then
+if [ ! -e "/etc/config/kube.conf" ]; then
+   echo "activating oneagent in ds pod..."
    if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
       echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
       echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
@@ -552,7 +558,38 @@ fi
             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
       fi
    fi
-#fi
+else
+   echo "activating oneagent in replicaset pod..."
+   echo "enable debug logs..."
+   echo "configuring mdsd..."
+   cat /etc/mdsd.d/envmdsd | while read line; do
+      echo $line >> ~/.bashrc
+   done
+   source /etc/mdsd.d/envmdsd   
+
+   # setting env vars for AAD auth MSI mode    
+   echo "setting mdsd env vars for aad auth msi mode"
+   export MCS_ENDPOINT="handler.control.monitor.azure.com"
+   echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
+   export AZURE_ENDPOINT="https://monitor.azure.com/"
+   echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
+   export ADD_REGION_TO_MCS_ENDPOINT="true"
+   echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
+   export ENABLE_MCS="true"
+   echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
+   export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
+   echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
+   export MDSD_USE_LOCAL_PERSISTENCY="false"
+   echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
+   source ~/.bashrc
+
+   dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
+
+   echo "starting mdsd in replicaset..."
+   # specify port -29230 to ensure both modes have same mdsd port
+   # use inmem
+   mdsd -l -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &   
+fi
 echo "************end oneagent log routing checks************"
 
 #telegraf & fluentbit requirements

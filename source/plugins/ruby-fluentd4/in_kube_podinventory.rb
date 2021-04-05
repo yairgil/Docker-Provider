@@ -11,7 +11,9 @@ module Fluent::Plugin
 
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
-    @@kubeperfTag = "oms.api.KubePerf"
+    # use the dcr tag
+    # @@kubeperfTag = "oms.api.KubePerf"
+    @@kubeperfTag = "dcr-ce457924319a43d3886d67c2431b7bc3:ContainerInsightsExtension:LINUX_PERF_BLOB"
     @@kubeservicesTag = "oms.containerinsights.KubeServices"
     @@containerinventoryTag = "oms.containerinsights.ContainerInventory"
 

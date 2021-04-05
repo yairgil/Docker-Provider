@@ -84,11 +84,20 @@
       <Column name="ServiceName" type="str" mdstype="mt:wstr" />
       <Column name="ServiceType" type="str" mdstype="mt:wstr" />
     </Schema>
+    <Schema name="KubePerfSchema">
+      <Column name="Computer" type="str" mdstype="mt:wstr" />
+      <Column name="ObjectName" type="str" mdstype="mt:wstr" />
+      <Column name="CounterName" type="str" mdstype="mt:wstr" />
+      <Column name="InstanceName" type="str" mdstype="mt:wstr" />
+      <Column name="TimeGenerated" type="str" mdstype="mt:wstr" />
+      <Column name="CounterValue" type="str" mdstype="mt:wstr" />      
+    </Schema>
   </Schemas>
 
   <Sources>
     <Source name="oms.containerinsights.KubePodInventory" schema="KubePodInventorySchema" />
     <Source name="oms.containerinsights.KubeServices" schema="KubeServicesSchema" />   
+    <Source name="oms.api.KubePerf" schema="KubePerfSchema" />
   </Sources>
   
   <!--
@@ -127,6 +136,10 @@
         <RouteEvent eventName="KubeServicesEvent" duration="PT10S" priority="High" storeType="Local">          
         </RouteEvent>
     </MdsdEventSource>
+    <MdsdEventSource source="oms.api.KubePerf" queryDelay="PT10S">
+      <RouteEvent eventName="KubePerfEvent" duration="PT10S" priority="High" storeType="Local">          
+      </RouteEvent>
+    </MdsdEventSource>
     </MdsdEvents>
   </Events>
 
@@ -138,12 +151,19 @@
          </Content>
        </OMS>
     </EventStreamingAnnotation>
-  <EventStreamingAnnotation name="KubeServicesEvent">
+    <EventStreamingAnnotation name="KubeServicesEvent">
        <OMS>
          <Content>
            <![CDATA[<Config workspaceName="CIWORKSPACE" logType="KUBE_SERVICES_BLOB" ipName="ContainerInsights"/>]]>
          </Content>
        </OMS>
     </EventStreamingAnnotation>
+    <EventStreamingAnnotation name="KubePerfEvent">
+       <OMS>
+         <Content>
+           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="LINUX_PERF_BLOB" ipName="ContainerInsights"/>]]>
+         </Content>
+       </OMS>
+    </EventStreamingAnnotation>  
   </EventStreamingAnnotations>
 </MonitoringManagement>

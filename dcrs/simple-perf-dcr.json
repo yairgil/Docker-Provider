@@ -1,0 +1,34 @@
+{
+    "location": "westus",
+    "properties": {
+      "dataSources": {       
+          "extensions": [
+              {
+                  "name": "ContainerInsightsExtension",
+                  "streams": [
+                      "Microsoft-Perf"
+                  ],
+                  "extensionName": "ContainerInsights"
+              }
+          ]
+      }, 
+      "destinations": {
+        "logAnalytics": [
+          {
+            "workspaceResourceId": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/my-resource-group/providers/Microsoft.OperationalInsights/workspaces/my-workspace",
+            "name": "ciworkspace"
+          }
+        ]
+      },
+      "dataFlows": [
+        {
+          "streams": [
+            "Microsoft-Perf"         
+          ],
+          "destinations": [
+            "ciworkspace"
+          ]
+        }
+      ]
+    }
+}
