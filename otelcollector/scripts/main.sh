@@ -75,30 +75,35 @@ echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc
 
 source ~/.bashrc
 
-
-
-
 #Parse the configmap to set the right environment variables for prometheus collector settings
-
 ruby /opt/microsoft/configmapparser/tomlparser-prometheus-collector-settings.rb
 
-if [ -e "/etc/config/settings/prometheus-collector-settings" ]; then
-      cat /opt/microsoft/configmapparser/config_prometheus_collector_settings_env_var | while read line; do
+
+cat /opt/microsoft/configmapparser/config_prometheus_collector_settings_env_var | while read line; do
+      echo $line >> ~/.bashrc
+done
+source /opt/microsoft/configmapparser/config_prometheus_collector_settings_env_var
+source ~/.bashrc
+
+
+ruby /opt/microsoft/configmapparser/tomlparser-default-scrape-settings.rb
+if [ -e "/opt/microsoft/configmapparser/config_default_scrape_settings_env_var" ]; then
+      cat /opt/microsoft/configmapparser/config_default_scrape_settings_env_var | while read line; do
             echo $line >> ~/.bashrc
       done
-      source /opt/microsoft/configmapparser/config_prometheus_collector_settings_env_var
+      source /opt/microsoft/configmapparser/config_default_scrape_settings_env_var
       source ~/.bashrc
 fi
 
-if [ -e "/etc/config/settings/prometheus-config" ]; then
+if [ -e "/etc/config/settings/prometheus/prometheus-config" ]; then
       # Currently only logs the success or failure
-      /opt/promtool check config /etc/config/settings/prometheus-config
+      /opt/promtool check config /etc/config/settings/prometheus/prometheus-config
 
       # Use default config if specified config is invalid
       if [ $? -ne 0 ]; then
             echo "export AZMON_USE_DEFAULT_PROMETHEUS_CONFIG=true" >> ~/.bashrc
             export AZMON_USE_DEFAULT_PROMETHEUS_CONFIG=true
-            # Get prometheus config and replace in otelcollector config
+      # Get prometheus config and replace in otelcollector config
       else 
             ruby /opt/microsoft/configmapparser/tomlparser-prometheus-config.rb
 
@@ -112,17 +117,16 @@ else
       export AZMON_USE_DEFAULT_PROMETHEUS_CONFIG=true
 fi 
 
-
-
 source ~/.bashrc
 
 #start cron daemon for logrotate
 service cron start
 
 #start otelcollector
-if [ -e "/etc/config/settings/prometheus-config" ]; then
+if [ -e "/etc/config/settings/prometheus/prometheus-config" ]; then
       echo "prometheus config specified for otel collector:"
-      cat /etc/config/settings/prometheus-config
+      cat /etc/config/settings/prometheus/prometheus-config
+      echo
 fi
 echo "Use default prometheus config: ${AZMON_USE_DEFAULT_PROMETHEUS_CONFIG}"
 
@@ -147,7 +151,11 @@ echo "starting metricsextension"
 
 #get ME version
 dpkg -l | grep metricsext | awk '{print $2 " " $3}'
+#get ruby version
 ruby --version
+
+echo "starting telegraf"
+/opt/telegraf/telegraf --config /opt/telegraf/telegraf-prometheus-collector.conf &
 
 shutdown() {
 	echo "shutting down"

@@ -50,6 +50,13 @@ tar -xf $TMPDIR/prometheus-2.25.2.linux-amd64.tar.gz
 cp -f $TMPDIR/prometheus-2.25.2.linux-amd64/promtool /opt/promtool
 chmod 777 /opt/promtool
 
+# Install Telegraf
+#1.18 pre-release
+wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_linux_amd64.tar.gz
+tar -zxvf telegraf-1.18.0_linux_amd64.tar.gz
+mv /opt/telegraf-1.18.0/usr/bin/telegraf /opt/telegraf/telegraf
+chmod 777 /opt/telegraf/telegraf
+
 sudo apt --fix-broken install -y
 sudo apt-get install inotify-tools -y
 
@@ -57,3 +64,5 @@ sudo apt-get install inotify-tools -y
 rm -f $TMPDIR/metricsext2*.deb
 rm -f $TMPDIR/prometheus-2.25.2.linux-amd64.tar.gz
 rm -rf $TMPDIR/prometheus-2.25.2.linux-amd64
+rm -f $TMPDIR/telegraf*.gz
+rm -rf $TMPDIR/telegraf-1.18.0/

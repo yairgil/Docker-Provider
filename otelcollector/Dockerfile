@@ -1,6 +1,8 @@
 FROM ubuntu:20.04
 LABEL description="Azure Monitor Prometheus metrics collector"
 LABEL maintainer="omscontainers@microsoft.com"
+ARG IMAGE_TAG="test"
+ENV AGENT_VERSION ${IMAGE_TAG}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV tmpdir /opt
 ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
@@ -10,5 +12,6 @@ COPY ./configmapparser/*.rb $tmpdir/microsoft/configmapparser/
 COPY ./opentelemetry-collector-builder/otelcollector ./opentelemetry-collector-builder/collector-config-default.yml ./opentelemetry-collector-builder/collector-config-template.yml $tmpdir/microsoft/otelcollector/
 COPY ./scripts/setup.sh ./scripts/main.sh $tmpdir/
 COPY ./metricextension/me.config /usr/sbin/
+COPY ./telegraf/telegraf-prometheus-collector.conf $tmpdir/telegraf/
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh
 CMD [ "/opt/main.sh" ]

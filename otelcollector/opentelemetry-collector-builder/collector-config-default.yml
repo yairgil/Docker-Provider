@@ -6,15 +6,31 @@ exporters:
   otlp:
     endpoint: 127.0.0.1:55680
     insecure: true
+processors:
+  batch:
+    send_batch_size: 8192
+    timeout: 200ms
+    send_batch_max_size: 0
 receivers:
     prometheus:
       include_resource_labels: true
       config:
         scrape_configs:
-        # scrape_configs must be non-null for collector to start
-        - job_name: empty_job
+        - job_name: 'kubernetes-nodes'
+          scheme: https
+          tls_config:
+            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            insecure_skip_verify: true
+          authorization:
+            credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+          kubernetes_sd_configs:
+          - role: node
+          relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
 service:
   pipelines:
     metrics:
       receivers: [prometheus]
       exporters: [otlp]
+      processors: [batch]
