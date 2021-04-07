@@ -71,7 +71,7 @@ spec:
       serviceAccountName: prometheus-collector
       containers:
         - name: prometheus-collector
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:prometheuscollector0404-1"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:myprometheuscollector-040721-2"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -119,6 +119,9 @@ spec:
           volumeMounts:
             - mountPath: /etc/config/settings
               name: settings-vol-config
+              readOnly: true
+            - mountPath: /etc/config/settings/prometheus
+              name: prometheus-config-vol
               readOnly: true
             - mountPath: /etc/config/settings/metricstore
               name: metricstore-secret
@@ -176,4 +179,8 @@ spec:
         - name: metricstore-secret
           secret:
             secretName: metricstore-secret
+            optional: true
+        - name: prometheus-config-vol
+          configMap:
+            name: prometheus-config
             optional: true
