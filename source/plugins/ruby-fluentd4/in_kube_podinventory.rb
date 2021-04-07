@@ -12,8 +12,7 @@ module Fluent::Plugin
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
     # use the dcr tag
-    # @@kubeperfTag = "oms.api.KubePerf"
-    @@kubeperfTag = "dcr-ce457924319a43d3886d67c2431b7bc3:ContainerInsightsExtension:LINUX_PERF_BLOB"
+    @@kubeperfTag = "oms.api.KubePerf"   
     @@kubeservicesTag = "oms.containerinsights.KubeServices"
     @@containerinventoryTag = "oms.containerinsights.ContainerInventory"
 
@@ -56,6 +55,12 @@ module Fluent::Plugin
 
     def start
       if @run_interval
+
+        if !ENV["PERF_TAG"].nil? && !ENV["PERF_TAG"].empty? 
+          @@kubeperfTag = ENV["PERF_TAG"]  
+          $log.warn("in_kube_podinventory::start: using perf tag: @ #{@@kubeperfTag}")               
+        end
+
         if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty? && ENV["PODS_CHUNK_SIZE"].to_i > 0
           @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"].to_i
         else

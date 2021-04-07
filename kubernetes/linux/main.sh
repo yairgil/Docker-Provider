@@ -553,7 +553,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
             echo "starting mdsd ..."
-            mdsd -l -a -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+            mdsd -l -a -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &           
 
             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
       fi
@@ -567,28 +567,45 @@ else
    done
    source /etc/mdsd.d/envmdsd   
 
-   # setting env vars for AAD auth MSI mode    
-   echo "setting mdsd env vars for aad auth msi mode"
-   export MCS_ENDPOINT="handler.control.monitor.azure.com"
-   echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
-   export AZURE_ENDPOINT="https://monitor.azure.com/"
-   echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
-   export ADD_REGION_TO_MCS_ENDPOINT="true"
-   echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
-   export ENABLE_MCS="true"
-   echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
-   export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
-   echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
-   export MDSD_USE_LOCAL_PERSISTENCY="false"
-   echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
-   source ~/.bashrc
+   if [ -z $AMA_AAD_AUTH_MODE ]; then
+      echo "*** LEGACY AUTH MODE ***"
+      echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+      export CIWORKSPACE_id=$CIWORKSPACE_id
+      echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
+      export CIWORKSPACE_key=$CIWORKSPACE_key
+      echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
+      source ~/.bashrc
 
-   dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
+      dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
-   echo "starting mdsd in replicaset..."
-   # specify port -29230 to ensure both modes have same mdsd port
-   # use inmem
-   mdsd -l -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &   
+      echo "starting mdsd ..."
+      mdsd -l -a -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &        
+   else 
+      echo "*** AAD AUTH MODE ***"
+      # setting env vars for AAD auth MSI mode    
+      echo "setting mdsd env vars for aad auth msi mode"
+      export MCS_ENDPOINT="handler.control.monitor.azure.com"
+      echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
+      export AZURE_ENDPOINT="https://monitor.azure.com/"
+      echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
+      export ADD_REGION_TO_MCS_ENDPOINT="true"
+      echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
+      export ENABLE_MCS="true"
+      echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
+      export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
+      echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
+      export MDSD_USE_LOCAL_PERSISTENCY="false"
+      echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
+      source ~/.bashrc
+
+      dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
+
+      echo "starting mdsd in replicaset..."
+      # specify port -29230 to ensure both modes have same mdsd port
+      # use inmem
+      mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+   fi 
+
 fi
 echo "************end oneagent log routing checks************"
 

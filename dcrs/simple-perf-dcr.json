@@ -1,5 +1,5 @@
 {
-    "location": "westus",
+    "location": "canadacentral",
     "properties": {
       "dataSources": {       
           "extensions": [
@@ -15,7 +15,7 @@
       "destinations": {
         "logAnalytics": [
           {
-            "workspaceResourceId": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/my-resource-group/providers/Microsoft.OperationalInsights/workspaces/my-workspace",
+            "workspaceResourceId": "/subscriptions/692aea0b-2d89-4e7e-ae30-fffe40782ee2/resourcegroups/gangams-aadauth-ws-canada-east-rg/providers/microsoft.operationalinsights/workspaces/gangams-aadauth-ws-canada-east",
             "name": "ciworkspace"
           }
         ]
