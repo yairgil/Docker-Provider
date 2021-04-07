@@ -9,7 +9,6 @@ module Fluent
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
     @@configMapMountPath = "/etc/config/settings/log-data-collection-settings"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
-    @@osmConfigMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
     @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
     @@kubeperfTag = "oms.api.KubePerf"
 
@@ -20,10 +19,7 @@ module Fluent
     @@rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
     @@rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
     @@rsPromMonitorPodsNamespaceLength = ENV["TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH"]
-    @@rsPromMonitorPodsLabelSelectorLength = ENV["TELEMETRY_RS_PROM_LABEL_SELECTOR_LENGTH"]
-    @@rsPromMonitorPodsFieldSelectorLength = ENV["TELEMETRY_RS_PROM_FIELD_SELECTOR_LENGTH"]
     @@collectAllKubeEvents = ENV["AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS"]
-    @@osmNamespaceCount = ENV["TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT"]
 
     def initialize
       super
@@ -43,6 +39,8 @@ module Fluent
       @nodeInventoryE2EProcessingLatencyMs = 0
       @nodesAPIE2ELatencyMs = 0
       require_relative "constants"
+
+      @NodeCache = NodeStatsCache.new()
     end
 
     config_param :run_interval, :time, :default => 60
@@ -157,6 +155,19 @@ module Fluent
         insightsMetricsEventStream = MultiEventStream.new
         kubePerfEventStream = MultiEventStream.new
         @@istestvar = ENV["ISTEST"]
+        
+        begin
+          # first refresh the node cpu and memory capacity cache
+          cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
+          @NodeCache.cpu.set_capacity_all(cpu_capacity_json)
+
+          memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
+          @NodeCache.mem.set_capacity_all(memory_capacity_json)
+        rescue => errorStr
+          $log.warn "in_kube_nodes::enumerate:Failed to cache cpu and memory limits for all nodes: #{errorStr}"
+          $log.warn(errorStr.backtrace.to_s)
+        end
+
         #get node inventory
         nodeInventory["items"].each do |item|
           # node inventory
@@ -300,12 +311,6 @@ module Fluent
               properties["rsPromUrl"] = @@rsPromUrlCount
               properties["rsPromMonPods"] = @@rsPromMonitorPods
               properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
-              properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
-              properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
-            end
-            # telemetry about osm metric settings for replicaset
-            if (File.file?(@@osmConfigMountPath))
-              properties["osmNamespaceCount"] = @@osmNamespaceCount
             end
             ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
             telemetrySent = true
@@ -496,4 +501,98 @@ module Fluent
       return properties
     end
   end # Kube_Node_Input
+
+
+  class NodeStatsCache
+    # inner class for caching implementation (CPU and memory caching is handled the exact same way, so logic to do so is moved to a private inner class)
+    # (to reduce code duplication)
+    class NodeCache
+
+      @@RECORD_TIME_TO_LIVE = 60*20  # units are seconds, so clear the cache every 20 minutes.
+  
+      def initialize
+        @cacheHash = {}  # 
+        @timeAdded = {}  # records when an entry was last added
+        @lock = Mutex.new
+        @lastCacheClearTime = 0
+  
+        @cacheHash.default = 0.0
+        @lastCacheClearTime = DateTime.now.to_time.to_i
+      end
+  
+      def get_capacity(node_name)
+        begin
+          @lock.lock
+          retval = @cacheHash[node_name]
+          return retval
+        ensure
+          # this is always run even though there was a return earlier
+          @lock.unlock
+        end
+      end
+  
+      def set_capacity_all(capacity_json)
+        # clean the cache here so that calling code doesn't have to remember to clean it. The disadvantage to this 
+        # approach is that the cache will never be cleaned if new nodes are never added, (but then the cache also 
+        # can't grow and our main concern is unbounded cache growth)
+        if DateTime.now.to_time.to_i - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
+          clean_cache
+        end
+  
+        begin
+          @lock.lock
+          addTime = DateTime.now.to_time.to_i
+  
+          capacity_json.each do |item|
+            host = item["DataItems"][0]["Host"]
+            val = item["DataItems"][0]["Collections"][0]["Value"]
+            @cacheHash[host] = val
+            
+            @timeAdded[host] = addTime
+          end
+        ensure
+          @lock.unlock
+        end
+      end
+  
+      def clean_cache()
+        $log.info "in_kube_nodes::clean_cache: cleaning node cpu/mem cache"
+  
+        cacheClearTime = DateTime.now.to_time.to_i
+        begin
+          @lock.lock
+  
+          nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate 
+          # list is used so that we aren't modifying a hash while iterating through it. 
+    
+          @cacheHash.each do |key, val|
+            if cacheClearTime - @timeAdded[key] > @@RECORD_TIME_TO_LIVE
+              nodes_to_remove.append(key)
+            end
+          end
+  
+          nodes_to_remove.each do node_name
+            @cacheHash.delete(node_name)
+            @timeAdded.delete(node_name)
+          end
+  
+        ensure
+          @lock.unlock
+        end
+      end
+    end  # NodeCache
+
+
+    @@cpuCache = NodeCache.new
+    @@memCache = NodeCache.new
+
+    def cpu()
+      return @@cpuCache
+    end
+
+    def mem()
+      return @@memCache
+    end
+  end
+
 end # module
