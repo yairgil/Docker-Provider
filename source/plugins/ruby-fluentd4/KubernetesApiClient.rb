@@ -437,8 +437,8 @@ class KubernetesApiClient
             if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
               metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
 
-              metricItem = {}
-              metricItem["DataItems"] = []
+              # metricItem = {}
+              # metricItem["DataItems"] = []
 
               metricProps = {}
               metricProps["Timestamp"] = metricTime
@@ -448,22 +448,24 @@ class KubernetesApiClient
               metricProps["ObjectName"] = "K8SContainer"
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
-              metricProps["Collections"] = []
-              metricCollections = {}
-              metricCollections["CounterName"] = metricNametoReturn
-              metricCollections["Value"] = metricValue
+              metricProps["json_Collections"] = []
+              metricCollections = []
+              metricCollection = {}
+              metricCollection["CounterName"] = metricNametoReturn
+              metricCollection["Value"] = metricValue
+              metricCollections.push(metricCollection)        
+              metricProps["json_Collections"] = metricCollections.to_json
 
-              metricProps["Collections"].push(metricCollections)
-              metricItem["DataItems"].push(metricProps)
-              metricItems.push(metricItem)
+              # metricItem["DataItems"].push(metricProps)
+              metricItems.push(metricProps)
               #No container level limit for the given metric, so default to node level limit
             else
               nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
               if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
                 metricValue = @@NodeMetrics[nodeMetricsHashKey]
                 #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
-                metricItem = {}
-                metricItem["DataItems"] = []
+                # metricItem = {}
+                # metricItem["DataItems"] = []
 
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
@@ -473,14 +475,16 @@ class KubernetesApiClient
                 metricProps["ObjectName"] = "K8SContainer"
                 metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
-                metricProps["Collections"] = []
-                metricCollections = {}
-                metricCollections["CounterName"] = metricNametoReturn
-                metricCollections["Value"] = metricValue
+                metricProps["json_Collections"] = []
+                metricCollections = []
+                metricCollection = {}
+                metricCollection["CounterName"] = metricNametoReturn
+                metricCollection["Value"] = metricValue
+                metricCollections.push(metricCollection)
 
-                metricProps["Collections"].push(metricCollections)
-                metricItem["DataItems"].push(metricProps)
-                metricItems.push(metricItem)
+                metricProps["json_Collections"] = metricCollections.to_json
+                # metricItem["DataItems"].push(metricProps)
+                metricItems.push(metricProps)
               end
             end
           end

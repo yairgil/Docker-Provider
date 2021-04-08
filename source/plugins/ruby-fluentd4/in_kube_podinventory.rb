@@ -268,27 +268,27 @@ module Fluent::Plugin
 
           #container perf records
           containerMetricDataItems = []
-          perfRecord = {}
-          perfRecord["Timestamp"] = Time.now.utc.iso8601
-          perfRecord["Host"] = "aks-agentpool-39583045-vmss000000"
-          # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
-          perfRecord["Computer"] = "aks-agentpool-39583045-vmss000000"
-          perfRecord["ObjectName"] = "K8SContainer"
-          perfRecord["InstanceName"] = "/subscriptions/692aea0b-2d89-4e7e-ae30-fffe40782ee2/resourcegroups/gangams-ci-aadauth-poc/providers/Microsoft.ContainerService/managedClusters/gangams-ci-aadauth-poc/ef7de75c-4b70-4303-89c9-f147022bebdd/azure-ip-masq-agent"
+          # perfRecord = {}
+          # perfRecord["Timestamp"] = Time.now.utc.iso8601
+          # perfRecord["Host"] = "aks-agentpool-39583045-vmss000000"
+          # # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
+          # perfRecord["Computer"] = "aks-agentpool-39583045-vmss000000"
+          # perfRecord["ObjectName"] = "K8SContainer"
+          # perfRecord["InstanceName"] = "/subscriptions/692aea0b-2d89-4e7e-ae30-fffe40782ee2/resourcegroups/gangams-ci-aadauth-poc/providers/Microsoft.ContainerService/managedClusters/gangams-ci-aadauth-poc/ef7de75c-4b70-4303-89c9-f147022bebdd/azure-ip-masq-agent"
 
-          # perfRecord["json_Collections"] = []
-          metricCollections = []
-          metricCollection = {}
-          metricCollection["CounterName"] = "cpuLimitNanoCores"
-          metricCollection["Value"] = 0
-          metricCollections.push(metricCollection)
-          perfRecord["json_Collections"] = metricCollections.to_json
-          containerMetricDataItems.push(perfRecord)
+          # # perfRecord["json_Collections"] = []
+          # metricCollections = []
+          # metricCollection = {}
+          # metricCollection["CounterName"] = "cpuLimitNanoCores"
+          # metricCollection["Value"] = 0
+          # metricCollections.push(metricCollection)
+          # perfRecord["json_Collections"] = metricCollections.to_json
+          # containerMetricDataItems.push(perfRecord)
 
-          # containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "cpu", "cpuRequestNanoCores", batchTime))
-          # containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "memory", "memoryRequestBytes", batchTime))
-          # containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "cpu", "cpuLimitNanoCores", batchTime))
-          # containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "cpu", "cpuRequestNanoCores", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "memory", "memoryRequestBytes", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "cpu", "cpuLimitNanoCores", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", batchTime))
 
 
           containerMetricDataItems.each do |record|
