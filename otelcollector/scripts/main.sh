@@ -135,7 +135,7 @@ else
       /opt/microsoft/otelcollector/otelcollector --config /opt/microsoft/otelcollector/collector-config.yml --log-level DEBUG --metrics-level none &> /opt/microsoft/otelcollector/collector-log.txt &
 fi
 
-echo "started otelcollector "
+echo "started otelcollector"
 
 # if this file exists, liveness probe will check that the collector is running
 #touch /opt/OTELCOLLECTOR
@@ -152,6 +152,10 @@ ruby --version
 
 echo "starting telegraf"
 /opt/telegraf/telegraf --config /opt/telegraf/telegraf-prometheus-collector.conf &
+
+echo "starting fluent-bit"
+/opt/td-agent-bit/bin/td-agent-bit -c /opt/fluent-bit/fluent-bit.conf -e /opt/fluent-bit/bin/out_oms.so &
+dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 shutdown() {
 	echo "shutting down"

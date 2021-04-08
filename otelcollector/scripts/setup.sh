@@ -60,6 +60,13 @@ chmod 777 /opt/telegraf/telegraf
 sudo apt --fix-broken install -y
 sudo apt-get install inotify-tools -y
 
+# Install fluent-bit
+wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
+sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
+sudo echo "deb http://security.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list.d/bionic.list
+sudo apt-get update
+sudo apt-get install td-agent-bit=1.6.8 -y
+
 #cleanup all install
 rm -f $TMPDIR/metricsext2*.deb
 rm -f $TMPDIR/prometheus-2.25.2.linux-amd64.tar.gz
