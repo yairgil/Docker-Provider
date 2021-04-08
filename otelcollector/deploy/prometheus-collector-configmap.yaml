@@ -10,19 +10,10 @@ data:
   prometheus-collector-settings: |-
     [prometheus_collector_settings.default_metric_account]
       account_name = "mymetricaccountname"
-  prometheus-config: |-
-    global:
-      evaluation_interval: 60s
-      scrape_interval: 60s
-    scrape_configs:
-    - job_name: prometheus_ref_app
-      scheme: http
-      kubernetes_sd_configs:
-        - role: service
-      relabel_configs:
-        - source_labels: [__meta_kubernetes_service_name]
-          action: keep
-          regex: "prometheus-reference-service"
+  default-scrape-settings: |-
+    [default_scrape_settings]
+      kubelet_enabled = true
+      coredns_enabled = true
 metadata:
   name: prometheus-collector-configmap
   namespace: kube-system
