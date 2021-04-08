@@ -448,13 +448,13 @@ class KubernetesApiClient
               metricProps["ObjectName"] = "K8SContainer"
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
-              metricProps["json_Collections"] = []
+              metricProps["Collections"] = []
               metricCollections = []
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
               metricCollection["Value"] = metricValue
               metricCollections.push(metricCollection)        
-              metricProps["json_Collections"] = metricCollections.to_json
+              metricProps["Collections"] = metricCollections.to_json
 
               # metricItem["DataItems"].push(metricProps)
               metricItems.push(metricProps)
@@ -474,16 +474,15 @@ class KubernetesApiClient
                 metricProps["Computer"] = nodeName
                 metricProps["ObjectName"] = "K8SContainer"
                 metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
-
-                metricProps["json_Collections"] = []
+               
+                metricProps["Collections"] = []
                 metricCollections = []
                 metricCollection = {}
                 metricCollection["CounterName"] = metricNametoReturn
                 metricCollection["Value"] = metricValue
                 metricCollections.push(metricCollection)
 
-                metricProps["json_Collections"] = metricCollections.to_json
-                # metricItem["DataItems"].push(metricProps)
+                metricProps["Collections"] = metricCollections.to_json               
                 metricItems.push(metricProps)
               end
             end
