@@ -579,7 +579,7 @@ else
       dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
       echo "starting mdsd ..."
-      mdsd -l -a -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &        
+      mdsd -l -a -T  0x2002 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &        
    else 
       echo "*** AAD AUTH MODE ***"
       # setting env vars for AAD auth MSI mode    

@@ -161,7 +161,7 @@
     <EventStreamingAnnotation name="KubePerfEvent">
        <OMS>
          <Content>
-           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="LINUX_PERF_BLOB" ipName="ContainerInsights"/>]]>
+           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="LINUX_PERF_BLOB" ipName="LogManagement"/>]]>
          </Content>
        </OMS>
     </EventStreamingAnnotation>  
