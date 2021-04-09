@@ -49,6 +49,13 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	}
 
 	incomingTag := strings.ToLower(C.GoString(tag))
+
+	// Metrics Extension logs with metrics processed & sent counts
+	if incomingTag == "oms.container.log.flbplugin.scrapedmetrics" {
+		return PushMetricScrapeInfoToAppInsightsMetrics(records)
+	}
+
+	// Error messages from metrics extension and otelcollector
 	return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
 }
 

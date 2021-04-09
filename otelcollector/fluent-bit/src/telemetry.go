@@ -4,8 +4,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
@@ -13,36 +14,10 @@ import (
 )
 
 var (
-	// FlushedRecordsCount indicates the number of flushed log records in the current period
-	FlushedRecordsCount float64
-	// FlushedRecordsSize indicates the size of the flushed records in the current period
-	FlushedRecordsSize float64
-	// FlushedRecordsTimeTaken indicates the cumulative time taken to flush the records for the current period
-	FlushedRecordsTimeTaken float64
-	// This is telemetry for how old/latent logs we are processing in milliseconds (max over a period of time)
-	AgentLogProcessingMaxLatencyMs float64
-	// This is telemetry for which container logs were latent (max over a period of time)
-	AgentLogProcessingMaxLatencyMsContainer string
 	// CommonProperties indicates the dimensions that are sent with every event/metric
 	CommonProperties map[string]string
 	// TelemetryClient is the client used to send the telemetry
 	TelemetryClient appinsights.TelemetryClient
-	// ContainerLogTelemetryTicker sends telemetry periodically
-	ContainerLogTelemetryTicker *time.Ticker
-	//Tracks the number of telegraf metrics sent successfully between telemetry ticker periods (uses ContainerLogTelemetryTicker)
-	TelegrafMetricsSentCount float64
-	//Tracks the number of send errors between telemetry ticker periods (uses ContainerLogTelemetryTicker)
-	TelegrafMetricsSendErrorCount float64
-	//Tracks the number of 429 (throttle) errors between telemetry ticker periods (uses ContainerLogTelemetryTicker)
-	TelegrafMetricsSend429ErrorCount float64
-	//Tracks the number of write/send errors to mdsd for containerlogs (uses ContainerLogTelemetryTicker)
-	ContainerLogsSendErrorsToMDSDFromFluent float64
-	//Tracks the number of mdsd client create errors for containerlogs (uses ContainerLogTelemetryTicker)
-	ContainerLogsMDSDClientCreateErrors float64
-	//Tracks the number of write/send errors to ADX for containerlogs (uses ContainerLogTelemetryTicker)
-	ContainerLogsSendErrorsToADXFromFluent float64
-	 //Tracks the number of ADX client create errors for containerlogs (uses ContainerLogTelemetryTicker)
-	ContainerLogsADXClientCreateErrors float64
 )
 
 const (
@@ -52,36 +27,7 @@ const (
 	envACSResourceName                                = "ACS_RESOURCE_NAME"
 	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
 	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
-	metricNameAvgFlushRate                            = "ContainerLogAvgRecordsFlushedPerSec"
-	metricNameAvgLogGenerationRate                    = "ContainerLogsGeneratedPerSec"
-	metricNameLogSize                                 = "ContainerLogsSize"
-	metricNameAgentLogProcessingMaxLatencyMs          = "ContainerLogsAgentSideLatencyMs"
-	metricNameNumberofTelegrafMetricsSentSuccessfully = "TelegrafMetricsSentCount"
-	metricNameNumberofSendErrorsTelegrafMetrics       = "TelegrafMetricsSendErrorCount"
-	metricNameNumberofSend429ErrorsTelegrafMetrics    = "TelegrafMetricsSend429ErrorCount"
-	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent	  = "ContainerLogs2MdsdSendErrorCount"
-	metricNameErrorCountContainerLogsMDSDClientCreateError	  = "ContainerLogsMdsdClientCreateErrorCount"
-	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent	  = "ContainerLogs2ADXSendErrorCount"
-	metricNameErrorCountContainerLogsADXClientCreateError	  = "ContainerLogsADXClientCreateErrorCount"
-
-	defaultTelemetryPushIntervalSeconds = 300
-
-	eventNameContainerLogInit   = "ContainerLogPluginInitialized"
-	eventNameDaemonSetHeartbeat = "ContainerLogDaemonSetHeartbeatEvent"
 )
-
-// SendEvent sends an event to App Insights
-func SendEvent(eventName string, dimensions map[string]string) {
-	Log("Sending Event : %s\n", eventName)
-	event := appinsights.NewEventTelemetry(eventName)
-
-	// add any extra Properties
-	for k, v := range dimensions {
-		event.Properties[k] = v
-	}
-
-	TelemetryClient.Track(event)
-}
 
 // SendException  send an event to the configured app insights instance
 func SendException(err interface{}) {
@@ -170,3 +116,25 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 	TelemetryClient.Track(traceTelemetryItem)
 	return output.FLB_OK
 }
+
+
+func PushMetricScrapeInfoToAppInsightsMetrics(records []map[interface{}]interface{}) int {
+	for _, record := range records {
+		var logEntry = ToString(record["message"])
+		var metricScrapeInfoRegex = regexp.MustCompile(`\s*([^\s]+)\s*([^\s]+)\s*([^\s]+).*ProcessedCount: ([\d]+).*SentToPublicationCount: ([\d]+).*`)
+		groupMatches := metricScrapeInfoRegex.FindStringSubmatch(logEntry)
+
+		if len(groupMatches) > 5 {
+			metricsProcessedCount, err := strconv.ParseFloat(groupMatches[4], 64)
+			if err == nil {
+				metric := appinsights.NewMetricTelemetry("MetricsExtensionMetricsProcessedCount", metricsProcessedCount)
+				metric.Properties["MetricsAccountName"] = groupMatches[3]
+				metric.Properties["MetricsSentToPublicationCount"] = groupMatches[5]
+				TelemetryClient.Track(metric)
+			}
+		}
+	}
+
+	return output.FLB_OK
+}
+

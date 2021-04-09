@@ -82,26 +82,6 @@ func createLogger() *log.Logger {
 	return logger
 }
 
-//Azure loganalytics metric values have to be numeric, so string values are dropped
-func convert(in interface{}) (float64, bool) {
-	switch v := in.(type) {
-	case int64:
-		return float64(v), true
-	case uint64:
-		return float64(v), true
-	case float64:
-		return v, true
-	case bool:
-		if v {
-			return float64(1), true
-		}
-		return float64(0), true
-	default:
-		Log("returning 0 for %v ", in)
-		return float64(0), false
-	}
-}
-
 // InitializePlugin reads and populates plugin configuration
 func InitializePlugin(agentVersion string) {
 

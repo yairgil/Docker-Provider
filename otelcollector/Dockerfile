@@ -14,6 +14,7 @@ COPY ./scripts/setup.sh ./scripts/main.sh $tmpdir/
 COPY ./metricextension/me.config /usr/sbin/
 COPY ./telegraf/telegraf-prometheus-collector.conf $tmpdir/telegraf/
 COPY ./fluent-bit/fluent-bit.conf $tmpdir/fluent-bit/
+COPY ./fluent-bit/fluent-bit-parsers.conf $tmpdir/fluent-bit/
 COPY ./fluent-bit/src/out_oms.so $tmpdir/fluent-bit/bin/
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh
 CMD [ "/opt/main.sh" ]

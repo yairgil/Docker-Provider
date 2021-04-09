@@ -51,20 +51,20 @@ cp -f $TMPDIR/prometheus-2.25.2.linux-amd64/promtool /opt/promtool
 chmod 777 /opt/promtool
 
 # Install Telegraf
-#1.18 pre-release
 wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_linux_amd64.tar.gz
 tar -zxvf telegraf-1.18.0_linux_amd64.tar.gz
 mv /opt/telegraf-1.18.0/usr/bin/telegraf /opt/telegraf/telegraf
 chmod 777 /opt/telegraf/telegraf
-
-sudo apt --fix-broken install -y
-sudo apt-get install inotify-tools -y
 
 # Install fluent-bit
 wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
 sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
 sudo echo "deb http://security.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list.d/bionic.list
 sudo apt-get update
+sudo apt-get install td-agent-bit=1.6.8 -y
+
+sudo apt --fix-broken install -y
+
 sudo apt-get install td-agent-bit=1.6.8 -y
 
 #cleanup all install
