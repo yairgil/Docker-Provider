@@ -199,6 +199,13 @@ module Fluent
             end
           end
 
+          # Only CPU and Memory capacity for windows nodes get added to the cache (at end of file)
+          is_windows_node = false
+          operatingSystem = item["status"]["nodeInfo"]["operatingSystem"]
+          if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
+            is_windows_node = true
+          end
+
           # node metrics records
           nodeMetricRecords = []
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime)
@@ -213,13 +220,17 @@ module Fluent
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
-            @NodeCache.cpu.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+            if is_windows_node
+              @NodeCache.cpu.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+            end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
-            @NodeCache.mem.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+            if is_windows_node
+              @NodeCache.mem.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+            end
           end
           nodeMetricRecords.each do |metricRecord|
             metricRecord["DataType"] = "LINUX_PERF_BLOB"
