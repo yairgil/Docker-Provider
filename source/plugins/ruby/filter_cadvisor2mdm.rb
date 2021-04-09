@@ -164,6 +164,7 @@ module Fluent
               metric_name = Constants::CPU_USAGE_MILLI_CORES
               metric_value /= 1000000 #cadvisor record is in nanocores. Convert to mc
               target_node_cpu_capacity_nc = @NodeCache.cpu.get_capacity(record["DataItems"][0]["Host"])
+              @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_nc}"
               if target_node_cpu_capacity_nc != 0.0
                 percentage_metric_value = (metric_value) * 100 / (target_node_cpu_capacity_nc /= 1000000)
               end
@@ -172,10 +173,12 @@ module Fluent
             if counter_name.start_with?("memory")
               metric_name = counter_name
               target_node_mem_capacity = @NodeCache.mem.get_capacity(record["DataItems"][0]["Host"])
+              @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity}"
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
-            end
+            end            
+            @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["DataItems"][0]["Host"]} percentage: #{percentage_metric_value}"
 
             # do some sanity checking. Do we want this?
             if percentage_metric_value > 100.0 or percentage_metric_value < 0.0
@@ -186,7 +189,6 @@ module Fluent
               ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
             end
 
-            @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["DataItems"][0]["Host"]} percentage: #{percentage_metric_value}"
             return MdmMetricsGenerator.getNodeResourceMetricRecords(record, metric_name, metric_value, percentage_metric_value)
           elsif object_name == Constants::OBJECT_NAME_K8S_CONTAINER && @metrics_to_collect_hash.key?(counter_name.downcase)
             instanceName = record["DataItems"][0]["InstanceName"]

@@ -9,6 +9,7 @@ module Fluent
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
     @@configMapMountPath = "/etc/config/settings/log-data-collection-settings"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
+    @@osmConfigMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
     @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
     @@kubeperfTag = "oms.api.KubePerf"
 
@@ -19,7 +20,10 @@ module Fluent
     @@rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
     @@rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
     @@rsPromMonitorPodsNamespaceLength = ENV["TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH"]
+    @@rsPromMonitorPodsLabelSelectorLength = ENV["TELEMETRY_RS_PROM_LABEL_SELECTOR_LENGTH"]
+    @@rsPromMonitorPodsFieldSelectorLength = ENV["TELEMETRY_RS_PROM_FIELD_SELECTOR_LENGTH"]
     @@collectAllKubeEvents = ENV["AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS"]
+    @@osmNamespaceCount = ENV["TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT"]
 
     def initialize
       super
@@ -303,6 +307,12 @@ module Fluent
               properties["rsPromUrl"] = @@rsPromUrlCount
               properties["rsPromMonPods"] = @@rsPromMonitorPods
               properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
+              properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
+              properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
+            end
+            # telemetry about osm metric settings for replicaset
+            if (File.file?(@@osmConfigMountPath))
+              properties["osmNamespaceCount"] = @@osmNamespaceCount
             end
             ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
             telemetrySent = true
@@ -501,17 +511,17 @@ module Fluent
     class NodeCache
 
       @@RECORD_TIME_TO_LIVE = 60*50  # units are seconds, so clear the cache every 20 minutes.
-  
+
       def initialize
-        @cacheHash = {}  # 
+        @cacheHash = {}
         @timeAdded = {}  # records when an entry was last added
         @lock = Mutex.new
         @lastCacheClearTime = 0
-  
+
         @cacheHash.default = 0.0
         @lastCacheClearTime = DateTime.now.to_time.to_i
       end
-  
+
       def get_capacity(node_name)
         begin
           @lock.lock
@@ -524,13 +534,12 @@ module Fluent
       end
 
       def set_capacity(host, val)
-
         # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
         current_time = DateTime.now.to_time.to_i
         if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
           clean_cache
         end
-  
+
         begin
           @lock.lock
           @cacheHash[host] = val
@@ -540,28 +549,24 @@ module Fluent
         end
       end
 
-  
       def clean_cache()
         $log.info "in_kube_nodes::clean_cache: cleaning node cpu/mem cache"
-  
         cacheClearTime = DateTime.now.to_time.to_i
         begin
           @lock.lock
-  
-          nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate 
-          # list is used so that we aren't modifying a hash while iterating through it. 
-    
+          nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
+          # list is used so that we aren't modifying a hash while iterating through it.
           @cacheHash.each do |key, val|
             if cacheClearTime - @timeAdded[key] > @@RECORD_TIME_TO_LIVE
               nodes_to_remove.append(key)
             end
           end
-  
+
           nodes_to_remove.each do node_name
             @cacheHash.delete(node_name)
             @timeAdded.delete(node_name)
           end
-  
+
         ensure
           @lock.unlock
         end
