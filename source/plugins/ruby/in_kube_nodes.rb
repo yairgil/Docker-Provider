@@ -155,18 +155,6 @@ module Fluent
         insightsMetricsEventStream = MultiEventStream.new
         kubePerfEventStream = MultiEventStream.new
         @@istestvar = ENV["ISTEST"]
-        
-        # begin
-        #   # first refresh the node cpu and memory capacity cache
-        #   cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
-        #   @NodeCache.cpu.set_capacity_all(cpu_capacity_json)
-
-        #   memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
-        #   @NodeCache.mem.set_capacity_all(memory_capacity_json)
-        # rescue => errorStr
-        #   $log.warn "in_kube_nodes::enumerate:Failed to cache cpu and memory limits for all nodes: #{errorStr}"
-        #   $log.warn(errorStr.backtrace.to_s)
-        # end
 
         #get node inventory
         nodeInventory["items"].each do |item|
@@ -222,14 +210,12 @@ module Fluent
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache while we're here
-            $log.info "adding cpu value to cache. nodeMetricRecord[\"DataItems\"][0][\"Host\"]: #{nodeMetricRecord["DataItems"][0]["Host"]}, nodeMetricRecord[\"DataItems\"][0][\"Collections\"][0][\"Value\"]: #{nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"]}"
             @NodeCache.cpu.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache while we're here
-            $log.info "adding mem value to cache. nodeMetricRecord[\"DataItems\"][0][\"Host\"]: #{nodeMetricRecord["DataItems"][0]["Host"]}, nodeMetricRecord[\"DataItems\"][0][\"Collections\"][0][\"Value\"]: #{nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"]}"
             @NodeCache.mem.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
           end
           nodeMetricRecords.each do |metricRecord|
