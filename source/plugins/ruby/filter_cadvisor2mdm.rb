@@ -190,11 +190,22 @@ module Fluent
             return MdmMetricsGenerator.getNodeResourceMetricRecords(record, metric_name, metric_value, percentage_metric_value)
           elsif object_name == Constants::OBJECT_NAME_K8S_CONTAINER && @metrics_to_collect_hash.key?(counter_name.downcase)
             instanceName = record["DataItems"][0]["InstanceName"]
+            host = record["DataItems"][0]["Host"]
+            @log.info "In container block. record=#{record}"
             metricName = counter_name
             # Using node cpu capacity in the absence of container cpu capacity since the container will end up using the
             # node's capacity in this case. Converting this to nanocores for computation purposes, since this is in millicores
-            containerCpuLimit = @cpu_capacity * 1000000
-            containerMemoryLimit = @memory_capacity
+            containerCpuLimit = @NodeCache.cpu.get_capacity(host)
+            if containerCpuLimit == 0
+              containerCpuLimit = @cpu_capacity * 1000000
+            end
+
+            containerMemoryLimit = @NodeCache.mem.get_capacity(host)
+            if containerMemoryLimit == 0
+              containerMemoryLimit = @memory_capacity
+            end
+
+            @log.info "containerCpuLimit: #{containerCpuLimit}, containerMemoryLimit: #{containerMemoryLimit}"
 
             if counter_name == Constants::CPU_USAGE_NANO_CORES
               if !instanceName.nil? && !@containerCpuLimitHash[instanceName].nil?
@@ -214,6 +225,9 @@ module Fluent
                 percentage_metric_value = (metric_value) * 100 / containerMemoryLimit
               end
             end
+
+
+            @log.info "containerCpuLimit: #{containerCpuLimit}, containerMemoryLimit: #{containerMemoryLimit}"
 
             # Send this metric only if resource utilization is greater than configured threshold
             @log.info "percentage_metric_value for metric: #{metricName} for instance: #{instanceName} percentage: #{percentage_metric_value}"

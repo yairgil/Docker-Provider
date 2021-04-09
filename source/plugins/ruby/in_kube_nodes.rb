@@ -156,17 +156,17 @@ module Fluent
         kubePerfEventStream = MultiEventStream.new
         @@istestvar = ENV["ISTEST"]
         
-        begin
-          # first refresh the node cpu and memory capacity cache
-          cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
-          @NodeCache.cpu.set_capacity_all(cpu_capacity_json)
+        # begin
+        #   # first refresh the node cpu and memory capacity cache
+        #   cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
+        #   @NodeCache.cpu.set_capacity_all(cpu_capacity_json)
 
-          memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
-          @NodeCache.mem.set_capacity_all(memory_capacity_json)
-        rescue => errorStr
-          $log.warn "in_kube_nodes::enumerate:Failed to cache cpu and memory limits for all nodes: #{errorStr}"
-          $log.warn(errorStr.backtrace.to_s)
-        end
+        #   memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
+        #   @NodeCache.mem.set_capacity_all(memory_capacity_json)
+        # rescue => errorStr
+        #   $log.warn "in_kube_nodes::enumerate:Failed to cache cpu and memory limits for all nodes: #{errorStr}"
+        #   $log.warn(errorStr.backtrace.to_s)
+        # end
 
         #get node inventory
         nodeInventory["items"].each do |item|
@@ -221,10 +221,16 @@ module Fluent
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
+            # add data to the cache while we're here
+            $log.info "adding cpu value to cache. nodeMetricRecord[\"DataItems\"][0][\"Host\"]: #{nodeMetricRecord["DataItems"][0]["Host"]}, nodeMetricRecord[\"DataItems\"][0][\"Collections\"][0][\"Value\"]: #{nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"]}"
+            @NodeCache.cpu.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
+            # add data to the cache while we're here
+            $log.info "adding mem value to cache. nodeMetricRecord[\"DataItems\"][0][\"Host\"]: #{nodeMetricRecord["DataItems"][0]["Host"]}, nodeMetricRecord[\"DataItems\"][0][\"Collections\"][0][\"Value\"]: #{nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"]}"
+            @NodeCache.mem.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
           end
           nodeMetricRecords.each do |metricRecord|
             metricRecord["DataType"] = "LINUX_PERF_BLOB"
@@ -508,7 +514,7 @@ module Fluent
     # (to reduce code duplication)
     class NodeCache
 
-      @@RECORD_TIME_TO_LIVE = 60*20  # units are seconds, so clear the cache every 20 minutes.
+      @@RECORD_TIME_TO_LIVE = 60*50  # units are seconds, so clear the cache every 20 minutes.
   
       def initialize
         @cacheHash = {}  # 
@@ -530,30 +536,24 @@ module Fluent
           @lock.unlock
         end
       end
-  
-      def set_capacity_all(capacity_json)
-        # clean the cache here so that calling code doesn't have to remember to clean it. The disadvantage to this 
-        # approach is that the cache will never be cleaned if new nodes are never added, (but then the cache also 
-        # can't grow and our main concern is unbounded cache growth)
-        if DateTime.now.to_time.to_i - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
+
+      def set_capacity(host, val)
+
+        # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
+        current_time = DateTime.now.to_time.to_i
+        if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
           clean_cache
         end
   
         begin
           @lock.lock
-          addTime = DateTime.now.to_time.to_i
-  
-          capacity_json.each do |item|
-            host = item["DataItems"][0]["Host"]
-            val = item["DataItems"][0]["Collections"][0]["Value"]
-            @cacheHash[host] = val
-            
-            @timeAdded[host] = addTime
-          end
+          @cacheHash[host] = val
+          @timeAdded[host] = current_time
         ensure
           @lock.unlock
         end
       end
+
   
       def clean_cache()
         $log.info "in_kube_nodes::clean_cache: cleaning node cpu/mem cache"
