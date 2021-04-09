@@ -51,12 +51,12 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	incomingTag := strings.ToLower(C.GoString(tag))
 
 	// Metrics Extension logs with metrics processed & sent counts
-	if incomingTag == "oms.container.log.flbplugin.scrapedmetrics" {
+	if incomingTag == fluentbitMetricsExtensionMetricsTag {
 		return PushMetricScrapeInfoToAppInsightsMetrics(records)
 	}
 
 	// Error messages from metrics extension and otelcollector
-	return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
+	return PushLogErrorsToAppInsightsTraces(records, appinsights.Information, incomingTag)
 }
 
 // FLBPluginExit exits the plugin

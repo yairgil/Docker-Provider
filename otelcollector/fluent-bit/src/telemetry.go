@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -27,6 +28,10 @@ const (
 	envACSResourceName                                = "ACS_RESOURCE_NAME"
 	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
 	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
+	envComputerName 																	= "HOSTNAME"
+	fluentbitOtelCollectorLogsTag											= "oms.container.log.flbplugin.otelcollector"
+	fluentbitMetricsExtensionLogsTag									= "oms.container.log.flbplugin.metricsextension"
+	fluentbitMetricsExtensionMetricsTag								= "oms.container.log.flbplugin.scrapedmetrics"
 )
 
 // SendException  send an event to the configured app insights instance
@@ -101,12 +106,17 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	return 0, nil
 }
 
-// PushToAppInsightsTraces sends the log lines as trace messages to the configured App Insights Instance
-func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
+func PushLogErrorsToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
 	var logLines []string
 	for _, record := range records {
-		// If record contains config error or prometheus scraping errors send it to KubeMonAgentEvents table
-		var logEntry = ToString(record["log"])
+		var logEntry = ""
+
+		// Logs have different parsed formats depending on if they're from otelcollector or metricsextension
+		if tag == fluentbitMetricsExtensionLogsTag {
+			logEntry = ToString(record["message"])
+		} else if tag == fluentbitOtelCollectorLogsTag {
+			logEntry = fmt.Sprintf("%s %s", ToString(record["C"]), ToString(record["M"]))
+		}
 		logLines = append(logLines, logEntry)
 	}
 
@@ -117,7 +127,8 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 	return output.FLB_OK
 }
 
-
+// Get the account name, metrics processed count, and metrics sent count from metrics extension log line
+// that was filtered by fluent-bit
 func PushMetricScrapeInfoToAppInsightsMetrics(records []map[interface{}]interface{}) int {
 	for _, record := range records {
 		var logEntry = ToString(record["message"])
@@ -137,4 +148,3 @@ func PushMetricScrapeInfoToAppInsightsMetrics(records []map[interface{}]interfac
 
 	return output.FLB_OK
 }
-

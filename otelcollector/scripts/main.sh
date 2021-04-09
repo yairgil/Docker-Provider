@@ -139,12 +139,10 @@ fi
 
 echo "started otelcollector"
 
-# if this file exists, liveness probe will check that the collector is running
-#touch /opt/OTELCOLLECTOR
-
 echo "starting metricsextension"
 # will need to rotate the entire log location
 # will need to remove accountname fetching from env
+# Logs at level 'Info' to get metrics processed count. Fluentbit and out_oms filter the logs to only send errors and the metrics processed count to the telemetry
 /usr/sbin/MetricsExtension -Logger File -LogLevel Info -DataDirectory /opt/MetricsExtensionData -Input otlp_grpc -PrivateKeyFile /etc/config/settings/metricstore/tls.key -CertFile /etc/config/settings/metricstore/tls.crt  -MonitoringAccount $AZMON_DEFAULT_METRIC_ACCOUNT_NAME -ConfigOverridesFilePath /usr/sbin/me.config &
 
 #get ME version

@@ -96,6 +96,7 @@ func InitializePlugin(agentVersion string) {
 	}()
 
 	ResourceID = os.Getenv(envAKSResourceID)
+	Computer = os.Getenv(envComputerName)
 
 	if len(ResourceID) > 0 {
 		//AKS Scenario

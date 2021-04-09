@@ -64,7 +64,10 @@ sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
 
 sudo apt --fix-broken install -y
+sudo apt-get install inotify-tools -y
 
+# Some dependencies were fixed with sudo apt --fix-broken, try installing td-agent-bit again
+# This is because we are keeping the same fluentbit version but have upgraded ubuntu
 sudo apt-get install td-agent-bit=1.6.8 -y
 
 #cleanup all install
