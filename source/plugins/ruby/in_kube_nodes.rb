@@ -159,7 +159,6 @@ module Fluent
         insightsMetricsEventStream = MultiEventStream.new
         kubePerfEventStream = MultiEventStream.new
         @@istestvar = ENV["ISTEST"]
-
         #get node inventory
         nodeInventory["items"].each do |item|
           # node inventory
@@ -213,13 +212,13 @@ module Fluent
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
-            # add data to the cache while we're here
+            # add data to the cache so filter_cadvisor2mdm.rb can use it
             @NodeCache.cpu.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
-            # add data to the cache while we're here
+            # add data to the cache so filter_cadvisor2mdm.rb can use it
             @NodeCache.mem.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
           end
           nodeMetricRecords.each do |metricRecord|
