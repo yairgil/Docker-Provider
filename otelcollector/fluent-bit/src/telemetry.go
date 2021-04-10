@@ -29,9 +29,9 @@ const (
 	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
 	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
 	envComputerName 																	= "HOSTNAME"
-	fluentbitOtelCollectorLogsTag											= "oms.container.log.flbplugin.otelcollector"
-	fluentbitMetricsExtensionLogsTag									= "oms.container.log.flbplugin.metricsextension"
-	fluentbitMetricsExtensionMetricsTag								= "oms.container.log.flbplugin.scrapedmetrics"
+	fluentbitOtelCollectorLogsTag                     = "oms.container.log.flbplugin.otelcollector"
+	fluentbitMetricsExtensionLogsTag                  = "oms.container.log.flbplugin.metricsextension"
+	fluentbitMetricsExtensionMetricsTag               = "oms.container.log.flbplugin.scrapedmetrics"
 )
 
 // SendException  send an event to the configured app insights instance
