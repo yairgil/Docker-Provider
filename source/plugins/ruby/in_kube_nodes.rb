@@ -533,13 +533,9 @@ module Fluent
       end
 
       def get_capacity(node_name)
-        begin
-          @lock.lock
+        @lock.synchronize do
           retval = @cacheHash[node_name]
           return retval
-        ensure
-          # this is always run even though there was a return earlier
-          @lock.unlock
         end
       end
 
@@ -550,20 +546,16 @@ module Fluent
           clean_cache
         end
 
-        begin
-          @lock.lock
+        @lock.synchronize do
           @cacheHash[host] = val
           @timeAdded[host] = current_time
-        ensure
-          @lock.unlock
         end
       end
 
       def clean_cache()
         $log.info "in_kube_nodes::clean_cache: cleaning node cpu/mem cache"
         cacheClearTime = DateTime.now.to_time.to_i
-        begin
-          @lock.lock
+        @lock.synchronize do
           nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
           # list is used so that we aren't modifying a hash while iterating through it.
           @cacheHash.each do |key, val|
@@ -576,9 +568,6 @@ module Fluent
             @cacheHash.delete(node_name)
             @timeAdded.delete(node_name)
           end
-
-        ensure
-          @lock.unlock
         end
       end
     end  # NodeCache

@@ -24,6 +24,7 @@ module Fluent
     @metrics_to_collect_hash = {}
 
     @@metric_threshold_hash = {}
+    @@controller_type = ""
 
     def initialize
       super
@@ -163,16 +164,24 @@ module Fluent
             if counter_name == Constants::CPU_USAGE_NANO_CORES
               metric_name = Constants::CPU_USAGE_MILLI_CORES
               metric_value /= 1000000 #cadvisor record is in nanocores. Convert to mc
-              target_node_cpu_capacity_nc = @NodeCache.cpu.get_capacity(record["DataItems"][0]["Host"])
-              @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_nc}"
-              if target_node_cpu_capacity_nc != 0.0
-                percentage_metric_value = (metric_value) * 100 / (target_node_cpu_capacity_nc /= 1000000)
+              if @@controller_type.downcase == "replicaset"
+                target_node_cpu_capacity_mc = @NodeCache.cpu.get_capacity(record["DataItems"][0]["Host"]) / 1000000
+              else
+                target_node_cpu_capacity_mc = @cpu_capacity
+              end
+              @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc}"
+              if target_node_cpu_capacity_mc != 0.0
+                percentage_metric_value = (metric_value) * 100 / target_node_cpu_capacity_mc
               end
             end
 
             if counter_name.start_with?("memory")
               metric_name = counter_name
-              target_node_mem_capacity = @NodeCache.mem.get_capacity(record["DataItems"][0]["Host"])
+              if @@controller_type.downcase == "replicaset"
+                target_node_mem_capacity = @NodeCache.mem.get_capacity(record["DataItems"][0]["Host"])
+              else
+                target_node_mem_capacity = @memory_capacity
+              end
               @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity}"
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
@@ -294,8 +303,8 @@ module Fluent
         return
       end
 
-      controller_type = ENV["CONTROLLER_TYPE"]
-      if controller_type.downcase == "replicaset"
+      @@controller_type = ENV["CONTROLLER_TYPE"]
+      if @@controller_type.downcase == "replicaset"
         @log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
 
         begin
@@ -321,7 +330,7 @@ module Fluent
             @log.info "Error getting memory_capacity"
           end
         end
-      elsif controller_type.downcase == "daemonset"
+      elsif @@controller_type.downcase == "daemonset"
         capacity_from_kubelet = KubeletUtils.get_node_capacity
 
         # Error handling in case /metrics/cadvsior endpoint fails
