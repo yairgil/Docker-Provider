@@ -28,7 +28,7 @@ const (
 	envACSResourceName                                = "ACS_RESOURCE_NAME"
 	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
 	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
-	envComputerName 																	= "HOSTNAME"
+	envComputerName                                   = "HOSTNAME"
 	fluentbitOtelCollectorLogsTag                     = "oms.container.log.flbplugin.otelcollector"
 	fluentbitMetricsExtensionLogsTag                  = "oms.container.log.flbplugin.metricsextension"
 	fluentbitMetricsExtensionMetricsTag               = "oms.container.log.flbplugin.scrapedmetrics"

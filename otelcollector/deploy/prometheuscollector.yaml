@@ -71,7 +71,7 @@ spec:
       serviceAccountName: prometheus-collector
       containers:
         - name: prometheus-collector
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:myprometheuscollector-040721-2"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:myprometheuscollector-041221"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
