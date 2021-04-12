@@ -201,9 +201,11 @@ module Fluent
 
           # Only CPU and Memory capacity for windows nodes get added to the cache (at end of file)
           is_windows_node = false
-          operatingSystem = item["status"]["nodeInfo"]["operatingSystem"]
-          if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
-            is_windows_node = true
+          if !item["status"].nil? && !item["status"]["nodeInfo"].nil? && !item["status"]["nodeInfo"]["operatingSystem"].nil?
+            operatingSystem = item["status"]["nodeInfo"]["operatingSystem"]
+            if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
+              is_windows_node = true
+            end
           end
 
           # node metrics records
@@ -520,7 +522,7 @@ module Fluent
     # (to reduce code duplication)
     class NodeCache
 
-      @@RECORD_TIME_TO_LIVE = 60*50  # units are seconds, so clear the cache every 20 minutes.
+      @@RECORD_TIME_TO_LIVE = 60*20  # units are seconds, so clear the cache every 20 minutes.
 
       def initialize
         @cacheHash = {}
@@ -544,6 +546,7 @@ module Fluent
         current_time = DateTime.now.to_time.to_i
         if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
           clean_cache
+          @lastCacheClearTime = current_time
         end
 
         @lock.synchronize do
