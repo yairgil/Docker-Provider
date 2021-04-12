@@ -448,13 +448,14 @@ class KubernetesApiClient
               metricProps["ObjectName"] = "K8SContainer"
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
-              metricProps["Collections"] = []
+              # gangams - this has to be json_Collections for AMA route
+              metricProps["json_Collections"] = []
               metricCollections = []
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
               metricCollection["Value"] = metricValue
               metricCollections.push(metricCollection)        
-              metricProps["Collections"] = metricCollections.to_json
+              metricProps["json_Collections"] = metricCollections.to_json
 
               # metricItem["DataItems"].push(metricProps)
               metricItems.push(metricProps)

@@ -16,6 +16,12 @@ module Fluent::Plugin
     @@kubeservicesTag = "oms.containerinsights.KubeServices"
     @@containerinventoryTag = "oms.containerinsights.ContainerInventory"
 
+    # cache for dcr tags for example LINUX_PERF_BLOB => dcr-2d88e4588f6b4d5cbc6f0a09e89404f3:ContainerInsightsExtension:LINUX_PERF_BLOB
+    @@extensionConfigCache = Hash.new
+    @@extensionName = "ContainerInsights"
+    @@extensionVersion = "1"
+    @@fluentSocketName = "/var/run/mdsd/default_fluent.socket"
+
     def initialize
       super
       require "yaml"
@@ -23,6 +29,9 @@ module Fluent::Plugin
       require "yajl"
       require "set"
       require "time"
+      require "socket"
+      require "msgpack"
+      require 'securerandom'
 
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
@@ -54,13 +63,7 @@ module Fluent::Plugin
     end
 
     def start
-      if @run_interval
-
-        if !ENV["PERF_TAG"].nil? && !ENV["PERF_TAG"].empty? 
-          @@kubeperfTag = ENV["PERF_TAG"]  
-          $log.warn("in_kube_podinventory::start: using perf tag: @ #{@@kubeperfTag}")               
-        end
-
+      if @run_interval    
         if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty? && ENV["PODS_CHUNK_SIZE"].to_i > 0
           @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"].to_i
         else
@@ -111,6 +114,15 @@ module Fluent::Plugin
         serviceRecords = []
         @podInventoryE2EProcessingLatencyMs = 0
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
+        # get dcr cache if its AAD auth mode
+
+        if !@@extensionConfigCache.has_key?("LINUX_PERF_BLOB")
+          $log.info("in_kube_podinventory::enumerate: retrieve extension configuration")
+          getExtensionConfig()
+        end        
+        @@kubeperfTag = @@extensionConfigCache["LINUX_PERF_BLOB"]
+        $log.info("in_kube_podinventory::enumerate: using perf tag: @ #{@@kubeperfTag}")       
+
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
         serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
@@ -677,6 +689,42 @@ module Fluent::Plugin
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return serviceName
+    end
+
+    def getExtensionConfig()
+      begin
+       clientSocket = UNIXSocket.open(@@fluentSocketName)
+       requestId = SecureRandom.uuid.to_s    
+       requestBodyJSON = {"Request" => "AgentTaggedData", "RequestId" => requestId,"Tag" => @@extensionName, "Version" => @@extensionVersion}.to_json
+       $log.info("sending request body: #{requestBodyJSON}")
+       requestBodyMsgPack = requestBodyJSON.to_msgpack
+       clientSocket.write(requestBodyMsgPack)
+       clientSocket.flush
+       $log.info("reading the response")
+       resp = clientSocket.recv(1024)
+       if !resp.nil? && !resp.empty?
+           respJSON = JSON.parse(resp)
+           taggedData = respJSON["TaggedData"]
+           if !taggedData.nil? && !taggedData.empty?
+              taggedAgentData = JSON.parse(taggedData)
+              extensionConfigurations = taggedAgentData["extensionConfigurations"]
+              extensionConfigurations.each do | extensionConfig|
+                outputstreams = extensionConfig["outputStreams"]
+                $log.info("outputstreams: #{outputstreams}")
+                streamId = outputstreams["LINUX_PERF_BLOB"]
+                if !streamId.nil? && !streamId.empty?
+                   @@extensionConfigCache["LINUX_PERF_BLOB"] = streamId 
+                else
+                  $log.warn("streamId doesnt exist for LINUX_PERF_BLOB")
+                end               
+              end
+           end
+       end
+      rescue => error
+        $log.warn("getExtensionConfig failed: #{error}")
+      ensure 
+        clientSocket.close  unless clientSocket.nil?
+      end 
     end
   end # Kube_Pod_Input
 end # module
