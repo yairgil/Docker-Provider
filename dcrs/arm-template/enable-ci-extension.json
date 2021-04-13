@@ -1,0 +1,100 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource Id of the AKS Cluster"
+      }
+    },
+    "clusterRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "Location of the AKS Cluster Resource e.g. \"eastus\""
+      }
+    },
+    "workspaceResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Monitor Log Analytics Resource ID"
+      }
+    },
+    "workspaceRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Monitor Log Analytics Workspace region e.g. \"eastus\""
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "dcr",
+      "apiVersion": "2017-05-10",
+      "resourceGroup": "[split(parameters('workspaceResourceId'),'/')[4]]",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2019-11-01-preview",
+              "name": "[Concat('ContainerInsightsExtension', '(', split(parameters('workspaceResourceId'),'/')[8], ')')]",
+              "location": "[parameters('workspaceRegion')]",
+              "properties": {
+                "dataSources": {
+                  "extensions": [
+                    {
+                      "streams": [
+                        "Microsoft-Perf"
+                      ],
+                      "extensionName": "ContainerInsights",
+                      "name": "ContainerInsightsExtension"
+                    }
+                  ]
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                      "name": "ciworkspace"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Microsoft-Perf"
+                    ],
+                    "destinations": [
+                      "ciworkspace"
+                    ]
+                  }
+                ]
+              }
+            }
+          ]        
+        }
+      }
+    },
+    {
+      "type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+      "name": "[concat(split(parameters('clusterResourceId'),'/')[8],'/microsoft.insights/', 'ciextension')]",
+      "apiVersion": "2019-11-01-preview",
+      "location": "[parameters('clusterRegion')]",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/deployments/', 'dcr')]"
+      ],
+      "properties": {
+        "description": "Association of data collection rule. Deleting this association will break the data collection for this AKS cluster.",
+        "dataCollectionRuleId": "[reference('dcr').outputs.dataCollectionRuleId.value]"         
+      }      
+    }    
+  ]
+}
