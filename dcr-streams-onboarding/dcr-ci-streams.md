@@ -1,4 +1,6 @@
 # 1 - ContainerInventory
+
+```
 stream-id: Microsoft-ContainerInventory
 data-type: CONTAINER_INVENTORY_BLOB
 intelligence-pack: ContainerInsights
@@ -9,8 +11,11 @@ alias-stream-id: Microsoft-ContainerInventory
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 2 - ContainerLog
+
+```
 stream-id: Microsoft-ContainerLog
 data-type: CONTAINER_LOG_BLOB
 intelligence-pack: Containers
@@ -21,8 +26,11 @@ alias-stream-id: Microsoft-ContainerLog
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 3 - ContainerNodeInventory
+
+```
 stream-id: Microsoft-ContainerNodeInventory
 data-type: CONTAINER_NODE_INVENTORY_BLOB
 intelligence-pack: ContainerInsights
@@ -33,8 +41,10 @@ alias-stream-id: Microsoft-ContainerNodeInventory
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 4 - KubePodInventory
+```
 stream-id: Microsoft-KubePodInventory
 data-type: KUBE_POD_INVENTORY_BLOB
 intelligence-pack: ContainerInsights
@@ -45,8 +55,10 @@ alias-stream-id: Microsoft-KubePodInventory
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 5 - KubeNodeInventory
+```
 stream-id: Microsoft-KubeNodeInventory
 data-type: KUBE_NODE_INVENTORY_BLOB
 intelligence-pack: ContainerInsights
@@ -57,8 +69,10 @@ alias-stream-id: Microsoft-KubeNodeInventory
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 6 - KubePVInventory
+```
 stream-id: Microsoft-KubePVInventory
 data-type: KUBE_PV_INVENTORY_BLOB
 intelligence-pack: ContainerInsights
@@ -69,8 +83,10 @@ alias-stream-id: Microsoft-KubePVInventory
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 7 - KubeEvents
+```
 stream-id: Microsoft-KubeEvents
 data-type: KUBE_EVENTS_BLOB
 intelligence-pack: ContainerInsights
@@ -81,8 +97,10 @@ alias-stream-id: Microsoft-KubeEvents
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 8 - KubeServices
+```
 stream-id: Microsoft-KubeServices
 data-type: KUBE_SERVICES_BLOB
 intelligence-pack: ContainerInsights
@@ -93,8 +111,10 @@ alias-stream-id: Microsoft-KubeServices
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 9 - InsightsMetrics
+```
 stream-id: Microsoft-InsightsMetrics
 data-type: INSIGHTS_METRICS_BLOB
 intelligence-pack: ContainerInsights
@@ -105,8 +125,10 @@ alias-stream-id: Microsoft-InsightsMetrics
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 10 - KubeMonAgentEvents
+```
 stream-id: Microsoft-KubeMonAgentEvents
 data-type: KUBE_MON_AGENT_EVENTS_BLOB
 intelligence-pack: Containers
@@ -117,8 +139,10 @@ alias-stream-id: Microsoft-KubeMonAgentEvents
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 11 - Containers
+```
 stream-id: Microsoft-KubeHealth
 data-type: KUBE_HEALTH_BLOB
 intelligence-pack: ContainerInsights
@@ -129,8 +153,10 @@ alias-stream-id: Microsoft-KubeHealth
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
 
 # 12 - Perf
+```
 > Note - This stream already exists
 stream-id: Microsoft-Perf
 data-type: LINUX_PERF_BLOB
@@ -142,3 +168,4 @@ alias-stream-id: Microsoft-Perf
 contact-alias: OMScontainers@microsoft.com
 stage: to review
 tags: agent
+```
