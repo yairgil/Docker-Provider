@@ -13,6 +13,32 @@ else
       echo "customResourceId:$customResourceId"
 fi
 
+#set env vars used by telegraf
+if [ -z $AKS_RESOURCE_ID ]; then
+      telemetry_aks_resource_id=""
+      telemetry_aks_region=""
+      telemetry_cluster_name=""
+      telemetry_acs_resource_name=$ACS_RESOURCE_NAME
+      telemetry_cluster_type="ACS"
+else
+      telemetry_aks_resource_id=$AKS_RESOURCE_ID
+      telemetry_aks_region=$AKS_REGION
+      telemetry_cluster_name=$AKS_RESOURCE_ID
+      telemetry_acs_resource_name=""
+      telemetry_cluster_type="AKS"
+fi
+
+export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id
+echo "export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id" >> ~/.bashrc
+export TELEMETRY_AKS_REGION=$telemetry_aks_region
+echo "export TELEMETRY_AKS_REGION=$telemetry_aks_region" >> ~/.bashrc
+export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name
+echo "export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name" >> ~/.bashrc
+export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name
+echo "export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name" >> ~/.bashrc
+export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type
+echo "export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type" >> ~/.bashrc
+
 #set agent config schema version
 if [  -e "/etc/config/settings/schema-version" ] && [  -s "/etc/config/settings/schema-version" ]; then
       #trim
@@ -154,7 +180,7 @@ echo "starting telegraf"
 /opt/telegraf/telegraf --config /opt/telegraf/telegraf-prometheus-collector.conf &
 
 echo "starting fluent-bit"
-/opt/td-agent-bit/bin/td-agent-bit -c /opt/fluent-bit/fluent-bit.conf -e /opt/fluent-bit/bin/out_oms.so &
+/opt/td-agent-bit/bin/td-agent-bit -c /opt/fluent-bit/fluent-bit.conf -e /opt/fluent-bit/bin/out_appinsights.so &
 dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 shutdown() {

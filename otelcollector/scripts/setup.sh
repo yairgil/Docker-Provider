@@ -61,10 +61,12 @@ wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
 sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
 sudo echo "deb http://security.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list.d/bionic.list
 sudo apt-get update
-sudo apt-get install td-agent-bit=1.6.8 -y
+#sudo apt-get install td-agent-bit=1.6.8 -y
+
 
 sudo apt --fix-broken install -y
 sudo apt-get install inotify-tools -y
+
 
 # Some dependencies were fixed with sudo apt --fix-broken, try installing td-agent-bit again
 # This is because we are keeping the same fluentbit version but have upgraded ubuntu
