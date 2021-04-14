@@ -13,6 +13,32 @@ else
       echo "customResourceId:$customResourceId"
 fi
 
+#set env vars used by telegraf
+if [ -z $AKS_RESOURCE_ID ]; then
+      telemetry_aks_resource_id=""
+      telemetry_aks_region=""
+      telemetry_cluster_name=""
+      telemetry_acs_resource_name=$ACS_RESOURCE_NAME
+      telemetry_cluster_type="ACS"
+else
+      telemetry_aks_resource_id=$AKS_RESOURCE_ID
+      telemetry_aks_region=$AKS_REGION
+      telemetry_cluster_name=$AKS_RESOURCE_ID
+      telemetry_acs_resource_name=""
+      telemetry_cluster_type="AKS"
+fi
+
+export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id
+echo "export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id" >> ~/.bashrc
+export TELEMETRY_AKS_REGION=$telemetry_aks_region
+echo "export TELEMETRY_AKS_REGION=$telemetry_aks_region" >> ~/.bashrc
+export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name
+echo "export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name" >> ~/.bashrc
+export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name
+echo "export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name" >> ~/.bashrc
+export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type
+echo "export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type" >> ~/.bashrc
+
 #set agent config schema version
 if [  -e "/etc/config/settings/schema-version" ] && [  -s "/etc/config/settings/schema-version" ]; then
       #trim
@@ -131,20 +157,18 @@ echo "Use default prometheus config: ${AZMON_USE_DEFAULT_PROMETHEUS_CONFIG}"
 # will need to rotate log file
 if [ "$AZMON_USE_DEFAULT_PROMETHEUS_CONFIG" = "true" ]; then
       echo "starting otelcollector with DEFAULT prometheus configuration...."
-      /opt/microsoft/otelcollector/otelcollector --config /opt/microsoft/otelcollector/collector-config-default.yml --log-level DEBUG --metrics-level none &> /opt/microsoft/otelcollector/collector-log.txt &
+      /opt/microsoft/otelcollector/otelcollector --config /opt/microsoft/otelcollector/collector-config-default.yml --log-level ERROR --log-format json --metrics-level none &> /opt/microsoft/otelcollector/collector-log.txt &
 else
       echo "starting otelcollector...."
-      /opt/microsoft/otelcollector/otelcollector --config /opt/microsoft/otelcollector/collector-config.yml --log-level DEBUG --metrics-level none &> /opt/microsoft/otelcollector/collector-log.txt &
+      /opt/microsoft/otelcollector/otelcollector --config /opt/microsoft/otelcollector/collector-config.yml --log-level ERROR --log-format json --metrics-level none &> /opt/microsoft/otelcollector/collector-log.txt &
 fi
 
-echo "started otelcollector "
-
-# if this file exists, liveness probe will check that the collector is running
-#touch /opt/OTELCOLLECTOR
+echo "started otelcollector"
 
 echo "starting metricsextension"
 # will need to rotate the entire log location
 # will need to remove accountname fetching from env
+# Logs at level 'Info' to get metrics processed count. Fluentbit and out_appinsights filter the logs to only send errors and the metrics processed count to the telemetry
 /usr/sbin/MetricsExtension -Logger File -LogLevel Info -DataDirectory /opt/MetricsExtensionData -Input otlp_grpc -PrivateKeyFile /etc/config/settings/metricstore/tls.key -CertFile /etc/config/settings/metricstore/tls.crt  -MonitoringAccount $AZMON_DEFAULT_METRIC_ACCOUNT_NAME -ConfigOverridesFilePath /usr/sbin/me.config &
 
 #get ME version
@@ -154,6 +178,10 @@ ruby --version
 
 echo "starting telegraf"
 /opt/telegraf/telegraf --config /opt/telegraf/telegraf-prometheus-collector.conf &
+
+echo "starting fluent-bit"
+/opt/td-agent-bit/bin/td-agent-bit -c /opt/fluent-bit/fluent-bit.conf -e /opt/fluent-bit/bin/out_appinsights.so &
+dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 shutdown() {
 	echo "shutting down"

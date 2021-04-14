@@ -3,7 +3,6 @@
 
 require "tomlrb"
 require_relative "ConfigParseErrorLogger"
-#require_relative "microsoft/omsagent/plugin/constants"
 
 @configMapMountPath = "/etc/config/settings/prometheus/prometheus-config"
 @collectorConfigTemplatePath = "/opt/microsoft/otelcollector/collector-config-template.yml"

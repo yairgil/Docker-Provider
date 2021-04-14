@@ -3,7 +3,6 @@
 
 require "tomlrb"
 require_relative "ConfigParseErrorLogger"
-#require_relative "microsoft/omsagent/plugin/constants"
 
 @configMapMountPath = "/etc/config/settings/default-scrape-settings"
 @configVersion = ""
