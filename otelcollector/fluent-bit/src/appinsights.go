@@ -48,7 +48,7 @@ var (
 
 func createLogger() *log.Logger {
 	var logfile *os.File
-	var logPath = "/var/opt/microsoft/docker-cimprov/log/fluent-bit-out-oms-runtime.log"
+	var logPath = "/var/opt/microsoft/log/fluent-bit-out-appinsights-runtime.log"
 
 	if _, err := os.Stat(logPath); err == nil {
 		fmt.Printf("File Exists. Opening file in append mode...\n")

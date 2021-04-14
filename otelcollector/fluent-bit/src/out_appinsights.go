@@ -13,14 +13,14 @@ import (
 
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
-	return output.FLBPluginRegister(ctx, "oms", "OMS GO!")
+	return output.FLBPluginRegister(ctx, "appinsights", "AppInsights GO!")
 }
 
 //export FLBPluginInit
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
-	Log("Initializing out_oms go plugin for fluentbit")
+	Log("Initializing out_appinsights go plugin for fluentbit")
 	var agentVersion string
 	agentVersion = os.Getenv("AGENT_VERSION")
 

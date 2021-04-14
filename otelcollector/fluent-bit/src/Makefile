@@ -1,5 +1,5 @@
 fbplugin:
-	@echo "========================= Building  out_oms plugin go code  ========================="
+	@echo "========================= Building  out_appinsights plugin go code  ========================="
 	#export BUILDVERSION=$(CONTAINER_BUILDVERSION_MAJOR).$(CONTAINER_BUILDVERSION_MINOR).$(CONTAINER_BUILDVERSION_PATCH)-$(CONTAINER_BUILDVERSION_BUILDNR)
 	#export BUILDDATE=$(CONTAINER_BUILDVERSION_DATE)
 	#@echo $(BUILDVERSION)
