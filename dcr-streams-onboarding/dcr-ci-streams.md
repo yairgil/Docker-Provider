@@ -141,7 +141,7 @@ stage: to review
 tags: agent
 ```
 
-# 11 - Containers
+# 11 - KubeHealth
 ```
 stream-id: Microsoft-KubeHealth
 data-type: KUBE_HEALTH_BLOB
