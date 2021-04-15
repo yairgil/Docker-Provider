@@ -5,12 +5,14 @@ module Fluent
   require_relative "podinventory_to_mdm"
 
   class Kube_PodInventory_Input < Input
-    Plugin.register_input("kubepodinventory", self)
+    Plugin.register_input("kube_podinventory", self)
 
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
     @@kubeperfTag = "oms.api.KubePerf"
     @@kubeservicesTag = "oms.containerinsights.KubeServices"
+    # ci extension config cache
+    @@extensionConfigCache = Hash.new
 
     def initialize
       super
@@ -19,6 +21,9 @@ module Fluent
       require "yajl"
       require "set"
       require "time"
+      require "socket"
+      require "msgpack"
+      require "securerandom"
 
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
@@ -39,6 +44,7 @@ module Fluent
       @controllerData = {}
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
+      @aad_msi_auth_enable = false     
     end
 
     config_param :run_interval, :time, :default => 60
@@ -69,6 +75,11 @@ module Fluent
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
 
+        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
+          @aad_msi_auth_enable = true
+        end              
+        $log.info("in_kube_podinventory::start : aad auth enable:#{@aad_msi_auth_enable}")
+        
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -101,6 +112,17 @@ module Fluent
         serviceRecords = []
         @podInventoryE2EProcessingLatencyMs = 0
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
+        
+        if @aad_msi_auth_enable
+          $log.info("in_kube_podinventory::enumerate: retrieve extension configuration since: aad msi auth enabled : #{@aad_msi_auth_enable}")
+          if !@@extensionConfigCache.has_key?("LINUX_PERF_BLOB")
+            $log.info("in_kube_podinventory::enumerate: retrieve extension configuration")
+            getExtensionConfig()
+          end        
+          @@kubeperfTag = @@extensionConfigCache["LINUX_PERF_BLOB"]
+          $log.info("in_kube_podinventory::enumerate: using perf tag: @ #{@@kubeperfTag}")    
+        end 
+
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
         serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
@@ -205,11 +227,7 @@ module Fluent
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
           podInventoryRecords.each do |record|
             if !record.nil?
-              wrapper = {
-                          "DataType" => "KUBE_POD_INVENTORY_BLOB",
-                          "IPName" => "ContainerInsights",
-                          "DataItems" => [record.each { |k, v| record[k] = v }],
-                        }
+              wrapper = addDataTypeMetadata("KUBE_POD_INVENTORY_BLOB", "ContainerInsights", record)         
               eventStream.add(emitTime, wrapper) if wrapper
               @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
             end
@@ -229,11 +247,7 @@ module Fluent
               @winContainerCount += containerInventoryRecords.length
               containerInventoryRecords.each do |cirecord|
                 if !cirecord.nil?
-                  ciwrapper = {
-                    "DataType" => "CONTAINER_INVENTORY_BLOB",
-                    "IPName" => "ContainerInsights",
-                    "DataItems" => [cirecord.each { |k, v| cirecord[k] = v }],
-                  }
+                  ciwrapper = addDataTypeMetadata("CONTAINER_INVENTORY_BLOB", "ContainerInsights", cirecord)
                   eventStream.add(emitTime, ciwrapper) if ciwrapper
                 end
               end
@@ -257,8 +271,7 @@ module Fluent
           containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", batchTime))
 
           containerMetricDataItems.each do |record|
-            record["DataType"] = "LINUX_PERF_BLOB"
-            record["IPName"] = "LogManagement"
+            record = addDataTypeMetadata("LINUX_PERF_BLOB", "LogManagement", record)            
             kubePerfEventStream.add(emitTime, record) if record
           end
 
@@ -278,11 +291,7 @@ module Fluent
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
           containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
-            wrapper = {
-              "DataType" => "INSIGHTS_METRICS_BLOB",
-              "IPName" => "ContainerInsights",
-              "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
-            }
+            wrapper = addDataTypeMetadata("INSIGHTS_METRICS_BLOB", "ContainerInsights", insightsMetricsRecord)           
             insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
           end
 
@@ -341,11 +350,7 @@ module Fluent
               # adding before emit to reduce memory foot print
               kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
               kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
-              kubeServicewrapper = {
-                "DataType" => "KUBE_SERVICES_BLOB",
-                "IPName" => "ContainerInsights",
-                "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
-              }
+              kubeServicewrapper = addDataTypeMetadata("KUBE_SERVICES_BLOB", "ContainerInsights", kubeServiceRecord)
               kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
               if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
                 $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
@@ -653,5 +658,58 @@ module Fluent
       end
       return serviceName
     end
+  # add the data type metadata to the record
+  def addDataTypeMetadata(dataTypeName, ipName, record)    
+     # oneagent adds the data type and ipname so return the record as is
+    return record  if KubernetesApiClient.isUsingOneAgent()   
+    # perf 
+    if dataTypeName == "LINUX_PERF_BLOB"
+      record["DataType"] = "LINUX_PERF_BLOB"
+      record["IPName"] = "LogManagement"
+      return record 
+    end
+    return {
+      "DataType" => dataTypeName,
+      "IPName" => ipName,
+      "DataItems" => [record.each { |k, v| record[k] = v }],
+     }     
+  end   
+
+  # TODO- move to separate class & file   
+  def getExtensionConfig()
+      begin
+        clientSocket = UNIXSocket.open(Constants::ONEAGENT_FLUENT_SOCKET_NAME)
+        requestId = SecureRandom.uuid.to_s    
+        requestBodyJSON = {"Request" => "AgentTaggedData", "RequestId" => requestId,"Tag" => Constants::CI_EXTENSION_NAME, "Version" => Constants::CI_EXTENSION_VERSION}.to_json
+        $log.info("sending request with request body: #{requestBodyJSON}")
+        requestBodyMsgPack = requestBodyJSON.to_msgpack
+        clientSocket.write(requestBodyMsgPack)
+        clientSocket.flush
+        $log.info("reading the response from fluent socket: #{Constants::ONEAGENT_FLUENT_SOCKET_NAME}")
+        resp = clientSocket.recv(Constants::CI_EXTENSION_CONFIG_MAX_BYTES)
+        if !resp.nil? && !resp.empty?
+            respJSON = JSON.parse(resp)
+            taggedData = respJSON["TaggedData"]
+            if !taggedData.nil? && !taggedData.empty?
+                taggedAgentData = JSON.parse(taggedData)
+                extensionConfigurations = taggedAgentData["extensionConfigurations"]
+                extensionConfigurations.each do | extensionConfig|
+                  outputstreams = extensionConfig["outputStreams"]
+                  $log.info("outputstreams: #{outputstreams}")
+                  streamId = outputstreams["LINUX_PERF_BLOB"]
+                  if !streamId.nil? && !streamId.empty?
+                    @@extensionConfigCache["LINUX_PERF_BLOB"] = streamId 
+                  else
+                    $log.warn("streamId doesnt exist for LINUX_PERF_BLOB")
+                  end  
+                end               
+            end
+        end      
+      rescue => error
+        $log.warn("getExtensionConfig failed: #{error}")
+      ensure 
+        clientSocket.close  unless clientSocket.nil?
+      end 
+   end # getExtensionConfig
   end # Kube_Pod_Input
 end # module

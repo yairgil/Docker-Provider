@@ -126,6 +126,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser-mdm-metrics-config.rb;                                  build/linux/installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
 /opt/tomlparser-metric-collection-config.rb;                            build/linux/installer/scripts/tomlparser-metric-collection-config.rb;     755; root; root
 
+/opt/fluent/oneagent.conf;			                               build/linux/installer/conf/oneagent.conf;                     644; root; root
+
 /opt/tomlparser-agent-config.rb;                                build/linux/installer/scripts/tomlparser-agent-config.rb;     755; root; root
 /opt/tomlparser.rb;                                             build/common/installer/scripts/tomlparser.rb;     755; root; root
 /opt/td-agent-bit-conf-customizer.rb;                           build/common/installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
@@ -178,6 +180,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt;                                                   755; root; root; sysdir
 /var;                                                   755; root; root; sysdir
 /var/opt;                                               755; root; root; sysdir
+
+/opt/fluent;                                            755; root; root; sysdir
 
 /etc/opt/microsoft;                                     755; root; root; sysdir
 /etc/opt/microsoft/docker-cimprov;                      755; root; root
@@ -285,6 +289,10 @@ chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluent_forward_fai
 touch /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
+
+touch /var/opt/microsoft/docker-cimprov/log/fluentd.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/fluentd.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluentd.log
 
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf

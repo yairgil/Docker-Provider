@@ -99,4 +99,10 @@ class Constants
   POD_STATUS_TERMINATING = "Terminating"
 
   AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2_FILENAME = "/opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2"
+
+  #ContainerInsights Extension (AMCS)
+  CI_EXTENSION_NAME = "ContainerInsights"
+  CI_EXTENSION_VERSION = "1"  
+  CI_EXTENSION_CONFIG_MAX_BYTES = 1024
+  ONEAGENT_FLUENT_SOCKET_NAME = "/var/run/mdsd/default_fluent.socket"  
 end

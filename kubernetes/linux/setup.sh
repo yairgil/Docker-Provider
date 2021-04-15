@@ -32,7 +32,11 @@ mv $TMPDIR/omsbundle* $TMPDIR/omsbundle
 #/usr/bin/dpkg -i $TMPDIR/omsbundle/100/omsconfig*.deb
 
 #install oneagent - Official bits (10/18)
-wget https://github.com/microsoft/Docker-Provider/releases/download/10182020-oneagent/azure-mdsd_1.5.126-build.master.99_x86_64.deb
+#wget https://github.com/microsoft/Docker-Provider/releases/download/10182020-oneagent/azure-mdsd_1.5.126-build.master.99_x86_64.deb
+# dev agent with custom resource id & fix
+# use official build which has all the changes for the release
+wget https://github.com/microsoft/Docker-Provider/raw/gangams/ci-aad-auth-msi/oneagent-dev/azure-mdsd_1.9.0-build.develop.1850_x86_64.deb
+
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
@@ -78,6 +82,14 @@ wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
 sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
 sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
+
+# install & setup fluentd version 0.12.40 which being validated with omsagent
+# using the same version will also avoid maintaining duplicate plugin code 
+# upgrade to latest version when we remove the omsagent dependency completely
+apt-get install rubygems ruby-dev gcc make -y
+sudo gem install fluentd -v "0.12.40" --no-document
+fluentd --setup ./fluent
+gem install gyoku iso8601 --no-doc
 
 rm -rf $TMPDIR/omsbundle
 rm -f $TMPDIR/omsagent*.sh

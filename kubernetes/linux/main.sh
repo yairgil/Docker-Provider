@@ -52,6 +52,11 @@ else
       echo "export customResourceId=$AKS_RESOURCE_ID" >> ~/.bashrc
       source ~/.bashrc
       echo "customResourceId:$customResourceId"
+
+      export customRegion=$AKS_REGION 
+      echo "export customRegion=$AKS_REGION" >> ~/.bashrc
+      source ~/.bashrc
+      echo "customRegion:$customRegion"  
 fi
 
 #set agent config schema version
@@ -546,46 +551,82 @@ else
    echo "oneagent region is false for current region:$currentregion"
 fi
 
-
 #start oneagent
-if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-   if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
-      echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
-      echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
-      #trim
-      containerlogsroute="$(echo $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE | xargs)"
-      # convert to lowercase
-      typeset -l containerlogsroute=$containerlogsroute
+if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true") ]]; then
+      export AAD_MSI_AUTH_ENABLE=true
+      echo "export AAD_MSI_AUTH_ENABLE=true" >> ~/.bashrc
+      export ONE_AGENT_ENABLE=true
+       echo "export ONE_AGENT_ENABLE=true" >> ~/.bashrc
 
-      echo "setting AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE as :$containerlogsroute"
-      export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute
-      echo "export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute" >> ~/.bashrc
+      echo "*** starting mdsd with AAD AUTH MODE ***"       
+      cat /etc/mdsd.d/envmdsd | while read line; do
+            echo $line >> ~/.bashrc
+      done
+      source /etc/mdsd.d/envmdsd
+
+      export MCS_ENDPOINT="handler.control.monitor.azure.com"
+      echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
+      export AZURE_ENDPOINT="https://monitor.azure.com/"
+      echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
+      export ADD_REGION_TO_MCS_ENDPOINT="true"
+      echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
+      export ENABLE_MCS="true"
+      echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
+      export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
+      echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
+      export MDSD_USE_LOCAL_PERSISTENCY="false"
+      echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
       source ~/.bashrc
 
-      if [ "$containerlogsroute" == "v2" ]; then
-            echo "activating oneagent..."
-            echo "configuring mdsd..."
-            cat /etc/mdsd.d/envmdsd | while read line; do
-                  echo $line >> ~/.bashrc
-            done
-            source /etc/mdsd.d/envmdsd
+      dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
 
-            echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
-            export CIWORKSPACE_id=$CIWORKSPACE_id
-            echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
-            export CIWORKSPACE_key=$CIWORKSPACE_key
-            echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
+      echo "starting mdsd in replicaset..."
+      mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
+      echo "*** starting fluentd ***"           
+      # note - using the omsagent plugin path to avoid multiple copies of the plugin code
+      # change plugin path appropriately when we remove the omsagent dependency completely
+      fluentd -p /opt/microsoft/omsagent/plugin -c /opt/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+else 
+    if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+      if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
+            echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
+            echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+            #trim
+            containerlogsroute="$(echo $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE | xargs)"
+            # convert to lowercase
+            typeset -l containerlogsroute=$containerlogsroute
+
+            echo "setting AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE as :$containerlogsroute"
+            export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute
+            echo "export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute" >> ~/.bashrc
             source ~/.bashrc
 
-            dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+            if [ "$containerlogsroute" == "v2" ]; then
+                  echo "activating oneagent..."
+                  echo "configuring mdsd..."
+                  cat /etc/mdsd.d/envmdsd | while read line; do
+                        echo $line >> ~/.bashrc
+                  done
+                  source /etc/mdsd.d/envmdsd
 
-            echo "starting mdsd ..."
-            mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+                  echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+                  export CIWORKSPACE_id=$CIWORKSPACE_id
+                  echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
+                  export CIWORKSPACE_key=$CIWORKSPACE_key
+                  echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
 
-            touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
+                  source ~/.bashrc
+
+                  dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+
+                  echo "starting mdsd ..."
+                  mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+
+                  touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
+            fi
       fi
-   fi
+    fi
 fi
 echo "************end oneagent log routing checks************"
 
