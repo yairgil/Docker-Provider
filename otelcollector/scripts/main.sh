@@ -5,39 +5,26 @@ inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyout
 
 #resourceid override.
 if [ -z $AKS_RESOURCE_ID ]; then
-      echo "not setting customResourceId"
+      echo "AKS_RESOURCE_ID is empty or not set."
+      if [ -z $CLUSTER ]; then
+            echo "CLUSTER is empty or not set. Using $NODE_NAME as CLUSTER"
+            export customResourceId=$NODE_NAME
+            echo "export customResourceId=$NODE_NAME" >> ~/.bashrc
+            source ~/.bashrc
+            echo "customResourceId:$customResourceId"
+      else
+            echo "Using CLUSTER as $CLUSTER"
+            export customResourceId=$CLUSTER
+            echo "export customResourceId=$CLUSTER" >> ~/.bashrc
+            source ~/.bashrc
+            echo "customResourceId:$customResourceId"
+      fi
 else
       export customResourceId=$AKS_RESOURCE_ID
       echo "export customResourceId=$AKS_RESOURCE_ID" >> ~/.bashrc
       source ~/.bashrc
       echo "customResourceId:$customResourceId"
 fi
-
-#set env vars used by telegraf
-if [ -z $AKS_RESOURCE_ID ]; then
-      telemetry_aks_resource_id=""
-      telemetry_aks_region=""
-      telemetry_cluster_name=""
-      telemetry_acs_resource_name=$ACS_RESOURCE_NAME
-      telemetry_cluster_type="ACS"
-else
-      telemetry_aks_resource_id=$AKS_RESOURCE_ID
-      telemetry_aks_region=$AKS_REGION
-      telemetry_cluster_name=$AKS_RESOURCE_ID
-      telemetry_acs_resource_name=""
-      telemetry_cluster_type="AKS"
-fi
-
-export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id
-echo "export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id" >> ~/.bashrc
-export TELEMETRY_AKS_REGION=$telemetry_aks_region
-echo "export TELEMETRY_AKS_REGION=$telemetry_aks_region" >> ~/.bashrc
-export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name
-echo "export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name" >> ~/.bashrc
-export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name
-echo "export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name" >> ~/.bashrc
-export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type
-echo "export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type" >> ~/.bashrc
 
 #set agent config schema version
 if [  -e "/etc/config/settings/schema-version" ] && [  -s "/etc/config/settings/schema-version" ]; then
@@ -165,11 +152,44 @@ fi
 
 echo "started otelcollector"
 
+echo "finding files from akv in /etc/config/settings/akv to decode..."
+decodeLocation="/opt/akv/decoded"
+# secrets can only be alpha numeric chars and dashes
+ENCODEDFILES=/etc/config/settings/akv/*
+mkdir -p $decodeLocation
+for ef in $ENCODEDFILES
+do
+ name="$(basename -- $ef)"
+ echo "decoding $name into $decodeLocation ..."
+ base64 -d $ef > $decodeLocation/$name
+done
+
+
+echo "finding decoded files from $decodeLocation ..."
+DECODEDFILES=$decodeLocation/*
+decodedFiles=""
+for df in $DECODEDFILES
+do
+ echo "found $df"
+ if [ ${#decodedFiles} -ge 1 ]; then
+  decodedFiles=$decodedFiles:$df
+ else
+  decodedFiles=$df
+ fi
+done
+
+
+export AZMON_METRIC_ACCOUNTS_AKV_FILES=$(echo $decodedFiles)
+echo "export AZMON_METRIC_ACCOUNTS_AKV_FILES=$decodedFiles" >> ~/.bashrc
+source ~/.bashrc
+
+echo "AKV files for metric account=$AZMON_METRIC_ACCOUNTS_AKV_FILES"
+
 echo "starting metricsextension"
 # will need to rotate the entire log location
 # will need to remove accountname fetching from env
 # Logs at level 'Info' to get metrics processed count. Fluentbit and out_appinsights filter the logs to only send errors and the metrics processed count to the telemetry
-/usr/sbin/MetricsExtension -Logger File -LogLevel Info -DataDirectory /opt/MetricsExtensionData -Input otlp_grpc -PrivateKeyFile /etc/config/settings/metricstore/tls.key -CertFile /etc/config/settings/metricstore/tls.crt  -MonitoringAccount $AZMON_DEFAULT_METRIC_ACCOUNT_NAME -ConfigOverridesFilePath /usr/sbin/me.config &
+/usr/sbin/MetricsExtension -Logger File -LogLevel Info -DataDirectory /opt/MetricsExtensionData -Input otlp_grpc -PfxFile $AZMON_METRIC_ACCOUNTS_AKV_FILES -MonitoringAccount $AZMON_DEFAULT_METRIC_ACCOUNT_NAME -ConfigOverridesFilePath /usr/sbin/me.config $ME_ADDITIONAL_FLAGS &
 
 #get ME version
 dpkg -l | grep metricsext | awk '{print $2 " " $3}'
