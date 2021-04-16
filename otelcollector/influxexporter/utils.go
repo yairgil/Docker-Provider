@@ -57,7 +57,7 @@ func createFileLogger() *log.Logger {
 	var logPath string
 
 	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
-		logPath = ":/opt/microsoft/otelcollector/influx-exporter.log"
+		logPath = "/opt/microsoft/otelcollector/influx-exporter.log"
 	} else {
 		logPath = "/etc/omsagentwindows/influx-exporter.log"
 	}
