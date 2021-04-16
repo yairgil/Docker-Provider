@@ -32,6 +32,7 @@ const (
 	fluentbitOtelCollectorLogsTag                     = "prometheus.log.otelcollector"
 	fluentbitMetricsExtensionLogsTag                  = "prometheus.log.metricsextension"
 	fluentbitMetricsExtensionMetricsTag               = "prometheus.log.scrapedmetrics"
+	fluentbitContainerLogsTag                         = "prometheus.log.prometheuscollectorcontainer"
 )
 
 // SendException  send an event to the configured app insights instance
@@ -110,12 +111,13 @@ func PushLogErrorsToAppInsightsTraces(records []map[interface{}]interface{}, sev
 	var logLines []string
 	for _, record := range records {
 		var logEntry = ""
-
 		// Logs have different parsed formats depending on if they're from otelcollector or metricsextension
 		if tag == fluentbitMetricsExtensionLogsTag {
 			logEntry = ToString(record["message"])
 		} else if tag == fluentbitOtelCollectorLogsTag {
 			logEntry = fmt.Sprintf("%s %s", ToString(record["C"]), ToString(record["M"]))
+		} else if tag == fluentbitContainerLogsTag {
+			logEntry = ToString(record["log"])
 		}
 		logLines = append(logLines, logEntry)
 	}

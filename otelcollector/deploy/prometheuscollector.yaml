@@ -126,6 +126,12 @@ spec:
             - mountPath: /etc/config/settings/metricstore
               name: metricstore-secret
               readOnly: true
+            - name: host-log-containers
+              readOnly: true
+              mountPath: /var/log/containers
+            - name: host-log-pods
+              readOnly: true
+              mountPath: /var/log/pods
           livenessProbe:
             exec:
               command:
@@ -184,3 +190,10 @@ spec:
           configMap:
             name: prometheus-config
             optional: true
+                - name: host-log-containers
+        - name: host-log-containers
+          hostPath:
+            path: /var/log/containers
+        - name: host-log-pods
+          hostPath:
+            path: /var/log/pods
