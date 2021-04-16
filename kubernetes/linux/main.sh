@@ -586,7 +586,8 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
       echo "*** starting fluentd ***"           
       # note - using the omsagent plugin path to avoid multiple copies of the plugin code
       # change plugin path appropriately when we remove the omsagent dependency completely
-      fluentd -p /opt/microsoft/omsagent/plugin -c /opt/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      # fluentd -c /opt/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      # fluentd -p /opt/microsoft/omsagent/plugin -c /opt/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
 else 
     if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
@@ -749,6 +750,9 @@ service rsyslog stop
 
 echo "getting rsyslog status..."
 service rsyslog status
+
+echo "starting fluentd .."
+fluentd -c /opt/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
 
 shutdown() {
 	/opt/microsoft/omsagent/bin/service_control stop
