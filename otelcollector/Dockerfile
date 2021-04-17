@@ -5,7 +5,8 @@ ARG IMAGE_TAG="test"
 ENV AGENT_VERSION ${IMAGE_TAG}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV tmpdir /opt
-ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
+# Below is for ContainerInsightsPrometheusCollector-Prod AppInsights Resource
+ENV APPLICATIONINSIGHTS_AUTH MWNkYTMxMTItYWY1Ni00ZmNiLWI4MDQtZjg5NDVhYTFjYjMy
 RUN apt-get update && apt-get install -y libc-bin wget openssl curl sudo init-system-helpers net-tools cron vim apt-transport-https locales ruby-full gnupg
 COPY ./scripts/livenessprobe.sh $tmpdir/microsoft/liveness/livenessprobe.sh
 COPY ./configmapparser/*.rb $tmpdir/microsoft/configmapparser/

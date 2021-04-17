@@ -13,22 +13,21 @@ rules:
     resources:
       [
         "pods",
-        "events",
         "nodes",
         "nodes/stats",
         "nodes/metrics",
-        "nodes/spec",
         "nodes/proxy",
         "namespaces",
         "services",
-        "persistentvolumes",
         "endpoints",
         "ingress"
       ]
     verbs: ["list", "get", "watch"]
-  - apiGroups: ["apps", "extensions", "autoscaling"]
-    resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
-    verbs: ["list"]
+  - apiGroups:
+    - networking.k8s.io
+    resources:
+    - ingresses
+    verbs: ["list", "get", "watch"]
   - nonResourceURLs: ["/metrics"]
     verbs: ["get"]
 ---
@@ -71,7 +70,7 @@ spec:
       serviceAccountName: prometheus-collector
       containers:
         - name: prometheus-collector
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:myprometheuscollector-041421-2"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:prometheuscollector-0416-1"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -85,9 +84,10 @@ spec:
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
               value: "VALUE_AKS_RESOURCE_REGION_VALUE"
-            # Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
-            #- name: ACS_RESOURCE_NAME
-            #  value: "my_acs_cluster_name"
+            - name: CLUSTER
+              value: "my-cluster-name"
+            #- name: ME_ADDITIONAL_FLAGS
+            #  value: "-FrontEndUrl https://az-int.int.microsoftmetrics.com"
             - name: CONTROLLER_TYPE
               value: "ReplicaSet"
             - name: NODE_IP
@@ -123,8 +123,8 @@ spec:
             - mountPath: /etc/config/settings/prometheus
               name: prometheus-config-vol
               readOnly: true
-            - mountPath: /etc/config/settings/metricstore
-              name: metricstore-secret
+            - mountPath: /etc/config/settings/akv
+              name: secrets-store-inline
               readOnly: true
             - name: host-log-containers
               readOnly: true
@@ -197,3 +197,11 @@ spec:
         - name: host-log-pods
           hostPath:
             path: /var/log/pods
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "azure-kv-metricstore"
+            nodePublishSecretRef:           # Only required when using service principal mode
+              name: akv-creds               # Only required when using service principal mode. The name of the Kubernetes secret that contains the service principal credentials to access keyvault

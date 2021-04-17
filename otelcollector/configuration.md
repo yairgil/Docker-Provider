@@ -1,7 +1,7 @@
 # Prometheus Configuration
 ## Configuration File
 The format specified in the configmap will be the same as a prometheus.yml following the [configuration format](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#configuration-file). Currently supported are the following sections:
-```
+```yaml
 global:
   scrape_interval: <duration>
   scrape_timeout: <duration>
@@ -18,7 +18,7 @@ The `scrape_config` setting `honor_labels` (`false` by default) should be `true`
 For a Kubernetes cluster, a scrape config can either use `static_configs` or [`kubernetes_sd_configs`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config) for specifing or discovering targets.
 
 ### Static Config
-```
+```yaml
 scrape_configs:
   - job_name: example
     - targets: [ '10.10.10.1:9090', '10.10.10.2:9090', '10.10.10.3:9090' ... ]
@@ -31,12 +31,61 @@ Targets discovered using [`kubernetes_sd_configs`](https://prometheus.io/docs/pr
 
 See the [Prometheus examples](https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus-kubernetes.yml) of scrape configs for a Kubernetes cluster.
 
+### Multiple metric accounts
+
+To route metric(s) to different account(s), use the target re-labeling config to provide a pre-defined label ```microsoft_metrics_account```
+
+This example has two scrape jobs that is configured to woute metrics from each of these job to a different metrics account. 
+**Note** If no account name is specified using the pre-defined label for any scraped metric, those metrics will be routed to the 'default' metric account specified in the config map. To over-ride the default account, you can use the re-labeling per job or even for specific metric(s), in the scrape config.
+
+```yaml
+global:
+  evaluation_interval: 60s
+  scrape_interval: 60s
+scrape_configs:
+- job_name: prometheus_ref_app
+  scheme: http
+  kubernetes_sd_configs:
+    - role: service
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_service_name]
+      action: keep
+      regex: "prometheus-reference-service"
+    - source_labels: [__address__]
+      target_label: microsoft_metrics_account
+      action: replace
+      replacement: "containerinsightsgenevaaccount"
+- job_name: "kubernetes-kubelet"
+  scheme: https
+  tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    insecure_skip_verify: true
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+  kubernetes_sd_configs:
+    - role: node
+  relabel_configs:
+  - action: labelmap
+    regex: __meta_kubernetes_node_label_(.+)
+  - target_label: __address__
+    replacement: kubernetes.default.svc:443
+  - target_label: __scheme__
+    replacement: https
+  - source_labels: [__meta_kubernetes_node_name]
+    regex: (.+)
+    target_label: __metrics_path__
+    replacement: /api/v1/nodes/$${1}/proxy/metrics
+  - source_labels: [__address__]
+    target_label: microsoft_metrics_account
+    action: replace
+    replacement: "containerinsightsgenevaaccount2"
+```
+
 #### More Examples
 
 Add a new label called `example_label` with value `example_value` to every metric of the job. Use `__address__` as the source label only because that label will always exist.
 
 This example can be used to add a `cluster_id` label to metrics when multiple clusters are sending metrics to the same account.
-```
+```yaml
 relabel_configs:
 - source_labels: [__address__]
   target_label: example_label
@@ -48,7 +97,7 @@ Metrics are filtered after scraping and before ingestion. Use the `metric_relabe
 
 ### Drop Metrics by Name
 Drop the metric named `example_metric_name`
-```
+```yaml
 metric_relabel_configs:
 - source_labels: [__name__]
   action: drop
@@ -56,14 +105,14 @@ metric_relabel_configs:
 ```
 ### Keep Only Certain Metrics by Name
 Keep only the metric named `example_metric_name`
-```
+```yaml
 metric_relabel_configs:
 - source_labels: [__name__]
   action: keep
   regex: 'example_metric_name'
 ```
 Keep only metrics that start with `example_`
-```
+```yaml
 metric_relabel_configs:
 - source_labels: [__name__]
   action: keep
@@ -71,7 +120,7 @@ metric_relabel_configs:
 ```
 ### Rename Metrics
 Rename the metric `example_metric_name` to `new_metric_name`
-```
+```yaml
 metric_relabel_configs:
 - source_labels: [__name__]
   action: replace
@@ -81,21 +130,21 @@ metric_relabel_configs:
 ```
 ### Filter Metrics by Labels
 Keep only metrics with where example_label = 'example'
-```
+```yaml
 metric_relabel_configs:
 - source_labels: [example_label]
   action: keep
   regex: 'example'
 ```
 Keep metric only if `example_label` equals `value_1` or `value_2`
-```
+```yaml
 metric_relabel_configs:
 - source_labels: [example_label]
   action: keep
   regex: '(value_1|value_2)'
 ```
 Keep metric only if `example_label_1 = value_1` and `example_label_2 = value_2`
-```
+```yaml
 metric_relabel_configs:
 - source_labels: [example_label_1, example_label_2]
   separator: ';'
@@ -103,14 +152,14 @@ metric_relabel_configs:
   regex: 'value_1;value_2'
 ```
 Keep metric only if `example_label` exists
-```
+```yaml
 metric_relabel_configs:
 - source_labels: [example_label_1]
   action: keep
   regex: '.+'
 ```
 If a job is using [`kubernetes_sd_configs`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config) to discover targets, each role has associated `__meta_*` labels for metrics. The `__*` labels are dropped after discovering the targets. To filter by them at the metrics level, first keep them using `relabel_configs` by assigning a label name and then use `metric_relabel_configs` to filter.
-```
+```yaml
 # Use the kubernetes namespace as a label called 'kubernetes_namespace'
 relabel_configs:
 - source_labels: [__meta_kubernetes_namespace]
@@ -134,7 +183,7 @@ To scrape only certain pods, specify the port, path, and http/https through anno
 - `prometheus.io/path`: If the metrics path is not /metrics, define it with this annotation.
 - `prometheus.io/port`: Specify a single, desired port to scrape
 
-  ```
+  ```yaml
   global:
     scrape_interval: 5s
     evaluation_interval: 5s

@@ -26,9 +26,13 @@ const (
 	clusterTypeAKS                                    = "AKS"
 	envAKSResourceID                                  = "AKS_RESOURCE_ID"
 	envACSResourceName                                = "ACS_RESOURCE_NAME"
+	envAgentVersion									  = "AGENT_VERSION"
+	envControllerType								  = "CONTROLLER_TYPE"
+	envCluster										  = "customResourceId"
 	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
 	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
-	envComputerName                                   = "HOSTNAME"
+	envComputerName                                   = "NODE_NAME"
+	envTelemetryOffSwitch							  = "DISABLE_TELEMETRY"
 	fluentbitOtelCollectorLogsTag                     = "prometheus.log.otelcollector"
 	fluentbitMetricsExtensionLogsTag                  = "prometheus.log.metricsextension"
 	fluentbitMetricsExtensionMetricsTag               = "prometheus.log.scrapedmetrics"
@@ -65,20 +69,23 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	}
 	TelemetryClient = appinsights.NewTelemetryClientFromConfig(telemetryClientConfig)
 
-	telemetryOffSwitch := os.Getenv("DISABLE_TELEMETRY")
+	telemetryOffSwitch := os.Getenv(envTelemetryOffSwitch)
 	if strings.Compare(strings.ToLower(telemetryOffSwitch), "true") == 0 {
 		Log("Appinsights telemetry is disabled \n")
 		TelemetryClient.SetIsEnabled(false)
 	}
 
 	CommonProperties = make(map[string]string)
-	CommonProperties["Computer"] = Computer
-	CommonProperties["ControllerType"] = os.Getenv("CONTROLLER_TYPE")
-	CommonProperties["AgentVersion"] = agentVersion
+	CommonProperties["cluster"] = os.Getenv(envCluster)
+	CommonProperties["computer"] = os.Getenv(envComputerName)
+	CommonProperties["controllerType"] = os.Getenv(envControllerType)
+	CommonProperties["agentVersion"] = os.Getenv(envAgentVersion)
 
 	aksResourceID := os.Getenv(envAKSResourceID)
 	// if the aks resource id is not defined, it is most likely an ACS Cluster
-	if aksResourceID == "" {
+	//todo
+	//fix all the casing issues below for property names and also revist these telemetry before productizing as AKS addon
+	if aksResourceID == "" && os.Getenv(envACSResourceName) != "" {
 		CommonProperties["ACSResourceName"] = os.Getenv(envACSResourceName)
 		CommonProperties["ClusterType"] = clusterTypeACS
 
@@ -88,11 +95,11 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		CommonProperties["Region"] = ""
 		CommonProperties["AKS_RESOURCE_ID"] = ""
 
-	} else {
+	} else if aksResourceID != "" {
 		CommonProperties["ACSResourceName"] = ""
 		CommonProperties["AKS_RESOURCE_ID"] = aksResourceID
 		splitStrings := strings.Split(aksResourceID, "/")
-		if len(splitStrings) > 0 && len(splitStrings) < 10 {
+		if len(splitStrings) >=9 {
 			CommonProperties["SubscriptionID"] = splitStrings[2]
 			CommonProperties["ResourceGroupName"] = splitStrings[4]
 			CommonProperties["ClusterName"] = splitStrings[8]
@@ -140,9 +147,9 @@ func PushMetricScrapeInfoToAppInsightsMetrics(records []map[interface{}]interfac
 		if len(groupMatches) > 5 {
 			metricsProcessedCount, err := strconv.ParseFloat(groupMatches[4], 64)
 			if err == nil {
-				metric := appinsights.NewMetricTelemetry("MetricsExtensionMetricsProcessedCount", metricsProcessedCount)
-				metric.Properties["MetricsAccountName"] = groupMatches[3]
-				metric.Properties["MetricsSentToPublicationCount"] = groupMatches[5]
+				metric := appinsights.NewMetricTelemetry("meMetricsProcessedCount", metricsProcessedCount)
+				metric.Properties["metricsAccountName"] = groupMatches[3]
+				metric.Properties["metricsSentToPubCount"] = groupMatches[5]
 				TelemetryClient.Track(metric)
 			}
 		}
