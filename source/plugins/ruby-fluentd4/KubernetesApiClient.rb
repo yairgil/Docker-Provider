@@ -449,16 +449,22 @@ class KubernetesApiClient
               metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
               # gangams - this has to be json_Collections for AMA route
-              metricProps["json_Collections"] = []
-              metricCollections = []
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
-              metricCollection["Value"] = metricValue
-              metricCollections.push(metricCollection)        
-              metricProps["json_Collections"] = metricCollections.to_json
+              metricCollection["Value"] = metricValue              
+              if isUsingOneAgent()
+                metricProps["json_Collections"] = []
+                metricCollections = []               
+                metricCollections.push(metricCollection)        
+                metricProps["json_Collections"] = metricCollections.to_json
+                metricItems.push(metricProps)
+              else
+                metricProps["Collections"] = []
+                metricProps["Collections"].push(metricCollection)
+                metricItem["DataItems"].push(metricProps)
+                metricItems.push(metricItem)
+              end
 
-              # metricItem["DataItems"].push(metricProps)
-              metricItems.push(metricProps)
               #No container level limit for the given metric, so default to node level limit
             else
               nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
@@ -476,15 +482,22 @@ class KubernetesApiClient
                 metricProps["ObjectName"] = "K8SContainer"
                 metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
                
-                metricProps["Collections"] = []
-                metricCollections = []
                 metricCollection = {}
                 metricCollection["CounterName"] = metricNametoReturn
                 metricCollection["Value"] = metricValue
-                metricCollections.push(metricCollection)
+                if isUsingOneAgent()
+                  metricProps["json_Collections"] = []
+                  metricCollections = []                  
+                  metricCollections.push(metricCollection)        
+                  metricProps["json_Collections"] = metricCollections.to_json
+                  metricItems.push(metricProps)
+                else                  
+                  metricProps["Collections"] = []                 
+                  metricProps["Collections"].push(metricCollections)
+                  metricItem["DataItems"].push(metricProps)
+                  metricItems.push(metricItem)
+                end
 
-                metricProps["Collections"] = metricCollections.to_json               
-                metricItems.push(metricProps)
               end
             end
           end
@@ -612,14 +625,22 @@ class KubernetesApiClient
           metricProps["Computer"] = node["metadata"]["name"]
           metricProps["ObjectName"] = "K8SNode"
           metricProps["InstanceName"] = clusterId + "/" + node["metadata"]["name"]
-          metricProps["Collections"] = []
-          metricCollections = {}
-          metricCollections["CounterName"] = metricNametoReturn
-          metricCollections["Value"] = metricValue
 
-          metricProps["Collections"].push(metricCollections)
-          metricItem["DataItems"].push(metricProps)
+          metricCollection = {}
+          metricCollection["CounterName"] = metricNametoReturn
+          metricCollection["Value"] = metricValue
 
+          if isUsingOneAgent()
+            metricProps["json_Collections"] = []
+            metricCollections = []         
+            metricCollections.push(metricCollection)        
+            metricProps["json_Collections"] = metricCollections.to_json
+            metricItem.push(metricProps)
+          else                  
+            metricProps["Collections"] = []           
+            metricProps["Collections"].push(metricCollection)
+            metricItem["DataItems"].push(metricProps)
+          end
           #push node level metrics to a inmem hash so that we can use it looking up at container level.
           #Currently if container level cpu & memory limits are not defined we default to node level limits
           @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
@@ -818,5 +839,9 @@ class KubernetesApiClient
       end
       return kubeServiceRecords
     end
+
+    def isUsingOneAgent
+      return !ENV["ONE_AGENT_ENABLE"].nil? && !ENV["ONE_AGENT_ENABLE"].empty? && ENV["ONE_AGENT_ENABLE"].downcase == "true"       
+    end 
   end
 end

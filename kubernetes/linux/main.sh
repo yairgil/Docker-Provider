@@ -582,6 +582,12 @@ else
       mdsd -l -a -T  0x2002 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &        
    else 
       echo "*** AAD AUTH MODE ***"
+      export AAD_MSI_AUTH_ENABLE=true      
+      echo "export AAD_MSI_AUTH_ENABLE=true" >> ~/.bashrc
+
+      export ONE_AGENT_ENABLE=true
+      echo "export ONE_AGENT_ENABLE=true" >> ~/.bashrc
+
       # setting env vars for AAD auth MSI mode    
       echo "setting mdsd env vars for aad auth msi mode"
       export MCS_ENDPOINT="handler.control.monitor.azure.com"
