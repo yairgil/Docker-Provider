@@ -83,11 +83,9 @@ sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/
 sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
 
-# install & setup fluentd version 0.12.40 which being validated with omsagent
-# using the same version will also avoid maintaining duplicate plugin code 
-# upgrade to latest version when we remove the omsagent dependency completely
+# install fluentd v1
 apt-get install rubygems ruby-dev gcc make -y
-sudo gem install fluentd -v "0.12.40" --no-document
+gem install fluentd -v "1.12.2" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 

@@ -583,11 +583,8 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
       echo "starting mdsd in replicaset..."
       mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
-      echo "*** starting fluentd ***"           
-      # note - using the omsagent plugin path to avoid multiple copies of the plugin code
-      # change plugin path appropriately when we remove the omsagent dependency completely
-      # fluentd -c /opt/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
-      # fluentd -p /opt/microsoft/omsagent/plugin -c /opt/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      echo "*** starting fluentd v1 .."
+      fluentd -c /etc/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
 else 
     if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
@@ -750,9 +747,6 @@ service rsyslog stop
 
 echo "getting rsyslog status..."
 service rsyslog status
-
-echo "starting fluentd .."
-fluentd -c /opt/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
 
 shutdown() {
 	/opt/microsoft/omsagent/bin/service_control stop
