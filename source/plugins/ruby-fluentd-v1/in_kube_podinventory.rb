@@ -365,9 +365,8 @@ module Fluent::Plugin
             if !kubeServiceRecord.nil?
               # adding before emit to reduce memory foot print
               kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
-              kubeServicewrapper = addDataTypeMetadata("KUBE_SERVICES_BLOB", "ContainerInsights", kubeServiceRecord)
-              kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName              
+              kubeServicesEventStream.add(Fluent::Engine.now, kubeServiceRecord) if kubeServiceRecord
               if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
                 $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
                 router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
@@ -673,24 +672,8 @@ module Fluent::Plugin
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return serviceName
-    end
-  # add the data type metadata to the record
-  def addDataTypeMetadata(dataTypeName, ipName, record)    
-     # oneagent adds the data type and ipname so return the record as is
-    return record  if KubernetesApiClient.isUsingOneAgent()   
-    # perf 
-    if dataTypeName == "LINUX_PERF_BLOB"
-      record["DataType"] = "LINUX_PERF_BLOB"
-      record["IPName"] = "LogManagement"
-      return record 
-    end
-    return {
-      "DataType" => dataTypeName,
-      "IPName" => ipName,
-      "DataItems" => [record.each { |k, v| record[k] = v }],
-     }     
-  end   
-
+    end 
+    
   # TODO- move to separate class & file   
   def getExtensionConfig()
       begin
