@@ -389,6 +389,11 @@ touch /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 
+touch /var/opt/microsoft/docker-cimprov/log/fluentd.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/fluentd.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluentd.log
+
+
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 

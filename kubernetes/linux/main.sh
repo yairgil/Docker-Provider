@@ -696,7 +696,7 @@ service rsyslog status
 
 
 # start the new fluentd
-fluentd -c /opt/fluent/fluentd4.conf -o /var/fluent/fluentd4.log &
+fluentd -c /opt/fluent/fluentd4.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
 
 
 
