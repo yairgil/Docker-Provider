@@ -437,8 +437,8 @@ class KubernetesApiClient
             if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
               metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
 
-              metricItem = {}
-              metricItem["DataItems"] = []
+              # metricItem = {}
+              # metricItem["DataItems"] = []
 
               metricProps = {}
               metricProps["Timestamp"] = metricTime
@@ -463,8 +463,8 @@ class KubernetesApiClient
               if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
                 metricValue = @@NodeMetrics[nodeMetricsHashKey]
                 #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
-                metricItem = {}
-                metricItem["DataItems"] = []
+                # metricItem = {}
+                # metricItem["DataItems"] = []
 
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
@@ -601,24 +601,23 @@ class KubernetesApiClient
           # metricCategory can be "capacity" or "allocatable" and metricNameToCollect can be "cpu" or "memory"
           metricValue = getMetricNumericValue(metricNameToCollect, node["status"][metricCategory][metricNameToCollect])
 
-          metricItem["DataItems"] = []
-          metricProps = {}
-          metricProps["Timestamp"] = metricTime
-          metricProps["Host"] = node["metadata"]["name"]
+          # metricItem["DataItems"] = []
+          # metricProps = {}
+          metricItem["Timestamp"] = metricTime
+          metricItem["Host"] = node["metadata"]["name"]
           # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
-          metricProps["Computer"] = node["metadata"]["name"]
-          metricProps["ObjectName"] = "K8SNode"
-          metricProps["InstanceName"] = clusterId + "/" + node["metadata"]["name"]
+          metricItem["Computer"] = node["metadata"]["name"]
+          metricItem["ObjectName"] = "K8SNode"
+          metricItem["InstanceName"] = clusterId + "/" + node["metadata"]["name"]
 
           metricCollection = {}
           metricCollection["CounterName"] = metricNametoReturn
           metricCollection["Value"] = metricValue
          
-          metricProps["json_Collections"] = []
+          metricItem["json_Collections"] = []
           metricCollections = []         
           metricCollections.push(metricCollection)        
-          metricProps["json_Collections"] = metricCollections.to_json
-          metricItem.push(metricProps)
+          metricItem["json_Collections"] = metricCollections.to_json         
          
           #push node level metrics to a inmem hash so that we can use it looking up at container level.
           #Currently if container level cpu & memory limits are not defined we default to node level limits
