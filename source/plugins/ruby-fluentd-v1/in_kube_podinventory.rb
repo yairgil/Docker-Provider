@@ -56,9 +56,9 @@ module Fluent::Plugin
       @inventoryToMdmConvertor = Inventory2MdmConvertor.new()
     end
 
-    def start
-      super
+    def start      
       if @run_interval
+        super
         if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty? && ENV["PODS_CHUNK_SIZE"].to_i > 0
           @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"].to_i
         else
@@ -209,8 +209,7 @@ module Fluent::Plugin
     end
 
     def parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime = Time.utc.iso8601)
-      currentTime = Time.now
-      emitTime = currentTime.to_f
+      currentTime = Time.now      
       #batchTime = currentTime.utc.iso8601
       eventStream = Fluent::MultiEventStream.new
       containerInventoryStream = Fluent::MultiEventStream.new

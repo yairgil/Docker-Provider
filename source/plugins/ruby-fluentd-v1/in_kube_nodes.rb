@@ -49,6 +49,7 @@ module Fluent::Plugin
       require_relative "constants"
 
       @NodeCache = NodeStatsCache.new()
+      @aad_msi_auth_enable = false     
     end
 
     config_param :run_interval, :time, :default => 60
@@ -58,9 +59,9 @@ module Fluent::Plugin
       super
     end
 
-    def start
-      super
+    def start      
       if @run_interval
+        super
         if !ENV["NODES_CHUNK_SIZE"].nil? && !ENV["NODES_CHUNK_SIZE"].empty? && ENV["NODES_CHUNK_SIZE"].to_i > 0
           @NODES_CHUNK_SIZE = ENV["NODES_CHUNK_SIZE"].to_i
         else
@@ -169,8 +170,7 @@ module Fluent::Plugin
 
     def parse_and_emit_records(nodeInventory, batchTime = Time.utc.iso8601)
       begin
-        currentTime = Time.now
-        emitTime = currentTime.to_f
+        currentTime = Time.now        
         telemetrySent = false
         eventStream = Fluent::MultiEventStream.new
         containerNodeInventoryEventStream = Fluent::MultiEventStream.new
