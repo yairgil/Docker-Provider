@@ -601,8 +601,6 @@ class KubernetesApiClient
           # metricCategory can be "capacity" or "allocatable" and metricNameToCollect can be "cpu" or "memory"
           metricValue = getMetricNumericValue(metricNameToCollect, node["status"][metricCategory][metricNameToCollect])
 
-          # metricItem["DataItems"] = []
-          # metricProps = {}
           metricItem["Timestamp"] = metricTime
           metricItem["Host"] = node["metadata"]["name"]
           # Adding this so that it is not set by base omsagent since it was not set earlier and being set by base omsagent
@@ -613,10 +611,10 @@ class KubernetesApiClient
           metricCollection = {}
           metricCollection["CounterName"] = metricNametoReturn
           metricCollection["Value"] = metricValue
-         
-          metricItem["json_Collections"] = []
           metricCollections = []         
-          metricCollections.push(metricCollection)        
+          metricCollections.push(metricCollection) 
+         
+          metricItem["json_Collections"] = []                
           metricItem["json_Collections"] = metricCollections.to_json         
          
           #push node level metrics to a inmem hash so that we can use it looking up at container level.
