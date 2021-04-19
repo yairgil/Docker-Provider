@@ -4,6 +4,7 @@
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
+  require_relative "extension_config"
   class Kube_nodeInventory_Input < Input
     Fluent::Plugin.register_input("kube_nodes", self)
 
