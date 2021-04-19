@@ -264,6 +264,7 @@ MAINTAINER:              'Microsoft Corporation'
 
 /etc/fluent/oneagent.conf;			                                                       build/linux/installer/conf/oneagent.conf;                     644; root; root
 
+/etc/fluent/plugin/in_kube_nodes.rb;			                                           source/plugins/ruby-fluentd-v1/in_kube_nodes.rb;		      	644; root; root
 /etc/fluent/plugin/in_kube_podinventory.rb;			                                     source/plugins/ruby-fluentd-v1/in_kube_podinventory.rb;			644; root; root
 /etc/fluent/plugin/KubernetesApiClient.rb;			                                     source/plugins/ruby-fluentd-v1/KubernetesApiClient.rb;			644; root; root
 
