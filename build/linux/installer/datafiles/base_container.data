@@ -260,6 +260,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/omslog.rb;                                                           source/plugins/utils/omslog.rb; 644; root; root
 /etc/fluent/plugin/oms_common.rb;                                                       source/plugins/utils/oms_common.rb; 644; root; root
 /etc/fluent/plugin/oms_configuration.rb;                                                source/plugins/utils/oms_configuration.rb; 644; root; root
+/etc/fluent/plugin/extension_config.rb;                                                 source/plugins/utils/extension_config.rb; 644; root; root
 
 /etc/fluent/oneagent.conf;			                                                       build/linux/installer/conf/oneagent.conf;                     644; root; root
 

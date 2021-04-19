@@ -5,6 +5,7 @@ require 'fluent/plugin/input'
 
 module Fluent::Plugin
   require_relative "podinventory_to_mdm"
+  require_relative "extension_config"                    
 
   class Kube_PodInventory_Input < Input
     Fluent::Plugin.register_input("kube_podinventory", self)
@@ -12,12 +13,10 @@ module Fluent::Plugin
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
     # update these tags for oneagent scenario
-    @@kubeperfTag = "oms.api.KubePerf"
-    @@kubeservicesTag = "oms.containerinsights.KubeServices"
-    @@containerInventoryTag = "oms.containerinsights.ContainerInventory"
-    @@insightsMetricsTag = "oms.api.InsightsMetrics"
-    # ci extension config cache
-    @@extensionConfigCache = Hash.new
+    @@kubeperfTag = "oneagent.containerinsights.LINUX_PERF_BLOB"
+    @@kubeservicesTag = "oneagent.containerinsights.KUBE_SERVICES_BLOB"
+    @@containerInventoryTag = "oneagent.containerinsights.CONTAINER_INVENTORY_BLOB"
+    @@insightsMetricsTag = "oneagent.containerinsights.INSIGHTS_METRICS_BLOB" 
 
     def initialize
       super
@@ -26,9 +25,6 @@ module Fluent::Plugin
       require "yajl"
       require "set"
       require "time"
-      require "socket"
-      require "msgpack"
-      require "securerandom"
 
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
@@ -53,7 +49,7 @@ module Fluent::Plugin
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oms.containerinsights.KubePodInventory"
+    config_param :tag, :string, :default => "oneagent.containerinsights.KUBE_POD_INVENTORY_BLOB"
 
     def configure(conf)
       super
@@ -61,6 +57,7 @@ module Fluent::Plugin
     end
 
     def start
+      super
       if @run_interval
         if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty? && ENV["PODS_CHUNK_SIZE"].to_i > 0
           @PODS_CHUNK_SIZE = ENV["PODS_CHUNK_SIZE"].to_i
@@ -69,7 +66,7 @@ module Fluent::Plugin
           $log.warn("in_kube_podinventory::start: setting to default value since got PODS_CHUNK_SIZE nil or empty")
           @PODS_CHUNK_SIZE = 1000
         end
-        $log.info("in_kube_podinventory::start : PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
+        $log.info("in_kube_podinventory::start: PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
 
         if !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].nil? && !ENV["PODS_EMIT_STREAM_BATCH_SIZE"].empty? && ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i > 0
           @PODS_EMIT_STREAM_BATCH_SIZE = ENV["PODS_EMIT_STREAM_BATCH_SIZE"].to_i
@@ -78,12 +75,12 @@ module Fluent::Plugin
           $log.warn("in_kube_podinventory::start: setting to default value since got PODS_EMIT_STREAM_BATCH_SIZE nil or empty")
           @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end
-        $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
+        $log.info("in_kube_podinventory::start: PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
 
         if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
           @aad_msi_auth_enable = true
         end              
-        $log.info("in_kube_podinventory::start : aad auth enable:#{@aad_msi_auth_enable}")
+        $log.info("in_kube_podinventory::start: aad auth enable:#{@aad_msi_auth_enable}")
         
         @finished = false
         @condition = ConditionVariable.new
@@ -100,6 +97,7 @@ module Fluent::Plugin
           @condition.signal
         }
         @thread.join
+        super # This super must be at the end of shutdown method
       end
     end
 
@@ -118,16 +116,11 @@ module Fluent::Plugin
         @podInventoryE2EProcessingLatencyMs = 0
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
         
-        if @aad_msi_auth_enable
-          $log.info("in_kube_podinventory::enumerate: retrieve extension configuration since: aad msi auth enabled : #{@aad_msi_auth_enable}")
-          if !@@extensionConfigCache.has_key?("LINUX_PERF_BLOB")
-            $log.info("in_kube_podinventory::enumerate: retrieve extension configuration")
-            getExtensionConfig()
-          end        
-          @@kubeperfTag = @@extensionConfigCache["LINUX_PERF_BLOB"]
-          $log.info("in_kube_podinventory::enumerate: using perf tag: @ #{@@kubeperfTag}")    
+        if @aad_msi_auth_enable 
+           updateTagsWithStreamIds()
         end 
-
+        
+        $log.info("in_kube_podinventory::enumerate: using perf tag: @ #{@@kubeperfTag}")   
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
         serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
@@ -672,43 +665,58 @@ module Fluent::Plugin
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return serviceName
+    end  
+   
+  def updateTagsWithStreamIds()
+    # perf
+    if !@@kubeperfTag.start_with?("dcr-")    
+       outputStreamId = ExtensionConfig.instance.getOutputStreamId("LINUX_PERF_BLOB")                     
+       if !outputStreamId.nil? && !outputStreamId.empty?
+          @@kubeperfTag = outputStreamId
+       else
+         $log.warn("in_kube_podinventory::enumerate: got the outstream id is nil or empty for the datatypeid:LINUX_PERF_BLOB")
+       end
+    end
+
+    # kubeservices
+    if !@@kubeservicesTag.start_with?("dcr-")     
+      outputStreamId = ExtensionConfig.instance.getOutputStreamId("KUBE_SERVICES_BLOB")                     
+      if !outputStreamId.nil? && !outputStreamId.empty?
+        @@kubeservicesTag = outputStreamId
+      else
+        $log.warn("in_kube_podinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid:KUBE_SERVICES_BLOB")
+      end
+    end
+
+    # container inventory
+    if !@@containerInventoryTag.start_with?("dcr-")     
+      outputStreamId = ExtensionConfig.instance.getOutputStreamId("CONTAINER_INVENTORY_BLOB")                     
+      if !outputStreamId.nil? && !outputStreamId.empty?
+        @@containerInventoryTag = outputStreamId
+      else
+        $log.warn("in_kube_podinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid:CONTAINER_INVENTORY_BLOB")
+      end
+    end
+
+    # insightsmetrics
+    if !@@insightsMetricsTag.start_with?("dcr-")     
+      outputStreamId = ExtensionConfig.instance.getOutputStreamId("INSIGHTS_METRICS_BLOB")                     
+      if !outputStreamId.nil? && !outputStreamId.empty?
+        @@insightsMetricsTag = outputStreamId
+      else
+        $log.warn("in_kube_podinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid:INSIGHTS_METRICS_BLOB")
+      end
+    end
+
+    # kubepodinventory
+    if !@tag.start_with?("dcr-")     
+      outputStreamId = ExtensionConfig.instance.getOutputStreamId("KUBE_POD_INVENTORY_BLOB")                     
+      if !outputStreamId.nil? && !outputStreamId.empty?
+        @tag = outputStreamId
+      else
+        $log.warn("in_kube_podinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid:KUBE_POD_INVENTORY_BLOB")
+      end
     end 
-    
-  # TODO- move to separate class & file   
-  def getExtensionConfig()
-      begin
-        clientSocket = UNIXSocket.open(Constants::ONEAGENT_FLUENT_SOCKET_NAME)
-        requestId = SecureRandom.uuid.to_s    
-        requestBodyJSON = {"Request" => "AgentTaggedData", "RequestId" => requestId,"Tag" => Constants::CI_EXTENSION_NAME, "Version" => Constants::CI_EXTENSION_VERSION}.to_json
-        $log.info("sending request with request body: #{requestBodyJSON}")
-        requestBodyMsgPack = requestBodyJSON.to_msgpack
-        clientSocket.write(requestBodyMsgPack)
-        clientSocket.flush
-        $log.info("reading the response from fluent socket: #{Constants::ONEAGENT_FLUENT_SOCKET_NAME}")
-        resp = clientSocket.recv(Constants::CI_EXTENSION_CONFIG_MAX_BYTES)
-        if !resp.nil? && !resp.empty?
-            respJSON = JSON.parse(resp)
-            taggedData = respJSON["TaggedData"]
-            if !taggedData.nil? && !taggedData.empty?
-                taggedAgentData = JSON.parse(taggedData)
-                extensionConfigurations = taggedAgentData["extensionConfigurations"]
-                extensionConfigurations.each do | extensionConfig|
-                  outputstreams = extensionConfig["outputStreams"]
-                  $log.info("outputstreams: #{outputstreams}")
-                  streamId = outputstreams["LINUX_PERF_BLOB"]
-                  if !streamId.nil? && !streamId.empty?
-                    @@extensionConfigCache["LINUX_PERF_BLOB"] = streamId 
-                  else
-                    $log.warn("streamId doesnt exist for LINUX_PERF_BLOB")
-                  end  
-                end               
-            end
-        end      
-      rescue => error
-        $log.warn("getExtensionConfig failed: #{error}")
-      ensure 
-        clientSocket.close  unless clientSocket.nil?
-      end 
-   end # getExtensionConfig
+  end
   end # Kube_Pod_Input
 end # module
