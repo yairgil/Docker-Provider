@@ -4,6 +4,7 @@ LABEL maintainer="omscontainers@microsoft.com"
 ARG IMAGE_TAG="test"
 ENV AGENT_VERSION ${IMAGE_TAG}
 ENV DEBIAN_FRONTEND=noninteractive
+ENV AZMON_COLLECT_ENV False
 ENV tmpdir /opt
 # Below is for ContainerInsightsPrometheusCollector-Prod AppInsights Resource
 ENV APPLICATIONINSIGHTS_AUTH MWNkYTMxMTItYWY1Ni00ZmNiLWI4MDQtZjg5NDVhYTFjYjMy

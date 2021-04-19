@@ -70,7 +70,7 @@ spec:
       serviceAccountName: prometheus-collector
       containers:
         - name: prometheus-collector
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:prometheuscollector-0416-1"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:prometheus-collector-0416"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -80,10 +80,6 @@ spec:
               cpu: 250m
               memory: 250Mi
           env:
-            - name: AKS_RESOURCE_ID
-              value: "VALUE_AKS_RESOURCE_ID_VALUE"
-            - name: AKS_REGION
-              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
             - name: CLUSTER
               value: "my-cluster-name"
             #- name: ME_ADDITIONAL_FLAGS
