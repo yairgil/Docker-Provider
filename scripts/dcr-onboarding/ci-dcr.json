@@ -1,5 +1,5 @@
 {
-    "location": "westus",
+    "location": "<WorkspaceRegion>",
     "properties": {
       "dataSources": {       
           "extensions": [

@@ -2,7 +2,7 @@
 
 1. Get the Subscription whitelisted in AMCS for CI Extension
 2. Create AKS & LA workspace in `eastus2euap` region 
-3. Update the `ci-dcr.json` file with workspace resource id & region 
+3. Update the [ci-dcr.json](https://raw.githubusercontent.com/microsoft/Docker-Provider/gangams/enable-aad-auth-linux/scripts/dcr-onboarding/ci-dcr.json) file with workspace resource id & region 
    > Note - Only tested Microsoft-Perf stream so far and waiting for AMCS deployment other streams
 4. Create CI Extension DCR in the resource group of LA workspace using this https://docs.microsoft.com/en-us/rest/api/monitor/datacollectionrules/create#code-try-0
 5. Associate CI extension DCR to AKS cluster using this https://docs.microsoft.com/en-us/rest/api/monitor/datacollectionruleassociations/create#code-try-0
