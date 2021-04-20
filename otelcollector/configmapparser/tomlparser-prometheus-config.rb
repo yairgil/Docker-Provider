@@ -16,6 +16,7 @@ require_relative "ConfigParseErrorLogger"
 
 @kubeletDefaultString = "job_name: 'kubernetes-nodes'\nscheme: https\ntls_config:\n  ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n  insecure_skip_verify: true\nauthorization:\n  credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token\nkubernetes_sd_configs:\n- role: node\nrelabel_configs:\n- action: labelmap\n  regex: __meta_kubernetes_node_label_(.+)"
 @corednsDefaultString = "job_name: kube-dns\nhonor_labels: true\nkubernetes_sd_configs:\n- role: pod\nrelabel_configs:\n- action: keep\n  source_labels:\n  - __meta_kubernetes_namespace\n  - __meta_kubernetes_pod_name\n  separator: '/'\n  regex: 'kube-system/coredns.+'\n- source_labels:\n  - __meta_kubernetes_pod_container_port_name\n  action: keep\n  regex: metrics\n- source_labels:\n  - __meta_kubernetes_pod_name\n  action: replace\n  target_label: instance\n- action: labelmap\n  regex: __meta_kubernetes_pod_label_(.+)"
+@cadvisorDefaultString = "job_name: 'kubernetes-cadvisor'\nscheme: https\nmetrics_path: /metrics/cadvisor\ntls_config:\n  ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n  insecure_skip_verify: true\nauthorization:\n  credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token\nkubernetes_sd_configs:\n- role: node\nrelabel_configs:\n- action: labelmap\n  regex: __meta_kubernetes_node_label_(.+)"
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -47,6 +48,9 @@ def populateSettingValuesFromConfigMap(configString)
     end
     if !ENV["AZMON_PROMETHEUS_COREDNS_SCRAPING_ENABLED"].nil? && ENV["AZMON_PROMETHEUS_COREDNS_SCRAPING_ENABLED"].downcase == "true"
       @indentedConfig = addDefaultScrapeConfig(@indentedConfig, @corednsDefaultString)
+    end
+    if !ENV["AZMON_PROMETHEUS_CADVISOR_SCRAPING_ENABLED"].nil? && ENV["AZMON_PROMETHEUS_CADVISOR_SCRAPING_ENABLED"].downcase == "true"
+      @indentedConfig = addDefaultScrapeConfig(@indentedConfig, @cadvisorDefaultString)
     end
     puts "config::Using config map setting for prometheus config"
     puts @indentedConfig
