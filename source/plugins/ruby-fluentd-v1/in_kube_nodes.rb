@@ -92,6 +92,7 @@ module Fluent::Plugin
         @thread = Thread.new(&method(:run_periodic))
         @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
+        @extensionCache = ExtensionConfigCache.new   
       end
     end
 
@@ -116,9 +117,7 @@ module Fluent::Plugin
         @nodeInventoryE2EProcessingLatencyMs = 0
         nodeInventoryStartTime = (Time.now.to_f * 1000).to_i
         
-        if @aad_msi_auth_enable 
-          updateTagsWithStreamIds()
-        end 
+        overrideTagsWithStreamIdsIfAADAuthEnabled()      
 
         nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
 
@@ -524,46 +523,44 @@ module Fluent::Plugin
       return properties
     end
 
-    def updateTagsWithStreamIds()
-      # perf
-      if !@@kubeperfTag.start_with?("dcr-")    
-         outputStreamId = ExtensionConfig.instance.getOutputStreamId("LINUX_PERF_BLOB")                     
-         if !outputStreamId.nil? && !outputStreamId.empty?
-            @@kubeperfTag = outputStreamId
-         else
-           $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:LINUX_PERF_BLOB")
-         end
+    def overrideTagsWithStreamIdsIfAADAuthEnabled()
+      begin
+        if @aad_msi_auth_enable 
+          # perf
+          if @@kubeperfTag.nil? || @@kubeperfTag.empty? || !@@kubeperfTag.start_with?("dcr-")
+            @@kubeperfTag = @extensionCache.get_output_stream_id("LINUX_PERF_BLOB")
+            if  @@kubeperfTag.nil? || @@kubeperfTag.empty?
+              $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: LINUX_PERF_BLOB")
+            end
+          end
+
+          # container node inventory
+          if @@ContainerNodeInventoryTag.nil? || @@ContainerNodeInventoryTag.empty? || !@@ContainerNodeInventoryTag.start_with?("dcr-")     
+            @@ContainerNodeInventoryTag = @extensionCache.get_output_stream_id("CONTAINER_NODE_INVENTORY_BLOB")
+            if  @@ContainerNodeInventoryTag.nil? || @@ContainerNodeInventoryTag.empty?
+              $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: CONTAINER_NODE_INVENTORY_BLOB")
+            end
+          end     
+
+          # insightsmetrics
+          if @@insightsMetricsTag.nil? || @@insightsMetricsTag.empty? || !@@insightsMetricsTag.start_with?("dcr-")   
+              @@insightsMetricsTag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+              if @@insightsMetricsTag.nil? || @@insightsMetricsTag.empty?
+                $log.warn("in_kube_nodes::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+              end
+          end
+
+          # kubenodeinventory
+          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")  
+            @tag = @extensionCache.get_output_stream_id("KUBE_NODE_INVENTORY_BLOB")  
+            if @tag.nil? || @tag.empty?
+              $log.warn("in_kube_nodes::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: KUBE_NODE_INVENTORY_BLOB")           
+            end
+          end
+        end 
+      rescue => errorStr
+        $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: failed with an error: #{errorStr}")
       end
-  
-      # container inventory
-      if !@@ContainerNodeInventoryTag.start_with?("dcr-")     
-        outputStreamId = ExtensionConfig.instance.getOutputStreamId("CONTAINER_INVENTORY_BLOB")                     
-        if !outputStreamId.nil? && !outputStreamId.empty?
-          @@ContainerNodeInventoryTag = outputStreamId
-        else
-          $log.warn("in_kube_nodes::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid:CONTAINER_INVENTORY_BLOB")
-        end
-      end
-  
-      # insightsmetrics
-      if !@@insightsMetricsTag.start_with?("dcr-")     
-        outputStreamId = ExtensionConfig.instance.getOutputStreamId("INSIGHTS_METRICS_BLOB")                     
-        if !outputStreamId.nil? && !outputStreamId.empty?
-          @@insightsMetricsTag = outputStreamId
-        else
-          $log.warn("in_kube_nodes::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid:INSIGHTS_METRICS_BLOB")
-        end
-      end
-  
-      # kubenodeinventory
-      if !@tag.start_with?("dcr-")     
-        outputStreamId = ExtensionConfig.instance.getOutputStreamId("KUBE_NODE_INVENTORY_BLOB")                     
-        if !outputStreamId.nil? && !outputStreamId.empty?
-          @tag = outputStreamId
-        else
-          $log.warn("in_kube_nodes::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid:KUBE_NODE_INVENTORY_BLOB")
-        end
-      end 
     end
   end # Kube_Node_Input
   class NodeStatsCache

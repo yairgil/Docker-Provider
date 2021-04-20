@@ -51,6 +51,7 @@ module Fluent::Plugin
                 @container_cpu_memory_records = []
                 @telemetry = HealthMonitorTelemetry.new
                 @state = HealthMonitorState.new
+                @extensionCache = ExtensionConfigCache.new   
                 if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
                     @aad_msi_auth_enable = true
                 end              
@@ -96,9 +97,7 @@ module Fluent::Plugin
                 new_es = Fluent::MultiEventStream.new
                 time = Time.now
 
-                if @aad_msi_auth_enable 
-                    updateTagsWithStreamIds()
-                end 
+                overrideTagsWithStreamIdsIfAADAuthEnabled()                
 
                 if tag.start_with?("kubehealth.DaemonSet.Node")
                     node_records = []
@@ -281,16 +280,21 @@ module Fluent::Plugin
                  return nil
             end
         end
-        def updateTagsWithStreamIds()
-            # perf
-            if !@@rewrite_tag.start_with?("dcr-")    
-               outputStreamId = ExtensionConfig.instance.getOutputStreamId("KUBE_HEALTH_BLOB")                     
-               if !outputStreamId.nil? && !outputStreamId.empty?
-                  @@rewrite_tag = outputStreamId
-               else
-                 $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:KUBE_HEALTH_BLOB")
-               end
-            end                                   
+
+        def overrideTagsWithStreamIdsIfAADAuthEnabled()
+           begin
+              if @aad_msi_auth_enable
+                # kubehealth
+                if @@rewrite_tag.nil? || @@rewrite_tag.empty? || !@@rewrite_tag.start_with?("dcr-")  
+                    @@rewrite_tag = @extensionCache.get_output_stream_id("KUBE_HEALTH_BLOB")  
+                    if @@rewrite_tag.nil? || @@rewrite_tag.empty?
+                    $log.warn("filter_health_model_builder::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: KUBE_HEALTH_BLOB")           
+                    end
+                end
+              end   
+            rescue => errorStr
+                $log.warn("filter_health_model_builder::updateTagsWithStreamIds:failed with an error: #{errorStr}")           
+            end 
         end
     end
 end

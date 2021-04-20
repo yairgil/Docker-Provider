@@ -69,7 +69,8 @@ module Fluent::Plugin
         if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
           @aad_msi_auth_enable = true
         end              
-        $log.info("in_kube_nodes::start: aad auth enable:#{@aad_msi_auth_enable}")
+        $log.info("in_kube_events::start: aad auth enable:#{@aad_msi_auth_enable}")
+        @extensionCache = ExtensionConfigCache.new
       end
     end
 
@@ -93,9 +94,7 @@ module Fluent::Plugin
         newEventQueryState = []
         @eventsCount = 0
 
-        if @aad_msi_auth_enable 
-          updateTagsWithStreamIds()
-        end 
+        overrideTagsWithStreamIdsIfAADAuthEnabled()        
 
         # Initializing continuation token to nil
         continuationToken = nil
@@ -255,16 +254,20 @@ module Fluent::Plugin
       end
     end
 
-    def updateTagsWithStreamIds()
-      # kubeevents
-      if !@tag.start_with?("dcr-")    
-         outputStreamId = ExtensionConfig.instance.getOutputStreamId("KUBE_EVENTS_BLOB")                     
-         if !outputStreamId.nil? && !outputStreamId.empty?
-            @tag = outputStreamId
-         else
-           $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:KUBE_EVENTS_BLOB")
-         end
-      end      
+    def overrideTagsWithStreamIdsIfAADAuthEnabled()
+      begin
+        if @aad_msi_auth_enable        
+          # kubeevents
+          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")  
+            @tag = @extensionCache.get_output_stream_id("KUBE_EVENTS_BLOB")  
+            if @tag.nil? || @tag.empty?
+              $log.warn("in_kube_events::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: KUBE_EVENTS_BLOB")           
+            end
+          end
+        end   
+      rescue => errorStr
+        $log.warn("in_kube_events::updateTagsWithStreamIds: failed with an error: #{errorStr}")           
+      end
     end
 
   end # Kube_Event_Input

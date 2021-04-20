@@ -40,6 +40,7 @@ module Fluent::Plugin
           @aad_msi_auth_enable = true
         end              
         $log.info("in_kube_nodes::start: aad auth enable:#{@aad_msi_auth_enable}")
+        @extensionCache = ExtensionConfigCache.new   
       end
     end
 
@@ -61,9 +62,7 @@ module Fluent::Plugin
       eventStream = Fluent::MultiEventStream.new
       hostName = ""
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
-      if @aad_msi_auth_enable 
-        updateTagsWithStreamIds()
-      end 
+      overrideTagsWithStreamIdsIfAADAuthEnabled()     
       begin
         containerRuntimeEnv = ENV["CONTAINER_RUNTIME"]
         $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")
@@ -157,16 +156,20 @@ module Fluent::Plugin
       @mutex.unlock
     end
     
-    def updateTagsWithStreamIds()
-      # kubeevents
-      if !@tag.start_with?("dcr-")    
-         outputStreamId = ExtensionConfig.instance.getOutputStreamId("CONTAINER_INVENTORY_BLOB")                     
-         if !outputStreamId.nil? && !outputStreamId.empty?
-            @tag = outputStreamId
-         else
-           $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:CONTAINER_INVENTORY_BLOB")
-         end
-      end      
+    def overrideTagsWithStreamIdsIfAADAuthEnabled()
+      begin 
+        if @aad_msi_auth_enable
+          # containerinventory
+          if @tag.nil? || @tag.empty? || @tag.start_with?("dcr-")
+            @tag = @extensionCache.get_output_stream_id("CONTAINER_INVENTORY_BLOB")  
+            if @tag.nil? || @tag.empty?
+              $log.warn("in_containerinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: CONTAINER_INVENTORY_BLOB")           
+            end
+          end      
+        end   
+      rescue => errorStr
+        $log.warn "in_containerinventory::updateTagsWithStreamIds: Failed to update tags: #{errorStr}"
+      end
     end
   end # Container_Inventory_Input
 end # module

@@ -85,9 +85,8 @@ module Fluent::Plugin
 
         @hpaCount = 0
 
-        if @aad_msi_auth_enable 
-          updateTagsWithStreamIds()
-        end 
+        overrideTagsWithStreamIdsIfAADAuthEnabled()
+
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kubestate_hpa::enumerate : Getting HPAs from Kube API @ #{Time.now.utc.iso8601}")
@@ -241,15 +240,20 @@ module Fluent::Plugin
       end
       @mutex.unlock
     end
-    def updateTagsWithStreamIds()
-      # perf
-      if !@tag.start_with?("dcr-")    
-         outputStreamId = ExtensionConfig.instance.getOutputStreamId("INSIGHTS_METRICS_BLOB")                     
-         if !outputStreamId.nil? && !outputStreamId.empty?
-            @tag = outputStreamId
-         else
-           $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:INSIGHTS_METRICS_BLOB")
-         end
+
+    def overrideTagsWithStreamIdsIfAADAuthEnabled()
+      begin
+        if @aad_msi_auth_enable
+          # kubestatehpa
+          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
+            @tag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+            if @tag.nil? || @tag.empty?
+              $log.warn("in_kubestate_hpa::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+            end
+          end     
+        end   
+      rescue => errorStr
+        $log.warn("in_kubestate_hpa::updateTagsWithStreamIds: failed with an error : #{errorStr}")           
       end 
     end
   end

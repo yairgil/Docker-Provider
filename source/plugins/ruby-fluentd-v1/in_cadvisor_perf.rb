@@ -20,10 +20,11 @@ module Fluent::Plugin
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oms.api.cadvisorperf"
+    config_param :tag, :string, :default => "oneagent.containerInsights.LINUX_PERF_BLOB"
     config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
     config_param :nodehealthtag, :string, :default => "kubehealth.DaemonSet.Node"
     config_param :containerhealthtag, :string, :default => "kubehealth.DaemonSet.Container"
+    config_param :insightsmetricstag, :string, :default => "oneagent.containerinsights.INSIGHTS_METRICS_BLOB"
 
     def configure(conf)
       super
@@ -36,6 +37,11 @@ module Fluent::Plugin
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
+        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
+          @aad_msi_auth_enable = true
+        end              
+        $log.info("in_cadvisor_perf::start: aad auth enable:#{@aad_msi_auth_enable}")
+        @extensionCache = ExtensionConfigCache.new   
       end
     end
 
@@ -63,6 +69,7 @@ module Fluent::Plugin
           eventStream.add(Fluent::Engine.now, record) if record
         end
 
+        overrideTagsWithStreamIdsIfAADAuthEnabled()
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@mdmtag, eventStream) if eventStream
         router.emit_stream(@containerhealthtag, eventStream) if eventStream
@@ -76,19 +83,13 @@ module Fluent::Plugin
         #start GPU InsightsMetrics items
         begin
           containerGPUusageInsightsMetricsDataItems = []
-          containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))
-          
+          containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))          
 
           containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
-            wrapper = {
-              "DataType" => "INSIGHTS_METRICS_BLOB",
-              "IPName" => "ContainerInsights",
-              "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
-            }
-            insightsMetricsEventStream.add(Fluent::Engine.now, wrapper) if wrapper
+            insightsMetricsEventStream.add(Fluent::Engine.now, insightsMetricsRecord) if insightsMetricsRecord
           end
 
-          router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+          router.emit_stream(@insightsmetricstag, insightsMetricsEventStream) if insightsMetricsEventStream
           router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
           
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
@@ -137,5 +138,29 @@ module Fluent::Plugin
       end
       @mutex.unlock
     end
+
+    def overrideTagsWithStreamIdsIfAADAuthEnabled()
+      begin
+        if @aad_msi_auth_enable        
+          # perf
+          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
+            @tag = @extensionCache.get_output_stream_id("LINUX_PERF_BLOB")  
+            if @tag.nil? || @tag.empty?
+              $log.warn("in_cadvisor_perf::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: LINUX_PERF_BLOB")           
+            end
+          end   
+          # insights metrics         
+          if @insightsmetricstag.nil? || @insightsmetricstag.empty? || !@insightsmetricstag.start_with?("dcr-")     
+            @insightsmetricstag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+            if @insightsmetricstag.nil? || @insightsmetricstag.empty?
+              $log.warn("in_cadvisor_perf::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+            end
+          end     
+        end   
+      rescue => errorStr
+        $log.warn("in_cadvisor_perf::updateTagsWithStreamIds:failed with an error: #{errorStr}")           
+      end 
+    end         
+
   end # CAdvisor_Perf_Input
 end # module

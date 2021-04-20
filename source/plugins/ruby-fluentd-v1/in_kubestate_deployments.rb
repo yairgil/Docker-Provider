@@ -60,12 +60,13 @@ module Fluent::Plugin
         if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
           @aad_msi_auth_enable = true
         end              
-        $log.info("in_kube_nodes::start: aad auth enable:#{@aad_msi_auth_enable}")
+        $log.info("in_kubestate_deployments::start: aad auth enable:#{@aad_msi_auth_enable}")
 
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
+        @extensionCache = ExtensionConfigCache.new  
       end
     end
 
@@ -89,9 +90,7 @@ module Fluent::Plugin
         #set the running total for this batch to 0
         @deploymentsRunningTotal = 0
 
-        if @aad_msi_auth_enable 
-          updateTagsWithStreamIds()
-        end 
+        overrideTagsWithStreamIdsIfAADAuthEnabled()       
 
         # Initializing continuation token to nil
         continuationToken = nil
@@ -245,15 +244,19 @@ module Fluent::Plugin
       @mutex.unlock
     end
 
-    def updateTagsWithStreamIds()
-      # perf
-      if !@tag.start_with?("dcr-")    
-         outputStreamId = ExtensionConfig.instance.getOutputStreamId("INSIGHTS_METRICS_BLOB")                     
-         if !outputStreamId.nil? && !outputStreamId.empty?
-            @tag = outputStreamId
-         else
-           $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:INSIGHTS_METRICS_BLOB")
-         end
+    def overrideTagsWithStreamIdsIfAADAuthEnabled()
+      begin
+        if @aad_msi_auth_enable
+          # kubepvinventory
+          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
+            @tag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+            if @tag.nil? || @tag.empty?
+              $log.warn("in_kubestate_deployments::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+            end
+          end      
+        end 
+      rescue => errorStr
+        $log.warn("in_kubestate_deployments::updateTagsWithStreamIds: failed with an error: #{errorStr}")           
       end
     end
   end

@@ -1,22 +1,31 @@
 require "socket"
 require "msgpack"
 require "securerandom"
-require "singleton"
 require_relative "omslog"
 require_relative "constants"
 
-class ExtensionConfig
-  include Singleton
-
+class ExtensionConfigCache
+    
   def initialize
-    $log.info("ExtenionConfig:initialize start ...")
-    @extensionConfig = getExtensionConfig()
-    $log.info("ExtenionConfig:initialize complete.")
+    @cache = {}
+    @cache_lock = Mutex.new  
+  end
+  
+  def get_output_stream_id(datatypeId)
+    @cache_lock.synchronize {
+      if @cache.has_key?(datatypeId)
+        return @cache[datatypeId]
+      else
+        @cache = get_extension_config()
+        return @cache[datatypeId]
+      end
+    }
   end
 
-  def getExtensionConfig()
+  private 
+  def get_extension_config()
     extConfig = Hash.new
-    $log.info("ExtenionConfig:getExtensionConfig start ...")
+    $log.info("ExtenionConfig:get_extension_config start ...")
     begin
       clientSocket = UNIXSocket.open(Constants::ONEAGENT_FLUENT_SOCKET_NAME)
       requestId = SecureRandom.uuid.to_s
@@ -51,18 +60,11 @@ class ExtensionConfig
         end
       end
     rescue => error
-      $log.warn("getExtensionConfig failed: #{error}")
+      $log.warn("get_extension_config failed: #{error}")
     ensure
       clientSocket.close unless clientSocket.nil?
     end
-    $log.info("ExtenionConfig:getExtensionConfig complete ...")
+    $log.info("ExtenionConfig:get_extension_config complete ...")
     return extConfig
   end
-
-  def getOutputStreamId(datatype_name)
-    if @extensionConfig.empty? || @extensionConfig[datatype_name].nil? ||  @extensionConfig[datatype_name].empty? 
-        @extensionConfig = getExtensionConfig()
-    end 
-    return @extensionConfig[datatype_name]   
-  end
-end  # ExtensionConfig
+end
