@@ -1,0 +1,55 @@
+{
+    "location": "westus",
+    "properties": {
+      "dataSources": {       
+          "extensions": [
+              {
+                  "name": "ContainerInsightsExtension",
+                  "streams": [
+                      "Microsoft-Perf",
+                      "Microsoft-ContainerInventory",
+                      "Microsoft-ContainerLog",
+                      "Microsoft-ContainerNodeInventory",
+                      "Microsoft-KubeEvents",
+                      "Microsoft-KubeHealth",
+                      "Microsoft-KubeMonAgentEvents",
+                      "Microsoft-KubeNodeInventory",
+                      "Microsoft-KubePodInventory",
+                      "Microsoft-KubePVInventory",
+                      "Microsoft-KubeServices"                    
+
+                  ],
+                  "extensionName": "ContainerInsights"
+              }
+          ]
+      }, 
+      "destinations": {
+        "logAnalytics": [
+          {
+            "workspaceResourceId": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/my-resource-group/providers/Microsoft.OperationalInsights/workspaces/my-workspace",
+            "name": "ciworkspace"
+          }
+        ]
+      },
+      "dataFlows": [
+        {
+          "streams": [
+            "Microsoft-Perf",
+            "Microsoft-ContainerInventory",
+            "Microsoft-ContainerLog",
+            "Microsoft-ContainerNodeInventory",
+            "Microsoft-KubeEvents",
+            "Microsoft-KubeHealth",
+            "Microsoft-KubeMonAgentEvents",
+            "Microsoft-KubeNodeInventory",
+            "Microsoft-KubePodInventory",
+            "Microsoft-KubePVInventory",
+            "Microsoft-KubeServices"                         
+          ],
+          "destinations": [
+            "ciworkspace"
+          ]
+        }
+      ]
+    }
+}
