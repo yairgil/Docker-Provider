@@ -140,7 +140,7 @@ module Fluent::Plugin
 
     def parse_and_emit_records(deployments, batchTime = Time.utc.iso8601)
       metricItems = []
-      insightsMetricsEventStream = MultiEventStream.new
+      insightsMetricsEventStream = Fluent::MultiEventStream.new
       begin
         metricInfo = deployments
         metricInfo["items"].each do |deployment|
@@ -254,6 +254,7 @@ module Fluent::Plugin
          else
            $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:INSIGHTS_METRICS_BLOB")
          end
+      end
     end
   end
 end

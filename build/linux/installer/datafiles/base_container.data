@@ -264,13 +264,19 @@ MAINTAINER:              'Microsoft Corporation'
 
 /etc/fluent/oneagent.conf;			                                                       build/linux/installer/conf/oneagent.conf;                     644; root; root
 
+/etc/fluent/plugin/in_cadvisor_perf.rb;			                                        source/plugins/ruby-fluentd-v1/in_cadvisor_perf.rb;		    	644; root; root
+/etc/fluent/plugin/in_containerinventory.rb;			                                     source/plugins/ruby-fluentd-v1/in_containerinventory.rb;	  	644; root; root
 /etc/fluent/plugin/in_kube_nodes.rb;			                                           source/plugins/ruby-fluentd-v1/in_kube_nodes.rb;		      	644; root; root
 /etc/fluent/plugin/in_kube_podinventory.rb;			                                     source/plugins/ruby-fluentd-v1/in_kube_podinventory.rb;			644; root; root
 /etc/fluent/plugin/KubernetesApiClient.rb;			                                     source/plugins/ruby-fluentd-v1/KubernetesApiClient.rb;			644; root; root
 /etc/fluent/plugin/in_kube_events.rb;			                                           source/plugins/ruby-fluentd-v1/in_kube_events.rb;			      644; root; root
+/etc/fluent/plugin/in_kube_health.rb;			                                           source/plugins/ruby-fluentd-v1/in_kube_health.rb;			      644; root; root
 /etc/fluent/plugin/in_kube_pvinventory.rb;			                                     source/plugins/ruby-fluentd-v1/in_kube_pvinventory.rb;			644; root; root
 /etc/fluent/plugin/in_kubestate_deployments.rb;			                                  source/plugins/ruby-fluentd-v1/in_kubestate_deployments.rb;	644; root; root
 /etc/fluent/plugin/in_kubestate_hpa.rb;			                                        source/plugins/ruby-fluentd-v1/in_kubestate_hpa.rb;	644; root; root
+/etc/fluent/plugin/out_health_forward.rb;			                                        source/plugins/ruby-fluentd-v1/out_health_forward.rb;	644; root; root
+/etc/fluent/plugin/out_mdm.rb;			                                                 source/plugins/ruby-fluentd-v1/out_mdm.rb;	644; root; root
+
 
 
 %Links

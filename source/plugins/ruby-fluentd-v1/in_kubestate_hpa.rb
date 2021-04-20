@@ -5,7 +5,7 @@ require 'fluent/plugin/input'
 
 module Fluent::Plugin
   class Kube_Kubestate_HPA_Input < Input
-    Fluent::Plugin.register_input("kubestatehpa", self)
+    Fluent::Plugin.register_input("kubestate_hpa", self)
     @@istestvar = ENV["ISTEST"]
 
     def initialize
@@ -126,7 +126,7 @@ module Fluent::Plugin
 
     def parse_and_emit_records(hpas, batchTime = Time.utc.iso8601)
       metricItems = []
-      insightsMetricsEventStream = MultiEventStream.new
+      insightsMetricsEventStream = Fluent::MultiEventStream.new
       begin
         metricInfo = hpas
         metricInfo["items"].each do |hpa|
@@ -250,6 +250,7 @@ module Fluent::Plugin
          else
            $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:INSIGHTS_METRICS_BLOB")
          end
+      end 
     end
   end
 end

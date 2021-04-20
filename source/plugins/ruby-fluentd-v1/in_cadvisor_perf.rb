@@ -56,8 +56,8 @@ module Fluent::Plugin
       batchTime = currentTime.utc.iso8601
       @@istestvar = ENV["ISTEST"]
       begin
-        eventStream = MultiEventStream.new
-        insightsMetricsEventStream = MultiEventStream.new
+        eventStream = Fluent::MultiEventStream.new
+        insightsMetricsEventStream = Fluent::MultiEventStream.new
         metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime )
         metricData.each do |record|          
           eventStream.add(Fluent::Engine.now, record) if record

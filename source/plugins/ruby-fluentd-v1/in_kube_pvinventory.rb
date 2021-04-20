@@ -115,7 +115,7 @@ module Fluent::Plugin
 
     def parse_and_emit_records(pvInventory, batchTime = Time.utc.iso8601)
       currentTime = Time.now      
-      eventStream = MultiEventStream.new
+      eventStream = Fluent::MultiEventStream.new
       @@istestvar = ENV["ISTEST"]
       begin
         records = []

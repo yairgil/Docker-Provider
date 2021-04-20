@@ -58,7 +58,7 @@ module Fluent::Plugin
       currentTime = Time.now      
       batchTime = currentTime.utc.iso8601
       containerInventory = Array.new
-      eventStream = MultiEventStream.new
+      eventStream = Fluent::MultiEventStream.new
       hostName = ""
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
       if @aad_msi_auth_enable 

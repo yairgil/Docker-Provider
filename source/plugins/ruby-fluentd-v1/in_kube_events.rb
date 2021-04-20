@@ -145,7 +145,7 @@ module Fluent::Plugin
       currentTime = Time.now      
       @@istestvar = ENV["ISTEST"]
       begin
-        eventStream = MultiEventStream.new
+        eventStream = Fluent::MultiEventStream.new
         events["items"].each do |items|
           record = {}
           #<BUGBUG> - Not sure if ingestion has the below mapping for this custom type. Fix it as part of fixed type conversion

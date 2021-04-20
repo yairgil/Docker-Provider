@@ -13,7 +13,7 @@ module Fluent::Plugin
 
   class KubeHealthInput < Input
     include HealthModel
-    Fluent::Plugin.register_input("kubehealth", self)
+    Fluent::Plugin.register_input("kube_health", self)
 
     config_param :health_monitor_config_path, :default => "/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json"
 
@@ -86,13 +86,13 @@ module Fluent::Plugin
     def enumerate
       if !@@cluster_health_model_enabled
         @@hmlog.info "Cluster Health Model disabled in in_kube_health"
-        return MultiEventStream.new
+        return Fluent::MultiEventStream.new
     end
       begin
         currentTime = Time.now        
         batchTime = currentTime.utc.iso8601
         health_monitor_records = []
-        eventStream = MultiEventStream.new
+        eventStream = Fluent::MultiEventStream.new
 
         #HealthMonitorUtils.refresh_kubernetes_api_data(@@hmlog, nil)
         # we do this so that if the call fails, we get a response code/header etc.
