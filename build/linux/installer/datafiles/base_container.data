@@ -277,7 +277,7 @@ MAINTAINER:              'Microsoft Corporation'
 
 /etc/fluent/plugin/filter_cadvisor_health_container.rb;			                         source/plugins/ruby-fluentd-v1/filter_cadvisor_health_container.rb;	644; root; root
 /etc/fluent/plugin/filter_cadvisor_health_node.rb;			                               source/plugins/ruby-fluentd-v1/filter_cadvisor_health_node.rb;	644; root; root
-/etc/fluent/plugin/filter_cadvisor2mdm.rb.rb;			                                  source/plugins/ruby-fluentd-v1/filter_cadvisor2mdm.rb.rb;	644; root; root
+/etc/fluent/plugin/filter_cadvisor2mdm.rb;			                                     source/plugins/ruby-fluentd-v1/filter_cadvisor2mdm.rb;	644; root; root
 /etc/fluent/plugin/filter_container.rb;			                                        source/plugins/ruby-fluentd-v1/filter_container.rb;	644; root; root
 /etc/fluent/plugin/filter_health_model_builder.rb;			                               source/plugins/ruby-fluentd-v1/filter_health_model_builder.rb;	644; root; root
 /etc/fluent/plugin/filter_inventory2mdm.rb;			                                     source/plugins/ruby-fluentd-v1/filter_inventory2mdm.rb;	644; root; root
