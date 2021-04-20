@@ -291,6 +291,6 @@ module Fluent::Plugin
                  $log.warn("in_kube_nodes::enumerate: got the outstream id is nil or empty for the datatypeid:KUBE_HEALTH_BLOB")
                end
             end                                   
-          end
+        end
     end
 end
