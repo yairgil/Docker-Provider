@@ -274,6 +274,15 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/in_kube_pvinventory.rb;			                                     source/plugins/ruby-fluentd-v1/in_kube_pvinventory.rb;			644; root; root
 /etc/fluent/plugin/in_kubestate_deployments.rb;			                                  source/plugins/ruby-fluentd-v1/in_kubestate_deployments.rb;	644; root; root
 /etc/fluent/plugin/in_kubestate_hpa.rb;			                                        source/plugins/ruby-fluentd-v1/in_kubestate_hpa.rb;	644; root; root
+
+/etc/fluent/plugin/filter_cadvisor_health_container.rb;			                         source/plugins/ruby-fluentd-v1/filter_cadvisor_health_container.rb;	644; root; root
+/etc/fluent/plugin/filter_cadvisor_health_node.rb;			                               source/plugins/ruby-fluentd-v1/filter_cadvisor_health_node.rb;	644; root; root
+/etc/fluent/plugin/filter_cadvisor2mdm.rb.rb;			                                  source/plugins/ruby-fluentd-v1/filter_cadvisor2mdm.rb.rb;	644; root; root
+/etc/fluent/plugin/filter_container.rb;			                                        source/plugins/ruby-fluentd-v1/filter_container.rb;	644; root; root
+/etc/fluent/plugin/filter_health_model_builder.rb;			                               source/plugins/ruby-fluentd-v1/filter_health_model_builder.rb;	644; root; root
+/etc/fluent/plugin/filter_inventory2mdm.rb;			                                     source/plugins/ruby-fluentd-v1/filter_inventory2mdm.rb;	644; root; root
+/etc/fluent/plugin/filter_telegraf2mdm.rb;			                                     source/plugins/ruby-fluentd-v1/filter_telegraf2mdm.rb;	644; root; root
+
 /etc/fluent/plugin/out_health_forward.rb;			                                        source/plugins/ruby-fluentd-v1/out_health_forward.rb;	644; root; root
 /etc/fluent/plugin/out_mdm.rb;			                                                 source/plugins/ruby-fluentd-v1/out_mdm.rb;	644; root; root
 
