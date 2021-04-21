@@ -107,13 +107,28 @@ class MdmMetricsGenerator
             podControllerNameDimValue = key_elements[0]
             podNamespaceDimValue = key_elements[1]
 
-            record = metricsTemplate % {
-              timestamp: batch_time,
-              metricName: metricName,
-              controllerNameDimValue: podControllerNameDimValue,
-              namespaceDimValue: podNamespaceDimValue,
-              containerCountMetricValue: value,
-            }
+            # Special handling for jobs since we need to send the threshold as a dimension as it is configurable
+            if metricName == Constants::MDM_STALE_COMPLETED_JOB_COUNT
+              metric_threshold_hash = getContainerResourceUtilizationThresholds
+              #Converting this to hours since we already have olderThanHours dimension.
+              jobCompletionThresholdHours = metric_threshold_hash[Constants::JOB_COMPLETION_TIME] / 60.0
+              record = metricsTemplate % {
+                timestamp: batch_time,
+                metricName: metricName,
+                controllerNameDimValue: podControllerNameDimValue,
+                namespaceDimValue: podNamespaceDimValue,
+                containerCountMetricValue: value,
+                jobCompletionThreshold: jobCompletionThresholdHours,
+              }
+            else
+              record = metricsTemplate % {
+                timestamp: batch_time,
+                metricName: metricName,
+                controllerNameDimValue: podControllerNameDimValue,
+                namespaceDimValue: podNamespaceDimValue,
+                containerCountMetricValue: value,
+              }
+            end
             records.push(Yajl::Parser.parse(StringIO.new(record)))
           }
         else
@@ -140,9 +155,11 @@ class MdmMetricsGenerator
         staleJobHashValues = @stale_job_count_hash.values
         staleJobMetricCount = staleJobHashValues.inject(0) { |sum, x| sum + x }
 
+        metric_threshold_hash = getContainerResourceUtilizationThresholds
         properties["ContainerRestarts"] = containerRestartMetricCount
         properties["OomKilledContainers"] = oomKilledContainerMetricCount
         properties["OldCompletedJobs"] = staleJobMetricCount
+        properties["JobCompletionThesholdTimeInMinutes"] = metric_threshold_hash[Constants::JOB_COMPLETION_TIME]
         ApplicationInsightsUtility.sendCustomEvent(Constants::CONTAINER_METRICS_HEART_BEAT_EVENT, properties)
         ApplicationInsightsUtility.sendCustomEvent(Constants::POD_READY_PERCENTAGE_HEART_BEAT_EVENT, {})
       rescue => errorStr
@@ -465,6 +482,7 @@ class MdmMetricsGenerator
         metric_threshold_hash[Constants::MEMORY_RSS_BYTES] = Constants::DEFAULT_MDM_MEMORY_RSS_THRESHOLD
         metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES] = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
         metric_threshold_hash[Constants::PV_USED_BYTES] = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
+        metric_threshold_hash[Constants::JOB_COMPLETION_TIME] = Constants::DEFAULT_MDM_JOB_COMPLETED_TIME_THRESHOLD_MINUTES
 
         cpuThreshold = ENV["AZMON_ALERT_CONTAINER_CPU_THRESHOLD"]
         if !cpuThreshold.nil? && !cpuThreshold.empty?
@@ -489,6 +507,12 @@ class MdmMetricsGenerator
         if !pvUsagePercentageThreshold.nil? && !pvUsagePercentageThreshold.empty?
           pvUsagePercentageThresholdFloat = (pvUsagePercentageThreshold.to_f).round(2)
           metric_threshold_hash[Constants::PV_USED_BYTES] = pvUsagePercentageThresholdFloat
+        end
+
+        jobCompletionTimeThreshold = ENV["AZMON_ALERT_JOB_COMPLETION_TIME_THRESHOLD"]
+        if !jobCompletionTimeThreshold.nil? && !jobCompletionTimeThreshold.empty?
+          jobCompletionTimeThresholdInt = jobCompletionTimeThreshold.to_i
+          metric_threshold_hash[Constants::JOB_COMPLETION_TIME] = jobCompletionTimeThresholdInt
         end
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilizationThresholds: #{errorStr}"

@@ -45,7 +45,7 @@ class MdmAlertTemplates
                     "dimValues": [
                         "%{controllerNameDimValue}",
                         "%{namespaceDimValue}",
-                        "6"
+                        "%{jobCompletionThreshold}"
                     ],
                     "min": %{containerCountMetricValue},
                     "max": %{containerCountMetricValue},
