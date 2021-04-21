@@ -69,6 +69,9 @@ COPY ./omsagentwindows/installer/conf/telegraf.conf /etc/telegraf/
 # copy keepcert alive ruby scripts
 COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
 
+#Copy fluentd ruby plugins
+COPY ./omsagentwindows/plugins/ruby/*.rb /etc/fluent/plugin/
+
 ENV AGENT_VERSION ${IMAGE_TAG}
 ENV OS_TYPE "windows"
 ENV APPLICATIONINSIGHTS_AUTH "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
