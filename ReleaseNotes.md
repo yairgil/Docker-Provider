@@ -11,6 +11,14 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
+### 04/23/2021 -
+##### Version microsoft/oms:ciprod04222021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04222021 (linux)
+##### Version microsoft/oms:win-ciprod04222021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod04222021 (windows)
+##### Code change log
+- Bug fixes for metrics cpuUsagePercentage and memoryWorkingSetPercentage for windows nodes
+- Udated default buffer sizes in fluent-bit
+
+
 ### 03/26/2021 -
 ##### Version microsoft/oms:ciprod03262021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021 (linux)
 ##### Version microsoft/oms:win-ciprod03262021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03262021 (windows)
