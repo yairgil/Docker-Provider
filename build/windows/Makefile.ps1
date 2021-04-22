@@ -180,7 +180,7 @@ $exclude = @('*.cs','*.csproj')
 Copy-Item  -Path $installerdir  -Destination $publishdir -Recurse -Force -Exclude $exclude
 Write-Host("successfully copied installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ") -ForegroundColor Green
 
-$rubyplugindir = Join-Path -Path $rootdir -ChildPath "..\..\source\plugins\ruby"
+$rubyplugindir = Join-Path -Path $rootdir -ChildPath "source\plugins\ruby"
 $outmdmpluginpath = Join-Path -Path $rubyplugindir -ChildPath "\out_mdm.rb"
 # $destdir = Join-Path -Path $publishdir -ChildPath "\plugins\ruby"
 Write-Host("copying ruby source files from :" + $rubyplugindir + "  to  :" + $publishdir + " ...")
