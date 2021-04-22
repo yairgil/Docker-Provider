@@ -17,8 +17,12 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 ##### Code change log
 - Bug fixes for metrics cpuUsagePercentage and memoryWorkingSetPercentage for windows nodes
 - Added metrics for threshold violation
+- Made Job completion metric configurable
 - Udated default buffer sizes in fluent-bit
 - Updated recommended alerts
+- Fixed bug where logs written before agent starts up were not collected
+- Fixed bug which kept agent logs from being rotated
+- Bug fix for Windows Containerd container log collection
 - Bug fixes
 - Doc updates
 - Minor telemetry changes
