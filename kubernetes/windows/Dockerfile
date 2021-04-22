@@ -71,6 +71,7 @@ COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/flue
 
 #Copy fluentd ruby plugins
 COPY ./omsagentwindows/out_mdm.rb /etc/fluent/plugin/
+COPY ./omsagentwindows/filter_telegraf2mdm.rb /etc/fluent/plugin/
 
 ENV AGENT_VERSION ${IMAGE_TAG}
 ENV OS_TYPE "windows"

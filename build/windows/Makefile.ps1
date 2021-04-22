@@ -182,9 +182,11 @@ Write-Host("successfully copied installer files conf and scripts from :" + $inst
 
 $rubyplugindir = Join-Path -Path $rootdir -ChildPath "source\plugins\ruby"
 $outmdmpluginpath = Join-Path -Path $rubyplugindir -ChildPath "\out_mdm.rb"
+$filtertelegraftomdm = Join-Path -Path $rubyplugindir -ChildPath "\filter_telegraf2mdm.rb"
 # $destdir = Join-Path -Path $publishdir -ChildPath "\plugins\ruby"
 Write-Host("copying ruby source files from :" + $rubyplugindir + "  to  :" + $publishdir + " ...")
 Copy-Item  -Path $outmdmpluginpath  -Destination $publishdir -Force
+Copy-Item  -Path $filtertelegraftomdm  -Destination $publishdir -Force
 Write-Host("successfully copied ruby source files from :" + $rubyplugindir + "  to  :" + $publishdir + " ") -ForegroundColor Green
 
 Set-Location $currentdir
