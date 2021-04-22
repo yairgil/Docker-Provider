@@ -144,12 +144,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         if !fbitFlushIntervalSecs.nil? && is_number?(fbitFlushIntervalSecs) && fbitFlushIntervalSecs.to_i > 0
           @fbitFlushIntervalSecs = fbitFlushIntervalSecs.to_i
           puts "Using config map value: log_flush_interval_secs = #{@fbitFlushIntervalSecs}"
+        else
+          @fbitFlushIntervalSecs = 1
         end
 
         fbitTailBufferChunkSizeMBs = fbit_config[:tail_buf_chunksize_megabytes]
         if !fbitTailBufferChunkSizeMBs.nil? && is_number?(fbitTailBufferChunkSizeMBs) && fbitTailBufferChunkSizeMBs.to_i > 0
           @fbitTailBufferChunkSizeMBs = fbitTailBufferChunkSizeMBs.to_i
           puts "Using config map value: tail_buf_chunksize_megabytes  = #{@fbitTailBufferChunkSizeMBs}"
+        else
+          @fbitTailBufferChunkSizeMBs = 1
         end
 
         fbitTailBufferMaxSizeMBs = fbit_config[:tail_buf_maxsize_megabytes]
