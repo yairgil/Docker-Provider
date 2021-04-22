@@ -42,21 +42,21 @@ class ExtensionConfigCache
         if !taggedData.nil? && !taggedData.empty?
           taggedAgentData = JSON.parse(taggedData)
           extensionConfigurations = taggedAgentData["extensionConfigurations"]
-          extensionConfigurations.each do |extensionConfig|
-            outputstreams = extensionConfig["outputStreams"]
-            if !outputstreams.nil? && !outputstreams.empty? &&
-               !outputstreams.keys.nil? && !outputstreams.keys.empty? &&
-               outputstreams.keys.length > 0 && !outputstreams.keys[0].empty?
-              datatypeId = outputstreams.keys[0]
-              streamId = outputstreams[datatypeId]
-              if !streamId.nil? && !streamId.empty?
-                extConfig[datatypeId] = streamId
+          if !extensionConfigurations.nil? && !extensionConfigurations.empty?
+            extensionConfigurations.each do |extensionConfig|
+              outputStreams = extensionConfig["outputStreams"]
+              if !outputStreams.nil? && !outputStreams.empty? 
+                outputStreams.each do |datatypeId, streamId|
+                  $log.info("datatypeId: #{datatypeId}, streamId: #{streamId}")
+                  extConfig[datatypeId] = streamId
+                end
               else
-                $log.warn("streamId is nil or empty for datatype: #{datatypeId}")
-              end
-              $log.info("datatype id: #{datatypeId} and streamid: #{streamId}")
+                $log.info("received outputStreams is either nil or empty")
+              end                    
             end
-          end
+          else
+            $log.info("received extensionConfigurations is either nil or empty")  
+          end 
         end
       end
     rescue => error
