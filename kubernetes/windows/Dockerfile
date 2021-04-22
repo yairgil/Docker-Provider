@@ -70,7 +70,7 @@ COPY ./omsagentwindows/installer/conf/telegraf.conf /etc/telegraf/
 COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
 
 #Copy fluentd ruby plugins
-COPY ./omsagentwindows/plugins/ruby/*.rb /etc/fluent/plugin/
+COPY ./omsagentwindows/out_mdm.rb /etc/fluent/plugin/
 
 ENV AGENT_VERSION ${IMAGE_TAG}
 ENV OS_TYPE "windows"
