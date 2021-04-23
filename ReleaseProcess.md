@@ -13,12 +13,19 @@ Here are the high-level instructions to get the CIPROD`<MM><DD><YYYY>` image for
 2. Make PR to ci_dev branch and once the PR approved, merge the changes to ci_dev
 3. Latest bits of ci_dev automatically deployed to CIDEV cluster in build subscription so just validated E2E to make sure everthing works
 4. If everything validated in DEV, make merge PR from ci_dev and ci_prod and merge once this reviewed by dev team
-6. Update following pipeline variables under ReleaseCandiate with version of chart and image tag
-    - CIHELMCHARTVERSION <VersionValue> # For example, 2.7.4
-    - CIImageTagSuffix <ImageTag> # ciprod08072020 or ciprod08072020-1 etc.
-7. Merge ci_dev and ci_prod branch which will trigger automatic deployment of latest bits to CIPROD cluster with CIPROD`<MM><DD><YYYY>` image to test and scale cluters, AKS, AKS-Engine
+5. Merge ci_dev and ci_prod branch which will trigger automatic deployment of latest bits to CIPROD cluster with CIPROD`<MM><DD><YYYY>` image to test and scale cluters, AKS, AKS-Engine
    > Note: production image automatically pushed to CIPROD Public cloud ACR which will inturn replicated to Public cloud MCR.
-8. Validate all the scenarios against clusters in build subscription and scale clusters
+6. Validate all the scenarios against clusters in build subscription and scale clusters
+7. Check to make sure the ci_prod build succeeded before proceeding - https://github-private.visualstudio.com/microsoft/_build?definitionId=243&_a=summary
+8. Update following pipeline variables under ReleaseCandiate with version of chart and image tag
+    - pipeline: https://github-private.visualstudio.com/microsoft/_release?definitionId=11&view=mine&_a=releases
+    - open the pipeline, navigate to edit -> Variables -> Variable groups -> Manage variable groups -> + Variable group, then fill in the following two variables:
+       - CIHELMCHARTVERSION <VersionValue> # For example, 2.7.4
+       - CIImageTagSuffix <ImageTag> # ciprod08072020 or ciprod08072020-1 etc.
+    - Then go back to the variable groups page in the pipeline editor, unlink the old variable group, and link the new variable group.
+    - Contact Ganga if the pipeline can't be saved
+
+
 
 
 # 2. Perf and scale testing
