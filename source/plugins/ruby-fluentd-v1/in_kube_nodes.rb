@@ -7,15 +7,12 @@ module Fluent::Plugin
   require_relative "extension_config"
   class Kube_nodeInventory_Input < Input
     Fluent::Plugin.register_input("kube_nodes", self)
-
-    @@ContainerNodeInventoryTag = "oneagent.containerinsights.CONTAINER_INVENTORY_BLOB"
-    @@insightsMetricsTag = "oneagent.containerinsights.INSIGHTS_METRICS_BLOB" 
-    @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
+     
     @@configMapMountPath = "/etc/config/settings/log-data-collection-settings"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
     @@osmConfigMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
     @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
-    @@kubeperfTag = "oneagent.containerinsights.LINUX_PERF_BLOB"
+   
 
     @@rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
     @@rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
@@ -40,6 +37,12 @@ module Fluent::Plugin
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
       require_relative "omslog"
+      
+      @ContainerNodeInventoryTag = "oneagent.containerinsights.CONTAINER_INVENTORY_BLOB" 
+      @insightsMetricsTag = "oneagent.containerinsights.INSIGHTS_METRICS_BLOB" 
+      @MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"  
+      @kubeperfTag = "oneagent.containerinsights.LINUX_PERF_BLOB"
+
       # refer tomlparser-agent-config for the defaults
       @NODES_CHUNK_SIZE = 0
       @NODES_EMIT_STREAM_BATCH_SIZE = 0
@@ -192,7 +195,7 @@ module Fluent::Plugin
             $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@tag, eventStream) if eventStream
             $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@@MDMKubeNodeInventoryTag, mdmNodeInventoryStream) if mdmNodeInventoryStream
+            router.emit_stream(@MDMKubeNodeInventoryTag, mdmNodeInventoryStream) if mdmNodeInventoryStream
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
               $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
             end
@@ -206,7 +209,7 @@ module Fluent::Plugin
 
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && containerNodeInventoryEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
             $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+            router.emit_stream(@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
             containerNodeInventoryEventStream = Fluent::MultiEventStream.new
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
               $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -253,7 +256,7 @@ module Fluent::Plugin
           end
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
             $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
             kubePerfEventStream = Fluent::MultiEventStream.new
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
               $log.info("kubeNodePerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -283,7 +286,7 @@ module Fluent::Plugin
           end
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && insightsMetricsEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
             $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
+            router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
             insightsMetricsEventStream = Fluent::MultiEventStream.new
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
               $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -344,7 +347,7 @@ module Fluent::Plugin
           $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
           $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@@MDMKubeNodeInventoryTag, mdmNodeInventoryStream) if mdmNodeInventoryStream
+          router.emit_stream(@MDMKubeNodeInventoryTag, mdmNodeInventoryStream) if mdmNodeInventoryStream
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
             $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
@@ -353,7 +356,7 @@ module Fluent::Plugin
         end
         if containerNodeInventoryEventStream.count > 0
           $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+          router.emit_stream(@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
           containerNodeInventoryEventStream = nil
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
             $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -362,7 +365,7 @@ module Fluent::Plugin
 
         if kubePerfEventStream.count > 0
           $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+          router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
           kubePerfEventStream = nil
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
             $log.info("kubeNodePerfInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -370,7 +373,7 @@ module Fluent::Plugin
         end
         if insightsMetricsEventStream.count > 0
           $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
+          router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
           insightsMetricsEventStream = nil
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
             $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -527,25 +530,25 @@ module Fluent::Plugin
       begin
         if @aad_msi_auth_enable 
           # perf
-          if @@kubeperfTag.nil? || @@kubeperfTag.empty? || !@@kubeperfTag.start_with?("dcr-")
-            @@kubeperfTag = @extensionCache.get_output_stream_id("LINUX_PERF_BLOB")
-            if  @@kubeperfTag.nil? || @@kubeperfTag.empty?
+          if @kubeperfTag.nil? || @kubeperfTag.empty? || !@kubeperfTag.start_with?("dcr-")
+            @kubeperfTag = @extensionCache.get_output_stream_id("LINUX_PERF_BLOB")
+            if  @kubeperfTag.nil? || @kubeperfTag.empty?
               $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: LINUX_PERF_BLOB")
             end
           end
 
           # container node inventory
-          if @@ContainerNodeInventoryTag.nil? || @@ContainerNodeInventoryTag.empty? || !@@ContainerNodeInventoryTag.start_with?("dcr-")     
-            @@ContainerNodeInventoryTag = @extensionCache.get_output_stream_id("CONTAINER_NODE_INVENTORY_BLOB")
-            if  @@ContainerNodeInventoryTag.nil? || @@ContainerNodeInventoryTag.empty?
+          if @ContainerNodeInventoryTag.nil? || @ContainerNodeInventoryTag.empty? || !@ContainerNodeInventoryTag.start_with?("dcr-")     
+            @ContainerNodeInventoryTag = @extensionCache.get_output_stream_id("CONTAINER_NODE_INVENTORY_BLOB")
+            if  @ContainerNodeInventoryTag.nil? || @ContainerNodeInventoryTag.empty?
               $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: CONTAINER_NODE_INVENTORY_BLOB")
             end
           end     
 
           # insightsmetrics
-          if @@insightsMetricsTag.nil? || @@insightsMetricsTag.empty? || !@@insightsMetricsTag.start_with?("dcr-")   
-              @@insightsMetricsTag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
-              if @@insightsMetricsTag.nil? || @@insightsMetricsTag.empty?
+          if @insightsMetricsTag.nil? || @insightsMetricsTag.empty? || !@insightsMetricsTag.start_with?("dcr-")   
+              @insightsMetricsTag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+              if @insightsMetricsTag.nil? || @insightsMetricsTag.empty?
                 $log.warn("in_kube_nodes::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
               end
           end

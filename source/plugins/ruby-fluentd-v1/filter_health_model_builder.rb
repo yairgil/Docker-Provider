@@ -23,7 +23,7 @@ module Fluent::Plugin
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :telemetry
 
 
-        @@rewrite_tag = 'kubehealth.Signals'
+       
         @@cluster_id = KubernetesApiClient.getClusterId
         @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
         @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
@@ -32,6 +32,7 @@ module Fluent::Plugin
         def initialize
             begin
                 super
+                @rewrite_tag = 'kubehealth.Signals'
                 @buffer = HealthModel::HealthModelBuffer.new
                 @cluster_health_state = ClusterHealthState.new(@@token_file_path, @@cert_file_path)
                 @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
@@ -256,7 +257,7 @@ module Fluent::Plugin
                     }
 
                     #emit the stream
-                    router.emit_stream(@@rewrite_tag, new_es)
+                    router.emit_stream(@rewrite_tag, new_es)
 
                     #initialize monitor_set and model_builder
                     @monitor_set = HealthModel::MonitorSet.new
@@ -285,9 +286,9 @@ module Fluent::Plugin
            begin
               if @aad_msi_auth_enable
                 # kubehealth
-                if @@rewrite_tag.nil? || @@rewrite_tag.empty? || !@@rewrite_tag.start_with?("dcr-")  
-                    @@rewrite_tag = @extensionCache.get_output_stream_id("KUBE_HEALTH_BLOB")  
-                    if @@rewrite_tag.nil? || @@rewrite_tag.empty?
+                if @rewrite_tag.nil? || @rewrite_tag.empty? || !@rewrite_tag.start_with?("dcr-")  
+                    @rewrite_tag = @extensionCache.get_output_stream_id("KUBE_HEALTH_BLOB")  
+                    if @rewrite_tag.nil? || @rewrite_tag.empty?
                     $log.warn("filter_health_model_builder::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: KUBE_HEALTH_BLOB")           
                     end
                 end
