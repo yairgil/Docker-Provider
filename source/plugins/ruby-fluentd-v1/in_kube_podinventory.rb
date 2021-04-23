@@ -42,8 +42,7 @@ module Fluent::Plugin
       @controllerData = {}
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
-      @aad_msi_auth_enable = false  
-      @extensionCache = ExtensionConfigCache.new   
+      @aad_msi_auth_enable = false       
       
       @kubeperfTag = "oneagent.containerinsights.LINUX_PERF_BLOB"
       @kubeservicesTag = "oneagent.containerinsights.KUBE_SERVICES_BLOB"
@@ -119,9 +118,7 @@ module Fluent::Plugin
         @podInventoryE2EProcessingLatencyMs = 0
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
         
-        overrideTagsWithStreamIdsIfAADAuthEnabled()        
-        
-        $log.info("in_kube_podinventory::enumerate: using perf tag: @ #{@kubeperfTag}")   
+        overrideTagsWithStreamIdsIfAADAuthEnabled()               
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
         serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
@@ -672,46 +669,57 @@ module Fluent::Plugin
         if @aad_msi_auth_enable 
           # perf
           if @kubeperfTag.nil? || @kubeperfTag.empty? || !@kubeperfTag.start_with?("dcr-")
-            @kubeperfTag = @extensionCache.get_output_stream_id("LINUX_PERF_BLOB")
+            @kubeperfTag = ExtensionConfig.instance.get_output_stream_id("LINUX_PERF_BLOB")
             if  @kubeperfTag.nil? || @kubeperfTag.empty?
               $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: LINUX_PERF_BLOB")
+            else
+              $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using perf tag: #{@kubeperfTag}")   
             end
           end
 
           # kube services
           if @kubeservicesTag.nil? || @kubeservicesTag.empty? || !@kubeservicesTag.start_with?("dcr-")     
-            @kubeservicesTag = @extensionCache.get_output_stream_id("KUBE_SERVICES_BLOB")
+            @kubeservicesTag = ExtensionConfig.instance.get_output_stream_id("KUBE_SERVICES_BLOB")
             if  @kubeservicesTag.nil? || @kubeservicesTag.empty?
-            $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: KUBE_SERVICES_BLOB")
+              $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: KUBE_SERVICES_BLOB")
+            else
+              $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using kubeservicesTag: #{@kubeservicesTag}")   
             end
           end
 
           # container inventory
           if @containerInventoryTag.nil? || @containerInventoryTag.empty? || !@containerInventoryTag.start_with?("dcr-")     
-            @containerInventoryTag =  @extensionCache.get_output_stream_id("CONTAINER_INVENTORY_BLOB")                     
+            @containerInventoryTag =  ExtensionConfig.instance.get_output_stream_id("CONTAINER_INVENTORY_BLOB")                     
             if @containerInventoryTag.nil? || @containerInventoryTag.empty?
-            $log.warn("in_kube_podinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: CONTAINER_INVENTORY_BLOB")           
+              $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: CONTAINER_INVENTORY_BLOB")  
+            else
+              $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using containerinventorytag: #{@containerInventoryTag}")            
             end
           end
 
           # insightsmetrics
           if @insightsMetricsTag.nil? || @insightsMetricsTag.empty? || !@insightsMetricsTag.start_with?("dcr-")     
-              @insightsMetricsTag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+              @insightsMetricsTag = ExtensionConfig.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
               if @insightsMetricsTag.nil? || @insightsMetricsTag.empty?
-                $log.warn("in_kube_podinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+                $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")  
+              else
+                $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using insightsMetricsTag: #{@insightsMetricsTag}")            
               end
           end
 
           # kubepodinventory
           if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = @extensionCache.get_output_stream_id("KUBE_POD_INVENTORY_BLOB")  
+            @tag = ExtensionConfig.instance.get_output_stream_id("KUBE_POD_INVENTORY_BLOB")  
             if @tag.nil? || @tag.empty?
-              $log.warn("in_kube_podinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: KUBE_POD_INVENTORY_BLOB")           
+              $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_POD_INVENTORY_BLOB")
+            else
+              $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using kubePodInventoryTag: #{@tag}")            
             end
           end      
         end  
       rescue => errorStr     
-        $log.warn("in_kube_podinventory::updateTagsWithStreamIds: failed with an error: #{errorStr}")            
+        $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: failed with an error: #{errorStr}")    
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)        
       end
     end
   end # Kube_Pod_Input

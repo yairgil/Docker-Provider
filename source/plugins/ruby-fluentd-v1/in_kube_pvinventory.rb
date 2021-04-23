@@ -45,8 +45,7 @@ module Fluent::Plugin
         if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
           @aad_msi_auth_enable = true
         end              
-        $log.info("in_kube_pvinventory::start: aad auth enable:#{@aad_msi_auth_enable}")
-        @extensionCache = ExtensionConfigCache.new   
+        $log.info("in_kube_pvinventory::start: aad auth enable:#{@aad_msi_auth_enable}")        
       end
     end
 
@@ -266,9 +265,11 @@ module Fluent::Plugin
         if @aad_msi_auth_enable
           # kubepvinventory
           if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")  
-            @tag = @extensionCache.get_output_stream_id("KUBE_PV_INVENTORY_BLOB")  
+            @tag = ExtensionConfig.instance.get_output_stream_id("KUBE_PV_INVENTORY_BLOB")  
             if @tag.nil? || @tag.empty?
-              $log.warn("in_kube_pvinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: KUBE_PV_INVENTORY_BLOB")           
+              $log.warn("in_kube_pvinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_PV_INVENTORY_BLOB") 
+            else
+              $log.info("in_kube_pvinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using kubePVInventoryTag: #{@tag}")          
             end
           end 
         end

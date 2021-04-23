@@ -41,7 +41,6 @@ module Fluent::Plugin
           @aad_msi_auth_enable = true
         end              
         $log.info("in_cadvisor_perf::start: aad auth enable:#{@aad_msi_auth_enable}")
-        @extensionCache = ExtensionConfigCache.new   
       end
     end
 
@@ -144,21 +143,25 @@ module Fluent::Plugin
         if @aad_msi_auth_enable        
           # perf
           if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = @extensionCache.get_output_stream_id("LINUX_PERF_BLOB")  
+            @tag = ExtensionConfig.instance.get_output_stream_id("LINUX_PERF_BLOB")  
             if @tag.nil? || @tag.empty?
-              $log.warn("in_cadvisor_perf::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: LINUX_PERF_BLOB")           
+              $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: LINUX_PERF_BLOB")           
+            else            
+              $log.info("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: using perf tag: #{@tag}")     
             end
           end   
           # insights metrics         
           if @insightsmetricstag.nil? || @insightsmetricstag.empty? || !@insightsmetricstag.start_with?("dcr-")     
-            @insightsmetricstag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+            @insightsmetricstag = ExtensionConfig.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
             if @insightsmetricstag.nil? || @insightsmetricstag.empty?
-              $log.warn("in_cadvisor_perf::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+              $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+            else            
+              $log.info("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: using insightsmetrics tag: #{@insightsmetricstag}")  
             end
           end     
         end   
       rescue => errorStr
-        $log.warn("in_cadvisor_perf::updateTagsWithStreamIds:failed with an error: #{errorStr}")           
+        $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled:failed with an error: #{errorStr}")           
       end 
     end         
 

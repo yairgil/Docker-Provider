@@ -40,7 +40,6 @@ module Fluent::Plugin
           @aad_msi_auth_enable = true
         end              
         $log.info("in_kube_nodes::start: aad auth enable:#{@aad_msi_auth_enable}")
-        @extensionCache = ExtensionConfigCache.new   
       end
     end
 
@@ -161,9 +160,11 @@ module Fluent::Plugin
         if @aad_msi_auth_enable
           # containerinventory
           if @tag.nil? || @tag.empty? || @tag.start_with?("dcr-")
-            @tag = @extensionCache.get_output_stream_id("CONTAINER_INVENTORY_BLOB")  
+            @tag = ExtensionConfig.instance.get_output_stream_id("CONTAINER_INVENTORY_BLOB")  
             if @tag.nil? || @tag.empty?
-              $log.warn("in_containerinventory::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: CONTAINER_INVENTORY_BLOB")           
+              $log.warn("in_containerinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: CONTAINER_INVENTORY_BLOB")           
+            else            
+              $log.info("in_containerinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using containerinventorytag: #{@tag}")
             end
           end      
         end   

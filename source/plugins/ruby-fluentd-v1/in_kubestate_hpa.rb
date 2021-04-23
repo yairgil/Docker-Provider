@@ -246,9 +246,11 @@ module Fluent::Plugin
         if @aad_msi_auth_enable
           # kubestatehpa
           if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+            @tag = ExtensionConfig.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
             if @tag.nil? || @tag.empty?
               $log.warn("in_kubestate_hpa::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+            else
+              $log.info("in_kubestate_hpa::overrideTagsWithStreamIdsIfAADAuthEnabled: using insightsmetricstag: #{@tag}")             
             end
           end     
         end   

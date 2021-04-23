@@ -1,14 +1,19 @@
 require "socket"
 require "msgpack"
 require "securerandom"
+require "singleton"
 require_relative "omslog"
 require_relative "constants"
+require_relative "ApplicationInsightsUtility"
 
-class ExtensionConfigCache
-    
+
+class ExtensionConfig
+  include Singleton
+
   def initialize
     @cache = {}
-    @cache_lock = Mutex.new  
+    @cache_lock = Mutex.new 
+    $log.info("ExtensionConfig::initialize complete")
   end
   
   def get_output_stream_id(datatypeId)
@@ -25,7 +30,7 @@ class ExtensionConfigCache
   private 
   def get_extension_config()
     extConfig = Hash.new
-    $log.info("ExtenionConfig:get_extension_config start ...")
+    $log.info("ExtensionConfig::get_extension_config start ...")
     begin
       clientSocket = UNIXSocket.open(Constants::ONEAGENT_FLUENT_SOCKET_NAME)
       requestId = SecureRandom.uuid.to_s
@@ -55,16 +60,17 @@ class ExtensionConfigCache
               end                    
             end
           else
-            $log.info("received extensionConfigurations is either nil or empty")  
+            $log.info("received extensionConfigurations from fluentsocket is either nil or empty")  
           end 
         end
       end
-    rescue => error
-      $log.warn("get_extension_config failed: #{error}")
+    rescue => errorStr
+      $log.warn("ExtensionConfig::get_extension_config failed: #{error}")
+      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
     ensure
       clientSocket.close unless clientSocket.nil?
     end
-    $log.info("ExtenionConfig:get_extension_config complete ...")
+    $log.info("ExtensionConfig::get_extension_config complete ...")
     return extConfig
   end
 end

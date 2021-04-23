@@ -65,8 +65,7 @@ module Fluent::Plugin
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
-        @thread = Thread.new(&method(:run_periodic))
-        @extensionCache = ExtensionConfigCache.new  
+        @thread = Thread.new(&method(:run_periodic))       
       end
     end
 
@@ -249,9 +248,11 @@ module Fluent::Plugin
         if @aad_msi_auth_enable
           # kubepvinventory
           if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = @extensionCache.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+            @tag = ExtensionConfig.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
             if @tag.nil? || @tag.empty?
-              $log.warn("in_kubestate_deployments::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+              $log.warn("in_kubestate_deployments::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
+            else
+              $log.info("in_kubestate_deployments::overrideTagsWithStreamIdsIfAADAuthEnabled: using insightsmetricstag: #{@tag}")  
             end
           end      
         end 
