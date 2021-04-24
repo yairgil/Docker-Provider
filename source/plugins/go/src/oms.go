@@ -90,8 +90,8 @@ const defaultContainerInventoryRefreshInterval = 60
 const kubeMonAgentConfigEventFlushInterval = 60
 
 //Eventsource name in mdsd
-const MdsdContainerLogSourceName = "ContainerLogSource"
-const MdsdContainerLogV2SourceName = "ContainerLogV2Source"
+const MdsdContainerLogSourceName = "dcr-b4d08f24eb8444f59bdd19641a7fab4f:ContainerInsightsExtension:CONTAINER_LOG_BLOB"
+const MdsdContainerLogV2SourceName = "dcr-b4d08f24eb8444f59bdd19641a7fab4f:ContainerInsightsExtension:CONTAINER_LOG_BLOB"
 
 //container logs route (v2=flush to oneagent, adx= flush to adx ingestion, anything else flush to ODS[default])
 const ContainerLogsV2Route = "v2"

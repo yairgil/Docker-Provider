@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,7 +13,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
+	"time"	
 
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
@@ -177,4 +178,43 @@ func isValidUrl(uri string) bool {
 		return false
 	}
 	return true
+}
+
+fun GetExtensionConfig() (map[string]struct{}, err) {
+	guid := uuid.New()
+	tags := make(map[string]struct{})
+
+	taggedData := map[string]interface{}{"Request": "AgentTaggedData", "RequestId": guid.String(), "Tag": "ContainerInsights", "Version": "1"}
+	jsonBytes, err := json.Marshal(taggedData)
+
+	var data []byte
+	enc := codec.NewEncoderBytes(&data, new(codec.MsgpackHandle))
+	if err := enc.Encode(string(jsonBytes)); err != nil {
+		return tags, err
+	}
+	
+	fs := &FluentSocketWriter{}
+	responseBytes, err := fs.WriteAndRead(data)
+	if err != nil {
+		return tags, err
+	}
+	response := string(responseBytes)
+
+	var responseObject AgentTaggedDataResponse
+	err = json.Unmarshal([]byte(response), &responseObject)
+	if err != nil {	
+		Log("Error::mdsd::Failed to unmarshal config data. Error message: %s", string(err.Error()))
+	}
+
+	var extensionData TaggedData
+	json.Unmarshal([]byte(response.TaggedData), &extensionData)
+
+	configs := extensionData.ExtensionConfigs		
+	for _, config := range configs {
+		for dataType, outputStreamID := range config {
+			tags[dataType] = outputStreamID.(string)
+		}	
+	}
+
+	return tags, nil
 }
