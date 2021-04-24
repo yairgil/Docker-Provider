@@ -16,7 +16,7 @@ Here are the high-level instructions to get the CIPROD`<MM><DD><YYYY>` image for
       - Release notes
    - Create a PR to merge these changes back into ci_dev
 2. Changes in ci_dev are automatically deployed to the CIDEV cluster (in the build subscription) so validate E2E to make sure everthing works
-3. <a name="create_ci_prod_pr_anchor">If everything validated in DEV, make a release branch off ci_prod, pull in changes from ci_dev, then make a PR to merge the release branch back into ci_prod. Request the dev team review the PR but don't merge it yet.</a>
+3. <a name="create_ci_prod_pr_anchor">If</a> everything validated in DEV, make a release branch off ci_prod, pull in changes from ci_dev, then make a PR to merge the release branch back into ci_prod. Request the dev team review the PR but don't merge it yet.
 4. Go to the [release pipeline](https://github-private.visualstudio.com/microsoft/_releaseDefinition?definitionId=11&_a=environments-editor-preview) and update the variables with the new chart version and image tag
    1. From the release pipeline overview screen, navigate to variables -> Variable groups -> manage variable groups. Create a new variable group with the following variables:
       - CIHELMCHARTVERSION <VersionValue> # For example, 2.7.4
@@ -39,9 +39,11 @@ No action required here, images are automatically synched to MCR CN from Public 
 
 ## AKS
 
-TODO:
-- agent baker (before 8pm friday) - reference link: https://github.com/Azure/AgentBaker/pull/775
-- make PR against AKS RP (monday)
+1. Update the image in the AKS Agent Baker ([use this PR as a reference](https://github.com/Azure/AgentBaker/pull/775)). The AKS agent is built every Friday at 8:00 PM
+2. Update the agent version in the AKS RP ([use this PR as a reference](https://msazure.visualstudio.com/CloudNativeCompute/_git/aks-rp/pullrequest/4195646)). Make this PR on Monday following the Agent Baker PR.
+
+congratulations! A new agent version will roll out with the next AKS release. See instructions for monitoring its progress in [section 4](#monitor_anchor)
+
 
 ## AKS-Engine
 
@@ -95,7 +97,8 @@ Instructions to create PR
 
 # 4. Monitor agent roll-out status
 
-In Container Insights Agent (AKS) telemetry dashboard, update the agent roll status by  region chart with released agent image and track rollout status. If you see any issues with agent rollout, reach out AKS on-call team for the help on investigation and understanding whats going on.
+
+<a name="monitor_anchor">In</a> Container Insights Agent (AKS) telemetry dashboard, update the agent roll status by  region chart with released agent image and track rollout status. If you see any issues with agent rollout, reach out AKS on-call team for the help on investigation and understanding whats going on.
 
 
 
