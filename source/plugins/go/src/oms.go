@@ -663,33 +663,30 @@ func flushKubeMonAgentEventRecords() {
 				
 				if MdsdKubeMonMsgpUnixSocketClient == nil {
 					Log("Error::mdsd::mdsd connection for KubeMonAgentEvents does not exist. re-connecting ...")
-					CreateMDSDClientKubeMon()
-					if MdsdKubeMonMsgpUnixSocketClient == nil {
-						Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")								
-						return output.FLB_RETRY
-					}
+					CreateMDSDClientKubeMon()					
 				}
-		
-				deadline := 10 * time.Second
-				MdsdKubeMonMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
-		
-				bts, er := MdsdKubeMonMsgpUnixSocketClient.Write(msgpBytes)
-		
-				elapsed = time.Since(start)
-		
-				if er != nil {
-					message := fmt.Sprintf("Error::mdsd::Failed to write to kubemonagent mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
-					Log(message)
-					if MdsdKubeMonMsgpUnixSocketClient != nil {
-						MdsdKubeMonMsgpUnixSocketClient.Close()
-						MdsdKubeMonMsgpUnixSocketClient = nil
-					}													
-			        SendException(message)
+
+				if MdsdKubeMonMsgpUnixSocketClient != nil {							
+					deadline := 10 * time.Second
+					MdsdKubeMonMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse			
+					bts, er := MdsdKubeMonMsgpUnixSocketClient.Write(msgpBytes)
+					elapsed = time.Since(start)			
+					if er != nil {
+						message := fmt.Sprintf("Error::mdsd::Failed to write to kubemonagent mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
+						Log(message)
+						if MdsdKubeMonMsgpUnixSocketClient != nil {
+							MdsdKubeMonMsgpUnixSocketClient.Close()
+							MdsdKubeMonMsgpUnixSocketClient = nil
+						}													
+						SendException(message)
+					} else {
+						numRecords := len(msgPackEntries)
+						Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
+					// Send telemetry to AppInsights resource
+						SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
+					} 
 				} else {
-					numRecords := len(msgPackEntries)
-			  	    Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
-			       // Send telemetry to AppInsights resource
-				    SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
+					Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")																					
 				}		
 
 			}
@@ -1082,7 +1079,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if (ContainerLogSchemaV2 == true) {
 			//mdsdSourceName = MdsdContainerLogV2SourceName
 			mdsdSourceName = DataTypeStreamIdMap[ContainerLogV2DataType]				
-		}
+		}	
 		Log("Info::mdsd:: using mdsdsource name: %s", mdsdSourceName)
 
 		fluentForward := MsgPackForward{
