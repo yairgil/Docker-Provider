@@ -29,7 +29,7 @@ func (fs *FluentSocketWriter) connect() error {
 
 func (fs *FluentSocketWriter) disConnect() error {
 	if (fs.socket != nil) {
-		fs.Close()		
+		fs.socket.Close()		
 		fs.socket = nil
 	}
 }
