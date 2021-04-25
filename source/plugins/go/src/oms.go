@@ -90,8 +90,8 @@ const defaultContainerInventoryRefreshInterval = 60
 const kubeMonAgentConfigEventFlushInterval = 60
 
 //Eventsource name in mdsd
-const MdsdContainerLogSourceName = "dcr-b4d08f24eb8444f59bdd19641a7fab4f:ContainerInsightsExtension:CONTAINER_LOG_BLOB"
-const MdsdContainerLogV2SourceName = "dcr-b4d08f24eb8444f59bdd19641a7fab4f:ContainerInsightsExtension:CONTAINER_LOG_BLOB"
+const MdsdContainerLogSourceName = "ContainerLogSource"
+const MdsdContainerLogV2SourceName = "ContainerLogV2Source"
 
 //container logs route (v2=flush to oneagent, adx= flush to adx ingestion, anything else flush to ODS[default])
 const ContainerLogsV2Route = "v2"
@@ -169,6 +169,8 @@ var (
 	EventHashUpdateMutex = &sync.Mutex{}
 	// parent context used by ADX uploader
 	ParentContext = context.Background()
+	// DataType to StreamId Map for AAD MSI enabled clusters
+	DataTypeStreamIdMap map[string]string
 )
 
 var (
@@ -986,11 +988,25 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	numContainerLogRecords := 0
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
-		//flush to mdsd
-		mdsdSourceName := MdsdContainerLogSourceName
+		//flush to mdsd		
+		if DataTypeStreamIdMap == nil || len(DataTypeStreamIdMap) == 0 || DataTypeStreamIdMap[ContainerLogDataType] == ""{ 
+			Log("Info::mdsd::getting extension config")		
+			var err error	
+			DataTypeStreamIdMap, err = GetExtensionConfig()	
+			if err != nil || DataTypeStreamIdMap == nil || len(DataTypeStreamIdMap) == 0 || DataTypeStreamIdMap[ContainerLogDataType] == "" {
+				Log("Error::mdsd::failed to get the extension config: %s", string(err.Error()))
+				return output.FLB_RETRY
+			}			
+		}			
+
+		mdsdSourceName := DataTypeStreamIdMap[ContainerLogDataType]				
+		//mdsdSourceName := MdsdContainerLogSourceName
 		if (ContainerLogSchemaV2 == true) {
-			mdsdSourceName = MdsdContainerLogV2SourceName
+			//mdsdSourceName = MdsdContainerLogV2SourceName
+			mdsdSourceName = DataTypeStreamIdMap[ContainerLogV2DataType]				
 		}
+		Log("Info::mdsd:: using mdsdsource name: %s", mdsdSourceName)
+
 		fluentForward := MsgPackForward{
 			Tag:     mdsdSourceName,
 			Entries: msgPackEntries,
@@ -1489,6 +1505,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		go flushKubeMonAgentEventRecords()
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
-	}
-
+	}		
+	//DataTypeStreamIdMap, _ = GetExtensionConfig()
+	// if err != nil {	
+	// 	Log("Warn::mdsd::failed to get the extension config during the initialization: %s", string(err.Error()))
+	// } else {		
+	// 	Log("Info::mdsd::successfully got the extension config")
+	// }
 }
