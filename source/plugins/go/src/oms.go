@@ -92,6 +92,7 @@ const kubeMonAgentConfigEventFlushInterval = 60
 //Eventsource name in mdsd
 const MdsdContainerLogSourceName = "ContainerLogSource"
 const MdsdContainerLogV2SourceName = "ContainerLogV2Source"
+const MdsdKubeMonAgentEventsSourceName = "KubeMonAgentEvents"
 
 //container logs route (v2=flush to oneagent, adx= flush to adx ingestion, anything else flush to ODS[default])
 const ContainerLogsV2Route = "v2"
@@ -108,6 +109,8 @@ var (
 	HTTPClient http.Client
 	// Client for MDSD msgp Unix socket
 	MdsdMsgpUnixSocketClient net.Conn
+	// Client for MDSD msgp Unix socket for KubeMon Agent events
+	MdsdKubeMonMsgpUnixSocketClient net.Conn
 	// Ingestor for ADX
 	ADXIngestor *ingest.Ingestion
 	// OMSEndpoint ingestion endpoint
@@ -534,6 +537,7 @@ func flushKubeMonAgentEventRecords() {
 			start := time.Now()
 			var elapsed time.Duration
 			var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
+			var msgPackEntries []MsgPackEntry
 			telemetryDimensions := make(map[string]string)
 
 			telemetryDimensions["ConfigErrorEventCount"] = strconv.Itoa(len(ConfigErrorEvent))
@@ -560,7 +564,11 @@ func flushKubeMonAgentEventRecords() {
 							Message:        k,
 							Tags:           fmt.Sprintf("%s", tagJson),
 						}
-						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)						
+						msgPackEntry := MsgPackEntry{							
+							Record: laKubeMonAgentEventsRecord,
+						}
+						msgPackEntries = append(msgPackEntries, msgPackEntry)
 					}
 				}
 
@@ -581,7 +589,11 @@ func flushKubeMonAgentEventRecords() {
 							Message:        k,
 							Tags:           fmt.Sprintf("%s", tagJson),
 						}
-						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)						
+						msgPackEntry := MsgPackEntry{							
+							Record: laKubeMonAgentEventsRecord,
+						}
+						msgPackEntries = append(msgPackEntries, msgPackEntry)
 					}
 				}
 
@@ -612,58 +624,124 @@ func flushKubeMonAgentEventRecords() {
 						Message:        "No errors",
 						Tags:           fmt.Sprintf("%s", tagJson),
 					}
-					laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+					laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)					
+					msgPackEntry := MsgPackEntry{							
+							Record: laKubeMonAgentEventsRecord,
+					}
+					msgPackEntries = append(msgPackEntries, msgPackEntry)
 				}
 			}
+			if len(msgPackEntries) > 0 {	
+				mdsdSourceName := MdsdKubeMonAgentEventsSourceName		
+				Log("Info::mdsd:: using mdsdsource name for KubeMonAgentEvents: %s", mdsdSourceName)
 
-			if len(laKubeMonAgentEventsRecords) > 0 {
-				kubeMonAgentEventEntry := KubeMonAgentEventBlob{
-					DataType:  KubeMonAgentEventDataType,
-					IPName:    IPName,
-					DataItems: laKubeMonAgentEventsRecords}
+				fluentForward := MsgPackForward{
+					Tag:     mdsdSourceName,
+					Entries: msgPackEntries,
+				}
 
-				marshalled, err := json.Marshal(kubeMonAgentEventEntry)
+				//determine the size of msgp message
+				msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
+				for i := range fluentForward.Entries {
+					msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
+				}
 
-				if err != nil {
-					message := fmt.Sprintf("Error while marshalling kubemonagentevent entry: %s", err.Error())
+				//allocate buffer for msgp message
+				var msgpBytes []byte
+				msgpBytes = msgp.Require(nil, msgpSize)
+
+				//construct the stream
+				msgpBytes = append(msgpBytes, 0x92)
+				msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
+				msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+				batchTime := time.Now().Unix()
+				for entry := range fluentForward.Entries {
+					msgpBytes = append(msgpBytes, 0x92)
+					msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
+					msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
+				}	
+				
+				if MdsdKubeMonMsgpUnixSocketClient == nil {
+					Log("Error::mdsd::mdsd connection for KubeMonAgentEvents does not exist. re-connecting ...")
+					CreateMDSDClientKubeMon()
+					if MdsdKubeMonMsgpUnixSocketClient == nil {
+						Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")								
+						return output.FLB_RETRY
+					}
+				}
+		
+				deadline := 10 * time.Second
+				MdsdKubeMonMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
+		
+				bts, er := MdsdKubeMonMsgpUnixSocketClient.Write(msgpBytes)
+		
+				elapsed = time.Since(start)
+		
+				if er != nil {
+					message := fmt.Sprintf("Error::mdsd::Failed to write to kubemonagent mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
 					Log(message)
-					SendException(message)
+					if MdsdKubeMonMsgpUnixSocketClient != nil {
+						MdsdKubeMonMsgpUnixSocketClient.Close()
+						MdsdKubeMonMsgpUnixSocketClient = nil
+					}													
+			        SendException(message)
 				} else {
-					req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-					req.Header.Set("Content-Type", "application/json")
-					req.Header.Set("User-Agent", userAgent)
-					reqId := uuid.New().String()
-					req.Header.Set("X-Request-ID", reqId)
-					//expensive to do string len for every request, so use a flag
-					if ResourceCentric == true {
-						req.Header.Set("x-ms-AzureResourceId", ResourceID)
-					}
+					numRecords := len(msgPackEntries)
+			  	    Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
+			       // Send telemetry to AppInsights resource
+				    SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
+				}		
 
-					resp, err := HTTPClient.Do(req)
-					elapsed = time.Since(start)
-
-					if err != nil {
-						message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
-						Log(message)
-						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
-					} else if resp == nil || resp.StatusCode != 200 {
-						if resp != nil {
-							Log("flushKubeMonAgentEventRecords: RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
-						}
-						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
-					} else {
-						numRecords := len(laKubeMonAgentEventsRecords)
-						Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
-
-						// Send telemetry to AppInsights resource
-						SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
-
-					}
-					if resp != nil && resp.Body != nil {
-						defer resp.Body.Close()
-					}
-				}
 			}
+
+			// if len(laKubeMonAgentEventsRecords) > 0 {
+			// 	kubeMonAgentEventEntry := KubeMonAgentEventBlob{
+			// 		DataType:  KubeMonAgentEventDataType,
+			// 		IPName:    IPName,
+			// 		DataItems: laKubeMonAgentEventsRecords}
+
+			// 	marshalled, err := json.Marshal(kubeMonAgentEventEntry)
+
+			// 	if err != nil {
+			// 		message := fmt.Sprintf("Error while marshalling kubemonagentevent entry: %s", err.Error())
+			// 		Log(message)
+			// 		SendException(message)
+			// 	} else {
+			// 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+			// 		req.Header.Set("Content-Type", "application/json")
+			// 		req.Header.Set("User-Agent", userAgent)
+			// 		reqId := uuid.New().String()
+			// 		req.Header.Set("X-Request-ID", reqId)
+			// 		//expensive to do string len for every request, so use a flag
+			// 		if ResourceCentric == true {
+			// 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
+			// 		}
+
+			// 		resp, err := HTTPClient.Do(req)
+			// 		elapsed = time.Since(start)
+
+			// 		if err != nil {
+			// 			message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
+			// 			Log(message)
+			// 			Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+			// 		} else if resp == nil || resp.StatusCode != 200 {
+			// 			if resp != nil {
+			// 				Log("flushKubeMonAgentEventRecords: RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
+			// 			}
+			// 			Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+			// 		} else {
+			// 			numRecords := len(laKubeMonAgentEventsRecords)
+			// 			Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
+
+			// 			// Send telemetry to AppInsights resource
+			// 			SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
+
+			// 		}
+			// 		if resp != nil && resp.Body != nil {
+			// 			defer resp.Body.Close()
+			// 		}
+			// 	}
+			// }
 		} else {
 			// Setting this to false to allow for subsequent flushes after the first hour
 			skipKubeMonEventsFlush = false
