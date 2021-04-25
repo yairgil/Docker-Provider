@@ -197,6 +197,7 @@ func GetExtensionConfig() (map[string]string, error) {
 	
 	fs := &FluentSocketWriter{}
 	responseBytes, err := fs.WriteAndRead(data)
+	defer fs.disConnect()
 	Log("Info::mdsd::Making call to FluentSocket to write and read the config data")
 	if err != nil {
 		return dataTypeStreamIdMap, err

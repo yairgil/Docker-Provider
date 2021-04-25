@@ -1506,10 +1506,4 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}		
-	//DataTypeStreamIdMap, _ = GetExtensionConfig()
-	// if err != nil {	
-	// 	Log("Warn::mdsd::failed to get the extension config during the initialization: %s", string(err.Error()))
-	// } else {		
-	// 	Log("Info::mdsd::successfully got the extension config")
-	// }
 }

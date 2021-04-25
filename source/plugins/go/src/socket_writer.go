@@ -27,6 +27,13 @@ func (fs *FluentSocketWriter) connect() error {
 	return nil
 }
 
+func (fs *FluentSocketWriter) disConnect() error {
+	if (fs.socket != nil) {
+		fs.Close()		
+		fs.socket = nil
+	}
+}
+
 func (fs *FluentSocketWriter) writeWithRetries(data []byte) (int, error) {
 	var (
 		err error
