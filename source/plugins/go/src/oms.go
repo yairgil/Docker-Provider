@@ -153,8 +153,10 @@ var (
 	AdxClientSecret string
 	// flag to check whether LA AAD MSIenabled or not
 	IsLogAnalyticsAADMSIAuth bool
-	// container log or container log v2 tag name
+	// container log or container log v2 tag name for oneagent route
 	MdsdContainerLogTagName string 
+	// kubemonagent events tag name for oneagent route
+	MdsdKubeMonAgentEventsTagName string
 )
 
 var (
@@ -648,12 +650,15 @@ func flushKubeMonAgentEventRecords() {
 					msgPackEntries = append(msgPackEntries, msgPackEntry)
 				}
 			}
-			if len(msgPackEntries) > 0 {	
-				mdsdSourceName := MdsdKubeMonAgentEventsSourceName		
-				Log("Info::mdsd:: using mdsdsource name for KubeMonAgentEvents: %s", mdsdSourceName)
-
+			if len(msgPackEntries) > 0 {					
+			
+				if (IsLogAnalyticsAADMSIAuth == true && strings.HasPrefix(MdsdKubeMonAgentEventsTagName, "dcr-") == false) {
+					Log("Info::mdsd::obtaining output stream id for data type: %s", KubeMonAgentEventDataType)					
+					MdsdKubeMonAgentEventsTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(KubeMonAgentEventDataType)				
+				}
+				Log("Info::mdsd:: using mdsdsource name for KubeMonAgentEvents: %s", MdsdKubeMonAgentEventsTagName)
 				fluentForward := MsgPackForward{
-					Tag:     mdsdSourceName,
+					Tag:     MdsdKubeMonAgentEventsTagName,
 					Entries: msgPackEntries,
 				}
 
@@ -1598,6 +1603,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		  MdsdContainerLogTagName = MdsdContainerLogSourceName
      	}
 	}
+	// TODO - add flag for oneagent route
+	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
 	IsLogAnalyticsAADMSIAuth = false 
 	if strings.Compare(strings.ToLower(os.Getenv(LogAnalyticsAADMSIAuth)), "true") == 0 { 
 		Log("Log Analytics AAD MSI Auth Configured")
