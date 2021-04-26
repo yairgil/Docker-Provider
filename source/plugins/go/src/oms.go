@@ -51,6 +51,9 @@ const ResourceNameEnv = "ACS_RESOURCE_NAME"
 //env variable which has container run time name
 const ContainerRuntimeEnv = "CONTAINER_RUNTIME"
 
+//env variable for LA AAD MSI Auth
+const LogAnalyticsAADMSIAuth = "USING_LA_AAD_AUTH"
+
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags and also for custom-metrics telemetry )
 const TelegrafMetricOriginPrefix = "container.azm.ms"
 
@@ -148,6 +151,10 @@ var (
 	AdxTenantID string
 	//ADX client secret
 	AdxClientSecret string
+	// flag to check whether LA AAD MSIenabled or not
+	IsLogAnalyticsAADMSIAuth bool
+	// container log or container log v2 tag name
+	MdsdContainerLogTagName string 
 )
 
 var (
@@ -173,8 +180,6 @@ var (
 	EventHashUpdateMutex = &sync.Mutex{}
 	// parent context used by ADX uploader
 	ParentContext = context.Background()
-	// Instance of the Extension to get the extension config for AAD MSI enabled clusters
-	ExtensionInstance *extension.Extension
 )
 
 var (
@@ -566,8 +571,12 @@ func flushKubeMonAgentEventRecords() {
 							Tags:           fmt.Sprintf("%s", tagJson),
 						}
 						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)						
+						var stringMap map[string]string
+						inrec, _ := json.Marshal(&laKubeMonAgentEventsRecord)
+						json.Unmarshal(inrec, &stringMap)
+
 						msgPackEntry := MsgPackEntry{							
-							Record: laKubeMonAgentEventsRecord,
+							Record: stringMap,
 						}
 						msgPackEntries = append(msgPackEntries, msgPackEntry)
 					}
@@ -591,9 +600,12 @@ func flushKubeMonAgentEventRecords() {
 							Tags:           fmt.Sprintf("%s", tagJson),
 						}
 						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)						
+						var stringMap map[string]string
+						inrec, _ := json.Marshal(&laKubeMonAgentEventsRecord)
+						json.Unmarshal(inrec, &stringMap)
 						msgPackEntry := MsgPackEntry{							
-							Record: laKubeMonAgentEventsRecord,
-						}
+							Record: stringMap,
+						}					
 						msgPackEntries = append(msgPackEntries, msgPackEntry)
 					}
 				}
@@ -626,8 +638,12 @@ func flushKubeMonAgentEventRecords() {
 						Tags:           fmt.Sprintf("%s", tagJson),
 					}
 					laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)					
+					var stringMap map[string]string
+					inrec, _ := json.Marshal(&laKubeMonAgentEventsRecord)
+					json.Unmarshal(inrec, &stringMap)
+
 					msgPackEntry := MsgPackEntry{							
-							Record: laKubeMonAgentEventsRecord,
+						Record: stringMap,
 					}
 					msgPackEntries = append(msgPackEntries, msgPackEntry)
 				}
@@ -682,7 +698,7 @@ func flushKubeMonAgentEventRecords() {
 						SendException(message)
 					} else {
 						numRecords := len(msgPackEntries)
-						Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
+						Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records that was %d bytes in %s", numRecords, bts, elapsed)
 					// Send telemetry to AppInsights resource
 						SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
 					} 
@@ -1064,16 +1080,19 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	numContainerLogRecords := 0
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
-		//flush to mdsd	
-		mdsdSourceName := MdsdContainerLogSourceName
-		if (ContainerLogSchemaV2 == true) {
-			mdsdSourceName = MdsdContainerLogV2SourceName
+		//flush to mdsd			
+		if (IsLogAnalyticsAADMSIAuth == true && strings.HasPrefix(MdsdContainerLogTagName, "dcr-") == false) {
+			Log("Info::mdsd::obtaining output stream id")
+			if (ContainerLogSchemaV2 == true) { 
+				MdsdContainerLogTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(ContainerLogV2DataType)
+			} else {
+				MdsdContainerLogTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(ContainerLogDataType)
+			}
 		}
-		mdsdSourceName = ExtensionInstance.GetOutputStreamId(ContainerLogDataType)					
-		Log("Info::mdsd:: using mdsdsource name: %s", mdsdSourceName)
+		Log("Info::mdsd:: using mdsdsource name: %s", MdsdContainerLogTagName)
 
 		fluentForward := MsgPackForward{
-			Tag:     mdsdSourceName,
+			Tag:     MdsdContainerLogTagName,
 			Entries: msgPackEntries,
 		}
 
@@ -1571,6 +1590,17 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
-	// Create Extension config Instance
-	ExtensionInstance = extension.GetInstance(FLBLogger)		
+	
+	if (ContainerLogsRouteV2 == true) {
+		if (ContainerLogSchemaV2 == true) {
+			MdsdContainerLogTagName = MdsdContainerLogV2SourceName
+		} else {
+		  MdsdContainerLogTagName = MdsdContainerLogSourceName
+     	}
+	}
+	IsLogAnalyticsAADMSIAuth = false 
+	if strings.Compare(strings.ToLower(os.Getenv(LogAnalyticsAADMSIAuth)), "true") == 0 { 
+		Log("Log Analytics AAD MSI Auth Configured")
+		IsLogAnalyticsAADMSIAuth = true
+	}		
 }
