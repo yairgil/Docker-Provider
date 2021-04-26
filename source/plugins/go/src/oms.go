@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"Docker-Provider/source/plugins/go/src/extension"
 )
 
 // DataType for Container Log
@@ -169,8 +170,8 @@ var (
 	EventHashUpdateMutex = &sync.Mutex{}
 	// parent context used by ADX uploader
 	ParentContext = context.Background()
-	// DataType to StreamId Map for AAD MSI enabled clusters
-	DataTypeStreamIdMap map[string]string
+	// Instance of the Extension to get the extension config for AAD MSI enabled clusters
+	ExtensionInstance *extension.Extension
 )
 
 var (
@@ -988,23 +989,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	numContainerLogRecords := 0
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
-		//flush to mdsd		
-		if DataTypeStreamIdMap == nil || len(DataTypeStreamIdMap) == 0 || DataTypeStreamIdMap[ContainerLogDataType] == ""{ 
-			Log("Info::mdsd::getting extension config")		
-			var err error	
-			DataTypeStreamIdMap, err = GetExtensionConfig()	
-			if err != nil || DataTypeStreamIdMap == nil || len(DataTypeStreamIdMap) == 0 || DataTypeStreamIdMap[ContainerLogDataType] == "" {
-				Log("Error::mdsd::failed to get the extension config: %s", string(err.Error()))
-				return output.FLB_RETRY
-			}			
-		}			
-
-		mdsdSourceName := DataTypeStreamIdMap[ContainerLogDataType]				
-		//mdsdSourceName := MdsdContainerLogSourceName
+		//flush to mdsd	
+		mdsdSourceName := MdsdContainerLogSourceName
 		if (ContainerLogSchemaV2 == true) {
-			//mdsdSourceName = MdsdContainerLogV2SourceName
-			mdsdSourceName = DataTypeStreamIdMap[ContainerLogV2DataType]				
+			mdsdSourceName = MdsdContainerLogV2SourceName
 		}
+		mdsdSourceName = ExtensionInstance.GetOutputStreamId(ContainerLogDataType)			
 		Log("Info::mdsd:: using mdsdsource name: %s", mdsdSourceName)
 
 		fluentForward := MsgPackForward{
@@ -1505,5 +1495,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		go flushKubeMonAgentEventRecords()
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
-	}		
+	}
+	// Create Extension config Instance
+	ExtensionInstance = extension.GetInstance(FLBLogger)		
 }

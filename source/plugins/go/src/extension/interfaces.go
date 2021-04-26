@@ -1,4 +1,4 @@
-package main
+package extension
 
 // AgentTaggedDataResponse struct for response from AgentTaggedData request
 type AgentTaggedDataResponse struct {
@@ -32,5 +32,3 @@ type ExtensionConfig struct {
 	InputStreams      map[string]interface{} `json:"inputStreams"`
 	OutputStreams     map[string]interface{} `json:"outputStreams"`
 }
-
-

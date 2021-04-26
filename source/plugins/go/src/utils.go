@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,8 +17,6 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	uuid "github.com/google/uuid"
-	"github.com/ugorji/go/codec"
 )
 
 // ReadConfiguration reads a property file
@@ -180,50 +177,4 @@ func isValidUrl(uri string) bool {
 		return false
 	}
 	return true
-}
-
-func GetExtensionConfig() (map[string]string, error) {
-	guid := uuid.New()
-	dataTypeStreamIdMap := make(map[string]string)
-
-	taggedData := map[string]interface{}{"Request": "AgentTaggedData", "RequestId": guid.String(), "Tag": "ContainerInsights", "Version": "1"}
-	jsonBytes, err := json.Marshal(taggedData)
-
-	var data []byte
-	enc := codec.NewEncoderBytes(&data, new(codec.MsgpackHandle))
-	if err := enc.Encode(string(jsonBytes)); err != nil {
-		return dataTypeStreamIdMap, err
-	}
-	
-	fs := &FluentSocketWriter{}
-	responseBytes, err := fs.WriteAndRead(data)
-	defer fs.disConnect()
-	Log("Info::mdsd::Making call to FluentSocket to write and read the config data")
-	if err != nil {
-		return dataTypeStreamIdMap, err
-	}
-	response := string(responseBytes)
-
-	var responseObject AgentTaggedDataResponse
-	err = json.Unmarshal([]byte(response), &responseObject)
-	if err != nil {	
-		Log("Error::mdsd::Failed to unmarshal config data. Error message: %s", string(err.Error()))
-		return dataTypeStreamIdMap, err
-	}
-
-	var extensionData TaggedData
-	json.Unmarshal([]byte(responseObject.TaggedData), &extensionData)
-
-	extensionConfigs := extensionData.ExtensionConfigs	
-	Log("Info::mdsd::build the datatype and streamid map -- start")	
-	for _, extensionConfig := range extensionConfigs {
-		outputStreams := extensionConfig.OutputStreams
-		for dataType, outputStreamID := range outputStreams {
-			Log("Info::mdsd::datatype: %s, outputstreamId: %s", dataType, outputStreamID)
-			dataTypeStreamIdMap[dataType] = outputStreamID.(string)
-		}	
-	}
-	Log("Info::mdsd::build the datatype and streamid map -- end")	
-
-	return dataTypeStreamIdMap, nil
 }
