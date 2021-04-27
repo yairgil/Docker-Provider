@@ -805,6 +805,9 @@ spec:
           - mountPath: C:\etc\config\adx
             name: omsagent-adx-secret
             readOnly: true
+          - mountPath: C:\etc\kubernetes\host
+            name: azure-json-path
+            readOnly: true
          livenessProbe:
           exec:
             command:
@@ -836,6 +839,9 @@ spec:
       - name: docker-windows-kuberenetes-container-logs
         hostPath:
           path: C:\var
+      - name: azure-json-path
+        hostPath:
+          path: C:\k
       - name: docker-windows-containers
         hostPath:
           path: C:\ProgramData\docker\containers
