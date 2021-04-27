@@ -18,8 +18,7 @@ import (
 	"time"
 
 	"github.com/fluent/fluent-bit-go/output"
-	"github.com/google/uuid"
-	"github.com/tinylib/msgp/msgp"
+	"github.com/google/uuid"	
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
@@ -96,7 +95,8 @@ const kubeMonAgentConfigEventFlushInterval = 60
 //Eventsource name in mdsd
 const MdsdContainerLogSourceName = "ContainerLogSource"
 const MdsdContainerLogV2SourceName = "ContainerLogV2Source"
-const MdsdKubeMonAgentEventsSourceName = "KubeMonAgentEvents"
+const MdsdKubeMonAgentEventsSourceName = "KubeMonAgentEventsSource"
+const MdsdInsightsMetricsSourceName = "InsightsMetricsSource"
 
 //container logs route (v2=flush to oneagent, adx= flush to adx ingestion, anything else flush to ODS[default])
 const ContainerLogsV2Route = "v2"
@@ -105,6 +105,9 @@ const ContainerLogsADXRoute = "adx"
 
 //container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
+
+// Tag prefix of mdsd output streamid in AMCS(aka MSI auth) mode
+const MdsdOutputStreamIdTagPrefix = "dcr-"
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -115,6 +118,8 @@ var (
 	MdsdMsgpUnixSocketClient net.Conn
 	// Client for MDSD msgp Unix socket for KubeMon Agent events
 	MdsdKubeMonMsgpUnixSocketClient net.Conn
+	// Client for MDSD msgp Unix socket for Insights Metrics
+	MdsdInsightsMetricsMsgpUnixSocketClient net.Conn
 	// Ingestor for ADX
 	ADXIngestor *ingest.Ingestion
 	// OMSEndpoint ingestion endpoint
@@ -151,12 +156,14 @@ var (
 	AdxTenantID string
 	//ADX client secret
 	AdxClientSecret string
-	// flag to check whether LA AAD MSIenabled or not
+	// flag to check whether LA AAD MSI Auth Enabled or not
 	IsLogAnalyticsAADMSIAuth bool
 	// container log or container log v2 tag name for oneagent route
 	MdsdContainerLogTagName string 
 	// kubemonagent events tag name for oneagent route
 	MdsdKubeMonAgentEventsTagName string
+	// InsightsMetrics tag name for oneagent route
+	MdsdInsightsMetricsTagName string 
 )
 
 var (
@@ -574,13 +581,24 @@ func flushKubeMonAgentEventRecords() {
 						}
 						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)						
 						var stringMap map[string]string
-						inrec, _ := json.Marshal(&laKubeMonAgentEventsRecord)
-						json.Unmarshal(inrec, &stringMap)
-
-						msgPackEntry := MsgPackEntry{							
-							Record: stringMap,
-						}
-						msgPackEntries = append(msgPackEntries, msgPackEntry)
+						jsonBytes, err := json.Marshal(&laKubeMonAgentEventsRecord)
+						if err != nil {
+							message := fmt.Sprintf("Error while Marshalling laKubeMonAgentEventsRecord to json bytes: %s", err.Error())
+							Log(message)
+							SendException(message)
+						} else {
+							err := json.Unmarshal(jsonBytes, &stringMap)
+							if err != nil {
+								message := fmt.Sprintf("Error while UnMarhalling json bytes to stringmap: %s", err.Error())
+								Log(message)
+								SendException(message)
+							} else {
+						    	msgPackEntry := MsgPackEntry{							
+									Record: stringMap,
+								}
+						    msgPackEntries = append(msgPackEntries, msgPackEntry) 
+						  }
+					   }
 					}
 				}
 
@@ -641,53 +659,42 @@ func flushKubeMonAgentEventRecords() {
 					}
 					laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)					
 					var stringMap map[string]string
-					inrec, _ := json.Marshal(&laKubeMonAgentEventsRecord)
-					json.Unmarshal(inrec, &stringMap)
-
-					msgPackEntry := MsgPackEntry{							
-						Record: stringMap,
+					jsonBytes, err := json.Marshal(&laKubeMonAgentEventsRecord)
+					if err != nil {					
+						message := fmt.Sprintf("Error while Marshalling laKubeMonAgentEventsRecord to json bytes: %s", err.Error())
+						Log(message)
+						SendException(message)
+					} else {
+						if err := json.Unmarshal(jsonBytes, &stringMap); err != nil { 							
+							message := fmt.Sprintf("Error while UnMarshalling json bytes to stringmap: %s", err.Error())
+						    Log(message)
+						    SendException(message)
+						} else {					
+							msgPackEntry := MsgPackEntry{							
+								Record: stringMap,
+						    }
+						   msgPackEntries = append(msgPackEntries, msgPackEntry) 
+						}
 					}
-					msgPackEntries = append(msgPackEntries, msgPackEntry)
 				}
 			}
-			if len(msgPackEntries) > 0 {					
-			
-				if (IsLogAnalyticsAADMSIAuth == true && strings.HasPrefix(MdsdKubeMonAgentEventsTagName, "dcr-") == false) {
+			if (ContainerLogsRouteV2 == true && len(msgPackEntries) > 0) {								
+				if (IsLogAnalyticsAADMSIAuth == true && strings.HasPrefix(MdsdKubeMonAgentEventsTagName, MdsdOutputStreamIdTagPrefix) == false) {
 					Log("Info::mdsd::obtaining output stream id for data type: %s", KubeMonAgentEventDataType)					
 					MdsdKubeMonAgentEventsTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(KubeMonAgentEventDataType)				
 				}
 				Log("Info::mdsd:: using mdsdsource name for KubeMonAgentEvents: %s", MdsdKubeMonAgentEventsTagName)
-				fluentForward := MsgPackForward{
-					Tag:     MdsdKubeMonAgentEventsTagName,
-					Entries: msgPackEntries,
-				}
-
-				//determine the size of msgp message
-				msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
-				for i := range fluentForward.Entries {
-					msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
-				}
-
-				//allocate buffer for msgp message
-				var msgpBytes []byte
-				msgpBytes = msgp.Require(nil, msgpSize)
-
-				//construct the stream
-				msgpBytes = append(msgpBytes, 0x92)
-				msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
-				msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
-				batchTime := time.Now().Unix()
-				for entry := range fluentForward.Entries {
-					msgpBytes = append(msgpBytes, 0x92)
-					msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
-					msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
-				}	
-				
+				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdKubeMonAgentEventsTagName, msgPackEntries)							
 				if MdsdKubeMonMsgpUnixSocketClient == nil {
 					Log("Error::mdsd::mdsd connection for KubeMonAgentEvents does not exist. re-connecting ...")
-					CreateMDSDClientKubeMon()					
+					CreateMDSDClientKubeMon()	
+					if MdsdKubeMonMsgpUnixSocketClient == nil {
+						Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")					
+						ContainerLogTelemetryMutex.Lock()
+						defer ContainerLogTelemetryMutex.Unlock()
+						KubeMonEventsMDSDClientCreateErrors += 1					
+					}				
 				}
-
 				if MdsdKubeMonMsgpUnixSocketClient != nil {							
 					deadline := 10 * time.Second
 					MdsdKubeMonMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse			
@@ -704,63 +711,60 @@ func flushKubeMonAgentEventRecords() {
 					} else {
 						numRecords := len(msgPackEntries)
 						Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records that was %d bytes in %s", numRecords, bts, elapsed)
-					// Send telemetry to AppInsights resource
+					    // Send telemetry to AppInsights resource
 						SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
 					} 
 				} else {
 					Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")																					
-				}		
+				}	
+			} else if len(laKubeMonAgentEventsRecords) > 0 {
+				kubeMonAgentEventEntry := KubeMonAgentEventBlob{
+					DataType:  KubeMonAgentEventDataType,
+					IPName:    IPName,
+					DataItems: laKubeMonAgentEventsRecords}
 
+				marshalled, err := json.Marshal(kubeMonAgentEventEntry)
+
+				if err != nil {
+					message := fmt.Sprintf("Error while marshalling kubemonagentevent entry: %s", err.Error())
+					Log(message)
+					SendException(message)
+				} else {
+					req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+					req.Header.Set("Content-Type", "application/json")
+					req.Header.Set("User-Agent", userAgent)
+					reqId := uuid.New().String()
+					req.Header.Set("X-Request-ID", reqId)
+					//expensive to do string len for every request, so use a flag
+					if ResourceCentric == true {
+						req.Header.Set("x-ms-AzureResourceId", ResourceID)
+					}
+
+					resp, err := HTTPClient.Do(req)
+					elapsed = time.Since(start)
+
+					if err != nil {
+						message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
+						Log(message)
+						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+					} else if resp == nil || resp.StatusCode != 200 {
+						if resp != nil {
+							Log("flushKubeMonAgentEventRecords: RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
+						}
+						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+					} else {
+						numRecords := len(laKubeMonAgentEventsRecords)
+						Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
+
+						// Send telemetry to AppInsights resource
+						SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
+
+					}
+					if resp != nil && resp.Body != nil {
+						defer resp.Body.Close()
+					}
+				}
 			}
-
-			// if len(laKubeMonAgentEventsRecords) > 0 {
-			// 	kubeMonAgentEventEntry := KubeMonAgentEventBlob{
-			// 		DataType:  KubeMonAgentEventDataType,
-			// 		IPName:    IPName,
-			// 		DataItems: laKubeMonAgentEventsRecords}
-
-			// 	marshalled, err := json.Marshal(kubeMonAgentEventEntry)
-
-			// 	if err != nil {
-			// 		message := fmt.Sprintf("Error while marshalling kubemonagentevent entry: %s", err.Error())
-			// 		Log(message)
-			// 		SendException(message)
-			// 	} else {
-			// 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-			// 		req.Header.Set("Content-Type", "application/json")
-			// 		req.Header.Set("User-Agent", userAgent)
-			// 		reqId := uuid.New().String()
-			// 		req.Header.Set("X-Request-ID", reqId)
-			// 		//expensive to do string len for every request, so use a flag
-			// 		if ResourceCentric == true {
-			// 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
-			// 		}
-
-			// 		resp, err := HTTPClient.Do(req)
-			// 		elapsed = time.Since(start)
-
-			// 		if err != nil {
-			// 			message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
-			// 			Log(message)
-			// 			Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
-			// 		} else if resp == nil || resp.StatusCode != 200 {
-			// 			if resp != nil {
-			// 				Log("flushKubeMonAgentEventRecords: RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
-			// 			}
-			// 			Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
-			// 		} else {
-			// 			numRecords := len(laKubeMonAgentEventsRecords)
-			// 			Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
-
-			// 			// Send telemetry to AppInsights resource
-			// 			SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
-
-			// 		}
-			// 		if resp != nil && resp.Body != nil {
-			// 			defer resp.Body.Close()
-			// 		}
-			// 	}
-			// }
 		} else {
 			// Setting this to false to allow for subsequent flushes after the first hour
 			skipKubeMonEventsFlush = false
@@ -845,70 +849,143 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived %v metrics from %v timeseries", len(laMetrics), len(telegrafRecords))
 		Log(message)
 	}
+	
+	if (ContainerLogsRouteV2 == true) {		
+		var msgPackEntries []MsgPackEntry			
+		var i int
+		start := time.Now()
+        var elapsed time.Duration
 
-	var metrics []laTelegrafMetric
-	var i int
-
-	for i = 0; i < len(laMetrics); i++ {
-		metrics = append(metrics, *laMetrics[i])
-	}
-
-	laTelegrafMetrics := InsightsMetricsBlob{
-		DataType:  InsightsMetricsDataType,
-		IPName:    IPName,
-		DataItems: metrics}
-
-	jsonBytes, err := json.Marshal(laTelegrafMetrics)
-
-	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
-		Log(message)
-		SendException(message)
-		return output.FLB_OK
-	}
-
-	//Post metrics data to LA
-	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
-
-	//req.URL.Query().Add("api-version","2016-04-01")
-
-	//set headers
-	req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
-	req.Header.Set("User-Agent", userAgent)
-	reqID := uuid.New().String()
-	req.Header.Set("X-Request-ID", reqID)
-
-	//expensive to do string len for every request, so use a flag
-	if ResourceCentric == true {
-		req.Header.Set("x-ms-AzureResourceId", ResourceID)
-	}
-
-	start := time.Now()
-	resp, err := HTTPClient.Do(req)
-	elapsed := time.Since(start)
-
-	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending %v metrics. duration:%v err:%q \n", len(laMetrics), elapsed, err.Error())
-		Log(message)
-		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
-		return output.FLB_RETRY
-	}
-
-	if resp == nil || resp.StatusCode != 200 {
-		if resp != nil {
-			Log("PostTelegrafMetricsToLA::Error:(retriable) RequestID %s Response Status %v Status Code %v", reqID, resp.Status, resp.StatusCode)
+		for i = 0; i < len(laMetrics); i++ { 
+				var stringMap map[string]string 
+				jsonBytes, err := json.Marshal(*laMetrics[i])
+				if err != nil {
+					message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
+					Log(message)
+					SendException(message)
+					return output.FLB_OK
+				} else {
+					if err := json.Unmarshal(jsonBytes, &stringMap); err != nil { 							
+						message := fmt.Sprintf("Error while UnMarshalling json bytes to stringmap: %s", err.Error())
+						Log(message)
+						SendException(message)
+						return output.FLB_OK
+					} else {					
+						msgPackEntry := MsgPackEntry{							
+							Record: stringMap,
+						}
+				     	msgPackEntries = append(msgPackEntries, msgPackEntry) 
+					}				
+				}
 		}
-		if resp != nil && resp.StatusCode == 429 {
-			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
+		if (len(msgPackEntries) > 0) {			
+				if (IsLogAnalyticsAADMSIAuth == true && (strings.HasPrefix(MdsdInsightsMetricsTagName, MdsdOutputStreamIdTagPrefix) == false)) {
+					Log("Info::mdsd::obtaining output stream id for InsightsMetricsDataType since Log Analytics AAD MSI Auth Enabled")
+					MdsdInsightsMetricsTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(InsightsMetricsDataType)			
+				}
+				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdInsightsMetricsTagName, msgPackEntries)			
+				if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
+					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+					CreateMDSDClientInsightsMetrics()
+					if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
+						Log("Error::mdsd::Unable to create mdsd client for insights metrics. Please check error log.")					
+						ContainerLogTelemetryMutex.Lock()
+						defer ContainerLogTelemetryMutex.Unlock()
+						InsightsMetricsMDSDClientCreateErrors += 1
+						return output.FLB_RETRY
+					}
+				}
+
+				deadline := 10 * time.Second
+				MdsdInsightsMetricsMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse			
+				bts, er := MdsdInsightsMetricsMsgpUnixSocketClient.Write(msgpBytes)
+
+				elapsed = time.Since(start)
+
+				if er != nil {
+					Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
+					if MdsdInsightsMetricsMsgpUnixSocketClient != nil {
+						MdsdInsightsMetricsMsgpUnixSocketClient.Close()
+						MdsdInsightsMetricsMsgpUnixSocketClient = nil
+					}
+
+					ContainerLogTelemetryMutex.Lock()
+					defer ContainerLogTelemetryMutex.Unlock()
+					ContainerLogsSendErrorsToMDSDFromFluent += 1
+
+					return output.FLB_RETRY
+				} else {
+					numTelegrafMetricsRecords := len(msgPackEntries)
+					Log("Success::mdsd::Successfully flushed %d telegraf metrics records that was %d bytes to mdsd in %s ", numTelegrafMetricsRecords, bts, elapsed)
+				}
 		}
-		return output.FLB_RETRY
+		
+	} else {
+
+		var metrics []laTelegrafMetric
+		var i int
+
+		for i = 0; i < len(laMetrics); i++ {
+			metrics = append(metrics, *laMetrics[i])
+		}
+
+		laTelegrafMetrics := InsightsMetricsBlob{
+			DataType:  InsightsMetricsDataType,
+			IPName:    IPName,
+			DataItems: metrics}
+
+		jsonBytes, err := json.Marshal(laTelegrafMetrics)
+
+		if err != nil {
+			message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
+			Log(message)
+			SendException(message)
+			return output.FLB_OK
+		}
+
+		//Post metrics data to LA
+		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
+
+		//req.URL.Query().Add("api-version","2016-04-01")
+
+		//set headers
+		req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
+		req.Header.Set("User-Agent", userAgent)
+		reqID := uuid.New().String()
+		req.Header.Set("X-Request-ID", reqID)
+
+		//expensive to do string len for every request, so use a flag
+		if ResourceCentric == true {
+			req.Header.Set("x-ms-AzureResourceId", ResourceID)
+		}
+
+		start := time.Now()
+		resp, err := HTTPClient.Do(req)
+		elapsed := time.Since(start)
+
+		if err != nil {
+			message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending %v metrics. duration:%v err:%q \n", len(laMetrics), elapsed, err.Error())
+			Log(message)
+			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
+			return output.FLB_RETRY
+		}
+
+		if resp == nil || resp.StatusCode != 200 {
+			if resp != nil {
+				Log("PostTelegrafMetricsToLA::Error:(retriable) RequestID %s Response Status %v Status Code %v", reqID, resp.Status, resp.StatusCode)
+			}
+			if resp != nil && resp.StatusCode == 429 {
+				UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
+			}
+			return output.FLB_RETRY
+		}
+
+		defer resp.Body.Close()
+
+		numMetrics := len(laMetrics)
+		UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0)
+		Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
 	}
-
-	defer resp.Body.Close()
-
-	numMetrics := len(laMetrics)
-	UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0)
-	Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
 
 	return output.FLB_OK
 }
@@ -1086,7 +1163,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
 		//flush to mdsd			
-		if (IsLogAnalyticsAADMSIAuth == true && strings.HasPrefix(MdsdContainerLogTagName, "dcr-") == false) {
+		if (IsLogAnalyticsAADMSIAuth == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false) {
 			Log("Info::mdsd::obtaining output stream id")
 			if (ContainerLogSchemaV2 == true) { 
 				MdsdContainerLogTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(ContainerLogV2DataType)
@@ -1096,32 +1173,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 		Log("Info::mdsd:: using mdsdsource name: %s", MdsdContainerLogTagName)
 
-		fluentForward := MsgPackForward{
-			Tag:     MdsdContainerLogTagName,
-			Entries: msgPackEntries,
-		}
-
-		//determine the size of msgp message
-		msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
-		for i := range fluentForward.Entries {
-			msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
-		}
-
-		//allocate buffer for msgp message
-		var msgpBytes []byte
-		msgpBytes = msgp.Require(nil, msgpSize)
-
-		//construct the stream
-		msgpBytes = append(msgpBytes, 0x92)
-		msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
-		msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
-		batchTime := time.Now().Unix()
-		for entry := range fluentForward.Entries {
-			msgpBytes = append(msgpBytes, 0x92)
-			msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
-			msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
-		}
-
+		msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdContainerLogTagName, msgPackEntries)		
 		if MdsdMsgpUnixSocketClient == nil {
 			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
 			CreateMDSDClient()
@@ -1564,6 +1616,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	if ContainerLogsRouteV2 == true {
 		CreateMDSDClient()
+		CreateMDSDClientKubeMon()
+		CreateMDSDClientInsightsMetrics()
 	} else if ContainerLogsRouteADX == true {
 		CreateADXClient()
 	}
@@ -1596,15 +1650,17 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
 	
+	//TODO - gangams- rename ContainerLogsRouteV2 to generic name to reflect v2 route
 	if (ContainerLogsRouteV2 == true) {
 		if (ContainerLogSchemaV2 == true) {
 			MdsdContainerLogTagName = MdsdContainerLogV2SourceName
 		} else {
 		  MdsdContainerLogTagName = MdsdContainerLogSourceName
      	}
-	}
-	// TODO - add flag for oneagent route
-	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
+
+		MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
+    	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
+	}		
 	IsLogAnalyticsAADMSIAuth = false 
 	if strings.Compare(strings.ToLower(os.Getenv(LogAnalyticsAADMSIAuth)), "true") == 0 { 
 		Log("Log Analytics AAD MSI Auth Configured")

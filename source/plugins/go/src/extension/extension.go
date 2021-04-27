@@ -21,11 +21,12 @@ var logger *log.Logger
 func GetInstance(flbLogger *log.Logger) *Extension {
     once.Do(func() {
         singleton = &Extension{make(map[string]string)}
-		flbLogger.Println("Extension Config Instance created")
+		flbLogger.Println("Extension Instance created")
     })
 	logger = flbLogger
     return singleton
 }
+
 func (e *Extension) GetOutputStreamId(datatype string) string {
 	extensionconfiglock.Lock()
 	defer extensionconfiglock.Unlock()  	
@@ -91,6 +92,3 @@ func getDataTypeToStreamIdMapping() (map[string]string, error) {
 
 	return datatypeOutputStreamMap, nil
 }
-
-
-
