@@ -258,7 +258,7 @@ module Fluent::Plugin
         if @aad_msi_auth_enable        
           # kubeevents
           if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")  
-            @tag = ExtensionConfig.instance.get_output_stream_id("KUBE_EVENTS_BLOB")  
+            @tag = Extension.instance.get_output_stream_id("KUBE_EVENTS_BLOB")  
             if @tag.nil? || @tag.empty?
               $log.warn("in_kube_events::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_EVENTS_BLOB")                       
             else

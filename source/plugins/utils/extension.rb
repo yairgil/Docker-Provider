@@ -7,13 +7,13 @@ require_relative "constants"
 require_relative "ApplicationInsightsUtility"
 
 
-class ExtensionConfig
+class Extension
   include Singleton
 
   def initialize
     @cache = {}
     @cache_lock = Mutex.new 
-    $log.info("ExtensionConfig::initialize complete")
+    $log.info("Extension::initialize complete")
   end
   
   def get_output_stream_id(datatypeId)
@@ -21,16 +21,16 @@ class ExtensionConfig
       if @cache.has_key?(datatypeId)
         return @cache[datatypeId]
       else
-        @cache = get_extension_config()
+        @cache = get_config()
         return @cache[datatypeId]
       end
     }
   end
 
   private 
-  def get_extension_config()
+  def get_config()
     extConfig = Hash.new
-    $log.info("ExtensionConfig::get_extension_config start ...")
+    $log.info("Extension::get_config start ...")
     begin
       clientSocket = UNIXSocket.open(Constants::ONEAGENT_FLUENT_SOCKET_NAME)
       requestId = SecureRandom.uuid.to_s
@@ -65,12 +65,12 @@ class ExtensionConfig
         end
       end
     rescue => errorStr
-      $log.warn("ExtensionConfig::get_extension_config failed: #{error}")
+      $log.warn("Extension::get_config failed: #{error}")
       ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
     ensure
       clientSocket.close unless clientSocket.nil?
     end
-    $log.info("ExtensionConfig::get_extension_config complete ...")
+    $log.info("Extension::get_config complete ...")
     return extConfig
   end
 end

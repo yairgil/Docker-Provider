@@ -669,7 +669,7 @@ module Fluent::Plugin
         if @aad_msi_auth_enable 
           # perf
           if @kubeperfTag.nil? || @kubeperfTag.empty? || !@kubeperfTag.start_with?("dcr-")
-            @kubeperfTag = ExtensionConfig.instance.get_output_stream_id("LINUX_PERF_BLOB")
+            @kubeperfTag = Extension.instance.get_output_stream_id("LINUX_PERF_BLOB")
             if  @kubeperfTag.nil? || @kubeperfTag.empty?
               $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: LINUX_PERF_BLOB")
             else
@@ -679,7 +679,7 @@ module Fluent::Plugin
 
           # kube services
           if @kubeservicesTag.nil? || @kubeservicesTag.empty? || !@kubeservicesTag.start_with?("dcr-")     
-            @kubeservicesTag = ExtensionConfig.instance.get_output_stream_id("KUBE_SERVICES_BLOB")
+            @kubeservicesTag = Extension.instance.get_output_stream_id("KUBE_SERVICES_BLOB")
             if  @kubeservicesTag.nil? || @kubeservicesTag.empty?
               $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: KUBE_SERVICES_BLOB")
             else
@@ -689,7 +689,7 @@ module Fluent::Plugin
 
           # container inventory
           if @containerInventoryTag.nil? || @containerInventoryTag.empty? || !@containerInventoryTag.start_with?("dcr-")     
-            @containerInventoryTag =  ExtensionConfig.instance.get_output_stream_id("CONTAINER_INVENTORY_BLOB")                     
+            @containerInventoryTag =  Extension.instance.get_output_stream_id("CONTAINER_INVENTORY_BLOB")                     
             if @containerInventoryTag.nil? || @containerInventoryTag.empty?
               $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: CONTAINER_INVENTORY_BLOB")  
             else
@@ -699,7 +699,7 @@ module Fluent::Plugin
 
           # insightsmetrics
           if @insightsMetricsTag.nil? || @insightsMetricsTag.empty? || !@insightsMetricsTag.start_with?("dcr-")     
-              @insightsMetricsTag = ExtensionConfig.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+              @insightsMetricsTag = Extension.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
               if @insightsMetricsTag.nil? || @insightsMetricsTag.empty?
                 $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")  
               else
@@ -709,7 +709,7 @@ module Fluent::Plugin
 
           # kubepodinventory
           if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = ExtensionConfig.instance.get_output_stream_id("KUBE_POD_INVENTORY_BLOB")  
+            @tag = Extension.instance.get_output_stream_id("KUBE_POD_INVENTORY_BLOB")  
             if @tag.nil? || @tag.empty?
               $log.warn("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_POD_INVENTORY_BLOB")
             else

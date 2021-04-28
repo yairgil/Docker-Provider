@@ -286,7 +286,7 @@ module Fluent::Plugin
               if @aad_msi_auth_enable
                 # kubehealth
                 if @rewrite_tag.nil? || @rewrite_tag.empty? || !@rewrite_tag.start_with?("dcr-")  
-                    @rewrite_tag = ExtensionConfig.instance.get_output_stream_id("KUBE_HEALTH_BLOB")  
+                    @rewrite_tag = Extension.instance.get_output_stream_id("KUBE_HEALTH_BLOB")  
                     if @rewrite_tag.nil? || @rewrite_tag.empty?
                       $log.warn("filter_health_model_builder::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_HEALTH_BLOB")           
                     else

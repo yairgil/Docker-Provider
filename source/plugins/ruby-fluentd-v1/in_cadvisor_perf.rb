@@ -143,7 +143,7 @@ module Fluent::Plugin
         if @aad_msi_auth_enable        
           # perf
           if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = ExtensionConfig.instance.get_output_stream_id("LINUX_PERF_BLOB")  
+            @tag = Extension.instance.get_output_stream_id("LINUX_PERF_BLOB")  
             if @tag.nil? || @tag.empty?
               $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: LINUX_PERF_BLOB")           
             else            
@@ -152,7 +152,7 @@ module Fluent::Plugin
           end   
           # insights metrics         
           if @insightsmetricstag.nil? || @insightsmetricstag.empty? || !@insightsmetricstag.start_with?("dcr-")     
-            @insightsmetricstag = ExtensionConfig.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+            @insightsmetricstag = Extension.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
             if @insightsmetricstag.nil? || @insightsmetricstag.empty?
               $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
             else            
