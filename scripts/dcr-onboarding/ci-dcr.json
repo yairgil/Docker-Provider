@@ -1,5 +1,5 @@
 {
-    "location": "<WorkspaceRegion>",
+    "location": "eastus2euap",
     "properties": {
       "dataSources": {       
           "extensions": [
@@ -8,7 +8,7 @@
                   "streams": [
                       "Microsoft-Perf",
                       "Microsoft-ContainerInventory",
-                      "Microsoft-ContainerLog",
+                      "Microsoft-ContainerLog",                                           
                       "Microsoft-ContainerNodeInventory",
                       "Microsoft-KubeEvents",
                       "Microsoft-KubeHealth",
@@ -16,7 +16,8 @@
                       "Microsoft-KubeNodeInventory",
                       "Microsoft-KubePodInventory",
                       "Microsoft-KubePVInventory",
-                      "Microsoft-KubeServices"                    
+                      "Microsoft-KubeServices",
+                      "Microsoft-InsightsMetrics"                    
 
                   ],
                   "extensionName": "ContainerInsights"
@@ -26,7 +27,7 @@
       "destinations": {
         "logAnalytics": [
           {
-            "workspaceResourceId": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/my-resource-group/providers/Microsoft.OperationalInsights/workspaces/my-workspace",
+            "workspaceResourceId": "/subscriptions/<subId>/resourcegroups/<rgName>/providers/microsoft.operationalinsights/workspaces/<workspaceName>",
             "name": "ciworkspace"
           }
         ]
@@ -36,7 +37,7 @@
           "streams": [
             "Microsoft-Perf",
             "Microsoft-ContainerInventory",
-            "Microsoft-ContainerLog",
+            "Microsoft-ContainerLog",                    
             "Microsoft-ContainerNodeInventory",
             "Microsoft-KubeEvents",
             "Microsoft-KubeHealth",
@@ -44,7 +45,8 @@
             "Microsoft-KubeNodeInventory",
             "Microsoft-KubePodInventory",
             "Microsoft-KubePVInventory",
-            "Microsoft-KubeServices"                         
+            "Microsoft-KubeServices",
+            "Microsoft-InsightsMetrics"                
           ],
           "destinations": [
             "ciworkspace"
