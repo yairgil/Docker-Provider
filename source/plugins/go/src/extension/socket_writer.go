@@ -11,7 +11,7 @@ const SockAddress = "/var/run/mdsd/default_fluent.socket"
 const MaxRetries = 5
 
 //ReadBufferSize for reading data from sockets
-const ReadBufferSize = 8 << 20 //Read 8MB at a time
+const ReadBufferSize = 20480 //20KB
 
 //FluentSocketWriter writes data to AMA's default fluent socket
 type FluentSocketWriter struct {
