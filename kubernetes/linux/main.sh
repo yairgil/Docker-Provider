@@ -553,8 +553,8 @@ fi
 
 #start oneagent
 if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true") ]]; then
-      export AAD_MSI_AUTH_ENABLE=true
-      echo "export AAD_MSI_AUTH_ENABLE=true" >> ~/.bashrc
+      export AAD_MSI_AUTH_MODE=true
+      echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
       export ONE_AGENT_ENABLE=true
       echo "export ONE_AGENT_ENABLE=true" >> ~/.bashrc
 

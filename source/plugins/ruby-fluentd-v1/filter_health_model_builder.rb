@@ -5,11 +5,12 @@
 require 'fluent/plugin/filter'
 
 module Fluent::Plugin
-    require_relative "extension_config"
+    require_relative "extension"
+    require_relative "extension_utils"
     require 'logger'
     require 'yajl/json_gem'
     Dir[File.join(__dir__, './health', '*.rb')].each { |file| require file }
-
+ 
 
     class FilterHealthModelBuilder < Filter
         include HealthModel
@@ -95,9 +96,15 @@ module Fluent::Plugin
             end
             begin
                 new_es = Fluent::MultiEventStream.new
-                time = Time.now
-
-                overrideTagsWithStreamIdsIfAADAuthEnabled()                
+                time = Time.now              
+                if ExtensionUtils.isAADMSIAuthMode()
+                    $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE ENABLED")             
+                    if !@rewrite_tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+                      @rewrite_tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
+                    end                            
+                end           
+                # debug logs          
+                $log.info("filter_health_model_builder::filter_stream: using tag -#{@rewrite_tag} @ #{Time.now.utc.iso8601}")                       
 
                 if tag.start_with?("kubehealth.DaemonSet.Node")
                     node_records = []
@@ -279,24 +286,6 @@ module Fluent::Plugin
                  @log.warn "Message: #{e.message} Backtrace: #{e.backtrace}"
                  return nil
             end
-        end
-
-        def overrideTagsWithStreamIdsIfAADAuthEnabled()
-           begin
-              if @aad_msi_auth_enable
-                # kubehealth
-                if @rewrite_tag.nil? || @rewrite_tag.empty? || !@rewrite_tag.start_with?("dcr-")  
-                    @rewrite_tag = Extension.instance.get_output_stream_id("KUBE_HEALTH_BLOB")  
-                    if @rewrite_tag.nil? || @rewrite_tag.empty?
-                      $log.warn("filter_health_model_builder::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_HEALTH_BLOB")           
-                    else
-                      $log.info("filter_health_model_builder::overrideTagsWithStreamIdsIfAADAuthEnabled: using kubehealth tag: #{@rewrite_tag}")
-                    end
-                end
-              end   
-            rescue => errorStr
-                $log.warn("filter_health_model_builder::overrideTagsWithStreamIdsIfAADAuthEnabled:failed with an error: #{errorStr}")           
-            end 
-        end
+        end       
     end
 end

@@ -4,6 +4,8 @@
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
+  require_relative "extension"
+  require_relative "extension_utils"
   class Kube_Kubestate_HPA_Input < Input
     Fluent::Plugin.register_input("kubestate_hpa", self)
     @@istestvar = ENV["ISTEST"]
@@ -85,7 +87,14 @@ module Fluent::Plugin
 
         @hpaCount = 0
 
-        overrideTagsWithStreamIdsIfAADAuthEnabled()
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kubestate_hpa::enumerate: AAD AUTH MSI MODE ENABLED")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end                            
+        end           
+        # debug logs          
+        $log.info("in_kubestate_hpa::enumerate: using tag -#{@tag} @ #{Time.now.utc.iso8601}")  
 
         # Initializing continuation token to nil
         continuationToken = nil
@@ -239,24 +248,6 @@ module Fluent::Plugin
         @mutex.lock
       end
       @mutex.unlock
-    end
-
-    def overrideTagsWithStreamIdsIfAADAuthEnabled()
-      begin
-        if @aad_msi_auth_enable
-          # kubestatehpa
-          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = Extension.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
-            if @tag.nil? || @tag.empty?
-              $log.warn("in_kubestate_hpa::updateTagsWithStreamIds: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
-            else
-              $log.info("in_kubestate_hpa::overrideTagsWithStreamIdsIfAADAuthEnabled: using insightsmetricstag: #{@tag}")             
-            end
-          end     
-        end   
-      rescue => errorStr
-        $log.warn("in_kubestate_hpa::updateTagsWithStreamIds: failed with an error : #{errorStr}")           
-      end 
-    end
+    end    
   end
 end

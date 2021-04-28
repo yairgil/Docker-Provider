@@ -3,8 +3,9 @@
 
 require 'fluent/plugin/input'
 
-module Fluent::Plugin
-  require_relative "extension_config"
+module Fluent::Plugin  
+  require_relative "extension"
+  require_relative "extension_utils"
   class Kube_Event_Input < Input
     Fluent::Plugin.register_input("kube_events", self)
     @@KubeEventsStateFile = "/var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml"
@@ -92,8 +93,15 @@ module Fluent::Plugin
         eventQueryState = getEventQueryState
         newEventQueryState = []
         @eventsCount = 0
-
-        overrideTagsWithStreamIdsIfAADAuthEnabled()        
+        
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE ENABLED")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
+          end                            
+        end           
+        # debug logs          
+        $log.info("in_kube_events::enumerate: using kubeevents tag -#{@tag} @ #{Time.now.utc.iso8601}")         
 
         # Initializing continuation token to nil
         continuationToken = nil
@@ -252,24 +260,5 @@ module Fluent::Plugin
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
-
-    def overrideTagsWithStreamIdsIfAADAuthEnabled()
-      begin
-        if @aad_msi_auth_enable        
-          # kubeevents
-          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")  
-            @tag = Extension.instance.get_output_stream_id("KUBE_EVENTS_BLOB")  
-            if @tag.nil? || @tag.empty?
-              $log.warn("in_kube_events::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_EVENTS_BLOB")                       
-            else
-              $log.info("in_kube_events::overrideTagsWithStreamIdsIfAADAuthEnabled: using kubeEventsTag: #{@tag}")
-            end
-          end
-        end   
-      rescue => errorStr
-        $log.warn("in_kube_events::overrideTagsWithStreamIdsIfAADAuthEnabled: failed with an error: #{errorStr}")           
-      end
-    end
-
   end # Kube_Event_Input
 end # module

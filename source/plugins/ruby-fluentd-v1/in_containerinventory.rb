@@ -4,6 +4,8 @@
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
+  require_relative "extension"
+  require_relative "extension_utils"
   class Container_Inventory_Input < Input
     Fluent::Plugin.register_input("containerinventory", self)
 
@@ -60,8 +62,15 @@ module Fluent::Plugin
       containerInventory = Array.new
       eventStream = Fluent::MultiEventStream.new
       hostName = ""
-      $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
-      overrideTagsWithStreamIdsIfAADAuthEnabled()     
+      $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")      
+      if ExtensionUtils.isAADMSIAuthMode()
+        $log.info("in_container_inventory::enumerate: AAD AUTH MSI MODE ENABLED")             
+        if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+          @tag = ExtensionUtils.getOutputStreamId(Constants::CONTAINER_INVENTORY_DATA_TYPE)
+        end                            
+      end       
+      # debug logs          
+      $log.info("in_container_inventory::enumerate: using tag -#{@tag} @ #{Time.now.utc.iso8601}")                  
       begin
         containerRuntimeEnv = ENV["CONTAINER_RUNTIME"]
         $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")
@@ -153,24 +162,6 @@ module Fluent::Plugin
         @mutex.lock
       end
       @mutex.unlock
-    end
-    
-    def overrideTagsWithStreamIdsIfAADAuthEnabled()
-      begin 
-        if @aad_msi_auth_enable
-          # containerinventory
-          if @tag.nil? || @tag.empty? || @tag.start_with?("dcr-")
-            @tag = Extension.instance.get_output_stream_id("CONTAINER_INVENTORY_BLOB")  
-            if @tag.nil? || @tag.empty?
-              $log.warn("in_containerinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: CONTAINER_INVENTORY_BLOB")           
-            else            
-              $log.info("in_containerinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using containerinventorytag: #{@tag}")
-            end
-          end      
-        end   
-      rescue => errorStr
-        $log.warn "in_containerinventory::updateTagsWithStreamIds: Failed to update tags: #{errorStr}"
-      end
-    end
+    end     
   end # Container_Inventory_Input
 end # module
