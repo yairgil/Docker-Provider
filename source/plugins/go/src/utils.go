@@ -144,7 +144,7 @@ func CreateMDSDClientKubeMon() {
 	conn, err := net.DialTimeout("unix",
 		"/var/run/mdsd/default_fluent.socket", 10*time.Second)
 	if err != nil {
-		Log("Error::mdsd::Unable to open MDSD msgp socket connection %s", err.Error())
+		Log("Error::mdsd::Unable to open MDSD msgp socket connection for KubeMon events %s", err.Error())
 		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
 	} else {
 		Log("Successfully created MDSD msgp socket connection for KubeMon events")
