@@ -38,44 +38,46 @@ helm repo add csi-secrets-store-provider-azure https://raw.githubusercontent.com
 helm install csi csi-secrets-store-provider-azure/csi-secrets-store-provider-azure --namespace csi --create-namespace
 ```
 
-- **Step 5** : Install prometheus-collector chart in your cluster
+- **Step 5** : Pull, Export & Install prometheus-collector chart in your cluster
 ```shell
 helm chart pull mcr.microsoft.com/azuremonitor/containerinsights/cidev:prometheus-collector-chart-0.0.2
 helm chart export mcr.microsoft.com/azuremonitor/containerinsights/cidev:prometheus-collector-chart-0.0.2 .
-helm upgrade --install my-collector-release prometheus-collector --set azureKeyVault.name='**' --set azureKeyVault.pfxCertNames='{**,**}' --set azureKeyVault.tenantId='**' --set clusterName='**' --set azureMetricAccount.defaultAccountName='**' --set azureKeyVault.clientId='**' --set azureKeyVault.clientSecret='****' --namespace=prom-collector --create-namespace
+
+helm upgrade --install <chart_release_name> ./prometheus-collector --set azureKeyVault.name='**' --set azureKeyVault.pfxCertNames='{**,**}' --set azureKeyVault.tenantId='**' --set clusterName='**' --set azureMetricAccount.defaultAccountName='**' --set azureKeyVault.clientId='**' --set azureKeyVault.clientSecret='****' --namespace=<my_prom_collector_namespace> --create-namespace
 ```
   **Example** :-
 ```shell
-helm install my-collector-dev-release ./prometheus-collector --set azureKeyVault.name='containerinsightstest1kv' --set azureKeyVault.pfxCertNames='{containerinsightsgenevaaccount1-pfx,containerinsightsgenevaaccount2-pfx}' --set azureKeyVault.tenantId='72f988bf-****-41af-****-2d7cd011db47' --set clusterName='mydevcluster' --set azureMetricAccount.defaultAccountName='containerinsightsgenevaaccount1' --set azureKeyVault.clientId='70937f05-****-4fc0-****-de917f2a9402' --set azureKeyVault.clientSecret='**********************************' --namespace=prom-collector --create-namespace
+helm upgrade --install my-collector-dev-release ./prometheus-collector --set azureKeyVault.name='containerinsightstest1kv' --set azureKeyVault.pfxCertNames='{containerinsightsgenevaaccount1-pfx,containerinsightsgenevaaccount2-pfx}' --set azureKeyVault.tenantId='72f988bf-****-41af-****-2d7cd011db47' --set clusterName='mydevcluster' --set azureMetricAccount.defaultAccountName='containerinsightsgenevaaccount1' --set azureKeyVault.clientId='70937f05-****-4fc0-****-de917f2a9402' --set azureKeyVault.clientSecret='**********************************' --namespace=prom-collector --create-namespace
 ```
 - **Step 6** : [Optional] - Apply prometheus configuration as configmap
   If you have prometheus config as .yml, you can apply it as config map using the below command. 
   
-    **Tip** We will validate provided prometheus configuration using [promtool](https://github.com/prometheus/prometheus/tree/main/cmd/promtool), an official commandline prometheus tool, with the command:]
-```shell
-    promtool check config <config name>
-```
-
-   **If you have your own prometheus yaml scrape configuration and want to use that without having to paste into the configmap, rename your config file   to ```prometheus-config``` and run:**
+    **Tip** - If you have your own prometheus yaml scrape configuration and want to use that without having to paste into the configmap, rename your config file   to ```prometheus-config``` and run:**
 ```shell
 kubectl create configmap <chart_release_name>-prometheus-config --from-file=prometheus-config -n <same_namespace_as_collector_namespace>
 ```
-  **Example** :- [Note the release name 'my-collector-dev-release-' used a prefix to the configmap name below, and also same namespace (prom-collector) into which prometheus-collector chart was installed in step-5 above]
+  **Example** :- [Note the release name 'my-collector-dev-release-' used a prefix to the configmap name below, and also config map should be created in the same namespace (ex;- prom-collector in this example) into which prometheus-collector chart was installed in step-5 above]
 ```shell
 kubectl create configmap my-collector-dev-release-prometheus-config --from-file=prometheus-config -n prom-collector
+```  
+  **Tip** - We will validate provided prometheus configuration using [promtool](https://github.com/prometheus/prometheus/tree/main/cmd/promtool), an official commandline prometheus tool, with the command below]
+```shell
+    promtool check config <config_file_name>
 ```
+
+ 
 
 ## Chart Values
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| azureKeyVault.name | string | <mark>Required</mark> | `""` | name of the azure key vault resource |
-| azureKeyVault.clientId | string | <mark>Required</mark> | `""` | clientid for a service principal that has access to read the Pfx certificates from keyvault specified above |
-| azureKeyVault.clientSecret | string | <mark>Required</mark> | `""` | client secret for the above service principal |
-| azureKeyVault.pfxCertNames | list of comma seperated strings | <mark>Required</mark> | `{}` | name of the Pfx certificate(s) - one per metric account |
-| azureKeyVault.tenantId | string | <mark>Required</mark> | `""` | tenantid for the azure key vault resource |
-| azureMetricAccount.defaultAccountName | string | <mark>Required</mark> | `""` | default metric account name to ingest metrics into. This will be the account used if metric itself does not have account 'hinting' label. The certificate for this account should be specified in one of the further arguments below here |
-| clusterName | string | <mark>Required</mark> | `""` | name of the k8s cluster. This will be added as a 'cluster' label for every metric scraped |
+| azureKeyVault.name | string | <mark>`Required`</mark> | `""` | name of the azure key vault resource |
+| azureKeyVault.clientId | string | <mark>`Required`</mark> | `""` | clientid for a service principal that has access to read the Pfx certificates from keyvault specified above |
+| azureKeyVault.clientSecret | string | <mark>`Required`</mark> | `""` | client secret for the above service principal |
+| azureKeyVault.pfxCertNames | list of comma seperated strings | <mark>`Required`</mark> | `{}` | name of the Pfx certificate(s) - one per metric account |
+| azureKeyVault.tenantId | string | <mark>`Required`</mark> | `""` | tenantid for the azure key vault resource |
+| azureMetricAccount.defaultAccountName | string | <mark>`Required`</mark> | `""` | default metric account name to ingest metrics into. This will be the account used if metric itself does not have account 'hinting' label. The certificate for this account should be specified in one of the further arguments below here |
+| clusterName | string | <mark>`Required`</mark> | `""` | name of the k8s cluster. This will be added as a 'cluster' label for every metric scraped |
 | image.pullPolicy | string | Optional | `"IfNotPresent"` |  |
 | image.repository | string | Optional | `"mcr.microsoft.com/azuremonitor/containerinsights/cidev"` |  |
 | image.tag | string | Optional | `"prometheus-collector-0420-2"` |  |
