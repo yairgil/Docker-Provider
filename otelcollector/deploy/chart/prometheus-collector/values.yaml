@@ -3,6 +3,8 @@
 # Declare variables to be passed into your templates.
 
 scrapeTargets:
+  # -- when true, automatically scrape cAdvisor every node in the k8s cluster without any additional scrape config
+  cAdvisor: true
   # -- when true, automatically scrape coredns service in the k8s cluster without any additional scrape config
   coreDns: true
   # -- when true, automatically scrape kubelet in every node in the k8s cluster without any additional scrape config

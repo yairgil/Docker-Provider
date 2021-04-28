@@ -48,7 +48,6 @@ var (
 
 func createLogger() *log.Logger {
 	var logfile *os.File
-	//var logPath = "/opt/fluent-bit/fluent-bit-out-appinsights-runtime.log"
 	var logPath = "/opt/fluent-bit/fluent-bit-out-appinsights-runtime.log"
 
 	if _, err := os.Stat(logPath); err == nil {
