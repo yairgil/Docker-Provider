@@ -556,9 +556,9 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
       export AAD_MSI_AUTH_ENABLE=true
       echo "export AAD_MSI_AUTH_ENABLE=true" >> ~/.bashrc
       export ONE_AGENT_ENABLE=true
-       echo "export ONE_AGENT_ENABLE=true" >> ~/.bashrc
+      echo "export ONE_AGENT_ENABLE=true" >> ~/.bashrc
 
-      echo "*** starting mdsd with AAD AUTH MODE ***"       
+      echo "*** activating oneagent in aad auth msi mode ***"       
       cat /etc/mdsd.d/envmdsd | while read line; do
             echo $line >> ~/.bashrc
       done
@@ -580,13 +580,13 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
 
       dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
 
-      echo "starting mdsd in replicaset..."
+      echo "starting mdsd in aad auth msi mode..."
       mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
       echo "*** starting fluentd v1 .."
       fluentd -c /etc/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
 else 
-    if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+   if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
             echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
             echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
@@ -624,8 +624,10 @@ else
                   touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
             fi
       fi
-    fi
+   fi  
 fi
+
+
 echo "************end oneagent log routing checks************"
 
 #If config parsing was successful, a copy of the conf file with replaced custom settings file is created

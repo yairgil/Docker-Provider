@@ -12,11 +12,12 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
-
+	"time"	
+	
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/tinylib/msgp/msgp"
 )
 
 // ReadConfiguration reads a property file
@@ -130,6 +131,48 @@ func CreateMDSDClient() {
 	}
 }
 
+//mdsdSocketClient to write msgp messages for KubeMonAgent Events
+func CreateMDSDClientKubeMon() {
+	if MdsdKubeMonMsgpUnixSocketClient != nil {
+		MdsdKubeMonMsgpUnixSocketClient.Close()
+		MdsdKubeMonMsgpUnixSocketClient = nil
+	}
+	/*conn, err := fluent.New(fluent.Config{FluentNetwork:"unix",
+	  FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
+	  WriteTimeout: 5 * time.Second,
+	  RequestAck: true}) */
+	conn, err := net.DialTimeout("unix",
+		"/var/run/mdsd/default_fluent.socket", 10*time.Second)
+	if err != nil {
+		Log("Error::mdsd::Unable to open MDSD msgp socket connection %s", err.Error())
+		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
+	} else {
+		Log("Successfully created MDSD msgp socket connection for KubeMon events")
+		MdsdKubeMonMsgpUnixSocketClient = conn
+	}
+}
+
+//mdsdSocketClient to write msgp messages for KubeMonAgent Events
+func CreateMDSDClientInsightsMetrics() {
+	if MdsdInsightsMetricsMsgpUnixSocketClient != nil {
+		MdsdInsightsMetricsMsgpUnixSocketClient.Close()
+		MdsdInsightsMetricsMsgpUnixSocketClient = nil
+	}
+	/*conn, err := fluent.New(fluent.Config{FluentNetwork:"unix",
+	  FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
+	  WriteTimeout: 5 * time.Second,
+	  RequestAck: true}) */
+	conn, err := net.DialTimeout("unix",
+		"/var/run/mdsd/default_fluent.socket", 10*time.Second)
+	if err != nil {
+		Log("Error::mdsd::Unable to open MDSD msgp socket connection %s for insights metrics", err.Error())
+		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
+	} else {
+		Log("Successfully created MDSD msgp socket connection for Insights metrics")
+		MdsdInsightsMetricsMsgpUnixSocketClient = conn
+	}
+}
+
 //ADX client to write to ADX
 func CreateADXClient() {
 
@@ -177,4 +220,34 @@ func isValidUrl(uri string) bool {
 		return false
 	}
 	return true
+}
+
+func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []MsgPackEntry) []byte {
+	var msgpBytes []byte
+	
+	fluentForward := MsgPackForward{
+		Tag:     fluentForwardTag,
+		Entries: msgPackEntries,
+	}
+	//determine the size of msgp message
+	msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
+	for i := range fluentForward.Entries {
+		msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
+	}
+
+	//allocate buffer for msgp message		
+	msgpBytes = msgp.Require(nil, msgpSize)
+
+	//construct the stream
+	msgpBytes = append(msgpBytes, 0x92)
+	msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
+	msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+	batchTime := time.Now().Unix()
+	for entry := range fluentForward.Entries {
+		msgpBytes = append(msgpBytes, 0x92)
+		msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
+		msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
+	}
+    
+    return msgpBytes
 }
