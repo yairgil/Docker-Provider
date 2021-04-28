@@ -1,89 +1,40 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: prometheus-collector
-  namespace: kube-system
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: prometheus-collector-reader
-rules:
-  - apiGroups: [""]
-    resources:
-      [
-        "pods",
-        "nodes",
-        "nodes/stats",
-        "nodes/metrics",
-        "nodes/proxy",
-        "namespaces",
-        "services",
-        "endpoints",
-        "ingress"
-      ]
-    verbs: ["list", "get", "watch"]
-  - apiGroups:
-    - networking.k8s.io
-    resources:
-    - ingresses
-    verbs: ["list", "get", "watch"]
-  - nonResourceURLs: ["/metrics"]
-    verbs: ["get"]
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: prometheus-collector-clusterrolebinding
-subjects:
-  - kind: ServiceAccount
-    name: prometheus-collector
-    namespace: kube-system
-roleRef:
-  kind: ClusterRole
-  name: prometheus-collector-reader
-  apiGroup: rbac.authorization.k8s.io
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prometheus-collector
-  namespace: kube-system
+  name: {{ .Release.Name }}-prometheus-collector
+  namespace: {{ .Release.Namespace }}
   labels:
-    component: prometheus-collector
+    component: {{ .Release.Name }}-prometheus-collector
     tier: node
 spec:
   replicas: 1
   selector:
     matchLabels:
-      rsName: "prometheus-collector"
+      rsName: {{ .Release.Name }}-prometheus-collector
   strategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        rsName: "prometheus-collector"
+        rsName: {{ .Release.Name }}-prometheus-collector
       annotations:
         agentVersion: "0.0.0.1"
         schema-versions: "v1"
     spec:
-      serviceAccountName: prometheus-collector
+      serviceAccountName: {{ .Release.Name }}-prometheus-collector
       containers:
         - name: prometheus-collector
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:prometheus-collector-0423"
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
-            limits:
-              cpu: 1
-              memory: 1Gi
-            requests:
-              cpu: 250m
-              memory: 250Mi
+            {{- toYaml .Values.resources | nindent 12 }}
           env:
             - name: CLUSTER
-              value: "my-cluster-name"
-            #- name: ME_ADDITIONAL_FLAGS
-            #  value: "-FrontEndUrl https://az-int.int.microsoftmetrics.com"
+              value: {{ required "clusterName is required" .Values.clusterName | toString | quote }}
+            {{- if .Values.internalSettings.IntEnvironment  }}
+            - name: ME_ADDITIONAL_FLAGS
+              value: "-FrontEndUrl https://az-int.int.microsoftmetrics.com"
+            {{- end }}
             - name: CONTROLLER_TYPE
               value: "ReplicaSet"
             - name: NODE_IP
@@ -122,12 +73,6 @@ spec:
             - mountPath: /etc/config/settings/akv
               name: secrets-store-inline
               readOnly: true
-            - name: host-log-containers
-              readOnly: true
-              mountPath: /var/log/containers
-            - name: host-log-pods
-              readOnly: true
-              mountPath: /var/log/pods
           livenessProbe:
             exec:
               command:
@@ -176,28 +121,17 @@ spec:
       volumes:
         - name: settings-vol-config
           configMap:
-            name: prometheus-collector-configmap
-            optional: true
-        - name: metricstore-secret
-          secret:
-            secretName: metricstore-secret
+            name: {{ .Release.Name }}-prometheus-collector-configmap
             optional: true
         - name: prometheus-config-vol
           configMap:
-            name: prometheus-config
+            name: {{ .Release.Name }}-prometheus-config
             optional: true
-                - name: host-log-containers
-        - name: host-log-containers
-          hostPath:
-            path: /var/log/containers
-        - name: host-log-pods
-          hostPath:
-            path: /var/log/pods
         - name: secrets-store-inline
           csi:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
-              secretProviderClass: "azure-kv-metricstore"
+              secretProviderClass: "{{ .Release.Name }}-azure-kv-metricstore"
             nodePublishSecretRef:           # Only required when using service principal mode
-              name: akv-creds               # Only required when using service principal mode. The name of the Kubernetes secret that contains the service principal credentials to access keyvault
+              name: {{ .Release.Name }}-akv-creds   # Only required when using service principal mode. The name of the Kubernetes secret that contains the service principal credentials to access keyvault
