@@ -41,6 +41,8 @@ module Fluent::Plugin
   class HealthForwardOutput < Output
     Fluent::Plugin.register_output('health_forward', self)
 
+    DEFAULT_LISTEN_PORT = 25227
+    
     def initialize
       super
       require 'fluent/plugin/socket_util'

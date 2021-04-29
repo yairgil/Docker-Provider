@@ -587,8 +587,13 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
       echo "starting mdsd in aad auth msi mode..."
       mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
-      echo "*** starting fluentd v1 .."
-      fluentd -c /etc/fluent/oneagent_rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      if [ ! -e "/etc/config/kube.conf" ]; then
+           echo "*** starting fluentd v1 in daemonset"
+           fluentd -c /etc/fluent/oneagent_ds.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      else
+          echo "*** starting fluentd v1 in replicaset"
+          fluentd -c /etc/fluent/oneagent_rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      fi      
 
       touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
 else 
