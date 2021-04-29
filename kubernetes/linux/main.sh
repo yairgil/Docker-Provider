@@ -584,7 +584,7 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
       mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
       echo "*** starting fluentd v1 .."
-      fluentd -c /etc/fluent/oneagent-rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      fluentd -c /etc/fluent/oneagent_rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
 
       touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
 else 
