@@ -357,13 +357,13 @@ module Fluent::Plugin
     private
 
     class ChunkErrorHandler
-      include Configurable
-      include PluginId
-      include PluginLoggerMixin
+      include Fluent::Configurable
+      include Fluent::PluginId
+      include Fluent::PluginLoggerMixin
 
       SecondaryName = "__ChunkErrorHandler__"
 
-      Plugin.register_output(SecondaryName, self)
+      Fluent::Plugin.register_output(SecondaryName, self)
 
       def initialize
         @router = nil
