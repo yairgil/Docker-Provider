@@ -53,7 +53,6 @@ module Fluent::Plugin
       require_relative "constants"
 
       @NodeCache = NodeStatsCache.new()
-      @aad_msi_auth_enable = false     
     end
 
     config_param :run_interval, :time, :default => 60
@@ -115,7 +114,7 @@ module Fluent::Plugin
         nodeInventoryStartTime = (Time.now.to_f * 1000).to_i        
         
         if ExtensionUtils.isAADMSIAuthMode()
-          $log.info("in_kube_nodes::enumerate: AAD AUTH MSI MODE ENABLED")    
+          $log.info("in_kube_nodes::enumerate: AAD AUTH MSI MODE")    
           if !@kubeperfTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @kubeperfTag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
           end  

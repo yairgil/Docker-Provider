@@ -53,10 +53,6 @@ module Fluent::Plugin
                 @container_cpu_memory_records = []
                 @telemetry = HealthMonitorTelemetry.new
                 @state = HealthMonitorState.new
-                if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
-                    @aad_msi_auth_enable = true
-                end              
-                $log.info("in_kube_nodes::start: aad auth enable:#{@aad_msi_auth_enable}")
                 # move network calls to the end. This will ensure all the instance variables get initialized
                 if @@cluster_health_model_enabled
                     deserialized_state_info = @cluster_health_state.get_state
@@ -98,7 +94,7 @@ module Fluent::Plugin
                 new_es = Fluent::MultiEventStream.new
                 time = Time.now              
                 if ExtensionUtils.isAADMSIAuthMode()
-                    $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE ENABLED")             
+                    $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE")             
                     if !@rewrite_tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
                       @rewrite_tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
                     end                            

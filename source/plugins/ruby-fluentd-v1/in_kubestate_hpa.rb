@@ -34,7 +34,6 @@ module Fluent::Plugin
       @NodeName = OMS::Common.get_hostname
       @ClusterId = KubernetesApiClient.getClusterId
       @ClusterName = KubernetesApiClient.getClusterName
-      @aad_msi_auth_enable = false   
     end
 
     config_param :run_interval, :time, :default => 60
@@ -55,7 +54,7 @@ module Fluent::Plugin
           @HPA_CHUNK_SIZE = 2000
         end
         $log.info("in_kubestate_hpa::start : HPA_CHUNK_SIZE  @ #{@HPA_CHUNK_SIZE}")
-        
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -83,7 +82,7 @@ module Fluent::Plugin
         @hpaCount = 0
 
         if ExtensionUtils.isAADMSIAuthMode()
-          $log.info("in_kubestate_hpa::enumerate: AAD AUTH MSI MODE ENABLED")             
+          $log.info("in_kubestate_hpa::enumerate: AAD AUTH MSI MODE")             
           if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
           end                            

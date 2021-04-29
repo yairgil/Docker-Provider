@@ -59,7 +59,7 @@ module Fluent::Plugin
       hostName = ""
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")      
       if ExtensionUtils.isAADMSIAuthMode()
-        $log.info("in_container_inventory::enumerate: AAD AUTH MSI MODE ENABLED")             
+        $log.info("in_container_inventory::enumerate: AAD AUTH MSI MODE")             
         if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
           @tag = ExtensionUtils.getOutputStreamId(Constants::CONTAINER_INVENTORY_DATA_TYPE)
         end                            

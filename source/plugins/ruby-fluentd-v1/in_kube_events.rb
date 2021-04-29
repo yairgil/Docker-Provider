@@ -30,8 +30,6 @@ module Fluent::Plugin
 
       # Initilize enable/disable normal event collection
       @collectAllKubeEvents = false
-
-      @aad_msi_auth_enable = false     
     end
 
     config_param :run_interval, :time, :default => 60
@@ -91,7 +89,7 @@ module Fluent::Plugin
         @eventsCount = 0
         
         if ExtensionUtils.isAADMSIAuthMode()
-          $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE ENABLED")             
+          $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE")             
           if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
           end                            

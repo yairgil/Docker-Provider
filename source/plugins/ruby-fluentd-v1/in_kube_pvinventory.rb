@@ -24,7 +24,6 @@ module Fluent::Plugin
       # Response size is around 1500 bytes per PV
       @PV_CHUNK_SIZE = "5000"
       @pvTypeToCountHash = {}
-      @aad_msi_auth_enable = false
     end
 
     config_param :run_interval, :time, :default => 60
@@ -65,7 +64,7 @@ module Fluent::Plugin
         batchTime = currentTime.utc.iso8601
 
         if ExtensionUtils.isAADMSIAuthMode()
-          $log.info("in_kube_pvinventory::enumerate: AAD AUTH MSI MODE ENABLED")             
+          $log.info("in_kube_pvinventory::enumerate: AAD AUTH MSI MODE")             
           if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_PV_INVENTORY_DATA_TYPE)
           end                            

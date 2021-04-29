@@ -114,7 +114,7 @@ module Fluent::Plugin
         podInventoryStartTime = (Time.now.to_f * 1000).to_i       
       
         if ExtensionUtils.isAADMSIAuthMode()
-           $log.info("in_kube_podinventory::enumerate: AAD AUTH MSI MODE ENABLED")    
+           $log.info("in_kube_podinventory::enumerate: AAD AUTH MSI MODE")    
            if !@kubeperfTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
              @kubeperfTag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
            end  
