@@ -27,8 +27,8 @@
       "destinations": {
         "logAnalytics": [
           {
-            "workspaceResourceId": "/subscriptions/<subId>/resourcegroups/<rgName>/providers/microsoft.operationalinsights/workspaces/<workspaceName>",
-            "name": "<ciworkspace>"
+            "workspaceResourceId": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/davidwin5/providers/Microsoft.OperationalInsights/workspaces/davidwin5-la",
+            "name": "davidwin5-la"
           }
         ]
       },
@@ -49,7 +49,7 @@
             "Microsoft-InsightsMetrics"                
           ],
           "destinations": [
-            "<ciworkspace>"
+            "davidwin5-la"
           ]
         }
       ]

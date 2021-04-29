@@ -6,6 +6,7 @@
    > Note - Only tested Microsoft-Perf stream so far and waiting for AMCS deployment other streams
 4. Create CI Extension DCR in the resource group of LA workspace using this https://docs.microsoft.com/en-us/rest/api/monitor/datacollectionrules/create#code-try-0
 5. Associate CI extension DCR to AKS cluster using this https://docs.microsoft.com/en-us/rest/api/monitor/datacollectionruleassociations/create#code-try-0
+   - note: resourceUri should be resource ID of the AKS cluster 
 6. Deploy the Monitoring addon with ARM template with `enabled: false`
 
 ```

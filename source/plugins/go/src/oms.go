@@ -716,7 +716,9 @@ func flushKubeMonAgentEventRecords() {
 					} 
 				} else {
 					Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")																					
-				}	
+				}
+			
+			// Container Log v1 route
 			} else if len(laKubeMonAgentEventsRecords) > 0 {
 				kubeMonAgentEventEntry := KubeMonAgentEventBlob{
 					DataType:  KubeMonAgentEventDataType,
