@@ -124,7 +124,7 @@ class Constants
   #ContainerInsights Extension (AMCS)
   CI_EXTENSION_NAME = "ContainerInsights"
   CI_EXTENSION_VERSION = "1"  
-  #Current CI extension config size is ~3 to 4 KB and going with 20KB to handle any future scenarios
+  #Current CI extension config size is ~5KB and going with 20KB to handle any future scenarios
   CI_EXTENSION_CONFIG_MAX_BYTES = 20480
   ONEAGENT_FLUENT_SOCKET_NAME = "/var/run/mdsd/default_fluent.socket" 
   #Tag prefix for output stream
