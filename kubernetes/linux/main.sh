@@ -564,6 +564,10 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
       done
       source /etc/mdsd.d/envmdsd
 
+      #MDSD Fluent socket port is different in AMCS and Legacy Auth Mode
+      export MDSD_FLUENT_SOCKET_PORT="28230"
+      echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+
       export MCS_ENDPOINT="handler.control.monitor.azure.com"
       echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
       export AZURE_ENDPOINT="https://monitor.azure.com/"
