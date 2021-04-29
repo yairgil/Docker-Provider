@@ -50,8 +50,8 @@ const ResourceNameEnv = "ACS_RESOURCE_NAME"
 //env variable which has container run time name
 const ContainerRuntimeEnv = "CONTAINER_RUNTIME"
 
-//env variable for LA AAD MSI Auth
-const LogAnalyticsAADMSIAuth = "USING_LA_AAD_AUTH"
+//env variable for AAD MSI Auth mode
+const AADMSIAuthMode = "AAD_MSI_AUTH_MODE"
 
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags and also for custom-metrics telemetry )
 const TelegrafMetricOriginPrefix = "container.azm.ms"
@@ -157,7 +157,7 @@ var (
 	//ADX client secret
 	AdxClientSecret string
 	// flag to check whether LA AAD MSI Auth Enabled or not
-	IsLogAnalyticsAADMSIAuth bool
+	IsAADMSIAuthMode bool
 	// container log or container log v2 tag name for oneagent route
 	MdsdContainerLogTagName string 
 	// kubemonagent events tag name for oneagent route
@@ -678,8 +678,8 @@ func flushKubeMonAgentEventRecords() {
 					}
 				}
 			}
-			if (ContainerLogsRouteV2 == true && len(msgPackEntries) > 0) {								
-				if (IsLogAnalyticsAADMSIAuth == true && strings.HasPrefix(MdsdKubeMonAgentEventsTagName, MdsdOutputStreamIdTagPrefix) == false) {
+			if (IsAADMSIAuthMode == true && len(msgPackEntries) > 0) {								
+				if (IsAADMSIAuthMode == true && strings.HasPrefix(MdsdKubeMonAgentEventsTagName, MdsdOutputStreamIdTagPrefix) == false) {
 					Log("Info::mdsd::obtaining output stream id for data type: %s", KubeMonAgentEventDataType)					
 					MdsdKubeMonAgentEventsTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(KubeMonAgentEventDataType)				
 				}
@@ -850,7 +850,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		Log(message)
 	}
 	
-	if (ContainerLogsRouteV2 == true) {		
+	if (IsAADMSIAuthMode == true) {		
 		var msgPackEntries []MsgPackEntry			
 		var i int
 		start := time.Now()
@@ -879,7 +879,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 				}
 		}
 		if (len(msgPackEntries) > 0) {			
-				if (IsLogAnalyticsAADMSIAuth == true && (strings.HasPrefix(MdsdInsightsMetricsTagName, MdsdOutputStreamIdTagPrefix) == false)) {
+				if (IsAADMSIAuthMode == true && (strings.HasPrefix(MdsdInsightsMetricsTagName, MdsdOutputStreamIdTagPrefix) == false)) {
 					Log("Info::mdsd::obtaining output stream id for InsightsMetricsDataType since Log Analytics AAD MSI Auth Enabled")
 					MdsdInsightsMetricsTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(InsightsMetricsDataType)			
 				}
@@ -1081,7 +1081,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
 
-		if ContainerLogsRouteV2 == true {
+		if (IsAADMSIAuthMode == true  || ContainerLogsRouteV2 == true) {
 			msgPackEntry = MsgPackEntry{
 				// this below time is what mdsd uses in its buffer/expiry calculations. better to be as close to flushtime as possible, so its filled just before flushing for each entry
 				//Time: start.Unix(),
@@ -1161,9 +1161,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	numContainerLogRecords := 0
 
-	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
+	if len(msgPackEntries) > 0 && (IsAADMSIAuthMode == true || ContainerLogsRouteV2 == true) {
 		//flush to mdsd			
-		if (IsLogAnalyticsAADMSIAuth == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false) {
+		if (IsAADMSIAuthMode == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false) {
 			Log("Info::mdsd::obtaining output stream id")
 			if (ContainerLogSchemaV2 == true) { 
 				MdsdContainerLogTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(ContainerLogV2DataType)
@@ -1614,10 +1614,18 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 	}
 
-	if ContainerLogsRouteV2 == true {
+	IsAADMSIAuthMode = false 
+	if strings.Compare(strings.ToLower(os.Getenv(AADMSIAuthMode)), "true") == 0 { 
+		Log("AAD AUTH MSI MODE CONFIGURED")
+		IsAADMSIAuthMode = true
+	}	
+
+	if IsAADMSIAuthMode == true {
 		CreateMDSDClient()
 		CreateMDSDClientKubeMon()
 		CreateMDSDClientInsightsMetrics()
+	} else if ContainerLogsRouteV2 == true {  //TODO- gangams- remove once decision to go oneagent fully
+		CreateMDSDClient()		
 	} else if ContainerLogsRouteADX == true {
 		CreateADXClient()
 	}
@@ -1649,21 +1657,13 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
-	
-	//TODO - gangams- rename ContainerLogsRouteV2 to generic name to reflect v2 route
-	if (ContainerLogsRouteV2 == true) {
-		if (ContainerLogSchemaV2 == true) {
-			MdsdContainerLogTagName = MdsdContainerLogV2SourceName
-		} else {
-		  MdsdContainerLogTagName = MdsdContainerLogSourceName
-     	}
+		
+	if (ContainerLogSchemaV2 == true) {
+		MdsdContainerLogTagName = MdsdContainerLogV2SourceName
+	} else {
+	   MdsdContainerLogTagName = MdsdContainerLogSourceName
+    }
 
-		MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
-    	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
-	}		
-	IsLogAnalyticsAADMSIAuth = false 
-	if strings.Compare(strings.ToLower(os.Getenv(LogAnalyticsAADMSIAuth)), "true") == 0 { 
-		Log("Log Analytics AAD MSI Auth Configured")
-		IsLogAnalyticsAADMSIAuth = true
-	}		
+	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
+    MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName			
 }
