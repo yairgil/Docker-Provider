@@ -55,12 +55,7 @@ module Fluent::Plugin
           @HPA_CHUNK_SIZE = 2000
         end
         $log.info("in_kubestate_hpa::start : HPA_CHUNK_SIZE  @ #{@HPA_CHUNK_SIZE}")
-
-        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
-          @aad_msi_auth_enable = true
-        end              
-        $log.info("in_kube_nodes::start: aad auth enable:#{@aad_msi_auth_enable}")
-
+        
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new

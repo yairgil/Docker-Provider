@@ -58,12 +58,7 @@ module Fluent::Plugin
           @DEPLOYMENTS_CHUNK_SIZE = 500
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
-        
-        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
-          @aad_msi_auth_enable = true
-        end              
-        $log.info("in_kubestate_deployments::start: aad auth enable:#{@aad_msi_auth_enable}")
-
+      
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new

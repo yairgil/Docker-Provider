@@ -42,10 +42,6 @@ module Fluent::Plugin
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
-        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
-          @aad_msi_auth_enable = true
-        end              
-        $log.info("in_kube_pvinventory::start: aad auth enable:#{@aad_msi_auth_enable}")        
       end
     end
 

@@ -84,12 +84,6 @@ module Fluent::Plugin
         end
         $log.info("in_kube_nodes::start : NODES_EMIT_STREAM_BATCH_SIZE  @ #{@NODES_EMIT_STREAM_BATCH_SIZE}")
 
-        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
-          @aad_msi_auth_enable = true
-        end              
-        $log.info("in_kube_nodes::start: aad auth enable:#{@aad_msi_auth_enable}")
-
-
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new

@@ -5,17 +5,18 @@
 class ExtensionUtils
     class << self        
         def getOutputStreamId(dataType)  
-          tag = "" 
+          outputStreamId = "" 
           begin
             if !dataType.nil? && !dataType.empty?
-              tag = Extension.instance.get_output_stream_id(dataType)            
+              outputStreamId = Extension.instance.get_output_stream_id(dataType)  
+              $log.info("ExtensionUtils::getOutputStreamId: got streamid: #{outputStreamId} for datatype: #{dataType}")
             else           
               $log.warn("ExtensionUtils::getOutputStreamId: dataType shouldnt nil or empty")
             end            
           rescue => errorStr
             $log.warn("ExtensionUtils::getOutputStreamId: failed with an exception: #{errorStr}")
           end    
-          return tag     
+          return outputStreamId     
         end 
         def isAADMSIAuthMode() 
           return !ENV["AAD_MSI_AUTH_MODE"].nil? && !ENV["AAD_MSI_AUTH_MODE"].empty? && ENV["AAD_MSI_AUTH_MODE"].downcase == "true"

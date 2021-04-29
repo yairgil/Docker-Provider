@@ -79,12 +79,6 @@ module Fluent::Plugin
           @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end
         $log.info("in_kube_podinventory::start: PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
-
-        if !ENV["AAD_MSI_AUTH_MODE"].nil? && !ENV["AAD_MSI_AUTH_MODE"].empty? && ENV["AAD_MSI_AUTH_MODE"].downcase == "true"
-          @AAD_MSI_AUTH_MODE = true
-        end              
-        $log.info("in_kube_podinventory::start: aad auth enable:#{@AAD_MSI_AUTH_MODE}")
-        
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new

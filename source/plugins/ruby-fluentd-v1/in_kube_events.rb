@@ -67,10 +67,6 @@ module Fluent::Plugin
             $log.warn("Normal kube events collection enabled for cluster")
           end
         end
-        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
-          @aad_msi_auth_enable = true
-        end              
-        $log.info("in_kube_events::start: aad auth enable:#{@aad_msi_auth_enable}")       
       end
     end
 

@@ -585,6 +585,8 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
 
       echo "*** starting fluentd v1 .."
       fluentd -c /etc/fluent/oneagent-rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+
+      touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
 else 
    if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
