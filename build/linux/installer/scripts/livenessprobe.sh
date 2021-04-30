@@ -1,12 +1,15 @@
 #!/bin/bash
 
 #test to exit non zero value if omsagent is not running
-(ps -ef | grep omsagent- | grep -v "grep")
-if [ $? -ne 0 ]
-then
- echo " omsagent is not running" > /dev/termination-log
- exit 1
-fi
+#TODO-gangams-for now,omsagent will be in legacy mode
+# if [ ! -e /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE ]; then
+#   (ps -ef | grep omsagent- | grep -v "grep")
+#   if [ $? -ne 0 ]
+#   then
+#   echo " omsagent is not running" > /dev/termination-log
+#   exit 1
+#   fi
+# fi
 
 #optionally test to exit non zero value if oneagent is not running
 #TODO-gangams- merge this if we are going with oneagent all up?
@@ -14,7 +17,7 @@ if [[ -e /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2 || -e /opt/AZMON_CONTAINER
   (ps -ef | grep "mdsd" | grep -v "grep")
   if [ $? -ne 0 ]
   then
-   echo "oneagent is not running" > /dev/termination-log
+   echo "mdsd is not running" > /dev/termination-log
    exit 1
   fi
 fi

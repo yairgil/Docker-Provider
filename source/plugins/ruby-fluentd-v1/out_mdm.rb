@@ -356,7 +356,7 @@ module Fluent::Plugin
 
     private
 
-    class ChunkErrorHandler
+    class ChunkErrorHandler < Output
       include Fluent::Configurable
       include Fluent::PluginId
       include Fluent::PluginLoggerMixin
