@@ -202,6 +202,10 @@ module Fluent::Plugin
       log.error_backtrace
     end
 
+    def write(chunk)
+      write_objects(chunk.metadata.tag, chunk)
+    end
+    
     def write_objects(tag, chunk)
       return if chunk.empty?
 

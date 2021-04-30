@@ -66,7 +66,7 @@ class Extension
         end
       end
     rescue => errorStr
-      $log.warn("Extension::get_config failed: #{error}")
+      $log.warn("Extension::get_config failed: #{errorStr}")
       ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
     ensure
       clientSocket.close unless clientSocket.nil?
