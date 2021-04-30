@@ -260,9 +260,11 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/omslog.rb;                                                           source/plugins/utils/omslog.rb; 644; root; root
 /etc/fluent/plugin/oms_common.rb;                                                       source/plugins/utils/oms_common.rb; 644; root; root
 /etc/fluent/plugin/oms_configuration.rb;                                                source/plugins/utils/oms_configuration.rb; 644; root; root
-# /etc/fluent/plugin/extension_config.rb;                                                 source/plugins/utils/extension_config.rb; 644; root; root
+/etc/fluent/plugin/extension.rb;                                                        source/plugins/utils/extension.rb; 644; root; root
+/etc/fluent/plugin/extension_utils.rb;                                                  source/plugins/utils/extension_utils.rb; 644; root; root
 
-/etc/fluent/oneagent.conf;			                                                       build/linux/installer/conf/oneagent.conf;                     644; root; root
+/etc/fluent/oneagent_rs.conf;			                                                    build/linux/installer/conf/oneagent_rs.conf;                  644; root; root
+/etc/fluent/oneagent_ds.conf;			                                                    build/linux/installer/conf/oneagent_ds.conf;                  644; root; root
 
 /etc/fluent/plugin/in_cadvisor_perf.rb;			                                        source/plugins/ruby-fluentd-v1/in_cadvisor_perf.rb;		    	644; root; root
 /etc/fluent/plugin/in_containerinventory.rb;			                                     source/plugins/ruby-fluentd-v1/in_containerinventory.rb;	  	644; root; root

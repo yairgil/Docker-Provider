@@ -42,6 +42,7 @@ class Extension
       $log.info("reading the response from fluent socket: #{Constants::ONEAGENT_FLUENT_SOCKET_NAME}")
       resp = clientSocket.recv(Constants::CI_EXTENSION_CONFIG_MAX_BYTES)
       if !resp.nil? && !resp.empty?
+        $log.info("successfully read the extension config from fluentsocket and number of bytes read is #{resp.length}")
         respJSON = JSON.parse(resp)
         taggedData = respJSON["TaggedData"]
         if !taggedData.nil? && !taggedData.empty?

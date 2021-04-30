@@ -255,6 +255,12 @@ class CAdvisorMetricsAPIClient
                     elsif (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
                       telemetryProps["containerLogsRoute"] = @containerLogsRoute
                     end
+                    #telemetry about AAD AUTH MSI Mode
+                    if File.exist?(Constants::AZMON_CONTAINER_AAD_AUTH_MSI_MODE_FILENAME)
+                      telemetryProps["aadAuthMSIMode"] = "true"
+                    else
+                      telemetryProps["aadAuthMSIMode"] = "false"
+                    end
                     #telemetry about health model
                     if (!@hmEnabled.nil? && !@hmEnabled.empty?)
                       telemetryProps["hmEnabled"] = @hmEnabled

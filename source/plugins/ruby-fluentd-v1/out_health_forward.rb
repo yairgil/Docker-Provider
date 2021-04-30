@@ -21,7 +21,6 @@ require 'fileutils'
 
 require 'cool.io'
 
-require 'fluent/output'
 require 'fluent/config/error'
 require 'fluent/plugin/output'
 
@@ -38,8 +37,10 @@ module Fluent::Plugin
   class ForwardOutputACKTimeoutError < ForwardOutputResponseError
   end
 
-  class HealthForwardOutput < Output
+  class HealthForwardOutput < Fluent::Plugin::Output
     Fluent::Plugin.register_output('health_forward', self)
+
+    DEFAULT_LISTEN_PORT = 25227
 
     def initialize
       super

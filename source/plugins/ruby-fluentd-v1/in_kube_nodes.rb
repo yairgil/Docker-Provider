@@ -4,7 +4,8 @@
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
-  require_relative "extension_config"
+  require_relative "extension"
+  require_relative "extension_utils"
   class Kube_nodeInventory_Input < Input
     Fluent::Plugin.register_input("kube_nodes", self)
      
@@ -52,7 +53,6 @@ module Fluent::Plugin
       require_relative "constants"
 
       @NodeCache = NodeStatsCache.new()
-      @aad_msi_auth_enable = false     
     end
 
     config_param :run_interval, :time, :default => 60
@@ -83,12 +83,6 @@ module Fluent::Plugin
         end
         $log.info("in_kube_nodes::start : NODES_EMIT_STREAM_BATCH_SIZE  @ #{@NODES_EMIT_STREAM_BATCH_SIZE}")
 
-        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
-          @aad_msi_auth_enable = true
-        end              
-        $log.info("in_kube_nodes::start: aad auth enable:#{@aad_msi_auth_enable}")
-
-
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -117,9 +111,29 @@ module Fluent::Plugin
 
         @nodesAPIE2ELatencyMs = 0
         @nodeInventoryE2EProcessingLatencyMs = 0
-        nodeInventoryStartTime = (Time.now.to_f * 1000).to_i
+        nodeInventoryStartTime = (Time.now.to_f * 1000).to_i        
         
-        overrideTagsWithStreamIdsIfAADAuthEnabled()      
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kube_nodes::enumerate: AAD AUTH MSI MODE")    
+          if !@kubeperfTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @kubeperfTag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
+          end  
+          if !@insightsMetricsTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @insightsMetricsTag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end 
+          if !@ContainerNodeInventoryTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @ContainerNodeInventoryTag = ExtensionUtils.getOutputStreamId(Constants::CONTAINER_NODE_INVENTORY_DATA_TYPE)
+          end 
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_NODE_INVENTORY_DATA_TYPE)
+          end                            
+        end   
+
+        # debug logs
+        $log.info("in_kube_nodes::enumerate: using perf tag -#{@kubeperfTag} @ #{Time.now.utc.iso8601}")    
+        $log.info("in_kube_nodes::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")            
+        $log.info("in_kube_nodes::enumerate: using containernodeinventory tag -#{@ContainerNodeInventoryTag} @ #{Time.now.utc.iso8601}")            
+        $log.info("in_kube_nodes::enumerate: using kubenodeinventory tag -#{@tag} @ #{Time.now.utc.iso8601}")          
 
         nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
 
@@ -523,55 +537,7 @@ module Fluent::Plugin
         $log.warn "in_kube_nodes::getContainerNodeIngetNodeTelemetryPropsventoryRecord:Failed: #{errorStr}"
       end
       return properties
-    end
-
-    def overrideTagsWithStreamIdsIfAADAuthEnabled()
-      begin
-        if @aad_msi_auth_enable 
-          # perf
-          if @kubeperfTag.nil? || @kubeperfTag.empty? || !@kubeperfTag.start_with?("dcr-")
-            @kubeperfTag = Extension.instance.get_output_stream_id("LINUX_PERF_BLOB")
-            if  @kubeperfTag.nil? || @kubeperfTag.empty?
-              $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: LINUX_PERF_BLOB")
-            else
-              $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using kubeperfTag: #{@kubeperfTag}") 
-            end
-          end
-
-          # container node inventory
-          if @ContainerNodeInventoryTag.nil? || @ContainerNodeInventoryTag.empty? || !@ContainerNodeInventoryTag.start_with?("dcr-")     
-            @ContainerNodeInventoryTag = Extension.instance.get_output_stream_id("CONTAINER_NODE_INVENTORY_BLOB")
-            if  @ContainerNodeInventoryTag.nil? || @ContainerNodeInventoryTag.empty?
-              $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: got the output streamid nil or empty for datatype: CONTAINER_NODE_INVENTORY_BLOB")
-            else
-              $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using ContainerNodeInventoryTag: #{@ContainerNodeInventoryTag}") 
-            end
-          end     
-
-          # insightsmetrics
-          if @insightsMetricsTag.nil? || @insightsMetricsTag.empty? || !@insightsMetricsTag.start_with?("dcr-")   
-              @insightsMetricsTag = Extension.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
-              if @insightsMetricsTag.nil? || @insightsMetricsTag.empty?
-                $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
-              else
-                $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using ContainerNodeInventoryTag: #{@ContainerNodeInventoryTag}")   
-              end
-          end
-
-          # kubenodeinventory
-          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")  
-            @tag = Extension.instance.get_output_stream_id("KUBE_NODE_INVENTORY_BLOB")  
-            if @tag.nil? || @tag.empty?
-              $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_NODE_INVENTORY_BLOB")           
-            else
-              $log.info("in_kube_podinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using kubeNodeInventoryTag: #{@tag}")   
-            end
-          end
-        end 
-      rescue => errorStr
-        $log.warn("in_kube_nodes::overrideTagsWithStreamIdsIfAADAuthEnabled: failed with an error: #{errorStr}")
-      end
-    end
+    end    
   end # Kube_Node_Input
   class NodeStatsCache
     # inner class for caching implementation (CPU and memory caching is handled the exact same way, so logic to do so is moved to a private inner class)

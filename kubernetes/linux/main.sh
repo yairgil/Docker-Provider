@@ -553,8 +553,8 @@ fi
 
 #start oneagent
 if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true") ]]; then
-      export AAD_MSI_AUTH_ENABLE=true
-      echo "export AAD_MSI_AUTH_ENABLE=true" >> ~/.bashrc
+      export AAD_MSI_AUTH_MODE=true
+      echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
       export ONE_AGENT_ENABLE=true
       echo "export ONE_AGENT_ENABLE=true" >> ~/.bashrc
 
@@ -563,6 +563,10 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
             echo $line >> ~/.bashrc
       done
       source /etc/mdsd.d/envmdsd
+
+      #MDSD Fluent socket port is different in AMCS and Legacy Auth Mode
+      export MDSD_FLUENT_SOCKET_PORT="28230"
+      echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
 
       export MCS_ENDPOINT="handler.control.monitor.azure.com"
       echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
@@ -583,8 +587,15 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
       echo "starting mdsd in aad auth msi mode..."
       mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
-      echo "*** starting fluentd v1 .."
-      fluentd -c /etc/fluent/oneagent.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      if [ ! -e "/etc/config/kube.conf" ]; then
+           echo "*** starting fluentd v1 in daemonset"
+           fluentd -c /etc/fluent/oneagent_ds.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      else
+          echo "*** starting fluentd v1 in replicaset"
+          fluentd -c /etc/fluent/oneagent_rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      fi      
+
+      touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
 else 
    if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then

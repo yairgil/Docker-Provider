@@ -8,7 +8,8 @@
                   "streams": [
                       "Microsoft-Perf",
                       "Microsoft-ContainerInventory",
-                      "Microsoft-ContainerLog",                                           
+                      "Microsoft-ContainerLog",
+                      "Microsoft-ContainerLogV2",                                                                                      
                       "Microsoft-ContainerNodeInventory",
                       "Microsoft-KubeEvents",
                       "Microsoft-KubeHealth",
@@ -37,7 +38,8 @@
           "streams": [
             "Microsoft-Perf",
             "Microsoft-ContainerInventory",
-            "Microsoft-ContainerLog",                    
+            "Microsoft-ContainerLog",    
+            "Microsoft-ContainerLogV2",                                                                                                     
             "Microsoft-ContainerNodeInventory",
             "Microsoft-KubeEvents",
             "Microsoft-KubeHealth",

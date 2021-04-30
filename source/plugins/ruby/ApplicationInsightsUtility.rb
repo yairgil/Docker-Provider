@@ -78,7 +78,14 @@ class ApplicationInsightsUtility
           isProxyConfigured = false
           $log.info("proxy is not configured")
         end
-
+        
+        aadAuthMSIMode = ENV["AAD_MSI_AUTH_MODE"]
+        if !aadAuthMSIMode.nil? && !aadAuthMSIMode.empty? && aadAuthMSIMode.downcase == "true".downcase
+          @@CustomProperties["aadAuthMSIMode"] = "true"
+        else
+          @@CustomProperties["aadAuthMSIMode"] = "false"
+        end
+        
         #Check if telemetry is turned off
         telemetryOffSwitch = ENV["DISABLE_TELEMETRY"]
         if telemetryOffSwitch && !telemetryOffSwitch.nil? && !telemetryOffSwitch.empty? && telemetryOffSwitch.downcase == "true".downcase

@@ -24,7 +24,6 @@ module Fluent::Plugin
       # Response size is around 1500 bytes per PV
       @PV_CHUNK_SIZE = "5000"
       @pvTypeToCountHash = {}
-      @aad_msi_auth_enable = false
     end
 
     config_param :run_interval, :time, :default => 60
@@ -42,10 +41,6 @@ module Fluent::Plugin
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@pvTelemetryTimeTracker = DateTime.now.to_time.to_i
-        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
-          @aad_msi_auth_enable = true
-        end              
-        $log.info("in_kube_pvinventory::start: aad auth enable:#{@aad_msi_auth_enable}")        
       end
     end
 
@@ -68,7 +63,14 @@ module Fluent::Plugin
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
 
-        overrideTagsWithStreamIdsIfAADAuthEnabled()      
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kube_pvinventory::enumerate: AAD AUTH MSI MODE")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_PV_INVENTORY_DATA_TYPE)
+          end                            
+        end           
+        # debug logs          
+        $log.info("in_kube_pvinventory::enumerate: using kubeevents tag -#{@tag} @ #{Time.now.utc.iso8601}")          
 
         continuationToken = nil
         $log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
@@ -258,24 +260,6 @@ module Fluent::Plugin
         @mutex.lock
       end
       @mutex.unlock
-    end
-
-    def overrideTagsWithStreamIdsIfAADAuthEnabled()
-      begin
-        if @aad_msi_auth_enable
-          # kubepvinventory
-          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")  
-            @tag = Extension.instance.get_output_stream_id("KUBE_PV_INVENTORY_BLOB")  
-            if @tag.nil? || @tag.empty?
-              $log.warn("in_kube_pvinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: KUBE_PV_INVENTORY_BLOB") 
-            else
-              $log.info("in_kube_pvinventory::overrideTagsWithStreamIdsIfAADAuthEnabled: using kubePVInventoryTag: #{@tag}")          
-            end
-          end 
-        end
-      rescue => errorStr
-        $log.warn("in_kube_pvinventory::updateTagsWithStreamIds: failed with an error: #{errorStr}")           
-      end 
-    end
+    end   
   end # Kube_PVInventory_Input
 end # module

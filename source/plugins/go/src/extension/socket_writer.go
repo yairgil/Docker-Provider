@@ -11,7 +11,8 @@ const SockAddress = "/var/run/mdsd/default_fluent.socket"
 const MaxRetries = 5
 
 //ReadBufferSize for reading data from sockets
-const ReadBufferSize = 20480 //20KB
+//Current CI extension config size is ~5KB and going with 20KB to handle any future scenarios
+const ReadBufferSize = 20480 
 
 //FluentSocketWriter writes data to AMA's default fluent socket
 type FluentSocketWriter struct {

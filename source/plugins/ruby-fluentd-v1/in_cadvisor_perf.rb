@@ -5,7 +5,7 @@ require 'fluent/plugin/input'
 module Fluent::Plugin
 
   class CAdvisor_Perf_Input < Input
-    Fluent::Plugin.register_input("cadvisorperf", self)
+    Fluent::Plugin.register_input("cadvisor_perf", self)
 
     def initialize
       super
