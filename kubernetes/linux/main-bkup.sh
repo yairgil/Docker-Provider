@@ -1,7 +1,39 @@
 #!/bin/bash
 
+if [ -e "/etc/config/kube.conf" ]; then
+    cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
+elif [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+    echo "setting omsagent conf file for prometheus sidecar"
+    cat /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
+    # omsadmin.sh replaces %MONITOR_AGENT_PORT% and %SYSLOG_PORT% in the monitor.conf and syslog.conf with default ports 25324 and 25224. 
+    # Since we are running 2 omsagents in the same pod, we need to use a different port for the sidecar, 
+    # else we will see the  Address already in use - bind(2) for 0.0.0.0:253(2)24 error.
+    # Look into omsadmin.sh scripts's configure_monitor_agent()/configure_syslog() and find_available_port() methods for more info.
+    sed -i -e 's/port %MONITOR_AGENT_PORT%/port 25326/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/monitor.conf
+    sed -i -e 's/port %SYSLOG_PORT%/port 25226/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
+else
+    echo "setting omsagent conf file for daemonset"
+    sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
+fi
+sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
+sed -i -e 's/^exit 101$/exit 0/g' /usr/sbin/policy-rc.d
+
+#Using the get_hostname for hostname instead of the host field in syslog messages
+sed -i.bak "s/record\[\"Host\"\] = hostname/record\[\"Host\"\] = OMS::Common.get_hostname/" /opt/microsoft/omsagent/plugin/filter_syslog.rb
+
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
 mkdir -p /var/opt/microsoft/docker-cimprov/state
+
+#if [ ! -e "/etc/config/kube.conf" ]; then
+  # add permissions for omsagent user to access docker.sock
+  #sudo setfacl -m user:omsagent:rw /var/run/host/docker.sock
+#fi
+
+# add permissions for omsagent user to access azure.json.
+sudo setfacl -m user:omsagent:r /etc/kubernetes/host/azure.json
+
+# add permission for omsagent user to log folder. We also need 'x', else log rotation is failing. TODO: Investigate why.
+sudo setfacl -m user:omsagent:rwx /var/opt/microsoft/docker-cimprov/log
 
 #Run inotify as a daemon to track changes to the mounted configmap.
 inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
@@ -75,6 +107,87 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
       fi
 fi
 
+export PROXY_ENDPOINT=""
+
+# Check for internet connectivity or workspace deletion
+if [ -e "/etc/omsagent-secret/WSID" ]; then
+      workspaceId=$(cat /etc/omsagent-secret/WSID)
+      if [ -e "/etc/omsagent-secret/DOMAIN" ]; then
+            domain=$(cat /etc/omsagent-secret/DOMAIN)
+      else
+            domain="opinsights.azure.com"
+      fi
+
+      if [ -e "/etc/omsagent-secret/PROXY" ]; then
+            export PROXY_ENDPOINT=$(cat /etc/omsagent-secret/PROXY)
+            # Validate Proxy Endpoint URL
+            # extract the protocol://
+            proto="$(echo $PROXY_ENDPOINT | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+            # convert the protocol prefix in lowercase for validation
+            proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
+            if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
+               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+            fi
+            # remove the protocol
+            url="$(echo ${PROXY_ENDPOINT/$proto/})"
+            # extract the creds
+            creds="$(echo $url | grep @ | cut -d@ -f1)"
+            user="$(echo $creds | cut -d':' -f1)"
+            pwd="$(echo $creds | cut -d':' -f2)"
+            # extract the host and port
+            hostport="$(echo ${url/$creds@/} | cut -d/ -f1)"
+            # extract host without port
+            host="$(echo $hostport | sed -e 's,:.*,,g')"
+            # extract the port
+            port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
+
+            if [ -z "$user" -o -z "$pwd" -o -z "$host" -o -z "$port" ]; then
+               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+            else
+               echo "successfully validated provided proxy endpoint is valid and expected format"
+            fi
+      fi
+
+      if [ ! -z "$PROXY_ENDPOINT" ]; then
+         echo "Making curl request to oms endpint with domain: $domain and proxy: $PROXY_ENDPOINT"
+         curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+      else
+         echo "Making curl request to oms endpint with domain: $domain"
+         curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
+      fi
+
+      if [ $? -ne 0 ]; then
+            if [ ! -z "$PROXY_ENDPOINT" ]; then
+               echo "Making curl request to ifconfig.co with proxy: $PROXY_ENDPOINT"
+               RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT`
+            else
+               echo "Making curl request to ifconfig.co"
+               RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co`
+            fi
+            if [ $RET -eq 000 ]; then
+                  echo "-e error    Error resolving host during the onboarding request. Check the internet connectivity and/or network policy on the cluster"
+            else
+                  # Retrying here to work around network timing issue
+                  if [ ! -z "$PROXY_ENDPOINT" ]; then
+                    echo "ifconfig check succeeded, retrying oms endpoint with proxy..."
+                    curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+                  else
+                    echo "ifconfig check succeeded, retrying oms endpoint..."
+                    curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
+                  fi
+
+                  if [ $? -ne 0 ]; then
+                        echo "-e error    Error resolving host during the onboarding request. Workspace might be deleted."
+                  else
+                        echo "curl request to oms endpoint succeeded with retry."
+                  fi
+            fi
+      else
+            echo "curl request to oms endpoint succeeded."
+      fi
+else
+      echo "LA Onboarding:Workspace Id not mounted, skipping the telemetry check"
+fi
 
 # Set environment variable for if public cloud by checking the workspace domain.
 if [ -z $domain ]; then
@@ -315,8 +428,75 @@ echo $NODE_NAME > /var/opt/microsoft/docker-cimprov/state/containerhostname
 #check if file was written successfully.
 cat /var/opt/microsoft/docker-cimprov/state/containerhostname
 
+
+#Commenting it for test. We do this in the installer now
+#Setup sudo permission for containerlogtailfilereader
+#chmod +w /etc/sudoers.d/omsagent
+#echo "#run containerlogtailfilereader.rb for docker-provider" >> /etc/sudoers.d/omsagent
+#echo "omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsagent/ruby/bin/ruby /opt/microsoft/omsagent/plugin/containerlogtailfilereader.rb *" >> /etc/sudoers.d/omsagent
+#chmod 440 /etc/sudoers.d/omsagent
+
+#Disable dsc
+#/opt/microsoft/omsconfig/Scripts/OMS_MetaConfigHelper.py --disable
+rm -f /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistencyinvoker.conf
+
+CIWORKSPACE_id=""
+CIWORKSPACE_key=""
+
+if [ -z $INT ]; then
+  if [ -a /etc/omsagent-secret/PROXY ]; then
+     if [ -a /etc/omsagent-secret/DOMAIN ]; then
+        /opt/microsoft/omsagent/bin/omsadmin.sh -w `cat /etc/omsagent-secret/WSID` -s `cat /etc/omsagent-secret/KEY` -d `cat /etc/omsagent-secret/DOMAIN` -p `cat /etc/omsagent-secret/PROXY`
+     else
+        /opt/microsoft/omsagent/bin/omsadmin.sh -w `cat /etc/omsagent-secret/WSID` -s `cat /etc/omsagent-secret/KEY` -p `cat /etc/omsagent-secret/PROXY`
+     fi
+     CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
+     CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"
+  elif [ -a /etc/omsagent-secret/DOMAIN ]; then
+     /opt/microsoft/omsagent/bin/omsadmin.sh -w `cat /etc/omsagent-secret/WSID` -s `cat /etc/omsagent-secret/KEY` -d `cat /etc/omsagent-secret/DOMAIN`
+     CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
+     CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"
+  elif [ -a /etc/omsagent-secret/WSID ]; then
+     /opt/microsoft/omsagent/bin/omsadmin.sh -w `cat /etc/omsagent-secret/WSID` -s `cat /etc/omsagent-secret/KEY`
+     CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
+     CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"
+  elif [ -a /run/secrets/DOMAIN ]; then
+     /opt/microsoft/omsagent/bin/omsadmin.sh -w `cat /run/secrets/WSID` -s `cat /run/secrets/KEY` -d `cat /run/secrets/DOMAIN`
+     CIWORKSPACE_id="$(cat /run/secrets/WSID)"
+     CIWORKSPACE_key="$(cat /run/secrets/KEY)"
+  elif [ -a /run/secrets/WSID ]; then
+     /opt/microsoft/omsagent/bin/omsadmin.sh -w `cat /run/secrets/WSID` -s `cat /run/secrets/KEY`
+     CIWORKSPACE_id="$(cat /run/secrets/WSID)"
+     CIWORKSPACE_key="$(cat /run/secrets/KEY)"
+  elif [ -z $DOMAIN ]; then
+     /opt/microsoft/omsagent/bin/omsadmin.sh -w $WSID -s $KEY
+     CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
+     CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"
+  else
+     /opt/microsoft/omsagent/bin/omsadmin.sh -w $WSID -s $KEY -d $DOMAIN
+     CIWORKSPACE_id="$WSID"
+     CIWORKSPACE_key="$KEY"
+  fi
+else
+#To onboard to INT workspace - workspace-id (WSID-not base64 encoded), workspace-key (KEY-not base64 encoded), Domain(DOMAIN-int2.microsoftatlanta-int.com)
+#need to be added to omsagent.yaml.
+	echo WORKSPACE_ID=$WSID > /etc/omsagent-onboard.conf
+	echo SHARED_KEY=$KEY >> /etc/omsagent-onboard.conf
+      echo URL_TLD=$DOMAIN >> /etc/omsagent-onboard.conf
+	/opt/microsoft/omsagent/bin/omsadmin.sh
+      CIWORKSPACE_id="$WSID"
+      CIWORKSPACE_key="$KEY"
+fi
+
 #start cron daemon for logrotate
 service cron start
+
+#check if agent onboarded successfully
+/opt/microsoft/omsagent/bin/omsadmin.sh -l
+
+#get omsagent and docker-provider versions
+dpkg -l | grep omsagent | awk '{print $2 " " $3}'
+dpkg -l | grep docker-cimprov | awk '{print $2 " " $3}'
 
 DOCKER_CIMPROV_VERSION=$(dpkg -l | grep docker-cimprov | awk '{print $3}')
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
@@ -416,6 +596,46 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
       fi      
 
       touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
+else 
+   if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+      if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
+            echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
+            echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+            #trim
+            containerlogsroute="$(echo $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE | xargs)"
+            # convert to lowercase
+            typeset -l containerlogsroute=$containerlogsroute
+
+            echo "setting AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE as :$containerlogsroute"
+            export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute
+            echo "export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute" >> ~/.bashrc
+            source ~/.bashrc
+
+            if [ "$containerlogsroute" == "v2" ]; then
+                  echo "activating oneagent..."
+                  echo "configuring mdsd..."
+                  cat /etc/mdsd.d/envmdsd | while read line; do
+                        echo $line >> ~/.bashrc
+                  done
+                  source /etc/mdsd.d/envmdsd
+
+                  echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+                  export CIWORKSPACE_id=$CIWORKSPACE_id
+                  echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
+                  export CIWORKSPACE_key=$CIWORKSPACE_key
+                  echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
+
+                  source ~/.bashrc
+
+                  dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+
+                  echo "starting mdsd ..."
+                  mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+
+                  touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
+            fi
+      fi
+   fi  
 fi
 
 
@@ -529,14 +749,21 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
+
+
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 touch /dev/write-to-traces
+
 
 echo "stopping rsyslog..."
 service rsyslog stop
 
 echo "getting rsyslog status..."
 service rsyslog status
+
+shutdown() {
+	/opt/microsoft/omsagent/bin/service_control stop
+	}
 
 trap "shutdown" SIGTERM
 
