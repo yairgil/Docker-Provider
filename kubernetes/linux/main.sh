@@ -121,7 +121,7 @@ source ~/.bashrc
 
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       #Parse the configmap to set the right environment variables.
-      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
+      /usr/bin/ruby tomlparser.rb
 
       cat config_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -132,7 +132,7 @@ fi
 #Parse the configmap to set the right environment variables for agent config.
 #Note > tomlparser-agent-config.rb has to be parsed first before td-agent-bit-conf-customizer.rb for fbit agent settings
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-agent-config.rb
+      /usr/bin/ruby tomlparser-agent-config.rb
 
       cat agent_config_env_var | while read line; do
             #echo $line
@@ -141,7 +141,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       source agent_config_env_var
 
       #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
-      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
+      /usr/bin/ruby tomlparser-npm-config.rb
 
       cat integration_npm_config_env_var | while read line; do
             #echo $line
@@ -152,11 +152,11 @@ fi
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
 if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /opt/microsoft/omsagent/ruby/bin/ruby td-agent-bit-conf-customizer.rb
+      /usr/bin/ruby td-agent-bit-conf-customizer.rb
 fi
 
 #Parse the prometheus configmap to create a file with new custom settings.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prom-customconfig.rb
+/usr/bin/ruby tomlparser-prom-customconfig.rb
 
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
@@ -189,7 +189,7 @@ fi
 
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-mdm-metrics-config.rb
+      /usr/bin/ruby tomlparser-mdm-metrics-config.rb
 
       cat config_mdm_metrics_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -197,7 +197,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       source config_mdm_metrics_env_var
 
       #Parse the configmap to set the right environment variables for metric collection settings
-      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-metric-collection-config.rb
+      /usr/bin/ruby tomlparser-metric-collection-config.rb
 
       cat config_metric_collection_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -208,7 +208,7 @@ fi
 # OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
 if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
       ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
-      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
+      /usr/bin/ruby tomlparser-osm-config.rb
 
       if [ -e "integration_osm_config_env_var" ]; then
             cat integration_osm_config_env_var | while read line; do
@@ -302,9 +302,6 @@ else
       usermod -aG ${DOCKER_GROUP} ${REGULAR_USER}
    fi
 fi
-
-echo "set caps for ruby process to read container env from proc"
-sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /opt/microsoft/omsagent/ruby/bin/ruby
 
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
@@ -420,6 +417,10 @@ fi
 
 
 echo "************end oneagent log routing checks************"
+
+#TODO-gangams- validate whether this required ??
+#echo "set caps for ruby process to read container env from proc"
+#sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby
 
 #If config parsing was successful, a copy of the conf file with replaced custom settings file is created
 if [ ! -e "/etc/config/kube.conf" ]; then
