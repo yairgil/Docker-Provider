@@ -3,10 +3,8 @@ cd $TMPDIR
 
 #Download utf-8 encoding capability on the omsagent container.
 #upgrade apt to latest version
-echo "upgrading to latest apt"
 apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
-echo "updating locale"
 sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
@@ -14,7 +12,6 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 #install oneagent - Official bits (10/18)
 # wget https://github.com/microsoft/Docker-Provider/releases/download/10182020-oneagent/azure-mdsd_1.5.126-build.master.99_x86_64.deb
 # use official build which has all the changes for the release
-echo "installing one agent"
 wget https://github.com/microsoft/Docker-Provider/raw/gangams/ci-aad-auth-msi/oneagent-dev/azure-mdsd_1.9.0-build.develop.1850_x86_64.deb
 
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
@@ -30,7 +27,6 @@ sudo apt-get install inotify-tools -y
 sudo apt-get install jq=1.5+dfsg-2 -y
 
 #used to setcaps for ruby process to read /proc/env
-echo "installing libcap2-bin"
 sudo apt-get install libcap2-bin -y
 
 #1.18 pre-release
@@ -51,8 +47,10 @@ sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
 
 #install ruby2.5
-echo "installing ruby2.5"
-apt-get install ruby 2.5 -y
+sudo apt -y install software-properties-common
+sudo apt-add-repository ppa:brightbox/ruby-ng
+sudo apt-get update
+sudo apt-get install ruby2.5 -y
 
 # install & setup fluentd v1
 apt-get install rubygems ruby-dev gcc make -y
