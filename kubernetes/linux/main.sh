@@ -75,6 +75,87 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
       fi
 fi
 
+export PROXY_ENDPOINT=""
+# Check for internet connectivity or workspace deletion
+if [ -e "/etc/omsagent-secret/WSID" ]; then
+      workspaceId=$(cat /etc/omsagent-secret/WSID)
+      if [ -e "/etc/omsagent-secret/DOMAIN" ]; then
+            domain=$(cat /etc/omsagent-secret/DOMAIN)
+      else
+            domain="opinsights.azure.com"
+      fi
+
+      if [ -e "/etc/omsagent-secret/PROXY" ]; then
+            export PROXY_ENDPOINT=$(cat /etc/omsagent-secret/PROXY)
+            # Validate Proxy Endpoint URL
+            # extract the protocol://
+            proto="$(echo $PROXY_ENDPOINT | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+            # convert the protocol prefix in lowercase for validation
+            proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
+            if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
+               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+            fi
+            # remove the protocol
+            url="$(echo ${PROXY_ENDPOINT/$proto/})"
+            # extract the creds
+            creds="$(echo $url | grep @ | cut -d@ -f1)"
+            user="$(echo $creds | cut -d':' -f1)"
+            pwd="$(echo $creds | cut -d':' -f2)"
+            # extract the host and port
+            hostport="$(echo ${url/$creds@/} | cut -d/ -f1)"
+            # extract host without port
+            host="$(echo $hostport | sed -e 's,:.*,,g')"
+            # extract the port
+            port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
+
+            if [ -z "$user" -o -z "$pwd" -o -z "$host" -o -z "$port" ]; then
+               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+            else
+               echo "successfully validated provided proxy endpoint is valid and expected format"
+            fi
+      fi
+
+      if [ ! -z "$PROXY_ENDPOINT" ]; then
+         echo "Making curl request to oms endpint with domain: $domain and proxy: $PROXY_ENDPOINT"
+         curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+      else
+         echo "Making curl request to oms endpint with domain: $domain"
+         curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
+      fi
+
+      if [ $? -ne 0 ]; then
+            if [ ! -z "$PROXY_ENDPOINT" ]; then
+               echo "Making curl request to ifconfig.co with proxy: $PROXY_ENDPOINT"
+               RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT`
+            else
+               echo "Making curl request to ifconfig.co"
+               RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co`
+            fi
+            if [ $RET -eq 000 ]; then
+                  echo "-e error    Error resolving host during the onboarding request. Check the internet connectivity and/or network policy on the cluster"
+            else
+                  # Retrying here to work around network timing issue
+                  if [ ! -z "$PROXY_ENDPOINT" ]; then
+                    echo "ifconfig check succeeded, retrying oms endpoint with proxy..."
+                    curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+                  else
+                    echo "ifconfig check succeeded, retrying oms endpoint..."
+                    curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
+                  fi
+
+                  if [ $? -ne 0 ]; then
+                        echo "-e error    Error resolving host during the onboarding request. Workspace might be deleted."
+                  else
+                        echo "curl request to oms endpoint succeeded with retry."
+                  fi
+            fi
+      else
+            echo "curl request to oms endpoint succeeded."
+      fi
+else
+      echo "LA Onboarding:Workspace Id not mounted, skipping the telemetry check"
+fi
+
 
 # Set environment variable for if public cloud by checking the workspace domain.
 if [ -z $domain ]; then
@@ -86,6 +167,12 @@ else
 fi
 export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
+
+#consisten naming conventions with the windows
+export DOMAIN=$domain
+echo "export DOMAIN=$DOMAIN" >> ~/.bashrc
+export WSID=$workspaceId
+echo "export WSID=$WSID" >> ~/.bashrc
 
 # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
 if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)

@@ -14,7 +14,6 @@ class ApplicationInsightsUtility
   @@Exception = "ExceptionEvent"
   @@AcsClusterType = "ACS"
   @@AksClusterType = "AKS"
-  @OmsAdminFilePath = "/etc/opt/microsoft/omsagent/conf/omsadmin.conf"
   @@EnvAcsResourceName = "ACS_RESOURCE_NAME"
   @@EnvAksRegion = "AKS_REGION"
   @@EnvAgentVersion = "AGENT_VERSION"
@@ -270,14 +269,11 @@ class ApplicationInsightsUtility
     end
 
     def getWorkspaceId()
-      begin
-        adminConf = {}
-        confFile = File.open(@OmsAdminFilePath, "r")
-        confFile.each_line do |line|
-          splitStrings = line.split("=")
-          adminConf[splitStrings[0]] = splitStrings[1]
+      begin       
+        workspaceId = ENV["WSID"]
+        if workspaceId.nil? || workspaceId.empty?
+          $log.warn("Exception in AppInsightsUtility: getWorkspaceId - WorkspaceID either nil or empty")
         end
-        workspaceId = adminConf["WORKSPACE_ID"]
         return workspaceId
       rescue => errorStr
         $log.warn("Exception in AppInsightsUtility: getWorkspaceId - error: #{errorStr}")
@@ -285,14 +281,8 @@ class ApplicationInsightsUtility
     end
 
     def getWorkspaceCloud()
-      begin
-        adminConf = {}
-        confFile = File.open(@OmsAdminFilePath, "r")
-        confFile.each_line do |line|
-          splitStrings = line.split("=")
-          adminConf[splitStrings[0]] = splitStrings[1]
-        end
-        workspaceDomain = adminConf["URL_TLD"].strip
+      begin     
+        workspaceDomain = ENV["DOMAIN"]
         workspaceCloud = "AzureCloud"
         if workspaceDomain.casecmp("opinsights.azure.com") == 0
           workspaceCloud = "AzureCloud"

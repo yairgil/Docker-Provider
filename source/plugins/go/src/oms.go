@@ -128,6 +128,8 @@ var (
 	Computer string
 	// WorkspaceID log analytics workspace id
 	WorkspaceID string
+	// LogAnalyticsWorkspaceDomain log analytics workspace domain
+	LogAnalyticsWorkspaceDomain string
 	// ResourceID for resource-centric log analytics data
 	ResourceID string
 	// Resource-centric flag (will be true if we determine if above RseourceID is non-empty - default is false)
@@ -1448,16 +1450,23 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	// Linux
 	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
 		Log("Reading configuration for Linux from %s", pluginConfPath)
-		omsadminConf, err := ReadConfiguration(pluginConfig["omsadmin_conf_path"])
-		if err != nil {
-			message := fmt.Sprintf("Error Reading omsadmin configuration %s\n", err.Error())
+		WorkspaceID = os.Getenv("WSID")
+		if WorkspaceID == "" {
+			message := fmt.Sprintf("WorkspaceID shouldnt be empty")
 			Log(message)
 			SendException(message)
 			time.Sleep(30 * time.Second)
 			log.Fatalln(message)
 		}
-		OMSEndpoint = omsadminConf["OMS_ENDPOINT"]
-		WorkspaceID = omsadminConf["WORKSPACE_ID"]
+		LogAnalyticsWorkspaceDomain = os.Getenv("DOMAIN")
+		if LogAnalyticsWorkspaceDomain == "" {
+			message := fmt.Sprintf("Workspace DOMAIN shouldnt be empty")
+			Log(message)
+			SendException(message)
+			time.Sleep(30 * time.Second)
+			log.Fatalln(message)
+		}		
+		OMSEndpoint = "https://" + WorkspaceID + ".ods." + LogAnalyticsWorkspaceDomain + "/OperationalData.svc/PostJsonDataItems"		
 		// Populate Computer field
 		containerHostName, err1 := ioutil.ReadFile(pluginConfig["container_host_file_path"])
 		if err1 != nil {
@@ -1488,9 +1497,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		// windows
 		Computer = os.Getenv("HOSTNAME")
 		WorkspaceID = os.Getenv("WSID")
-		logAnalyticsDomain := os.Getenv("DOMAIN")
+		LogAnalyticsWorkspaceDomain = os.Getenv("DOMAIN")
 		ProxyEndpoint = os.Getenv("PROXY")
-		OMSEndpoint = "https://" + WorkspaceID + ".ods." + logAnalyticsDomain + "/OperationalData.svc/PostJsonDataItems"
+		OMSEndpoint = "https://" + WorkspaceID + ".ods." + LogAnalyticsWorkspaceDomain + "/OperationalData.svc/PostJsonDataItems"
 	}
 
 	Log("OMSEndpoint %s", OMSEndpoint)
