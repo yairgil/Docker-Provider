@@ -56,7 +56,7 @@ else
       export customRegion=$AKS_REGION 
       echo "export customRegion=$AKS_REGION" >> ~/.bashrc
       source ~/.bashrc
-      echo "customRegion:$customRegion"  
+      echo "customRegion:$customRegion" 
 fi
 
 #set agent config schema version

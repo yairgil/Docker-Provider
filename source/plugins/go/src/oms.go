@@ -156,14 +156,8 @@ var (
 	AdxTenantID string
 	//ADX client secret
 	AdxClientSecret string
-	// flag to check whether LA AAD MSI Auth Enabled or not
-	IsAADMSIAuthMode bool
-	// container log or container log v2 tag name for oneagent route
-	MdsdContainerLogTagName string 
-	// kubemonagent events tag name for oneagent route
-	MdsdKubeMonAgentEventsTagName string
-	// InsightsMetrics tag name for oneagent route
-	MdsdInsightsMetricsTagName string 
+	//ODSIngestion Token
+	ODSIngestionAuthToken string 
 )
 
 var (
@@ -1308,8 +1302,42 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if ResourceCentric == true {
 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		}
+		//
+		if ODSIngestionAuthToken == "" {			
+			imdsAccessToken, err := getAccessTokenFromIMDS()
+			if err != nil {
+				message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
+				Log(message)
+			}
+			Log("IMDS Access Token: %s", imdsAccessToken)
+			if imdsAccessToken != "" {
+				var ingestionToken string 
+				var err error
+				var configurationId string 
+				var channelId string 
+				configurationId, channelId, err = getAgentConfiguration(imdsAccessToken)
+				if err != nil {
+					message := fmt.Sprintf("Error getAgentConfiguration %s \n", err.Error())
+					Log(message)
+				}
+				if configurationId != "" && channelId != "" {
+					ingestionToken, err = getIngestionAuthToken(imdsAccessToken, configurationId, channelId)
+					if err != nil {
+						message := fmt.Sprintf("Error getIngestionAuthToken %s \n", err.Error())
+						Log(message)
+					} 
+			    }
+				ODSIngestionAuthToken = ingestionToken 
+		    }
+			Log("ODS Ingestion Token: %s", ODSIngestionAuthToken)
+		}
+		var bearer = "Bearer " + ODSIngestionAuthToken
+		// add authorization header to the req
+	    req.Header.Add("Authorization", bearer)
 		
-		resp, err := HTTPClient.Do(req)
+		client := &http.Client{}
+	    resp, err := client.Do(req) 
+		//resp, err := HTTPClient.Do(req)
 		elapsed = time.Since(start)
 
 		if err != nil {
@@ -1407,6 +1435,7 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 // InitializePlugin reads and populates plugin configuration
 func InitializePlugin(pluginConfPath string, agentVersion string) {
 
+	ODSIngestionAuthToken = ""
 	go func() {
 		isTest := os.Getenv("ISTEST")
 		if strings.Compare(strings.ToLower(strings.TrimSpace(isTest)), "true") == 0 {
