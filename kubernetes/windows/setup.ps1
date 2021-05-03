@@ -18,6 +18,9 @@ Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /etc/config/settings/
     New-Item -Type Directory -Path /etc/config/adx/
 
+    # Creating the following directory structure since some plugins write logs to this path
+    New-Item -Type Directory -Path /var/opt/microsoft/docker-cimprov/log
+
 Write-Host ('Installing Fluent Bit');
 
     try {
