@@ -52,6 +52,11 @@ else
       echo "export customResourceId=$AKS_RESOURCE_ID" >> ~/.bashrc
       source ~/.bashrc
       echo "customResourceId:$customResourceId"
+
+      export customRegion=$AKS_REGION 
+      echo "export customRegion=$AKS_REGION" >> ~/.bashrc
+      source ~/.bashrc
+      echo "customRegion:$customRegion" 
 fi
 
 #set agent config schema version
