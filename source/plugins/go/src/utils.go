@@ -263,6 +263,8 @@ func getAccessTokenFromIMDS() (string, error) {
     }
     req.Header.Add("Metadata", "true")
 
+	// TODO: what if there are multiple identiteis assigned? IMDS returns this error:
+
     // Call managed services for Azure resources token endpoint
     client := &http.Client{}
     resp, err := client.Do(req) 

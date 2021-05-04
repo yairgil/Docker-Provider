@@ -84,7 +84,6 @@ const WindowsContainerLogPluginConfFilePath = "/etc/omsagentwindows/out_oms.conf
 // IPName
 const IPName = "ContainerInsights"
 
-
 const defaultContainerInventoryRefreshInterval = 60
 
 const kubeMonAgentConfigEventFlushInterval = 60
@@ -145,7 +144,7 @@ var (
 	//ADX client secret
 	AdxClientSecret string
 	//ODSIngestion Token
-	ODSIngestionAuthToken string 
+	ODSIngestionAuthToken string
 )
 
 var (
@@ -209,29 +208,29 @@ type DataItemLAv1 struct {
 // DataItemLAv2 == ContainerLogV2 table in LA
 // Please keep the names same as destination column names, to avoid transforming one to another in the pipeline
 type DataItemLAv2 struct {
-	TimeGenerated         string `json:"TimeGenerated"`
-	Computer              string `json:"Computer"`
-	ContainerId           string `json:"ContainerId"`
-	ContainerName         string `json:"ContainerName"`
-	PodName				  string `json:"PodName"`
-	PodNamespace          string `json:"PodNamespace"`
-	LogMessage            string `json:"LogMessage"`
-	LogSource             string `json:"LogSource"`
+	TimeGenerated string `json:"TimeGenerated"`
+	Computer      string `json:"Computer"`
+	ContainerId   string `json:"ContainerId"`
+	ContainerName string `json:"ContainerName"`
+	PodName       string `json:"PodName"`
+	PodNamespace  string `json:"PodNamespace"`
+	LogMessage    string `json:"LogMessage"`
+	LogSource     string `json:"LogSource"`
 	//PodLabels			  string `json:"PodLabels"`
 }
 
 // DataItemADX == ContainerLogV2 table in ADX
 type DataItemADX struct {
-	TimeGenerated         string `json:"TimeGenerated"`
-	Computer              string `json:"Computer"`
-	ContainerId           string `json:"ContainerId"`
-	ContainerName         string `json:"ContainerName"`
-	PodName				  string `json:"PodName"`
-	PodNamespace          string `json:"PodNamespace"`
-	LogMessage            string `json:"LogMessage"`
-	LogSource             string `json:"LogSource"`
+	TimeGenerated string `json:"TimeGenerated"`
+	Computer      string `json:"Computer"`
+	ContainerId   string `json:"ContainerId"`
+	ContainerName string `json:"ContainerName"`
+	PodName       string `json:"PodName"`
+	PodNamespace  string `json:"PodNamespace"`
+	LogMessage    string `json:"LogMessage"`
+	LogSource     string `json:"LogSource"`
 	//PodLabels			  string `json:"PodLabels"`
-	AzureResourceId       string `json:"AzureResourceId"`
+	AzureResourceId string `json:"AzureResourceId"`
 }
 
 // telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
@@ -256,15 +255,15 @@ type InsightsMetricsBlob struct {
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
 type ContainerLogBlobLAv1 struct {
-	DataType  string     `json:"DataType"`
-	IPName    string     `json:"IPName"`
+	DataType  string         `json:"DataType"`
+	IPName    string         `json:"IPName"`
 	DataItems []DataItemLAv1 `json:"DataItems"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
 type ContainerLogBlobLAv2 struct {
-	DataType  string     `json:"DataType"`
-	IPName    string     `json:"IPName"`
+	DataType  string         `json:"DataType"`
+	IPName    string         `json:"IPName"`
 	DataItems []DataItemLAv2 `json:"DataItems"`
 }
 
@@ -868,12 +867,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap = make(map[string]string)
 		//below id & name are used by latency telemetry in both v1 & v2 LA schemas
 		id := ""
-	    name := ""
+		name := ""
 
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
-		if (ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true) {
+		if ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true {
 			stringMap["Computer"] = Computer
 			stringMap["ContainerId"] = containerID
 			stringMap["ContainerName"] = containerName
@@ -922,29 +921,29 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				stringMap["AzureResourceId"] = ""
 			}
 			dataItemADX = DataItemADX{
-				TimeGenerated:         stringMap["TimeGenerated"],
-				Computer:              stringMap["Computer"],
-				ContainerId:           stringMap["ContainerId"],
-				ContainerName:         stringMap["ContainerName"],
-				PodName:               stringMap["PodName"],
-				PodNamespace:          stringMap["PodNamespace"],
-				LogMessage:            stringMap["LogMessage"],
-				LogSource:             stringMap["LogSource"],
-				AzureResourceId:       stringMap["AzureResourceId"],
+				TimeGenerated:   stringMap["TimeGenerated"],
+				Computer:        stringMap["Computer"],
+				ContainerId:     stringMap["ContainerId"],
+				ContainerName:   stringMap["ContainerName"],
+				PodName:         stringMap["PodName"],
+				PodNamespace:    stringMap["PodNamespace"],
+				LogMessage:      stringMap["LogMessage"],
+				LogSource:       stringMap["LogSource"],
+				AzureResourceId: stringMap["AzureResourceId"],
 			}
 			//ADX
 			dataItemsADX = append(dataItemsADX, dataItemADX)
 		} else {
-			if (ContainerLogSchemaV2 == true) {
+			if ContainerLogSchemaV2 == true {
 				dataItemLAv2 = DataItemLAv2{
-					TimeGenerated:         stringMap["TimeGenerated"],
-					Computer:              stringMap["Computer"],
-					ContainerId:           stringMap["ContainerId"],
-					ContainerName:         stringMap["ContainerName"],
-					PodName:               stringMap["PodName"],
-					PodNamespace:          stringMap["PodNamespace"],
-					LogMessage:            stringMap["LogMessage"],
-					LogSource:             stringMap["LogSource"],
+					TimeGenerated: stringMap["TimeGenerated"],
+					Computer:      stringMap["Computer"],
+					ContainerId:   stringMap["ContainerId"],
+					ContainerName: stringMap["ContainerName"],
+					PodName:       stringMap["PodName"],
+					PodNamespace:  stringMap["PodNamespace"],
+					LogMessage:    stringMap["LogMessage"],
+					LogSource:     stringMap["LogSource"],
 				}
 				//ODS-v2 schema
 				dataItemsLAv2 = append(dataItemsLAv2, dataItemLAv2)
@@ -962,10 +961,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					Image:                 stringMap["Image"],
 					Name:                  stringMap["Name"],
 				}
-			//ODS-v1 schema
-			dataItemsLAv1 = append(dataItemsLAv1, dataItemLAv1)
-			name = stringMap["Name"]
-			id = stringMap["Id"]
+				//ODS-v1 schema
+				dataItemsLAv1 = append(dataItemsLAv1, dataItemLAv1)
+				name = stringMap["Name"]
+				id = stringMap["Id"]
 			}
 		}
 
@@ -990,7 +989,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
 		//flush to mdsd
 		mdsdSourceName := MdsdContainerLogSourceName
-		if (ContainerLogSchemaV2 == true) {
+		if ContainerLogSchemaV2 == true {
 			mdsdSourceName = MdsdContainerLogV2SourceName
 		}
 		fluentForward := MsgPackForward{
@@ -1114,13 +1113,13 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		recordType := ""
 		loglinesCount := 0
 		//schema v2
-		if (len(dataItemsLAv2) > 0 && ContainerLogSchemaV2 == true) {
+		if len(dataItemsLAv2) > 0 && ContainerLogSchemaV2 == true {
 			logEntry = ContainerLogBlobLAv2{
 				DataType:  ContainerLogV2DataType,
 				IPName:    IPName,
 				DataItems: dataItemsLAv2}
-				loglinesCount = len(dataItemsLAv2)
-				recordType = "ContainerLogV2"
+			loglinesCount = len(dataItemsLAv2)
+			recordType = "ContainerLogV2"
 		} else {
 			//schema v1
 			if len(dataItemsLAv1) > 0 {
@@ -1128,8 +1127,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					DataType:  ContainerLogDataType,
 					IPName:    IPName,
 					DataItems: dataItemsLAv1}
-					loglinesCount = len(dataItemsLAv1)
-					recordType = "ContainerLog"
+				loglinesCount = len(dataItemsLAv1)
+				recordType = "ContainerLog"
 			}
 		}
 
@@ -1152,7 +1151,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		}
 		//
-		if ODSIngestionAuthToken == "" {			
+		if ODSIngestionAuthToken == "" {
 			imdsAccessToken, err := getAccessTokenFromIMDS()
 			if err != nil {
 				message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
@@ -1160,10 +1159,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			Log("IMDS Access Token: %s", imdsAccessToken)
 			if imdsAccessToken != "" {
-				var ingestionToken string 
+				var ingestionToken string
 				var err error
-				var configurationId string 
-				var channelId string 
+				var configurationId string
+				var channelId string
 				configurationId, channelId, err = getAgentConfiguration(imdsAccessToken)
 				if err != nil {
 					message := fmt.Sprintf("Error getAgentConfiguration %s \n", err.Error())
@@ -1174,18 +1173,20 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					if err != nil {
 						message := fmt.Sprintf("Error getIngestionAuthToken %s \n", err.Error())
 						Log(message)
-					} 
-			    }
-				ODSIngestionAuthToken = ingestionToken 
-		    }
+					}
+				}
+				ODSIngestionAuthToken = ingestionToken
+			} else {
+				Log("ERROR: ODS Ingestion Token is empty: %s", imdsAccessToken)
+			}
 			Log("ODS Ingestion Token: %s", ODSIngestionAuthToken)
 		}
 		var bearer = "Bearer " + ODSIngestionAuthToken
 		// add authorization header to the req
-	    req.Header.Add("Authorization", bearer)
-		
+		req.Header.Add("Authorization", bearer)
+
 		client := &http.Client{}
-	    resp, err := client.Do(req) 
+		resp, err := client.Do(req)
 		//resp, err := HTTPClient.Do(req)
 		elapsed = time.Since(start)
 
@@ -1194,7 +1195,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Log(message)
 			// Commenting this out for now. TODO - Add better telemetry for ods errors using aggregation
 			//SendException(message)
-			
+
 			Log("Failed to flush %d records after %s", loglinesCount, elapsed)
 
 			return output.FLB_RETRY
@@ -1211,7 +1212,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		numContainerLogRecords = loglinesCount
 		Log("PostDataHelper::Info::Successfully flushed %d %s records to ODS in %s", numContainerLogRecords, recordType, elapsed)
 
-		}
+	}
 
 	ContainerLogTelemetryMutex.Lock()
 	defer ContainerLogTelemetryMutex.Unlock()
@@ -1503,9 +1504,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerLogSchemaVersion := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
 	Log("AZMON_CONTAINER_LOG_SCHEMA_VERSION:%s", ContainerLogSchemaVersion)
 
-	ContainerLogSchemaV2 = false  //default is v1 schema
+	ContainerLogSchemaV2 = false //default is v1 schema
 
-	if strings.Compare(ContainerLogSchemaVersion, ContainerLogV2SchemaVersion) == 0  && ContainerLogsRouteADX != true {
+	if strings.Compare(ContainerLogSchemaVersion, ContainerLogV2SchemaVersion) == 0 && ContainerLogsRouteADX != true {
 		ContainerLogSchemaV2 = true
 		Log("Container logs schema=%s", ContainerLogV2SchemaVersion)
 		fmt.Fprintf(os.Stdout, "Container logs schema=%s... \n", ContainerLogV2SchemaVersion)
