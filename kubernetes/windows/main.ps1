@@ -170,6 +170,7 @@ function Set-EnvironmentVariables {
 function Get-ContainerRuntime {
     # default container runtime and make default as containerd when containerd becomes default in AKS
     $containerRuntime = "docker"
+    $cAdvisorIsSecure = "false"
     $response = ""
     $NODE_IP = ""
     try {
@@ -209,12 +210,17 @@ function Get-ContainerRuntime {
                     if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
                         Write-Host "API call to https://$($NODE_IP):10250/pods succeeded"
                         $isPodsAPISuccess = $true
+                        $cAdvisorIsSecure = "true"
                     }
                 }
                 catch {
                     Write-Host "API call to https://$($NODE_IP):10250/pods failed"
                 }
             }
+
+        # set IS_SECURE_CADVISOR_PORT env for debug and telemetry purpose
+        [System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Process")
+        [System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Machine")
 
             if ($isPodsAPISuccess) {
                 if (![string]::IsNullOrEmpty($response.Content)) {
