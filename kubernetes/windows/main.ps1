@@ -219,6 +219,7 @@ function Get-ContainerRuntime {
             }
 
         # set IS_SECURE_CADVISOR_PORT env for debug and telemetry purpose
+        Write-Host "Setting IS_SECURE_CADVISOR_PORT environment variable as $($cAdvisorIsSecure)"
         [System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Process")
         [System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Machine")
 
