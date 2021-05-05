@@ -195,4 +195,7 @@ Write-Host("copying ruby source files from :" + $utilsplugindir + "  to  :" + $p
 Copy-Item -Path $utilsplugindir -Destination $publishdir -Recurse -Force
 Write-Host("successfully copied ruby source files from :" + $utilsplugindir + "  to  :" + $publishdir + " ") -ForegroundColor Green
 
+# Creating the following directory structure since some plugins write logs to this path
+New-Item -Type Directory -Path /var/opt/microsoft/docker-cimprov/log
+
 Set-Location $currentdir

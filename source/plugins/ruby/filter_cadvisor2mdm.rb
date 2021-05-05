@@ -186,7 +186,7 @@ module Fluent
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
-            end            
+            end
             @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["DataItems"][0]["Host"]} percentage: #{percentage_metric_value}"
 
             # do some sanity checking. Do we want this?
@@ -260,7 +260,6 @@ module Fluent
       begin
         mdmMetrics = []
         record["DataItems"].each do |dataItem|
-
           if dataItem["Name"] == Constants::PV_USED_BYTES && @metrics_to_collect_hash.key?(dataItem["Name"].downcase)
             metricName = dataItem["Name"]
             usage = dataItem["Value"]
@@ -279,11 +278,11 @@ module Fluent
             if percentage_metric_value >= thresholdPercentage
               setThresholdExceededTelemetry(metricName)
               return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
-                                                                       metricName,
-                                                                       computer,
-                                                                       percentage_metric_value,
-                                                                       resourceDimensions,
-                                                                       thresholdPercentage)
+                                                                        metricName,
+                                                                        computer,
+                                                                        percentage_metric_value,
+                                                                        resourceDimensions,
+                                                                        thresholdPercentage)
             else
               return []
             end # end if block for percentage metric > configured threshold % check
@@ -341,7 +340,6 @@ module Fluent
           # cpu_capacity and memory_capacity keep initialized value of 0.0
           @log.error "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
         end
-
       end
     end
 
@@ -355,6 +353,7 @@ module Fluent
         end
 
         es.each { |time, record|
+          @log.warn "rashmi-record-#{record}"
           filtered_records = filter(tag, time, record)
           filtered_records.each { |filtered_record|
             new_es.add(time, filtered_record) if filtered_record
