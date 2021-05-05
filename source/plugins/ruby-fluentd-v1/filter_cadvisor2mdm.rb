@@ -357,6 +357,7 @@ module Fluent::Plugin
         end
 
         es.each { |time, record|
+          @log.warn "rashmi-record-#{record}"
           filtered_records = filter(tag, time, record)
           filtered_records.each { |filtered_record|
             new_es.add(time, filtered_record) if filtered_record
