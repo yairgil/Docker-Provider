@@ -376,6 +376,8 @@ if [ "$CONTAINER_RUNTIME" != "docker" ]; then
    export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="kubelet_runtime_operations_errors"  
 fi
 
+echo "set caps for ruby process to read container env from proc"
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /opt/microsoft/omsagent/ruby/bin/ruby
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
 
@@ -387,77 +389,119 @@ cat /var/opt/microsoft/docker-cimprov/state/containerhostname
 
 #start cron daemon for logrotate
 service cron start
+#get  docker-provider versions
+
+dpkg -l | grep docker-cimprov | awk '{print $2 " " $3}'
 
 DOCKER_CIMPROV_VERSION=$(dpkg -l | grep docker-cimprov | awk '{print $3}')
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
-#region check to auto-activate oneagent, to route container logs,
-#Intent is to activate one agent routing for all managed clusters with region in the regionllist, unless overridden by configmap
-# AZMON_CONTAINER_LOGS_ROUTE  will have route (if any) specified in the config map
-# AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE will have the final route that we compute & set, based on our region list logic
-echo "************start oneagent log routing checks************"
-# by default, use configmap route for safer side
-AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
+# #region check to auto-activate oneagent, to route container logs,
+# #Intent is to activate one agent routing for all managed clusters with region in the regionllist, unless overridden by configmap
+# # AZMON_CONTAINER_LOGS_ROUTE  will have route (if any) specified in the config map
+# # AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE will have the final route that we compute & set, based on our region list logic
+# echo "************start oneagent log routing checks************"
+# # by default, use configmap route for safer side
+# AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
 
-#trim region list
-oneagentregions="$(echo $AZMON_CONTAINERLOGS_ONEAGENT_REGIONS | xargs)"
-#lowercase region list
-typeset -l oneagentregions=$oneagentregions
-echo "oneagent regions: $oneagentregions"
-#trim current region
-currentregion="$(echo $AKS_REGION | xargs)"
-#lowercase current region
-typeset -l currentregion=$currentregion
-echo "current region: $currentregion"
+# #trim region list
+# oneagentregions="$(echo $AZMON_CONTAINERLOGS_ONEAGENT_REGIONS | xargs)"
+# #lowercase region list
+# typeset -l oneagentregions=$oneagentregions
+# echo "oneagent regions: $oneagentregions"
+# #trim current region
+# currentregion="$(echo $AKS_REGION | xargs)"
+# #lowercase current region
+# typeset -l currentregion=$currentregion
+# echo "current region: $currentregion"
 
-#initilze isoneagentregion as false
-isoneagentregion=false
+# #initilze isoneagentregion as false
+# isoneagentregion=false
 
-#set isoneagentregion as true if matching region is found
-if [ ! -z $oneagentregions ] && [ ! -z $currentregion ]; then
-  for rgn in $(echo $oneagentregions | sed "s/,/ /g"); do
-    if [ "$rgn" == "$currentregion" ]; then
-          isoneagentregion=true
-          echo "current region is in oneagent regions..."
-          break
-    fi
-  done
-else
-  echo "current region is not in oneagent regions..."
-fi
+# #set isoneagentregion as true if matching region is found
+# if [ ! -z $oneagentregions ] && [ ! -z $currentregion ]; then
+#   for rgn in $(echo $oneagentregions | sed "s/,/ /g"); do
+#     if [ "$rgn" == "$currentregion" ]; then
+#           isoneagentregion=true
+#           echo "current region is in oneagent regions..."
+#           break
+#     fi
+#   done
+# else
+#   echo "current region is not in oneagent regions..."
+# fi
 
-if [ "$isoneagentregion" = true ]; then
-   #if configmap has a routing for logs, but current region is in the oneagent region list, take the configmap route
-   if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then
-      AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
-      echo "oneagent region is true for current region:$currentregion and config map logs route is not empty. so using config map logs route as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
-   else #there is no configmap route, so route thru oneagent
-      AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE="v2"
-      echo "oneagent region is true for current region:$currentregion and config map logs route is empty. so using oneagent as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
-   fi
-else
-   echo "oneagent region is false for current region:$currentregion"
-fi
+# if [ "$isoneagentregion" = true ]; then
+#    #if configmap has a routing for logs, but current region is in the oneagent region list, take the configmap route
+#    if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then
+#       AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
+#       echo "oneagent region is true for current region:$currentregion and config map logs route is not empty. so using config map logs route as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+#    else #there is no configmap route, so route thru oneagent
+#       AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE="v2"
+#       echo "oneagent region is true for current region:$currentregion and config map logs route is empty. so using oneagent as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+#    fi
+# else
+#    echo "oneagent region is false for current region:$currentregion"
+# fi
 
 #start oneagent
-if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true") ]]; then
+# if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+#    if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
+#       echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
+#       echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+#       #trim
+#       containerlogsroute="$(echo $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE | xargs)"
+#       # convert to lowercase
+#       typeset -l containerlogsroute=$containerlogsroute
+
+#       echo "setting AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE as :$containerlogsroute"
+#       export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute
+#       echo "export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute" >> ~/.bashrc
+#       source ~/.bashrc
+
+#       if [ "$containerlogsroute" == "v2" ]; then
+#             echo "activating oneagent..."
+#             echo "configuring mdsd..."
+#             cat /etc/mdsd.d/envmdsd | while read line; do
+#                   echo $line >> ~/.bashrc
+#             done
+#             source /etc/mdsd.d/envmdsd
+
+#             echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+#             export CIWORKSPACE_id=$CIWORKSPACE_id
+#             echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
+#             export CIWORKSPACE_key=$CIWORKSPACE_key
+#             echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
+
+#             source ~/.bashrc
+
+#             dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+
+#             echo "starting mdsd ..."
+#             mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+
+#             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
+#       fi
+#    fi
+# fi
+
+# check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
+export AAD_MSI_AUTH_MODE=false 
+if [[ ("${USING_LA_AAD_AUTH}" == "true") ]]; then
+      echo "*** activating oneagent in aad auth msi mode ***"       
       export AAD_MSI_AUTH_MODE=true
       echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
-      export ONE_AGENT_ENABLE=true
-      echo "export ONE_AGENT_ENABLE=true" >> ~/.bashrc
-
-      echo "*** activating oneagent in aad auth msi mode ***"       
+     
       cat /etc/mdsd.d/envmdsd | while read line; do
             echo $line >> ~/.bashrc
       done
       source /etc/mdsd.d/envmdsd
 
-      #MDSD Fluent socket port is different in AMCS and Legacy Auth Mode
+      
       export MDSD_FLUENT_SOCKET_PORT="28230"
       echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
-
       export MCS_ENDPOINT="handler.control.monitor.azure.com"
       echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
       export AZURE_ENDPOINT="https://monitor.azure.com/"
@@ -476,24 +520,45 @@ if [[ ("${AKS_AAD_AUTH_ENABLE}" == "true") && ("${LA_AAD_AUTH_ENABLE}" == "true"
 
       echo "starting mdsd in aad auth msi mode..."
       mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-
-      if [ ! -e "/etc/config/kube.conf" ]; then
-           echo "*** starting fluentd v1 in daemonset"
-           fluentd -c /etc/fluent/oneagent_ds.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
-      else
-          echo "*** starting fluentd v1 in replicaset"
-          fluentd -c /etc/fluent/oneagent_rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
-      fi      
-
+     
       touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
+else 
+      echo "*** activating oneagent in legacy auth mode ***"  
+      CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
+      CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"      
+      cat /etc/mdsd.d/envmdsd | while read line; do
+            echo $line >> ~/.bashrc
+      done
+      source /etc/mdsd.d/envmdsd
+
+      echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+      export CIWORKSPACE_id=$CIWORKSPACE_id
+      echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
+      export CIWORKSPACE_key=$CIWORKSPACE_key
+      echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
+      export OMS_TLD=$domain
+      echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc      
+      export MDSD_FLUENT_SOCKET_PORT="29230"
+      echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+
+      source ~/.bashrc
+
+      dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+
+      echo "starting mdsd ..."
+      mdsd -l -T  0xFFFF -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &                        
 fi
 
-
-echo "************end oneagent log routing checks************"
-
-#TODO-gangams- validate whether this required ??
-#echo "set caps for ruby process to read container env from proc"
-sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby2.5
+# no dependency on fluentd for prometheus side car container  
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then     
+      if [ ! -e "/etc/config/kube.conf" ]; then
+         echo "*** starting fluentd v1 in daemonset"
+         fluentd -c /etc/fluent/oneagent_ds.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      else
+        echo "*** starting fluentd v1 in replicaset"
+        fluentd -c /etc/fluent/oneagent_rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+      fi      
+fi   
 
 #If config parsing was successful, a copy of the conf file with replaced custom settings file is created
 if [ ! -e "/etc/config/kube.conf" ]; then

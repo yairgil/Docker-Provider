@@ -18,7 +18,8 @@ import (
 	"time"
 
 	"github.com/fluent/fluent-bit-go/output"
-	"github.com/google/uuid"	
+	"github.com/google/uuid"
+
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
@@ -106,7 +107,7 @@ const ContainerLogsADXRoute = "adx"
 //container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
 
-// Tag prefix of mdsd output streamid in AMCS(aka MSI auth) mode
+// Tag prefix of mdsd output streamid for AMA in MSI auth mode
 const MdsdOutputStreamIdTagPrefix = "dcr-"
 
 var (
@@ -166,6 +167,8 @@ var (
 	MdsdKubeMonAgentEventsTagName string
 	// InsightsMetrics tag name for oneagent route
 	MdsdInsightsMetricsTagName string 
+	// flag to check if its Windows OS
+	IsWindows bool
 )
 
 var (
@@ -1446,6 +1449,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 
 	osType := os.Getenv("OS_TYPE")
+	IsWindows = false 
 
 	// Linux
 	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
@@ -1495,6 +1499,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 	} else {
 		// windows
+		IsWindows = true 
 		Computer = os.Getenv("HOSTNAME")
 		WorkspaceID = os.Getenv("WSID")
 		LogAnalyticsWorkspaceDomain = os.Getenv("DOMAIN")
@@ -1578,7 +1583,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	PluginConfiguration = pluginConfig
 
-	CreateHTTPClient()
+	if IsWindows == true  {
+	   Log("Creating HTTP client since the osType is Windows")
+	   CreateHTTPClient()
+    }
 
 	ContainerLogsRoute := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE")))
 	Log("AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE:%s", ContainerLogsRoute)
@@ -1629,16 +1637,15 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		IsAADMSIAuthMode = true
 	}	
 
-	if IsAADMSIAuthMode == true {
+	//only logs via ADX route if its ADXRoute 
+	if ContainerLogsRouteADX == true {
+		CreateADXClient()
+	} else if IsWindows == false // MDSD for linux specific
 		CreateMDSDClient()
 		CreateMDSDClientKubeMon()
-		CreateMDSDClientInsightsMetrics()
-	} else if ContainerLogsRouteV2 == true {  //TODO- gangams- remove once decision to go oneagent fully
-		CreateMDSDClient()		
-	} else if ContainerLogsRouteADX == true {
-		CreateADXClient()
+	    CreateMDSDClientInsightsMetrics()
 	}
-
+	
 	ContainerLogSchemaVersion := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
 	Log("AZMON_CONTAINER_LOG_SCHEMA_VERSION:%s", ContainerLogSchemaVersion)
 

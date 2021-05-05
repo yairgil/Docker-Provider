@@ -94,7 +94,7 @@ func CreateHTTPClient() {
 	HTTPClient = http.Client{
 		Transport: transport,
 		Timeout:   30 * time.Second,
-	}
+	} 
 
 	Log("Successfully created HTTP Client")
 }

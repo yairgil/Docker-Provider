@@ -39,7 +39,7 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       
-      @ContainerNodeInventoryTag = "oneagent.containerinsights.CONTAINER_INVENTORY_BLOB" 
+      @ContainerNodeInventoryTag = "oneagent.containerinsights.CONTAINER_NODE_INVENTORY_BLOB" 
       @insightsMetricsTag = "oneagent.containerinsights.INSIGHTS_METRICS_BLOB" 
       @MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"  
       @kubeperfTag = "oneagent.containerinsights.LINUX_PERF_BLOB"
