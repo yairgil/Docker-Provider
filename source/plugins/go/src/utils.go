@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -13,7 +14,6 @@ import (
 	"os"
 	"strings"
 	"time"
-    "encoding/json"
 
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
@@ -30,7 +30,6 @@ type IMDSResponse struct {
 	Resource     string `json:"resource"`
 	TokenType    string `json:"token_type"`
 }
-
 
 type AgentConfiguration struct {
 	Configurations []struct {
@@ -248,30 +247,30 @@ func isValidUrl(uri string) bool {
 
 func getAccessTokenFromIMDS() (string, error) {
 	Log("Info getAccessTokenFromIMDS: start")
-	imdsAccessToken := ""	
+	imdsAccessToken := ""
 
 	var msi_endpoint *url.URL
-    msi_endpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://monitor.azure.com/")
-    if err != nil {
+	msi_endpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://monitor.azure.com/")
+	if err != nil {
 		Log("Error creating IMDS endpoint URL: %s", err.Error())
-       return imdsAccessToken, err 
-    }  
-    req, err := http.NewRequest("GET", msi_endpoint.String(), nil)
-    if err != nil {
-	  Log("Error creating HTTP request: %s", err.Error())
-      return imdsAccessToken, err
-    }
-    req.Header.Add("Metadata", "true")
+		return imdsAccessToken, err
+	}
+	req, err := http.NewRequest("GET", msi_endpoint.String(), nil)
+	if err != nil {
+		Log("Error creating HTTP request: %s", err.Error())
+		return imdsAccessToken, err
+	}
+	req.Header.Add("Metadata", "true")
 
-	// TODO: what if there are multiple identiteis assigned? IMDS returns this error:
+	// TODO: what if there are multiple identiteis assigned?
 
-    // Call managed services for Azure resources token endpoint
-    client := &http.Client{}
-    resp, err := client.Do(req) 
-    if err != nil{
+	// Call managed services for Azure resources token endpoint
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
 		Log("Error calling token endpoint: %s", err.Error())
-	  return imdsAccessToken, err
-    }
+		return imdsAccessToken, err
+	}
 
 	Log("IMDS Response Status: %d", resp.StatusCode)
 	if resp.StatusCode != 200 {
@@ -279,31 +278,31 @@ func getAccessTokenFromIMDS() (string, error) {
 		return imdsAccessToken, err
 	}
 
-    // Pull out response body
-    responseBytes,err := ioutil.ReadAll(resp.Body)
-    defer resp.Body.Close()
-    if err != nil {
+	// Pull out response body
+	responseBytes, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
 		Log("Error reading response body : %s", err.Error())
-      return imdsAccessToken, err
-    }
+		return imdsAccessToken, err
+	}
 
-    // Unmarshall response body into struct
-    var imdsResponse IMDSResponse
-    err = json.Unmarshal(responseBytes, &imdsResponse)
-    if err != nil {
+	// Unmarshall response body into struct
+	var imdsResponse IMDSResponse
+	err = json.Unmarshal(responseBytes, &imdsResponse)
+	if err != nil {
 		Log("Error unmarshalling the response: %s", err.Error())
 		return imdsAccessToken, err
-    }
+	}
 	imdsAccessToken = imdsResponse.AccessToken
-	
+
 	Log("IMDS Token obtained: %s", imdsAccessToken)
 
 	Log("Info getAccessTokenFromIMDS: end")
 
-	return imdsAccessToken, nil 
+	return imdsAccessToken, nil
 }
 
-func getAgentConfiguration(imdsAccessToken string) (configurationId string, channelId string,  err error) {
+func getAgentConfiguration(imdsAccessToken string) (configurationId string, channelId string, err error) {
 	Log("Info getAgentConfiguration: start")
 	configurationId = ""
 	channelId = ""
@@ -315,122 +314,122 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
 	var bearer = "Bearer " + imdsAccessToken
-	// Create a new request using http    
-    req, err := http.NewRequest("GET", amcs_endpoint.String(), nil)
-    if err != nil {
-	  Log("Error creating HTTP request for AMCS endpoint: %s", err.Error())
-      return configurationId, channelId, err
-    }
+	// Create a new request using http
+	req, err := http.NewRequest("GET", amcs_endpoint.String(), nil)
+	if err != nil {
+		Log("Error creating HTTP request for AMCS endpoint: %s", err.Error())
+		return configurationId, channelId, err
+	}
 
 	// add authorization header to the req
 	req.Header.Add("Authorization", bearer)
 
 	// Call managed services for Azure resources token endpoint
 	client := &http.Client{}
-	resp, err := client.Do(req) 
-	if err != nil{
-	   Log("Error calling amcs endpoint: %s", err.Error())
-	   return configurationId, channelId, err
+	resp, err := client.Do(req)
+	if err != nil {
+		Log("Error calling amcs endpoint: %s", err.Error())
+		return configurationId, channelId, err
 	}
 
 	Log("getAgentConfiguration Response Status: %d", resp.StatusCode)
 	if resp.StatusCode != 200 {
-		Log("getAgentConfiguration Request failed with an error code : %d", resp.StatusCode) 
+		Log("getAgentConfiguration Request failed with an error code : %d", resp.StatusCode)
 		return configurationId, channelId, err
 	}
 
 	// Pull out response body
-    responseBytes, err := ioutil.ReadAll(resp.Body)
-    defer resp.Body.Close()
-    if err != nil {
+	responseBytes, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
 		Log("Error reading response body from AMCS API call : %s", err.Error())
 		return configurationId, channelId, err
-    }
+	}
 
 	// Unmarshall response body into struct
 	var agentConfiguration AgentConfiguration
 	err = json.Unmarshal(responseBytes, &agentConfiguration)
 	if err != nil {
-		 Log("Error unmarshalling the response: %s", err.Error())
-		 return configurationId, channelId, err
+		Log("Error unmarshalling the response: %s", err.Error())
+		return configurationId, channelId, err
 	}
 
-	if len(agentConfiguration.Configurations) == 0 {		
+	if len(agentConfiguration.Configurations) == 0 {
 		Log("Received empty agentConfiguration.Configurations array")
 		return configurationId, channelId, err
 	}
-	 
-	if len(agentConfiguration.Configurations[0].Content.Channels) == 0 {		
+
+	if len(agentConfiguration.Configurations[0].Content.Channels) == 0 {
 		Log("Received empty agentConfiguration.Configurations[0].Content.Channels")
 		return configurationId, channelId, err
-	} 	
+	}
 
-	configurationId = agentConfiguration.Configurations[0].Configurationid	
+	configurationId = agentConfiguration.Configurations[0].Configurationid
 	channelId = agentConfiguration.Configurations[0].Content.Channels[0].ID
 
 	Log("obtained configurationId: %s, channelId: %s", configurationId, channelId)
 
 	Log("Info getAgentConfiguration: end")
 
- 	return configurationId, channelId, nil  
+	return configurationId, channelId, nil
 }
 
-func getIngestionAuthToken(imdsAccessToken string, configurationId string, channelId string) (ingestionAuthToken string, err error) { 
+func getIngestionAuthToken(imdsAccessToken string, configurationId string, channelId string) (ingestionAuthToken string, err error) {
 	Log("Info getIngestionAuthToken: start")
 	ingestionAuthToken = ""
 	var amcs_endpoint *url.URL
 	resourceId := os.Getenv("customResourceId")
 	resourceRegion := os.Getenv("customRegion")
-	apiVersion := "2020-04-01-preview"	
+	apiVersion := "2020-04-01-preview"
 	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.monitor.azure.com%s/agentConfigurations/%s/channels/%s/issueIngestionToken?platform=linux&api-version=%s", resourceRegion, resourceId, configurationId, channelId, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
 	var bearer = "Bearer " + imdsAccessToken
-	// Create a new request using http    
-    req, err := http.NewRequest("GET", amcs_endpoint.String(), nil)
-    if err != nil {
-	  Log("Error creating HTTP request for AMCS endpoint: %s", err.Error())
-      return ingestionAuthToken, err
-    }
+	// Create a new request using http
+	req, err := http.NewRequest("GET", amcs_endpoint.String(), nil)
+	if err != nil {
+		Log("Error creating HTTP request for AMCS endpoint: %s", err.Error())
+		return ingestionAuthToken, err
+	}
 
 	// add authorization header to the req
 	req.Header.Add("Authorization", bearer)
 
 	// Call managed services for Azure resources token endpoint
 	client := &http.Client{}
-	resp, err := client.Do(req) 
-	if err != nil{
-	   Log("Error calling amcs endpoint for ingestion auth token: %s", err.Error())
-	   return ingestionAuthToken, err
-    }	
+	resp, err := client.Do(req)
+	if err != nil {
+		Log("Error calling amcs endpoint for ingestion auth token: %s", err.Error())
+		return ingestionAuthToken, err
+	}
 
-    Log("getIngestionAuthToken Response Status: %d", resp.StatusCode)
-	
+	Log("getIngestionAuthToken Response Status: %d", resp.StatusCode)
+
 	if resp.StatusCode != 200 {
-		Log("getIngestionAuthToken Request failed with an error code : %d", resp.StatusCode) 
-		return ingestionAuthToken, err        
+		Log("getIngestionAuthToken Request failed with an error code : %d", resp.StatusCode)
+		return ingestionAuthToken, err
 	}
 
 	// Pull out response body
-    responseBytes, err := ioutil.ReadAll(resp.Body)
-    defer resp.Body.Close()
-    if err != nil {
+	responseBytes, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
 		Log("Error reading response body from AMCS Ingestion API call : %s", err.Error())
-		return ingestionAuthToken, err    
-    }
+		return ingestionAuthToken, err
+	}
 
-	 // Unmarshall response body into struct
+	// Unmarshall response body into struct
 	var ingestionTokenResponse IngestionTokenResponse
 	err = json.Unmarshal(responseBytes, &ingestionTokenResponse)
 	if err != nil {
-		 Log("Error unmarshalling the response: %s", err.Error())
-		 return ingestionAuthToken, err    
+		Log("Error unmarshalling the response: %s", err.Error())
+		return ingestionAuthToken, err
 	}
-	
+
 	ingestionAuthToken = ingestionTokenResponse.Ingestionauthtoken
 
 	Log("ingestionAuthToken obtained: %s", ingestionAuthToken)
 
 	Log("Info getIngestionAuthToken: end")
- 	return ingestionAuthToken, nil  
+	return ingestionAuthToken, nil
 }

@@ -58,6 +58,16 @@ function Set-EnvironmentVariables {
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")
 
+        
+    # Set Region
+    [System.Environment]::SetEnvironmentVariable("customRegion", $env:AKS_REGION, "Process")
+    [System.Environment]::SetEnvironmentVariable("customRegion", $env:AKS_REGION, "Machine")
+    
+    # Set resource ID
+    [System.Environment]::SetEnvironmentVariable("customResourceId", $env:AKS_RESOURCE_ID, "Process")
+    [System.Environment]::SetEnvironmentVariable("customResourceId", $env:AKS_RESOURCE_ID, "Machine")
+
+
     $wsID = ""
     if (Test-Path /etc/omsagent-secret/WSID) {
         # TODO: Change to omsagent-secret before merging
