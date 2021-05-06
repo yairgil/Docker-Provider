@@ -21,10 +21,10 @@ require 'fileutils'
 
 require 'cool.io'
 
-require 'fluent/output'
 require 'fluent/config/error'
+require 'fluent/plugin/output'
 
-module Fluent
+module Fluent::Plugin
   class ForwardOutputError < StandardError
   end
 
@@ -37,8 +37,10 @@ module Fluent
   class ForwardOutputACKTimeoutError < ForwardOutputResponseError
   end
 
-  class HealthForwardOutput < ObjectBufferedOutput
-    Plugin.register_output('health_forward', self)
+  class HealthForwardOutput < Fluent::Plugin::Output
+    Fluent::Plugin.register_output('health_forward', self)
+
+    DEFAULT_LISTEN_PORT = 25227
 
     def initialize
       super
@@ -190,6 +192,7 @@ module Fluent
       end
       @thread.join if @thread
       @usock.close if @usock
+      super
     end
 
     def run
@@ -199,6 +202,10 @@ module Fluent
       log.error_backtrace
     end
 
+    def write(chunk)
+      write_objects(chunk.metadata.tag, chunk)
+    end
+    
     def write_objects(tag, chunk)
       return if chunk.empty?
 
@@ -502,7 +509,7 @@ module Fluent
           return @resolved_host ||= resolve_dns!
 
         else
-          now = Engine.now
+          now = Fluent::Engine.now
           rh = @resolved_host
           if !rh || now - @resolved_time >= @conf.expire_dns_cache
             rh = @resolved_host = resolve_dns!

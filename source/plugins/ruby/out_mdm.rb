@@ -1,11 +1,12 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-module Fluent
-  class OutputMDM < BufferedOutput
-    config_param :retry_mdm_post_wait_minutes, :integer
+require 'fluent/plugin/output'
 
-    Plugin.register_output("out_mdm", self)
+module Fluent::Plugin
+  class OutputMDM < Output
+    config_param :retry_mdm_post_wait_minutes, :integer
+    Fluent::Plugin.register_output("mdm", self)
 
     def initialize
       super
@@ -270,6 +271,7 @@ module Fluent
         flush_mdm_exception_telemetry
         if (!@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes * 60)) && @can_send_data_to_mdm
           post_body = []
+          chunk.extend Fluent::ChunkMessagePackEventStreamer
           chunk.msgpack_each { |(tag, record)|
             post_body.push(record.to_json)
           }
@@ -355,14 +357,14 @@ module Fluent
 
     private
 
-    class ChunkErrorHandler
-      include Configurable
-      include PluginId
-      include PluginLoggerMixin
+    class ChunkErrorHandler < Output
+      include Fluent::Configurable
+      include Fluent::PluginId
+      include Fluent::PluginLoggerMixin
 
       SecondaryName = "__ChunkErrorHandler__"
 
-      Plugin.register_output(SecondaryName, self)
+      Fluent::Plugin.register_output(SecondaryName, self)
 
       def initialize
         @router = nil

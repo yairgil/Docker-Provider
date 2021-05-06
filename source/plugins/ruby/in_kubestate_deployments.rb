@@ -1,9 +1,13 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-module Fluent
+require 'fluent/plugin/input'
+
+module Fluent::Plugin
+  require_relative "extension"
+  require_relative "extension_utils"
   class Kube_Kubestate_Deployments_Input < Input
-    Plugin.register_input("kubestatedeployments", self)
+    Fluent::Plugin.register_input("kubestate_deployments", self)
     @@istestvar = ENV["ISTEST"]
     # telemetry - To keep telemetry cost reasonable, we keep track of the max deployments over a period of 15m
     @@deploymentsCount = 0
@@ -36,14 +40,15 @@ module Fluent
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => Constants::INSIGHTSMETRICS_FLUENT_TAG
+    config_param :tag, :string, :default => "oneagent.containerinsights.INSIGHTS_METRICS_BLOB"
 
     def configure(conf)
       super
     end
 
-    def start
+    def start      
       if @run_interval
+        super
         if !ENV["DEPLOYMENTS_CHUNK_SIZE"].nil? && !ENV["DEPLOYMENTS_CHUNK_SIZE"].empty? && ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i > 0
           @DEPLOYMENTS_CHUNK_SIZE = ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i
         else
@@ -52,11 +57,11 @@ module Fluent
           @DEPLOYMENTS_CHUNK_SIZE = 500
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
-
+      
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
-        @thread = Thread.new(&method(:run_periodic))
+        @thread = Thread.new(&method(:run_periodic))       
       end
     end
 
@@ -67,6 +72,7 @@ module Fluent
           @condition.signal
         }
         @thread.join
+        super # This super must be at the end of shutdown method
       end
     end
 
@@ -78,6 +84,15 @@ module Fluent
 
         #set the running total for this batch to 0
         @deploymentsRunningTotal = 0
+      
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kubestate_deployments::enumerate: AAD AUTH MSI MODE")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end                            
+        end           
+        # debug logs                  
+        $log.info("in_kubestate_deployments::enumerate: using tag -#{@tag} @ #{Time.now.utc.iso8601}")          
 
         # Initializing continuation token to nil
         continuationToken = nil
@@ -126,7 +141,7 @@ module Fluent
 
     def parse_and_emit_records(deployments, batchTime = Time.utc.iso8601)
       metricItems = []
-      insightsMetricsEventStream = MultiEventStream.new
+      insightsMetricsEventStream = Fluent::MultiEventStream.new
       begin
         metricInfo = deployments
         metricInfo["items"].each do |deployment|
@@ -182,16 +197,11 @@ module Fluent
         end
 
         time = Time.now.to_f
-        metricItems.each do |insightsMetricsRecord|
-          wrapper = {
-            "DataType" => "INSIGHTS_METRICS_BLOB",
-            "IPName" => "ContainerInsights",
-            "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
-          }
-          insightsMetricsEventStream.add(time, wrapper) if wrapper
+        metricItems.each do |insightsMetricsRecord|        
+          insightsMetricsEventStream.add(Fluent::Engine.now, insightsMetricsRecord) if insightsMetricsRecord
         end
 
-        router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+        router.emit_stream(@tag, insightsMetricsEventStream) if insightsMetricsEventStream
         $log.info("successfully emitted #{metricItems.length()} kube_state_deployment metrics")
 
         @deploymentsRunningTotal = @deploymentsRunningTotal + metricItems.length()
@@ -234,6 +244,6 @@ module Fluent
         @mutex.lock
       end
       @mutex.unlock
-    end
+    end    
   end
 end

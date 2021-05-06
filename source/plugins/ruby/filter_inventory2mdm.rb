@@ -2,14 +2,16 @@
 
 # frozen_string_literal: true
 
-module Fluent
+require 'fluent/plugin/filter'
+
+module Fluent::Plugin
     require 'logger'
     require 'yajl/json_gem'
     require_relative 'oms_common'
     require_relative 'CustomMetricsUtils'
 
 	class Inventory2MdmFilter < Filter
-		Fluent::Plugin.register_filter('filter_inventory2mdm', self)
+		Fluent::Plugin.register_filter('inventory2mdm', self)
 
 		config_param :enable_log, :integer, :default => 0
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log'
@@ -263,7 +265,7 @@ module Fluent
         end
 
         def filter_stream(tag, es)
-            new_es = MultiEventStream.new
+            new_es = Fluent::MultiEventStream.new
             filtered_records = []
             time = DateTime.now
             begin

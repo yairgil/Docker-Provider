@@ -1,7 +1,9 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-module Fluent
+require 'fluent/plugin/filter'
+
+module Fluent::Plugin
     require 'logger'
     require 'yajl/json_gem'
     require_relative 'oms_common'
@@ -11,8 +13,8 @@ module Fluent
 
     class CAdvisor2NodeHealthFilter < Filter
         include HealthModel
-        Fluent::Plugin.register_filter('filter_cadvisor_health_node', self)
-
+        Fluent::Plugin.register_filter('cadvisor_health_node', self)
+        
         attr_accessor :provider, :resources
 
         config_param :metrics_to_collect, :string, :default => 'cpuUsageNanoCores,memoryRssBytes'
@@ -75,13 +77,13 @@ module Fluent
         def filter_stream(tag, es)
             if !@@cluster_health_model_enabled
                 @log.info "Cluster Health Model disabled in filter_cadvisor_health_node"
-                return MultiEventStream.new
+                return Fluent::MultiEventStream.new
             end
             begin
                 node_capacity = HealthMonitorUtils.ensure_cpu_memory_capacity_set(@@hm_log, @cpu_capacity, @memory_capacity, @@hostName)
                 @cpu_capacity = node_capacity[0]
                 @memory_capacity = node_capacity[1]
-                new_es = MultiEventStream.new
+                new_es = Fluent::MultiEventStream.new
                 records_count = 0
                 es.each { |time, record|
                 filtered_record = filter(tag, time, record)
@@ -95,7 +97,7 @@ module Fluent
             rescue => e
                 @log.info "Error in filter_cadvisor_health_node filter_stream #{e.backtrace}"
                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
-                return MultiEventStream.new
+                return Fluent::MultiEventStream.new
             end
         end
 

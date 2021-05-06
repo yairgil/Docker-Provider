@@ -1,10 +1,11 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
+require 'fluent/plugin/input'
 
-module Fluent
+module Fluent::Plugin
 
   class CAdvisor_Perf_Input < Input
-    Plugin.register_input("cadvisorperf", self)
+    Fluent::Plugin.register_input("cadvisor_perf", self)
 
     def initialize
       super
@@ -16,24 +17,32 @@ module Fluent
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
+      require_relative "extension"                    
+      require_relative "extension_utils"
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oms.api.cadvisorperf"
+    config_param :tag, :string, :default => "oneagent.containerInsights.LINUX_PERF_BLOB"
     config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
     config_param :nodehealthtag, :string, :default => "kubehealth.DaemonSet.Node"
     config_param :containerhealthtag, :string, :default => "kubehealth.DaemonSet.Container"
+    config_param :insightsmetricstag, :string, :default => "oneagent.containerinsights.INSIGHTS_METRICS_BLOB"
 
     def configure(conf)
       super
     end
 
-    def start
+    def start       
       if @run_interval
+        super
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
+        if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
+          @aad_msi_auth_enable = true
+        end              
+        $log.info("in_cadvisor_perf::start: aad auth enable:#{@aad_msi_auth_enable}")
       end
     end
 
@@ -44,6 +53,7 @@ module Fluent
           @condition.signal
         }
         @thread.join
+        super # This super must be at the end of shutdown method
       end
     end
 
@@ -53,14 +63,26 @@ module Fluent
       batchTime = currentTime.utc.iso8601
       @@istestvar = ENV["ISTEST"]
       begin
-        eventStream = MultiEventStream.new
-        insightsMetricsEventStream = MultiEventStream.new
+        eventStream = Fluent::MultiEventStream.new
+        insightsMetricsEventStream = Fluent::MultiEventStream.new
         metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime )
-        metricData.each do |record|
-          record["DataType"] = "LINUX_PERF_BLOB"
-          record["IPName"] = "LogManagement"
-          eventStream.add(time, record) if record
+        metricData.each do |record|          
+          eventStream.add(Fluent::Engine.now, record) if record
         end
+        
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_cadvisor_perf::enumerate: AAD AUTH MSI MODE")    
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
+          end   
+          if !@insightsmetricstag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @insightsmetricstag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end                   
+        end       
+
+        # debug logs
+        $log.info("in_cadvisor_perf::enumerate: using perf tag -#{@tag} @ #{Time.now.utc.iso8601}")    
+        $log.info("in_cadvisor_perf::enumerate: using insightsmetrics tag -#{@insightsmetricstag} @ #{Time.now.utc.iso8601}")    
 
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@mdmtag, eventStream) if eventStream
@@ -75,19 +97,13 @@ module Fluent
         #start GPU InsightsMetrics items
         begin
           containerGPUusageInsightsMetricsDataItems = []
-          containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))
-          
+          containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))          
 
           containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
-            wrapper = {
-              "DataType" => "INSIGHTS_METRICS_BLOB",
-              "IPName" => "ContainerInsights",
-              "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
-            }
-            insightsMetricsEventStream.add(time, wrapper) if wrapper
+            insightsMetricsEventStream.add(Fluent::Engine.now, insightsMetricsRecord) if insightsMetricsRecord
           end
 
-          router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+          router.emit_stream(@insightsmetricstag, insightsMetricsEventStream) if insightsMetricsEventStream
           router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
           
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
@@ -135,6 +151,6 @@ module Fluent
         @mutex.lock
       end
       @mutex.unlock
-    end
+    end      
   end # CAdvisor_Perf_Input
 end # module

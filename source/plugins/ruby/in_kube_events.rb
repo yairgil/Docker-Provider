@@ -1,9 +1,13 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-module Fluent
+require 'fluent/plugin/input'
+
+module Fluent::Plugin  
+  require_relative "extension"
+  require_relative "extension_utils"
   class Kube_Event_Input < Input
-    Plugin.register_input("kubeevents", self)
+    Fluent::Plugin.register_input("kube_events", self)
     @@KubeEventsStateFile = "/var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml"
 
     def initialize
@@ -29,14 +33,15 @@ module Fluent
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oms.containerinsights.KubeEvents"
+    config_param :tag, :string, :default => "oneagent.containerinsights.KUBE_EVENTS_BLOB"
 
     def configure(conf)
       super
     end
 
-    def start
+    def start      
       if @run_interval
+        super
         if !ENV["EVENTS_CHUNK_SIZE"].nil? && !ENV["EVENTS_CHUNK_SIZE"].empty? && ENV["EVENTS_CHUNK_SIZE"].to_i > 0
           @EVENTS_CHUNK_SIZE = ENV["EVENTS_CHUNK_SIZE"].to_i
         else
@@ -70,6 +75,7 @@ module Fluent
           @condition.signal
         }
         @thread.join
+        super
       end
     end
 
@@ -81,6 +87,15 @@ module Fluent
         eventQueryState = getEventQueryState
         newEventQueryState = []
         @eventsCount = 0
+        
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
+          end                            
+        end           
+        # debug logs          
+        $log.info("in_kube_events::enumerate: using kubeevents tag -#{@tag} @ #{Time.now.utc.iso8601}")         
 
         # Initializing continuation token to nil
         continuationToken = nil
@@ -127,11 +142,10 @@ module Fluent
     end # end enumerate
 
     def parse_and_emit_records(events, eventQueryState, newEventQueryState, batchTime = Time.utc.iso8601)
-      currentTime = Time.now
-      emitTime = currentTime.to_f
+      currentTime = Time.now      
       @@istestvar = ENV["ISTEST"]
       begin
-        eventStream = MultiEventStream.new
+        eventStream = Fluent::MultiEventStream.new
         events["items"].each do |items|
           record = {}
           #<BUGBUG> - Not sure if ingestion has the below mapping for this custom type. Fix it as part of fixed type conversion
@@ -162,13 +176,8 @@ module Fluent
           record["Count"] = items["count"]
           record["Computer"] = nodeName
           record["ClusterName"] = KubernetesApiClient.getClusterName
-          record["ClusterId"] = KubernetesApiClient.getClusterId
-          wrapper = {
-            "DataType" => "KUBE_EVENTS_BLOB",
-            "IPName" => "ContainerInsights",
-            "DataItems" => [record.each { |k, v| record[k] = v }],
-          }
-          eventStream.add(emitTime, wrapper) if wrapper
+          record["ClusterId"] = KubernetesApiClient.getClusterId        
+          eventStream.add(Fluent::Engine.now, record) if record
           @eventsCount += 1
         end
         router.emit_stream(@tag, eventStream) if eventStream
