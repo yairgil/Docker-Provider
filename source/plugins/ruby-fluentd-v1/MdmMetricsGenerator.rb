@@ -10,14 +10,14 @@ class MdmMetricsGenerator
   require_relative "constants"
   require_relative "oms_common"
 
-  @os_type = ENV["OS_TYPE"]
+  # @os_type = ENV["OS_TYPE"]
   # if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
-  #   @log_path = "/etc/omsagentwindows/mdm_metrics_generator.log"
+  @log_path = "/etc/omsagentwindows/mdm_metrics_generator.log"
   # else
   #   @log_path = "/var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log"
   # end
 
-  # @log = Logger.new(@log_path, 1, 5000000)
+  @log = Logger.new(@log_path, 1, 5000000)
   @@hostName = (OMS::Common.get_hostname)
 
   @oom_killed_container_count_hash = {}
@@ -65,13 +65,13 @@ class MdmMetricsGenerator
   @zeroFilledMetricsTimeTracker = DateTime.now.to_time.to_i
 
   def initialize
-    if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
-      @log_path = "/etc/omsagentwindows/mdm_metrics_generator.log"
-    else
-      @log_path = "/var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log"
-    end
+    # if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
+    #   @log_path = "/etc/omsagentwindows/mdm_metrics_generator.log"
+    # else
+    #   @log_path = "/var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log"
+    # end
 
-    @log = Logger.new(@log_path, 1, 5000000)
+    # @log = Logger.new(@log_path, 1, 5000000)
   end
 
   class << self

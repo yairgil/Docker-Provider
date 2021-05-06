@@ -280,6 +280,46 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
+function Set-Env-Fluent {
+    # Setting environment variables required by the fluentd plugins
+    $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
+    if (![string]::IsNullOrEmpty($aksResourceId)) {
+        [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
+        Write-Host "Successfully set environment variable AKS_RESOURCE_ID - $($aksResourceId) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AKS_RESOURCE_ID for target 'machine' since it is either null or empty"
+    }
+
+    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
+    if (![string]::IsNullOrEmpty($aksRegion)) {
+        [System.Environment]::SetEnvironmentVariable("AKS_REGION", $aksRegion, "machine")
+        Write-Host "Successfully set environment variable AKS_REGION - $($aksRegion) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
+    }
+
+    $controllerType = [System.Environment]::GetEnvironmentVariable("CONTROLLER_TYPE", "process")
+    if (![string]::IsNullOrEmpty($controllerType)) {
+        [System.Environment]::SetEnvironmentVariable("CONTROLLER_TYPE", $controllerType, "machine")
+        Write-Host "Successfully set environment variable CONTROLLER_TYPE - $($controllerType) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable CONTROLLER_TYPE for target 'machine' since it is either null or empty"
+    }
+
+    $osType = [System.Environment]::GetEnvironmentVariable("OS_TYPE", "process")
+    if (![string]::IsNullOrEmpty($osType)) {
+        [System.Environment]::SetEnvironmentVariable("OS_TYPE", $osType, "machine")
+        Write-Host "Successfully set environment variable OS_TYPE - $($osType) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable OS_TYPE for target 'machine' since it is either null or empty"
+    }
+}
+
+
 function Start-Fluent-Telegraf {
 
     # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
@@ -287,6 +327,9 @@ function Start-Fluent-Telegraf {
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\omsagentwindows\out_oms.so") }
 
     $containerRuntime = Get-ContainerRuntime
+
+    # Set environment variable for target 'machine' since it is required by the fluent plugins
+    Set-Env-Fluent
 
     #register fluentd as a service and start
     # there is a known issues with win32-service https://github.com/chef/win32-service/issues/70

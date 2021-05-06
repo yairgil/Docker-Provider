@@ -2,7 +2,7 @@
 
 # frozen_string_literal: true
 
-require 'fluent/plugin/filter'
+require "fluent/plugin/filter"
 
 module Fluent::Plugin
   require "logger"
@@ -46,6 +46,10 @@ module Fluent::Plugin
       super
       begin
         @process_incoming_stream = CustomMetricsUtils.check_custom_metrics_availability
+        @log.warn "rashmi-aks-resource-id-value: #{ENV["AKS_RESOURCE_ID"]}"
+        @log.warn "rashmi-aks-region-value: #{ENV["AKS_REGION"]}"
+        @log.warn "rashmi-cloud-env-value: #{ENV["CLOUD_ENVIRONMENT"]}"
+        @log.warn "rashmi-processs-incoming-stream-value: #{@process_incoming_stream}"
         @metrics_to_collect_hash = build_metrics_hash
         @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
         @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
@@ -75,10 +79,15 @@ module Fluent::Plugin
     end
 
     def build_metrics_hash
-      @log.debug "Building Hash of Metrics to Collect"
-      metrics_to_collect_arr = @metrics_to_collect.split(",").map(&:strip)
-      metrics_hash = metrics_to_collect_arr.map { |x| [x.downcase, true] }.to_h
-      @log.info "Metrics Collected : #{metrics_hash}"
+      metrics_hash = {}
+      begin
+        @log.debug "Building Hash of Metrics to Collect"
+        metrics_to_collect_arr = @metrics_to_collect.split(",").map(&:strip)
+        metrics_hash = metrics_to_collect_arr.map { |x| [x.downcase, true] }.to_h
+        @log.info "Metrics Collected : #{metrics_hash}"
+      rescue => e
+        @log.info "Error in build_metrics_hash-#{e}"
+      end
       return metrics_hash
     end
 
@@ -188,7 +197,7 @@ module Fluent::Plugin
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
-            end            
+            end
             @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["DataItems"][0]["Host"]} percentage: #{percentage_metric_value}"
 
             # do some sanity checking. Do we want this?
@@ -262,7 +271,6 @@ module Fluent::Plugin
       begin
         mdmMetrics = []
         record["DataItems"].each do |dataItem|
-
           if dataItem["Name"] == Constants::PV_USED_BYTES && @metrics_to_collect_hash.key?(dataItem["Name"].downcase)
             metricName = dataItem["Name"]
             usage = dataItem["Value"]
@@ -281,11 +289,11 @@ module Fluent::Plugin
             if percentage_metric_value >= thresholdPercentage
               setThresholdExceededTelemetry(metricName)
               return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
-                                                                       metricName,
-                                                                       computer,
-                                                                       percentage_metric_value,
-                                                                       resourceDimensions,
-                                                                       thresholdPercentage)
+                                                                        metricName,
+                                                                        computer,
+                                                                        percentage_metric_value,
+                                                                        resourceDimensions,
+                                                                        thresholdPercentage)
             else
               return []
             end # end if block for percentage metric > configured threshold % check
@@ -306,6 +314,7 @@ module Fluent::Plugin
       end
 
       @@controller_type = ENV["CONTROLLER_TYPE"]
+      @log.info "rashmi-ensure_cpu_memory_capacity_set @@controller_type #{@@controller_type}"
       if @@controller_type.downcase == "replicaset"
         @log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
 
@@ -343,7 +352,6 @@ module Fluent::Plugin
           # cpu_capacity and memory_capacity keep initialized value of 0.0
           @log.error "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
         end
-
       end
     end
 
@@ -357,7 +365,7 @@ module Fluent::Plugin
         end
 
         es.each { |time, record|
-          @log.warn "rashmi-record-#{record}"
+          #@log.warn "rashmi-record-#{record}"
           filtered_records = filter(tag, time, record)
           filtered_records.each { |filtered_record|
             new_es.add(time, filtered_record) if filtered_record
