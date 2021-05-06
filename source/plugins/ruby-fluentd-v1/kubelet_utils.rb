@@ -10,12 +10,16 @@ require "bigdecimal"
 
 class KubeletUtils
   @os_type = ENV["OS_TYPE"]
-  if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
-    @log_path = "/etc/omsagentwindows/filter_cadvisor2mdm.log"
-  else
-    @log_path = "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
+
+  def initialize
+    if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
+      @log_path = "/etc/omsagentwindows/filter_cadvisor2mdm.log"
+    else
+      @log_path = "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
+    end
+
+    @log = Logger.new(@log_path, 1, 5000000)
   end
-  @log = Logger.new(@log_path, 1, 5000000)
 
   class << self
     def get_node_capacity
