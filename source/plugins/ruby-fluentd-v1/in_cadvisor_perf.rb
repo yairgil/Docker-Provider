@@ -17,6 +17,8 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
+      require_relative "extension"                    
+      require_relative "extension_utils"
     end
 
     config_param :run_interval, :time, :default => 60
@@ -67,8 +69,21 @@ module Fluent::Plugin
         metricData.each do |record|          
           eventStream.add(Fluent::Engine.now, record) if record
         end
+        
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_cadvisor_perf::enumerate: AAD AUTH MSI MODE")    
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
+          end   
+          if !@insightsmetricstag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @insightsmetricstag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end                   
+        end       
 
-        overrideTagsWithStreamIdsIfAADAuthEnabled()
+        # debug logs
+        $log.info("in_cadvisor_perf::enumerate: using perf tag -#{@tag} @ #{Time.now.utc.iso8601}")    
+        $log.info("in_cadvisor_perf::enumerate: using insightsmetrics tag -#{@insightsmetricstag} @ #{Time.now.utc.iso8601}")    
+
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@mdmtag, eventStream) if eventStream
         router.emit_stream(@containerhealthtag, eventStream) if eventStream
@@ -136,34 +151,6 @@ module Fluent::Plugin
         @mutex.lock
       end
       @mutex.unlock
-    end
-
-    def overrideTagsWithStreamIdsIfAADAuthEnabled()
-      begin
-        if @aad_msi_auth_enable        
-          # perf
-          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = Extension.instance.get_output_stream_id("LINUX_PERF_BLOB")  
-            if @tag.nil? || @tag.empty?
-              $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: LINUX_PERF_BLOB")           
-            else            
-              $log.info("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: using perf tag: #{@tag}")     
-            end
-          end   
-          # insights metrics         
-          if @insightsmetricstag.nil? || @insightsmetricstag.empty? || !@insightsmetricstag.start_with?("dcr-")     
-            @insightsmetricstag = Extension.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
-            if @insightsmetricstag.nil? || @insightsmetricstag.empty?
-              $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
-            else            
-              $log.info("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: using insightsmetrics tag: #{@insightsmetricstag}")  
-            end
-          end     
-        end   
-      rescue => errorStr
-        $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled:failed with an error: #{errorStr}")           
-      end 
-    end         
-
+    end      
   end # CAdvisor_Perf_Input
 end # module

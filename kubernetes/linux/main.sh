@@ -704,6 +704,10 @@ service rsyslog stop
 echo "getting rsyslog status..."
 service rsyslog status
 
+shutdown() {
+	 pkill -f mdsd 
+	}
+
 trap "shutdown" SIGTERM
 
 sleep inf & wait

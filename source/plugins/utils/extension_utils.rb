@@ -2,6 +2,8 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
+require_relative "extension"                    
+
 class ExtensionUtils
     class << self        
         def getOutputStreamId(dataType)  
