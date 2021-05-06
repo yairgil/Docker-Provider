@@ -4,9 +4,6 @@ import (
 	"net"
 )
 
-//SockAddress for AMA's default fluent socket
-const SockAddress = "/var/run/mdsd/default_fluent.socket"
-
 //MaxRetries for trying to write data to the socket
 const MaxRetries = 5
 
@@ -17,10 +14,11 @@ const ReadBufferSize = 20480
 //FluentSocketWriter writes data to AMA's default fluent socket
 type FluentSocketWriter struct {
 	socket net.Conn
+	sockAddress string 
 }
 
 func (fs *FluentSocketWriter) connect() error {
-	c, err := net.Dial("unix", SockAddress)
+	c, err := net.Dial("unix", fs.sockAddress)
 	if err != nil {
 		return err
 	}

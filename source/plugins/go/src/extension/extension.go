@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"	
-	"sync"		
+	"sync"
+	"strings"		
 	uuid "github.com/google/uuid"	
 	"github.com/ugorji/go/codec"
 )
@@ -17,13 +18,15 @@ var singleton *Extension
 var once sync.Once
 var extensionconfiglock sync.Mutex
 var logger *log.Logger
+var containerType string 
 
-func GetInstance(flbLogger *log.Logger) *Extension {
+func GetInstance(flbLogger *log.Logger, containerType string) *Extension {
     once.Do(func() {
         singleton = &Extension{make(map[string]string)}
 		flbLogger.Println("Extension Instance created")
     })
 	logger = flbLogger
+	containerType = containerType
     return singleton
 }
 
@@ -58,10 +61,14 @@ func getDataTypeToStreamIdMapping() (map[string]string, error) {
 		return datatypeOutputStreamMap, err
 	}
 	
-	fs := &FluentSocketWriter{}
+	fs := &FluentSocketWriter{ }
+	fs.sockAddress = "/var/run/mdsd/default_fluent.socket"
+	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
+		fs.sockAddress = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket", containerType)
+	}     
 	responseBytes, err := fs.WriteAndRead(data)
 	defer fs.disConnect()
-	logger.Printf("Info::mdsd::Making call to FluentSocket to write and read the config data")
+	logger.Printf("Info::mdsd::Making call to FluentSocket: %s to write and read the config data", fs.sockAddress)
 	if err != nil {
 		return datatypeOutputStreamMap, err
 	}

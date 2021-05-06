@@ -509,7 +509,7 @@ module Fluent::Plugin
           return @resolved_host ||= resolve_dns!
 
         else
-          now = Engine.now
+          now = Fluent::Engine.now
           rh = @resolved_host
           if !rh || now - @resolved_time >= @conf.expire_dns_cache
             rh = @resolved_host = resolve_dns!

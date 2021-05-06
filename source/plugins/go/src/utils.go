@@ -111,7 +111,7 @@ func ToString(s interface{}) string {
 }
 
 //mdsdSocketClient to write msgp messages
-func CreateMDSDClient() {
+func CreateMDSDClient(containerType string) {
 	if MdsdMsgpUnixSocketClient != nil {
 		MdsdMsgpUnixSocketClient.Close()
 		MdsdMsgpUnixSocketClient = nil
@@ -120,19 +120,23 @@ func CreateMDSDClient() {
 	  FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
 	  WriteTimeout: 5 * time.Second,
 	  RequestAck: true}) */
+	mdsdfluentSocket := "/var/run/mdsd/default_fluent.socket"	
+	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
+	   mdsdfluentSocket = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket", containerType)
+	} 
 	conn, err := net.DialTimeout("unix",
-		"/var/run/mdsd/default_fluent.socket", 10*time.Second)
+		mdsdfluentSocket, 10*time.Second)
 	if err != nil {
 		Log("Error::mdsd::Unable to open MDSD msgp socket connection %s", err.Error())
 		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
 	} else {
-		Log("Successfully created MDSD msgp socket connection")
+		Log("Successfully created MDSD msgp socket connection: %s", mdsdfluentSocket)
 		MdsdMsgpUnixSocketClient = conn
 	}
 }
 
 //mdsdSocketClient to write msgp messages for KubeMonAgent Events
-func CreateMDSDClientKubeMon() {
+func CreateMDSDClientKubeMon(containerType string) {
 	if MdsdKubeMonMsgpUnixSocketClient != nil {
 		MdsdKubeMonMsgpUnixSocketClient.Close()
 		MdsdKubeMonMsgpUnixSocketClient = nil
@@ -141,19 +145,23 @@ func CreateMDSDClientKubeMon() {
 	  FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
 	  WriteTimeout: 5 * time.Second,
 	  RequestAck: true}) */
+	mdsdfluentSocket := "/var/run/mdsd/default_fluent.socket"	
+	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
+		mdsdfluentSocket = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket",containerType)
+	}   
 	conn, err := net.DialTimeout("unix",
-		"/var/run/mdsd/default_fluent.socket", 10*time.Second)
-	if err != nil {
-		Log("Error::mdsd::Unable to open MDSD msgp socket connection for KubeMon events %s", err.Error())
+		mdsdfluentSocket, 10*time.Second)
+	if err != nil {		
+		Log("Error::mdsd::Unable to open MDSD msgp socket connection for KubeMon events %s", mdsdfluentSocket, err.Error())
 		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
 	} else {
-		Log("Successfully created MDSD msgp socket connection for KubeMon events")
+		Log("Successfully created MDSD msgp socket connection for KubeMon events:%s", mdsdfluentSocket)
 		MdsdKubeMonMsgpUnixSocketClient = conn
 	}
 }
 
 //mdsdSocketClient to write msgp messages for KubeMonAgent Events
-func CreateMDSDClientInsightsMetrics() {
+func CreateMDSDClientInsightsMetrics(containerType string) {
 	if MdsdInsightsMetricsMsgpUnixSocketClient != nil {
 		MdsdInsightsMetricsMsgpUnixSocketClient.Close()
 		MdsdInsightsMetricsMsgpUnixSocketClient = nil
@@ -162,13 +170,17 @@ func CreateMDSDClientInsightsMetrics() {
 	  FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
 	  WriteTimeout: 5 * time.Second,
 	  RequestAck: true}) */
+	mdsdfluentSocket := "/var/run/mdsd/default_fluent.socket"	
+	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
+	   mdsdfluentSocket = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket",containerType)
+	}     
 	conn, err := net.DialTimeout("unix",
-		"/var/run/mdsd/default_fluent.socket", 10*time.Second)
-	if err != nil {
-		Log("Error::mdsd::Unable to open MDSD msgp socket connection %s for insights metrics", err.Error())
+	    mdsdfluentSocket, 10*time.Second)
+	if err != nil {		
+		Log("Error::mdsd::Unable to open MDSD msgp socket connectionfor insights metrics %s", mdsdfluentSocket, err.Error())
 		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
 	} else {
-		Log("Successfully created MDSD msgp socket connection for Insights metrics")
+		Log("Successfully created MDSD msgp socket connection for Insights metrics %s", mdsdfluentSocket)
 		MdsdInsightsMetricsMsgpUnixSocketClient = conn
 	}
 }

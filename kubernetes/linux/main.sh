@@ -377,7 +377,7 @@ if [ "$CONTAINER_RUNTIME" != "docker" ]; then
 fi
 
 echo "set caps for ruby process to read container env from proc"
-sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /opt/microsoft/omsagent/ruby/bin/ruby
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby2.5
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
 
@@ -518,14 +518,28 @@ if [[ ("${USING_LA_AAD_AUTH}" == "true") ]]; then
 
       dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
 
-      echo "starting mdsd in aad auth msi mode..."
-      mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then   
+         echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in aad auth msi mode in sidecar container..."                 
+         #use tenant name to avoid unix socket conflict and different ports for port conflict
+         #roleprefix to use container specific mdsd socket
+         export TENANT_NAME="${CONTAINER_TYPE}"
+         echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
+         export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
+         echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
+         source ~/.bashrc   
+         mkdir /var/run/mdsd-${CONTAINER_TYPE}          
+         mdsd -a -A -T  0xFFFF -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+      else 
+         echo "starting mdsd in aad auth msi mode in main container..."
+         mdsd -a -A -T  0xFFFF  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+      fi
      
       touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
 else 
       echo "*** activating oneagent in legacy auth mode ***"  
       CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
-      CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"      
+      CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"  
+      CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"   
       cat /etc/mdsd.d/envmdsd | while read line; do
             echo $line >> ~/.bashrc
       done
@@ -545,8 +559,21 @@ else
 
       dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
-      echo "starting mdsd ..."
-      mdsd -l -T  0xFFFF -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &                        
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then   
+         echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in legacy auth mode in sidecar container..."                 
+         #use tenant name to avoid unix socket conflict and different ports for port conflict
+         #roleprefix to use container specific mdsd socket
+         export TENANT_NAME="${CONTAINER_TYPE}"
+         echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
+         export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
+         echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
+         source ~/.bashrc
+         mkdir /var/run/mdsd-${CONTAINER_TYPE}       
+         mdsd -l -T 0xFFFF -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+      else          
+         echo "starting mdsd in legacy auth mode in main container..."
+         mdsd -l -T  0xFFFF -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &  
+      fi
 fi
 
 # no dependency on fluentd for prometheus side car container  

@@ -39,10 +39,10 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       
-      @ContainerNodeInventoryTag = "oneagent.containerinsights.CONTAINER_NODE_INVENTORY_BLOB" 
-      @insightsMetricsTag = "oneagent.containerinsights.INSIGHTS_METRICS_BLOB" 
+      @ContainerNodeInventoryTag = "oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB" 
+      @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB" 
       @MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"  
-      @kubeperfTag = "oneagent.containerinsights.LINUX_PERF_BLOB"
+      @kubeperfTag = "oneagent.containerInsights.LINUX_PERF_BLOB"
 
       # refer tomlparser-agent-config for the defaults
       @NODES_CHUNK_SIZE = 0
@@ -56,7 +56,7 @@ module Fluent::Plugin
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oneagent.containerinsights.KUBE_NODE_INVENTORY_BLOB"
+    config_param :tag, :string, :default => "oneagent.containerInsights.KUBE_NODE_INVENTORY_BLOB"
 
     def configure(conf)
       super

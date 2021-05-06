@@ -45,14 +45,14 @@ module Fluent::Plugin
       @podsAPIE2ELatencyMs = 0
       @AAD_MSI_AUTH_MODE = false       
       
-      @kubeperfTag = "oneagent.containerinsights.LINUX_PERF_BLOB"
-      @kubeservicesTag = "oneagent.containerinsights.KUBE_SERVICES_BLOB"
-      @containerInventoryTag = "oneagent.containerinsights.CONTAINER_INVENTORY_BLOB"
-      @insightsMetricsTag = "oneagent.containerinsights.INSIGHTS_METRICS_BLOB" 
+      @kubeperfTag = "oneagent.containerInsights.LINUX_PERF_BLOB"
+      @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
+      @containerInventoryTag = "oneagent.containerInsights.CONTAINER_INVENTORY_BLOB"
+      @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB" 
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oneagent.containerinsights.KUBE_POD_INVENTORY_BLOB"
+    config_param :tag, :string, :default => "oneagent.containerInsights.KUBE_POD_INVENTORY_BLOB"
 
     def configure(conf)
       super

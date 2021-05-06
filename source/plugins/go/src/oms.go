@@ -19,7 +19,7 @@ import (
 
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/google/uuid"
-
+	"github.com/tinylib/msgp/msgp"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
@@ -50,9 +50,6 @@ const ResourceNameEnv = "ACS_RESOURCE_NAME"
 
 //env variable which has container run time name
 const ContainerRuntimeEnv = "CONTAINER_RUNTIME"
-
-//env variable for AAD MSI Auth mode
-const AADMSIAuthMode = "AAD_MSI_AUTH_MODE"
 
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags and also for custom-metrics telemetry )
 const TelegrafMetricOriginPrefix = "container.azm.ms"
@@ -107,8 +104,13 @@ const ContainerLogsADXRoute = "adx"
 //container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
 
+//env variable for AAD MSI Auth mode
+const AADMSIAuthMode = "AAD_MSI_AUTH_MODE"
 // Tag prefix of mdsd output streamid for AMA in MSI auth mode
 const MdsdOutputStreamIdTagPrefix = "dcr-"
+
+//env variable to container type
+const ContainerTypeEnv = "CONTAINER_TYPE"
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -169,6 +171,8 @@ var (
 	MdsdInsightsMetricsTagName string 
 	// flag to check if its Windows OS
 	IsWindows bool
+	// container type 
+	ContainerType string	
 )
 
 var (
@@ -683,16 +687,16 @@ func flushKubeMonAgentEventRecords() {
 					}
 				}
 			}
-			if (IsAADMSIAuthMode == true && len(msgPackEntries) > 0) {								
+			if (IsWindows == false && len(msgPackEntries) > 0) { //for linux, mdsd route								
 				if (IsAADMSIAuthMode == true && strings.HasPrefix(MdsdKubeMonAgentEventsTagName, MdsdOutputStreamIdTagPrefix) == false) {
 					Log("Info::mdsd::obtaining output stream id for data type: %s", KubeMonAgentEventDataType)					
-					MdsdKubeMonAgentEventsTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(KubeMonAgentEventDataType)				
+					MdsdKubeMonAgentEventsTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(KubeMonAgentEventDataType)				
 				}
 				Log("Info::mdsd:: using mdsdsource name for KubeMonAgentEvents: %s", MdsdKubeMonAgentEventsTagName)
 				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdKubeMonAgentEventsTagName, msgPackEntries)							
 				if MdsdKubeMonMsgpUnixSocketClient == nil {
 					Log("Error::mdsd::mdsd connection for KubeMonAgentEvents does not exist. re-connecting ...")
-					CreateMDSDClientKubeMon()	
+					CreateMDSDClientKubeMon(ContainerType)	
 					if MdsdKubeMonMsgpUnixSocketClient == nil {
 						Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")					
 						ContainerLogTelemetryMutex.Lock()
@@ -722,7 +726,7 @@ func flushKubeMonAgentEventRecords() {
 				} else {
 					Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")																					
 				}	
-			} else if len(laKubeMonAgentEventsRecords) > 0 {
+			} else if len(laKubeMonAgentEventsRecords) > 0 { //for windows, ODS direct
 				kubeMonAgentEventEntry := KubeMonAgentEventBlob{
 					DataType:  KubeMonAgentEventDataType,
 					IPName:    IPName,
@@ -855,7 +859,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		Log(message)
 	}
 	
-	if (IsAADMSIAuthMode == true) {		
+	if IsWindows == false { //for linux, mdsd route
 		var msgPackEntries []MsgPackEntry			
 		var i int
 		start := time.Now()
@@ -886,12 +890,12 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		if (len(msgPackEntries) > 0) {			
 				if (IsAADMSIAuthMode == true && (strings.HasPrefix(MdsdInsightsMetricsTagName, MdsdOutputStreamIdTagPrefix) == false)) {
 					Log("Info::mdsd::obtaining output stream id for InsightsMetricsDataType since Log Analytics AAD MSI Auth Enabled")
-					MdsdInsightsMetricsTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(InsightsMetricsDataType)			
+					MdsdInsightsMetricsTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(InsightsMetricsDataType)			
 				}
 				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdInsightsMetricsTagName, msgPackEntries)			
 				if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
 					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-					CreateMDSDClientInsightsMetrics()
+					CreateMDSDClientInsightsMetrics(ContainerType)
 					if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
 						Log("Error::mdsd::Unable to create mdsd client for insights metrics. Please check error log.")					
 						ContainerLogTelemetryMutex.Lock()
@@ -925,7 +929,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 				}
 		}
 		
-	} else {
+	} else { // for windows, ODS direct
 
 		var metrics []laTelegrafMetric
 		var i int
@@ -1086,7 +1090,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
 
-		if (IsAADMSIAuthMode == true  || ContainerLogsRouteV2 == true) {
+		if ContainerLogsRouteV2 == true {
 			msgPackEntry = MsgPackEntry{
 				// this below time is what mdsd uses in its buffer/expiry calculations. better to be as close to flushtime as possible, so its filled just before flushing for each entry
 				//Time: start.Unix(),
@@ -1166,22 +1170,46 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	numContainerLogRecords := 0
 
-	if len(msgPackEntries) > 0 && (IsAADMSIAuthMode == true || ContainerLogsRouteV2 == true) {
-		//flush to mdsd			
+	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
+		//flush to mdsd
 		if (IsAADMSIAuthMode == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false) {
 			Log("Info::mdsd::obtaining output stream id")
 			if (ContainerLogSchemaV2 == true) { 
-				MdsdContainerLogTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(ContainerLogV2DataType)
+				MdsdContainerLogTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(ContainerLogV2DataType)
 			} else {
-				MdsdContainerLogTagName = extension.GetInstance(FLBLogger).GetOutputStreamId(ContainerLogDataType)
+				MdsdContainerLogTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(ContainerLogDataType)
 			}
 		}
-		Log("Info::mdsd:: using mdsdsource name: %s", MdsdContainerLogTagName)
+		Log("Info::mdsd:: using mdsdsource name: %s", MdsdContainerLogTagName)	
+		fluentForward := MsgPackForward{
+			Tag:     MdsdContainerLogTagName,
+			Entries: msgPackEntries,
+		}
 
-		msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdContainerLogTagName, msgPackEntries)		
+		//determine the size of msgp message
+		msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
+		for i := range fluentForward.Entries {
+			msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
+		}
+
+		//allocate buffer for msgp message
+		var msgpBytes []byte
+		msgpBytes = msgp.Require(nil, msgpSize)
+
+		//construct the stream
+		msgpBytes = append(msgpBytes, 0x92)
+		msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
+		msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+		batchTime := time.Now().Unix()
+		for entry := range fluentForward.Entries {
+			msgpBytes = append(msgpBytes, 0x92)
+			msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
+			msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
+		}
+
 		if MdsdMsgpUnixSocketClient == nil {
 			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-			CreateMDSDClient()
+			CreateMDSDClient(ContainerType)
 			if MdsdMsgpUnixSocketClient == nil {
 				Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
 
@@ -1448,8 +1476,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		log.Fatalln(message)
 	}
 
+	ContainerType = os.Getenv(ContainerTypeEnv)
+	Log("Container Type %s", ContainerType) 	
+
 	osType := os.Getenv("OS_TYPE")
-	IsWindows = false 
 
 	// Linux
 	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
@@ -1470,7 +1500,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			time.Sleep(30 * time.Second)
 			log.Fatalln(message)
 		}		
-		OMSEndpoint = "https://" + WorkspaceID + ".ods." + LogAnalyticsWorkspaceDomain + "/OperationalData.svc/PostJsonDataItems"		
+		OMSEndpoint = "https://" + WorkspaceID + ".ods." + LogAnalyticsWorkspaceDomain + "/OperationalData.svc/PostJsonDataItems"
 		// Populate Computer field
 		containerHostName, err1 := ioutil.ReadFile(pluginConfig["container_host_file_path"])
 		if err1 != nil {
@@ -1502,9 +1532,15 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		IsWindows = true 
 		Computer = os.Getenv("HOSTNAME")
 		WorkspaceID = os.Getenv("WSID")
-		LogAnalyticsWorkspaceDomain = os.Getenv("DOMAIN")
+		logAnalyticsDomain := os.Getenv("DOMAIN")
 		ProxyEndpoint = os.Getenv("PROXY")
-		OMSEndpoint = "https://" + WorkspaceID + ".ods." + LogAnalyticsWorkspaceDomain + "/OperationalData.svc/PostJsonDataItems"
+		OMSEndpoint = "https://" + WorkspaceID + ".ods." + logAnalyticsDomain + "/OperationalData.svc/PostJsonDataItems"
+	}
+
+	IsAADMSIAuthMode = false 
+	if strings.Compare(strings.ToLower(os.Getenv(AADMSIAuthMode)), "true") == 0 { 
+		Log("AAD MSI Auth Mode Configured")
+		IsAADMSIAuthMode = true
 	}
 
 	Log("OMSEndpoint %s", OMSEndpoint)
@@ -1583,8 +1619,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	PluginConfiguration = pluginConfig
 
-	if IsWindows == true  {
-	   Log("Creating HTTP client since the osType is Windows")
+	if IsWindows == true {
+	   Log("Creating HTTP Client since the OS Platform is Windows")
 	   CreateHTTPClient()
     }
 
@@ -1594,11 +1630,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerLogsRouteV2 = false  //default is ODS
 	ContainerLogsRouteADX = false //default is LA
 
-	if strings.Compare(ContainerLogsRoute, ContainerLogsV2Route) == 0 && strings.Compare(strings.ToLower(osType), "windows") != 0 {
-		ContainerLogsRouteV2 = true
-		Log("Routing container logs thru %s route...", ContainerLogsV2Route)
-		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsV2Route)
-	} else if strings.Compare(ContainerLogsRoute, ContainerLogsADXRoute) == 0 {
+	if strings.Compare(ContainerLogsRoute, ContainerLogsADXRoute) == 0 {
 		//check if adx clusteruri, clientid & secret are set
 		var err error
 		AdxClusterUri, err = ReadFileContents(PluginConfiguration["adx_cluster_uri_path"])
@@ -1629,23 +1661,24 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			Log("Routing container logs thru %s route...", ContainerLogsADXRoute)
 			fmt.Fprintf(os.Stdout, "Routing container logs thru %s route...\n", ContainerLogsADXRoute)
 		}
-	}
+	} else if strings.Compare(strings.ToLower(osType), "windows") != 0 { //for linux, oneagent will be default route
+		ContainerLogsRouteV2 = true  //default is mdsd route
+		Log("Routing container logs thru %s route...", ContainerLogsV2Route)
+		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsV2Route)
+	} 
 
-	IsAADMSIAuthMode = false 
-	if strings.Compare(strings.ToLower(os.Getenv(AADMSIAuthMode)), "true") == 0 { 
-		Log("AAD AUTH MSI MODE CONFIGURED")
-		IsAADMSIAuthMode = true
-	}	
-
-	//only logs via ADX route if its ADXRoute 
-	if ContainerLogsRouteADX == true {
+	if ContainerLogsRouteV2 == true {
+		CreateMDSDClient(ContainerType)
+	} else if ContainerLogsRouteADX == true {
 		CreateADXClient()
-	} else if IsWindows == false // MDSD for linux specific
-		CreateMDSDClient()
-		CreateMDSDClientKubeMon()
-	    CreateMDSDClientInsightsMetrics()
 	}
-	
+
+	if IsWindows == false {
+		Log("Creating MDSD clients for KubeMonAgentEvents & InsightsMetrics")
+		CreateMDSDClientKubeMon(ContainerType)
+	    CreateMDSDClientInsightsMetrics(ContainerType) 
+    }
+
 	ContainerLogSchemaVersion := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
 	Log("AZMON_CONTAINER_LOG_SCHEMA_VERSION:%s", ContainerLogSchemaVersion)
 
@@ -1673,13 +1706,13 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
-		
-	if (ContainerLogSchemaV2 == true) {
+
+	if ContainerLogSchemaV2 == true {
 		MdsdContainerLogTagName = MdsdContainerLogV2SourceName
 	} else {
 	   MdsdContainerLogTagName = MdsdContainerLogSourceName
     }
 
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
-    MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName			
+    MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName		
 }

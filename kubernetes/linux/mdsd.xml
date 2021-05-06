@@ -167,8 +167,7 @@
       <Column name="CollectionTime" type="str" mdstype="mt:wstr" />
       <Column name="Computer" type="str" mdstype="mt:wstr" />
       <Column name="ContainerID" type="str" mdstype="mt:wstr" />
-      <Column name="Name" type="str" mdstype="mt:wstr" />
-      <Column name="ContainerID" type="str" mdstype="mt:wstr" />
+      <Column name="Name" type="str" mdstype="mt:wstr" /> 
       <Column name="ContainerHostname" type="str" mdstype="mt:wstr" />
       <Column name="ImageID" type="str" mdstype="mt:wstr" />
       <Column name="Repository" type="str" mdstype="mt:wstr" />
@@ -223,16 +222,16 @@
   </Schemas>
 
   <Sources>
-    <Source name="oneagent.containerinsights.KUBE_POD_INVENTORY_BLOB" schema="KubePodInventorySchema" />
-    <Source name="oneagent.containerinsights.KUBE_NODE_INVENTORY_BLOB" schema="KubeNodeInventorySchema" />
-    <Source name="oneagent.containerinsights.KUBE_SERVICES_BLOB" schema="KubeServicesSchema" /> 
-    <Source name="oneagent.containerinsights.KUBE_EVENTS_BLOB" schema="KubeEventsSchema" />     
-    <Source name="oneagent.containerinsights.KUBE_PV_INVENTORY_BLOB" schema="KubePVInventorySchema" />   
-    <Source name="oneagent.containerinsights.INSIGHTS_METRICS_BLOB" schema="InsightsMetricsSchema" />   
-    <Source name="oneagent.containerinsights.CONTAINER_INVENTORY_BLOB" schema="ContainerInventorySchema" />
-    <Source name="oneagent.containerinsights.CONTAINER_NODE_INVENTORY_BLOB" schema="ContainerNodeInventorySchema" />         
-    <Source name="oneagent.containerinsights.LINUX_PERF_BLOB" schema="KubePerfSchema" />        
-    <Source name="oneagent.containerinsights.KUBE_HEALTH_BLOB" schema="KubeHealthSchema" />          
+    <Source name="oneagent.containerInsights.KUBE_POD_INVENTORY_BLOB" schema="KubePodInventorySchema" />
+    <Source name="oneagent.containerInsights.KUBE_NODE_INVENTORY_BLOB" schema="KubeNodeInventorySchema" />
+    <Source name="oneagent.containerInsights.KUBE_SERVICES_BLOB" schema="KubeServicesSchema" /> 
+    <Source name="oneagent.containerInsights.KUBE_EVENTS_BLOB" schema="KubeEventsSchema" />     
+    <Source name="oneagent.containerInsights.KUBE_PV_INVENTORY_BLOB" schema="KubePVInventorySchema" />   
+    <Source name="oneagent.containerInsights.INSIGHTS_METRICS_BLOB" schema="InsightsMetricsSchema" />   
+    <Source name="oneagent.containerInsights.CONTAINER_INVENTORY_BLOB" schema="ContainerInventorySchema" />
+    <Source name="oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB" schema="ContainerNodeInventorySchema" />         
+    <Source name="oneagent.containerInsights.LINUX_PERF_BLOB" schema="KubePerfSchema" />        
+    <Source name="oneagent.containerInsights.KUBE_HEALTH_BLOB" schema="KubeHealthSchema" />          
     <Source name="ContainerLogSource" schema="ContainerLogSchema" />
     <Source name="ContainerLogV2Source" schema="ContainerLogV2Schema" /> 	
     <Source name="KubeMonAgentEventsSource" schema="KubeMonAgentEventsSchema" />     
@@ -298,52 +297,52 @@
             </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.KUBE_POD_INVENTORY_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.KUBE_POD_INVENTORY_BLOB" queryDelay="PT10S">
             <RouteEvent eventName="KubePodInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
             </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.KUBE_NODE_INVENTORY_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.KUBE_NODE_INVENTORY_BLOB" queryDelay="PT10S">
             <RouteEvent eventName="KubeNodeInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
             </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.KUBE_SERVICES_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.KUBE_SERVICES_BLOB" queryDelay="PT10S">
             <RouteEvent eventName="KubeServicesEvent" duration="PT10S" priority="High" storeType="Local">          
             </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.KUBE_EVENTS_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.KUBE_EVENTS_BLOB" queryDelay="PT10S">
             <RouteEvent eventName="KubeEventsEvent" duration="PT10S" priority="High" storeType="Local">          
             </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.KUBE_PV_INVENTORY_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.KUBE_PV_INVENTORY_BLOB" queryDelay="PT10S">
             <RouteEvent eventName="KubePVInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
             </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.INSIGHTS_METRICS_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.INSIGHTS_METRICS_BLOB" queryDelay="PT10S">
             <RouteEvent eventName="InsightsMetricsEvent" duration="PT10S" priority="High" storeType="Local">          
             </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.CONTAINER_INVENTORY_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.CONTAINER_INVENTORY_BLOB" queryDelay="PT10S">
            <RouteEvent eventName="ContainerInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
            </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.CONTAINER_NODE_INVENTORY_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB" queryDelay="PT10S">
            <RouteEvent eventName="ContainerNodeInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
            </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.LINUX_PERF_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.LINUX_PERF_BLOB" queryDelay="PT10S">
            <RouteEvent eventName="KubePerfEvent" duration="PT10S" priority="High" storeType="Local">          
            </RouteEvent>
         </MdsdEventSource>
 
-        <MdsdEventSource source="oneagent.containerinsights.KUBE_HEALTH_BLOB" queryDelay="PT10S">
+        <MdsdEventSource source="oneagent.containerInsights.KUBE_HEALTH_BLOB" queryDelay="PT10S">
            <RouteEvent eventName="KubeHealthEvent" duration="PT10S" priority="High" storeType="Local">          
            </RouteEvent>
         </MdsdEventSource>
