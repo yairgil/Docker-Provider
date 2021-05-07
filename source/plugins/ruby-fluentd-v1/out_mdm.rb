@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require 'fluent/plugin/output'
+require "fluent/plugin/output"
 
 module Fluent::Plugin
   class OutputMDM < Output
@@ -271,6 +271,7 @@ module Fluent::Plugin
         flush_mdm_exception_telemetry
         if (!@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes * 60)) && @can_send_data_to_mdm
           post_body = []
+          chunk.extend Fluent::ChunkMessagePackEventStreamer
           chunk.msgpack_each { |(tag, record)|
             post_body.push(record.to_json)
           }
