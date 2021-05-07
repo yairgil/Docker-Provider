@@ -152,7 +152,7 @@ func CreateMDSDClientKubeMon(containerType string) {
 	conn, err := net.DialTimeout("unix",
 		mdsdfluentSocket, 10*time.Second)
 	if err != nil {		
-		Log("Error::mdsd::Unable to open MDSD msgp socket connection for KubeMon events %s", mdsdfluentSocket, err.Error())
+		Log("Error::mdsd::Unable to open MDSD msgp socket connection for KubeMon events %s",  err.Error())
 		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
 	} else {
 		Log("Successfully created MDSD msgp socket connection for KubeMon events:%s", mdsdfluentSocket)
@@ -177,7 +177,7 @@ func CreateMDSDClientInsightsMetrics(containerType string) {
 	conn, err := net.DialTimeout("unix",
 	    mdsdfluentSocket, 10*time.Second)
 	if err != nil {		
-		Log("Error::mdsd::Unable to open MDSD msgp socket connectionfor insights metrics %s", mdsdfluentSocket, err.Error())
+		Log("Error::mdsd::Unable to open MDSD msgp socket connectionfor insights metrics %s", err.Error())
 		//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
 	} else {
 		Log("Successfully created MDSD msgp socket connection for Insights metrics %s", mdsdfluentSocket)
