@@ -370,6 +370,7 @@ module Fluent::Plugin
           filtered_records.each { |filtered_record|
             new_es.add(time, filtered_record) if filtered_record
           } if filtered_records
+          @log.warn "rashmi-filtered-records- #{filtered_records}"
         }
       rescue => e
         @log.info "Error in filter_stream #{e.message}"
