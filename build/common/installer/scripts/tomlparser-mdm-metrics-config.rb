@@ -5,11 +5,12 @@
 @os_type = ENV["OS_TYPE"]
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   require "tomlrb"
+  require_relative "/etc/fluent/plugin/constants"
 else
   require_relative "tomlrb"
+  require_relative "microsoft/omsagent/plugin/constants"
 end
 require_relative "ConfigParseErrorLogger"
-require_relative "microsoft/omsagent/plugin/constants"
 
 @configMapMountPath = "/etc/config/settings/alertable-metrics-configuration-settings"
 @configVersion = ""
