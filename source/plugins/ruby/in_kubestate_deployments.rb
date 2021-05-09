@@ -4,8 +4,6 @@
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
-  require_relative "extension"
-  require_relative "extension_utils"
   class Kube_Kubestate_Deployments_Input < Input
     Fluent::Plugin.register_input("kubestate_deployments", self)
     @@istestvar = ENV["ISTEST"]
@@ -24,6 +22,7 @@ module Fluent::Plugin
       require_relative "omslog"
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
+      require_relative "extension_utils"
 
       # refer tomlparser-agent-config for defaults
       # this configurable via configmap

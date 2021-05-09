@@ -270,7 +270,7 @@ module Fluent::Plugin
                     @telemetry.send
                     # return an empty event stream, else the match will throw a NoMethodError
                     return Fluent::MultiEventStream.new
-                elsif tag.start_with?("kubehealth.Signals")
+                elsif tag.start_with?(@rewrite_tag) 
                     # this filter also acts as a pass through as we are rewriting the tag and emitting to the fluent stream
                     es
                 else

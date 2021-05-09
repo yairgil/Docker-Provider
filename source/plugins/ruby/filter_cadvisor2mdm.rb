@@ -67,7 +67,7 @@ module Fluent::Plugin
           @containerResourceDimensionHash = {}
           @pvUsageHash = {}
           @@metric_threshold_hash = MdmMetricsGenerator.getContainerResourceUtilizationThresholds
-          @NodeCache = Fluent::NodeStatsCache.new()
+          @NodeCache = Fluent::Plugin::NodeStatsCache.new()
         end
       rescue => e
         @log.info "Error initializing plugin #{e}"
@@ -150,16 +150,16 @@ module Fluent::Plugin
       begin
         if @process_incoming_stream
 
-          # Check if insights metrics for PV metrics
-          data_type = record["DataType"]
-          if data_type == "INSIGHTS_METRICS_BLOB"
+          # Check if insights metrics for PV metrics      
+          if record["Name"] == Constants::PV_USED_BYTES
             return filterPVInsightsMetrics(record)
           end
 
-          object_name = record["DataItems"][0]["ObjectName"]
-          counter_name = record["DataItems"][0]["Collections"][0]["CounterName"]
+          object_name = record["ObjectName"]
+          counter_name = JSON.parse(record["json_Collections"])[0]["CounterName"]
+         
           percentage_metric_value = 0.0
-          metric_value = record["DataItems"][0]["Collections"][0]["Value"]
+          metric_value = JSON.parse(record["json_Collections"])[0]["Value"]          
 
           if object_name == Constants::OBJECT_NAME_K8S_NODE && @metrics_to_collect_hash.key?(counter_name.downcase)
             # Compute and send % CPU and Memory
@@ -167,7 +167,7 @@ module Fluent::Plugin
               metric_name = Constants::CPU_USAGE_MILLI_CORES
               metric_value /= 1000000 #cadvisor record is in nanocores. Convert to mc
               if @@controller_type.downcase == "replicaset"
-                target_node_cpu_capacity_mc = @NodeCache.cpu.get_capacity(record["DataItems"][0]["Host"]) / 1000000
+                target_node_cpu_capacity_mc = @NodeCache.cpu.get_capacity(record["Host"]) / 1000000
               else
                 target_node_cpu_capacity_mc = @cpu_capacity
               end
@@ -180,7 +180,7 @@ module Fluent::Plugin
             if counter_name.start_with?("memory")
               metric_name = counter_name
               if @@controller_type.downcase == "replicaset"
-                target_node_mem_capacity = @NodeCache.mem.get_capacity(record["DataItems"][0]["Host"])
+                target_node_mem_capacity = @NodeCache.mem.get_capacity(record["Host"])
               else
                 target_node_mem_capacity = @memory_capacity
               end
@@ -189,12 +189,12 @@ module Fluent::Plugin
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
             end            
-            @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["DataItems"][0]["Host"]} percentage: #{percentage_metric_value}"
+            @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["Host"]} percentage: #{percentage_metric_value}"
 
             # do some sanity checking. Do we want this?
             if percentage_metric_value > 100.0 or percentage_metric_value < 0.0
               telemetryProperties = {}
-              telemetryProperties["Computer"] = record["DataItems"][0]["Host"]
+              telemetryProperties["Computer"] = record["Host"]
               telemetryProperties["MetricName"] = metric_name
               telemetryProperties["MetricPercentageValue"] = percentage_metric_value
               ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
@@ -202,7 +202,7 @@ module Fluent::Plugin
 
             return MdmMetricsGenerator.getNodeResourceMetricRecords(record, metric_name, metric_value, percentage_metric_value)
           elsif object_name == Constants::OBJECT_NAME_K8S_CONTAINER && @metrics_to_collect_hash.key?(counter_name.downcase)
-            instanceName = record["DataItems"][0]["InstanceName"]
+            instanceName = record["InstanceName"]
             metricName = counter_name
             # Using node cpu capacity in the absence of container cpu capacity since the container will end up using the
             # node's capacity in this case. Converting this to nanocores for computation purposes, since this is in millicores
@@ -237,7 +237,7 @@ module Fluent::Plugin
             flushMetricTelemetry
             if percentage_metric_value >= thresholdPercentage
               setThresholdExceededTelemetry(metricName)
-              return MdmMetricsGenerator.getContainerResourceUtilMetricRecords(record["DataItems"][0]["Timestamp"],
+              return MdmMetricsGenerator.getContainerResourceUtilMetricRecords(record["Timestamp"],
                                                                                metricName,
                                                                                percentage_metric_value,
                                                                                @containerResourceDimensionHash[instanceName],
@@ -258,39 +258,36 @@ module Fluent::Plugin
       end
     end
 
-    def filterPVInsightsMetrics(record)
+   def filterPVInsightsMetrics(record)
       begin
         mdmMetrics = []
-        record["DataItems"].each do |dataItem|
+        if record["Name"] == Constants::PV_USED_BYTES && @metrics_to_collect_hash.key?(record["Name"].downcase)
+          metricName = record["Name"]
+          usage = record["Value"]
+          capacity = record["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
+          if capacity != 0
+            percentage_metric_value = (usage * 100.0) / capacity
+          end
+          @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
+          @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
-          if dataItem["Name"] == Constants::PV_USED_BYTES && @metrics_to_collect_hash.key?(dataItem["Name"].downcase)
-            metricName = dataItem["Name"]
-            usage = dataItem["Value"]
-            capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
-            if capacity != 0
-              percentage_metric_value = (usage * 100.0) / capacity
-            end
-            @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
-            @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
+          computer = record["Computer"]
+          resourceDimensions = record["Tags"]
+          thresholdPercentage = @@metric_threshold_hash[metricName]
 
-            computer = dataItem["Computer"]
-            resourceDimensions = dataItem["Tags"]
-            thresholdPercentage = @@metric_threshold_hash[metricName]
-
-            flushMetricTelemetry
-            if percentage_metric_value >= thresholdPercentage
-              setThresholdExceededTelemetry(metricName)
-              return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
-                                                                       metricName,
-                                                                       computer,
-                                                                       percentage_metric_value,
-                                                                       resourceDimensions,
-                                                                       thresholdPercentage)
-            else
-              return []
-            end # end if block for percentage metric > configured threshold % check
-          end # end if block for dataItem name check
-        end # end for block of looping through data items
+          flushMetricTelemetry
+          if percentage_metric_value >= thresholdPercentage
+            setThresholdExceededTelemetry(metricName)
+            return MdmMetricsGenerator.getPVResourceUtilMetricRecords(record["CollectionTime"],
+                                                                      metricName,
+                                                                      computer,
+                                                                      percentage_metric_value,
+                                                                      resourceDimensions,
+                                                                      thresholdPercentage)
+          else
+            return []
+          end # end if block for percentage metric > configured threshold % check
+        end # end if block for dataItem name check
         return []
       rescue Exception => e
         @log.info "Error processing cadvisor insights metrics record Exception: #{e.class} Message: #{e.message}"
@@ -318,16 +315,22 @@ module Fluent::Plugin
         end
         if !nodeInventory.nil?
           cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
-          if !cpu_capacity_json.nil? && !cpu_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
-            @cpu_capacity = cpu_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"]
-            @log.info "CPU Limit #{@cpu_capacity}"
+          if !cpu_capacity_json.nil? 
+             metricVal = JSON.parse(cpu_capacity_json[0]["json_Collections"])[0]["Value"]
+            if !metricVal.to_s.nil?
+              @cpu_capacity = metricVal
+              @log.info "CPU Limit #{@cpu_capacity}"
+            end
           else
             @log.info "Error getting cpu_capacity"
           end
           memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
-          if !memory_capacity_json.nil? && !memory_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
-            @memory_capacity = memory_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"]
-            @log.info "Memory Limit #{@memory_capacity}"
+          if !memory_capacity_json.nil? 
+            metricVal = JSON.parse(cpu_capacity_json[0]["json_Collections"])[0]["Value"]          
+            if !metricVal.to_s.nil?
+              @memory_capacity = metricVal
+              @log.info "Memory Limit #{@memory_capacity}"
+            end
           else
             @log.info "Error getting memory_capacity"
           end

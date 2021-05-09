@@ -5,8 +5,6 @@ require 'fluent/plugin/input'
 
 module Fluent::Plugin
   require_relative "podinventory_to_mdm"
-  require_relative "extension"                    
-  require_relative "extension_utils"
 
   class Kube_PodInventory_Input < Input
     Fluent::Plugin.register_input("kube_podinventory", self)
@@ -30,6 +28,7 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
+      require_relative "extension_utils"
 
       # refer tomlparser-agent-config for updating defaults
       # this configurable via configmap
@@ -243,13 +242,8 @@ module Fluent::Plugin
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
           podInventoryRecords.each do |record|
             if !record.nil?
-              eventStream.add(Fluent::Engine.now, record) if record                          
-              wrapper = {
-                "DataType" => "KUBE_POD_INVENTORY_BLOB",
-                "IPName" => "ContainerInsights",
-                "DataItems" => [record.each { |k, v| record[k] = v }],
-              }             
-              @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)            
+              eventStream.add(Fluent::Engine.now, record) if record                                      
+              @inventoryToMdmConvertor.process_pod_inventory_record(record)            
             end
           end
           # Setting this flag to true so that we can send ContainerInventory records for containers

@@ -117,8 +117,8 @@ module Fluent::Plugin
 
                 es.each{|time,record|
                     begin
-                        timestamp = record['DataItems'][0]['CollectionTime']
-                        node_status = record['DataItems'][0]['Status']
+                        timestamp = record['CollectionTime']
+                        node_status = record['Status']
                         if node_status.downcase.split(",").include? @@node_status_ready.downcase
                             node_ready_count = node_ready_count+1
                         else
@@ -163,8 +163,8 @@ module Fluent::Plugin
                 records = []
                 es.each{|time,record|
                     record_count += 1
-                    timestamp = record['DataItems'][0]['CollectionTime']
-                    podUid = record['DataItems'][0]['PodUid']
+                    timestamp = record['CollectionTime']
+                    podUid = record['PodUid']
 
 		            if podUids.key?(podUid)
                         #@log.info "pod with #{podUid} already counted"
@@ -172,10 +172,10 @@ module Fluent::Plugin
                     end
 
                     podUids[podUid] = true
-                    podPhaseDimValue = record['DataItems'][0]['PodStatus']
-                    podNamespaceDimValue = record['DataItems'][0]['Namespace']
-                    podControllerNameDimValue = record['DataItems'][0]['ControllerName']
-                    podNodeDimValue = record['DataItems'][0]['Computer']
+                    podPhaseDimValue = record['PodStatus']
+                    podNamespaceDimValue = record['Namespace']
+                    podControllerNameDimValue = record['ControllerName']
+                    podNodeDimValue = record['Computer']
 
                     if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
                         podControllerNameDimValue = 'No Controller'

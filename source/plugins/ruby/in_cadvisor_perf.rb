@@ -17,7 +17,6 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
-      require_relative "extension"                    
       require_relative "extension_utils"
     end
 
@@ -63,11 +62,11 @@ module Fluent::Plugin
       batchTime = currentTime.utc.iso8601
       @@istestvar = ENV["ISTEST"]
       begin
-        eventStream = Fluent::MultiEventStream.new
+        eventStream = Fluent::MultiEventStream.new      
         insightsMetricsEventStream = Fluent::MultiEventStream.new
         metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime )
         metricData.each do |record|          
-          eventStream.add(Fluent::Engine.now, record) if record
+          eventStream.add(Fluent::Engine.now, record) if record                  
         end
         
         if ExtensionUtils.isAADMSIAuthMode()

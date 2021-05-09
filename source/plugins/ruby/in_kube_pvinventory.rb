@@ -20,6 +20,7 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
+      require_relative "extension_utils"
 
       # Response size is around 1500 bytes per PV
       @PV_CHUNK_SIZE = "5000"

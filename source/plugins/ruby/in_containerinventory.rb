@@ -4,8 +4,6 @@
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
-  require_relative "extension"
-  require_relative "extension_utils"
   class Container_Inventory_Input < Input
     Fluent::Plugin.register_input("containerinventory", self)
 
@@ -19,7 +17,8 @@ module Fluent::Plugin
       require_relative "ApplicationInsightsUtility"
       require_relative "omslog"
       require_relative "CAdvisorMetricsAPIClient"
-      require_relative "kubernetes_container_inventory"      
+      require_relative "kubernetes_container_inventory"   
+      require_relative "extension_utils"   
     end
 
     config_param :run_interval, :time, :default => 60

@@ -4,8 +4,6 @@
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
-  require_relative "extension"
-  require_relative "extension_utils"
   class Kube_nodeInventory_Input < Input
     Fluent::Plugin.register_input("kube_nodes", self)
      
@@ -38,7 +36,8 @@ module Fluent::Plugin
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
       require_relative "omslog"
-      
+      require_relative "extension_utils"
+
       @ContainerNodeInventoryTag = "oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB" 
       @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB" 
       @MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"  
@@ -190,30 +189,22 @@ module Fluent::Plugin
         eventStream = Fluent::MultiEventStream.new
         containerNodeInventoryEventStream = Fluent::MultiEventStream.new
         insightsMetricsEventStream = Fluent::MultiEventStream.new
-        kubePerfEventStream = Fluent::MultiEventStream.new
-        mdmNodeInventoryStream = Fluent::MultiEventStream.new
+        kubePerfEventStream = Fluent::MultiEventStream.new      
         @@istestvar = ENV["ISTEST"]
         #get node inventory
         nodeInventory["items"].each do |item|
           # node inventory
           nodeInventoryRecord = getNodeInventoryRecord(item, batchTime)
-          eventStream.add(Fluent::Engine.now, nodeInventoryRecord) if nodeInventoryRecord
-          wrapper = {
-            "DataType" => "KUBE_NODE_INVENTORY_BLOB",
-            "IPName" => "ContainerInsights",
-            "DataItems" => [nodeInventoryRecord.each { |k, v| nodeInventoryRecord[k] = v }],
-          }
-          mdmNodeInventoryStream.add(Fluent::Engine.now, wrapper) if wrapper
+          eventStream.add(Fluent::Engine.now, nodeInventoryRecord) if nodeInventoryRecord         
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && eventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
             $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@tag, eventStream) if eventStream
             $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@MDMKubeNodeInventoryTag, mdmNodeInventoryStream) if mdmNodeInventoryStream
+            router.emit_stream(@MDMKubeNodeInventoryTag, eventStream) if eventStream
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
               $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
             end
-            eventStream = Fluent::MultiEventStream.new
-            mdmNodeInventoryStream = Fluent::MultiEventStream.new
+            eventStream = Fluent::MultiEventStream.new            
           end
 
           # container node inventory
@@ -253,7 +244,8 @@ module Fluent::Plugin
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
             if is_windows_node
-              @NodeCache.cpu.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+              metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
+              @NodeCache.cpu.set_capacity(nodeMetricRecord["Host"], metricVal)
             end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
@@ -261,7 +253,8 @@ module Fluent::Plugin
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
             if is_windows_node
-              @NodeCache.mem.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+              metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
+              @NodeCache.mem.set_capacity(nodeMetricRecord["Host"], metricVal)
             end
           end
           nodeMetricRecords.each do |metricRecord|          
@@ -360,12 +353,11 @@ module Fluent::Plugin
           $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
           $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@MDMKubeNodeInventoryTag, mdmNodeInventoryStream) if mdmNodeInventoryStream
+          router.emit_stream(@MDMKubeNodeInventoryTag, eventStream) if eventStream
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
             $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
-          eventStream = nil
-          mdmNodeInventoryStream = nil
+          eventStream = nil       
         end
         if containerNodeInventoryEventStream.count > 0
           $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.iso8601}")

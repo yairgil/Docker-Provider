@@ -154,6 +154,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/oneagent_ds.conf;			                                                    build/linux/installer/conf/oneagent_ds.conf;                  644; root; root
 
 /etc/fluent/plugin/in_cadvisor_perf.rb;			                                        source/plugins/ruby/in_cadvisor_perf.rb;		    	644; root; root
+/etc/fluent/plugin/in_win_cadvisor_perf.rb;			                                     source/plugins/ruby/in_win_cadvisor_perf.rb;		    	644; root; root
 /etc/fluent/plugin/in_containerinventory.rb;			                                     source/plugins/ruby/in_containerinventory.rb;	  	644; root; root
 /etc/fluent/plugin/in_kube_nodes.rb;			                                           source/plugins/ruby/in_kube_nodes.rb;		      	644; root; root
 /etc/fluent/plugin/in_kube_podinventory.rb;			                                     source/plugins/ruby/in_kube_podinventory.rb;			644; root; root

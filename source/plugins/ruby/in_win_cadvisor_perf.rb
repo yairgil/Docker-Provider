@@ -1,9 +1,11 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-module Fluent
+require 'fluent/plugin/input'
+
+module Fluent::Plugin
   class Win_CAdvisor_Perf_Input < Input
-    Plugin.register_input("wincadvisorperf", self)
+    Fluent::Plugin.register_input("win_cadvisor_perf", self)    
 
     @@winNodes = []
 
@@ -18,10 +20,12 @@ module Fluent
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
+      require_relative "extension_utils"
+      @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB" 
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oms.api.wincadvisorperf"
+    config_param :tag, :string, :default => "oneagent.containerInsights.LINUX_PERF_BLOB"
     config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
 
     def configure(conf)
@@ -50,11 +54,26 @@ module Fluent
     end
 
     def enumerate()
-      time = Time.now.to_f
+      time = Fluent::Engine.now
       begin
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         @@istestvar = ENV["ISTEST"]
+
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_win_cadvisor_perf::enumerate: AAD AUTH MSI MODE")    
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
+          end  
+          if !@insightsMetricsTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @insightsMetricsTag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end                 
+       end       
+
+       # debug logs
+       $log.info("in_win_cadvisor_perf::enumerate: using perf tag -#{@kubeperfTag} @ #{Time.now.utc.iso8601}")          
+       $log.info("in_win_cadvisor_perf::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")         
+
 
         #Resetting this cache so that it is populated with the current set of containers with every call
         CAdvisorMetricsAPIClient.resetWinContainerIdCache()
@@ -68,12 +87,10 @@ module Fluent
           @@winNodeQueryTimeTracker = DateTime.now.to_time.to_i
         end
         @@winNodes.each do |winNode|
-          eventStream = MultiEventStream.new
+          eventStream = Fluent::MultiEventStream.new
           metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601)
           metricData.each do |record|
             if !record.empty?
-              record["DataType"] = "LINUX_PERF_BLOB"
-              record["IPName"] = "LogManagement"
               eventStream.add(time, record) if record
             end
           end
@@ -88,18 +105,13 @@ module Fluent
           begin
             containerGPUusageInsightsMetricsDataItems = []
             containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601))
-            insightsMetricsEventStream = MultiEventStream.new
+            insightsMetricsEventStream = Fluent::MultiEventStream.new            
 
             containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
-              wrapper = {
-                "DataType" => "INSIGHTS_METRICS_BLOB",
-                "IPName" => "ContainerInsights",
-                "DataItems" => [insightsMetricsRecord.each { |k, v| insightsMetricsRecord[k] = v }],
-              }
-              insightsMetricsEventStream.add(time, wrapper) if wrapper
+              insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord             
             end
 
-            router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
+            router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
             router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
               $log.info("winCAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
