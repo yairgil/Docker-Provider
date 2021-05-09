@@ -866,7 +866,8 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
         var elapsed time.Duration
 
 		for i = 0; i < len(laMetrics); i++ { 
-				var stringMap map[string]string 
+				var interfaceMap map[string]interface{} 
+				stringMap := make(map[string]string)
 				jsonBytes, err := json.Marshal(*laMetrics[i])
 				if err != nil {
 					message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
@@ -874,12 +875,17 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 					SendException(message)
 					return output.FLB_OK
 				} else {
-					if err := json.Unmarshal(jsonBytes, &stringMap); err != nil { 							
-						message := fmt.Sprintf("Error while UnMarshalling json bytes to stringmap: %s", err.Error())
+					if err := json.Unmarshal(jsonBytes, &interfaceMap); err != nil { 							
+						message := fmt.Sprintf("Error while UnMarshalling json bytes to interfaceMap: %s", err.Error())
 						Log(message)
 						SendException(message)
 						return output.FLB_OK
-					} else {					
+					} else {	
+						for key, value := range interfaceMap {
+							strKey := fmt.Sprintf("%v", key)
+							strValue := fmt.Sprintf("%v", value)
+							stringMap[strKey] = strValue
+						}				
 						msgPackEntry := MsgPackEntry{							
 							Record: stringMap,
 						}
