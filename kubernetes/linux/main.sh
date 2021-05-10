@@ -539,7 +539,8 @@ else
       echo "*** activating oneagent in legacy auth mode ***"  
       CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
       CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"  
-      CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"   
+      #use the file path as its secure than env
+      # CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"   
       cat /etc/mdsd.d/envmdsd | while read line; do
             echo $line >> ~/.bashrc
       done
@@ -550,6 +551,8 @@ else
       echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
       export CIWORKSPACE_key=$CIWORKSPACE_key
       echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
+      # export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
+      # echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
       export OMS_TLD=$domain
       echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc      
       export MDSD_FLUENT_SOCKET_PORT="29230"
