@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://statics.teams.cdn.office.net/
+HostUrl=https://msazure.visualstudio.com/_apis/resources/Containers/68323260/drop/x86_64/outputs?itemPath=drop%2Fx86_64%2Foutputs%2Fbuild%2Fmdsdsvc%2Fdebian%2Fazure-mdsd_1.10.0-build.develop.1986_x86_64.deb
