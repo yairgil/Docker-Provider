@@ -198,6 +198,12 @@ function Set-EnvironmentVariables {
         Write-Host "Failed to set environment variable OS_TYPE for target 'machine' since it is either null or empty"
     }
 
+    $userMsi = [System.Environment]::GetEnvironmentVariable("USER_ASSIGNED_IDENTITY_CLIENT_ID", "process")
+    if (![string]::IsNullOrEmpty($userMsi)) {
+        [System.Environment]::SetEnvironmentVariable("USER_ASSIGNED_IDENTITY_CLIENT_ID", $userMsi, "machine")
+        Write-Host "Successfully set environment variable USER_ASSIGNED_IDENTITY_CLIENT_ID - $($userMsi) for target 'machine'..."
+    }
+
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
     .\setenv.ps1
