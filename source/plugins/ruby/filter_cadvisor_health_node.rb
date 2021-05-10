@@ -107,10 +107,10 @@ module Fluent::Plugin
                     return record
                 end
 
-                object_name = record['DataItems'][0]['ObjectName']
-                counter_name = record['DataItems'][0]['Collections'][0]['CounterName'].downcase
+                object_name = record['ObjectName']
+                counter_name = JSON.parse(record['json_Collections'])[0]['CounterName'].downcase
                 if @metrics_to_collect_hash.key?(counter_name.downcase)
-                    metric_value = record['DataItems'][0]['Collections'][0]['Value']
+                    metric_value = JSON.parse(record['json_Collections'])[0]['Value']
                     case object_name
                     when @@object_name_k8s_node
                         case counter_name.downcase
@@ -136,14 +136,14 @@ module Fluent::Plugin
             if record.nil?
                 return nil
             else
-                instance_name = record['DataItems'][0]['InstanceName']
+                instance_name = record['InstanceName']
                 #@log.info "CPU capacity #{@cpu_capacity}"
                 metric_value /= 1000000
                 percent = (metric_value.to_f/@cpu_capacity*100).round(2)
                 #@log.debug "Percentage of CPU limit: #{percent}"
                 state = HealthMonitorUtils.compute_percentage_state(percent, @provider.get_config(MonitorId::NODE_CPU_MONITOR_ID))
                 #@log.debug "Computed State : #{state}"
-                timestamp = record['DataItems'][0]['Timestamp']
+                timestamp = record['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"cpuUsageMillicores" => metric_value, "cpuUtilizationPercentage" => percent}}
 
                 monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@clusterId, @@hostName])
@@ -168,14 +168,14 @@ module Fluent::Plugin
             if record.nil?
                 return nil
             else
-                instance_name = record['DataItems'][0]['InstanceName']
+                instance_name = record['InstanceName']
                 #@log.info "Memory capacity #{@memory_capacity}"
 
                 percent = (metric_value.to_f/@memory_capacity*100).round(2)
                 #@log.debug "Percentage of Memory limit: #{percent}"
                 state = HealthMonitorUtils.compute_percentage_state(percent, @provider.get_config(MonitorId::NODE_MEMORY_MONITOR_ID))
                 #@log.debug "Computed State : #{state}"
-                timestamp = record['DataItems'][0]['Timestamp']
+                timestamp = record['Timestamp']
                 health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"memoryRssBytes" => metric_value.to_f, "memoryUtilizationPercentage" => percent}}
                 #@log.info health_monitor_record
 

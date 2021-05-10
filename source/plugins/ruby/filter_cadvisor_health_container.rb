@@ -85,8 +85,9 @@ module Fluent::Plugin
                 if record.key?("MonitorLabels")
                     return record
                 end
-                object_name = record['DataItems'][0]['ObjectName']
-                counter_name = record['DataItems'][0]['Collections'][0]['CounterName'].downcase
+
+                object_name = record['ObjectName']
+                counter_name = JSON.parse(record['json_Collections'])[0]['CounterName'].downcase
                 if @metrics_to_collect_hash.key?(counter_name)
                     if object_name == @@object_name_k8s_container
                         return @formatter.get_record_from_cadvisor_record(record)
