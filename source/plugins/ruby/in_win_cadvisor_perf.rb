@@ -78,7 +78,7 @@ module Fluent
             end
           end
           router.emit_stream(@tag, eventStream) if eventStream
-          router.emit_stream(@mdmtag, eventStream) if eventStream
+          #router.emit_stream(@mdmtag, eventStream) if eventStream
 
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
