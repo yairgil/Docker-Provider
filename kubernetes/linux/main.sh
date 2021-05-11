@@ -487,6 +487,13 @@ echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 #    fi
 # fi
 
+#MDSD added dmiinfo in > 1.9 and has issue populating in container environments 
+#received workaround until that issue fixed is to populate with arbitery guids since this causes ingestion failures
+#remove this workaround once the mdsd address this issue
+mkdir -p /etc/mdsd.d/oms
+echo "11111111-1111-1111-1111-111111111111" > /etc/mdsd.d/oms/dmiinfo.txt                                
+echo "11111111-1111-1111-1111-111111111112" >> /etc/mdsd.d/oms/dmiinfo.txt               
+
 # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
 export AAD_MSI_AUTH_MODE=false 
 if [[ ("${USING_LA_AAD_AUTH}" == "true") ]]; then
@@ -516,8 +523,8 @@ if [[ ("${USING_LA_AAD_AUTH}" == "true") ]]; then
       echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
       source ~/.bashrc
 
-      dpkg -l | grep mdsd | awk '{print $2 " " $3}'                                
-
+      dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+                      
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then   
          echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in aad auth msi mode in sidecar container..."                 
          #use tenant name to avoid unix socket conflict and different ports for port conflict
@@ -537,22 +544,18 @@ if [[ ("${USING_LA_AAD_AUTH}" == "true") ]]; then
       touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
 else 
       echo "*** activating oneagent in legacy auth mode ***"  
-      CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
-      CIWORKSPACE_key="$(cat /etc/omsagent-secret/KEY)"  
+      CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"     
       #use the file path as its secure than env
-      # CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"   
+      CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"   
       cat /etc/mdsd.d/envmdsd | while read line; do
             echo $line >> ~/.bashrc
       done
       source /etc/mdsd.d/envmdsd
-
       echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
       export CIWORKSPACE_id=$CIWORKSPACE_id
-      echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
-      export CIWORKSPACE_key=$CIWORKSPACE_key
-      echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
-      # export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
-      # echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
+      echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc      
+      export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
+      echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
       export OMS_TLD=$domain
       echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc      
       export MDSD_FLUENT_SOCKET_PORT="29230"
