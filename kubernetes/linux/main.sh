@@ -472,6 +472,10 @@ else
       export MDSD_FLUENT_SOCKET_PORT="29230"
       echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
 
+      #skip imds lookup since not used in legacy auth path  
+      export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
+      echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
+
       source ~/.bashrc
 
       dpkg -l | grep mdsd | awk '{print $2 " " $3}'
