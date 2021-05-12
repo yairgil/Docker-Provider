@@ -528,7 +528,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 // Function to get config error log records after iterating through the two hashes
 func flushKubeMonAgentEventRecords() {
 	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
-		if skipKubeMonEventsFlush != true {
+		if !skipKubeMonEventsFlush {
 			Log("In flushConfigErrorRecords\n")
 			start := time.Now()
 			var elapsed time.Duration
@@ -781,7 +781,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	req.Header.Set("X-Request-ID", reqID)
 
 	//expensive to do string len for every request, so use a flag
-	if ResourceCentric == true {
+	if ResourceCentric {
 		req.Header.Set("x-ms-AzureResourceId", ResourceID)
 	}
 
@@ -872,7 +872,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
-		if ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true {
+		if ContainerLogSchemaV2 || ContainerLogsRouteADX {
 			stringMap["Computer"] = Computer
 			stringMap["ContainerId"] = containerID
 			stringMap["ContainerName"] = containerName
@@ -906,7 +906,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
 
-		if ContainerLogsRouteV2 == true {
+		if ContainerLogsRouteV2 {
 			msgPackEntry = MsgPackEntry{
 				// this below time is what mdsd uses in its buffer/expiry calculations. better to be as close to flushtime as possible, so its filled just before flushing for each entry
 				//Time: start.Unix(),
@@ -914,8 +914,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Record: stringMap,
 			}
 			msgPackEntries = append(msgPackEntries, msgPackEntry)
-		} else if ContainerLogsRouteADX == true {
-			if ResourceCentric == true {
+		} else if ContainerLogsRouteADX {
+			if ResourceCentric {
 				stringMap["AzureResourceId"] = ResourceID
 			} else {
 				stringMap["AzureResourceId"] = ""
@@ -934,7 +934,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			//ADX
 			dataItemsADX = append(dataItemsADX, dataItemADX)
 		} else {
-			if ContainerLogSchemaV2 == true {
+			if ContainerLogSchemaV2 {
 				dataItemLAv2 = DataItemLAv2{
 					TimeGenerated: stringMap["TimeGenerated"],
 					Computer:      stringMap["Computer"],
@@ -986,10 +986,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	numContainerLogRecords := 0
 
-	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
+	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 {
 		//flush to mdsd
 		mdsdSourceName := MdsdContainerLogSourceName
-		if ContainerLogSchemaV2 == true {
+		if ContainerLogSchemaV2 {
 			mdsdSourceName = MdsdContainerLogV2SourceName
 		}
 		fluentForward := MsgPackForward{
@@ -1113,7 +1113,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		recordType := ""
 		loglinesCount := 0
 		//schema v2
-		if len(dataItemsLAv2) > 0 && ContainerLogSchemaV2 == true {
+		if len(dataItemsLAv2) > 0 && ContainerLogSchemaV2 {
 			logEntry = ContainerLogBlobLAv2{
 				DataType:  ContainerLogV2DataType,
 				IPName:    IPName,
@@ -1147,48 +1147,31 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		reqId := uuid.New().String()
 		req.Header.Set("X-Request-ID", reqId)
 		//expensive to do string len for every request, so use a flag
-		if ResourceCentric == true {
+		if ResourceCentric {
 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		}
-		//
-		if ODSIngestionAuthToken == "" {
-			imdsAccessToken, err := getAccessTokenFromIMDS()
-			if err != nil {
-				message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
-				Log(message)
-			}
-			Log("IMDS Access Token: %s", imdsAccessToken)
-			if imdsAccessToken != "" {
-				var ingestionToken string
-				var err error
-				var configurationId string
-				var channelId string
-				configurationId, channelId, err = getAgentConfiguration(imdsAccessToken)
-				if err != nil {
-					message := fmt.Sprintf("Error getAgentConfiguration %s \n", err.Error())
-					Log(message)
-				}
-				if configurationId != "" && channelId != "" {
-					ingestionToken, err = getIngestionAuthToken(imdsAccessToken, configurationId, channelId)
-					if err != nil {
-						message := fmt.Sprintf("Error getIngestionAuthToken %s \n", err.Error())
-						Log(message)
-					}
-				}
-				ODSIngestionAuthToken = ingestionToken
-			} else {
-				Log("ERROR: ODS Ingestion Token is empty: %s", imdsAccessToken)
-			}
-			Log("ODS Ingestion Token: %s", ODSIngestionAuthToken)
-		}
-		var bearer = "Bearer " + ODSIngestionAuthToken
-		// add authorization header to the req
-		req.Header.Add("Authorization", bearer)
 
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		//resp, err := HTTPClient.Do(req)
-		elapsed = time.Since(start)
+		var resp *http.Response
+
+		if os.Getenv("AAD_MSI_AUTH_MODE") == "true" {
+			ODSIngestionAuthToken, err = getIngestionToken()
+			if err != nil {
+				Log("failed to get ODS Ingestion Auth Token (even after retries)")
+				message := fmt.Sprintf("Error string: %s \n", err.Error())
+				Log(message)
+				return output.FLB_RETRY
+			}
+
+			// add authorization header to the req
+			req.Header.Add("Authorization", "Bearer "+ODSIngestionAuthToken)
+
+			client := &http.Client{}
+			resp, err = client.Do(req)
+			elapsed = time.Since(start)
+		} else {
+			resp, err = HTTPClient.Do(req)
+			elapsed = time.Since(start)
+		}
 
 		if err != nil {
 			message := fmt.Sprintf("Error when sending request %s \n", err.Error())

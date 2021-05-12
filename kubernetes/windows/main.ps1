@@ -172,6 +172,12 @@ function Set-EnvironmentVariables {
     [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Machine")
 
 
+    # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
+    if ($env.USING_LA_AAD_AUTH) {
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Process")
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Machine")
+    }
+
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
     .\setenv.ps1
