@@ -398,12 +398,12 @@ echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
-#MDSD added dmiinfo in > 1.9 and has issue populating in container environments 
-#received workaround until that issue fixed is to populate with arbitery guids since this causes ingestion failures
-#remove this workaround once the mdsd address this issue
-mkdir -p /etc/mdsd.d/oms
-echo "11111111-1111-1111-1111-111111111111" > /etc/mdsd.d/oms/dmiinfo.txt                                
-echo "11111111-1111-1111-1111-111111111112" >> /etc/mdsd.d/oms/dmiinfo.txt               
+# #MDSD added dmiinfo in > 1.9 and has issue populating in container environments 
+# #received workaround until that issue fixed is to populate with arbitery guids since this causes ingestion failures
+# #remove this workaround once the mdsd address this issue
+# mkdir -p /etc/mdsd.d/oms
+# echo "11111111-1111-1111-1111-111111111111" > /etc/mdsd.d/oms/dmiinfo.txt                                
+# echo "11111111-1111-1111-1111-111111111112" >> /etc/mdsd.d/oms/dmiinfo.txt               
 
 # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
 export AAD_MSI_AUTH_MODE=false 
