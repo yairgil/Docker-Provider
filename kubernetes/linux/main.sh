@@ -398,13 +398,6 @@ echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
-# #MDSD added dmiinfo in > 1.9 and has issue populating in container environments 
-# #received workaround until that issue fixed is to populate with arbitery guids since this causes ingestion failures
-# #remove this workaround once the mdsd address this issue
-# mkdir -p /etc/mdsd.d/oms
-# echo "11111111-1111-1111-1111-111111111111" > /etc/mdsd.d/oms/dmiinfo.txt                                
-# echo "11111111-1111-1111-1111-111111111112" >> /etc/mdsd.d/oms/dmiinfo.txt               
-
 # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
 export AAD_MSI_AUTH_MODE=false 
 if [[ ("${USING_LA_AAD_AUTH}" == "true") ]]; then
@@ -489,11 +482,13 @@ else
          export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
          echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
          source ~/.bashrc
-         mkdir /var/run/mdsd-${CONTAINER_TYPE}       
-         mdsd -l -T 0xFFFF -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+         mkdir /var/run/mdsd-${CONTAINER_TYPE}
+         # add -T 0xFFFF for full traces
+         mdsd -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
       else          
          echo "starting mdsd in legacy auth mode in main container..."
-         mdsd -l -T  0xFFFF -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &  
+         # add -T 0xFFFF for full traces
+         mdsd -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &  
       fi
 fi
 
