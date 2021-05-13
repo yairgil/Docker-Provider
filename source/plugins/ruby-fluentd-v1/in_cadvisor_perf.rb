@@ -1,16 +1,20 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
-require 'fluent/plugin/input'
+require "fluent/plugin/input"
 
 module Fluent::Plugin
-
   class CAdvisor_Perf_Input < Input
     Fluent::Plugin.register_input("cadvisor_perf", self)
+    @@isWindows = false
+    @@os_type = ENV["OS_TYPE"]
+    if !@@os_type.nil? && !@@os_type.empty? && @@os_type.strip.casecmp("windows") == 0
+      @@isWindows = true
+    end
 
     def initialize
       super
       require "yaml"
-      require 'yajl/json_gem'
+      require "yajl/json_gem"
       require "time"
 
       require_relative "CAdvisorMetricsAPIClient"
@@ -30,7 +34,7 @@ module Fluent::Plugin
       super
     end
 
-    def start       
+    def start
       if @run_interval
         super
         @finished = false
@@ -39,7 +43,7 @@ module Fluent::Plugin
         @thread = Thread.new(&method(:run_periodic))
         if !ENV["AAD_MSI_AUTH_ENABLE"].nil? && !ENV["AAD_MSI_AUTH_ENABLE"].empty? && ENV["AAD_MSI_AUTH_ENABLE"].downcase == "true"
           @aad_msi_auth_enable = true
-        end              
+        end
         $log.info("in_cadvisor_perf::start: aad auth enable:#{@aad_msi_auth_enable}")
       end
     end
@@ -63,8 +67,8 @@ module Fluent::Plugin
       begin
         eventStream = Fluent::MultiEventStream.new
         insightsMetricsEventStream = Fluent::MultiEventStream.new
-        metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime )
-        metricData.each do |record|          
+        metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime)
+        metricData.each do |record|
           eventStream.add(Fluent::Engine.now, record) if record
         end
 
@@ -74,31 +78,32 @@ module Fluent::Plugin
         router.emit_stream(@containerhealthtag, eventStream) if eventStream
         router.emit_stream(@nodehealthtag, eventStream) if eventStream
 
-        
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("cAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
 
         #start GPU InsightsMetrics items
         begin
-          containerGPUusageInsightsMetricsDataItems = []
-          containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))          
+          if !@@isWindows.nil? && @@isWindows == false
+            containerGPUusageInsightsMetricsDataItems = []
+            containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))
 
-          containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
-            insightsMetricsEventStream.add(Fluent::Engine.now, insightsMetricsRecord) if insightsMetricsRecord
-          end
+            containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
+              insightsMetricsEventStream.add(Fluent::Engine.now, insightsMetricsRecord) if insightsMetricsRecord
+            end
 
-          router.emit_stream(@insightsmetricstag, insightsMetricsEventStream) if insightsMetricsEventStream
-          router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
-          
-          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
-            $log.info("cAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@insightsmetricstag, insightsMetricsEventStream) if insightsMetricsEventStream
+            router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
+
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+              $log.info("cAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
         rescue => errorStr
           $log.warn "Failed when processing GPU Usage metrics in_cadvisor_perf : #{errorStr}"
           $log.debug_backtrace(errorStr.backtrace)
           ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-        end 
+        end
         #end GPU InsightsMetrics items
 
       rescue => errorStr
@@ -140,30 +145,29 @@ module Fluent::Plugin
 
     def overrideTagsWithStreamIdsIfAADAuthEnabled()
       begin
-        if @aad_msi_auth_enable        
+        if @aad_msi_auth_enable
           # perf
-          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")     
-            @tag = Extension.instance.get_output_stream_id("LINUX_PERF_BLOB")  
+          if @tag.nil? || @tag.empty? || !@tag.start_with?("dcr-")
+            @tag = Extension.instance.get_output_stream_id("LINUX_PERF_BLOB")
             if @tag.nil? || @tag.empty?
-              $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: LINUX_PERF_BLOB")           
-            else            
-              $log.info("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: using perf tag: #{@tag}")     
+              $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: LINUX_PERF_BLOB")
+            else
+              $log.info("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: using perf tag: #{@tag}")
             end
-          end   
-          # insights metrics         
-          if @insightsmetricstag.nil? || @insightsmetricstag.empty? || !@insightsmetricstag.start_with?("dcr-")     
-            @insightsmetricstag = Extension.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")  
+          end
+          # insights metrics
+          if @insightsmetricstag.nil? || @insightsmetricstag.empty? || !@insightsmetricstag.start_with?("dcr-")
+            @insightsmetricstag = Extension.instance.get_output_stream_id("INSIGHTS_METRICS_BLOB")
             if @insightsmetricstag.nil? || @insightsmetricstag.empty?
-              $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")           
-            else            
-              $log.info("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: using insightsmetrics tag: #{@insightsmetricstag}")  
+              $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: got the outstream id is nil or empty for the datatypeid: INSIGHTS_METRICS_BLOB")
+            else
+              $log.info("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled: using insightsmetrics tag: #{@insightsmetricstag}")
             end
-          end     
-        end   
+          end
+        end
       rescue => errorStr
-        $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled:failed with an error: #{errorStr}")           
-      end 
-    end         
-
+        $log.warn("in_cadvisor_perf::overrideTagsWithStreamIdsIfAADAuthEnabled:failed with an error: #{errorStr}")
+      end
+    end
   end # CAdvisor_Perf_Input
 end # module
