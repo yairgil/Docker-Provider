@@ -496,10 +496,10 @@ fi
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then     
       if [ ! -e "/etc/config/kube.conf" ]; then
          echo "*** starting fluentd v1 in daemonset"
-         fluentd -c /etc/fluent/oneagent_ds.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+         fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
       else
         echo "*** starting fluentd v1 in replicaset"
-        fluentd -c /etc/fluent/oneagent_rs.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
+        fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log &
       fi      
 fi   
 
