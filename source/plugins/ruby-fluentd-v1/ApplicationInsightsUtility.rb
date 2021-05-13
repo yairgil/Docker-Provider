@@ -138,19 +138,23 @@ class ApplicationInsightsUtility
     end
 
     def getContainerRuntimeInfo()
-      # Not doing this for windows since docker is being deprecated soon and we dont want to bring in the socket dependency.
-      if !@@isWindows.nil? && @@isWindows == false
-        containerRuntime = ENV[@@EnvContainerRuntime]
-        if !containerRuntime.nil? && !containerRuntime.empty?
-          # DockerVersion field holds either containerRuntime for non-docker or Dockerversion if its docker
-          @@CustomProperties["DockerVersion"] = containerRuntime
-          if containerRuntime.casecmp("docker") == 0
-            dockerInfo = DockerApiClient.dockerInfo
-            if (!dockerInfo.nil? && !dockerInfo.empty?)
-              @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
+      begin
+        # Not doing this for windows since docker is being deprecated soon and we dont want to bring in the socket dependency.
+        if !@@isWindows.nil? && @@isWindows == false
+          containerRuntime = ENV[@@EnvContainerRuntime]
+          if !containerRuntime.nil? && !containerRuntime.empty?
+            # DockerVersion field holds either containerRuntime for non-docker or Dockerversion if its docker
+            @@CustomProperties["DockerVersion"] = containerRuntime
+            if containerRuntime.casecmp("docker") == 0
+              dockerInfo = DockerApiClient.dockerInfo
+              if (!dockerInfo.nil? && !dockerInfo.empty?)
+                @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
+              end
             end
           end
         end
+      rescue => errorStr
+        $log.warn("Exception in AppInsightsUtility: getContainerRuntimeInfo - error: #{errorStr}")
       end
     end
 
@@ -272,7 +276,7 @@ class ApplicationInsightsUtility
     def getWorkspaceId()
       begin
         if !@@isWindows.nil? && @@isWindows == true
-          workspaceId = os.Getenv("WSID")
+          workspaceId = ENV["WSID"]
         else
           adminConf = {}
           confFile = File.open(@OmsAdminFilePath, "r")
@@ -291,7 +295,7 @@ class ApplicationInsightsUtility
     def getWorkspaceCloud()
       begin
         if !@@isWindows.nil? && @@isWindows == true
-          workspaceDomain = os.Getenv("DOMAIN")
+          workspaceDomain = ENV["DOMAIN"]
         else
           adminConf = {}
           confFile = File.open(@OmsAdminFilePath, "r")
