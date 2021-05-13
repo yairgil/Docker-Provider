@@ -252,11 +252,8 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                @Log.info("rashmi-cadvisor-tel-before")
                 if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && metricNametoReturn.eql?(Constants::CPU_USAGE_NANO_CORES))
-                  @Log.info("rashmi-cadvisor-tel-after")
                   if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
-                    @Log.info("rashmi-cadvisor-tel-after-after")
                     telemetryProps = {}
                     telemetryProps["PodName"] = podName
                     telemetryProps["ContainerName"] = containerName
@@ -584,8 +581,11 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
+                @Log.info("rashmi-cadvisor-tel-before")
                 if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent"))
+                  @Log.info("rashmi-cadvisor-tel-after")
                   if (timeDifferenceInMinutes >= 10)
+                    @Log.info("rashmi-cadvisor-tel-after-after")
                     telemetryProps = {}
                     telemetryProps["PodName"] = podName
                     telemetryProps["ContainerName"] = containerName
