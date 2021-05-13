@@ -23,13 +23,14 @@ class ApplicationInsightsUtility
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
   @@isWindows = false
+  @@hostName = (OMS::Common.get_hostname)
   @@os_type = ENV["OS_TYPE"]
   if !@@os_type.nil? && !@@os_type.empty? && @@os_type.strip.casecmp("windows") == 0
     @@isWindows = true
+    @@hostName = ENV["HOSTNAME"]
   end
   @@CustomProperties = {}
   @@Tc = nil
-  @@hostName = (OMS::Common.get_hostname)
   @@proxy = (ProxyUtils.getProxyConfiguration)
 
   def initialize

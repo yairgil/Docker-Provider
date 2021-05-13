@@ -213,6 +213,16 @@ function Set-EnvironmentVariables {
         Write-Host "Failed to set environment variable APPLICATIONINSIGHTS_AUTH for target 'machine' since it is either null or empty"
     }
 
+    $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
+    if (![string]::IsNullOrEmpty($hostName)) {
+        [System.Environment]::SetEnvironmentVariable("HOSTNAME", $hostName, "machine")
+        Write-Host "Successfully set environment variable HOSTNAME - $($hostName) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
+    }
+
+
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
     .\setenv.ps1
