@@ -33,7 +33,7 @@ module Fluent::Plugin
         def initialize
             begin
                 super
-                @rewrite_tag = 'oneagent.containerinsights.KUBE_HEALTH_BLOB'
+                @rewrite_tag = 'oneagent.containerInsights.KUBE_HEALTH_BLOB'
                 @buffer = HealthModel::HealthModelBuffer.new
                 @cluster_health_state = ClusterHealthState.new(@@token_file_path, @@cert_file_path)
                 @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)

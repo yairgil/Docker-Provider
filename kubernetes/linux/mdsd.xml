@@ -443,5 +443,12 @@
          </Content>
        </OMS>
     </EventStreamingAnnotation>  
+    <EventStreamingAnnotation name="KubeHealthEvent">
+       <OMS>
+         <Content>         
+           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="KUBE_HEALTH_BLOB" ipName="ContainerInsights"/>]]>
+         </Content>
+       </OMS>
+    </EventStreamingAnnotation>
 	</EventStreamingAnnotations>
 </MonitoringManagement>
