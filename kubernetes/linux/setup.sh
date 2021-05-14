@@ -50,8 +50,12 @@ sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/
 sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
 
-# install ruby2.5 & fluentd v1 gem
-apt-get install ruby2.5 ruby-dev gcc make -y
+# install ruby2.6 
+sudo apt-get install software-properties-common -y
+sudo apt-add-repository ppa:brightbox/ruby-ng -y
+sudo apt-get update
+sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
+# fluentd v1 gem
 gem install fluentd -v "1.12.2" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc

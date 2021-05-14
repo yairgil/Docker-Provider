@@ -32,7 +32,7 @@ module Fluent::Plugin
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oneagent.containerinsights.KUBE_EVENTS_BLOB"
+    config_param :tag, :string, :default => "oneagent.containerInsights.KUBE_EVENTS_BLOB"
 
     def configure(conf)
       super

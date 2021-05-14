@@ -25,7 +25,7 @@ module Fluent::Plugin
     config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
     config_param :nodehealthtag, :string, :default => "kubehealth.DaemonSet.Node"
     config_param :containerhealthtag, :string, :default => "kubehealth.DaemonSet.Container"
-    config_param :insightsmetricstag, :string, :default => "oneagent.containerinsights.INSIGHTS_METRICS_BLOB"
+    config_param :insightsmetricstag, :string, :default => "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
 
     def configure(conf)
       super

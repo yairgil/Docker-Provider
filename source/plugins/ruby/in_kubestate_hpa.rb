@@ -36,7 +36,7 @@ module Fluent::Plugin
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oneagent.containerinsights.INSIGHTS_METRICS_BLOB"
+    config_param :tag, :string, :default => "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
 
     def configure(conf)
       super
