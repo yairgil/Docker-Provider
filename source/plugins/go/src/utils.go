@@ -63,7 +63,13 @@ func ReadConfiguration(filename string) (map[string]string, error) {
 
 // CreateHTTPClient used to create the client for sending post requests to OMSEndpoint
 func CreateHTTPClient() {
-	cert, err := tls.LoadX509KeyPair(PluginConfiguration["cert_file_path"], PluginConfiguration["key_file_path"])
+	certFilePath := PluginConfiguration["cert_file_path"]
+	keyFilePath := PluginConfiguration["key_file_path"]
+	if IsWindows == false {
+		certFilePath = fmt.Sprintf(certFilePath, WorkspaceID)
+		keyFilePath := fmt.Sprintf(keyFilePath, WorkspaceID)
+	}
+	cert, err := tls.LoadX509KeyPair(certFilePath, keyFilePath)
 	if err != nil {
 		message := fmt.Sprintf("Error when loading cert %s", err.Error())
 		SendException(message)

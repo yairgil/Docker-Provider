@@ -95,10 +95,13 @@ const MdsdContainerLogV2SourceName = "ContainerLogV2Source"
 const MdsdKubeMonAgentEventsSourceName = "KubeMonAgentEventsSource"
 const MdsdInsightsMetricsSourceName = "InsightsMetricsSource"
 
-//container logs route (v2=flush to oneagent, adx= flush to adx ingestion, anything else flush to ODS[default])
+//container logs route (v2=flush to oneagent, adx= flush to adx ingestion, v1 for ODS Direct)
 const ContainerLogsV2Route = "v2"
 
 const ContainerLogsADXRoute = "adx"
+
+//fallback option v1 route i.e. ODS direct if required in any case
+const ContainerLogsV1Route = "v1"
 
 //container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
@@ -1594,18 +1597,13 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log(message)
 	}
 
-	PluginConfiguration = pluginConfig
-
-	if IsWindows == true {
-	   Log("Creating HTTP Client since the OS Platform is Windows")
-	   CreateHTTPClient()
-    }
+	PluginConfiguration = pluginConfig	
 
 	ContainerLogsRoute := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE")))
 	Log("AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE:%s", ContainerLogsRoute)
 
-	ContainerLogsRouteV2 = false  //default is ODS
-	ContainerLogsRouteADX = false //default is LA
+	ContainerLogsRouteV2 = false  
+	ContainerLogsRouteADX = false 
 
 	if strings.Compare(ContainerLogsRoute, ContainerLogsADXRoute) == 0 {
 		//check if adx clusteruri, clientid & secret are set
@@ -1638,8 +1636,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			Log("Routing container logs thru %s route...", ContainerLogsADXRoute)
 			fmt.Fprintf(os.Stdout, "Routing container logs thru %s route...\n", ContainerLogsADXRoute)
 		}
-	} else if strings.Compare(strings.ToLower(osType), "windows") != 0 { //for linux, oneagent will be default route
+	} else if strings.Compare(strings.ToLower(osType), "windows") != 0 { //for linux, oneagent will be default route		 
 		ContainerLogsRouteV2 = true  //default is mdsd route
+		if strings.Compare(ContainerLogsRoute, ContainerLogsV1Route) == 0 {			
+			ContainerLogsRouteV2 = false  //fallback option
+		}
 		Log("Routing container logs thru %s route...", ContainerLogsV2Route)
 		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsV2Route)
 	} 
@@ -1648,7 +1649,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		CreateMDSDClient(ContainerType)
 	} else if ContainerLogsRouteADX == true {
 		CreateADXClient()
-	}
+	} else { // v1 or windows
+		Log("Creating HTTP Client since the OS Platform is Windows")
+		CreateHTTPClient()
+	 }
 
 	if IsWindows == false {
 		Log("Creating MDSD clients for KubeMonAgentEvents & InsightsMetrics")
