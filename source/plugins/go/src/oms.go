@@ -592,8 +592,7 @@ func flushKubeMonAgentEventRecords() {
 							Log(message)
 							SendException(message)
 						} else {
-							err := json.Unmarshal(jsonBytes, &stringMap)
-							if err != nil {
+							if err := json.Unmarshal(jsonBytes, &stringMap); err != nil {
 								message := fmt.Sprintf("Error while UnMarhalling json bytes to stringmap: %s", err.Error())
 								Log(message)
 								SendException(message)
@@ -626,12 +625,23 @@ func flushKubeMonAgentEventRecords() {
 						}
 						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)						
 						var stringMap map[string]string
-						inrec, _ := json.Marshal(&laKubeMonAgentEventsRecord)
-						json.Unmarshal(inrec, &stringMap)
-						msgPackEntry := MsgPackEntry{							
-							Record: stringMap,
-						}					
-						msgPackEntries = append(msgPackEntries, msgPackEntry)
+						jsonBytes, err := json.Marshal(&laKubeMonAgentEventsRecord)
+						if err != nil {
+							message := fmt.Sprintf("Error while Marshalling laKubeMonAgentEventsRecord to json bytes: %s", err.Error())
+							Log(message)
+							SendException(message)
+						} else { 
+							if err := json.Unmarshal(jsonBytes, &stringMap); err != nil { 							
+								message := fmt.Sprintf("Error while UnMarhalling json bytes to stringmap: %s", err.Error())
+								Log(message)
+								SendException(message)
+							} else {
+								msgPackEntry := MsgPackEntry{							
+									Record: stringMap,
+								}					
+							msgPackEntries = append(msgPackEntries, msgPackEntry)  
+						   }
+						}
 					}
 				}
 
@@ -914,8 +924,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 					ContainerLogTelemetryMutex.Lock()
 					defer ContainerLogTelemetryMutex.Unlock()
-					ContainerLogsSendErrorsToMDSDFromFluent += 1
-
+					InsightsMetricsMDSDClientCreateErrors += 1		
 					return output.FLB_RETRY
 				} else {
 					numTelegrafMetricsRecords := len(msgPackEntries)
@@ -1165,8 +1174,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	numContainerLogRecords := 0
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
-		//flush to mdsd	
-		Log("Info::mdsd:: using mdsdsource name: %s", MdsdContainerLogTagName)
+		//flush to mdsd			
 		fluentForward := MsgPackForward{
 			Tag:     MdsdContainerLogTagName,
 			Entries: msgPackEntries,
@@ -1466,7 +1474,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	Log("Container Type %s", ContainerType) 	
 
 	osType := os.Getenv("OS_TYPE")
-
+    IsWindows = false 
 	// Linux
 	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
 		Log("Reading configuration for Linux from %s", pluginConfPath)
@@ -1650,11 +1658,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	} else if ContainerLogsRouteADX == true {
 		CreateADXClient()
 	} else { // v1 or windows
-		Log("Creating HTTP Client since the OS Platform is Windows")
+		Log("Creating HTTP Client since either OS Platform is Windows or configmap configured with fallback option for ODS direct")
 		CreateHTTPClient()
-	 }
+	}
 
-	if IsWindows == false {
+	if IsWindows == false { // mdsd linux specific
 		Log("Creating MDSD clients for KubeMonAgentEvents & InsightsMetrics")
 		CreateMDSDClientKubeMon(ContainerType)
 	    CreateMDSDClientInsightsMetrics(ContainerType) 
