@@ -67,7 +67,7 @@ func CreateHTTPClient() {
 	keyFilePath := PluginConfiguration["key_file_path"]
 	if IsWindows == false {
 		certFilePath = fmt.Sprintf(certFilePath, WorkspaceID)
-		keyFilePath := fmt.Sprintf(keyFilePath, WorkspaceID)
+		keyFilePath = fmt.Sprintf(keyFilePath, WorkspaceID)
 	}
 	cert, err := tls.LoadX509KeyPair(certFilePath, keyFilePath)
 	if err != nil {
