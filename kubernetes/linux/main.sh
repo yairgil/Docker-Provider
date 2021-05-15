@@ -392,7 +392,7 @@ DOCKER_CIMPROV_VERSION=$(dpkg -l | grep docker-cimprov | awk '{print $3}')
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
-echo "*** activating oneagent in legacy auth mode ***"  
+echo "*** activating oneagent in legacy auth mode ***"
 CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"     
 #use the file path as its secure than env
 CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"   

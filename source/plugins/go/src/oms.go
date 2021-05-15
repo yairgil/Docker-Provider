@@ -1607,8 +1607,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	PluginConfiguration = pluginConfig	
 
-	ContainerLogsRoute := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE")))
-	Log("AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE:%s", ContainerLogsRoute)
+	ContainerLogsRoute := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOGS_ROUTE")))
+	Log("AZMON_CONTAINER_LOGS_ROUTE:%s", ContainerLogsRoute)
 
 	ContainerLogsRouteV2 = false  
 	ContainerLogsRouteADX = false 
