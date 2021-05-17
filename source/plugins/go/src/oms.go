@@ -1647,10 +1647,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	} else if strings.Compare(strings.ToLower(osType), "windows") != 0 { //for linux, oneagent will be default route		 
 		ContainerLogsRouteV2 = true  //default is mdsd route
 		if strings.Compare(ContainerLogsRoute, ContainerLogsV1Route) == 0 {			
-			ContainerLogsRouteV2 = false  //fallback option
+			ContainerLogsRouteV2 = false  //fallback option when hiddensetting set
 		}
-		Log("Routing container logs thru %s route...", ContainerLogsV2Route)
-		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsV2Route)
+		Log("Routing container logs thru %s route...", ContainerLogsRoute)
+		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsRoute)
 	} 
 
 	if ContainerLogsRouteV2 == true {
