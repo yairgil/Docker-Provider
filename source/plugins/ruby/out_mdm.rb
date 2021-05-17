@@ -320,7 +320,7 @@ module Fluent::Plugin
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
           @last_telemetry_sent_time = Time.now
         end
-      rescue Net::HTTPServerException => e
+      rescue Net::HTTPClientException  => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException 
         if !response.nil? && !response.body.nil? #body will have actual error
           @log.info "Failed to Post Metrics to MDM : #{e} Response.body: #{response.body}"
         else
@@ -334,10 +334,10 @@ module Fluent::Plugin
           # Not raising exception, as that will cause retries to happen
         elsif !response.code.empty? && response.code.start_with?("4")
           # Log 400 errors and continue
-          @log.info "Non-retryable HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
+          @log.info "Non-retryable HTTPClientException when POSTing Metrics to MDM #{e} Response: #{response}"
         else
           # raise if the response code is non-400
-          @log.info "HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
+          @log.info "HTTPClientException when POSTing Metrics to MDM #{e} Response: #{response}"
           raise e
         end
         # Adding exceptions to hash to aggregate and send telemetry for all 400 error codes
