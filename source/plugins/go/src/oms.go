@@ -638,8 +638,25 @@ func flushKubeMonAgentEventRecords() {
 						req.Header.Set("x-ms-AzureResourceId", ResourceID)
 					}
 
-					resp, err := HTTPClient.Do(req)
-					elapsed = time.Since(start)
+					var resp *http.Response
+					if os.Getenv("AAD_MSI_AUTH_MODE") == "true" {
+						ODSIngestionAuthToken, err = getIngestionToken()
+						if err != nil {
+							Log("failed to get ODS Ingestion Auth Token (even after retries)")
+							message := fmt.Sprintf("Error string: %s \n", err.Error())
+							Log(message)
+						}
+			
+						// add authorization header to the req
+						req.Header.Add("Authorization", "Bearer "+ODSIngestionAuthToken)
+			
+						client := &http.Client{}
+						resp, err = client.Do(req)
+						elapsed = time.Since(start)
+					} else {
+						resp, err = HTTPClient.Do(req)
+						elapsed = time.Since(start)
+					}
 
 					if err != nil {
 						message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
@@ -786,8 +803,27 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	start := time.Now()
-	resp, err := HTTPClient.Do(req)
-	elapsed := time.Since(start)
+
+	var resp *http.Response
+	var elapsed time.Duration
+	if os.Getenv("AAD_MSI_AUTH_MODE") == "true" {
+		ODSIngestionAuthToken, err = getIngestionToken()
+		if err != nil {
+			Log("failed to get ODS Ingestion Auth Token (even after retries)")
+			message := fmt.Sprintf("Error string: %s \n", err.Error())
+			Log(message)
+			return output.FLB_RETRY
+		}
+
+		// add authorization header to the req
+		req.Header.Add("Authorization", "Bearer "+ODSIngestionAuthToken)
+
+		client := &http.Client{}
+		resp, err = client.Do(req)
+	} else {
+		resp, err = HTTPClient.Do(req)
+	}
+	elapsed = time.Since(start)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending %v metrics. duration:%v err:%q \n", len(laMetrics), elapsed, err.Error())
@@ -1152,7 +1188,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		var resp *http.Response
-
 		if os.Getenv("AAD_MSI_AUTH_MODE") == "true" {
 			ODSIngestionAuthToken, err = getIngestionToken()
 			if err != nil {
@@ -1167,11 +1202,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 			client := &http.Client{}
 			resp, err = client.Do(req)
-			elapsed = time.Since(start)
 		} else {
 			resp, err = HTTPClient.Do(req)
-			elapsed = time.Since(start)
+			
 		}
+		elapsed = time.Since(start)
 
 		if err != nil {
 			message := fmt.Sprintf("Error when sending request %s \n", err.Error())
