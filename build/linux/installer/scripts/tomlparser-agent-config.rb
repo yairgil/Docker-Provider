@@ -59,6 +59,8 @@ require_relative "ConfigParseErrorLogger"
 @fbitFlushIntervalSecs = 0
 @fbitTailBufferChunkSizeMBs = 0
 @fbitTailBufferMaxSizeMBs = 0
+@fbitMemBufLimitSizeMBs = 0
+@fbitRotateWaitIntervalSecs = 0
 
 
 def is_number?(value)
@@ -140,10 +142,22 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       # fbit config settings
       fbit_config = parsedConfig[:agent_settings][:fbit_config]
       if !fbit_config.nil?
+        fbitMemBufLimitSizeMBs =  fbit_config[:mem_buf_limit_megabytes]
+        if !fbitMemBufLimitSizeMBs.nil? && is_number?(fbitMemBufLimitSizeMBs) && fbitMemBufLimitSizeMBs.to_i > 0
+          @fbitMemBufLimitSizeMBs = fbitMemBufLimitSizeMBs.to_i
+          puts "Using config map value: mem_buf_limit_megabytes = #{@fbitMemBufLimitSizeMBs}"
+        end
+
         fbitFlushIntervalSecs = fbit_config[:log_flush_interval_secs]
         if !fbitFlushIntervalSecs.nil? && is_number?(fbitFlushIntervalSecs) && fbitFlushIntervalSecs.to_i > 0
           @fbitFlushIntervalSecs = fbitFlushIntervalSecs.to_i
           puts "Using config map value: log_flush_interval_secs = #{@fbitFlushIntervalSecs}"
+        end
+        
+        fbitRotateWaitIntervalSecs = fbit_config[:rotate_wait_interval_secs]
+        if !fbitRotateWaitIntervalSecs.nil? && is_number?(fbitRotateWaitIntervalSecs) && fbitRotateWaitIntervalSecs.to_i > 0
+          @fbitRotateWaitIntervalSecs = fbitRotateWaitIntervalSecs.to_i
+          puts "Using config map value: rotate_wait_interval_secs = #{@fbitRotateWaitIntervalSecs}"
         end
 
         fbitTailBufferChunkSizeMBs = fbit_config[:tail_buf_chunksize_megabytes]
@@ -167,7 +181,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         if  @fbitTailBufferChunkSizeMBs > 0  && @fbitTailBufferMaxSizeMBs == 0
           @fbitTailBufferMaxSizeMBs = @fbitTailBufferChunkSizeMBs
           puts "config::warn: since tail_buf_maxsize_megabytes not provided hence using tail_buf_maxsize_megabytes=#{@fbitTailBufferMaxSizeMBs} which is same as the value of tail_buf_chunksize_megabytes"
-        end 
+        end         
       end
     end
   rescue => errorStr
@@ -212,6 +226,12 @@ if !file.nil?
   if @fbitTailBufferMaxSizeMBs > 0
     file.write("export FBIT_TAIL_BUFFER_MAX_SIZE=#{@fbitTailBufferMaxSizeMBs}\n")
   end 
+  if @fbitMemBufLimitSizeMBs > 0 
+    file.write("export FBIT_MEM_BUF_LIMIT_SIZE=#{@fbitMemBufLimitSizeMBs}\n")
+  end
+  if @fbitRotateWaitIntervalSecs > 0
+    file.write("export ROTATE_WAIT=#{@fbitRotateWaitIntervalSecs}\n")
+  end
   # Close file after writing all environment variables
   file.close
 else

@@ -6,6 +6,8 @@ require_relative "ConfigParseErrorLogger"
 @default_service_interval = "1"
 @default_buffer_chunk_size = "1"
 @default_buffer_max_size = "1"
+@default_mem_buf_limit = "10" # in mbs
+@default_rotate_wait = "20" # in secs
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -19,13 +21,20 @@ def substituteFluentBitPlaceHolders
     interval = ENV["FBIT_SERVICE_FLUSH_INTERVAL"]
     bufferChunkSize = ENV["FBIT_TAIL_BUFFER_CHUNK_SIZE"]
     bufferMaxSize = ENV["FBIT_TAIL_BUFFER_MAX_SIZE"]
+    memBufferLimitSize =  ENV["FBIT_MEM_BUF_LIMIT_SIZE"]
+    rotateWaitInterval = ENV["ROTATE_WAIT"]
 
     serviceInterval = (!interval.nil? && is_number?(interval) && interval.to_i > 0 ) ? interval : @default_service_interval
     serviceIntervalSetting = "Flush         " + serviceInterval
 
+    rotateWaitInterval = (!rotateWaitInterval.nil? && is_number?(rotateWaitInterval) && rotateWaitInterval.to_i > 0 ) ? rotateWaitInterval : @default_rotate_wait
+    rotateIntervalSetting = "Rotate_Wait   " + rotateWaitInterval
+
     tailBufferChunkSize = (!bufferChunkSize.nil? && is_number?(bufferChunkSize) && bufferChunkSize.to_i > 0) ? bufferChunkSize : @default_buffer_chunk_size
 
     tailBufferMaxSize = (!bufferMaxSize.nil? && is_number?(bufferMaxSize) && bufferMaxSize.to_i > 0) ? bufferMaxSize : @default_buffer_max_size = "1"
+
+    memBufferLimitSize = (!memBufferLimitSize.nil? && is_number?(memBufferLimitSize) && memBufferLimitSize.to_i > 0) ? memBufferLimitSize : @default_mem_buf_limit
 
     if ((!tailBufferChunkSize.nil? && tailBufferMaxSize.nil?) ||  (!tailBufferChunkSize.nil? && !tailBufferMaxSize.nil? && tailBufferChunkSize.to_i > tailBufferMaxSize.to_i))
       puts "config:warn buffer max size must be greater or equal to chunk size"
@@ -34,6 +43,7 @@ def substituteFluentBitPlaceHolders
 
     text = File.read(@td_agent_bit_conf_path)
     new_contents = text.gsub("${SERVICE_FLUSH_INTERVAL}", serviceIntervalSetting)
+    new_contents = new_contents.gsub("${ROTATE_WAIT}", rotateIntervalSetting)
     if !tailBufferChunkSize.nil?
       new_contents = new_contents.gsub("${TAIL_BUFFER_CHUNK_SIZE}", "Buffer_Chunk_Size " + tailBufferChunkSize + "m")
     else
@@ -43,6 +53,12 @@ def substituteFluentBitPlaceHolders
       new_contents = new_contents.gsub("${TAIL_BUFFER_MAX_SIZE}", "Buffer_Max_Size " + tailBufferMaxSize + "m")
     else
       new_contents = new_contents.gsub("\n    ${TAIL_BUFFER_MAX_SIZE}\n", "\n")
+    end
+    
+    if !memBufferLimitSize.nil?
+      new_contents = new_contents.gsub("${MEM_BUF_LIMIT}", "Mem_Buf_Limit " + memBufferLimitSize + "m")
+    else
+      new_contents = new_contents.gsub("${MEM_BUF_LIMIT}", "Mem_Buf_Limit " + @default_mem_buf_limit + "m")
     end
 
     File.open(@td_agent_bit_conf_path, "w") { |file| file.puts new_contents }
