@@ -142,4 +142,4 @@ Once that is done, update chart version in scripts/onboarding/managed/enable-mon
 - Deployment to scale cluster is broken, cluster API server is unresponsive (kubectl can't communicate)
 - deployment pipeline doesn't clean up old scale clusters, two are still running since March release (that's an expensive thing to not clean up)
 - Permission errors when updating the variable group in the deployment pipeline. (Vishwa can't edit the pipeline variables)
-- Windows build fails on finalize step. (TODO: check cdpx email chain later for updates/fixes)
+- FIXED(?) Windows build fails on finalize step. (TODO: check cdpx email chain later for updates/fixes) (This was not an issue in the 05122021 release, not sure if we changed someting or if a platform bug was fixed. If it works on the next release then delete this problem)
