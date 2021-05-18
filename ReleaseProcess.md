@@ -43,14 +43,28 @@ No action required here, images are automatically synched to MCR CN from Public 
 # 3. Release of the agent
 
 ## 3.1. AKS
-(Last updated 5/3/2021)
+(Last updated 5/18/2021)
 
-   1. Update the image in the AKS Agent Baker (use [this PR as a reference for linux](https://github.com/Azure/AgentBaker/pull/775) and [this PR as a reference for windows](https://github.com/Azure/AgentBaker/pull/813)). The AKS agent is built every Friday at 8:00 PM  (as of 4/23/2021, may change in the future)
+1. Update the image in the AKS Agent Baker (use [this PR as a reference for linux](https://github.com/Azure/AgentBaker/pull/775) and [this PR as a reference for windows](https://github.com/Azure/AgentBaker/pull/813)). The AKS agent is built every Friday at 8:00 PM  (as of 4/23/2021, may change in the future)
 2. Update the agent version in the AKS RP ([use this PR as a reference](https://msazure.visualstudio.com/CloudNativeCompute/_git/aks-rp/pullrequest/4425425)). Make this PR on Monday following the Agent Baker PR.
+
+   Most of the files in the reference PR are auto-generated templates used for unit tests. They can be manually updated or auto-generated. The auto-generation tool doesn't always work though, sometimes it generates results that fail AKS tests. It is known to work with helm 2.12.3, please update this section if you get it working.
+   ```
+   # from the base directory of the aks-rp repository
+   cd ccp\charts\kube-control-plane\tests
+   Set RENDER_SNAPSHOTS=true
+   go test .
+   ```
 
 3. update [this dashboard](https://ms.portal.azure.com/#@microsoft.onmicrosoft.com/dashboard/arm/subscriptions/13d371f9-5a39-46d5-8e1b-60158c49db84/resourcegroups/dashboards/providers/microsoft.portal/dashboards/011897c2-1ea6-4e21-bc8e-2c835fe40024). About half way down is a chart called Latest "LINUX agent (ciprod________) - Cluster count" and "Latest Windows agent (win-ciprod________) - Cluster count". Remove the oldest pair of charts and add new ones for the agent version about to roll out. This is so we can track the rollout.
 
 Congratulations! A new agent version will roll out with the next AKS release. See instructions for monitoring its progress in [section 4](#monitor_anchor)
+
+
+### Hotfix process:
+See (this link)[https://msazure.visualstudio.com/CloudNativeCompute/_wiki/wikis/CloudNativeCompute.wiki/20221/Release-Hotfix?anchor=hotfix-process] for instructions on how to make hotfixes. A few things to keep in mind:
+   * AKS prefers to roll back instead of roll forward. It's possible to roll back to an agent image in the agent baker, not really possible to roll forward to a new image.
+   
 
 
 ## 3.2. Arc for Kubernetes 
