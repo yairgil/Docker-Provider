@@ -102,6 +102,7 @@ module Fluent
           else
             @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
           end
+          @http_client.instance_eval { @ssl_context = OpenSSL::SSL::SSLContext.new(:TLSv1_2) }
           @http_client.use_ssl = true
           @log.info "POST Request url: #{@@post_request_url}"
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPluginStart", {})
