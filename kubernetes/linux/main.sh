@@ -23,7 +23,7 @@ waitforlisteneronTCPport() {
                         fi
                         varlistener=$(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ":'"$port"'$"')
                         if [ -z "$varlistener" ]; then
-                              echo "${FUNCNAME[0]} waiting for $sleepdurationsecs more sec for listener on port:$port ..."
+                              #echo "${FUNCNAME[0]} waiting for $sleepdurationsecs more sec for listener on port:$port ..."
                               sleep $sleepdurationsecs
                               totalsleptsecs=$(($totalsleptsecs+1))
                         else
@@ -729,11 +729,17 @@ echo "export HOST_VAR=/hostfs/var" >> ~/.bashrc
 
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            echo "Skip waiting for listener on tcp #25228"
+            echo "checking for listener on tcp #25229 and waiting for 30 secs if not.."
+            waitforlisteneronTCPport 25229 30
       else
+            echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
+            waitforlisteneronTCPport 25226 30
             echo "checking for listener on tcp #25228 and waiting for 30 secs if not.."
             waitforlisteneronTCPport 25228 30
       fi
+else
+      echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
+      waitforlisteneronTCPport 25226 30
 fi
 
 #start telegraf
