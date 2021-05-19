@@ -3,7 +3,7 @@
 # 0. Triage all agent release tasks
 (Last updated 4/28/2021)
 
-A few weeks before the agent release, create a story on the scrum board. Add tasks for all changes which need to go into the next release (look for tasks from the livesite story). Sometime (TODO: when?) before the release go through the task list with the team and triage the tasks (move anything which will no to into the release into the story for the next release).
+A few weeks before the agent release, create a story on the scrum board. Add tasks for all changes which need to go into the next release (look for tasks from the livesite story). A week or so before the release go through the task list with the team and triage the tasks (move anything which will not go into the release into the story for the next release).
 
 # 1. Production agent image and automatic deployment to CIPROD cluster
 (Last updated 4/23/2021)
