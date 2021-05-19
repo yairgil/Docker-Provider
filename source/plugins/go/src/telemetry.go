@@ -199,7 +199,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		if insightsMetricsMDSDClientCreateErrors > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountInsightsMetricsMDSDClientCreateError, insightsMetricsMDSDClientCreateErrors))
 		}
-		if containerLogsMDSDClientCreateErrors > 0.0 {
+		if kubeMonEventsMDSDClientCreateErrors > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountKubeMonEventsMDSDClientCreateError, kubeMonEventsMDSDClientCreateErrors))
 		}
 
