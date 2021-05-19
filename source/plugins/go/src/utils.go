@@ -138,7 +138,7 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 				Log("Error::mdsd::Unable to open MDSD msgp socket connection for ContainerLogV2 %s", err.Error())
 				//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
 			} else {
-				Log("Successfully created MDSD msgp socket connection for ContainerLogV2: %s", mdsdfluentSocket, )
+				Log("Successfully created MDSD msgp socket connection for ContainerLogV2: %s", mdsdfluentSocket)
 				MdsdMsgpUnixSocketClient = conn
 			}
 		case KubeMonAgentEvents:
