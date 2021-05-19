@@ -337,7 +337,7 @@ module Fluent::Plugin
           @log.info "Non-retryable HTTPClientException when POSTing Metrics to MDM #{e} Response: #{response}"
         else
           # raise if the response code is non-400
-          @log.info "HTTPClientException when POSTing Metrics to MDM #{e} Response: #{response}"
+          @log.info "HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
           raise e
         end
         # Adding exceptions to hash to aggregate and send telemetry for all 400 error codes
