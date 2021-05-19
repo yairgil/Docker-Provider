@@ -203,7 +203,7 @@ module Fluent::Plugin
     end
 
     def write_status_file(success, message)
-      fn = "/var/opt/microsoft/omsagent/log/MDMIngestion.status"
+      fn = "/var/opt/microsoft/docker-cimprov/log/MDMIngestion.status"
       status = '{ "operation": "MDMIngestion", "success": "%s", "message": "%s" }' % [success, message]
       begin
         File.open(fn, "w") { |file| file.write(status) }
