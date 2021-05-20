@@ -11,7 +11,6 @@ module Fluent::Plugin
 
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
-    # update these tags for oneagent scenario
   
 
     def initialize
@@ -226,7 +225,8 @@ module Fluent::Plugin
     end
 
     def parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime = Time.utc.iso8601)
-      currentTime = Time.now      
+      currentTime = Time.now   
+      emitTime = Fluent::Engine.now  
       #batchTime = currentTime.utc.iso8601
       eventStream = Fluent::MultiEventStream.new
       containerInventoryStream = Fluent::MultiEventStream.new
@@ -242,7 +242,7 @@ module Fluent::Plugin
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
           podInventoryRecords.each do |record|
             if !record.nil?
-              eventStream.add(Fluent::Engine.now, record) if record                                      
+              eventStream.add(emitTime, record) if record                                      
               @inventoryToMdmConvertor.process_pod_inventory_record(record)            
             end
           end
@@ -261,7 +261,7 @@ module Fluent::Plugin
               @winContainerCount += containerInventoryRecords.length
               containerInventoryRecords.each do |cirecord|
                 if !cirecord.nil?                
-                  containerInventoryStream.add(Fluent::Engine.now, cirecord) if cirecord
+                  containerInventoryStream.add(emitTime, cirecord) if cirecord
                 end
               end
             end
@@ -284,7 +284,7 @@ module Fluent::Plugin
           containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", batchTime))
 
           containerMetricDataItems.each do |record|            
-            kubePerfEventStream.add(Fluent::Engine.now, record) if record
+            kubePerfEventStream.add(emitTime, record) if record
           end
 
           if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
@@ -303,7 +303,7 @@ module Fluent::Plugin
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
           containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|            
-            insightsMetricsEventStream.add(Fluent::Engine.now, insightsMetricsRecord) if insightsMetricsRecord
+            insightsMetricsEventStream.add(emitTime, insightsMetricsRecord) if insightsMetricsRecord
           end
 
           if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && insightsMetricsEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
@@ -370,7 +370,7 @@ module Fluent::Plugin
               # adding before emit to reduce memory foot print
               kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
               kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName              
-              kubeServicesEventStream.add(Fluent::Engine.now, kubeServiceRecord) if kubeServiceRecord
+              kubeServicesEventStream.add(emitTime, kubeServiceRecord) if kubeServiceRecord
               if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
                 $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
                 router.emit_stream(@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream

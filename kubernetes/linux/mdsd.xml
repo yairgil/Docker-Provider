@@ -293,57 +293,57 @@
         </MdsdEventSource>
 
         <MdsdEventSource source="InsightsMetricsSource" queryDelay="PT10S">
-            <RouteEvent eventName="InsightsMetricsEvent" duration="PT10S" priority="High" storeType="Local">          
+            <RouteEvent eventName="InsightsMetricsEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">          
             </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.KUBE_POD_INVENTORY_BLOB" queryDelay="PT10S">
-            <RouteEvent eventName="KubePodInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
+            <RouteEvent eventName="KubePodInventoryEvent" duration="PT10S" priority="High" storeType="Local" disabled="true"> 
             </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.KUBE_NODE_INVENTORY_BLOB" queryDelay="PT10S">
-            <RouteEvent eventName="KubeNodeInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
+            <RouteEvent eventName="KubeNodeInventoryEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">
             </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.KUBE_SERVICES_BLOB" queryDelay="PT10S">
-            <RouteEvent eventName="KubeServicesEvent" duration="PT10S" priority="High" storeType="Local">          
+            <RouteEvent eventName="KubeServicesEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">
             </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.KUBE_EVENTS_BLOB" queryDelay="PT10S">
-            <RouteEvent eventName="KubeEventsEvent" duration="PT10S" priority="High" storeType="Local">          
+            <RouteEvent eventName="KubeEventsEvent" duration="PT10S" priority="High" storeType="Local" disabled="true"> 
             </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.KUBE_PV_INVENTORY_BLOB" queryDelay="PT10S">
-            <RouteEvent eventName="KubePVInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
+            <RouteEvent eventName="KubePVInventoryEvent" duration="PT10S" priority="High" storeType="Local" disabled="true"> 
             </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.INSIGHTS_METRICS_BLOB" queryDelay="PT10S">
-            <RouteEvent eventName="InsightsMetricsEvent" duration="PT10S" priority="High" storeType="Local">          
+            <RouteEvent eventName="InsightsMetricsEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">
             </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.CONTAINER_INVENTORY_BLOB" queryDelay="PT10S">
-           <RouteEvent eventName="ContainerInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
+           <RouteEvent eventName="ContainerInventoryEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">
            </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB" queryDelay="PT10S">
-           <RouteEvent eventName="ContainerNodeInventoryEvent" duration="PT10S" priority="High" storeType="Local">          
+           <RouteEvent eventName="ContainerNodeInventoryEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">
            </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.LINUX_PERF_BLOB" queryDelay="PT10S">
-           <RouteEvent eventName="KubePerfEvent" duration="PT10S" priority="High" storeType="Local">          
+           <RouteEvent eventName="KubePerfEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">
            </RouteEvent>
         </MdsdEventSource>
 
         <MdsdEventSource source="oneagent.containerInsights.KUBE_HEALTH_BLOB" queryDelay="PT10S">
-           <RouteEvent eventName="KubeHealthEvent" duration="PT10S" priority="High" storeType="Local">          
+           <RouteEvent eventName="KubeHealthEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">
            </RouteEvent>
         </MdsdEventSource>
     </MdsdEvents>

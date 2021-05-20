@@ -252,17 +252,8 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["dsPromUrl"] = @dsPromUrlCount
                     end
                     #telemetry about containerlog Routing for daemonset
-                    if File.exist?(Constants::AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2_FILENAME)
-                      telemetryProps["containerLogsRoute"] = "v2"
-                    elsif (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
-                      telemetryProps["containerLogsRoute"] = @containerLogsRoute
-                    end
-                    #telemetry about AAD AUTH MSI Mode
-                    if File.exist?(Constants::AZMON_CONTAINER_AAD_AUTH_MSI_MODE_FILENAME)
-                      telemetryProps["aadAuthMSIMode"] = "true"
-                    else
-                      telemetryProps["aadAuthMSIMode"] = "false"
-                    end
+                    telemetryProps["containerLogsRoute"] = @containerLogsRoute
+                   
                     #telemetry about health model
                     if (!@hmEnabled.nil? && !@hmEnabled.empty?)
                       telemetryProps["hmEnabled"] = @hmEnabled

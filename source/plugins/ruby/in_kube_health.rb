@@ -89,7 +89,8 @@ module Fluent::Plugin
         return Fluent::MultiEventStream.new
     end
       begin
-        currentTime = Time.now        
+        currentTime = Time.now   
+        emitTime = Fluent::Engine.now     
         batchTime = currentTime.utc.iso8601
         health_monitor_records = []
         eventStream = Fluent::MultiEventStream.new

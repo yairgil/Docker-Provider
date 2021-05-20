@@ -53,6 +53,7 @@ module Fluent::Plugin
     def enumerate
       currentTime = Time.now      
       batchTime = currentTime.utc.iso8601
+      emitTime = Fluent::Engine.now
       containerInventory = Array.new
       eventStream = Fluent::MultiEventStream.new
       hostName = ""
@@ -64,7 +65,7 @@ module Fluent::Plugin
         end                            
       end       
       # debug logs          
-      $log.info("in_container_inventory::enumerate: using tag -#{@tag} @ #{Time.now.utc.iso8601}")                  
+      $log.info("in_container_inventory::enumerate: using tag -#{@tag} @ #{Time.now.utc.iso8601}")                        
       begin
         containerRuntimeEnv = ENV["CONTAINER_RUNTIME"]
         $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")
@@ -102,7 +103,7 @@ module Fluent::Plugin
            end
         end        
         containerInventory.each do |record|         
-          eventStream.add(Fluent::Engine.now, record) if record
+          eventStream.add(emitTime, record) if record
         end
         router.emit_stream(@tag, eventStream) if eventStream
         @@istestvar = ENV["ISTEST"]

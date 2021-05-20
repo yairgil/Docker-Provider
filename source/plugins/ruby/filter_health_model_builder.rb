@@ -4,8 +4,7 @@
 
 require 'fluent/plugin/filter'
 
-module Fluent::Plugin
-    require_relative "extension"
+module Fluent::Plugin   
     require_relative "extension_utils"
     require 'logger'
     require 'yajl/json_gem'
@@ -236,6 +235,7 @@ module Fluent::Plugin
                     # for each key in monitor.keys,
                     # get the state from health_monitor_state
                     # generate the record to send
+                    emit_time = Fluent::Engine.now
                     all_monitors.keys.each{|key|
                         record = @provider.get_record(all_monitors[key], state)
                         if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER
@@ -255,7 +255,7 @@ module Fluent::Plugin
                                 end
                             end
                         end                       
-                        new_es.add(Fluent::Engine.now, record)
+                        new_es.add(emit_time, record)
                     }
 
                     #emit the stream

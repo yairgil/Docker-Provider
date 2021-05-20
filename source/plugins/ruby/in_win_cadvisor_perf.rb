@@ -5,7 +5,7 @@ require 'fluent/plugin/input'
 
 module Fluent::Plugin
   class Win_CAdvisor_Perf_Input < Input
-    Fluent::Plugin.register_input("win_cadvisor_perf", self)    
+    Fluent::Plugin.register_input("win_cadvisor_perf", self)
 
     @@winNodes = []
 
@@ -58,7 +58,7 @@ module Fluent::Plugin
       begin
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
-        @@istestvar = ENV["ISTEST"]
+        @@istestvar = ENV["ISTEST"]             
 
         if ExtensionUtils.isAADMSIAuthMode()
           $log.info("in_win_cadvisor_perf::enumerate: AAD AUTH MSI MODE")    
