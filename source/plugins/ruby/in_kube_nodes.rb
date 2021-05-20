@@ -213,10 +213,16 @@ module Fluent
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
+            if is_windows_node
+              @NodeCache.cpu.set_allocatable(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+            end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
+            if is_windows_node
+              @NodeCache.mem.set_allocatable(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+            end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
@@ -526,18 +532,25 @@ module Fluent
 
       def initialize
         @cacheHash = {}
+        @allocatableCacheHash = {}
         @timeAdded = {}  # records when an entry was last added
         @lock = Mutex.new
         @lastCacheClearTime = 0
 
         @cacheHash.default = 0.0
+        @allocatableCacheHash.default = 0.0
         @lastCacheClearTime = DateTime.now.to_time.to_i
       end
 
       def get_capacity(node_name)
         @lock.synchronize do
-          retval = @cacheHash[node_name]
-          return retval
+          return @cacheHash[node_name]
+        end
+      end
+
+      def get_allocatable(node_name)
+        @lock.synchronize do
+          return @allocatableCacheHash[node_name]
         end
       end
 
@@ -555,6 +568,23 @@ module Fluent
         end
       end
 
+      def set_allocatable(host, val)
+        ##########################################################
+        # Investigate what cache update logic is required
+        ##########################################################
+        # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
+        current_time = DateTime.now.to_time.to_i
+        if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
+          clean_cache
+          @lastCacheClearTime = current_time
+        end
+
+        @lock.synchronize do
+          @allocatableCacheHash[host] = val
+          @timeAdded[host] = current_time
+        end
+      end
+
       def clean_cache()
         $log.info "in_kube_nodes::clean_cache: cleaning node cpu/mem cache"
         cacheClearTime = DateTime.now.to_time.to_i
@@ -567,8 +597,14 @@ module Fluent
             end
           end
 
+          @allocatableCacheHash.each do |key, val|
+            if cacheClearTime - @timeAdded[key] > @@RECORD_TIME_TO_LIVE
+              nodes_to_remove.append(key)
+            end
+          end
+
           nodes_to_remove.each do node_name
-            @cacheHash.delete(node_name)
+            @allocatableCacheHash.delete(node_name)
             @timeAdded.delete(node_name)
           end
         end

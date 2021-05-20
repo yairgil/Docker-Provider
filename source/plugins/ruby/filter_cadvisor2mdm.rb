@@ -157,6 +157,7 @@ module Fluent
           object_name = record["DataItems"][0]["ObjectName"]
           counter_name = record["DataItems"][0]["Collections"][0]["CounterName"]
           percentage_metric_value = 0.0
+          allocatable_percentage_metric_value = 0.0
           metric_value = record["DataItems"][0]["Collections"][0]["Value"]
 
           if object_name == Constants::OBJECT_NAME_K8S_NODE && @metrics_to_collect_hash.key?(counter_name.downcase)
@@ -166,12 +167,21 @@ module Fluent
               metric_value /= 1000000 #cadvisor record is in nanocores. Convert to mc
               if @@controller_type.downcase == "replicaset"
                 target_node_cpu_capacity_mc = @NodeCache.cpu.get_capacity(record["DataItems"][0]["Host"]) / 1000000
+                target_node_cpu_allocatable_mc = @NodeCache.cpu.get_allocatable(record["DataItems"][0]["Host"]) / 1000000
               else
                 target_node_cpu_capacity_mc = @cpu_capacity
+                ############################################
+                # What is the deafault value I should set it too? INVESTIGATE
+                ############################################
+                target_node_cpu_allocatable_mc = @cpu_capacity
               end
               @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc}"
+              @log.info "Metric_value: #{metric_value} CPU Allocatable #{target_node_cpu_allocatable_mc}"
               if target_node_cpu_capacity_mc != 0.0
                 percentage_metric_value = (metric_value) * 100 / target_node_cpu_capacity_mc
+              end
+              if target_node_cpu_allocatable_mc != 0.0
+                allocatable_percentage_metric_value = (metric_value) * 100 / target_node_cpu_allocatable_mc
               end
             end
 
@@ -179,18 +189,27 @@ module Fluent
               metric_name = counter_name
               if @@controller_type.downcase == "replicaset"
                 target_node_mem_capacity = @NodeCache.mem.get_capacity(record["DataItems"][0]["Host"])
+                target_node_mem_allocatable = @NodeCache.mem.get_allocatable(record["DataItems"][0]["Host"])
               else
                 target_node_mem_capacity = @memory_capacity
+                ############################################
+                # What is the deafault value I should set it too? INVESTIGATE
+                ############################################
+                target_node_mem_allocatable = @memory_capacity
               end
               @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity}"
+              @log.info "Metric_value: #{metric_value} Memory Allocatable #{target_node_mem_allocatable}"
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
+              if target_node_mem_allocatable != 0.0
+                allocatable_percentage_metric_value = metric_value * 100 / target_node_mem_allocatable
+              end
             end            
             @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["DataItems"][0]["Host"]} percentage: #{percentage_metric_value}"
+            @log.info "allocatable_percentage_metric_value for metric: #{metric_name} for instance: #{record["DataItems"][0]["Host"]} percentage: #{allocatable_percentage_metric_value}"
 
-            # do some sanity checking. Do we want this?
-            if percentage_metric_value > 100.0 or percentage_metric_value < 0.0
+            if percentage_metric_value > 100.0
               telemetryProperties = {}
               telemetryProperties["Computer"] = record["DataItems"][0]["Host"]
               telemetryProperties["MetricName"] = metric_name
@@ -198,7 +217,15 @@ module Fluent
               ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
             end
 
-            return MdmMetricsGenerator.getNodeResourceMetricRecords(record, metric_name, metric_value, percentage_metric_value)
+            if allocatable_percentage_metric_value > 100.0
+              telemetryProperties = {}
+              telemetryProperties["Computer"] = record["DataItems"][0]["Host"]
+              telemetryProperties["MetricName"] = metric_name
+              telemetryProperties["AllocatableMetricPercentageValue"] = allocatable_percentage_metric_value
+              ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
+            end
+
+            return MdmMetricsGenerator.getNodeResourceMetricRecords(record, metric_name, metric_value, percentage_metric_value, allocatable_percentage_metric_value)
           elsif object_name == Constants::OBJECT_NAME_K8S_CONTAINER && @metrics_to_collect_hash.key?(counter_name.downcase)
             instanceName = record["DataItems"][0]["InstanceName"]
             metricName = counter_name
