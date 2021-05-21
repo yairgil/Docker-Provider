@@ -483,9 +483,8 @@ if [[ ("${USING_LA_AAD_AUTH}" == "true") ]]; then
          echo "starting mdsd in aad auth msi mode in main container..."
         # add -T 0xFFFF for full traces
          mdsd -a -A  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-      fi
-     
-      touch /opt/AZMON_CONTAINER_AAD_AUTH_MSI_MODE
+      fi   
+ 
 else 
       echo "*** activating oneagent in legacy auth mode ***"  
       CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"     
