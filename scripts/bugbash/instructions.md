@@ -37,7 +37,7 @@ az role assignment create --assignee "766650bd-d06b-403d-b1ad-26c0fa12da5c" --sc
 kubectl config current-context
 
 # downdload omsagent.yaml from dev or targted branch
-curl -LO https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_dev/kubernetes/omsagent.yaml
+curl -LO https://raw.githubusercontent.com/microsoft/Docker-Provider/rashmi/win-mdm-phase2-no-aad/kubernetes/omsagent.yaml
 
 # replace the existing image with targeted linux and/or windows agent image
 # replace the VALUE_AKS_RESOURCE_ID_VALUE, VALUE_AKS_RESOURCE_REGION_VALUE, WSID and Key values in the omsagent.yaml
