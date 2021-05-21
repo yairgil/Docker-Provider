@@ -790,6 +790,9 @@ spec:
                  fieldPath: status.hostIP
           - name: SIDECAR_SCRAPING_ENABLED
             value: "true"
+          # Add this only for clouds that require cert bootstrapping
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
          volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers
@@ -805,6 +808,10 @@ spec:
           - mountPath: C:\etc\config\adx
             name: omsagent-adx-secret
             readOnly: true
+          # Need to mount this only for airgapped clouds - Commenting this since it wont exist in non airgapped clouds
+          # - mountPath: C:\ca
+          #   name: ca-certs
+          #   readOnly: true
          livenessProbe:
           exec:
             command:
@@ -836,6 +843,10 @@ spec:
       - name: docker-windows-kuberenetes-container-logs
         hostPath:
           path: C:\var
+      # Need to mount this only for airgapped clouds - Commenting this since it wont exist in non airgapped clouds
+      #- name: ca-certs
+      #  hostPath:
+      #    path: C:\ca
       - name: docker-windows-containers
         hostPath:
           path: C:\ProgramData\docker\containers
