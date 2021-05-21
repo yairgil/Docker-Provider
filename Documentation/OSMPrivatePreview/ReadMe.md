@@ -7,7 +7,7 @@ This private preview supports Open Service Mesh on [AKS](https://docs.microsoft.
 Azure Monitor container insights now supporting preview of [Open Service Mesh(OSM)](https://docs.microsoft.com/azure/aks/servicemesh-osm-about) Monitoring. As part of this support, customer can:
 1.	Filter & view inventory of all the services that are part of your service mesh.
 2.	Visualize and monitor requests between services in your service mesh, with request latency, error rate & resource utilization by services.
-3.	Provides connection summary for OSM infrastructure running on AKS.
+3.	Provides connection summary for OSM infrastructure running on AKS or Azure Arc for k8s.
 
 ## How to onboard Container Insights OSM monitoring?
 OSM exposes Prometheus metrics which Container Insights can collect, for container insights agent to collect OSM metrics follow the following steps.
@@ -29,16 +29,17 @@ osm metrics enable --namespace "test1, test2"
      * Download the configmap from [here](https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/container-azm-ms-osmconfig.yaml)
      * Add the namespaces you want to monitor in configmap `monitor_namespaces = ["namespace1", "namespace2"]`
      * Run the following kubectl command: kubectl apply -f<configmap_yaml_file.yaml>
-         * Example: `kubectl apply -f container-azm-ms-agentconfig.yaml`
+         * Example: `kubectl apply -f container-azm-ms-osmconfig.yaml`
 4. The configuration change can take upto 15 mins to finish before taking effect, and all omsagent pods in the cluster will restart. The restart is a rolling restart for all omsagent pods, not all restart at the same time.
 
 ### Azure Arc for Kuberentes
 This section assumes that you already have your kubernetes distribution connected via Azure Arc. If not learn more [here.](https://docs.microsoft.com/en-us/azure/azure-arc/kubernetes/quickstart-connect-cluster)
 
-1. Install Arc enabled Open Service mesh on your Arc cluster. Learn more [here](https://docs.microsoft.com/en-us/azure/azure-arc/kubernetes/tutorial-arc-enabled-osm#navigating-the-osm-dashboard)
+1. Install Arc enabled Open Service mesh on your Arc cluster. Learn more [here](http://docs.microsoft.com/azure/azure-arc/kubernetes/tutorial-arc-enabled-osm#install-arc-enabled-open-service-mesh-osm-on-an-arc-enabled-kubernetes-cluster)
 2. Install Azure Monitor Container Insights on Arc. If not installed already. Learn more how to install [here](https://docs.microsoft.com/azure/azure-monitor/containers/container-insights-enable-arc-enabled-clusters)
-3. Configure OSM to allow Prometheus scraping, follow steps from [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#configure-osm-to-allow-prometheus-scraping)
-3.  To enable namespace(s), download the osm client library [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#osm-service-quotas-and-limits-preview) & then enable metrics on namespaces
+3. Ensure that prometheus_scraping is set to true in the OSM configmap.
+3. Ensure that the application namespaces that you wish to be monitored are onboarded to the mesh. Follow the guidance available [here.](http://docs.microsoft.com/azure/azure-arc/kubernetes/tutorial-arc-enabled-osm#onboard-namespaces-to-the-service-mesh)
+4. To enable namespace(s), download the osm client library [here](https://docs.microsoft.com/en-us/azure/aks/servicemesh-osm-about?pivots=client-operating-system-linux#osm-service-quotas-and-limits-preview) & then enable metrics on namespaces
 ```bash
 # With osm
 osm metrics enable --namespace test
@@ -49,7 +50,7 @@ osm metrics enable --namespace "test1, test2"
  * Download the configmap from [here](https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/container-azm-ms-osmconfig.yaml)
      * Add the namespaces you want to monitor in configmap `monitor_namespaces = ["namespace1", "namespace2"]`
      * Run the following kubectl command: kubectl apply -f<configmap_yaml_file.yaml>
-         * Example: `kubectl apply -f container-azm-ms-agentconfig.yaml`
+         * Example: `kubectl apply -f container-azm-ms-osmconfig.yaml`
 5. The configuration change can take upto 15 mins to finish before taking effect, and all omsagent pods in the cluster will restart. The restart is a rolling restart for all omsagent pods, not all restart at the same time.
 
 ## Validate the metrics flow
@@ -72,6 +73,8 @@ InsightsMetrics
 2.	You can view all the services and all the services it is communicating to by selecting the service in grid.
 3.	You can view total requests, request error rate & P90 latency.
 4.	You can drill-down to destination and view trends for HTTP error/success code, success rate, Pods resource utilization, latencies at different percentiles.
+
+![image](https://user-images.githubusercontent.com/31900410/119195241-2e712000-ba39-11eb-8cb0-2d7d16e26d1b.png)
 
 ### Connections Tab
 1.	This tab provides you a summary of all the connections between your services in Open Service Mesh. 
