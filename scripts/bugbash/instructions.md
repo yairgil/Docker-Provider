@@ -1,4 +1,4 @@
-# Instructions to enable monitoring with custom settings
+# Instructions to Enable Monitoring
 
 1. Disable existing monitoring addon on existing cluster
 ```
