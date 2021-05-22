@@ -435,6 +435,27 @@ DOCKER_CIMPROV_VERSION=$(dpkg -l | grep docker-cimprov | awk '{print $3}')
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
+echo "*** activating oneagent in legacy auth mode ***"
+CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"     
+#use the file path as its secure than env
+CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"   
+cat /etc/mdsd.d/envmdsd | while read line; do
+     echo $line >> ~/.bashrc
+done
+source /etc/mdsd.d/envmdsd
+echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+export CIWORKSPACE_id=$CIWORKSPACE_id
+echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc      
+export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
+echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
+export OMS_TLD=$domain
+echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc      
+export MDSD_FLUENT_SOCKET_PORT="29230"
+echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+
+#skip imds lookup since not used in legacy auth path  
+export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
+echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
 
 # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
 export AAD_MSI_AUTH_MODE=false 
