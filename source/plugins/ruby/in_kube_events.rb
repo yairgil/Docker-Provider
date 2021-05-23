@@ -18,6 +18,7 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "ApplicationInsightsUtility"
+      require_relative "extension_utils"
 
       # refer tomlparser-agent-config for defaults
       # this configurable via configmap
@@ -86,6 +87,14 @@ module Fluent::Plugin
         newEventQueryState = []
         @eventsCount = 0        
        
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
+          end                            
+        end           
+        # debug logs          
+        $log.info("in_kube_events::enumerate: using kubeevents tag -#{@tag} @ #{Time.now.utc.iso8601}")         
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_events::enumerate : Getting events from Kube API @ #{Time.now.utc.iso8601}")

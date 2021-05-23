@@ -35,7 +35,8 @@ module Fluent::Plugin
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
-      require_relative "omslog"      
+      require_relative "omslog"
+      require_relative "extension_utils"
 
       @ContainerNodeInventoryTag = "oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB" 
       @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB" 
@@ -111,6 +112,27 @@ module Fluent::Plugin
         @nodeInventoryE2EProcessingLatencyMs = 0
         nodeInventoryStartTime = (Time.now.to_f * 1000).to_i                     
       
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kube_nodes::enumerate: AAD AUTH MSI MODE")    
+          if !@kubeperfTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @kubeperfTag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
+          end  
+          if !@insightsMetricsTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @insightsMetricsTag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end 
+          if !@ContainerNodeInventoryTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @ContainerNodeInventoryTag = ExtensionUtils.getOutputStreamId(Constants::CONTAINER_NODE_INVENTORY_DATA_TYPE)
+          end 
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_NODE_INVENTORY_DATA_TYPE)
+          end                            
+        end   
+
+        # debug logs
+        $log.info("in_kube_nodes::enumerate: using perf tag -#{@kubeperfTag} @ #{Time.now.utc.iso8601}")    
+        $log.info("in_kube_nodes::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")            
+        $log.info("in_kube_nodes::enumerate: using containernodeinventory tag -#{@ContainerNodeInventoryTag} @ #{Time.now.utc.iso8601}")            
+        $log.info("in_kube_nodes::enumerate: using kubenodeinventory tag -#{@tag} @ #{Time.now.utc.iso8601}")          
         nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
 
         # Initializing continuation token to nil

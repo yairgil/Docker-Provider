@@ -4,7 +4,8 @@
 
 require 'fluent/plugin/filter'
 
-module Fluent::Plugin    
+module Fluent::Plugin   
+    require_relative 'extension_utils'
     require 'logger'
     require 'yajl/json_gem'
     Dir[File.join(__dir__, './health', '*.rb')].each { |file| require file }
@@ -91,6 +92,14 @@ module Fluent::Plugin
             begin
                 new_es = Fluent::MultiEventStream.new
                 time = Time.now                                                  
+                if ExtensionUtils.isAADMSIAuthMode()
+                    $log.info("filter_health_model_builder::enumerate: AAD AUTH MSI MODE")             
+                    if !@rewrite_tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+                      @rewrite_tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
+                    end                            
+                end           
+                # debug logs          
+                $log.info("filter_health_model_builder::filter_stream: using tag -#{@rewrite_tag} @ #{Time.now.utc.iso8601}")                       
 
                 if tag.start_with?("kubehealth.DaemonSet.Node")
                     node_records = []

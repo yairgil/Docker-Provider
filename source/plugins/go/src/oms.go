@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"Docker-Provider/source/plugins/go/src/extension"
 )
 
 // DataType for Container Log
@@ -106,6 +107,10 @@ const ContainerLogsV1Route = "v1"
 //container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
 
+//env variable for AAD MSI Auth mode
+const AADMSIAuthMode = "AAD_MSI_AUTH_MODE"
+// Tag prefix of mdsd output streamid for AMA in MSI auth mode
+const MdsdOutputStreamIdTagPrefix = "dcr-"
 
 //env variable to container type
 const ContainerTypeEnv = "CONTAINER_TYPE"
@@ -159,6 +164,8 @@ var (
 	AdxTenantID string
 	//ADX client secret
 	AdxClientSecret string	
+	// flag to check whether LA AAD MSI Auth Enabled or not
+	IsAADMSIAuthMode bool
 	// container log or container log v2 tag name for oneagent route
 	MdsdContainerLogTagName string 
 	// kubemonagent events tag name for oneagent route
@@ -703,6 +710,10 @@ func flushKubeMonAgentEventRecords() {
 				}
 			}
 			if (IsWindows == false && len(msgPackEntries) > 0) { //for linux, mdsd route												
+				if (IsAADMSIAuthMode == true && strings.HasPrefix(MdsdKubeMonAgentEventsTagName, MdsdOutputStreamIdTagPrefix) == false) {
+					Log("Info::mdsd::obtaining output stream id for data type: %s", KubeMonAgentEventDataType)					
+					MdsdKubeMonAgentEventsTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(KubeMonAgentEventDataType)				
+				}
 				Log("Info::mdsd:: using mdsdsource name for KubeMonAgentEvents: %s", MdsdKubeMonAgentEventsTagName)
 				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdKubeMonAgentEventsTagName, msgPackEntries)							
 				if MdsdKubeMonMsgpUnixSocketClient == nil {
@@ -905,6 +916,10 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 				}
 		}
 		if (len(msgPackEntries) > 0) {							
+				if (IsAADMSIAuthMode == true && (strings.HasPrefix(MdsdInsightsMetricsTagName, MdsdOutputStreamIdTagPrefix) == false)) {
+					Log("Info::mdsd::obtaining output stream id for InsightsMetricsDataType since Log Analytics AAD MSI Auth Enabled")
+					MdsdInsightsMetricsTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(InsightsMetricsDataType)			
+				}
 				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdInsightsMetricsTagName, msgPackEntries)			
 				if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
 					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
@@ -1183,6 +1198,16 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	numContainerLogRecords := 0
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
+		//flush to mdsd			
+		if (IsAADMSIAuthMode == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false) {
+			Log("Info::mdsd::obtaining output stream id")
+			if (ContainerLogSchemaV2 == true) { 
+				MdsdContainerLogTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(ContainerLogV2DataType)
+			} else {
+				MdsdContainerLogTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(ContainerLogDataType)
+			}
+		}
+		Log("Info::mdsd:: using mdsdsource name: %s", MdsdContainerLogTagName)	
 		//flush to mdsd			
 		fluentForward := MsgPackForward{
 			Tag:     MdsdContainerLogTagName,
@@ -1540,6 +1565,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		OMSEndpoint = "https://" + WorkspaceID + ".ods." + logAnalyticsDomain + "/OperationalData.svc/PostJsonDataItems"
 	}
 
+	IsAADMSIAuthMode = false 
+	if strings.Compare(strings.ToLower(os.Getenv(AADMSIAuthMode)), "true") == 0 { 
+		Log("AAD MSI Auth Mode Configured")
+		IsAADMSIAuthMode = true
+	}
 	Log("OMSEndpoint %s", OMSEndpoint)
 	ResourceID = os.Getenv(envAKSResourceID)
 
