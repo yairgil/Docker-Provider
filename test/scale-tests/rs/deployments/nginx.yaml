@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: nginx
+  labels:
+    app: nginx-deployment
+  name: nginx-deployment
+spec:
+  replicas: 1000
+  selector:
+    matchLabels:
+      app: nginx-deployment
+  strategy: {}
+  template:
+    metadata:  
+      labels:
+        app: nginx-deployment
+    spec:
+      containers:
+      - image: nginx
+        name: nginx1
+        ports:
+        - containerPort: 80      
+      - image: nginx
+        name: nginx2
+        ports:
+        - containerPort: 80      
+      nodeSelector:
+       kubernetes.io/os: linux         
+status: {}
