@@ -646,10 +646,10 @@ func flushKubeMonAgentEventRecords() {
 							message := fmt.Sprintf("Error string: %s \n", err.Error())
 							Log(message)
 						}
-			
+
 						// add authorization header to the req
 						req.Header.Add("Authorization", "Bearer "+ODSIngestionAuthToken)
-			
+
 						client := &http.Client{}
 						resp, err = client.Do(req)
 						elapsed = time.Since(start)
@@ -805,7 +805,6 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	start := time.Now()
 
 	var resp *http.Response
-	var elapsed time.Duration
 	if os.Getenv("AAD_MSI_AUTH_MODE") == "true" {
 		ODSIngestionAuthToken, err = getIngestionToken()
 		if err != nil {
@@ -823,7 +822,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	} else {
 		resp, err = HTTPClient.Do(req)
 	}
-	elapsed = time.Since(start)
+	elapsed := time.Since(start)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending %v metrics. duration:%v err:%q \n", len(laMetrics), elapsed, err.Error())
@@ -1204,7 +1203,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			resp, err = client.Do(req)
 		} else {
 			resp, err = HTTPClient.Do(req)
-			
+
 		}
 		elapsed = time.Since(start)
 
@@ -1513,9 +1512,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 	}
 
-	if ContainerLogsRouteV2 == true {
+	if ContainerLogsRouteV2 {
 		CreateMDSDClient()
-	} else if ContainerLogsRouteADX == true {
+	} else if ContainerLogsRouteADX {
 		CreateADXClient()
 	}
 
@@ -1524,7 +1523,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	ContainerLogSchemaV2 = false //default is v1 schema
 
-	if strings.Compare(ContainerLogSchemaVersion, ContainerLogV2SchemaVersion) == 0 && ContainerLogsRouteADX != true {
+	if strings.Compare(ContainerLogSchemaVersion, ContainerLogV2SchemaVersion) == 0 && !ContainerLogsRouteADX {
 		ContainerLogSchemaV2 = true
 		Log("Container logs schema=%s", ContainerLogV2SchemaVersion)
 		fmt.Fprintf(os.Stdout, "Container logs schema=%s... \n", ContainerLogV2SchemaVersion)
@@ -1534,7 +1533,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		populateExcludedStdoutNamespaces()
 		populateExcludedStderrNamespaces()
 		//enrichment not applicable for ADX and v2 schema
-		if enrichContainerLogs == true && ContainerLogsRouteADX != true && ContainerLogSchemaV2 != true {
+		if enrichContainerLogs && !ContainerLogsRouteADX && !ContainerLogSchemaV2 {
 			Log("ContainerLogEnrichment=true; starting goroutine to update containerimagenamemaps \n")
 			go updateContainerImageNameMaps()
 		} else {

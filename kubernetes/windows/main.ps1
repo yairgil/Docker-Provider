@@ -43,6 +43,7 @@ function Start-FileSystemWatcher {
 
 function Set-EnvironmentVariables {
     $domain = "opinsights.azure.com"
+    $mcs_endpoint = "monitor.azure.com"
     $cloud_environment = "public"
     if (Test-Path /etc/omsagent-secret/DOMAIN) {
         # TODO: Change to omsagent-secret before merging
@@ -53,6 +54,10 @@ function Set-EnvironmentVariables {
     # Set DOMAIN
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Machine")
+    
+    # Set DOMAIN
+    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Process")
+    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Machine")
 
     # Set CLOUD_ENVIRONMENT
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")

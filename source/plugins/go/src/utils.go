@@ -254,7 +254,6 @@ var IMDSTokenExpiration int64
 
 var configurationId string
 var channelId string
-var configurationIdExpiration int64 // also the timeout for ingestionAuthToken
 
 var ingestionToken string
 var ingestionTokenExpiration int64
@@ -263,22 +262,23 @@ func getIngestionToken() (authToken string, err error) {
 	// check if the ingestion token has not been fetched yet or is expiring soon. If so then re-fetch it first.
 	// TODO: re-fetch token in a new thread if it is about to expire (don't block the main thread)
 
-	if IMDSToken == "" || IMDSTokenExpiration >= time.Now().Unix()-10 { // refresh the token 10 seconds before it expires
+	if IMDSToken == "" || IMDSTokenExpiration >= time.Now().Unix()-30 { // refresh the token 10 seconds before it expires
 		IMDSToken, IMDSTokenExpiration, err = getAccessTokenFromIMDS()
 		if err != nil {
 			message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
 			Log(message)
-			return "", err // TODO: add retries and proper error handling here
+			return "", err
 		}
 		Log("IMDS Access Token: %s", IMDSToken)
 	}
 
-	if configurationId == "" || channelId == "" || configurationIdExpiration >= time.Now().Unix()-10 {
-		configurationId, channelId, configurationIdExpiration, err = getAgentConfiguration(IMDSToken)
+	// ignore agent configuration expiring, the configuration and channel IDs will never change (without creating an agent restart)
+	if configurationId == "" || channelId == "" {
+		configurationId, channelId, _, err = getAgentConfiguration(IMDSToken)
 		if err != nil {
 			message := fmt.Sprintf("Error getAgentConfiguration %s \n", err.Error())
 			Log(message)
-			return "", err // TODO: add retries and proper error handling here
+			return "", err
 		}
 	}
 
@@ -287,21 +287,24 @@ func getIngestionToken() (authToken string, err error) {
 		if err != nil {
 			message := fmt.Sprintf("Error getIngestionAuthToken %s \n", err.Error())
 			Log(message)
-			return "", err // TODO: add retries and proper error handling here
+			return "", err
 		}
 	}
-	Log("ODS Ingestion Token: %s", ODSIngestionAuthToken)
+
+	//TODO: why did this line print ODSIngestionAuthToken? there should be no reason, but writing a note just in case it was intentional (I guess this is why global variables can be bad)
+	Log("ODS Ingestion Token: %s", ingestionToken)
 
 	return ingestionToken, nil
 }
 
 func getAccessTokenFromIMDS() (string, int64, error) {
 	Log("Info getAccessTokenFromIMDS: start")
+	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
 	imdsAccessToken := ""
 
 	var msi_endpoint *url.URL
 	//TODO: Add support for other clouds (change monitor.azure.com). See linux for an example
-	msi_endpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://monitor.azure.com/")
+	msi_endpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://" + MCS_ENDPOINT + "/")
 	if err != nil {
 		Log("Error creating IMDS endpoint URL: %s", err.Error())
 		return imdsAccessToken, 0, err
@@ -382,7 +385,9 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	var amcs_endpoint *url.URL
 	resourceId := os.Getenv("customResourceId")
 	resourceRegion := os.Getenv("customRegion")
-	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.monitor.azure.com%s/agentConfigurations?platform=linux&api-version=%s", resourceRegion, resourceId, apiVersion)
+	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
+	//TODO: get domain from environment variable set in main.ps1. Need to create a new variable for AMCS domain (call it MCS_ENDPOINT) (export MCS_ENDPOINT="monitor.azure.com")
+	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations?platform=linux&api-version=%s", resourceRegion, resourceId, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
 	var bearer = "Bearer " + imdsAccessToken
@@ -471,6 +476,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	var amcs_endpoint *url.URL
 	resourceId := os.Getenv("customResourceId")
 	resourceRegion := os.Getenv("customRegion")
+	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
 	//TODO: the API version might change for GA (in walmart timeframe). track this, we might want to move to GA API version.
 	apiVersion := "2020-04-01-preview"
 	//TODO: the URL is cloud specific, add configurability
@@ -480,7 +486,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	} else {
 		os_type = "linux"
 	}
-	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.monitor.azure.com%s/agentConfigurations/%s/channels/%s/issueIngestionToken?platform=%s&api-version=%s", resourceRegion, resourceId, configurationId, channelId, os_type, apiVersion)
+	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations/%s/channels/%s/issueIngestionToken?platform=%s&api-version=%s", resourceRegion, resourceId, configurationId, channelId, os_type, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
 	var bearer = "Bearer " + imdsAccessToken
@@ -503,14 +509,12 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 		resp, err = client.Do(req)
 		if err != nil {
 			Log("Error calling amcs endpoint for ingestion auth token: %s", err.Error())
-			// return ingestionAuthToken, 0, err
 			resp = nil
 			continue
 		}
 		Log("getIngestionAuthToken Response Status: %d", resp.StatusCode)
 		if resp.StatusCode != 200 {
 			Log("getIngestionAuthToken Request failed with an error code : %d", resp.StatusCode)
-			// return ingestionAuthToken, 0, err
 			resp = nil
 			continue
 		}
@@ -527,7 +531,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 		Log("getIngestionAuthToken failed to parse auth token expiration time")
 		return ingestionAuthToken, 0, err
 	}
-	Log(fmt.Sprintf("getIngestionAuthToken: token times out at %d seconds (unix timestamp)", expiration))
+	Log("getIngestionAuthToken: token times out at time %d (unix timestamp)", expiration)
 
 	// Pull out response body
 	responseBytes, err := ioutil.ReadAll(resp.Body)
