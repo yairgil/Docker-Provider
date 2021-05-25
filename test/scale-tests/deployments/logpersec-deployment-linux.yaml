@@ -1,0 +1,30 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: sixty-seconds-deployment
+  namespace: linux-logs
+  labels:
+    app: sixty-seconds  
+spec:
+  replicas: 2000
+  selector:
+    matchLabels:
+      app: sixty-seconds
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: sixty-seconds
+    spec:
+      containers:
+        - name: sixty-second-log-app
+          image: debian
+          command: ["/bin/sh"]
+          args: ["-c", "while true; do echo '{\"container_name\": \"simple-json\", \"pod_name\": \"simple-json\",\"pod_namespace\": \"simple-json\",\"environment\": \"test\"}'; sleep 60; done"]     
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst      
+      nodeSelector:
+       kubernetes.io/os: linux    
+  
