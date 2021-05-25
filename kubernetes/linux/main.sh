@@ -200,9 +200,6 @@ fi
 export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
 
-#TODO: remove this. It is only used to make testing Windows easier
-export MCS_ENDPOINT="monitor.azure.com"
-
 # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
 if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
       for BACKOFF in {1..4}; do

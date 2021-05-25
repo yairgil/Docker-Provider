@@ -270,7 +270,6 @@ func getIngestionToken() (authToken string, err error) {
 			SendException(message)
 			return "", err
 		}
-		Log("IMDS Access Token: %s", IMDSToken)
 	}
 
 	// ignore agent configuration expiring, the configuration and channel IDs will never change (without creating an agent restart)
@@ -294,9 +293,6 @@ func getIngestionToken() (authToken string, err error) {
 		}
 	}
 
-	//TODO: why did this line print ODSIngestionAuthToken? there should be no reason, but writing a note just in case it was intentional (I guess this is why global variables can be bad)
-	Log("ODS Ingestion Token: %s", ingestionToken)
-
 	return ingestionToken, nil
 }
 
@@ -306,7 +302,6 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 	imdsAccessToken := ""
 
 	var msi_endpoint *url.URL
-	//TODO: Add support for other clouds (change monitor.azure.com). See linux for an example
 	msi_endpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://" + MCS_ENDPOINT + "/")
 	if err != nil {
 		Log("Error creating IMDS endpoint URL: %s", err.Error())
@@ -318,8 +313,6 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 		return imdsAccessToken, 0, err
 	}
 	req.Header.Add("Metadata", "true")
-
-	// TODO: what if there are multiple identiteis assigned?
 
 	// Call managed services for Azure resources token endpoint
 	var resp *http.Response = nil
@@ -392,7 +385,6 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	resourceId := os.Getenv("customResourceId")
 	resourceRegion := os.Getenv("customRegion")
 	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
-	//TODO: get domain from environment variable set in main.ps1. Need to create a new variable for AMCS domain (call it MCS_ENDPOINT) (export MCS_ENDPOINT="monitor.azure.com")
 	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations?platform=linux&api-version=%s", resourceRegion, resourceId, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
@@ -489,9 +481,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	resourceId := os.Getenv("customResourceId")
 	resourceRegion := os.Getenv("customRegion")
 	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
-	//TODO: the API version might change for GA (in walmart timeframe). track this, we might want to move to GA API version.
 	apiVersion := "2020-04-01-preview"
-	//TODO: the URL is cloud specific, add configurability
 	var os_type string
 	if os.Getenv("OS_TYPE") == "windows" {
 		os_type = "windows"
@@ -570,7 +560,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 
 	ingestionAuthToken = ingestionTokenResponse.Ingestionauthtoken
 
-	Log("ingestionAuthToken obtained: %s", ingestionAuthToken)
+	// Log("ingestionAuthToken obtained: %s", ingestionAuthToken)
 
 	Log("Info getIngestionAuthToken: end")
 	return ingestionAuthToken, expiration, nil
