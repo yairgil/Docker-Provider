@@ -181,6 +181,10 @@ function Set-EnvironmentVariables {
     if ($env.USING_LA_AAD_AUTH) {
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Process")
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Machine")
+        Write-Host "Using LA AAD auth"
+    }
+    else {
+        Write-Host "Using LA AAD auth"
     }
 
     # run config parser
@@ -320,6 +324,7 @@ function Start-Fluent-Telegraf {
 
     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
 
+    # TODO: why is this here?
     Notepad.exe | Out-Null
 }
 

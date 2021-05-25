@@ -102,7 +102,7 @@ login_to_docker()
 build_docker_image()
 {
   echo "build docker image: $image and image tage is $imageTag"
-  mkdir $baseDir/kubernetes/linux/source
+  mkdir -p $baseDir/kubernetes/linux/source
   cp $baseDir/source $baseDir/kubernetes/linux/source -r
   cd $baseDir/kubernetes/linux
   sudo docker build -t $image --build-arg IMAGE_TAG=$imageTag  .

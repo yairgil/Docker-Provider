@@ -267,6 +267,7 @@ func getIngestionToken() (authToken string, err error) {
 		if err != nil {
 			message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
 			Log(message)
+			SendException(message)
 			return "", err
 		}
 		Log("IMDS Access Token: %s", IMDSToken)
@@ -278,6 +279,7 @@ func getIngestionToken() (authToken string, err error) {
 		if err != nil {
 			message := fmt.Sprintf("Error getAgentConfiguration %s \n", err.Error())
 			Log(message)
+			SendException(message)
 			return "", err
 		}
 	}
@@ -287,6 +289,7 @@ func getIngestionToken() (authToken string, err error) {
 		if err != nil {
 			message := fmt.Sprintf("Error getIngestionAuthToken %s \n", err.Error())
 			Log(message)
+			SendException(message)
 			return "", err
 		}
 	}
@@ -324,15 +327,19 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 		client := &http.Client{}
 		resp, err = client.Do(req)
 		if err != nil {
-			Log("Error calling token endpoint: %s", err.Error())
-			// return imdsAccessToken, 0, err
+			message := fmt.Sprintf("Error calling token endpoint: %s", err.Error())
+			Log(message)
+			SendException(message) // send the exception here because this error is not returned. The calling function will send any returned errors to telemetry.
 			continue
 		}
+		//TODO: is this the best place to defer closing the response body?
+		defer resp.Body.Close()
 
 		Log("IMDS Response Status: %d", resp.StatusCode)
 		if resp.StatusCode != 200 {
-			Log("IMDS Request failed with an error code : %d", resp.StatusCode)
-			// return imdsAccessToken, 0, err
+			message := fmt.Sprintf("IMDS Request failed with an error code : %d", resp.StatusCode)
+			Log(message)
+			SendException(message)
 			continue
 		}
 		break // call succeeded, don't retry any more
@@ -344,7 +351,6 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 
 	// Pull out response body
 	responseBytes, err := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
 	if err != nil {
 		Log("Error reading response body : %s", err.Error())
 		return imdsAccessToken, 0, err
@@ -394,7 +400,8 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	// Create a new request using http
 	req, err := http.NewRequest("GET", amcs_endpoint.String(), nil)
 	if err != nil {
-		Log("Error creating HTTP request for AMCS endpoint: %s", err.Error())
+		message := fmt.Sprintf("Error creating HTTP request for AMCS endpoint: %s", err.Error())
+		Log(message)
 		return configurationId, channelId, 0, err
 	}
 
@@ -408,15 +415,20 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 		client := &http.Client{}
 		resp, err = client.Do(req)
 		if err != nil {
-			Log("Error calling amcs endpoint: %s", err.Error())
-			// return configurationId, channelId, 0, err
+			message := fmt.Sprintf("Error calling amcs endpoint: %s", err.Error())
+			Log(message)
+			SendException(message)
 			continue
 		}
 
+		//TODO: is this the best place to defer closing the response body?
+		defer resp.Body.Close()
+
 		Log("getAgentConfiguration Response Status: %d", resp.StatusCode)
 		if resp.StatusCode != 200 {
-			Log("getAgentConfiguration Request failed with an error code : %d", resp.StatusCode)
-			// return configurationId, channelId, 0, err
+			message := fmt.Sprintf("getAgentConfiguration Request failed with an error code : %d", resp.StatusCode)
+			Log(message)
+			SendException(message)
 			continue
 		}
 		break // call succeeded, don't retry any more
@@ -435,8 +447,8 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	Log(fmt.Sprintf("getAgentConfiguration: DCR expires at %d seconds (unix timestamp)", expiration))
 
 	// Pull out response body
+	//TODO: does responseBytes need to be closed?
 	responseBytes, err := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
 	if err != nil {
 		Log("Error reading response body from AMCS API call : %s", err.Error())
 		return configurationId, channelId, expiration, err
@@ -508,13 +520,21 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 		client := &http.Client{}
 		resp, err = client.Do(req)
 		if err != nil {
-			Log("Error calling amcs endpoint for ingestion auth token: %s", err.Error())
+			message := fmt.Sprintf("Error calling amcs endpoint for ingestion auth token: %s", err.Error())
+			Log(message)
+			SendException(message)
 			resp = nil
 			continue
 		}
+
+		//TODO: is this the best place to defer closing the response body?
+		defer resp.Body.Close()
+
 		Log("getIngestionAuthToken Response Status: %d", resp.StatusCode)
 		if resp.StatusCode != 200 {
-			Log("getIngestionAuthToken Request failed with an error code : %d", resp.StatusCode)
+			message := fmt.Sprintf("getIngestionAuthToken Request failed with an error code : %d", resp.StatusCode)
+			Log(message)
+			SendException(message)
 			resp = nil
 			continue
 		}
@@ -535,7 +555,6 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 
 	// Pull out response body
 	responseBytes, err := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
 	if err != nil {
 		Log("Error reading response body from AMCS Ingestion API call : %s", err.Error())
 		return ingestionAuthToken, expiration, err
