@@ -44,11 +44,13 @@ sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/
 sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
 
-# install ruby2.6 
+# install ruby2.6
 sudo apt-get install software-properties-common -y
 sudo apt-add-repository ppa:brightbox/ruby-ng -y
 sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
+# to fix CVE-2020-10663
+gem update json -v 2.5.1
 # fluentd v1 gem
 gem install fluentd -v "1.12.2" --no-document
 fluentd --setup ./fluent
