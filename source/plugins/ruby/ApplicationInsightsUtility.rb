@@ -14,7 +14,6 @@ class ApplicationInsightsUtility
   @@Exception = "ExceptionEvent"
   @@AcsClusterType = "ACS"
   @@AksClusterType = "AKS"
-  @OmsAdminFilePath = "/etc/opt/microsoft/omsagent/conf/omsadmin.conf"
   @@EnvAcsResourceName = "ACS_RESOURCE_NAME"
   @@EnvAksRegion = "AKS_REGION"
   @@EnvAgentVersion = "AGENT_VERSION"
@@ -22,6 +21,7 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
+  @@EnvAADMSIAuthMode = "AAD_MSI_AUTH_MODE"
 
   @@CustomProperties = {}
   @@Tc = nil
@@ -78,7 +78,12 @@ class ApplicationInsightsUtility
           isProxyConfigured = false
           $log.info("proxy is not configured")
         end
-
+        aadAuthMSIMode = ENV[@@EnvAADMSIAuthMode]
+        if !aadAuthMSIMode.nil? && !aadAuthMSIMode.empty? && aadAuthMSIMode.downcase == "true".downcase
+          @@CustomProperties["aadAuthMSIMode"] = "true"
+        else
+          @@CustomProperties["aadAuthMSIMode"] = "false"
+        end
         #Check if telemetry is turned off
         telemetryOffSwitch = ENV["DISABLE_TELEMETRY"]
         if telemetryOffSwitch && !telemetryOffSwitch.nil? && !telemetryOffSwitch.empty? && telemetryOffSwitch.downcase == "true".downcase
@@ -263,14 +268,11 @@ class ApplicationInsightsUtility
     end
 
     def getWorkspaceId()
-      begin
-        adminConf = {}
-        confFile = File.open(@OmsAdminFilePath, "r")
-        confFile.each_line do |line|
-          splitStrings = line.split("=")
-          adminConf[splitStrings[0]] = splitStrings[1]
+      begin       
+        workspaceId = ENV["WSID"]
+        if workspaceId.nil? || workspaceId.empty?
+          $log.warn("Exception in AppInsightsUtility: getWorkspaceId - WorkspaceID either nil or empty")
         end
-        workspaceId = adminConf["WORKSPACE_ID"]
         return workspaceId
       rescue => errorStr
         $log.warn("Exception in AppInsightsUtility: getWorkspaceId - error: #{errorStr}")
@@ -278,14 +280,8 @@ class ApplicationInsightsUtility
     end
 
     def getWorkspaceCloud()
-      begin
-        adminConf = {}
-        confFile = File.open(@OmsAdminFilePath, "r")
-        confFile.each_line do |line|
-          splitStrings = line.split("=")
-          adminConf[splitStrings[0]] = splitStrings[1]
-        end
-        workspaceDomain = adminConf["URL_TLD"].strip
+      begin     
+        workspaceDomain = ENV["DOMAIN"]
         workspaceCloud = "AzureCloud"
         if workspaceDomain.casecmp("opinsights.azure.com") == 0
           workspaceCloud = "AzureCloud"

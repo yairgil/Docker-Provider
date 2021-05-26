@@ -134,6 +134,25 @@ function Set-EnvironmentVariables {
         $env:AZMON_AGENT_CFG_SCHEMA_VERSION
     }
 
+    # Need to do this before the SA fetch for AI key for airgapped clouds so that it is not overwritten with defaults.
+    $appInsightsAuth = [System.Environment]::GetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", "process")
+    if (![string]::IsNullOrEmpty($appInsightsAuth)) {
+        [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $appInsightsAuth, "machine")
+        Write-Host "Successfully set environment variable APPLICATIONINSIGHTS_AUTH - $($appInsightsAuth) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable APPLICATIONINSIGHTS_AUTH for target 'machine' since it is either null or empty"
+    }
+
+    $appInsightsEndpoint = [System.Environment]::GetEnvironmentVariable("APPLICATIONINSIGHTS_ENDPOINT", "process")
+    if (![string]::IsNullOrEmpty($appInsightsEndpoint)) {
+        [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_ENDPOINT", $appInsightsEndpoint, "machine")
+        Write-Host "Successfully set environment variable APPLICATIONINSIGHTS_ENDPOINT - $($appInsightsEndpoint) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable APPLICATIONINSIGHTS_ENDPOINT for target 'machine' since it is either null or empty"
+    }
+
     # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
     $aiKeyURl = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH_URL')
     if ($aiKeyURl) {
@@ -175,7 +194,6 @@ function Set-EnvironmentVariables {
     $aiKeyDecoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
     [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Process")
     [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Machine")
-
 
     # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
     if ($env.USING_LA_AAD_AUTH) {
@@ -430,11 +448,40 @@ function Test-CertificatePath {
     }
 }
 
+function Bootstrap-CACertificates {
+    try {
+        # This is required when the root CA certs are different for some clouds.
+        $certMountPath = "C:\ca"
+        Get-ChildItem $certMountPath |
+        Foreach-Object {
+            $absolutePath=$_.FullName
+            Write-Host "cert path: $($absolutePath)"
+            Import-Certificate -FilePath $absolutePath -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
+        }
+    }
+    catch {
+        $e = $_.Exception
+        Write-Host $e
+        Write-Host "exception occured in Bootstrap-CACertificates..."
+    }
+}
+
 Start-Transcript -Path main.txt
 
 Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
+
+#Bootstrapping CA certs for non public clouds and AKS clusters
+$aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
+$requiresCertBootstrap = [System.Environment]::GetEnvironmentVariable("REQUIRES_CERT_BOOTSTRAP")
+if (![string]::IsNullOrEmpty($requiresCertBootstrap) -and `
+    $requiresCertBootstrap.ToLower() -eq 'true' -and `
+    ![string]::IsNullOrEmpty($aksResourceId) -and `
+    $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/"))
+{
+    Bootstrap-CACertificates
+}
 
 Generate-Certificates
 Test-CertificatePath

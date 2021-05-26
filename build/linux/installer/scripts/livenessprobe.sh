@@ -1,19 +1,21 @@
 #!/bin/bash
 
-#test to exit non zero value if omsagent is not running
-(ps -ef | grep omsagent- | grep -v "grep")
+#test to exit non zero value if mdsd is not running
+(ps -ef | grep "mdsd" | grep -v "grep")
 if [ $? -ne 0 ]
 then
- echo " omsagent is not running" > /dev/termination-log
- exit 1
+  echo "mdsd is not running" > /dev/termination-log
+  exit 1
 fi
 
-#optionally test to exit non zero value if oneagent is not running
-if [ -e "/opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2" ]; then
-  (ps -ef | grep "mdsd -l" | grep -v "grep")
+
+#optionally test to exit non zero value if fluentd is not running
+#fluentd not used in sidecar container
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then   
+  (ps -ef | grep "fluentd" | grep -v "grep")
   if [ $? -ne 0 ]
   then
-   echo "oneagent is not running" > /dev/termination-log
+   echo "fluentd is not running" > /dev/termination-log
    exit 1
   fi
 fi
@@ -30,9 +32,9 @@ fi
 (ps -ef | grep telegraf | grep -v "grep")
 if [ $? -ne 0 ]
 then
- echo "Telegraf is not running" > /dev/termination-log
+ # echo "Telegraf is not running" > /dev/termination-log
  echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" > /dev/write-to-traces  # this file is tailed and sent to traces
- exit 1
+ # exit 1
 fi
 
 if [ -s "inotifyoutput.txt" ]

@@ -2,15 +2,18 @@
 
 # frozen_string_literal: true
 
-module Fluent
+require 'fluent/plugin/filter'
+
+module Fluent::Plugin   
+    require_relative 'extension_utils'
     require 'logger'
     require 'yajl/json_gem'
     Dir[File.join(__dir__, './health', '*.rb')].each { |file| require file }
-
+ 
 
     class FilterHealthModelBuilder < Filter
         include HealthModel
-        Fluent::Plugin.register_filter('filter_health_model_builder', self)
+        Fluent::Plugin.register_filter('health_model_builder', self)
 
         config_param :enable_log, :integer, :default => 0
         config_param :log_path, :string, :default => '/var/opt/microsoft/docker-cimprov/log/filter_health_model_builder.log'
@@ -20,7 +23,7 @@ module Fluent
         attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :telemetry
 
 
-        @@rewrite_tag = 'kubehealth.Signals'
+       
         @@cluster_id = KubernetesApiClient.getClusterId
         @@token_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
         @@cert_file_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
@@ -29,6 +32,7 @@ module Fluent
         def initialize
             begin
                 super
+                @rewrite_tag = 'oneagent.containerInsights.KUBE_HEALTH_BLOB'
                 @buffer = HealthModel::HealthModelBuffer.new
                 @cluster_health_state = ClusterHealthState.new(@@token_file_path, @@cert_file_path)
                 @health_model_definition = HealthModel::ParentMonitorProvider.new(HealthModel::HealthModelDefinitionParser.new(@model_definition_path).parse_file)
@@ -53,6 +57,7 @@ module Fluent
                     deserialized_state_info = @cluster_health_state.get_state
                     @state.initialize_state(deserialized_state_info)
                 end
+                
             rescue => e
                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
             end
@@ -82,11 +87,19 @@ module Fluent
         def filter_stream(tag, es)
             if !@@cluster_health_model_enabled
                 @log.info "Cluster Health Model disabled in filter_health_model_builder"
-                return MultiEventStream.new
+                return Fluent::MultiEventStream.new
             end
             begin
-                new_es = MultiEventStream.new
-                time = Time.now
+                new_es = Fluent::MultiEventStream.new
+                time = Time.now                                                  
+                if ExtensionUtils.isAADMSIAuthMode()
+                    $log.info("filter_health_model_builder::enumerate: AAD AUTH MSI MODE")             
+                    if !@rewrite_tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+                      @rewrite_tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
+                    end                            
+                end           
+                # debug logs          
+                $log.info("filter_health_model_builder::filter_stream: using tag -#{@rewrite_tag} @ #{Time.now.utc.iso8601}")                       
 
                 if tag.start_with?("kubehealth.DaemonSet.Node")
                     node_records = []
@@ -96,7 +109,7 @@ module Fluent
                         }
                         @buffer.add_to_buffer(node_records)
                     end
-                    return MultiEventStream.new
+                    return Fluent::MultiEventStream.new
                 elsif tag.start_with?("kubehealth.DaemonSet.Container")
                     container_records = []
                     if !es.nil?
@@ -110,7 +123,7 @@ module Fluent
                         @container_cpu_memory_records = [] #in some clusters, this is null, so initialize it again.
                     end
                     @container_cpu_memory_records.push(*container_records) # push the records for aggregation later
-                    return MultiEventStream.new
+                    return Fluent::MultiEventStream.new
                 elsif tag.start_with?("kubehealth.ReplicaSet")
                     records = []
                     es.each{|time, record|
@@ -218,11 +231,11 @@ module Fluent
 
                     @log.info "after optimizing health signals all_monitors.size #{all_monitors.size}"
 
-                    current_time = Time.now
-                    emit_time = current_time.to_f
+                    
                     # for each key in monitor.keys,
                     # get the state from health_monitor_state
                     # generate the record to send
+                    emit_time = Fluent::Engine.now
                     all_monitors.keys.each{|key|
                         record = @provider.get_record(all_monitors[key], state)
                         if record[HealthMonitorRecordFields::MONITOR_ID] == MonitorId::CLUSTER
@@ -241,17 +254,12 @@ module Fluent
                                         @cluster_new_state = new_state
                                 end
                             end
-                        end
-                        record_wrapper = {
-                            "DataType" => "KUBE_HEALTH_BLOB",
-                            "IPName" => "ContainerInsights",
-                            "DataItems" => [record.each { |k, v| record[k] = v }],
-                        }
-                        new_es.add(emit_time, record_wrapper)
+                        end                       
+                        new_es.add(emit_time, record)
                     }
 
                     #emit the stream
-                    router.emit_stream(@@rewrite_tag, new_es)
+                    router.emit_stream(@rewrite_tag, new_es)
 
                     #initialize monitor_set and model_builder
                     @monitor_set = HealthModel::MonitorSet.new
@@ -261,8 +269,8 @@ module Fluent
                     @cluster_health_state.update_state(@state.to_h)
                     @telemetry.send
                     # return an empty event stream, else the match will throw a NoMethodError
-                    return MultiEventStream.new
-                elsif tag.start_with?("kubehealth.Signals")
+                    return Fluent::MultiEventStream.new
+                elsif tag.start_with?(@rewrite_tag) 
                     # this filter also acts as a pass through as we are rewriting the tag and emitting to the fluent stream
                     es
                 else
@@ -274,6 +282,6 @@ module Fluent
                  @log.warn "Message: #{e.message} Backtrace: #{e.backtrace}"
                  return nil
             end
-        end
+        end       
     end
 end

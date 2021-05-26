@@ -3,7 +3,7 @@
 
 require_relative "tomlrb"
 require_relative "ConfigParseErrorLogger"
-require_relative "microsoft/omsagent/plugin/constants"
+require_relative "/etc/fluent/plugin/constants"
 
 @configMapMountPath = "/etc/config/settings/alertable-metrics-configuration-settings"
 @configVersion = ""

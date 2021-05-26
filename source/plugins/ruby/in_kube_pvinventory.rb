@@ -1,6 +1,11 @@
-module Fluent
+#!/usr/local/bin/ruby
+# frozen_string_literal: true
+
+require 'fluent/plugin/input'
+
+module Fluent::Plugin
   class Kube_PVInventory_Input < Input
-    Plugin.register_input("kubepvinventory", self)
+    Fluent::Plugin.register_input("kube_pvinventory", self)
 
     @@hostName = (OMS::Common.get_hostname)
 
@@ -15,6 +20,7 @@ module Fluent
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
+      require_relative "extension_utils"
 
       # Response size is around 1500 bytes per PV
       @PV_CHUNK_SIZE = "5000"
@@ -22,14 +28,15 @@ module Fluent
     end
 
     config_param :run_interval, :time, :default => 60
-    config_param :tag, :string, :default => "oms.containerinsights.KubePVInventory"
+    config_param :tag, :string, :default => "oneagent.containerInsights.KUBE_PV_INVENTORY_BLOB"
 
     def configure(conf)
       super
     end
 
-    def start
+    def start      
       if @run_interval
+        super
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -45,6 +52,7 @@ module Fluent
           @condition.signal
         }
         @thread.join
+        super
       end
     end
 
@@ -54,7 +62,15 @@ module Fluent
         telemetryFlush = false
         @pvTypeToCountHash = {}
         currentTime = Time.now
-        batchTime = currentTime.utc.iso8601
+        batchTime = currentTime.utc.iso8601           
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kube_pvinventory::enumerate: AAD AUTH MSI MODE")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_PV_INVENTORY_DATA_TYPE)
+          end                            
+        end           
+        # debug logs          
+        $log.info("in_kube_pvinventory::enumerate: using kubeevents tag -#{@tag} @ #{Time.now.utc.iso8601}")          
 
         continuationToken = nil
         $log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")
@@ -103,9 +119,9 @@ module Fluent
     end # end enumerate
 
     def parse_and_emit_records(pvInventory, batchTime = Time.utc.iso8601)
-      currentTime = Time.now
-      emitTime = currentTime.to_f
-      eventStream = MultiEventStream.new
+      currentTime = Time.now  
+      emitTime = Fluent::Engine.now    
+      eventStream = Fluent::MultiEventStream.new
       @@istestvar = ENV["ISTEST"]
       begin
         records = []
@@ -145,13 +161,8 @@ module Fluent
         end
 
         records.each do |record|
-          if !record.nil?
-            wrapper = {
-              "DataType" => "KUBE_PV_INVENTORY_BLOB",
-              "IPName" => "ContainerInsights",
-              "DataItems" => [record.each { |k, v| record[k] = v }],
-            }
-            eventStream.add(emitTime, wrapper) if wrapper
+          if !record.nil?          
+            eventStream.add(emitTime, record) 
           end
         end
 
@@ -250,7 +261,6 @@ module Fluent
         @mutex.lock
       end
       @mutex.unlock
-    end
-
+    end   
   end # Kube_PVInventory_Input
 end # module
