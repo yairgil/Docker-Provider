@@ -58,8 +58,10 @@ module Fluent
         # initialize cpu and memory limit
         if @process_incoming_stream
           @cpu_capacity = 0.0
+          @cpu_allocatable = 0.0
           @memory_capacity = 0.0
-          ensure_cpu_memory_capacity_set
+          @memory_allocatable = 0.0
+          ensure_cpu_memory_capacity_and_allocatable_set
           @containerCpuLimitHash = {}
           @containerMemoryLimitHash = {}
           @containerResourceDimensionHash = {}
@@ -324,15 +326,16 @@ module Fluent
       end
     end
 
-    def ensure_cpu_memory_capacity_set
-      if @cpu_capacity != 0.0 && @memory_capacity != 0.0
+    # NEED TO DO THIS FOR ALLOCATABLE
+    def ensure_cpu_memory_capacity_and_allocatable_set
+      if @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @cpu_allocatable != 0.0 && @memory_allocatable != 0.0
         @log.info "CPU And Memory Capacity are already set"
         return
       end
 
       @@controller_type = ENV["CONTROLLER_TYPE"]
       if @@controller_type.downcase == "replicaset"
-        @log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
+        @log.info "ensure_cpu_memory_capacity_and_allocatable_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity} @cpu_allocatable #{@cpu_allocatable} @memory_allocatable #{@memory_allocatable}"
 
         begin
           resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?fieldSelector=metadata.name%3D#{@@hostName}")
@@ -349,12 +352,29 @@ module Fluent
           else
             @log.info "Error getting cpu_capacity"
           end
-          memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
+
+          cpu_allocatable_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores")
+          if !cpu_allocatable_json.nil? && !cpu_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
+            @cpu_allocatable = cpu_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"]
+            @log.info "CPU Allocatable #{@cpu_allocatable}"
+          else
+            @log.info "Error getting cpu_allocatable"
+          end
+
+          memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryCapacityBytes")
           if !memory_capacity_json.nil? && !memory_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
             @memory_capacity = memory_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"]
-            @log.info "Memory Limit #{@memory_capacity}"
+            @log.info "Memory Allocatable #{@memory_capacity}"
           else
             @log.info "Error getting memory_capacity"
+          end
+
+          memory_allocatable_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryAllocatableBytes")
+          if !memory_allocatable_json.nil? && !memory_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
+            @memory_allocatable = memory_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"]
+            @log.info "Memory Limit #{@memory_allocatable}"
+          else
+            @log.info "Error getting memory_allocatable"
           end
         end
       elsif @@controller_type.downcase == "daemonset"
@@ -369,13 +389,25 @@ module Fluent
           @log.error "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
         end
 
+        allocatable_from_kubelet = KubeletUtils.get_node_allocatable
+
+        # Error handling in case /metrics/cadvsior endpoint fails
+        if !allocatable_from_kubelet.nil? && allocatable_from_kubelet.length > 1
+          @cpu_allocatable = allocatable_from_kubelet[0]
+          @memory_allocatable = allocatable_from_kubelet[1]
+        else
+          # cpu_capacity and memory_capacity keep initialized value of 0.0
+          @log.error "Error getting allocatable_from_kubelet: cpu_allocatable and memory_allocatable"
+        end
+
       end
     end
 
     def filter_stream(tag, es)
       new_es = MultiEventStream.new
       begin
-        ensure_cpu_memory_capacity_set
+        @log.info "Begin filter_stream : Calling ensure_cpu_memory_capacity_and_allocatable_set"
+        ensure_cpu_memory_capacity_and_allocatable_set
         # Getting container limits hash
         if @process_incoming_stream
           @containerCpuLimitHash, @containerMemoryLimitHash, @containerResourceDimensionHash = KubeletUtils.get_all_container_limits
