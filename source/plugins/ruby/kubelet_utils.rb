@@ -51,6 +51,9 @@ class KubeletUtils
           kubereserved_memory = JSON.parse(response.body)["kubeletconfig"]["kubeReserved"]["memory"]
           @log.info "get_node_allocatable::Memory Allocatable #{kubereserved_memory}"
 
+          kubereserved_memory_eviction_hard = JSON.parse(response.body)["kubeletconfig"]["evictionHard"]["memory.available"]
+          @log.info "get_node_allocatable::Memory Allocatable #{kubereserved_memory_eviction_hard}"
+
           all_metrics = capacity_response.body.split("\n")
           cpu_capacity = all_metrics.select { |m| m.start_with?("machine_cpu_cores") }.first.split.last.to_f * 1000
           @log.info "get_node_allocatable::CPU Capacity #{cpu_capacity}"
@@ -65,11 +68,18 @@ class KubeletUtils
           cpu_allocatable  = new_capacity_number - new_get_number_cpu;
           @log.info "CPU Allocatable #{cpu_allocatable}"
 
-          @log.info "Calling memory_capacity.to_i: "
           new_memory_number = memory_capacity.to_i
           new_get_number_memory = kubereserved_memory.tr('^0-9', '').to_i
-          new_get_number_memory = new_get_number_memory * 1000
-          memory_allocatable = new_memory_number - new_get_number_memory;
+          new_get_number_memory = new_get_number_memory * 1024 * 1024
+
+          new_eviction_hard = kubereserved_memory_eviction_hard.tr('^0-9', '').to_i
+          new_eviction_hard = new_eviction_hard * 1024 * 1024
+
+          @log.info "**: #{new_memory_number}"
+          @log.info "**: #{new_get_number_memory}"
+          @log.info "**: #{new_eviction_hard}"
+
+          memory_allocatable = new_memory_number - new_get_number_memory - new_eviction_hard;
           @log.info "Memory Allocatable #{memory_allocatable}"
 
           cpu_allocatable = BigDecimal(cpu_allocatable).to_f

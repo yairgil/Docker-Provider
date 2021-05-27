@@ -172,10 +172,7 @@ module Fluent
                 target_node_cpu_allocatable_mc = @NodeCache.cpu.get_allocatable(record["DataItems"][0]["Host"]) / 1000000
               else
                 target_node_cpu_capacity_mc = @cpu_capacity
-                ############################################
-                # What is the deafault value I should set it too? INVESTIGATE
-                ############################################
-                target_node_cpu_allocatable_mc = @cpu_capacity
+                target_node_cpu_allocatable_mc = @cpu_allocatable
               end
               @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc}"
               @log.info "Metric_value: #{metric_value} CPU Allocatable #{target_node_cpu_allocatable_mc}"
@@ -197,7 +194,7 @@ module Fluent
                 ############################################
                 # What is the deafault value I should set it too? INVESTIGATE
                 ############################################
-                target_node_mem_allocatable = @memory_capacity
+                target_node_mem_allocatable = @memory_allocatable
               end
               @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity}"
               @log.info "Metric_value: #{metric_value} Memory Allocatable #{target_node_mem_allocatable}"
@@ -395,8 +392,14 @@ module Fluent
         if !allocatable_from_kubelet.nil? && allocatable_from_kubelet.length > 1
           @cpu_allocatable = allocatable_from_kubelet[0]
           @memory_allocatable = allocatable_from_kubelet[1]
+
+          @log.info "**********************"
+          @log.info "cpu_allocatable : " + @cpu_allocatable.to_s
+          @log.info "memory_allocatable : " + @memory_allocatable.to_s
+          @log.info "**********************"
+          
         else
-          # cpu_capacity and memory_capacity keep initialized value of 0.0
+          # cpu_allocatable and memory_allocatable keep initialized value of 0.0
           @log.error "Error getting allocatable_from_kubelet: cpu_allocatable and memory_allocatable"
         end
 

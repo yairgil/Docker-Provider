@@ -534,12 +534,16 @@ module Fluent
         @cacheHash = {}
         @allocatableCacheHash = {}
         @timeAdded = {}  # records when an entry was last added
+        @allocatableTimeAdded = {}
         @lock = Mutex.new
+        @allocatableLock = Mutex.new
         @lastCacheClearTime = 0
+        @allocatableLastCacheClearTime = 0
 
         @cacheHash.default = 0.0
         @allocatableCacheHash.default = 0.0
         @lastCacheClearTime = DateTime.now.to_time.to_i
+        @allocatableLastCacheClearTime = DateTime.now.to_time.to_i
       end
 
       def get_capacity(node_name)
@@ -549,7 +553,7 @@ module Fluent
       end
 
       def get_allocatable(node_name)
-        @lock.synchronize do
+        @allocatableLock.synchronize do
           return @allocatableCacheHash[node_name]
         end
       end
@@ -569,19 +573,15 @@ module Fluent
       end
 
       def set_allocatable(host, val)
-        ##########################################################
-        # Investigate what cache update logic is required
-        ##########################################################
-        # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
         current_time = DateTime.now.to_time.to_i
-        if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
-          clean_cache
-          @lastCacheClearTime = current_time
+        if current_time - @allocatableLastCacheClearTime > @@RECORD_TIME_TO_LIVE
+          allocatable_clean_cache
+          @allocatableLastCacheClearTime = current_time
         end
 
-        @lock.synchronize do
+        @allocatableLock.synchronize do
           @allocatableCacheHash[host] = val
-          @timeAdded[host] = current_time
+          @allocatableTimeAdded[host] = current_time
         end
       end
 
@@ -597,15 +597,28 @@ module Fluent
             end
           end
 
+          nodes_to_remove.each do node_name
+            @cacheHash.delete(node_name)
+            @timeAdded.delete(node_name)
+          end
+        end
+      end
+
+      def allocatable_clean_cache()
+        $log.info "in_kube_nodes::allocatable_clean_cache: cleaning node cpu/mem cache for ALLOCATABLE"
+        cacheClearTime = DateTime.now.to_time.to_i
+        @allocatableLock.synchronize do
+          nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
+          # list is used so that we aren't modifying a hash while iterating through it.
           @allocatableCacheHash.each do |key, val|
-            if cacheClearTime - @timeAdded[key] > @@RECORD_TIME_TO_LIVE
+            if cacheClearTime - @allocatableTimeAdded[key] > @@RECORD_TIME_TO_LIVE
               nodes_to_remove.append(key)
             end
           end
 
           nodes_to_remove.each do node_name
             @allocatableCacheHash.delete(node_name)
-            @timeAdded.delete(node_name)
+            @allocatableTimeAdded.delete(node_name)
           end
         end
       end
