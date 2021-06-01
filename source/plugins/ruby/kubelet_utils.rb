@@ -47,12 +47,17 @@ class KubeletUtils
         response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil?
           kubereserved_cpu = JSON.parse(response.body)["kubeletconfig"]["kubeReserved"]["cpu"]
-          @log.info "get_node_allocatable::CPU Allocatable #{kubereserved_cpu}"
+          @log.info "get_node_allocatable::kubereserved_cpu  #{kubereserved_cpu}"
           kubereserved_memory = JSON.parse(response.body)["kubeletconfig"]["kubeReserved"]["memory"]
-          @log.info "get_node_allocatable::Memory Allocatable #{kubereserved_memory}"
-
-          kubereserved_memory_eviction_hard = JSON.parse(response.body)["kubeletconfig"]["evictionHard"]["memory.available"]
-          @log.info "get_node_allocatable::Memory Allocatable #{kubereserved_memory_eviction_hard}"
+          @log.info "get_node_allocatable::kubereserved_memory #{kubereserved_memory}"
+          systemReserved_cpu = JSON.parse(response.body)["kubeletconfig"]["systemReserved"]["cpu"]
+          @log.info "get_node_allocatable::systemReserved_cpu  #{systemReserved_cpu}"
+          systemReserved_memory = JSON.parse(response.body)["kubeletconfig"]["systemReserved"]["memory"]
+          @log.info "get_node_allocatable::systemReserved_memory #{systemReserved_memory}"
+          evictionHard_cpu = JSON.parse(response.body)["kubeletconfig"]["evictionHard"]["nodefs.available"]
+          @log.info "get_node_allocatable::evictionHard_cpu #{evictionHard_cpu}"
+          evictionHard_memory = JSON.parse(response.body)["kubeletconfig"]["evictionHard"]["memory.available"]
+          @log.info "get_node_allocatable::evictionHard_memory #{evictionHard_memory}"
 
           all_metrics = capacity_response.body.split("\n")
           cpu_capacity = all_metrics.select { |m| m.start_with?("machine_cpu_cores") }.first.split.last.to_f * 1000
@@ -60,26 +65,13 @@ class KubeletUtils
           memory_capacity_e = all_metrics.select { |m| m.start_with?("machine_memory_bytes") }.first.split.last
           memory_capacity = BigDecimal(memory_capacity_e).to_f
           @log.info "get_node_allocatable::Memory Capacity #{memory_capacity}"
+          cpu_capacity_number = cpu_capacity.to_i
 
-          #subtract to get allocatable
-          new_capacity_number = cpu_capacity.to_i
-          # new_get_number_cpu = get_number(kubereserved_cpu, 'm')
-          new_get_number_cpu = kubereserved_cpu.tr('^0-9', '').to_i
-          cpu_allocatable  = new_capacity_number - new_get_number_cpu;
+          # subtract to get allocatable. Formula : Allocatable = Capacity - ( kube reserved + system reserved + eviction threshold )
+          # https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
+          cpu_allocatable  = cpu_capacity_number - ( kubereserved_cpu.tr('^0-9', '').to_i + systemReserved_cpu.tr('^0-9', '').to_i + ( evictionHard_cpu.tr('^0-9', '').to_i * cpu_capacity_number / 100 ) );
           @log.info "CPU Allocatable #{cpu_allocatable}"
-
-          new_memory_number = memory_capacity.to_i
-          new_get_number_memory = kubereserved_memory.tr('^0-9', '').to_i
-          new_get_number_memory = new_get_number_memory * 1024 * 1024
-
-          new_eviction_hard = kubereserved_memory_eviction_hard.tr('^0-9', '').to_i
-          new_eviction_hard = new_eviction_hard * 1024 * 1024
-
-          @log.info "**: #{new_memory_number}"
-          @log.info "**: #{new_get_number_memory}"
-          @log.info "**: #{new_eviction_hard}"
-
-          memory_allocatable = new_memory_number - new_get_number_memory - new_eviction_hard;
+          memory_allocatable = memory_capacity.to_i - ( ( kubereserved_memory.tr('^0-9', '').to_i * 1024 * 1024 ) + ( systemReserved_memory.tr('^0-9', '').to_i * 1024 * 1024 ) + ( evictionHard_memory.tr('^0-9', '').to_i * 1024 * 1024 ) );
           @log.info "Memory Allocatable #{memory_allocatable}"
 
           cpu_allocatable = BigDecimal(cpu_allocatable).to_f

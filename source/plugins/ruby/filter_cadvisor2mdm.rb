@@ -174,8 +174,7 @@ module Fluent
                 target_node_cpu_capacity_mc = @cpu_capacity
                 target_node_cpu_allocatable_mc = @cpu_allocatable
               end
-              @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc}"
-              @log.info "Metric_value: #{metric_value} CPU Allocatable #{target_node_cpu_allocatable_mc}"
+              @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc} CPU Allocatable #{target_node_cpu_allocatable_mc}"
               if target_node_cpu_capacity_mc != 0.0
                 percentage_metric_value = (metric_value) * 100 / target_node_cpu_capacity_mc
               end
@@ -191,13 +190,9 @@ module Fluent
                 target_node_mem_allocatable = @NodeCache.mem.get_allocatable(record["DataItems"][0]["Host"])
               else
                 target_node_mem_capacity = @memory_capacity
-                ############################################
-                # What is the deafault value I should set it too? INVESTIGATE
-                ############################################
                 target_node_mem_allocatable = @memory_allocatable
               end
-              @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity}"
-              @log.info "Metric_value: #{metric_value} Memory Allocatable #{target_node_mem_allocatable}"
+              @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity} Memory Allocatable #{target_node_mem_allocatable}"
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
@@ -220,7 +215,7 @@ module Fluent
               telemetryProperties = {}
               telemetryProperties["Computer"] = record["DataItems"][0]["Host"]
               telemetryProperties["MetricName"] = metric_name
-              telemetryProperties["AllocatableMetricPercentageValue"] = allocatable_percentage_metric_value
+              telemetryProperties["MetricAllocatablePercentageValue"] = allocatable_percentage_metric_value
               ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
             end
 
@@ -323,10 +318,9 @@ module Fluent
       end
     end
 
-    # NEED TO DO THIS FOR ALLOCATABLE
     def ensure_cpu_memory_capacity_and_allocatable_set
       if @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @cpu_allocatable != 0.0 && @memory_allocatable != 0.0
-        @log.info "CPU And Memory Capacity are already set"
+        @log.info "CPU And Memory Capacity and Allocatable are already set"
         return
       end
 
@@ -347,7 +341,7 @@ module Fluent
             @cpu_capacity = cpu_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"]
             @log.info "CPU Limit #{@cpu_capacity}"
           else
-            @log.info "Error getting cpu_capacity"
+            @log.error "Error getting cpu_capacity"
           end
 
           cpu_allocatable_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores")
@@ -355,23 +349,23 @@ module Fluent
             @cpu_allocatable = cpu_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"]
             @log.info "CPU Allocatable #{@cpu_allocatable}"
           else
-            @log.info "Error getting cpu_allocatable"
+            @log.error "Error getting cpu_allocatable"
           end
 
-          memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryCapacityBytes")
+          memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
           if !memory_capacity_json.nil? && !memory_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
             @memory_capacity = memory_capacity_json[0]["DataItems"][0]["Collections"][0]["Value"]
-            @log.info "Memory Allocatable #{@memory_capacity}"
+            @log.info "Memory Limit #{@memory_capacity}"
           else
-            @log.info "Error getting memory_capacity"
+            @log.error "Error getting memory_capacity"
           end
 
-          memory_allocatable_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryAllocatableBytes")
+          memory_allocatable_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes")
           if !memory_allocatable_json.nil? && !memory_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
             @memory_allocatable = memory_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"]
-            @log.info "Memory Limit #{@memory_allocatable}"
+            @log.info "Memory Allocatable #{@memory_allocatable}"
           else
-            @log.info "Error getting memory_allocatable"
+            @log.error "Error getting memory_allocatable"
           end
         end
       elsif @@controller_type.downcase == "daemonset"
@@ -392,12 +386,6 @@ module Fluent
         if !allocatable_from_kubelet.nil? && allocatable_from_kubelet.length > 1
           @cpu_allocatable = allocatable_from_kubelet[0]
           @memory_allocatable = allocatable_from_kubelet[1]
-
-          @log.info "**********************"
-          @log.info "cpu_allocatable : " + @cpu_allocatable.to_s
-          @log.info "memory_allocatable : " + @memory_allocatable.to_s
-          @log.info "**********************"
-          
         else
           # cpu_allocatable and memory_allocatable keep initialized value of 0.0
           @log.error "Error getting allocatable_from_kubelet: cpu_allocatable and memory_allocatable"

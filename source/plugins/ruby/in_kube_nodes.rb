@@ -605,7 +605,7 @@ module Fluent
       end
 
       def allocatable_clean_cache()
-        $log.info "in_kube_nodes::allocatable_clean_cache: cleaning node cpu/mem cache for ALLOCATABLE"
+        $log.info "in_kube_nodes::allocatable_clean_cache: cleaning node cpu/mem cache"
         cacheClearTime = DateTime.now.to_time.to_i
         @allocatableLock.synchronize do
           nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
