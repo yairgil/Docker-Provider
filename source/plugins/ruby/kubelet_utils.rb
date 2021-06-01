@@ -80,7 +80,7 @@ class KubeletUtils
           return [cpu_allocatable, memory_allocatable]
         end
       rescue => errorStr
-        @log.info "Error get_node_allocatable: #{errorStr}"
+        @log.error "Error get_node_allocatable: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
