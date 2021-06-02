@@ -51,18 +51,56 @@ class KubeletUtils
         capacity_response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor(winNode: nil)
         response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil?
-          kubereserved_cpu = JSON.parse(response.body)["kubeletconfig"]["kubeReserved"]["cpu"]
-          @log.info "get_node_allocatable::kubereserved_cpu  #{kubereserved_cpu}"
-          kubereserved_memory = JSON.parse(response.body)["kubeletconfig"]["kubeReserved"]["memory"]
-          @log.info "get_node_allocatable::kubereserved_memory #{kubereserved_memory}"
-          systemReserved_cpu = JSON.parse(response.body)["kubeletconfig"]["systemReserved"]["cpu"]
-          @log.info "get_node_allocatable::systemReserved_cpu  #{systemReserved_cpu}"
-          systemReserved_memory = JSON.parse(response.body)["kubeletconfig"]["systemReserved"]["memory"]
-          @log.info "get_node_allocatable::systemReserved_memory #{systemReserved_memory}"
-          evictionHard_cpu = JSON.parse(response.body)["kubeletconfig"]["evictionHard"]["nodefs.available"]
-          @log.info "get_node_allocatable::evictionHard_cpu #{evictionHard_cpu}"
-          evictionHard_memory = JSON.parse(response.body)["kubeletconfig"]["evictionHard"]["memory.available"]
-          @log.info "get_node_allocatable::evictionHard_memory #{evictionHard_memory}"
+          begin
+            kubereserved_cpu = JSON.parse(response.body)["kubeletconfig"]["kubeReserved"]["cpu"]
+            @log.info "get_node_allocatable::kubereserved_cpu  #{kubereserved_cpu}"
+          rescue => errorStr
+            @log.error "Error in get_node_allocatable::kubereserved_cpu: #{errorStr}"
+            kubereserved_cpu = 0.0
+            ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
+          end 
+
+          begin
+            kubereserved_memory = JSON.parse(response.body)["kubeletconfig"]["kubeReserved"]["memory"]
+            @log.info "get_node_allocatable::kubereserved_memory #{kubereserved_memory}"
+          rescue => errorStr
+            @log.error "Error in get_node_allocatable::kubereserved_memory: #{errorStr}"
+            kubereserved_memory = 0.0
+            ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
+          end 
+          begin
+            systemReserved_cpu = JSON.parse(response.body)["kubeletconfig"]["systemReserved"]["cpu"]
+            @log.info "get_node_allocatable::systemReserved_cpu  #{systemReserved_cpu}"
+          rescue => errorStr
+            @log.error "Error in get_node_allocatable::systemReserved_cpu: #{errorStr}"
+            systemReserved_cpu = 0.0
+            ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
+          end 
+          begin
+             systemReserved_memory = JSON.parse(response.body)["kubeletconfig"]["systemReserved"]["memory"]
+             @log.info "get_node_allocatable::systemReserved_memory #{systemReserved_memory}"
+          rescue => errorStr
+             @log.error "Error in get_node_allocatable::systemReserved_memory: #{errorStr}"
+             systemReserved_memory = 0.0
+             ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
+          end 
+          begin
+            evictionHard_cpu = JSON.parse(response.body)["kubeletconfig"]["evictionHard"]["nodefs.available"]
+            @log.info "get_node_allocatable::evictionHard_cpu #{evictionHard_cpu}"
+          rescue => errorStr
+            @log.error "Error in get_node_allocatable::evictionHard_cpu: #{errorStr}"
+            evictionHard_cpu = 0.0
+            ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
+          end 
+          
+          begin
+            evictionHard_memory = JSON.parse(response.body)["kubeletconfig"]["evictionHard"]["memory.available"]
+            @log.info "get_node_allocatable::evictionHard_memory #{evictionHard_memory}"
+          rescue => errorStr
+            @log.error "Error in get_node_allocatable::evictionHard_memory: #{errorStr}"
+            evictionHard_memory = 0.0
+            ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
+          end 
 
           all_metrics = capacity_response.body.split("\n")
           cpu_capacity = all_metrics.select { |m| m.start_with?("machine_cpu_cores") }.first.split.last.to_f * 1000

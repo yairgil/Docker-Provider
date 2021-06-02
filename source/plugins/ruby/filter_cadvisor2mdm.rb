@@ -223,7 +223,7 @@ module Fluent::Plugin
 
             if allocatable_percentage_metric_value > 100.0
               telemetryProperties = {}
-              telemetryProperties["Computer"] = record["DataItems"][0]["Host"]
+              telemetryProperties["Computer"] = record["Host"]
               telemetryProperties["MetricName"] = metric_name
               telemetryProperties["MetricAllocatablePercentageValue"] = allocatable_percentage_metric_value
               ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
