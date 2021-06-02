@@ -56,7 +56,7 @@ class KubeletUtils
             @log.info "get_node_allocatable::kubereserved_cpu  #{kubereserved_cpu}"
           rescue => errorStr
             @log.error "Error in get_node_allocatable::kubereserved_cpu: #{errorStr}"
-            kubereserved_cpu = 0.0
+            kubereserved_cpu = 0
             ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
           end 
 
@@ -65,7 +65,7 @@ class KubeletUtils
             @log.info "get_node_allocatable::kubereserved_memory #{kubereserved_memory}"
           rescue => errorStr
             @log.error "Error in get_node_allocatable::kubereserved_memory: #{errorStr}"
-            kubereserved_memory = 0.0
+            kubereserved_memory = 0
             ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
           end 
           begin
@@ -73,7 +73,7 @@ class KubeletUtils
             @log.info "get_node_allocatable::systemReserved_cpu  #{systemReserved_cpu}"
           rescue => errorStr
             @log.error "Error in get_node_allocatable::systemReserved_cpu: #{errorStr}"
-            systemReserved_cpu = 0.0
+            systemReserved_cpu = 0
             ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
           end 
           begin
@@ -81,7 +81,7 @@ class KubeletUtils
              @log.info "get_node_allocatable::systemReserved_memory #{systemReserved_memory}"
           rescue => errorStr
              @log.error "Error in get_node_allocatable::systemReserved_memory: #{errorStr}"
-             systemReserved_memory = 0.0
+             systemReserved_memory = 0
              ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
           end 
           begin
@@ -89,7 +89,7 @@ class KubeletUtils
             @log.info "get_node_allocatable::evictionHard_cpu #{evictionHard_cpu}"
           rescue => errorStr
             @log.error "Error in get_node_allocatable::evictionHard_cpu: #{errorStr}"
-            evictionHard_cpu = 0.0
+            evictionHard_cpu = 0
             ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
           end 
           
@@ -98,7 +98,7 @@ class KubeletUtils
             @log.info "get_node_allocatable::evictionHard_memory #{evictionHard_memory}"
           rescue => errorStr
             @log.error "Error in get_node_allocatable::evictionHard_memory: #{errorStr}"
-            evictionHard_memory = 0.0
+            evictionHard_memory = 0
             ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
           end 
 
