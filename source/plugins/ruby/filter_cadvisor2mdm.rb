@@ -170,7 +170,7 @@ module Fluent::Plugin
          
           percentage_metric_value = 0.0
           allocatable_percentage_metric_value = 0.0
-          metric_value = JSON.parse(record["json_Collections"])[0]["Value"] 
+          metric_value = JSON.parse(record["json_Collections"])[0]["Value"]
 
           if object_name == Constants::OBJECT_NAME_K8S_NODE && @metrics_to_collect_hash.key?(counter_name.downcase)
             # Compute and send % CPU and Memory

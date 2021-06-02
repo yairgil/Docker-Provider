@@ -213,14 +213,14 @@ module Fluent::Plugin
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             if is_windows_node
-              @NodeCache.cpu.set_allocatable(nodeMetricRecord["Host"], nodeMetricRecord["json_Collections"])[0]["Value"])
+              @NodeCache.cpu.set_allocatable(nodeMetricRecord["Host"], JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"])
             end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             if is_windows_node
-              @NodeCache.mem.set_allocatable(nodeMetricRecord["Host"], nodeMetricRecord["json_Collections"])[0]["Value"])
+              @NodeCache.mem.set_allocatable(nodeMetricRecord["Host"], JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"])
             end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
