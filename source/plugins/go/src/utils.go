@@ -305,7 +305,7 @@ func getIngestionToken() (authToken string, err error) {
 	// TODO: re-fetch token in a new thread if it is about to expire (don't block the main thread)
 
 	if IMDSToken == "" || IMDSTokenExpiration >= time.Now().Unix()-30 { // refresh the token 10 seconds before it expires
-		IMDSToken, IMDSTokenExpiration, err = getAccessTokenFromIMDS()
+		IMDSToken, IMDSTokenExpiration, err = getAccessTokenFromIMDS(true) //TODO: read from an env variable? Or maybe from OS?
 		if err != nil {
 			message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
 			Log(message)
@@ -338,64 +338,79 @@ func getIngestionToken() (authToken string, err error) {
 	return ingestionToken, nil
 }
 
-func getAccessTokenFromIMDS() (string, int64, error) {
+func getAccessTokenFromIMDS(fromfile bool) (string, int64, error) {
 	Log("Info getAccessTokenFromIMDS: start")
 	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
 	imdsAccessToken := ""
 
-	var msi_endpoint *url.URL
-	msi_endpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://" + MCS_ENDPOINT + "/")
-	if err != nil {
-		Log("Error creating IMDS endpoint URL: %s", err.Error())
-		return imdsAccessToken, 0, err
-	}
-	req, err := http.NewRequest("GET", msi_endpoint.String(), nil)
-	if err != nil {
-		Log("Error creating HTTP request: %s", err.Error())
-		return imdsAccessToken, 0, err
-	}
-	req.Header.Add("Metadata", "true")
+	var responseBytes []byte
+	var err error
 
-	// Call managed services for Azure resources token endpoint
-	var resp *http.Response = nil
-	for i := 0; i < 3; i++ {
-		client := &http.Client{}
-		resp, err = client.Do(req)
+	if fromfile {
+		if os.Getenv("OS_TYPE") == "windows" {
+			responseBytes, err = ioutil.ReadFile("c:/etc/imds-access-token/token")
+		} else {
+			responseBytes, err = ioutil.ReadFile("/etc/imds-access-token/token")
+		}
 		if err != nil {
-			message := fmt.Sprintf("Error calling token endpoint: %s", err.Error())
-			Log(message)
-			SendException(message) // send the exception here because this error is not returned. The calling function will send any returned errors to telemetry.
-			continue
+			Log("getAccessTokenFromIMDS: Could not read IMDS token from file", err)
+			return imdsAccessToken, 0, err
 		}
-		//TODO: is this the best place to defer closing the response body?
-		defer resp.Body.Close()
-
-		Log("IMDS Response Status: %d", resp.StatusCode)
-		if resp.StatusCode != 200 {
-			message := fmt.Sprintf("IMDS Request failed with an error code : %d", resp.StatusCode)
-			Log(message)
-			SendException(message)
-			continue
+	} else {
+		var msi_endpoint *url.URL
+		msi_endpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://" + MCS_ENDPOINT + "/")
+		if err != nil {
+			Log("getAccessTokenFromIMDS: Error creating IMDS endpoint URL: %s", err.Error())
+			return imdsAccessToken, 0, err
 		}
-		break // call succeeded, don't retry any more
-	}
-	if resp == nil {
-		Log("IMDS Request ran out of retries")
-		return imdsAccessToken, 0, err
-	}
+		req, err := http.NewRequest("GET", msi_endpoint.String(), nil)
+		if err != nil {
+			Log("getAccessTokenFromIMDS: Error creating HTTP request: %s", err.Error())
+			return imdsAccessToken, 0, err
+		}
+		req.Header.Add("Metadata", "true")
 
-	// Pull out response body
-	responseBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		Log("Error reading response body : %s", err.Error())
-		return imdsAccessToken, 0, err
+		// Call managed services for Azure resources token endpoint
+		var resp *http.Response = nil
+		for i := 0; i < 3; i++ {
+			client := &http.Client{}
+			resp, err = client.Do(req)
+			if err != nil {
+				message := fmt.Sprintf("getAccessTokenFromIMDS: Error calling token endpoint: %s", err.Error())
+				Log(message)
+				SendException(message) // send the exception here because this error is not returned. The calling function will send any returned errors to telemetry.
+				continue
+			}
+			//TODO: is this the best place to defer closing the response body?
+			defer resp.Body.Close()
+
+			Log("getAccessTokenFromIMDS: IMDS Response Status: %d", resp.StatusCode)
+			if resp.StatusCode != 200 {
+				message := fmt.Sprintf("getAccessTokenFromIMDS: IMDS Request failed with an error code : %d", resp.StatusCode)
+				Log(message)
+				SendException(message)
+				continue
+			}
+			break // call succeeded, don't retry any more
+		}
+		if resp == nil {
+			Log("getAccessTokenFromIMDS: IMDS Request ran out of retries")
+			return imdsAccessToken, 0, err
+		}
+
+		// Pull out response body
+		responseBytes, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			Log("getAccessTokenFromIMDS: Error reading response body : %s", err.Error())
+			return imdsAccessToken, 0, err
+		}
 	}
 
 	// Unmarshall response body into struct
 	var imdsResponse IMDSResponse
 	err = json.Unmarshal(responseBytes, &imdsResponse)
 	if err != nil {
-		Log("Error unmarshalling the response: %s", err.Error())
+		Log("getAccessTokenFromIMDS: Error unmarshalling the response: %s", err.Error())
 		return imdsAccessToken, 0, err
 	}
 	imdsAccessToken = imdsResponse.AccessToken
@@ -404,10 +419,10 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 	if err != nil {
 		Log("Error reading expiration time from response header body: %s", err.Error())
 
-		Log("getAccessTokenFromIMDS: HTTP response header")
-		for value := range FormatHeaderForPrinting(&resp.Header) {
-			Log("getAccessTokenFromIMDS: \t " + value)
-		}
+		// Log("getAccessTokenFromIMDS: HTTP response header")
+		// for value := range FormatHeaderForPrinting(&resp.Header) {
+		// 	Log("getAccessTokenFromIMDS: \t " + value)
+		// }
 		return imdsAccessToken, 0, err
 	}
 
@@ -637,23 +652,23 @@ func getExpirationFromAmcsResponse(header http.Header) (bestBeforeTime int64, er
 	return 0, errors.New("didn't find timeout in header")
 }
 
-func FormatHeaderForPrinting(header *http.Header) chan string {
-	ch := make(chan string)
+// func FormatHeaderForPrinting(header *http.Header) chan string {
+// 	ch := make(chan string)
 
-	go func() {
+// 	go func() {
 
-		for key, value := range *header {
-			if key == "access_token" {
-				ch <- key + ": " + "<secret redacted>"
-			} else {
-				ch <- key + ": " + strings.Join(value, ",")
-			}
-		}
-		close(ch)
-	}()
+// 		for key, value := range *header {
+// 			if key == "access_token" {
+// 				ch <- key + ": " + "<secret redacted>"
+// 			} else {
+// 				ch <- key + ": " + strings.Join(value, ",")
+// 			}
+// 		}
+// 		close(ch)
+// 	}()
 
-	return ch
-}
+// 	return ch
+// }
 
 func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []MsgPackEntry) []byte {
 	var msgpBytes []byte
