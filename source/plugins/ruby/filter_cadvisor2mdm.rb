@@ -355,8 +355,8 @@ module Fluent::Plugin
           end
 
           cpu_allocatable_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "cpu", "cpuAllocatableNanoCores")
-          if !cpu_allocatable_json.nil? && !cpu_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
-            @cpu_allocatable = cpu_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"]
+          if !cpu_allocatable_json.nil?
+            @cpu_allocatable = cpu_allocatable_json[0]["json_Collections"])[0]["Value"]
             @log.info "CPU Allocatable #{@cpu_allocatable}"
           else
             @log.error "Error getting cpu_allocatable"
@@ -374,8 +374,8 @@ module Fluent::Plugin
           end
 
           memory_allocatable_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "allocatable", "memory", "memoryAllocatableBytes")
-          if !memory_allocatable_json.nil? && !memory_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"].to_s.nil?
-            @memory_allocatable = memory_allocatable_json[0]["DataItems"][0]["Collections"][0]["Value"]
+          if !memory_allocatable_json.nil?
+            @memory_allocatable = memory_allocatable_json[0]["json_Collections"])[0]["Value"]
             @log.info "Memory Allocatable #{@memory_allocatable}"
           else
             @log.error "Error getting memory_allocatable"
