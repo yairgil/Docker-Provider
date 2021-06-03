@@ -462,6 +462,11 @@ if [[ ("${USING_AAD_MSI_AUTH}" == "true") || ("${USING_LA_AAD_AUTH}" == "true") 
       echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
       export MDSD_USE_LOCAL_PERSISTENCY="false"
       echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
+      #skip imds metadata lookup since we dont use
+      #legacy auth misnomer here
+      export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
+      echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
+
       source ~/.bashrc
 
       dpkg -l | grep mdsd | awk '{print $2 " " $3}'

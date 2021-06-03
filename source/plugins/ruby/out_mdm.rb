@@ -31,7 +31,7 @@ module Fluent::Plugin
 
       # msiEndpoint is the well known endpoint for getting MSI authentications tokens
       @@msi_endpoint_template = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&client_id=%{user_assigned_client_id}&resource=%{resource}"
-      # IMDS msiEndpoint for AAD MSI Auth is the proxy endpoint for getting MSI authentications tokens
+      # IMDS msiEndpoint for AAD MSI Auth is the proxy endpoint whcih serves the MSI auth tokens with resource claim
       @@imds_msi_endpoint_template = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=%{resource}"
       @@user_assigned_client_id = ENV["USER_ASSIGNED_IDENTITY_CLIENT_ID"]
 
