@@ -23,9 +23,15 @@ class ApplicationInsightsUtility
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
   @@EnvAADMSIAuthMode = "AAD_MSI_AUTH_MODE"
 
+  @@isWindows = false
+  @@hostName = (OMS::Common.get_hostname)
+  @@os_type = ENV["OS_TYPE"]
+  if !@@os_type.nil? && !@@os_type.empty? && @@os_type.strip.casecmp("windows") == 0
+    @@isWindows = true
+    @@hostName = ENV["HOSTNAME"]
+  end
   @@CustomProperties = {}
   @@Tc = nil
-  @@hostName = (OMS::Common.get_hostname)
   @@proxy = (ProxyUtils.getProxyConfiguration)
 
   def initialize
@@ -139,16 +145,23 @@ class ApplicationInsightsUtility
     end
 
     def getContainerRuntimeInfo()
-      containerRuntime = ENV[@@EnvContainerRuntime]
-      if !containerRuntime.nil? && !containerRuntime.empty?
-        # DockerVersion field holds either containerRuntime for non-docker or Dockerversion if its docker
-        @@CustomProperties["DockerVersion"] = containerRuntime
-        if containerRuntime.casecmp("docker") == 0
-          dockerInfo = DockerApiClient.dockerInfo
-          if (!dockerInfo.nil? && !dockerInfo.empty?)
-            @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
+      begin
+        containerRuntime = ENV[@@EnvContainerRuntime]
+        if !containerRuntime.nil? && !containerRuntime.empty?
+          # DockerVersion field holds either containerRuntime for non-docker or Dockerversion if its docker
+          @@CustomProperties["DockerVersion"] = containerRuntime
+          # Not doing this for windows since docker is being deprecated soon and we dont want to bring in the socket dependency.
+          if !@@isWindows.nil? && @@isWindows == false
+            if containerRuntime.casecmp("docker") == 0
+              dockerInfo = DockerApiClient.dockerInfo
+              if (!dockerInfo.nil? && !dockerInfo.empty?)
+                @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
+              end
+            end
           end
         end
+      rescue => errorStr
+        $log.warn("Exception in AppInsightsUtility: getContainerRuntimeInfo - error: #{errorStr}")
       end
     end
 
@@ -268,7 +281,7 @@ class ApplicationInsightsUtility
     end
 
     def getWorkspaceId()
-      begin       
+      begin
         workspaceId = ENV["WSID"]
         if workspaceId.nil? || workspaceId.empty?
           $log.warn("Exception in AppInsightsUtility: getWorkspaceId - WorkspaceID either nil or empty")
@@ -280,7 +293,7 @@ class ApplicationInsightsUtility
     end
 
     def getWorkspaceCloud()
-      begin     
+      begin
         workspaceDomain = ENV["DOMAIN"]
         workspaceCloud = "AzureCloud"
         if workspaceDomain.casecmp("opinsights.azure.com") == 0

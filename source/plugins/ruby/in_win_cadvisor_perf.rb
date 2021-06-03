@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require 'fluent/plugin/input'
+require "fluent/plugin/input"
 
 module Fluent::Plugin
   class Win_CAdvisor_Perf_Input < Input
@@ -58,7 +58,7 @@ module Fluent::Plugin
       begin
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
-        @@istestvar = ENV["ISTEST"]             
+        @@istestvar = ENV["ISTEST"]
 
         if ExtensionUtils.isAADMSIAuthMode()
           $log.info("in_win_cadvisor_perf::enumerate: AAD AUTH MSI MODE")    
@@ -94,7 +94,6 @@ module Fluent::Plugin
             end
           end
           router.emit_stream(@tag, eventStream) if eventStream
-          router.emit_stream(@mdmtag, eventStream) if eventStream
 
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -104,10 +103,10 @@ module Fluent::Plugin
           begin
             containerGPUusageInsightsMetricsDataItems = []
             containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601))
-            insightsMetricsEventStream = Fluent::MultiEventStream.new            
+            insightsMetricsEventStream = Fluent::MultiEventStream.new
 
             containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
-              insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord             
+              insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
             end
 
             router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
