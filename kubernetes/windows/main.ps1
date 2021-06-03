@@ -196,13 +196,13 @@ function Set-EnvironmentVariables {
     [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Machine")
 
     # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
-    if ($env.USING_LA_AAD_AUTH) {
+    if ($env.USING_LA_AAD_AUTH || $env.USING_AAD_MSI_AUTH) {
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Process")
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Machine")
         Write-Host "Using LA AAD auth"
     }
     else {
-        Write-Host "Using LA AAD auth"
+        Write-Host "Using LA Legacy Auth"
     }
 
     # run config parser

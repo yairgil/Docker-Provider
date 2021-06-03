@@ -109,7 +109,6 @@ const ContainerLogV2SchemaVersion = "v2"
 
 //env variable for AAD MSI Auth mode
 const AADMSIAuthMode = "AAD_MSI_AUTH_MODE"
-const IMDSTokenPath = "c:/etc/imds-access-token/token" // only used in windows
 
 // Tag prefix of mdsd output streamid for AMA in MSI auth mode
 const MdsdOutputStreamIdTagPrefix = "dcr-"
