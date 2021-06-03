@@ -160,6 +160,8 @@ module Fluent::Plugin
       begin
         if @process_incoming_stream
 
+          @log.info "REACH HERE 55555555555555555555555 with metric_value: #{metric_value}"
+
           # Check if insights metrics for PV metrics      
           if record["Name"] == Constants::PV_USED_BYTES
             return filterPVInsightsMetrics(record)
@@ -172,14 +174,21 @@ module Fluent::Plugin
           allocatable_percentage_metric_value = 0.0
           metric_value = JSON.parse(record["json_Collections"])[0]["Value"]
 
+          @log.info "REACH HERE 444444444444444444444444444444444 with metric_value: #{metric_value}"
+
           if object_name == Constants::OBJECT_NAME_K8S_NODE && @metrics_to_collect_hash.key?(counter_name.downcase)
             # Compute and send % CPU and Memory
             if counter_name == Constants::CPU_USAGE_NANO_CORES
               metric_name = Constants::CPU_USAGE_MILLI_CORES
               metric_value /= 1000000 #cadvisor record is in nanocores. Convert to mc
               if @@controller_type.downcase == "replicaset"
+                @log.info "REACH HERE 333333333333333333333333333333333333333333333333"
                 target_node_cpu_capacity_mc = @NodeCache.cpu.get_capacity(record["Host"]) / 1000000
                 target_node_cpu_allocatable_mc = @NodeCache.cpu.get_allocatable(record["Host"]) / 1000000
+                @log.info "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                @log.info "target_node_cpu_capacity_mc : #{target_node_cpu_capacity_mc}"
+                @log.info "target_node_cpu_allocatable_mc : #{target_node_cpu_allocatable_mc}"
+                @log.info "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
               else
                 target_node_cpu_capacity_mc = @cpu_capacity
                 target_node_cpu_allocatable_mc = @cpu_allocatable
@@ -196,8 +205,13 @@ module Fluent::Plugin
             if counter_name.start_with?("memory")
               metric_name = counter_name
               if @@controller_type.downcase == "replicaset"
+                @log.info "REACH HERE 2222222222222222222222222222222"
                 target_node_mem_capacity = @NodeCache.mem.get_capacity(record["Host"])
                 target_node_mem_allocatable = @NodeCache.mem.get_allocatable(record["Host"])
+                @log.info "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                @log.info "target_node_mem_capacity : #{target_node_mem_capacity}"
+                @log.info "target_node_mem_allocatable : #{target_node_mem_allocatable}"
+                @log.info "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
               else
                 target_node_mem_capacity = @memory_capacity
                 target_node_mem_allocatable = @memory_allocatable
@@ -413,15 +427,19 @@ module Fluent::Plugin
     def filter_stream(tag, es)
       new_es = Fluent::MultiEventStream.new
       begin
-        @log.info "Begin filter_stream : Calling ensure_cpu_memory_capacity_and_allocatable_set"
+        @log.debug "Begin filter_stream : Calling ensure_cpu_memory_capacity_and_allocatable_set"
         ensure_cpu_memory_capacity_and_allocatable_set
+        @log.debug " FINISHED CALLING ensure_cpu_memory_capacity_and_allocatable_set"
         # Getting container limits hash
         if @process_incoming_stream
           @containerCpuLimitHash, @containerMemoryLimitHash, @containerResourceDimensionHash = KubeletUtils.get_all_container_limits
         end
 
+        @log.debug "Starting ES Loop"
+
         es.each { |time, record|
-          filtered_records = filter(tag, time, record)
+        @log.debug " calling filter(tag, time,recrd)...."
+        filtered_records = filter(tag, time, record)
           filtered_records.each { |filtered_record|
             new_es.add(time, filtered_record) if filtered_record
           } if filtered_records

@@ -213,14 +213,16 @@ module Fluent::Plugin
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             if is_windows_node
-              @NodeCache.cpu.set_allocatable(nodeMetricRecord["Host"], JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"])
+              metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
+              @NodeCache.cpu.set_allocatable(nodeMetricRecord["Host"], metricVal)
             end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             if is_windows_node
-              @NodeCache.mem.set_allocatable(nodeMetricRecord["Host"], JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"])
+              metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
+              @NodeCache.mem.set_allocatable(nodeMetricRecord["Host"], metricVal)
             end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
@@ -550,6 +552,7 @@ module Fluent::Plugin
 
       def set_capacity(host, val)
         # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
+        $log.info "in_kube_nodes::set_capacity being called"
         current_time = DateTime.now.to_time.to_i
         if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
           clean_cache
@@ -563,6 +566,7 @@ module Fluent::Plugin
       end
 
       def set_allocatable(host, val)
+        $log.info "in_kube_nodes::set_allocatable being called ***************"
         current_time = DateTime.now.to_time.to_i
         if current_time - @allocatableLastCacheClearTime > @@RECORD_TIME_TO_LIVE
           allocatable_clean_cache
