@@ -434,9 +434,10 @@ DOCKER_CIMPROV_VERSION=$(dpkg -l | grep docker-cimprov | awk '{print $3}')
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
-# check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
+# check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH 
+# remove USING_LA_AAD_AUTH environment variable once RP side change available
 export AAD_MSI_AUTH_MODE=false 
-if [[ ("${USING_LA_AAD_AUTH}" == "true") ]]; then
+if [[ ("${USING_AAD_MSI_AUTH}" == "true") || ("${USING_LA_AAD_AUTH}" == "true") ]]; then
       echo "*** activating oneagent in aad auth msi mode ***"       
       export AAD_MSI_AUTH_MODE=true
       echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
