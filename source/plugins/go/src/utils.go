@@ -347,11 +347,8 @@ func getAccessTokenFromIMDS(fromfile bool) (string, int64, error) {
 	var err error
 
 	if fromfile {
-		if os.Getenv("OS_TYPE") == "windows" {
-			responseBytes, err = ioutil.ReadFile("c:/etc/imds-access-token/token")
-		} else {
-			responseBytes, err = ioutil.ReadFile("/etc/imds-access-token/token")
-		}
+		// only used in windows
+		responseBytes, err = ioutil.ReadFile(IMDSTokenPath)
 		if err != nil {
 			Log("getAccessTokenFromIMDS: Could not read IMDS token from file", err)
 			return imdsAccessToken, 0, err
