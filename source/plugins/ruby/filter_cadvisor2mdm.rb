@@ -327,7 +327,7 @@ module Fluent::Plugin
 
     def ensure_cpu_memory_capacity_and_allocatable_set
       if @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @cpu_allocatable != 0.0 && @memory_allocatable != 0.0
-        @log.info "CPU And Memory Capacity and Allocatable are already set"
+        @log.info "CPU And Memory Capacity and allocatable are already set and their values are as follows #{@cpu_capacity} #{@memory_capacity} #{@cpu_allocatable} #{@memory_allocatable}"
         return
       end
 
@@ -399,6 +399,8 @@ module Fluent::Plugin
         if !allocatable_from_kubelet.nil? && allocatable_from_kubelet.length > 1
           @cpu_allocatable = allocatable_from_kubelet[0]
           @memory_allocatable = allocatable_from_kubelet[1]
+          @log.info "CPU Allocatable #{@cpu_allocatable}"
+          @log.info "Memory Allocatable #{@memory_allocatable}"
         else
           # cpu_allocatable and memory_allocatable keep initialized value of 0.0
           @log.error "Error getting allocatable_from_kubelet: cpu_allocatable and memory_allocatable"
