@@ -364,7 +364,7 @@ module Fluent::Plugin
 
           memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
           if !memory_capacity_json.nil? 
-            metricVal = JSON.parse(cpu_capacity_json[0]["json_Collections"])[0]["Value"]          
+            metricVal = JSON.parse(memory_capacity_json[0]["json_Collections"])[0]["Value"]          
             if !metricVal.to_s.nil?
               @memory_capacity = metricVal
               @log.info "Memory Limit #{@memory_capacity}"
@@ -381,6 +381,7 @@ module Fluent::Plugin
             @log.error "Error getting memory_allocatable"
           end
         end
+        @log.info "********** @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity} @cpu_allocatable #{@cpu_allocatable} @memory_allocatable #{@memory_allocatable}"
       elsif @@controller_type.downcase == "daemonset"
         capacity_from_kubelet = KubeletUtils.get_node_capacity
 

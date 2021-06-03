@@ -529,8 +529,6 @@ module Fluent::Plugin
         @allocatableTimeAdded = {}
         @lock = Mutex.new
         @allocatableLock = Mutex.new
-        @lastCacheClearTime = 0
-        @allocatableLastCacheClearTime = 0
 
         @cacheHash.default = 0.0
         @allocatableCacheHash.default = 0.0
@@ -598,12 +596,12 @@ module Fluent::Plugin
 
       def allocatable_clean_cache()
         $log.info "in_kube_nodes::allocatable_clean_cache: cleaning node cpu/mem cache"
-        cacheClearTime = DateTime.now.to_time.to_i
+        allocatableCacheClearTime = DateTime.now.to_time.to_i
         @allocatableLock.synchronize do
           nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
           # list is used so that we aren't modifying a hash while iterating through it.
           @allocatableCacheHash.each do |key, val|
-            if cacheClearTime - @allocatableTimeAdded[key] > @@RECORD_TIME_TO_LIVE
+            if allocatableCacheClearTime - @allocatableTimeAdded[key] > @@RECORD_TIME_TO_LIVE
               nodes_to_remove.append(key)
             end
           end
