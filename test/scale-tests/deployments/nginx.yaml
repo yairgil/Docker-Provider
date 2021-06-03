@@ -6,7 +6,7 @@ metadata:
     app: nginx-deployment
   name: nginx-deployment
 spec:
-  replicas: 5000
+  replicas: 1000
   selector:
     matchLabels:
       app: nginx-deployment
@@ -17,14 +17,10 @@ spec:
         app: nginx-deployment
     spec:
       containers:
-      - image: nginx
+      - image: mcr.microsoft.com/oss/nginx/nginx:1.15.5-alpine
         name: nginx1
         ports:
-        - containerPort: 80      
-      - image: nginx
-        name: nginx2
-        ports:
-        - containerPort: 80      
+        - containerPort: 80           
       nodeSelector:
        kubernetes.io/os: linux         
 status: {}
