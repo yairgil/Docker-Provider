@@ -62,6 +62,8 @@ omsagent:
     logflushintervalsecs: ""
     tailbufchunksizemegabytes: ""
     tailbufmaxsizemegabytes: ""
+    membuflimitsizemegabytes: ""
+    rotateWaitInterval: ""
     ## Applicable for only Azure Stack Edge K8s since it has custom mount path for container logs which will have symlink to /var/log path
     custommountpath: ""
 

@@ -89,6 +89,14 @@ spec:
        - name: FBIT_TAIL_BUFFER_MAX_SIZE
          value: {{ .Values.omsagent.logsettings.tailbufmaxsizemegabytes | quote }}
        {{- end }}
+       {{- if .Values.omsagent.logsettings.membuflimitsizemegabytes }}
+       - name: FBIT_MEM_BUF_LIMIT_SIZE
+         value: {{ .Values.omsagent.logsettings.membuflimitsizemegabytes | quote }}
+       {{- end }}      
+       {{- if .Values.omsagent.logsettings.rotateWaitInterval }}
+       - name: ROTATE_WAIT
+         value: {{ .Values.omsagent.logsettings.rotateWaitInterval | quote }}
+       {{- end }}              
        - name: ISTEST
          value: {{ .Values.omsagent.ISTEST | quote }}
        securityContext:
