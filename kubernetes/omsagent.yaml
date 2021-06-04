@@ -794,8 +794,8 @@ spec:
           - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
             value: ""
           # Add this only for clouds that require cert bootstrapping
-          - name: REQUIRES_CERT_BOOTSTRAP
-            value: "true"
+          #- name: REQUIRES_CERT_BOOTSTRAP
+          #  value: "true"
          volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers

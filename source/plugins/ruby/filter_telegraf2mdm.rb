@@ -2,7 +2,7 @@
 
 # frozen_string_literal: true
 
-require 'fluent/plugin/filter'
+require "fluent/plugin/filter"
 
 module Fluent::Plugin
   require "logger"
@@ -49,9 +49,12 @@ module Fluent::Plugin
     end
 
     def filter(tag, time, record)
+      @log.info "rashmi: in filter method"
       if @process_incoming_stream
         begin
+          @log.info "rashmi: in process incoming stream"
           if !record.nil? && !record["name"].nil? && record["name"].downcase == Constants::TELEGRAF_DISK_METRICS
+            @log.info "rashmi: disk metrics- record - #{record}"
             return MdmMetricsGenerator.getDiskUsageMetricRecords(record)
           else
             return MdmMetricsGenerator.getMetricRecords(record)
