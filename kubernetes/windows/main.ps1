@@ -224,6 +224,8 @@ function Set-EnvironmentVariables {
     if (![string]::IsNullOrEmpty($hostName)) {
         [System.Environment]::SetEnvironmentVariable("HOSTNAME", $hostName, "machine")
         Write-Host "Successfully set environment variable HOSTNAME - $($hostName) for target 'machine'..."
+        # # Replacing the placeholder in telegraf conf file with the host name
+        # (Get-Content -path C:\etc\telegraf\telegraf.conf -Raw) -replace 'placeholder_hostname',$hostName
     }
     else {
         Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
