@@ -21,6 +21,7 @@ require_relative "ConfigParseErrorLogger"
 @collectClusterEnvVariables = true
 @logTailPath = "/var/log/containers/*.log"
 @logExclusionRegexPattern = "(^((?!stdout|stderr).)*$)"
+@logStitchMultiline = false
 @excludePath = "*.csv2" #some invalid path
 @enrichContainerLogs = false
 @containerLogSchemaVersion = ""
@@ -150,6 +151,24 @@ def populateSettingValuesFromConfigMap(parsedConfig)
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for container log schema version - #{errorStr}, using defaults, please check config map for errors")
     end
+    
+    #Get multiline log stitching setting
+    begin
+      if !parsedConfig[:log_collection_settings][:stitch_multiline_logs].nil? && !parsedConfig[:log_collection_settings][:stitch_multiline_logs][:enabled].nil?
+        @logStitchMultiline = parsedConfig[:log_collection_settings][:stitch_multiline_logs][:enabled]
+        puts "config::Using config map setting for multiline stitching"
+      else
+        # turn on multiline by default if using containerlog v2 schema
+        # TODO: figure out allowed values for containerLogSchemaVersion, is "v2" the only value that will mean the new log schema?
+        if @containerLogSchemaVersion.strip.casecmp("v2")
+          @logStitchMultiline = true
+        else
+          @logStitchMultiline = false
+        end
+      end
+    rescue => errorStr
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for stitching multiline logs - #{errorStr}, using defaults, please check config map for errors")
+    end
 
     #Get kube events enrichment setting
     begin
@@ -209,6 +228,7 @@ if !file.nil?
   file.write("export AZMON_COLLECT_STDOUT_LOGS=#{@collectStdoutLogs}\n")
   file.write("export AZMON_LOG_TAIL_PATH=#{@logTailPath}\n")
   file.write("export AZMON_LOG_EXCLUSION_REGEX_PATTERN=\"#{@logExclusionRegexPattern}\"\n")
+  file.write("export AZMON_LOG_STITCH_MULTILINE=#{@logStitchMultiline}\n")
   file.write("export AZMON_STDOUT_EXCLUDED_NAMESPACES=#{@stdoutExcludeNamespaces}\n")
   file.write("export AZMON_COLLECT_STDERR_LOGS=#{@collectStderrLogs}\n")
   file.write("export AZMON_STDERR_EXCLUDED_NAMESPACES=#{@stderrExcludeNamespaces}\n")
@@ -247,6 +267,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     commands = get_command_windows('AZMON_LOG_TAIL_PATH', @logTailPath)
     file.write(commands)
     commands = get_command_windows('AZMON_LOG_EXCLUSION_REGEX_PATTERN', @logExclusionRegexPattern)
+    file.write(commands)
+    commands = get_command_windows('AZMON_LOG_STITCH_MULTILINE', @logStitchMultiline)
     file.write(commands)
     commands = get_command_windows('AZMON_STDOUT_EXCLUDED_NAMESPACES', @stdoutExcludeNamespaces)
     file.write(commands)
