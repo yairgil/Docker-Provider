@@ -1055,7 +1055,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		containerID, k8sNamespace, k8sPodName, containerName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 		logEntry := ToString(record["log"])
-    logEntryTimeStamp := ToString(record["time"])
+		logEntryTimeStamp := ToString(record["time"])
 
 		if (stripMultilineHeaders) {
 			logEntry = multilineContainerdRegex.ReplaceAllString(logEntry, "\n")
@@ -1083,7 +1083,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap = make(map[string]string)
 		//below id & name are used by latency telemetry in both v1 & v2 LA schemas
 		id := ""
-    name := ""
+	  name := ""
+
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
 		if (ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true) {
 			stringMap["Computer"] = Computer
