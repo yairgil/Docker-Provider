@@ -1,16 +1,9 @@
 TMPDIR="/opt"
 cd $TMPDIR
 
-#download and install fluent-bit(td-agent-bit)
-wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
-sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
-sudo apt-get update
-sudo apt-get install td-agent-bit=1.6.8 -y
-
-
 #Download utf-8 encoding capability on the omsagent container.
 #upgrade apt to latest version
-apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
+apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
 sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
@@ -27,6 +20,7 @@ cp -f $TMPDIR/envmdsd /etc/mdsd.d
 sudo apt-get install acl
 
 #download inotify tools for watching configmap changes
+sudo apt-get update
 sudo apt-get install inotify-tools -y
 
 #used to parse response of kubelet apis
@@ -47,6 +41,12 @@ chmod 777 /opt/telegraf
 # Use wildcard version so that it doesnt require to touch this file
 /$TMPDIR/docker-cimprov-*.*.*-*.x86_64.sh --install
 
+#download and install fluent-bit(td-agent-bit)
+wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
+sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
+sudo apt-get update
+sudo apt-get install td-agent-bit=1.6.8 -y
+
 # install ruby2.6
 sudo apt-get install software-properties-common -y
 sudo apt-add-repository ppa:brightbox/ruby-ng -y
@@ -57,9 +57,6 @@ gem install fluentd -v "1.12.2" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 
-
-rm -rf $TMPDIR/omsbundle
-rm -f $TMPDIR/omsagent*.sh
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml

@@ -38,15 +38,6 @@ waitforlisteneronTCPport() {
       fi
 }
 
-if [ -e "/etc/config/kube.conf" ]; then
-    cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
-else
-    sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
-fi
-sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
-sed -i -e 's/^exit 101$/exit 0/g' /usr/sbin/policy-rc.d
-
-
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
 #Defaults to use port 10255
@@ -418,52 +409,6 @@ if [ $RET_CODE -eq 200 ]; then
       cAdvisorIsSecure=true
 fi
 
-# default to docker since this is default in AKS as of now and change to containerd once this becomes default in AKS
-export CONTAINER_RUNTIME="docker"
-export NODE_NAME=""
-
-if [ "$cAdvisorIsSecure" = true ]; then
-      echo "Wget request using port 10250 succeeded. Using 10250"
-      export IS_SECURE_CADVISOR_PORT=true
-      echo "export IS_SECURE_CADVISOR_PORT=true" >> ~/.bashrc
-      export CADVISOR_METRICS_URL="https://$NODE_IP:10250/metrics"
-      echo "export CADVISOR_METRICS_URL=https://$NODE_IP:10250/metrics" >> ~/.bashrc
-      echo "Making curl request to cadvisor endpoint /pods with port 10250 to get the configured container runtime on kubelet"
-      podWithValidContainerId=$(curl -s -k -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://$NODE_IP:10250/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
-else
-      echo "Wget request using port 10250 failed. Using port 10255"
-      export IS_SECURE_CADVISOR_PORT=false
-      echo "export IS_SECURE_CADVISOR_PORT=false" >> ~/.bashrc
-      export CADVISOR_METRICS_URL="http://$NODE_IP:10255/metrics"
-      echo "export CADVISOR_METRICS_URL=http://$NODE_IP:10255/metrics" >> ~/.bashrc
-      echo "Making curl request to cadvisor endpoint with port 10255 to get the configured container runtime on kubelet"
-      podWithValidContainerId=$(curl -s http://$NODE_IP:10255/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
-fi
-
-if [ ! -z "$podWithValidContainerId" ]; then
-      containerRuntime=$(echo $podWithValidContainerId | jq -r '.status.containerStatuses[0].containerID' | cut -d ':' -f 1)
-      nodeName=$(echo $podWithValidContainerId | jq -r '.spec.nodeName')
-      # convert to lower case so that everywhere else can be used in lowercase
-      containerRuntime=$(echo $containerRuntime | tr "[:upper:]" "[:lower:]")
-      nodeName=$(echo $nodeName | tr "[:upper:]" "[:lower:]")
-      # update runtime only if its not empty, not null and not startswith docker
-      if [ -z "$containerRuntime" -o "$containerRuntime" == null  ]; then
-            echo "using default container runtime as $CONTAINER_RUNTIME since got containeRuntime as empty or null"
-      elif [[ $containerRuntime != docker* ]]; then
-            export CONTAINER_RUNTIME=$containerRuntime
-      fi
-
-      if [ -z "$nodeName" -o "$nodeName" == null  ]; then
-            echo "-e error nodeName in /pods API response is empty"
-      else
-            export NODE_NAME=$nodeName
-      fi
-else
-      echo "-e error either /pods API request failed or no running pods"
-fi
-
-echo "configured container runtime on kubelet is : "$CONTAINER_RUNTIME
-echo "export CONTAINER_RUNTIME="$CONTAINER_RUNTIME >> ~/.bashrc
 
 export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
 echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
@@ -542,7 +487,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
 else          
    echo "starting mdsd in legacy auth mode in main container..."
    # add -T 0xFFFF for full traces
-   mdsd -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &  
+   mdsd -T 0x2002 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &  
 fi
 
 # no dependency on fluentd for prometheus side car container  
