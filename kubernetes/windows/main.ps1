@@ -369,6 +369,16 @@ function Start-Fluent-Telegraf {
         (Get-Content -Path C:/etc/fluent/fluent.conf -Raw)  -replace 'fluent-docker-parser.conf','fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
     }
 
+    # # Start telegraf only in sidecar scraping mode
+    # $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+    # if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
+    # {
+    #     Write-Host "Starting telegraf..."
+    #     Start-Telegraf
+    # }
+
+    fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
+
     # Start telegraf only in sidecar scraping mode
     $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
     if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
@@ -376,8 +386,6 @@ function Start-Fluent-Telegraf {
         Write-Host "Starting telegraf..."
         Start-Telegraf
     }
-
-    fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
 
     Notepad.exe | Out-Null
 }
