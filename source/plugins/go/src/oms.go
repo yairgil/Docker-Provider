@@ -1054,6 +1054,21 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	for _, record := range tailPluginRecords {
 		containerID, k8sNamespace, k8sPodName, containerName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
+		logEntry := ToString(record["log"])
+    logEntryTimeStamp := ToString(record["time"])
+
+		if (stripMultilineHeaders) {
+			logEntry = multilineContainerdRegex.ReplaceAllString(logEntry, "\n")
+			if len(logEntryTimeStamp) == 0 {
+				var containerdHeaderRegex = regexp.MustCompile(`^([^ ]+) (stdout|stderr) ([^ ]*) ( *(.*))$`)
+		    groupMatches := containerdHeaderRegex.FindStringSubmatch(logEntry)
+				if len(groupMatches) > 4 {
+					logEntryTimeStamp = groupMatches[1]
+					logEntrySource = groupMatches[2]
+					logEntry = groupMatches[4]
+				}
+			}
+		}
 
 		if strings.EqualFold(logEntrySource, "stdout") {
 			if containerID == "" || containsKey(StdoutIgnoreNsSet, k8sNamespace) {
@@ -1068,15 +1083,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap = make(map[string]string)
 		//below id & name are used by latency telemetry in both v1 & v2 LA schemas
 		id := ""
-	    name := ""
-
-		logEntry := ToString(record["log"])
-
-		if (stripMultilineHeaders) {
-			logEntry = multilineContainerdRegex.ReplaceAllString(logEntry, "\n")
-		}
-
-		logEntryTimeStamp := ToString(record["time"])
+    name := ""
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
 		if (ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true) {
 			stringMap["Computer"] = Computer
@@ -1723,14 +1730,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
     MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName		
-}
 
-	//TODO: here
-	if (os.Getenv("AZMON_LOG_STITCH_MULTILINE") == "true" && os.Getenv("CONTAINER_RUNTIME") == "containerd") {
+	// if stitching multiline log messages and Containerd, then strip out the containerd header here
+  // Make sure the environment variables AZMON_LOG_STITCH_MULTILINE=true and CONTAINER_RUNTIME=containerd
+  if (os.Getenv("AZMON_LOG_STITCH_MULTILINE") == "true" && os.Getenv("CONTAINER_RUNTIME") == "containerd") {
 		stripMultilineHeaders = true
 	}
 }
-
-
-// if stitching multiline log messages and Containerd, then strip out the containerd header here
-// Make sure the environment variables AZMON_LOG_STITCH_MULTILINE=true and CONTAINER_RUNTIME=containerd
