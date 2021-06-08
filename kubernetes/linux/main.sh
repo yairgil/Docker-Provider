@@ -57,7 +57,8 @@ else
       export customResourceId=$AKS_RESOURCE_ID
       echo "export customResourceId=$AKS_RESOURCE_ID" >> ~/.bashrc
       source ~/.bashrc
-      echo "customResourceId:$customResourceId"     
+      echo "customResourceId:$customResourceId"
+
       export customRegion=$AKS_REGION 
       echo "export customRegion=$AKS_REGION" >> ~/.bashrc
       source ~/.bashrc

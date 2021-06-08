@@ -43,6 +43,7 @@ function Start-FileSystemWatcher {
 
 function Set-EnvironmentVariables {
     $domain = "opinsights.azure.com"
+    $mcs_endpoint = "monitor.azure.com"
     $cloud_environment = "public"
     if (Test-Path /etc/omsagent-secret/DOMAIN) {
         # TODO: Change to omsagent-secret before merging
@@ -53,10 +54,24 @@ function Set-EnvironmentVariables {
     # Set DOMAIN
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Machine")
+    
+    # Set DOMAIN
+    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Process")
+    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Machine")
 
     # Set CLOUD_ENVIRONMENT
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")
+
+        
+    # Set Region
+    [System.Environment]::SetEnvironmentVariable("customRegion", $env:AKS_REGION, "Process")
+    [System.Environment]::SetEnvironmentVariable("customRegion", $env:AKS_REGION, "Machine")
+    
+    # Set resource ID
+    [System.Environment]::SetEnvironmentVariable("customResourceId", $env:AKS_RESOURCE_ID, "Process")
+    [System.Environment]::SetEnvironmentVariable("customResourceId", $env:AKS_RESOURCE_ID, "Machine")
+
 
     $wsID = ""
     if (Test-Path /etc/omsagent-secret/WSID) {
@@ -227,6 +242,15 @@ function Set-EnvironmentVariables {
     }
     else {
         Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
+    }    
+    # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
+    if ($env.USING_LA_AAD_AUTH || $env.USING_AAD_MSI_AUTH) {
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Process")
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Machine")
+        Write-Host "Using LA AAD auth"
+    }
+    else {
+        Write-Host "Using LA Legacy Auth"
     }
 
     # run config parser
@@ -377,6 +401,7 @@ function Start-Fluent-Telegraf {
 
     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
 
+    # TODO: why is this here?
     Notepad.exe | Out-Null
 }
 
