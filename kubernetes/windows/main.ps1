@@ -358,9 +358,9 @@ function Start-Fluent-Telegraf {
     if (![string]::IsNullOrEmpty($stitchMultilineLogs) -and [string]$stitchMultilineLogs -eq "true") {
       if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
         Write-Host "For fluent-bit, changing parser from Docker multiline to CRI multiline since container runtime : $($containerRuntime) and which is non-docker"
-        (Get-Content -Path C:/etc/fluent-bit/fluent-multiline.conf -Raw)  -replace '#${CONTAINTERD_MULTILINE_LOGGING}','' | Set-Content C:\etc\fluent-bit\fluent-bit-multiline.conf
+        (Get-Content -Path C:/etc/fluent-bit/fluent-bit-multiline.conf -Raw)  -replace '#${CONTAINTERD_MULTILINE_LOGGING}','' | Set-Content C:\etc\fluent-bit\fluent-bit-multiline.conf
       } else {
-        (Get-Content -Path C:/etc/fluent-bit/fluent-multiline.conf -Raw)  -replace '#${DOCKER_MULTILINE_LOGGING}','' | Set-Content C:\etc\fluent-bit\fluent-bit-multiline.conf
+        (Get-Content -Path C:/etc/fluent-bit/fluent-bit-multiline.conf -Raw)  -replace '#${DOCKER_MULTILINE_LOGGING}','' | Set-Content C:\etc\fluent-bit\fluent-bit-multiline.conf
       }
       # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
       # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
