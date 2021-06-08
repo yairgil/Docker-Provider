@@ -95,7 +95,7 @@ module Fluent::Plugin
                 if ExtensionUtils.isAADMSIAuthMode()
                     $log.info("filter_health_model_builder::enumerate: AAD AUTH MSI MODE")             
                     if !@rewrite_tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
-                      @rewrite_tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
+                      @rewrite_tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_HEALTH_DATA_TYPE)
                     end                            
                 end           
                 # debug logs          
