@@ -355,7 +355,7 @@ function Start-Fluent-Telegraf {
     $containerRuntime = Get-ContainerRuntime
     $stitchMultilineLogs = [System.Environment]::GetEnvironmentVariable("AZMON_LOG_STITCH_MULTILINE", "process")
 
-    if ![string]::IsNullOrEmpty($stitchMultilineLogs) -and [string]$stitchMultilineLogs -eq "true" {
+    if (![string]::IsNullOrEmpty($stitchMultilineLogs) -and [string]$stitchMultilineLogs -eq "true") {
       if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
         Write-Host "For fluent-bit, changing parser from Docker multiline to CRI multiline since container runtime : $($containerRuntime) and which is non-docker"
         (Get-Content -Path C:/etc/fluent/fluent.conf -Raw)  -replace '#${CONTAINTERD_MULTILINE_LOGGING}','' | Set-Content C:\etc\fluent-bit\fluent-bit-multiline.conf
@@ -387,9 +387,9 @@ function Start-Fluent-Telegraf {
         Start-Telegraf
     }
 
-    if ![string]::IsNullOrEmpty($stitchMultilineLogs) -and [string]$stitchMultilineLogs -eq "true" {
+    if (![string]::IsNullOrEmpty($stitchMultilineLogs) -and [string]$stitchMultilineLogs -eq "true") {
       fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent-multiline.conf -o C:/etc/fluent/fluent.log'
-    else {
+    } else {
       fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
     }
     Notepad.exe | Out-Null
