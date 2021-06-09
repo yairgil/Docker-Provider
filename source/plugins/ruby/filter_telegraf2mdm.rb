@@ -53,6 +53,7 @@ module Fluent::Plugin
       if @process_incoming_stream
         begin
           @log.info "rashmi: in process incoming stream"
+          @log.info "rashmi: tgf metrics- record - #{record}"
           if !record.nil? && !record["name"].nil? && record["name"].downcase == Constants::TELEGRAF_DISK_METRICS
             @log.info "rashmi: disk metrics- record - #{record}"
             return MdmMetricsGenerator.getDiskUsageMetricRecords(record)
