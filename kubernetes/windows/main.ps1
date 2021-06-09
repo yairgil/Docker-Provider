@@ -244,7 +244,7 @@ function Set-EnvironmentVariables {
         Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
     }    
     # check if its AAD Auth MSI mode via USING_LA_AAD_AUTH environment variable
-    if ($env.USING_LA_AAD_AUTH || $env.USING_AAD_MSI_AUTH) {
+    if ($env.USING_LA_AAD_AUTH -or $env.USING_AAD_MSI_AUTH) {
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Process")
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Machine")
         Write-Host "Using LA AAD auth"
