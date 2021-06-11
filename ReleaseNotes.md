@@ -19,6 +19,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
    - Using MDSD version 1.10.1  as base agent for all the supported LA data types
    - Ruby version upgrade to 2.6 i.e. same version as windows agent
    - Upgrade FluentD gem version to 1.12.2 
+   - All the Ruby Fluentd Plugins upgraded to v1 as per Fluentd guidance
  - Windows Agent
    - CA cert changes for airgapped clouds
    - Send perf metrics to MDM from windows daemonset
