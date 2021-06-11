@@ -131,7 +131,7 @@ jobs:
         uses: PaloAltoNetworks/prisma-cloud-scan@v1
         with:
           image_name: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod04222021"
-        run: docker images --digests --all
+        #run: docker images --digests --all
       - name: Create-docker-image
         run: |
             cd ./kubernetes/windows/ && docker build . --file Dockerfile -t $env:IMAGETAG --build-arg IMAGE_TAG=$env:IMAGETAG_TELEMETRY
