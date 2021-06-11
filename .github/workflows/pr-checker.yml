@@ -125,12 +125,12 @@ jobs:
         run: systeminfo && go version && docker version
       - name: Build-source-code
         run: cd ./build/windows/ && & .\Makefile.ps1
-      - name: pull
-        run: docker pull "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod04222021"
+      #- name: pull
+      #  run: docker pull "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod04222021"
       - name: List-docker-images-pre
         uses: PaloAltoNetworks/prisma-cloud-scan@v1
         with:
-          image_name: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod04222021"
+          image_name: "mcr.microsoft.com/windows/servercore:ltsc2019"
         #run: docker images --digests --all
       - name: Create-docker-image
         run: |
