@@ -162,8 +162,8 @@ func getAccessTokenFromIMDS(fromfile bool) (string, int64, error) {
 		// Call managed services for Azure resources token endpoint
 		var resp *http.Response = nil
 		for i := 0; i < 3; i++ {
-			client := &http.Client{}
-			resp, err = client.Do(req)
+			// client := &http.Client{}
+			resp, err = HTTPClient.Do(req)
 			if err != nil {
 				message := fmt.Sprintf("getAccessTokenFromIMDS: Error calling token endpoint: %s", err.Error())
 				Log(message)
@@ -250,8 +250,8 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 
 	for i := 0; i < 3; i++ {
 		// Call managed services for Azure resources token endpoint
-		client := &http.Client{}
-		resp, err = client.Do(req)
+		// client := &http.Client{}
+		resp, err = HTTPClient.Do(req)
 		if err != nil {
 			message := fmt.Sprintf("Error calling amcs endpoint: %s", err.Error())
 			Log(message)
@@ -347,8 +347,8 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 
 	for i := 0; i < 3; i++ {
 		// Call managed services for Azure resources token endpoint
-		client := &http.Client{}
-		resp, err = client.Do(req)
+		// client := &http.Client{}
+		resp, err = HTTPClient.Do(req)
 		if err != nil {
 			message := fmt.Sprintf("Error calling amcs endpoint for ingestion auth token: %s", err.Error())
 			Log(message)

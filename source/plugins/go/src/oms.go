@@ -788,8 +788,8 @@ func flushKubeMonAgentEventRecords() {
 						// add authorization header to the req
 						req.Header.Add("Authorization", "Bearer "+ODSIngestionAuthToken)
 
-						client := &http.Client{}
-						resp, err = client.Do(req)
+						// client := &http.Client{}
+						resp, err = HTTPClient.Do(req)
 						elapsed = time.Since(start)
 					} else {
 						resp, err = HTTPClient.Do(req)
@@ -1031,8 +1031,8 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 			// add authorization header to the req
 			req.Header.Add("Authorization", "Bearer "+ODSIngestionAuthToken)
 
-			client := &http.Client{}
-			resp, err = client.Do(req)
+			// client := &http.Client{}
+			resp, err = HTTPClient.Do(req)
 		} else {
 			resp, err = HTTPClient.Do(req)
 		}
@@ -1420,8 +1420,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			// add authorization header to the req
 			req.Header.Add("Authorization", "Bearer "+ODSIngestionAuthToken)
 
-			client := &http.Client{}
-			resp, err = client.Do(req)
+			// client := &http.Client{}
+			resp, err = HTTPClient.Do(req)
 		} else {
 			resp, err = HTTPClient.Do(req)
 

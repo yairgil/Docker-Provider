@@ -63,27 +63,33 @@ func ReadConfiguration(filename string) (map[string]string, error) {
 
 // CreateHTTPClient used to create the client for sending post requests to OMSEndpoint
 func CreateHTTPClient() {
-	certFilePath := PluginConfiguration["cert_file_path"]
-	keyFilePath := PluginConfiguration["key_file_path"]
-	if IsWindows == false {
-		certFilePath = fmt.Sprintf(certFilePath, WorkspaceID)
-		keyFilePath = fmt.Sprintf(keyFilePath, WorkspaceID)
-	}
-	cert, err := tls.LoadX509KeyPair(certFilePath, keyFilePath)
-	if err != nil {
-		message := fmt.Sprintf("Error when loading cert %s", err.Error())
-		SendException(message)
-		time.Sleep(30 * time.Second)
-		Log(message)
-		log.Fatalf("Error when loading cert %s", err.Error())
-	}
+	var transport *http.Transport
 
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-	}
+	if os.Getenv("AAD_MSI_AUTH_MODE") == "true" {
+		certFilePath := PluginConfiguration["cert_file_path"]
+		keyFilePath := PluginConfiguration["key_file_path"]
+		if !IsWindows {
+			certFilePath = fmt.Sprintf(certFilePath, WorkspaceID)
+			keyFilePath = fmt.Sprintf(keyFilePath, WorkspaceID)
+		}
+		cert, err := tls.LoadX509KeyPair(certFilePath, keyFilePath)
+		if err != nil {
+			message := fmt.Sprintf("Error when loading cert %s", err.Error())
+			SendException(message)
+			time.Sleep(30 * time.Second)
+			Log(message)
+			log.Fatalf("Error when loading cert %s", err.Error())
+		}
 
-	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+
+		tlsConfig.BuildNameToCertificate()
+		transport = &http.Transport{TLSClientConfig: tlsConfig}
+	} else {
+		transport = &http.Transport{}
+	}
 	// set the proxy if the proxy configured
 	if ProxyEndpoint != "" {
 		proxyEndpointUrl, err := url.Parse(ProxyEndpoint)
