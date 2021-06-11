@@ -47,7 +47,7 @@ class KubeletUtils
         memory_capacity = 1.0
         cpu_allocatable = 1.0
         memory_allocatable = 1.0
-        capacity_response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor(winNode)
+        capacity_response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor(winNode: nil)
         if !capacity_response.nil? && !capacity_response.body.nil?
           all_metrics = capacity_response.body.split("\n")
           #cadvisor machine metrics can exist with (>=1.19) or without dimensions (<1.19)
@@ -57,6 +57,10 @@ class KubeletUtils
           memory_capacity_e = all_metrics.select { |m| m.start_with?("machine_memory_bytes") }.first.split.last
           memory_capacity = BigDecimal(memory_capacity_e).to_f
           @log.info "get_node_allocatable::Memory Capacity #{memory_capacity}"
+        end
+
+        if !winNode.nil?
+          winNode = nil
         end
 
         allocatable_response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode)
@@ -82,6 +86,7 @@ class KubeletUtils
           systemReserved_cpu = JSON.parse(allocatable_response.body)["kubeletconfig"]["systemReserved"]["cpu"]
           @log.info "get_node_allocatable::systemReserved_cpu  #{systemReserved_cpu}"
         rescue => errorStr
+          # this will likely always reach this condition for AKS ~ change logic....
           @log.error "Error in get_node_allocatable::systemReserved_cpu: #{errorStr}"
           systemReserved_cpu = "0"
           ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
