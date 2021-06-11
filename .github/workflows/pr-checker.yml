@@ -1,4 +1,4 @@
-name: pr-checker
+name: pr-checker1
 on:
   #push:
   #  branches:
