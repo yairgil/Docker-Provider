@@ -47,7 +47,7 @@ class KubeletUtils
         memory_capacity = 1.0
         cpu_allocatable = 1.0
         memory_allocatable = 1.0
-        capacity_response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor(winNode: nil)
+        capacity_response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor
         if !capacity_response.nil? && !capacity_response.body.nil?
           all_metrics = capacity_response.body.split("\n")
           #cadvisor machine metrics can exist with (>=1.19) or without dimensions (<1.19)
@@ -99,6 +99,8 @@ class KubeletUtils
            systemReserved_memory = "0"
            ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
         end 
+
+        ### DELTE this from the formula??
         begin
           evictionHard_cpu = JSON.parse(allocatable_response.body)["kubeletconfig"]["evictionHard"]["nodefs.available"]
           @log.info "get_node_allocatable::evictionHard_cpu #{evictionHard_cpu}"
@@ -121,6 +123,7 @@ class KubeletUtils
         # subtract to get allocatable. Formula : Allocatable = Capacity - ( kube reserved + system reserved + eviction threshold )
         # https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
         cpu_allocatable  = cpu_capacity_number - ( kubereserved_cpu.tr('^0-9', '').to_i + systemReserved_cpu.tr('^0-9', '').to_i + ( evictionHard_cpu.tr('^0-9', '').to_i * cpu_capacity_number / 100 ) );
+        #cpu_allocatable  = cpu_capacity_number - ( kubereserved_cpu.tr('^0-9', '').to_i + systemReserved_cpu.tr('^0-9', '').to_i );
         @log.info "CPU Allocatable #{cpu_allocatable}"
 
         memory_allocatable = memory_capacity.to_i - ( ( kubereserved_memory.tr('^0-9', '').to_i * 1024 * 1024 ) + ( systemReserved_memory.tr('^0-9', '').to_i * 1024 * 1024 ) + ( evictionHard_memory.tr('^0-9', '').to_i * 1024 * 1024 ) );
