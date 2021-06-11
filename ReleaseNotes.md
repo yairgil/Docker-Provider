@@ -20,6 +20,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
    - Ruby version upgrade to 2.6 i.e. same version as windows agent
    - Upgrade FluentD gem version to 1.12.2 
    - All the Ruby Fluentd Plugins upgraded to v1 as per Fluentd guidance
+   - Fluent-bit tail plugin Mem_Buf_limit is configurable via ConfigMap
  - Windows Agent
    - CA cert changes for airgapped clouds
    - Send perf metrics to MDM from windows daemonset
