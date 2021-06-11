@@ -57,7 +57,7 @@ Set-Location -Path $dockerFileDir
 # $updateImage = ${imagerepo} + ":" + ${imageTag}
 $updateImage = "omsagent-win-base"
 Write-Host "STAT:Triggering base docker image build: $updateImage"
-docker build -t $updateImage -f Dockerfile-baseimage
+docker build -t $updateImage -f Dockerfile-baseimage .
 Write-Host "END:Triggering docker image build: $updateImage"
 
 # Write-Host "STAT:pushing docker image : $updateImage"
