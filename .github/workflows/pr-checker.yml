@@ -94,7 +94,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Set-workflow-initiator
-        run: echo "Initiated by - ${GITHUB_ACTOR}"
+        run: echo "Initiated by -" ${{ env.GITHUB_ACTOR }}
+      - name: Set-workflow-initiator-2
+        run: echo "Initiated by -"$env:GITHUB_ACTOR
       #- name: Set-branch-name-for-non-pr
       #  if: ${{ github.event_name != 'pull_request' }}
       #  run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / _)" >> $GITHUB_ENV
@@ -130,7 +132,7 @@ jobs:
       #- name: Install-build-dependencies
       #  run: sudo apt-get install build-essential -y
       - name: Build-source-code
-        run: cd ./build/windows/ && powershell.exe -command Makefile.ps1
+        run: cd ./build/windows/ && Makefile.ps1
       - name: Create-docker-image
         run: |
             cd ./kubernetes/windows/ && docker build . --file Dockerfile -t $IMAGETAG --build-arg IMAGE_TAG=$IMAGETAG_TELEMETRY
