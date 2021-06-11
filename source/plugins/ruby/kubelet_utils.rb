@@ -67,6 +67,9 @@ class KubeletUtils
 
         begin
           kubereserved_cpu = JSON.parse(allocatable_response.body)["kubeletconfig"]["kubeReserved"]["cpu"]
+          if kubereserved_cpu.nil?
+            kubereserved_cpu = "0"
+          end
           @log.info "get_node_allocatable::kubereserved_cpu  #{kubereserved_cpu}"
         rescue => errorStr
           @log.error "Error in get_node_allocatable::kubereserved_cpu: #{errorStr}"
@@ -76,6 +79,9 @@ class KubeletUtils
 
         begin
           kubereserved_memory = JSON.parse(allocatable_response.body)["kubeletconfig"]["kubeReserved"]["memory"]
+          if kubereserved_memory.nil?
+            kubereserved_memory = "0"
+          end
           @log.info "get_node_allocatable::kubereserved_memory #{kubereserved_memory}"
         rescue => errorStr
           @log.error "Error in get_node_allocatable::kubereserved_memory: #{errorStr}"
@@ -84,6 +90,9 @@ class KubeletUtils
         end 
         begin
           systemReserved_cpu = JSON.parse(allocatable_response.body)["kubeletconfig"]["systemReserved"]["cpu"]
+          if systemReserved_cpu.nil?
+            systemReserved_cpu = "0"
+          end
           @log.info "get_node_allocatable::systemReserved_cpu  #{systemReserved_cpu}"
         rescue => errorStr
           # this will likely always reach this condition for AKS ~ change logic....
@@ -93,6 +102,9 @@ class KubeletUtils
         end 
         begin
            systemReserved_memory = JSON.parse(allocatable_response.body)["kubeletconfig"]["systemReserved"]["memory"]
+           if systemReserved_memory.nil?
+            systemReserved_memory = "0"
+           end
            @log.info "get_node_allocatable::systemReserved_memory #{systemReserved_memory}"
         rescue => errorStr
            @log.error "Error in get_node_allocatable::systemReserved_memory: #{errorStr}"
@@ -103,6 +115,9 @@ class KubeletUtils
         ### DELTE this from the formula??
         begin
           evictionHard_cpu = JSON.parse(allocatable_response.body)["kubeletconfig"]["evictionHard"]["nodefs.available"]
+          if evictionHard_cpu.nil?
+            evictionHard_cpu = "0"
+          end
           @log.info "get_node_allocatable::evictionHard_cpu #{evictionHard_cpu}"
         rescue => errorStr
           @log.error "Error in get_node_allocatable::evictionHard_cpu: #{errorStr}"
@@ -112,6 +127,9 @@ class KubeletUtils
         
         begin
           evictionHard_memory = JSON.parse(allocatable_response.body)["kubeletconfig"]["evictionHard"]["memory.available"]
+          if evictionHard_memory.nil?
+            evictionHard_memory = "0"
+          end
           @log.info "get_node_allocatable::evictionHard_memory #{evictionHard_memory}"
         rescue => errorStr
           @log.error "Error in get_node_allocatable::evictionHard_memory: #{errorStr}"
