@@ -28,10 +28,10 @@ sudo apt-get install jq=1.5+dfsg-2 -y
 sudo apt-get install libcap2-bin -y
 
 #1.18 pre-release
-wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_linux_amd64.tar.gz
-tar -zxvf telegraf-1.18.0_linux_amd64.tar.gz
+wget https://dl.influxdata.com/telegraf/releases/telegraf-1.19.0~rc0_linux_amd64.tar.gz
+tar -zxvf telegraf-1.19.0~rc0_linux_amd64.tar.gz
 
-mv /opt/telegraf-1.18.0/usr/bin/telegraf /opt/telegraf
+mv /opt/telegraf-1.19.0/usr/bin/telegraf /opt/telegraf
 
 chmod 777 /opt/telegraf
 
@@ -63,3 +63,10 @@ rm -f $TMPDIR/envmdsd
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
 rm /etc/logrotate.d/alternatives /etc/logrotate.d/apt /etc/logrotate.d/azure-mdsd /etc/logrotate.d/rsyslog
+
+#Remove gemfile.lock for http_parser gem 0.6.0
+#see  - https://github.com/fluent/fluentd/issues/3374 https://github.com/tmm1/http_parser.rb/issues/70
+if [  -e "/var/lib/gems/2.6.0/gems/http_parser.rb-0.6.0/Gemfile.lock" ]; then
+      #rename
+      mv /var/lib/gems/2.6.0/gems/http_parser.rb-0.6.0/Gemfile.lock /var/lib/gems/2.6.0/gems/http_parser.rb-0.6.0/renamed_Gemfile_lock.renamed
+fi
