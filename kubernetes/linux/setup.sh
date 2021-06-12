@@ -11,7 +11,9 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 
 #install oneagent - Official bits (05/17/2021)
 #makesure to update with master build
-wget https://github.com/microsoft/Docker-Provider/releases/download/05172021-oneagent/azure-mdsd_1.10.1-build.master.213_x86_64.deb
+#private build from aaron with memory leak fix
+#TODO- update with official build
+wget https://github.com/microsoft/Docker-Provider/raw/gangams/ci-aad-auth-msi/oneagent-dev/azure-mdsd_1.10.1-build.dev_x86_64.deb
 
 
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
