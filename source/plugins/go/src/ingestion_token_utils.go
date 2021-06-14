@@ -222,8 +222,8 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	channelId = ""
 	apiVersion := "2020-08-01-preview"
 	var amcs_endpoint *url.URL
-	resourceId := os.Getenv("customResourceId")
-	resourceRegion := os.Getenv("customRegion")
+	resourceId := os.Getenv("AKS_RESOURCE_ID")
+	resourceRegion := os.Getenv("AKS_REGION")
 	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
 	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations?platform=windows&api-version=%s", resourceRegion, resourceId, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
@@ -318,8 +318,8 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	Log("Info getIngestionAuthToken: start")
 	ingestionAuthToken = ""
 	var amcs_endpoint *url.URL
-	resourceId := os.Getenv("customResourceId")
-	resourceRegion := os.Getenv("customRegion")
+	resourceId := os.Getenv("AKS_RESOURCE_ID")
+	resourceRegion := os.Getenv("AKS_REGION")
 	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
 	apiVersion := "2020-04-01-preview"
 	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations/%s/channels/%s/issueIngestionToken?platform=windows&api-version=%s", resourceRegion, resourceId, configurationId, channelId, apiVersion)

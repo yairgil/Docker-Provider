@@ -61,16 +61,7 @@ function Set-EnvironmentVariables {
 
     # Set CLOUD_ENVIRONMENT
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
-    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")
-
-        
-    # Set Region
-    [System.Environment]::SetEnvironmentVariable("customRegion", $env:AKS_REGION, "Process")
-    [System.Environment]::SetEnvironmentVariable("customRegion", $env:AKS_REGION, "Machine")
-    
-    # Set resource ID
-    [System.Environment]::SetEnvironmentVariable("customResourceId", $env:AKS_RESOURCE_ID, "Process")
-    [System.Environment]::SetEnvironmentVariable("customResourceId", $env:AKS_RESOURCE_ID, "Machine")
+    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")      
 
     $wsID = ""
     if (Test-Path /etc/omsagent-secret/WSID) {
