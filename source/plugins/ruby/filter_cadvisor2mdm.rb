@@ -184,7 +184,7 @@ module Fluent::Plugin
                 target_node_cpu_capacity_mc = @cpu_capacity
                 target_node_cpu_allocatable_mc = @cpu_allocatable
               end
-              @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc}"
+              @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc} CPU Allocatable #{target_node_cpu_allocatable_mc} "
               if target_node_cpu_capacity_mc != 0.0
                 percentage_metric_value = (metric_value) * 100 / target_node_cpu_capacity_mc
               end
@@ -205,7 +205,7 @@ module Fluent::Plugin
                 target_node_mem_allocatable = @memory_allocatable # We do not need this value in the replicaset
               end
 
-              @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity}"
+              @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity} Memory Allocatable #{target_node_mem_allocatable}"
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
@@ -331,14 +331,15 @@ module Fluent::Plugin
     end
 
     def ensure_cpu_memory_capacity_and_allocatable_set
-      if @cpu_capacity != 0.0 && @memory_capacity != 0.0
+      @@controller_type = ENV["CONTROLLER_TYPE"]
+
+      if @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @@controller_type.downcase == "replicaset"
         @log.info "CPU And Memory Capacity are already set and their values are as follows @cpu_capacity : #{@cpu_capacity}, @memory_capacity: #{@memory_capacity}"
         return
       end
 
-      @@controller_type = ENV["CONTROLLER_TYPE"]
-
-      if @@controller_type.downcase == "daemonset" && @cpu_allocatable != 0.0 && @memory_allocatable != 0.0
+      if @@controller_type.downcase == "daemonset" @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @cpu_allocatable != 0.0 && @memory_allocatable != 0.0
+        @log.info "CPU And Memory Capacity are already set and their values are as follows @cpu_capacity : #{@cpu_capacity}, @memory_capacity: #{@memory_capacity}"
         @log.info "CPU And Memory Allocatable are already set and their values are as follows @cpu_allocatable : #{@cpu_allocatable}, @memory_allocatable: #{@memory_allocatable}"
         return
       end
