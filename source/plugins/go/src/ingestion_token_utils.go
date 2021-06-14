@@ -95,7 +95,7 @@ func getIngestionToken() (authToken string, err error) {
 	// check if the ingestion token has not been fetched yet or is expiring soon. If so then re-fetch it first.
 	// TODO: re-fetch token in a new thread if it is about to expire (don't block the main thread)
 
-	if IMDSToken == "" || IMDSTokenExpiration <= time.Now().Unix()+30 { // refresh the token 30 seconds before it expires
+	if IMDSToken == "" || IMDSTokenExpiration <= time.Now().Unix()+ 30*60 { // refresh the token 30 minutes before it expires
 		IMDSToken, IMDSTokenExpiration, err = getAccessTokenFromIMDS(true) //TODO: read from an env variable? Or maybe from OS?
 		if err != nil {
 			message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
@@ -116,7 +116,7 @@ func getIngestionToken() (authToken string, err error) {
 		}
 	}
 
-	if IngestionAuthToken == "" || IngestionAuthTokenExpiration <= time.Now().Unix()+10 {
+	if IngestionAuthToken == "" || IngestionAuthTokenExpiration <= time.Now().Unix()+30*60 {
 		IngestionAuthToken, IngestionAuthTokenExpiration, err = getIngestionAuthToken(IMDSToken, ConfigurationId, ChannelId)
 		if err != nil {
 			message := fmt.Sprintf("Error getIngestionAuthToken %s \n", err.Error())
