@@ -112,19 +112,6 @@ class KubeletUtils
            ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
         end 
 
-        ### DELTE this from the formula??
-        begin
-          evictionHard_cpu = JSON.parse(allocatable_response.body)["kubeletconfig"]["evictionHard"]["nodefs.available"]
-          if evictionHard_cpu.nil? || evictionHard_cpu == ""
-            evictionHard_cpu = "0"
-          end
-          @log.info "get_node_allocatable::evictionHard_cpu #{evictionHard_cpu}"
-        rescue => errorStr
-          @log.error "Error in get_node_allocatable::evictionHard_cpu: #{errorStr}"
-          evictionHard_cpu = "0"
-          ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
-        end 
-        
         begin
           evictionHard_memory = JSON.parse(allocatable_response.body)["kubeletconfig"]["evictionHard"]["memory.available"]
           if evictionHard_memory.nil? || evictionHard_memory == ""
@@ -140,11 +127,16 @@ class KubeletUtils
         cpu_capacity_number = cpu_capacity.to_i
         # subtract to get allocatable. Formula : Allocatable = Capacity - ( kube reserved + system reserved + eviction threshold )
         # https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
-        cpu_allocatable  = cpu_capacity_number - ( kubereserved_cpu.tr('^0-9', '').to_i + systemReserved_cpu.tr('^0-9', '').to_i + ( evictionHard_cpu.tr('^0-9', '').to_i * cpu_capacity_number / 100 ) );
-        #cpu_allocatable  = cpu_capacity_number - ( kubereserved_cpu.tr('^0-9', '').to_i + systemReserved_cpu.tr('^0-9', '').to_i );
+        # cpu_allocatable  = cpu_capacity_number - ( kubereserved_cpu.tr('^0-9', '').to_i + systemReserved_cpu.tr('^0-9', '').to_i );
+        cpu_allocatable  = cpu_capacity_number - ( KuberenetesApiClient.getMetricNumericValue("cpu", kubereserved_cpu) + KuberenetesApiClient.getMetricNumericValue("cpu", systemReserved_cpu) );
         @log.info "CPU Allocatable #{cpu_allocatable}"
 
-        memory_allocatable = memory_capacity.to_i - ( ( kubereserved_memory.tr('^0-9', '').to_i * 1024 * 1024 ) + ( systemReserved_memory.tr('^0-9', '').to_i * 1024 * 1024 ) + ( evictionHard_memory.tr('^0-9', '').to_i * 1024 * 1024 ) );
+        memory_allocatable = memory_capacity.to_i 
+        - ( 
+            (KuberenetesApiClient.getMetricNumericValue("memory", kubereserved_memory)
+            + (KuberenetesApiClient.getMetricNumericValue("memory", systemReserved_memory))
+            + (KuberenetesApiClient.getMetricNumericValue("memory", evictionHard_memory))
+          );
         @log.info "Memory Allocatable #{memory_allocatable}"
 
         cpu_allocatable = BigDecimal(cpu_allocatable).to_f
