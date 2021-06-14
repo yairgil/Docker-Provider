@@ -22,6 +22,7 @@ module Fluent::Plugin
       require_relative "omslog"
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
+      require_relative "extension_utils"
 
       # refer tomlparser-agent-config for defaults
       # this configurable via configmap
@@ -83,6 +84,12 @@ module Fluent::Plugin
         #set the running total for this batch to 0
         @deploymentsRunningTotal = 0     
       
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kubestate_deployments::enumerate: AAD AUTH MSI MODE")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end                            
+        end           
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kubestate_deployments::enumerate : Getting deployments from Kube API @ #{Time.now.utc.iso8601}")

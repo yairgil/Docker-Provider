@@ -17,7 +17,8 @@ module Fluent::Plugin
       require_relative "ApplicationInsightsUtility"
       require_relative "omslog"
       require_relative "CAdvisorMetricsAPIClient"
-      require_relative "kubernetes_container_inventory"      
+      require_relative "kubernetes_container_inventory"   
+      require_relative "extension_utils"   
     end
 
     config_param :run_interval, :time, :default => 60
@@ -57,6 +58,13 @@ module Fluent::Plugin
       eventStream = Fluent::MultiEventStream.new
       hostName = ""
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")                         
+      if ExtensionUtils.isAADMSIAuthMode()
+        $log.info("in_container_inventory::enumerate: AAD AUTH MSI MODE")             
+        if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+          @tag = ExtensionUtils.getOutputStreamId(Constants::CONTAINER_INVENTORY_DATA_TYPE)
+        end         
+        $log.info("in_container_inventory::enumerate: using tag -#{@tag} @ #{Time.now.utc.iso8601}")                        	                   
+      end       
       begin
         containerRuntimeEnv = ENV["CONTAINER_RUNTIME"]
         $log.info("in_container_inventory::enumerate : container runtime : #{containerRuntimeEnv}")

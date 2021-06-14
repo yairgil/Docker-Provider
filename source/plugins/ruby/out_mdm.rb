@@ -21,6 +21,9 @@ module Fluent::Plugin
       require_relative "proxy_utils"
 
       @@token_resource_url = "https://monitoring.azure.com/"
+      # AAD auth supported only in public cloud and handle other clouds when enabled
+      # this is unified new token audience for LA AAD MSI auth & metrics
+      @@token_resource_audience = "https://monitor.azure.com/"
       @@grant_type = "client_credentials"
       @@azure_json_path = "/etc/kubernetes/host/azure.json"
       @@post_request_url_template = "https://%{aks_region}.monitoring.azure.com%{aks_resource_id}/metrics"
@@ -28,6 +31,8 @@ module Fluent::Plugin
 
       # msiEndpoint is the well known endpoint for getting MSI authentications tokens
       @@msi_endpoint_template = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&client_id=%{user_assigned_client_id}&resource=%{resource}"
+      # IMDS msiEndpoint for AAD MSI Auth is the proxy endpoint whcih serves the MSI auth tokens with resource claim
+      @@imds_msi_endpoint_template = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=%{resource}"
       @@user_assigned_client_id = ENV["USER_ASSIGNED_IDENTITY_CLIENT_ID"]
 
       @@plugin_name = "AKSCustomMetricsMDM"
@@ -124,7 +129,13 @@ module Fluent::Plugin
               @parsed_token_uri = URI.parse(aad_token_url)
             else
               @useMsi = true
-              msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url }
+              if !@@user_assigned_client_id.nil? && !@@user_assigned_client_id.empty?
+                msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url }
+              else
+                # in case of msi auth user_assigned_client_id will be empty                
+                @log.info "using aad msi auth" 
+                msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
+              end
               @parsed_token_uri = URI.parse(msi_endpoint)
             end
 

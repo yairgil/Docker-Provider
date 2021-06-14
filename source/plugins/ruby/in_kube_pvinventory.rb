@@ -20,6 +20,7 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
+      require_relative "extension_utils"
 
       # Response size is around 1500 bytes per PV
       @PV_CHUNK_SIZE = "5000"
@@ -62,6 +63,12 @@ module Fluent::Plugin
         @pvTypeToCountHash = {}
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601           
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_kube_pvinventory::enumerate: AAD AUTH MSI MODE")             
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_PV_INVENTORY_DATA_TYPE)
+          end                            
+        end           
 
         continuationToken = nil
         $log.info("in_kube_pvinventory::enumerate : Getting PVs from Kube API @ #{Time.now.utc.iso8601}")

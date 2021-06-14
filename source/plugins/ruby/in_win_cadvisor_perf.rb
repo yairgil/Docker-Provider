@@ -20,7 +20,8 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
-      @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
+      require_relative "extension_utils"
+      @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB" 
     end
 
     config_param :run_interval, :time, :default => 60
@@ -58,6 +59,17 @@ module Fluent::Plugin
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         @@istestvar = ENV["ISTEST"]
+        if ExtensionUtils.isAADMSIAuthMode()
+          $log.info("in_win_cadvisor_perf::enumerate: AAD AUTH MSI MODE")    
+          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @tag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
+          end  
+          if !@insightsMetricsTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @insightsMetricsTag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end
+	        $log.info("in_win_cadvisor_perf::enumerate: using perf tag -#{@kubeperfTag} @ #{Time.now.utc.iso8601}")          
+          $log.info("in_win_cadvisor_perf::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")                          
+        end       
 
         #Resetting this cache so that it is populated with the current set of containers with every call
         CAdvisorMetricsAPIClient.resetWinContainerIdCache()

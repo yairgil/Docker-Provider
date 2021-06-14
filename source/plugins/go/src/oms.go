@@ -22,6 +22,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
+	"Docker-Provider/source/plugins/go/src/extension"
 
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,6 +107,11 @@ const ContainerLogsV1Route = "v1"
 //container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
 
+//env variable for AAD MSI Auth mode
+const AADMSIAuthMode = "AAD_MSI_AUTH_MODE"
+
+// Tag prefix of mdsd output streamid for AMA in MSI auth mode
+const MdsdOutputStreamIdTagPrefix = "dcr-"
 
 //env variable to container type
 const ContainerTypeEnv = "CONTAINER_TYPE"
@@ -168,7 +174,9 @@ var (
 	// flag to check if its Windows OS
 	IsWindows bool
 	// container type 
-	ContainerType string	
+	ContainerType string		
+	// flag to check whether LA AAD MSI Auth Enabled or not
+	IsAADMSIAuthMode bool
 )
 
 var (
@@ -702,7 +710,11 @@ func flushKubeMonAgentEventRecords() {
 					}
 				}
 			}
-			if (IsWindows == false && len(msgPackEntries) > 0) { //for linux, mdsd route												
+			if (IsWindows == false && len(msgPackEntries) > 0) { //for linux, mdsd route	
+				if IsAADMSIAuthMode == true && strings.HasPrefix(MdsdKubeMonAgentEventsTagName, MdsdOutputStreamIdTagPrefix) == false {
+					Log("Info::mdsd::obtaining output stream id for data type: %s", KubeMonAgentEventDataType)
+					MdsdKubeMonAgentEventsTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(KubeMonAgentEventDataType)
+				}											
 				Log("Info::mdsd:: using mdsdsource name for KubeMonAgentEvents: %s", MdsdKubeMonAgentEventsTagName)
 				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdKubeMonAgentEventsTagName, msgPackEntries)							
 				if MdsdKubeMonMsgpUnixSocketClient == nil {
@@ -758,6 +770,17 @@ func flushKubeMonAgentEventRecords() {
 					//expensive to do string len for every request, so use a flag
 					if ResourceCentric == true {
 						req.Header.Set("x-ms-AzureResourceId", ResourceID)
+					}
+
+					if IsAADMSIAuthMode == true {
+						ingestionAuthToken, err := getIngestionToken()
+						if err != nil {
+							Log("failed to get ODS Ingestion Auth Token (even after retries)")
+							message := fmt.Sprintf("Error string: %s \n", err.Error())
+							Log(message)
+						}
+						// add authorization header to the req
+						req.Header.Set("Authorization", "Bearer "+ingestionAuthToken)
 					}
 
 					resp, err := HTTPClient.Do(req)
@@ -904,7 +927,11 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 					}				
 				}
 		}
-		if (len(msgPackEntries) > 0) {							
+		if (len(msgPackEntries) > 0) {	
+			    if IsAADMSIAuthMode == true && (strings.HasPrefix(MdsdInsightsMetricsTagName, MdsdOutputStreamIdTagPrefix) == false) {
+				  Log("Info::mdsd::obtaining output stream id for InsightsMetricsDataType since Log Analytics AAD MSI Auth Enabled")
+				  MdsdInsightsMetricsTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(InsightsMetricsDataType)
+			    }						
 				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdInsightsMetricsTagName, msgPackEntries)			
 				if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
 					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
@@ -978,6 +1005,17 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		//expensive to do string len for every request, so use a flag
 		if ResourceCentric == true {
 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
+		}
+		if IsAADMSIAuthMode == true {
+			ingestionAuthToken, err := getIngestionToken()
+			if err != nil {
+				Log("failed to get ODS Ingestion Auth Token (even after retries)")
+				message := fmt.Sprintf("Error string: %s \n", err.Error())
+				Log(message)
+				return output.FLB_RETRY
+			}
+			// add authorization header to the req
+			req.Header.Set("Authorization", "Bearer "+ingestionAuthToken)
 		}
 
 		start := time.Now()
@@ -1184,6 +1222,16 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
 		//flush to mdsd			
+		if IsAADMSIAuthMode == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false {
+			Log("Info::mdsd::obtaining output stream id")
+			if ContainerLogSchemaV2 == true {
+				MdsdContainerLogTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(ContainerLogV2DataType)
+			} else {
+				MdsdContainerLogTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(ContainerLogDataType)
+			}
+			Log("Info::mdsd:: using mdsdsource name: %s", MdsdContainerLogTagName)
+		}
+		
 		fluentForward := MsgPackForward{
 			Tag:     MdsdContainerLogTagName,
 			Entries: msgPackEntries,
@@ -1343,6 +1391,19 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		}
 		
+		if IsAADMSIAuthMode == true {
+			ingestionAuthToken, err := getIngestionToken()
+			if err != nil {
+				Log("failed to get ODS Ingestion Auth Token (even after retries)")
+				message := fmt.Sprintf("Error string: %s \n", err.Error())
+				Log(message)
+				return output.FLB_RETRY
+			}
+
+			// add authorization header to the req
+		    req.Header.Set("Authorization", "Bearer "+ingestionAuthToken)
+		}		
+		
 		resp, err := HTTPClient.Do(req)
 		elapsed = time.Since(start)
 
@@ -1439,8 +1500,7 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 }
 
 // InitializePlugin reads and populates plugin configuration
-func InitializePlugin(pluginConfPath string, agentVersion string) {
-
+func InitializePlugin(pluginConfPath string, agentVersion string) {	
 	go func() {
 		isTest := os.Getenv("ISTEST")
 		if strings.Compare(strings.ToLower(strings.TrimSpace(isTest)), "true") == 0 {
@@ -1541,6 +1601,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 
 	Log("OMSEndpoint %s", OMSEndpoint)
+	IsAADMSIAuthMode = false
+	if strings.Compare(strings.ToLower(os.Getenv(AADMSIAuthMode)), "true") == 0 {
+		Log("AAD MSI Auth Mode Configured")
+	}
 	ResourceID = os.Getenv(envAKSResourceID)
 
 	if len(ResourceID) > 0 {

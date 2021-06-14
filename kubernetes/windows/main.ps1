@@ -43,6 +43,7 @@ function Start-FileSystemWatcher {
 
 function Set-EnvironmentVariables {
     $domain = "opinsights.azure.com"
+    $mcs_endpoint = "monitor.azure.com"
     $cloud_environment = "public"
     if (Test-Path /etc/omsagent-secret/DOMAIN) {
         # TODO: Change to omsagent-secret before merging
@@ -53,10 +54,23 @@ function Set-EnvironmentVariables {
     # Set DOMAIN
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Machine")
+    
+    # Set MCS Endpoint
+    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Process")
+    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Machine")
 
     # Set CLOUD_ENVIRONMENT
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")
+
+        
+    # Set Region
+    [System.Environment]::SetEnvironmentVariable("customRegion", $env:AKS_REGION, "Process")
+    [System.Environment]::SetEnvironmentVariable("customRegion", $env:AKS_REGION, "Machine")
+    
+    # Set resource ID
+    [System.Environment]::SetEnvironmentVariable("customResourceId", $env:AKS_RESOURCE_ID, "Process")
+    [System.Environment]::SetEnvironmentVariable("customResourceId", $env:AKS_RESOURCE_ID, "Machine")
 
     $wsID = ""
     if (Test-Path /etc/omsagent-secret/WSID) {
@@ -227,6 +241,16 @@ function Set-EnvironmentVariables {
     }
     else {
         Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
+    }
+    # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH environment variable
+    $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH", "process")
+    if (![string]::IsNullOrEmpty($isAADMSIAuth) -and ($isAADMSIAuth -eq "true")) {
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Process")
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Machine")
+        Write-Host "Using AAD MSI auth"
+    }
+    else {
+        Write-Host "Using LA Legacy Auth"
     }
 
     # run config parser
