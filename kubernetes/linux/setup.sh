@@ -45,7 +45,7 @@ chmod 777 /opt/telegraf
 wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
 sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
 sudo apt-get update
-sudo apt-get install td-agent-bit=1.6.8 -y
+sudo apt-get install td-agent-bit=1.7.8 -y
 
 # install ruby2.6
 sudo apt-get install software-properties-common -y

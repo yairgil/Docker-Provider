@@ -159,7 +159,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         puts "config::Using config map setting for multiline stitching"
       else
         # turn on multiline by default if using containerlog v2 schema
-        # TODO: figure out allowed values for containerLogSchemaVersion, is "v2" the only value that will mean the new log schema?
         if @containerLogSchemaVersion.strip.casecmp("v2")
           @logStitchMultiline = true
         else
