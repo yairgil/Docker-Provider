@@ -155,6 +155,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 			Log("getAccessTokenFromIMDS: IMDS token file doesnt exist: %s", err.Error())
 			return imdsAccessToken, 0, err
 		}
+		//ensure this works and no issues accessing the file
 		responseBytes, err = ioutil.ReadFile(IMDSTokenPathForWindows)
 		if err != nil {
 			Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s", err.Error())
@@ -423,7 +424,7 @@ func refreshIngestionAuthToken() {
 			//TODO - use Reset which is better when go version upgraded to 1.15 or up rather Stop() and NewTicker
 			//IngestionAuthTokenRefreshTicker.Reset(time.Second * time.Duration(refreshIntervalInSeconds))  
 			IngestionAuthTokenRefreshTicker.Stop()
-			IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(defaultIngestionAuthTokenRefreshIntervalSeconds))		
+			IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(refreshIntervalInSeconds))		
 		}
 	}
 }
