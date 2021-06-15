@@ -261,6 +261,9 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   file = File.open("setenv.ps1", "w")
 
   if !file.nil?
+    if @logStitchMultiline
+      @logTailPath = "C:\\var\\log\\containers\\*.log"
+    end
     commands = get_command_windows('AZMON_COLLECT_STDOUT_LOGS', @collectStdoutLogs)
     file.write(commands)
     commands = get_command_windows('AZMON_LOG_TAIL_PATH', @logTailPath)
