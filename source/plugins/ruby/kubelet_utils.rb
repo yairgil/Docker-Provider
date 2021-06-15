@@ -132,11 +132,10 @@ class KubeletUtils
         @log.info "CPU Allocatable #{cpu_allocatable}"
 
         memory_allocatable = memory_capacity.to_i 
-        - ( 
-            (KuberenetesApiClient.getMetricNumericValue("memory", kubereserved_memory)
-            + (KuberenetesApiClient.getMetricNumericValue("memory", systemReserved_memory))
-            + (KuberenetesApiClient.getMetricNumericValue("memory", evictionHard_memory))
-          );
+        - ( KuberenetesApiClient.getMetricNumericValue("memory", kubereserved_memory) 
+        + KuberenetesApiClient.getMetricNumericValue("memory", systemReserved_memory)            
+        + (KuberenetesApiClient.getMetricNumericValue("memory", evictionHard_memory))
+        )
         @log.info "Memory Allocatable #{memory_allocatable}"
 
         cpu_allocatable = BigDecimal(cpu_allocatable).to_f
