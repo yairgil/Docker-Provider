@@ -1609,7 +1609,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	Log("OMSEndpoint %s", OMSEndpoint)
 	IsAADMSIAuthMode = false
 	if strings.Compare(strings.ToLower(os.Getenv(AADMSIAuthMode)), "true") == 0 {
-		Log("AAD MSI Auth Mode Configured")
+		IsAADMSIAuthMode = true
+		Log("AAD MSI Auth Mode Configured")		
 	}
 	ResourceID = os.Getenv(envAKSResourceID)
 
