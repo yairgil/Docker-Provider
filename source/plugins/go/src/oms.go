@@ -89,6 +89,7 @@ const IPName = "ContainerInsights"
 const defaultContainerInventoryRefreshInterval = 60
 
 const kubeMonAgentConfigEventFlushInterval = 60
+const defaultIngestionAuthTokenRefreshIntervalSeconds = 3600
 
 //Eventsource name in mdsd
 const MdsdContainerLogSourceName = "ContainerLogSource"
@@ -202,6 +203,10 @@ var (
 	EventHashUpdateMutex = &sync.Mutex{}
 	// parent context used by ADX uploader
 	ParentContext = context.Background()
+	// IngestionAuthTokenUpdateMutex read and write mutex access to the container id set
+	IngestionAuthTokenUpdateMutex = &sync.Mutex{}
+	// ODSIngestionAuthToken for windows agent AAD MSI Auth
+	ODSIngestionAuthToken string 
 )
 
 var (
@@ -209,6 +214,8 @@ var (
 	ContainerImageNameRefreshTicker *time.Ticker
 	// KubeMonAgentConfigEventsSendTicker to send config events every hour
 	KubeMonAgentConfigEventsSendTicker *time.Ticker
+	// IngestionAuthTokenRefreshTicker to refresh ingestion token
+	IngestionAuthTokenRefreshTicker *time.Ticker
 )
 
 var (
@@ -773,13 +780,12 @@ func flushKubeMonAgentEventRecords() {
 					}
 
 					if IsAADMSIAuthMode == true {
-						ingestionAuthToken, err := getIngestionToken()
-						if err != nil {
-							Log("failed to get ODS Ingestion Auth Token (even after retries)")
-							message := fmt.Sprintf("Error string: %s \n", err.Error())
-							Log(message)
-						}
-						// add authorization header to the req
+						IngestionAuthTokenUpdateMutex.Lock()
+			            ingestionAuthToken = ODSIngestionAuthToken
+			            IngestionAuthTokenUpdateMutex.UnLock()												
+						if ingestionAuthToken == "" {																		
+							Log("ODS Ingestion Auth Token is empty")
+						}					
 						req.Header.Set("Authorization", "Bearer "+ingestionAuthToken)
 					}
 
@@ -1007,10 +1013,11 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		}
 		if IsAADMSIAuthMode == true {
-			ingestionAuthToken, err := getIngestionToken()
-			if err != nil {
-				Log("failed to get ODS Ingestion Auth Token (even after retries)")
-				message := fmt.Sprintf("Error string: %s \n", err.Error())
+			IngestionAuthTokenUpdateMutex.Lock()
+			ingestionAuthToken = ODSIngestionAuthToken
+			IngestionAuthTokenUpdateMutex.UnLock()													
+			if ingestionAuthToken == "" {				
+				message := "Ingestion Auth Token is empty"
 				Log(message)
 				return output.FLB_RETRY
 			}
@@ -1392,14 +1399,13 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 		
 		if IsAADMSIAuthMode == true {
-			ingestionAuthToken, err := getIngestionToken()
-			if err != nil {
-				Log("failed to get ODS Ingestion Auth Token (even after retries)")
-				message := fmt.Sprintf("Error string: %s \n", err.Error())
-				Log(message)
+			IngestionAuthTokenUpdateMutex.Lock()
+			ingestionAuthToken = ODSIngestionAuthToken
+			IngestionAuthTokenUpdateMutex.UnLock()
+			if ingestionAuthToken == "" {								
+				Log("ODS Ingestion Auth Token is empty")
 				return output.FLB_RETRY
 			}
-
 			// add authorization header to the req
 		    req.Header.Set("Authorization", "Bearer "+ingestionAuthToken)
 		}		
@@ -1776,5 +1782,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
     }
 
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
-    MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName		
+    MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
+	
+	if !ContainerLogsRouteADX && IsWindows && IsAADMSIAuthMode {
+		Log("defaultIngestionAuthTokenRefreshIntervalSeconds = %d \n", defaultIngestionAuthTokenRefreshIntervalSeconds)
+	    IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(defaultIngestionAuthTokenRefreshIntervalSeconds))
+		go refreshIngestionAuthToken()
+	}
 }
