@@ -5,7 +5,6 @@ on:
     branches:
       - ci_dev
       - ci_prod
-      - vishwa/scan
     paths-ignore:
       - '**.md'
 jobs:
