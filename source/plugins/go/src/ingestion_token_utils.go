@@ -123,7 +123,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 				SendException(message) // send the exception here because this error is not returned. The calling function will send any returned errors to telemetry.
 				continue
 			}
-			
+
 			if resp != nil && resp.Body != nil {
 			  defer resp.Body.Close() 
 			}
@@ -418,7 +418,7 @@ func refreshIngestionAuthToken() {
 		}				
 		IngestionAuthTokenUpdateMutex.Lock()
 		ODSIngestionAuthToken = ingestionAuthToken
-		IngestionAuthTokenUpdateMutex.Unlock()
+		IngestionAuthTokenUpdateMutex.Unlock()		
 		if refreshIntervalInSeconds > 0 && refreshIntervalInSeconds != defaultIngestionAuthTokenRefreshIntervalSeconds {
 			//TODO - use Reset which is better when go version upgraded to 1.15 or up rather Stop() and NewTicker
 			//IngestionAuthTokenRefreshTicker.Reset(time.Second * time.Duration(refreshIntervalInSeconds))  
