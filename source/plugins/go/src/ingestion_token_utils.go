@@ -258,7 +258,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	return configurationId, channelId, nil
 }
 
-func getIngestionAuthToken(imdsAccessToken string, configurationId string, channelId string) (ingestionAuthToken string, expiration int64, err error) {
+func getIngestionAuthToken(imdsAccessToken string, configurationId string, channelId string) (ingestionAuthToken string, refreshInterval int64, err error) {
 	Log("Info getIngestionAuthToken: start")
 	ingestionAuthToken = ""
 	refreshInterval = 0
@@ -346,8 +346,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 
 var cacheControlHeaderRegex = regexp.MustCompile(`max-age=([0-9]+)`)
 
-func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (bestBeforeTime int64, err error) {
-	refreshInterval := 0
+func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (refreshInterval int64, err error) {	
 	cacheControlHeader, valueInMap := header["Cache-Control"]
 	if !valueInMap {
 		return 0, errors.New("Cache-Control not in passed header")
@@ -356,11 +355,13 @@ func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (bestBeforeTime
 	for _, entry := range cacheControlHeader {
 		match := cacheControlHeaderRegex.FindStringSubmatch(entry)
 		if len(match) == 2 {
-			refreshInterval, err = strconv.Atoi(match[1])
+			interval := 0
+			interval, err = strconv.Atoi(match[1])
 			if err != nil {
 				Log("getIngestionAuthToken: error getting timeout from auth token. Header: " + strings.Join(cacheControlHeader, ","))
 				return 0, err
-			}		
+			}	
+			refreshInterval = int64(interval)	
 			return refreshInterval, nil
 		}
 	}
@@ -370,9 +371,8 @@ func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (bestBeforeTime
 
 func refreshIngestionAuthToken() {
 	for ; true; <-IngestionAuthTokenRefreshTicker.C { 
-		var err error
 		if IMDSToken == "" || IMDSTokenExpiration <= (time.Now().Unix() + 60 * 60) { // refresh the token 1 hr expiry
-			imdsToken, imdsTokenExpiry, err = getAccessTokenFromIMDS() 
+			imdsToken, imdsTokenExpiry, err := getAccessTokenFromIMDS() 
 			if err != nil {
 				message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
 				Log(message)
@@ -388,8 +388,9 @@ func refreshIngestionAuthToken() {
 			SendException(message)
 			continue 
 		} 	
+		var err error	
 		// ignore agent configuration expiring, the configuration and channel IDs will never change (without creating an agent restart)
-		if ConfigurationId == "" || ChannelId == "" {			
+		if ConfigurationId == "" || ChannelId == "" {					
 			ConfigurationId, ChannelId, err = getAgentConfiguration(IMDSToken)
 			if err != nil {
 				message := fmt.Sprintf("Error getAgentConfiguration %s \n", err.Error())
@@ -398,13 +399,13 @@ func refreshIngestionAuthToken() {
 				continue 
 			}
 		}
-		if IMDSToken == "" ConfigurationId == "" || ChannelId == ""  {
+		if IMDSToken == "" || ConfigurationId == "" || ChannelId == ""  {
 			message := "IMDSToken or ConfigurationId or ChannelId empty"
 			Log(message)
 			SendException(message)
 			continue 
 		}
-		ingestionAuthToken, refreshIntervalInSeconds, err = getIngestionAuthToken(IMDSToken, ConfigurationId, ChannelId)
+		ingestionAuthToken, refreshIntervalInSeconds, err := getIngestionAuthToken(IMDSToken, ConfigurationId, ChannelId)
 		if err != nil {
 			message := fmt.Sprintf("Error getIngestionAuthToken %s \n", err.Error())
 			Log(message)
@@ -415,7 +416,10 @@ func refreshIngestionAuthToken() {
 		ODSIngestionAuthToken = ingestionAuthToken
 		IngestionAuthTokenUpdateMutex.Unlock()
 		if refreshIntervalInSeconds > 0 && refreshIntervalInSeconds != defaultIngestionAuthTokenRefreshIntervalSeconds {
-			ticker.Reset(time.Second * refreshIntervalInSeconds)  
+			//TODO - use Reset when go version upgraded to 1.15 or up rather Stp() and NewTicker
+			//IngestionAuthTokenRefreshTicker.Reset(time.Second * time.Duration(refreshIntervalInSeconds))  
+			IngestionAuthTokenRefreshTicker.Stop()
+			IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(defaultIngestionAuthTokenRefreshIntervalSeconds))		
 		}
 	}
 }

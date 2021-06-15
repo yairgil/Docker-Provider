@@ -781,8 +781,8 @@ func flushKubeMonAgentEventRecords() {
 
 					if IsAADMSIAuthMode == true {
 						IngestionAuthTokenUpdateMutex.Lock()
-			            ingestionAuthToken = ODSIngestionAuthToken
-			            IngestionAuthTokenUpdateMutex.UnLock()												
+			            ingestionAuthToken := ODSIngestionAuthToken
+			            IngestionAuthTokenUpdateMutex.Unlock()												
 						if ingestionAuthToken == "" {																		
 							Log("ODS Ingestion Auth Token is empty")
 						}					
@@ -1014,8 +1014,8 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		}
 		if IsAADMSIAuthMode == true {
 			IngestionAuthTokenUpdateMutex.Lock()
-			ingestionAuthToken = ODSIngestionAuthToken
-			IngestionAuthTokenUpdateMutex.UnLock()													
+			ingestionAuthToken := ODSIngestionAuthToken
+			IngestionAuthTokenUpdateMutex.Unlock()													
 			if ingestionAuthToken == "" {				
 				message := "Ingestion Auth Token is empty"
 				Log(message)
@@ -1400,8 +1400,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		
 		if IsAADMSIAuthMode == true {
 			IngestionAuthTokenUpdateMutex.Lock()
-			ingestionAuthToken = ODSIngestionAuthToken
-			IngestionAuthTokenUpdateMutex.UnLock()
+			ingestionAuthToken := ODSIngestionAuthToken
+			IngestionAuthTokenUpdateMutex.Unlock()
 			if ingestionAuthToken == "" {								
 				Log("ODS Ingestion Auth Token is empty")
 				return output.FLB_RETRY
