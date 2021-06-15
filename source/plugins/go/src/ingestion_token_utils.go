@@ -370,7 +370,7 @@ func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (refreshInterva
 		}
 	}
 
-	return 0, errors.New("didn't find timeout in header")
+	return 0, errors.New("didn't find max-age in response header")
 }
 
 func refreshIngestionAuthToken() {

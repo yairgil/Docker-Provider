@@ -203,7 +203,7 @@ var (
 	EventHashUpdateMutex = &sync.Mutex{}
 	// parent context used by ADX uploader
 	ParentContext = context.Background()
-	// IngestionAuthTokenUpdateMutex read and write mutex access to the container id set
+	// IngestionAuthTokenUpdateMutex read and write mutex access for ODSIngestionAuthToken
 	IngestionAuthTokenUpdateMutex = &sync.Mutex{}
 	// ODSIngestionAuthToken for windows agent AAD MSI Auth
 	ODSIngestionAuthToken string 
