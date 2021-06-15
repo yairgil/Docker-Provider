@@ -783,8 +783,8 @@ func flushKubeMonAgentEventRecords() {
 						IngestionAuthTokenUpdateMutex.Lock()
 			            ingestionAuthToken := ODSIngestionAuthToken
 			            IngestionAuthTokenUpdateMutex.Unlock()												
-						if ingestionAuthToken == "" {																		
-							Log("ODS Ingestion Auth Token is empty")
+						if ingestionAuthToken == "" {		
+							Log("Error::ODS Ingestion Auth Token is empty. Please check error log.")																							
 						}					
 						req.Header.Set("Authorization", "Bearer "+ingestionAuthToken)
 					}
@@ -1017,7 +1017,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 			ingestionAuthToken := ODSIngestionAuthToken
 			IngestionAuthTokenUpdateMutex.Unlock()													
 			if ingestionAuthToken == "" {				
-				message := "Ingestion Auth Token is empty"
+				message := "Error::ODS Ingestion Auth Token is empty. Please check error log."				
 				Log(message)
 				return output.FLB_RETRY
 			}
@@ -1403,7 +1403,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			ingestionAuthToken := ODSIngestionAuthToken
 			IngestionAuthTokenUpdateMutex.Unlock()
 			if ingestionAuthToken == "" {								
-				Log("ODS Ingestion Auth Token is empty")
+				Log("Error::ODS Ingestion Auth Token is empty. Please check error log.")				
 				return output.FLB_RETRY
 			}
 			// add authorization header to the req
