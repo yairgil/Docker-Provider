@@ -233,16 +233,22 @@ function Set-EnvironmentVariables {
     else {
         Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
     }
+
     # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH environment variable
     $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH", "process")
-    if (![string]::IsNullOrEmpty($isAADMSIAuth) -and ($isAADMSIAuth -eq "true")) {
-        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Process")
-        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", "true", "Machine")
-        Write-Host "Using AAD MSI auth"
-    }
-    else {
-        Write-Host "Using LA Legacy Auth"
-    }
+    if (![string]::IsNullOrEmpty($isAADMSIAuth)) {
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Process")
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Machine")
+        Write-Host "Successfully set environment variable AAD_MSI_AUTH_MODE - $($isAADMSIAuth) for target 'machine'..."      
+    }    
+
+    # check if use token proxy endpoint set via USE_IMDS_TOKEN_PROXY_END_POINT environment variable
+    $useIMDSTokenProxyEndpoint = [System.Environment]::GetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", "process")
+    if (![string]::IsNullOrEmpty($useIMDSTokenProxyEndpoint)) {
+        [System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Process")
+        [System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Machine")
+        Write-Host "Successfully set environment variable USE_IMDS_TOKEN_PROXY_END_POINT - $($useIMDSTokenProxyEndpoint) for target 'machine'..."          
+    }      
 
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb

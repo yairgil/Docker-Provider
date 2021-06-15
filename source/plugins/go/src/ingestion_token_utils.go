@@ -92,17 +92,72 @@ type IngestionTokenResponse struct {
 }
 
 func getAccessTokenFromIMDS() (string, int64, error) {
-	Log("Info getAccessTokenFromIMDS: start")
+	Log("Info getAccessTokenFromIMDS: start")	
+	useIMDSTOkenProxyEndPoint := os.Getenv("USE_IMDS_TOKEN_PROXY_END_POINT")
 	imdsAccessToken := ""
 	var responseBytes []byte
 	var err error
-
-	responseBytes, err = ioutil.ReadFile(IMDSTokenPathForWindows)
-	if err != nil {
-		Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s", err.Error())
-		return imdsAccessToken, 0, err
-	}
 	
+	if (useIMDSTOkenProxyEndPoint != "" && strings.Compare(strings.ToLower(useIMDSTOkenProxyEndPoint), "true") == 0) {
+		Log("Info Reading IMDS Access Token from IMDS Token proxy endpoint")
+		MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
+		var msi_endpoint *url.URL
+		msi_endpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://" + MCS_ENDPOINT + "/")
+		if err != nil {
+			Log("getAccessTokenFromIMDS: Error creating IMDS endpoint URL: %s", err.Error())
+			return imdsAccessToken, 0, err
+		}
+		req, err := http.NewRequest("GET", msi_endpoint.String(), nil)
+		if err != nil {
+			Log("getAccessTokenFromIMDS: Error creating HTTP request: %s", err.Error())
+			return imdsAccessToken, 0, err
+		}
+		req.Header.Add("Metadata", "true")
+
+		// Call managed services for Azure resources token endpoint
+		var resp *http.Response = nil
+		for i := 0; i < 3; i++ {
+			// client := &http.Client{}
+			resp, err = HTTPClient.Do(req)
+			if err != nil {
+				message := fmt.Sprintf("getAccessTokenFromIMDS: Error calling token endpoint: %s", err.Error())
+				Log(message)
+				SendException(message) // send the exception here because this error is not returned. The calling function will send any returned errors to telemetry.
+				continue
+			}
+			//TODO: is this the best place to defer closing the response body?
+			defer resp.Body.Close()
+
+			Log("getAccessTokenFromIMDS: IMDS Response Status: %d", resp.StatusCode)
+			if resp.StatusCode != 200 {
+				message := fmt.Sprintf("getAccessTokenFromIMDS: IMDS Request failed with an error code : %d", resp.StatusCode)
+				Log(message)
+				SendException(message)
+				continue
+			}
+			break // call succeeded, don't retry any more
+		}
+		if resp == nil {
+			Log("getAccessTokenFromIMDS: IMDS Request ran out of retries")
+			return imdsAccessToken, 0, err
+		}
+
+		// Pull out response body
+		responseBytes, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			Log("getAccessTokenFromIMDS: Error reading response body : %s", err.Error())
+			return imdsAccessToken, 0, err
+		}
+
+	} else {
+		Log("Info Reading IMDS Access Token from file : %s", IMDSTokenPathForWindows)
+		responseBytes, err = ioutil.ReadFile(IMDSTokenPathForWindows)
+		if err != nil {
+			Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s", err.Error())
+			return imdsAccessToken, 0, err
+		}
+    }
+
 	// Unmarshall response body into struct
 	var imdsResponse IMDSResponse
 	err = json.Unmarshal(responseBytes, &imdsResponse)
@@ -114,7 +169,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 
 	expiration, err := strconv.ParseInt(imdsResponse.ExpiresOn, 10, 64)
 	if err != nil {
-		Log("Error reading expiration time from IMDS response: %s", err.Error())		
+		Log("Error parsing ExpiresOn field from IMDS response: %s", err.Error())		
 		return imdsAccessToken, 0, err
 	}
 	Log("Info getAccessTokenFromIMDS: end")
@@ -127,10 +182,11 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	channelId = ""	
 	apiVersion := "2020-08-01-preview"
 	var amcs_endpoint *url.URL
+	osType := os.Getenv("OS_TYPE")
 	resourceId := os.Getenv("AKS_RESOURCE_ID")
 	resourceRegion := os.Getenv("AKS_REGION")
 	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
-	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations?platform=windows&api-version=%s", resourceRegion, resourceId, apiVersion)
+	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations?platform=%s&api-version=%s", resourceRegion, resourceId, osType, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
 	var bearer = "Bearer " + imdsAccessToken
@@ -207,11 +263,12 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	ingestionAuthToken = ""
 	refreshInterval = 0
 	var amcs_endpoint *url.URL
+	osType := os.Getenv("OS_TYPE")
 	resourceId := os.Getenv("AKS_RESOURCE_ID")
 	resourceRegion := os.Getenv("AKS_REGION")
 	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
 	apiVersion := "2020-04-01-preview"
-	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations/%s/channels/%s/issueIngestionToken?platform=windows&api-version=%s", resourceRegion, resourceId, configurationId, channelId, apiVersion)
+	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations/%s/channels/%s/issueIngestionToken?platform=%s&api-version=%s", resourceRegion, resourceId, configurationId, channelId, osType, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
 	var bearer = "Bearer " + imdsAccessToken
@@ -353,7 +410,7 @@ func refreshIngestionAuthToken() {
 			Log(message)
 			SendException(message)
 			continue 
-		}		
+		}				
 		IngestionAuthTokenUpdateMutex.Lock()
 		ODSIngestionAuthToken = ingestionAuthToken
 		IngestionAuthTokenUpdateMutex.Unlock()
