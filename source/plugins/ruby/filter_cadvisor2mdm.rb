@@ -12,6 +12,7 @@ module Fluent::Plugin
   require_relative "kubelet_utils"
   require_relative "MdmMetricsGenerator"
   require_relative "in_kube_nodes"
+  require_relative "KubernetesApiClient"
 
   class CAdvisor2MdmFilter < Filter
     Fluent::Plugin.register_filter("cadvisor2mdm", self)
@@ -338,7 +339,7 @@ module Fluent::Plugin
         return
       end
 
-      if @@controller_type.downcase == "daemonset" @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @cpu_allocatable != 0.0 && @memory_allocatable != 0.0
+      if @@controller_type.downcase == "daemonset" && @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @cpu_allocatable != 0.0 && @memory_allocatable != 0.0
         @log.info "CPU And Memory Capacity are already set and their values are as follows @cpu_capacity : #{@cpu_capacity}, @memory_capacity: #{@memory_capacity}"
         @log.info "CPU And Memory Allocatable are already set and their values are as follows @cpu_allocatable : #{@cpu_allocatable}, @memory_allocatable: #{@memory_allocatable}"
         return

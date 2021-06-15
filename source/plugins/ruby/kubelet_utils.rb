@@ -124,22 +124,20 @@ class KubeletUtils
           ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
         end 
 
-        cpu_capacity_number = cpu_capacity.to_i
+        # do calculation in nanocore since that's what KubernetesApiClient.getMetricNumericValue expects
+        cpu_capacity_number = cpu_capacity.to_i * 1000.0 ** 2
         # subtract to get allocatable. Formula : Allocatable = Capacity - ( kube reserved + system reserved + eviction threshold )
         # https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
         # cpu_allocatable  = cpu_capacity_number - ( kubereserved_cpu.tr('^0-9', '').to_i + systemReserved_cpu.tr('^0-9', '').to_i );
-        cpu_allocatable  = cpu_capacity_number - ( KuberenetesApiClient.getMetricNumericValue("cpu", kubereserved_cpu) + KuberenetesApiClient.getMetricNumericValue("cpu", systemReserved_cpu) );
+        cpu_allocatable  = cpu_capacity_number - (KubernetesApiClient.getMetricNumericValue("cpu", kubereserved_cpu) + KubernetesApiClient.getMetricNumericValue("cpu", systemReserved_cpu))
+        cpu_allocatable = cpu_allocatable / (1000.0 ** 2)
         @log.info "CPU Allocatable #{cpu_allocatable}"
 
-        memory_allocatable = memory_capacity.to_i 
-        - ( KuberenetesApiClient.getMetricNumericValue("memory", kubereserved_memory) 
-        + KuberenetesApiClient.getMetricNumericValue("memory", systemReserved_memory)            
-        + (KuberenetesApiClient.getMetricNumericValue("memory", evictionHard_memory))
-        )
+        memory_allocatable = memory_capacity - (KubernetesApiClient.getMetricNumericValue("memory", kubereserved_memory) + KubernetesApiClient.getMetricNumericValue("memory", systemReserved_memory) + KubernetesApiClient.getMetricNumericValue("memory", evictionHard_memory))
         @log.info "Memory Allocatable #{memory_allocatable}"
 
-        cpu_allocatable = BigDecimal(cpu_allocatable).to_f
-        memory_allocatable = BigDecimal(memory_allocatable).to_f
+        # cpu_allocatable = BigDecimal(cpu_allocatable.to_s).to_f
+        # memory_allocatable = BigDecimal(memory_allocatable.to_s).to_f
 
         return [cpu_allocatable, memory_allocatable]
       rescue => errorStr
