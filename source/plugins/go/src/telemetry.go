@@ -161,6 +161,10 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 					telemetryDimensions["OsmNamespaceCount"] = strconv.Itoa(osmNamespaceCount)
 				}
 
+				telemetryDimensions["PromFbitChunkSize"] = os.Getenv("AZMON_SIDECAR_FBIT_CHUNK_SIZE")
+				telemetryDimensions["PromFbitBufferSize"] = os.Getenv("AZMON_SIDECAR_FBIT_BUFFER_SIZE")
+				telemetryDimensions["PromFbitMemBufLimit"] = os.Getenv("AZMON_SIDECAR_FBIT_MEM_BUF_LIMIT")
+
 				SendEvent(eventNameCustomPrometheusSidecarHeartbeat, telemetryDimensions)
 
 			} else {
