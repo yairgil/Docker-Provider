@@ -63,8 +63,7 @@ type AgentConfiguration struct {
 			Extensionconfigurations struct {
 				Containerinsights []struct {
 					ID        string   `json:"id"`
-					Originids []string `json:"originIds"`
-					//TODO: make this a map so that if more types are added in the future it won't break. Also test if removing a type breaks the json deserialization
+					Originids []string `json:"originIds"`				
 					Outputstreams struct {
 						LinuxPerfBlob                   string `json:"LINUX_PERF_BLOB"`
 						ContainerInventoryBlob          string `json:"CONTAINER_INVENTORY_BLOB"`
@@ -116,8 +115,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 
 		// Call managed services for Azure resources token endpoint
 		var resp *http.Response = nil
-		for i := 0; i < 3; i++ {
-			// client := &http.Client{}
+		for i := 0; i < 3; i++ {		
 			resp, err = HTTPClient.Do(req)
 			if err != nil {
 				message := fmt.Sprintf("getAccessTokenFromIMDS: Error calling token endpoint: %s", err.Error())
@@ -125,8 +123,10 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 				SendException(message) // send the exception here because this error is not returned. The calling function will send any returned errors to telemetry.
 				continue
 			}
-			//TODO: is this the best place to defer closing the response body?
-			defer resp.Body.Close()
+			
+			if resp != nil && resp.Body != nil {
+			  defer resp.Body.Close() 
+			}
 
 			Log("getAccessTokenFromIMDS: IMDS Response Status: %d", resp.StatusCode)
 			if resp.StatusCode != 200 {
@@ -151,6 +151,10 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 
 	} else {
 		Log("Info Reading IMDS Access Token from file : %s", IMDSTokenPathForWindows)
+		if _, err = os.Stat(IMDSTokenPathForWindows); os.IsNotExist(err) {
+			Log("getAccessTokenFromIMDS: IMDS token file doesnt exist: %s", err.Error())
+			return imdsAccessToken, 0, err
+		}
 		responseBytes, err = ioutil.ReadFile(IMDSTokenPathForWindows)
 		if err != nil {
 			Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s", err.Error())
@@ -371,7 +375,7 @@ func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (refreshInterva
 
 func refreshIngestionAuthToken() {
 	for ; true; <-IngestionAuthTokenRefreshTicker.C { 
-		if IMDSToken == "" || IMDSTokenExpiration <= (time.Now().Unix() + 60 * 60) { // refresh the token 1 hr expiry
+		if IMDSToken == "" || IMDSTokenExpiration <= (time.Now().Unix() + 60 * 60) { // token valid 24 hrs and refresh token 1 hr before expiry
 			imdsToken, imdsTokenExpiry, err := getAccessTokenFromIMDS() 
 			if err != nil {
 				message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
@@ -416,7 +420,7 @@ func refreshIngestionAuthToken() {
 		ODSIngestionAuthToken = ingestionAuthToken
 		IngestionAuthTokenUpdateMutex.Unlock()
 		if refreshIntervalInSeconds > 0 && refreshIntervalInSeconds != defaultIngestionAuthTokenRefreshIntervalSeconds {
-			//TODO - use Reset when go version upgraded to 1.15 or up rather Stp() and NewTicker
+			//TODO - use Reset which is better when go version upgraded to 1.15 or up rather Stop() and NewTicker
 			//IngestionAuthTokenRefreshTicker.Reset(time.Second * time.Duration(refreshIntervalInSeconds))  
 			IngestionAuthTokenRefreshTicker.Stop()
 			IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(defaultIngestionAuthTokenRefreshIntervalSeconds))		
