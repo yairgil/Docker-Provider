@@ -450,104 +450,72 @@ echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
+#skip imds lookup since not used either legacy or aad msi auth path
+export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
+echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc  
+cat /etc/mdsd.d/envmdsd | while read line; do
+   echo $line >> ~/.bashrc
+done
+source /etc/mdsd.d/envmdsd 
+MDSD_AAD_MSI_AUTH_ARGS=""
 # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH 
 export AAD_MSI_AUTH_MODE=false 
 if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
-   echo "*** activating oneagent in aad auth msi mode ***"       
+   echo "*** activating oneagent in aad auth msi mode ***"   
+   # msi auth specific args
+   MDSD_AAD_MSI_AUTH_ARGS="-a -A"    
    export AAD_MSI_AUTH_MODE=true
-   echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
-     
-   cat /etc/mdsd.d/envmdsd | while read line; do
-      echo $line >> ~/.bashrc
-   done
-   source /etc/mdsd.d/envmdsd
-
+   echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc        
       
-    export MDSD_FLUENT_SOCKET_PORT="28230"
-    echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
-    export MCS_ENDPOINT="handler.control.monitor.azure.com"
-    echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
-    export AZURE_ENDPOINT="https://monitor.azure.com/"
-    echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
-    export ADD_REGION_TO_MCS_ENDPOINT="true"
-    echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
-    export ENABLE_MCS="true"
-    echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
-    export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
-    echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
-    export MDSD_USE_LOCAL_PERSISTENCY="false"
-    echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
-    #skip imds metadata lookup since we dont use
-    #legacy auth misnomer here
-    export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
-    echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
-
-    source ~/.bashrc
-
-    dpkg -l | grep mdsd | awk '{print $2 " " $3}'
-                      
-     if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then   
-        echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in aad auth msi mode in sidecar container..."                 
-        #use tenant name to avoid unix socket conflict and different ports for port conflict
-        #roleprefix to use container specific mdsd socket
-        export TENANT_NAME="${CONTAINER_TYPE}"
-        echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
-        export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
-        echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
-        source ~/.bashrc   
-        mkdir /var/run/mdsd-${CONTAINER_TYPE}    
-        # add -T 0xFFFF for full traces      
-        mdsd -a -A  -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-     else 
-        echo "starting mdsd in aad auth msi mode in main container..."
-        # add -T 0xFFFF for full traces
-        mdsd -a -A  -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-     fi  
- 
+   export MDSD_FLUENT_SOCKET_PORT="28230"
+   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+   export MCS_ENDPOINT="handler.control.monitor.azure.com"
+   echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
+   export AZURE_ENDPOINT="https://monitor.azure.com/"
+   echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
+   export ADD_REGION_TO_MCS_ENDPOINT="true"
+   echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
+   export ENABLE_MCS="true"
+   echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
+   export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
+   echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
+   export MDSD_USE_LOCAL_PERSISTENCY="false"
+   echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc   
 else 
   echo "*** activating oneagent in legacy auth mode ***"
   CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"  
-   #use the file path as its secure than env
-   CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"
-   cat /etc/mdsd.d/envmdsd | while read line; do
-      echo $line >> ~/.bashrc
-   done
-   source /etc/mdsd.d/envmdsd
-   echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
-   export CIWORKSPACE_id=$CIWORKSPACE_id
-   echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc   
-   export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
-   echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
-   export OMS_TLD=$domain
-   echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc   
-   export MDSD_FLUENT_SOCKET_PORT="29230"
-   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+  #use the file path as its secure than env
+  CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"  
+  echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+  export CIWORKSPACE_id=$CIWORKSPACE_id
+  echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc   
+  export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
+  echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
+  export OMS_TLD=$domain
+  echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc   
+  export MDSD_FLUENT_SOCKET_PORT="29230"
+  echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc  
+fi
+source ~/.bashrc
 
-   #skip imds lookup since not used in legacy auth path
-   export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
-   echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
+dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
-   source ~/.bashrc
-
-   dpkg -l | grep mdsd | awk '{print $2 " " $3}'
-
-   if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-      echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in legacy auth mode in sidecar container..."                 
-      #use tenant name to avoid unix socket conflict and different ports for port conflict
-      #roleprefix to use container specific mdsd socket
-      export TENANT_NAME="${CONTAINER_TYPE}"
-      echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
-      export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
-      echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
-      source ~/.bashrc
-      mkdir /var/run/mdsd-${CONTAINER_TYPE}
-      # add -T 0xFFFF for full traces
-      mdsd -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-   else      
-      echo "starting mdsd in legacy auth mode in main container..."
-      # add -T 0xFFFF for full traces
-      mdsd -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-   fi
+if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+    echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in legacy auth mode in sidecar container..."                 
+    #use tenant name to avoid unix socket conflict and different ports for port conflict
+    #roleprefix to use container specific mdsd socket
+    export TENANT_NAME="${CONTAINER_TYPE}"
+    echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
+    export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
+    echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
+    source ~/.bashrc
+    mkdir /var/run/mdsd-${CONTAINER_TYPE}
+    # add -T 0xFFFF for full traces
+    mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+else      
+    echo "starting mdsd in legacy auth mode in main container..."
+    # add -T 0xFFFF for full traces
+    mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 fi
 
 # no dependency on fluentd for prometheus side car container  
