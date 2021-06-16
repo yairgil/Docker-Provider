@@ -811,9 +811,6 @@ spec:
           - mountPath: C:\etc\config\adx
             name: omsagent-adx-secret
             readOnly: true
-          - mountPath: C:\etc\IMDS-access-token
-            name: imds-token
-            readOnly: true
           # Need to mount this only for airgapped clouds - Commenting this since it wont exist in non airgapped clouds
           # - mountPath: C:\ca
           #   name: ca-certs
@@ -873,10 +870,6 @@ spec:
       - name: omsagent-adx-secret
         secret:
           secretName: omsagent-adx-secret
-          optional: true
-      - name: imds-token
-        secret:
-          secretName: omsagent-aad-msi-token
           optional: true
 ---
 kind: Service
