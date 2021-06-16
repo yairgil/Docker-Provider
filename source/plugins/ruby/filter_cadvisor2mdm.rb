@@ -12,7 +12,6 @@ module Fluent::Plugin
   require_relative "kubelet_utils"
   require_relative "MdmMetricsGenerator"
   require_relative "in_kube_nodes"
-  require_relative "KubernetesApiClient"
 
   class CAdvisor2MdmFilter < Filter
     Fluent::Plugin.register_filter("cadvisor2mdm", self)
@@ -379,7 +378,7 @@ module Fluent::Plugin
         end
       elsif @@controller_type.downcase == "daemonset"
         capacity_from_kubelet = KubeletUtils.get_node_capacity
-        allocatable_from_kubelet = KubeletUtils.get_node_allocatable(@@isWindows)
+        allocatable_from_kubelet = KubeletUtils.get_node_allocatable
 
         # Error handling in case /metrics/cadvsior endpoint fails
         if !capacity_from_kubelet.nil? && capacity_from_kubelet.length > 1

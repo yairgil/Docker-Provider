@@ -81,7 +81,7 @@ class CAdvisorMetricsAPIClient
       return getResponse(winNode, relativeUri)
     end
 
-    def getCongifzCAdvisor(winNode)
+    def getCongifzCAdvisor(winNode: nil)
       relativeUri = "/configz"
       return getResponse(winNode, relativeUri)
     end

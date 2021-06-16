@@ -41,13 +41,13 @@ class KubeletUtils
       end
     end
 
-    def get_node_allocatable(winNode)
+    def get_node_allocatable
       begin
         cpu_capacity = 1.0
         memory_capacity = 1.0
         cpu_allocatable = 1.0
         memory_allocatable = 1.0
-        capacity_response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor
+        capacity_response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor(winNode: nil)
         if !capacity_response.nil? && !capacity_response.body.nil?
           all_metrics = capacity_response.body.split("\n")
           #cadvisor machine metrics can exist with (>=1.19) or without dimensions (<1.19)
@@ -59,14 +59,11 @@ class KubeletUtils
           @log.info "get_node_allocatable::Memory Capacity #{memory_capacity}"
         end
 
-        if !winNode.nil?
-          winNode = nil
-        end
-
-        allocatable_response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode)
+        allocatable_response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode: nil)
+        parsed_response = JSON.parse(allocatable_response.body)
 
         begin
-          kubereserved_cpu = JSON.parse(allocatable_response.body)["kubeletconfig"]["kubeReserved"]["cpu"]
+          kubereserved_cpu = parsed_response["kubeletconfig"]["kubeReserved"]["cpu"]
           if kubereserved_cpu.nil? || kubereserved_cpu == ""
             kubereserved_cpu = "0"
           end
@@ -78,7 +75,7 @@ class KubeletUtils
         end 
 
         begin
-          kubereserved_memory = JSON.parse(allocatable_response.body)["kubeletconfig"]["kubeReserved"]["memory"]
+          kubereserved_memory = parsed_response["kubeletconfig"]["kubeReserved"]["memory"]
           if kubereserved_memory.nil? || kubereserved_memory == ""
             kubereserved_memory = "0"
           end
@@ -89,7 +86,7 @@ class KubeletUtils
           ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
         end 
         begin
-          systemReserved_cpu = JSON.parse(allocatable_response.body)["kubeletconfig"]["systemReserved"]["cpu"]
+          systemReserved_cpu = parsed_response["kubeletconfig"]["systemReserved"]["cpu"]
           if systemReserved_cpu.nil? || systemReserved_cpu == ""
             systemReserved_cpu = "0"
           end
@@ -101,7 +98,7 @@ class KubeletUtils
           ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
         end 
         begin
-           systemReserved_memory = JSON.parse(allocatable_response.body)["kubeletconfig"]["systemReserved"]["memory"]
+           systemReserved_memory = parsed_response["kubeletconfig"]["systemReserved"]["memory"]
            if systemReserved_memory.nil? || systemReserved_memory == ""
             systemReserved_memory = "0"
            end
@@ -113,7 +110,7 @@ class KubeletUtils
         end 
 
         begin
-          evictionHard_memory = JSON.parse(allocatable_response.body)["kubeletconfig"]["evictionHard"]["memory.available"]
+          evictionHard_memory = parsed_response["kubeletconfig"]["evictionHard"]["memory.available"]
           if evictionHard_memory.nil? || evictionHard_memory == ""
             evictionHard_memory = "0"
           end
