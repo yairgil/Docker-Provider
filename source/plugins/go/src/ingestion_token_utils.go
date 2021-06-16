@@ -254,12 +254,8 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 		return configurationId, channelId, err
 	}
 
-	if agentConfiguration.Configurations[0].Configurationid != nil && agentConfiguration.Configurations[0].Configurationid != "" {
-	    configurationId = agentConfiguration.Configurations[0].Configurationid
-	}
-	if agentConfiguration.Configurations[0].Content.Channels[0].ID != nil && agentConfiguration.Configurations[0].Content.Channels[0].ID != "" {
-	   channelId = agentConfiguration.Configurations[0].Content.Channels[0].ID 
-    }
+	configurationId = agentConfiguration.Configurations[0].Configurationid
+	channelId = agentConfiguration.Configurations[0].Content.Channels[0].ID     
 
 	Log("obtained configurationId: %s, channelId: %s", configurationId, channelId)
 	Log("Info getAgentConfiguration: end")
