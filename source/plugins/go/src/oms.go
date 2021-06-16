@@ -1783,8 +1783,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
     }
 
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
-    MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
-	Log("defaultIngestionAuthTokenRefreshIntervalSeconds = %d \n", defaultIngestionAuthTokenRefreshIntervalSeconds)
+    MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName	
 	Log("ContainerLogsRouteADX: %v, IsWindows: %v, IsAADMSIAuthMode = %v \n", ContainerLogsRouteADX, IsWindows, IsAADMSIAuthMode)
 	if !ContainerLogsRouteADX && IsWindows && IsAADMSIAuthMode {
 		Log("defaultIngestionAuthTokenRefreshIntervalSeconds = %d \n", defaultIngestionAuthTokenRefreshIntervalSeconds)
