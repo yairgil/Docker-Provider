@@ -3,9 +3,8 @@ require_relative "ConfigParseErrorLogger"
 
 @td_agent_bit_conf_path = "/etc/opt/microsoft/docker-cimprov/td-agent-bit.conf"
 
-@default_service_interval = "1"
-@default_buffer_chunk_size = "1"
-@default_buffer_max_size = "1"
+@default_service_interval = "15"
+@default_mem_buf_limit = "10"
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -21,21 +20,26 @@ def substituteFluentBitPlaceHolders
     bufferMaxSize = ENV["FBIT_TAIL_BUFFER_MAX_SIZE"]
     multilineLogging = ENV["AZMON_LOG_STITCH_MULTILINE"]
     containerRuntime = ENV["CONTAINER_RUNTIME"]
+    memBufLimit = ENV["FBIT_TAIL_MEM_BUF_LIMIT"]
 
     serviceInterval = (!interval.nil? && is_number?(interval) && interval.to_i > 0 ) ? interval : @default_service_interval
     serviceIntervalSetting = "Flush         " + serviceInterval
 
-    tailBufferChunkSize = (!bufferChunkSize.nil? && is_number?(bufferChunkSize) && bufferChunkSize.to_i > 0) ? bufferChunkSize : @default_buffer_chunk_size
+    tailBufferChunkSize = (!bufferChunkSize.nil? && is_number?(bufferChunkSize) && bufferChunkSize.to_i > 0) ? bufferChunkSize : nil
 
-    tailBufferMaxSize = (!bufferMaxSize.nil? && is_number?(bufferMaxSize) && bufferMaxSize.to_i > 0) ? bufferMaxSize : @default_buffer_max_size = "1"
+    tailBufferMaxSize = (!bufferMaxSize.nil? && is_number?(bufferMaxSize) && bufferMaxSize.to_i > 0) ? bufferMaxSize : nil
 
     if ((!tailBufferChunkSize.nil? && tailBufferMaxSize.nil?) ||  (!tailBufferChunkSize.nil? && !tailBufferMaxSize.nil? && tailBufferChunkSize.to_i > tailBufferMaxSize.to_i))
       puts "config:warn buffer max size must be greater or equal to chunk size"
       tailBufferMaxSize = tailBufferChunkSize
     end
 
+    tailMemBufLimit = (!memBufLimit.nil? && is_number?(memBufLimit) && memBufLimit.to_i > 10) ? memBufLimit : @default_mem_buf_limit
+    tailMemBufLimitSetting = "Mem_Buf_Limit " + tailMemBufLimit + "m"
+
     text = File.read(@td_agent_bit_conf_path)
     new_contents = text.gsub("${SERVICE_FLUSH_INTERVAL}", serviceIntervalSetting)
+    new_contents = new_contents.gsub("${TAIL_MEM_BUF_LIMIT}", tailMemBufLimitSetting)
     if !tailBufferChunkSize.nil?
       new_contents = new_contents.gsub("${TAIL_BUFFER_CHUNK_SIZE}", "Buffer_Chunk_Size " + tailBufferChunkSize + "m")
     else
