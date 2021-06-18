@@ -290,6 +290,7 @@ class CAdvisorMetricsAPIClient
                     end
                     if (!@clusterMultilineEnabled.nil? && !@clusterMultilineEnabled.empty?)
                       telemetryProps["multilineEnabled"] = @clusterMultilineEnabled
+                    end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
                 end
