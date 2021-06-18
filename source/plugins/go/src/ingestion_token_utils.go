@@ -63,7 +63,7 @@ type AgentConfiguration struct {
 			Extensionconfigurations struct {
 				Containerinsights []struct {
 					ID        string   `json:"id"`
-					Originids []string `json:"originIds"`				
+					Originids []string `json:"originIds"`
 					Outputstreams struct {
 						LinuxPerfBlob                   string `json:"LINUX_PERF_BLOB"`
 						ContainerInventoryBlob          string `json:"CONTAINER_INVENTORY_BLOB"`
@@ -91,13 +91,13 @@ type IngestionTokenResponse struct {
 }
 
 func getAccessTokenFromIMDS() (string, int64, error) {
-	Log("Info getAccessTokenFromIMDS: start")	
-	useIMDSTOkenProxyEndPoint := os.Getenv("USE_IMDS_TOKEN_PROXY_END_POINT")
+	Log("Info getAccessTokenFromIMDS: start")
+	useIMDSTokenProxyEndPoint := os.Getenv("USE_IMDS_TOKEN_PROXY_END_POINT")
 	imdsAccessToken := ""
 	var responseBytes []byte
 	var err error
-	
-	if (useIMDSTOkenProxyEndPoint != "" && strings.Compare(strings.ToLower(useIMDSTOkenProxyEndPoint), "true") == 0) {
+
+	if (useIMDSTokenProxyEndPoint != "" && strings.Compare(strings.ToLower(useIMDSTokenProxyEndPoint), "true") == 0) {
 		Log("Info Reading IMDS Access Token from IMDS Token proxy endpoint")
 		MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
 		var msi_endpoint *url.URL
@@ -113,22 +113,25 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 		}
 		req.Header.Add("Metadata", "true")
 
+		//IMDS endpoint nonroutable endpoint and requests doesnt go through proxy hence using separate client
+		httpClient := &http.Client{}
+
 		// Call managed services for Azure resources token endpoint
 		var resp *http.Response = nil
-		for i := 0; i < 3; i++ {		
-			resp, err = HTTPClient.Do(req)
+		for retryCount := 0; retryCount < 3; retryCount++ {
+			resp, err = httpClient.Do(req)
 			if err != nil {
-				message := fmt.Sprintf("getAccessTokenFromIMDS: Error calling token endpoint: %s", err.Error())
+				message := fmt.Sprintf("getAccessTokenFromIMDS: Error calling token endpoint: %s, retryCount: %d", err.Error(), retryCount)
 				Log(message)
 				SendException(message) // send the exception here because this error is not returned. The calling function will send any returned errors to telemetry.
 				continue
 			}
 
 			if resp != nil && resp.Body != nil {
-			  defer resp.Body.Close() 
+			  defer resp.Body.Close()
 			}
 
-			Log("getAccessTokenFromIMDS: IMDS Response Status: %d", resp.StatusCode)
+			Log("getAccessTokenFromIMDS: IMDS Response Status: %d, retryCount: %d", resp.StatusCode, retryCount)
 			if resp.StatusCode != 200 {
 				message := fmt.Sprintf("getAccessTokenFromIMDS: IMDS Request failed with an error code : %d", resp.StatusCode)
 				Log(message)
@@ -155,12 +158,16 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 			Log("getAccessTokenFromIMDS: IMDS token file doesnt exist: %s", err.Error())
 			return imdsAccessToken, 0, err
 		}
-		//ensure this works and no issues accessing the file
-		responseBytes, err = ioutil.ReadFile(IMDSTokenPathForWindows)
-		if err != nil {
-			Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s", err.Error())
-			return imdsAccessToken, 0, err
-		}
+		//adding retries incase if we ended up reading the token file while the token file being written
+		for retryCount := 0; retryCount < 3; retryCount++ {
+			responseBytes, err = ioutil.ReadFile(IMDSTokenPathForWindows)
+			if err != nil {
+				Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s, retryCount: %d", err.Error(), retryCount)
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			break
+	    }
     }
 
 	// Unmarshall response body into struct
@@ -174,7 +181,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 
 	expiration, err := strconv.ParseInt(imdsResponse.ExpiresOn, 10, 64)
 	if err != nil {
-		Log("Error parsing ExpiresOn field from IMDS response: %s", err.Error())		
+		Log("Error parsing ExpiresOn field from IMDS response: %s", err.Error())
 		return imdsAccessToken, 0, err
 	}
 	Log("Info getAccessTokenFromIMDS: end")
@@ -184,14 +191,14 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 func getAgentConfiguration(imdsAccessToken string) (configurationId string, channelId string, err error) {
 	Log("Info getAgentConfiguration: start")
 	configurationId = ""
-	channelId = ""	
+	channelId = ""
 	apiVersion := "2020-08-01-preview"
 	var amcs_endpoint *url.URL
 	osType := os.Getenv("OS_TYPE")
 	resourceId := os.Getenv("AKS_RESOURCE_ID")
 	resourceRegion := os.Getenv("AKS_REGION")
-	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
-	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations?platform=%s&api-version=%s", resourceRegion, resourceId, osType, apiVersion)
+	mcsEndpoint := os.Getenv("MCS_ENDPOINT")
+	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.%s%s/agentConfigurations?platform=%s&api-version=%s", resourceRegion, mcsEndpoint, resourceId, osType, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
 	var bearer = "Bearer " + imdsAccessToken
@@ -206,7 +213,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 
 	var resp *http.Response = nil
 
-	for i := 0; i < 3; i++ {	
+	for i := 0; i < 3; i++ {
 		resp, err = HTTPClient.Do(req)
 		if err != nil {
 			message := fmt.Sprintf("Error calling AMCS endpoint: %s", err.Error())
@@ -215,7 +222,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 			continue
 		}
 		if resp != nil && resp.Body != nil {
-			defer resp.Body.Close() 
+			defer resp.Body.Close()
 	    }
 		Log("getAgentConfiguration Response Status: %d", resp.StatusCode)
 		if resp.StatusCode != 200 {
@@ -223,7 +230,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 			Log(message)
 			SendException(message)
 			continue
-		} 
+		}
 		break // call succeeded, don't retry any more
 	}
 	if resp == nil {
@@ -255,7 +262,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	}
 
 	configurationId = agentConfiguration.Configurations[0].Configurationid
-	channelId = agentConfiguration.Configurations[0].Content.Channels[0].ID     
+	channelId = agentConfiguration.Configurations[0].Content.Channels[0].ID
 
 	Log("obtained configurationId: %s, channelId: %s", configurationId, channelId)
 	Log("Info getAgentConfiguration: end")
@@ -271,9 +278,9 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	osType := os.Getenv("OS_TYPE")
 	resourceId := os.Getenv("AKS_RESOURCE_ID")
 	resourceRegion := os.Getenv("AKS_REGION")
-	MCS_ENDPOINT := os.Getenv("MCS_ENDPOINT")
+	mcsEndpoint := os.Getenv("MCS_ENDPOINT")
 	apiVersion := "2020-04-01-preview"
-	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control."+MCS_ENDPOINT+"%s/agentConfigurations/%s/channels/%s/issueIngestionToken?platform=%s&api-version=%s", resourceRegion, resourceId, configurationId, channelId, osType, apiVersion)
+	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.%s%s/agentConfigurations/%s/channels/%s/issueIngestionToken?platform=%s&api-version=%s", resourceRegion, mcsEndpoint, resourceId, configurationId, channelId, osType, apiVersion)
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 
 	var bearer = "Bearer " + imdsAccessToken
@@ -291,7 +298,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	var resp *http.Response = nil
 
 	for i := 0; i < 3; i++ {
-		// Call managed services for Azure resources token endpoint	
+		// Call managed services for Azure resources token endpoint
 		resp, err = HTTPClient.Do(req)
 		if err != nil {
 			message := fmt.Sprintf("Error calling amcs endpoint for ingestion auth token: %s", err.Error())
@@ -300,9 +307,9 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 			resp = nil
 			continue
 		}
-		
+
 		if resp != nil && resp.Body != nil {
-			defer resp.Body.Close() 
+			defer resp.Body.Close()
 	    }
 
 		Log("getIngestionAuthToken Response Status: %d", resp.StatusCode)
@@ -320,7 +327,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 		Log("ran out of retries calling AMCS for ingestion token")
 		return ingestionAuthToken, 0, err
 	}
-	
+
 	// Pull out response body
 	responseBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -351,7 +358,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 
 var cacheControlHeaderRegex = regexp.MustCompile(`max-age=([0-9]+)`)
 
-func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (refreshInterval int64, err error) {	
+func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (refreshInterval int64, err error) {
 	cacheControlHeader, valueInMap := header["Cache-Control"]
 	if !valueInMap {
 		return 0, errors.New("Cache-Control not in passed header")
@@ -365,8 +372,8 @@ func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (refreshInterva
 			if err != nil {
 				Log("getIngestionAuthToken: error getting timeout from auth token. Header: " + strings.Join(cacheControlHeader, ","))
 				return 0, err
-			}	
-			refreshInterval = int64(interval)	
+			}
+			refreshInterval = int64(interval)
 			return refreshInterval, nil
 		}
 	}
@@ -375,56 +382,56 @@ func getTokenRefreshIntervalFromAmcsResponse(header http.Header) (refreshInterva
 }
 
 func refreshIngestionAuthToken() {
-	for ; true; <-IngestionAuthTokenRefreshTicker.C { 
+	for ; true; <-IngestionAuthTokenRefreshTicker.C {
 		if IMDSToken == "" || IMDSTokenExpiration <= (time.Now().Unix() + 60 * 60) { // token valid 24 hrs and refresh token 1 hr before expiry
-			imdsToken, imdsTokenExpiry, err := getAccessTokenFromIMDS() 
+			imdsToken, imdsTokenExpiry, err := getAccessTokenFromIMDS()
 			if err != nil {
 				message := fmt.Sprintf("Error on getAccessTokenFromIMDS  %s \n", err.Error())
 				Log(message)
-				SendException(message)				
+				SendException(message)
 			} else {
 				IMDSToken = imdsToken
 				IMDSTokenExpiration = imdsTokenExpiry
 			}
-		}		
+		}
 		if IMDSToken == "" {
 			message := "IMDSToken is empty"
 			Log(message)
 			SendException(message)
-			continue 
-		} 	
-		var err error	
+			continue
+		}
+		var err error
 		// ignore agent configuration expiring, the configuration and channel IDs will never change (without creating an agent restart)
-		if ConfigurationId == "" || ChannelId == "" {					
+		if ConfigurationId == "" || ChannelId == "" {
 			ConfigurationId, ChannelId, err = getAgentConfiguration(IMDSToken)
 			if err != nil {
 				message := fmt.Sprintf("Error getAgentConfiguration %s \n", err.Error())
 				Log(message)
 				SendException(message)
-				continue 
+				continue
 			}
 		}
 		if IMDSToken == "" || ConfigurationId == "" || ChannelId == ""  {
 			message := "IMDSToken or ConfigurationId or ChannelId empty"
 			Log(message)
 			SendException(message)
-			continue 
+			continue
 		}
 		ingestionAuthToken, refreshIntervalInSeconds, err := getIngestionAuthToken(IMDSToken, ConfigurationId, ChannelId)
 		if err != nil {
 			message := fmt.Sprintf("Error getIngestionAuthToken %s \n", err.Error())
 			Log(message)
 			SendException(message)
-			continue 
-		}				
+			continue
+		}
 		IngestionAuthTokenUpdateMutex.Lock()
 		ODSIngestionAuthToken = ingestionAuthToken
-		IngestionAuthTokenUpdateMutex.Unlock()		
+		IngestionAuthTokenUpdateMutex.Unlock()
 		if refreshIntervalInSeconds > 0 && refreshIntervalInSeconds != defaultIngestionAuthTokenRefreshIntervalSeconds {
 			//TODO - use Reset which is better when go version upgraded to 1.15 or up rather Stop() and NewTicker
-			//IngestionAuthTokenRefreshTicker.Reset(time.Second * time.Duration(refreshIntervalInSeconds))  
+			//IngestionAuthTokenRefreshTicker.Reset(time.Second * time.Duration(refreshIntervalInSeconds))
 			IngestionAuthTokenRefreshTicker.Stop()
-			IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(refreshIntervalInSeconds))		
+			IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(refreshIntervalInSeconds))
 		}
 	}
 }
