@@ -118,7 +118,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 		req.Header.Add("Metadata", "true")
 
 		//IMDS endpoint nonroutable endpoint and requests doesnt go through proxy hence using dedicated http client
-		httpClient := &http.Client{}
+		httpClient := &http.Client{Timeout: 30 * time.Second}
 
 		// Call managed services for Azure resources token endpoint
 		var resp *http.Response = nil
@@ -137,10 +137,19 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 			}
 
 			Log("getAccessTokenFromIMDS: IMDS Response Status: %d, retryCount: %d", resp.StatusCode, retryCount)
-		    if resp.StatusCode >= 500 {
+		    if ShouldRetry(resp.StatusCode) {
 				message := fmt.Sprintf("getAccessTokenFromIMDS: IMDS Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)
 				Log(message)
-				time.Sleep(100 * time.Millisecond)
+				retryDelay := time.Duration((retryCount + 1) * 100) * time.Millisecond
+				if resp.StatusCode == 429 {
+					if resp != nil && resp.Header.Get("Retry-After") != "" {
+						after, err := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 64)
+						if err != nil && after > 0 {
+							retryDelay = time.Duration(after) * time.Second
+						}
+					}
+				}			
+				time.Sleep(retryDelay)
 				continue
 			} else if resp.StatusCode != 200 {
 				message := fmt.Sprintf("getAccessTokenFromIMDS: IMDS Request failed with nonretryable error code: %d, retryCount: %d", resp.StatusCode, retryCount)
@@ -174,7 +183,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 			responseBytes, err = ioutil.ReadFile(IMDSTokenPathForWindows)
 			if err != nil {
 				Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s, retryCount: %d", err.Error(), retryCount)
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep((retryCount + 1) * 100 * time.Millisecond)
 				continue
 			}
 			break
@@ -244,10 +253,19 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 			defer resp.Body.Close()
 	    }
 		Log("getAgentConfiguration Response Status: %d", resp.StatusCode)
-		if resp.StatusCode >= 500 {
+		if ShouldRetry(resp.StatusCode) {
 			message := fmt.Sprintf("getAgentConfiguration: Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)
 			Log(message)
-			time.Sleep(100 * time.Millisecond)
+			retryDelay := time.Duration((retryCount + 1) * 100) * time.Millisecond
+			if resp.StatusCode == 429 {
+				if resp != nil && resp.Header.Get("Retry-After") != "" {
+					after, err := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 64)
+					if err != nil && after > 0 {
+						retryDelay = time.Duration(after) * time.Second
+					}
+				}
+			}			
+			time.Sleep(retryDelay)
 			continue
 		} else if resp.StatusCode != 200 {
 			message := fmt.Sprintf("getAgentConfiguration: Request failed with nonretryable error code: %d, retryCount: %d", resp.StatusCode, retryCount)
@@ -348,10 +366,19 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	    }
 
 		Log("getIngestionAuthToken Response Status: %d", resp.StatusCode)
-		if resp.StatusCode >= 500 {
-			message := fmt.Sprintf("getIngestionAuthToken: Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)
+		if ShouldRetry(resp.StatusCode) {
+			message := fmt.Sprintf("getIngestionAuthToken: Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)			
 			Log(message)
-			time.Sleep(100 * time.Millisecond)
+			retryDelay := time.Duration((retryCount + 1) * 100) * time.Millisecond
+			if resp.StatusCode == 429 {
+				if resp != nil && resp.Header.Get("Retry-After") != "" {
+					after, err := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 64)
+					if err != nil && after > 0 {
+						retryDelay = time.Duration(after) * time.Second
+					}
+				}
+		    }			
+			time.Sleep(retryDelay)
 			continue
 		} else if resp.StatusCode != 200 {
 			message := fmt.Sprintf("getIngestionAuthToken: Request failed with nonretryable error code: %d, retryCount: %d", resp.StatusCode, retryCount)
@@ -476,4 +503,14 @@ func refreshIngestionAuthToken() {
 			IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(refreshIntervalInSeconds))
 		}
 	}
+}
+
+func ShouldRetry(httpStatusCode int) bool {
+	retryableStatusCodes := [5]int{408, 429, 502, 503, 504}
+	for _, code := range retryableStatusCodes {
+	   if code == httpStatusCode {
+		  return true
+	   }
+	}
+	return false
 }
