@@ -152,13 +152,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       ConfigParseErrorLogger.logError("Exception while reading config map settings for container log schema version - #{errorStr}, using defaults, please check config map for errors")
     end
     
-    #Get multiline log stitching setting
+    # Get multiline log stitching setting
     begin
       if !parsedConfig[:log_collection_settings][:stitch_multiline_logs].nil? && !parsedConfig[:log_collection_settings][:stitch_multiline_logs][:enabled].nil?
         @logStitchMultiline = parsedConfig[:log_collection_settings][:stitch_multiline_logs][:enabled]
-        puts "config::Using config map setting for multiline stitching"
+        puts "config::Using config map setting for exception stack multiline logging"
       else
-        # turn on multiline by default if using containerlog v2 schema
+        # Turn on multiline by default if using ContainerLogV2 schema
         if @containerLogSchemaVersion.strip.casecmp("v2")
           @logStitchMultiline = true
         else
@@ -261,9 +261,12 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   file = File.open("setenv.ps1", "w")
 
   if !file.nil?
+
+    # This path format is necessary for fluent-bit in windows
     if @logStitchMultiline
       @logTailPath = "C:\\var\\log\\containers\\*.log"
     end
+
     commands = get_command_windows('AZMON_COLLECT_STDOUT_LOGS', @collectStdoutLogs)
     file.write(commands)
     commands = get_command_windows('AZMON_LOG_TAIL_PATH', @logTailPath)

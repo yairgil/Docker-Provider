@@ -51,24 +51,14 @@ def substituteFluentBitPlaceHolders
       new_contents = new_contents.gsub("\n    ${TAIL_BUFFER_MAX_SIZE}\n", "\n")
     end
 
-    # for stitching together multiline logs
-    puts multilineLogging
-    puts containerRuntime
-
-    puts "config::multiline -------------------------------- 1"
+    # Docker Mode vs. Multiline for Fluent-Bit depending on container runtime, if multiline is enabled
     if !multilineLogging.nil? && multilineLogging.to_s.downcase == "true" && !containerRuntime.nil?
-      puts "config::multiline -------------------------------- 2"
       if containerRuntime == "docker"
-        puts "config::multiline -------------------------------- 3"
         new_contents = new_contents.gsub("#${DOCKER_MULTILINE_LOGGING}", "")
       else
-        puts "config::multiline -------------------------------- 4"
         new_contents = new_contents.gsub("#${CONTAINTERD_MULTILINE_LOGGING}", "")
       end
-    else
-      puts "config::multiline -------------------------------- 4"
     end
-    puts "config::multiline -------------------------------- 5"
 
     File.open(@td_agent_bit_conf_path, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in td-agent-bit.conf file"
