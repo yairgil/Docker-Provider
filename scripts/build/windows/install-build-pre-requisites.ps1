@@ -134,7 +134,7 @@ function Install-Docker() {
 }
 
 Write-Host "Install GO 1.14.1 version"
-# Install-Go
+Install-Go
 Write-Host "Install Build dependencies"
 Build-Dependencies
 
@@ -142,6 +142,6 @@ Write-Host "Install .NET core sdk 3.1"
 Install-DotNetCoreSDK
 
 Write-Host "Install Docker"
-# Install-Docker
+Install-Docker
 
 Write-Host "successfully installed required pre-requisites" -ForegroundColor Green

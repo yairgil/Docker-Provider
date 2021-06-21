@@ -43,14 +43,6 @@ data:
           enabled = false
           # When this is enabled (enabled = true), all kube events including normal events will be collected
 
-       [log_collection_settings.stitch_multiline_logs]
-          # In the absense of this configmap, default value for stitch_multiline_logs is false
-          # When the setting is set to true, log lines which do not start with a timestamp are appended to the previous log line
-          # this is usefull for combining logical events (like exception stack traces) into a single line
-          enabled = true
-       [log_collection_settings.schema]
-          containerlog_schema_version = "v2"
-
   prometheus-data-collection-settings: |-
     # Custom Prometheus metrics data collection settings
     [prometheus_data_collection_settings.cluster]

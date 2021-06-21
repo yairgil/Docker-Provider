@@ -16,9 +16,6 @@ wget https://github.com/microsoft/Docker-Provider/releases/download/05172021-one
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 
-# Assign permissions to omsagent user to access docker.sock
-sudo apt-get install acl
-
 #download inotify tools for watching configmap changes
 sudo apt-get update
 sudo apt-get install inotify-tools -y

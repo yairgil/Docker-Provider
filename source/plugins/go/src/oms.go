@@ -1741,3 +1741,4 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		stripMultilineHeaders = true
 	}
 }
+

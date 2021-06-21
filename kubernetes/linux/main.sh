@@ -502,7 +502,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
 else          
    echo "starting mdsd in legacy auth mode in main container..."
    # add -T 0xFFFF for full traces
-   mdsd -T 0x2002 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &  
+   mdsd -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &  
 fi
 
 # no dependency on fluentd for prometheus side car container  
