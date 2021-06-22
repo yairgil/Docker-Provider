@@ -22,15 +22,8 @@ set -o pipefail
 # microsoft helm chart repo
 microsoftHelmRepo="https://microsoft.github.io/charts/repo"
 microsoftHelmRepoName="microsoft"
-
-# released chart version for Azure Arc enabled Kubernetes public preview
-# mcrChartVersion="2.8.3"
-# mcr="mcr.microsoft.com"
-# mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers"
-
 # default to public cloud since only supported cloud is azure public clod
 defaultAzureCloud="AzureCloud"
-#helmLocalRepoName="."
 # microsoft helm chart repo
 microsoftHelmRepo="https://microsoft.github.io/charts/repo"
 microsoftHelmRepoName="microsoft"
