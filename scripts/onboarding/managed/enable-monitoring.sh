@@ -43,11 +43,9 @@ defaultAzureCloud="AzureCloud"
 # default domain will be for public cloud
 omsAgentDomainName="opinsights.azure.com"
 
-# released chart version in mcr
-mcrChartVersion="2.8.3"
-mcr="mcr.microsoft.com"
-mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers"
-helmLocalRepoName="."
+# microsoft helm chart repo
+microsoftHelmRepo="https://microsoft.github.io/charts/repo"
+microsoftHelmRepoName="microsoft"
 helmChartName="azuremonitor-containers"
 
 # default release name used during onboarding
@@ -513,15 +511,7 @@ install_helm_chart() {
   clusterRegion=$(az resource show --ids ${clusterResourceId} --query location -o tsv)
   echo "cluster region is : ${clusterRegion}"
 
-  echo "pull the chart version ${mcrChartVersion} from ${mcr}/${mcrChartRepoPath}"
-  export HELM_EXPERIMENTAL_OCI=1
-  helm chart pull $mcr/$mcrChartRepoPath:$mcrChartVersion
-
-  echo "export the chart from local cache to current directory"
-  helm chart export $mcr/$mcrChartRepoPath:$mcrChartVersion --destination .
-
-  helmChartRepoPath=$helmLocalRepoName/$helmChartName
-
+  helmChartRepoPath=$microsoftHelmRepoName/$helmChartName
   echo "helm chart repo path: ${helmChartRepoPath}"
 
   if [ ! -z "$proxyEndpoint" ]; then
@@ -579,6 +569,14 @@ enable_aks_monitoring_addon() {
   echo $clusterGetResponse | jq $jqquery >putrequestbody.json
   status=$(az rest --method put --uri $clusterResourceId?api-version=2020-03-01 --body @putrequestbody.json --headers Content-Type=application/json)
   echo "status after enabling of aks monitoringa addon:$status"
+}
+
+# add helm chart repo and update repo to get latest chart version
+add_and_update_helm_chart_repo() {
+  echo "adding helm repo: ${microsoftHelmRepoName} with repo path: ${microsoftHelmRepo}"
+  helm repo add ${microsoftHelmRepoName} ${microsoftHelmRepo}
+  echo "updating helm repo: ${microsoftHelmRepoName} to get local charts updated with latest ones"
+  helm repo update
 }
 
 # parse and validate args
@@ -643,6 +641,9 @@ if [ "$isAksCluster" = true ]; then
 else
   attach_monitoring_tags
 fi
+
+# add helm repo & update to get the latest chart version
+add_and_update_helm_chart_repo
 
 # install helm chart
 install_helm_chart
