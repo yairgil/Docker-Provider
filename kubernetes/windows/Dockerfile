@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/windows/servercore:ltsc2019
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
-    com.microsoft.product="Azure Monitor for containers"
+    com.microsoft.product="Azure Monitor for containers2"
 
 ARG IMAGE_TAG=win-ciprod06112021
 
