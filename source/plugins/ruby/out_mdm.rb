@@ -51,6 +51,7 @@ module Fluent::Plugin
       @last_telemetry_sent_time = nil
       # Setting useMsi to false by default
       @useMsi = false
+      @isAADMSIAuth = false
       @metrics_flushed_count = 0
 
       @cluster_identity = nil
@@ -132,8 +133,9 @@ module Fluent::Plugin
               if !@@user_assigned_client_id.nil? && !@@user_assigned_client_id.empty?
                 msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url }
               else
-                # in case of msi auth user_assigned_client_id will be empty                
-                @log.info "using aad msi auth" 
+                # in case of msi auth user_assigned_client_id will be empty
+                @log.info "using aad msi auth"
+                @isAADMSIAuth = true
                 msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
               end
               @parsed_token_uri = URI.parse(msi_endpoint)
@@ -159,8 +161,14 @@ module Fluent::Plugin
             @log.info "Refreshing access token for out_mdm plugin.."
 
             if (!!@useMsi)
-              @log.info "Using msi to get the token to post MDM data"
-              ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMToken-MSI", {})
+              properties = {}
+              if (!!@isAADMSIAuth)
+                @log.info "Using aad msi auth to get the token to post MDM data"
+                properties["isAADMSIAuth"] = @isAADMSIAuth
+              else
+                @log.info "Using msi to get the token to post MDM data"
+              end
+              ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMToken-MSI", properties)
               @log.info "Opening TCP connection"
               http_access_token = Net::HTTP.start(@parsed_token_uri.host, @parsed_token_uri.port, :use_ssl => false)
               # http_access_token.use_ssl = false
@@ -331,7 +339,7 @@ module Fluent::Plugin
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
           @last_telemetry_sent_time = Time.now
         end
-      rescue Net::HTTPClientException  => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException 
+      rescue Net::HTTPClientException  => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException
         if !response.nil? && !response.body.nil? #body will have actual error
           @log.info "Failed to Post Metrics to MDM : #{e} Response.body: #{response.body}"
         else

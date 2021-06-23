@@ -44,7 +44,7 @@ function Start-FileSystemWatcher {
 function Set-EnvironmentVariables {
     $domain = "opinsights.azure.com"
     $mcs_endpoint = "monitor.azure.com"
-    $cloud_environment = "public"
+    $cloud_environment = "azurepubliccloud"
     if (Test-Path /etc/omsagent-secret/DOMAIN) {
         # TODO: Change to omsagent-secret before merging
         $domain = Get-Content /etc/omsagent-secret/DOMAIN
@@ -54,14 +54,14 @@ function Set-EnvironmentVariables {
     # Set DOMAIN
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Machine")
-    
+
     # Set MCS Endpoint
     [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Process")
     [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Machine")
 
     # Set CLOUD_ENVIRONMENT
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
-    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")      
+    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")
 
     $wsID = ""
     if (Test-Path /etc/omsagent-secret/WSID) {
@@ -163,7 +163,7 @@ function Set-EnvironmentVariables {
                 Write-Host $_.Exception
             }
         }
-        
+
         # Check if the fetched IKey was properly encoded. if not then turn off telemetry
         if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
             Write-Host "Using cloud-specific instrumentation key"
@@ -239,16 +239,16 @@ function Set-EnvironmentVariables {
     if (![string]::IsNullOrEmpty($isAADMSIAuth)) {
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Process")
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Machine")
-        Write-Host "Successfully set environment variable AAD_MSI_AUTH_MODE - $($isAADMSIAuth) for target 'machine'..."      
-    }    
+        Write-Host "Successfully set environment variable AAD_MSI_AUTH_MODE - $($isAADMSIAuth) for target 'machine'..."
+    }
 
     # check if use token proxy endpoint set via USE_IMDS_TOKEN_PROXY_END_POINT environment variable
     $useIMDSTokenProxyEndpoint = [System.Environment]::GetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", "process")
     if (![string]::IsNullOrEmpty($useIMDSTokenProxyEndpoint)) {
         [System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Process")
         [System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Machine")
-        Write-Host "Successfully set environment variable USE_IMDS_TOKEN_PROXY_END_POINT - $($useIMDSTokenProxyEndpoint) for target 'machine'..."          
-    }      
+        Write-Host "Successfully set environment variable USE_IMDS_TOKEN_PROXY_END_POINT - $($useIMDSTokenProxyEndpoint) for target 'machine'..."
+    }
 
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
@@ -431,7 +431,7 @@ function Start-Telegraf {
     else {
         Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
     }
-    
+
     $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
     if (![string]::IsNullOrEmpty($nodeIp)) {
         [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")

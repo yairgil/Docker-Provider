@@ -198,9 +198,15 @@ fi
 if [ -z $domain ]; then
   ClOUD_ENVIRONMENT="unknown"
 elif [ $domain == "opinsights.azure.com" ]; then
-  CLOUD_ENVIRONMENT="public"
-else
-  CLOUD_ENVIRONMENT="national"
+  CLOUD_ENVIRONMENT="azurepubliccloud"
+elif [ $domain == "opinsights.azure.cn" ]; then
+  CLOUD_ENVIRONMENT="azurechinacloud"
+elif [ $domain == "opinsights.azure.us" ]; then
+  CLOUD_ENVIRONMENT="azureusgovernmentcloud"
+elif [ $domain == "opinsights.azure.eaglex.ic.gov" ]; then
+  CLOUD_ENVIRONMENT="usnat"
+elif [ $domain == "opinsights.azure.microsoft.scloud" ]; then
+  CLOUD_ENVIRONMENT="ussec"
 fi
 export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
@@ -453,6 +459,9 @@ echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 #skip imds lookup since not used either legacy or aad msi auth path
 export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
 echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
+# this used by mdsd to determine cloud specific LA endpoints
+export OMS_TLD=$domain
+echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc
 cat /etc/mdsd.d/envmdsd | while read line; do
    echo $line >> ~/.bashrc
 done
@@ -466,15 +475,11 @@ if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
    MDSD_AAD_MSI_AUTH_ARGS="-a -A"
    export AAD_MSI_AUTH_MODE=true
    echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
-
+   # this used by mdsd to determine the cloud specific AMCS endpoints
+   export customEnvironment=$ClOUD_ENVIRONMENT
+   echo "export customEnvironment=$customEnvironment" >> ~/.bashrc
    export MDSD_FLUENT_SOCKET_PORT="28230"
    echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
-   export MCS_ENDPOINT="handler.control.monitor.azure.com"
-   echo "export MCS_ENDPOINT=$MCS_ENDPOINT" >> ~/.bashrc
-   export AZURE_ENDPOINT="https://monitor.azure.com/"
-   echo "export AZURE_ENDPOINT=$AZURE_ENDPOINT" >> ~/.bashrc
-   export ADD_REGION_TO_MCS_ENDPOINT="true"
-   echo "export ADD_REGION_TO_MCS_ENDPOINT=$ADD_REGION_TO_MCS_ENDPOINT" >> ~/.bashrc
    export ENABLE_MCS="true"
    echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
    export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
@@ -491,8 +496,6 @@ else
   echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
   export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
   echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
-  export OMS_TLD=$domain
-  echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc
   export MDSD_FLUENT_SOCKET_PORT="29230"
   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
 fi
