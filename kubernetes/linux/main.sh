@@ -476,7 +476,7 @@ if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
    export AAD_MSI_AUTH_MODE=true
    echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
    # this used by mdsd to determine the cloud specific AMCS endpoints
-   export customEnvironment=$ClOUD_ENVIRONMENT
+   export customEnvironment=$CLOUD_ENVIRONMENT
    echo "export customEnvironment=$customEnvironment" >> ~/.bashrc
    export MDSD_FLUENT_SOCKET_PORT="28230"
    echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc

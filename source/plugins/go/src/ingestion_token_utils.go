@@ -137,7 +137,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 			}
 
 			Log("getAccessTokenFromIMDS: IMDS Response Status: %d, retryCount: %d", resp.StatusCode, retryCount)
-		    if ShouldRetry(resp.StatusCode) {
+		    if IsRetriableError(resp.StatusCode) {
 				message := fmt.Sprintf("getAccessTokenFromIMDS: IMDS Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)
 				Log(message)
 				retryDelay := time.Duration((retryCount + 1) * 100) * time.Millisecond
@@ -148,7 +148,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 							retryDelay = time.Duration(after) * time.Second
 						}
 					}
-				}			
+				}
 				time.Sleep(retryDelay)
 				continue
 			} else if resp.StatusCode != 200 {
@@ -183,7 +183,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 			responseBytes, err = ioutil.ReadFile(IMDSTokenPathForWindows)
 			if err != nil {
 				Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s, retryCount: %d", err.Error(), retryCount)
-				time.Sleep((retryCount + 1) * 100 * time.Millisecond)
+				time.Sleep(time.Duration((retryCount + 1) * 100) * time.Millisecond)
 				continue
 			}
 			break
@@ -253,7 +253,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 			defer resp.Body.Close()
 	    }
 		Log("getAgentConfiguration Response Status: %d", resp.StatusCode)
-		if ShouldRetry(resp.StatusCode) {
+		if IsRetriableError(resp.StatusCode) {
 			message := fmt.Sprintf("getAgentConfiguration: Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)
 			Log(message)
 			retryDelay := time.Duration((retryCount + 1) * 100) * time.Millisecond
@@ -264,7 +264,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 						retryDelay = time.Duration(after) * time.Second
 					}
 				}
-			}			
+			}
 			time.Sleep(retryDelay)
 			continue
 		} else if resp.StatusCode != 200 {
@@ -349,7 +349,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	req.Header.Add("Authorization", bearer)
 
 	var resp *http.Response = nil
-    IsSuccess : = false
+    IsSuccess := false
 	for retryCount := 0; retryCount < MaxRetries; retryCount++ {
 		// Call managed services for Azure resources token endpoint
 		resp, err = HTTPClient.Do(req)
@@ -366,8 +366,8 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	    }
 
 		Log("getIngestionAuthToken Response Status: %d", resp.StatusCode)
-		if ShouldRetry(resp.StatusCode) {
-			message := fmt.Sprintf("getIngestionAuthToken: Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)			
+		if IsRetriableError(resp.StatusCode) {
+			message := fmt.Sprintf("getIngestionAuthToken: Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)
 			Log(message)
 			retryDelay := time.Duration((retryCount + 1) * 100) * time.Millisecond
 			if resp.StatusCode == 429 {
@@ -377,7 +377,7 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 						retryDelay = time.Duration(after) * time.Second
 					}
 				}
-		    }			
+		    }
 			time.Sleep(retryDelay)
 			continue
 		} else if resp.StatusCode != 200 {
@@ -505,7 +505,7 @@ func refreshIngestionAuthToken() {
 	}
 }
 
-func ShouldRetry(httpStatusCode int) bool {
+func IsRetriableError(httpStatusCode int) bool {
 	retryableStatusCodes := [5]int{408, 429, 502, 503, 504}
 	for _, code := range retryableStatusCodes {
 	   if code == httpStatusCode {

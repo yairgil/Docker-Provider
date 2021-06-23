@@ -48,8 +48,35 @@ function Set-EnvironmentVariables {
     if (Test-Path /etc/omsagent-secret/DOMAIN) {
         # TODO: Change to omsagent-secret before merging
         $domain = Get-Content /etc/omsagent-secret/DOMAIN
-        $cloud_environment = "national"
+        if (![string]::IsNullOrEmpty($domain)) {
+            if ($domain -eq "opinsights.azure.com") {
+                $cloud_environment = "azurepubliccloud"
+                $mcs_endpoint = "monitor.azure.com"
+            } elseif ($domain -eq "opinsights.azure.cn") {
+                $cloud_environment = "azurechinacloud"
+                $mcs_endpoint = "monitor.azure.cn"
+            } elseif ($domain -eq "opinsights.azure.us") {
+                $cloud_environment = "azureusgovernmentcloud"
+                $mcs_endpoint = "monitor.azure.us"
+            } elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
+                $cloud_environment = "usnat"
+                $mcs_endpoint = "monitor.azure.eaglex.ic.gov"
+            } elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
+                $cloud_environment = "ussec"
+                $mcs_endpoint = "monitor.azure.microsoft.scloud"
+            } else {
+                Write-Host "Invalid or Unsupported domain name $($domain). EXITING....."
+                exit 1
+            }
+        } else {
+            Write-Host "Domain name either null or empty. EXITING....."
+            exit 1
+        }
     }
+
+    Write-Host "Log analytics domain: $($domain)"
+    Write-Host "MCS endpoint: $($mcs_endpoint)"
+    Write-Host "Cloud Environment: $($cloud_environment)"
 
     # Set DOMAIN
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
