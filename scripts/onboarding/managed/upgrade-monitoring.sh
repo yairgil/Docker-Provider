@@ -38,6 +38,9 @@ arcK8sResourceProvider="Microsoft.Kubernetes/connectedClusters"
 # default of resourceProvider is Azure Arc enabled Kubernetes and this will get updated based on the provider cluster resource
 resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
+# resource provider for azure redhat openshift v4 cluster
+aroV4ResourceProvider="Microsoft.RedHatOpenShift/OpenShiftClusters"
+
 # Azure Arc enabled Kubernetes cluster resource
 isArcK8sCluster=false
 
@@ -216,7 +219,7 @@ validate_cluster_identity() {
 
 validate_monitoring_tags() {
   echo "get loganalyticsworkspaceResourceId tag on to cluster resource"
-  logAnalyticsWorkspaceResourceIdTag=$(az resource show --query tags.logAnalyticsWorkspaceResourceId -g $clusterResourceGroup -n $clusterName --resource-type 'microsoft.operationalinsights/workspaces' -o json)
+  logAnalyticsWorkspaceResourceIdTag=$(az resource show --query tags.logAnalyticsWorkspaceResourceId -g $clusterResourceGroup -n $clusterName --resource-type $resourceProvider -o json)
   echo "configured log analytics workspace: ${logAnalyticsWorkspaceResourceIdTag}"
   echo "successfully got logAnalyticsWorkspaceResourceId tag on the cluster resource"
   if [ -z "$logAnalyticsWorkspaceResourceIdTag" ]; then
