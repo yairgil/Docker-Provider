@@ -38,6 +38,9 @@ arcK8sResourceProvider="Microsoft.Kubernetes/connectedClusters"
 # default of resourceProvider is Azure Arc enabled Kubernetes and this will get updated based on the provider cluster resource
 resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
+# resource provider for azure redhat openshift v4 cluster
+aroV4ResourceProvider="Microsoft.RedHatOpenShift/OpenShiftClusters"
+
 # Azure Arc enabled Kubernetes cluster resource
 isArcK8sCluster=false
 
