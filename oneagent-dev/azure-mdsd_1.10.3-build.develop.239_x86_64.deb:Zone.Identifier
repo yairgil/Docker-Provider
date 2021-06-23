@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://msazure.visualstudio.com/One/_build/results?buildId=43836032&view=artifacts&pathAsName=false&type=publishedArtifacts
+HostUrl=https://msazure.visualstudio.com/_apis/resources/Containers/71300892/drop/Phase_1/x86_64/outputs?itemPath=drop%2FPhase_1%2Fx86_64%2Foutputs%2Fbuild%2Fmdsdsvc%2Fdebian%2Fazure-mdsd_1.10.3-build.develop.239_x86_64.deb
