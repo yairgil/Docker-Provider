@@ -133,7 +133,7 @@ module Fluent::Plugin
               if !@@user_assigned_client_id.nil? && !@@user_assigned_client_id.empty?
                 msi_endpoint = @@msi_endpoint_template % { user_assigned_client_id: @@user_assigned_client_id, resource: @@token_resource_url }
               else
-                # in case of msi auth user_assigned_client_id will be empty
+                # in case of aad msi auth user_assigned_client_id will be empty
                 @log.info "using aad msi auth"
                 @isAADMSIAuth = true
                 msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
@@ -164,7 +164,7 @@ module Fluent::Plugin
               properties = {}
               if (!!@isAADMSIAuth)
                 @log.info "Using aad msi auth to get the token to post MDM data"
-                properties["isAADMSIAuth"] = @isAADMSIAuth
+                properties["aadAuthMSIMode"] = "true"
               else
                 @log.info "Using msi to get the token to post MDM data"
               end
