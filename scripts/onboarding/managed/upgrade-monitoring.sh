@@ -216,7 +216,7 @@ validate_cluster_identity() {
 
 validate_monitoring_tags() {
   echo "get loganalyticsworkspaceResourceId tag on to cluster resource"
-  logAnalyticsWorkspaceResourceIdTag=$(az resource show --query tags.logAnalyticsWorkspaceResourceId -g $clusterResourceGroup -n $clusterName --resource-type $resourceProvider -o json)
+  logAnalyticsWorkspaceResourceIdTag=$(az resource show --query tags.logAnalyticsWorkspaceResourceId -g $clusterResourceGroup -n $clusterName --resource-type 'microsoft.operationalinsights/workspaces' -o json)
   echo "configured log analytics workspace: ${logAnalyticsWorkspaceResourceIdTag}"
   echo "successfully got logAnalyticsWorkspaceResourceId tag on the cluster resource"
   if [ -z "$logAnalyticsWorkspaceResourceIdTag" ]; then
