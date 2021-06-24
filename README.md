@@ -210,6 +210,32 @@ powershell -ExecutionPolicy bypass  # switch to powershell if you are not on pow
 .\build-and-publish-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
 ```
 
+##### Developer Build optimizations
+If you do not want to build the image from scratch every time you make changes during development,you can choose to build the docker images that are separated out by 
+* Base image and dependencies including agent bootstrap(setup.ps1)
+* Agent conf and plugin changes
+
+To do this, the very first time you start developing you would need to execute below instructions in elevated command prompt of powershell.
+This builds the base image(omsagent-win-base) with all the package dependencies
+```
+cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
+docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
+powershell -ExecutionPolicy bypass  # switch to powershell if you are not on powershell already
+.\build-dev-base-image.ps1  # builds base image and dependencies
+```
+
+And then run the script to build the image consisting of code and conf changes.
+```
+.\build-and-publish-dev-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
+```
+
+For the subsequent builds, you can just run - 
+
+```
+.\build-and-publish-dev-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
+```
+###### Note - If you have changes in setup.ps1 and want to test those changes, uncomment the section consisting of setup.ps1 in the Dockerfile-dev-image file.
+
 #### Option 2 - Using WSL2 to Build the Windows agent
 
 ##### On WSL2, Build Certificate Generator Source code and Out OMS Go plugin code
