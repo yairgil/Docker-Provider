@@ -12,10 +12,10 @@ class Extension
 
   def initialize
     @cache = {}
-    @cache_lock = Mutex.new 
+    @cache_lock = Mutex.new
     $log.info("Extension::initialize complete")
   end
-  
+
   def get_output_stream_id(datatypeId)
     @cache_lock.synchronize {
       if @cache.has_key?(datatypeId)
@@ -27,7 +27,7 @@ class Extension
     }
   end
 
-  private 
+  private
   def get_config()
     extConfig = Hash.new
     $log.info("Extension::get_config start ...")
@@ -35,14 +35,14 @@ class Extension
       clientSocket = UNIXSocket.open(Constants::ONEAGENT_FLUENT_SOCKET_NAME)
       requestId = SecureRandom.uuid.to_s
       requestBodyJSON = { "Request" => "AgentTaggedData", "RequestId" => requestId, "Tag" => Constants::CI_EXTENSION_NAME, "Version" => Constants::CI_EXTENSION_VERSION }.to_json
-      $log.info("sending request with request body: #{requestBodyJSON}")
+      $log.info("Extension::get_config::sending request with request body: #{requestBodyJSON}")
       requestBodyMsgPack = requestBodyJSON.to_msgpack
       clientSocket.write(requestBodyMsgPack)
       clientSocket.flush
       $log.info("reading the response from fluent socket: #{Constants::ONEAGENT_FLUENT_SOCKET_NAME}")
       resp = clientSocket.recv(Constants::CI_EXTENSION_CONFIG_MAX_BYTES)
       if !resp.nil? && !resp.empty?
-        $log.info("successfully read the extension config from fluentsocket and number of bytes read is #{resp.length}")
+        $log.info("Extension::get_config::successfully read the extension config from fluentsocket and number of bytes read is #{resp.length}")
         respJSON = JSON.parse(resp)
         taggedData = respJSON["TaggedData"]
         if !taggedData.nil? && !taggedData.empty?
@@ -51,18 +51,18 @@ class Extension
           if !extensionConfigurations.nil? && !extensionConfigurations.empty?
             extensionConfigurations.each do |extensionConfig|
               outputStreams = extensionConfig["outputStreams"]
-              if !outputStreams.nil? && !outputStreams.empty? 
+              if !outputStreams.nil? && !outputStreams.empty?
                 outputStreams.each do |datatypeId, streamId|
-                  $log.info("datatypeId: #{datatypeId}, streamId: #{streamId}")
+                  $log.info("Extension::get_config datatypeId:#{datatypeId}, streamId: #{streamId}")
                   extConfig[datatypeId] = streamId
                 end
               else
-                $log.info("received outputStreams is either nil or empty")
-              end                    
+                $log.warn("Extension::get_config::received outputStreams is either nil or empty")
+              end
             end
           else
-            $log.info("received extensionConfigurations from fluentsocket is either nil or empty")  
-          end 
+            $log.warn("Extension::get_config::received extensionConfigurations from fluentsocket is either nil or empty")
+          end
         end
       end
     rescue => errorStr
