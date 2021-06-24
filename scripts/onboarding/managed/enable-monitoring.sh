@@ -433,9 +433,10 @@ create_default_log_analytics_workspace() {
 
   workspaceResourceGroup="DefaultResourceGroup-"$workspaceRegionCode
   isRGExists=$(az group exists -g $workspaceResourceGroup)
+  isRGExists=$(echo $isRGExists | tr -d '"\r\n')
   workspaceName="DefaultWorkspace-"$subscriptionId"-"$workspaceRegionCode
 
-  if $isRGExists; then
+  if [ "${isRGExists}" == "true" ]; then
     echo "using existing default resource group:"$workspaceResourceGroup
   else
     echo "creating resource group: $workspaceResourceGroup in region: $workspaceRegion"
@@ -453,7 +454,7 @@ create_default_log_analytics_workspace() {
   fi
 
   workspaceResourceId=$(az resource show -g $workspaceResourceGroup -n $workspaceName --resource-type $workspaceResourceProvider --query id -o json)
-  workspaceResourceId=$(echo $workspaceResourceId | tr -d '"')
+  workspaceResourceId=$(echo $workspaceResourceId | tr -d '"' |  tr -d '"\r\n')
   echo "workspace resource Id: ${workspaceResourceId}"
 }
 
@@ -493,10 +494,16 @@ install_helm_chart() {
     adminUserName=$(az aro list-credentials -g $clusterResourceGroup -n $clusterName --query 'kubeadminUsername' -o tsv)
     adminPassword=$(az aro list-credentials -g $clusterResourceGroup -n $clusterName --query 'kubeadminPassword' -o tsv)
     apiServer=$(az aro show -g $clusterResourceGroup -n $clusterName --query apiserverProfile.url -o tsv)
+    # certain az cli versions adds /r/n so trim them
+    adminUserName=$(echo $adminUserName | tr -d '"\r\n')
+    adminPassword=$(echo $adminPassword | tr -d '"\r\n')
+    apiServer=$(echo $apiServer | tr -d '"\r\n')
     echo "login to the cluster via oc login"
     oc login $apiServer -u $adminUserName -p $adminPassword
-    echo "creating project azure-monitor-for-containers"
+    echo "creating project: azure-monitor-for-containers"
     oc new-project $openshiftProjectName
+    echo "swicthing to project: azure-monitor-for-containers"
+    oc project $openshiftProjectName
     echo "getting config-context of aro v4 cluster"
     kubeconfigContext=$(oc config current-context)
   fi

@@ -238,10 +238,14 @@ upgrade_helm_chart_release() {
     adminUserName=$(az aro list-credentials -g $clusterResourceGroup -n $clusterName --query 'kubeadminUsername' -o tsv)
     adminPassword=$(az aro list-credentials -g $clusterResourceGroup -n $clusterName --query 'kubeadminPassword' -o tsv)
     apiServer=$(az aro show -g $clusterResourceGroup -n $clusterName --query apiserverProfile.url -o tsv)
+    # certain az cli versions adds /r/n so trim them
+    adminUserName=$(echo $adminUserName |tr -d '"\r\n')
+    adminPassword=$(echo $adminPassword |tr -d '"\r\n')
+    apiServer=$(echo $apiServer |tr -d '"\r\n')
     echo "login to the cluster via oc login"
     oc login $apiServer -u $adminUserName -p $adminPassword
-    echo "creating project azure-monitor-for-containers"
-    oc new-project $openshiftProjectName
+    echo "switching to project azure-monitor-for-containers"
+    oc project $openshiftProjectName
     echo "getting config-context of aro v4 cluster"
     kubeconfigContext=$(oc config current-context)
   fi
