@@ -563,7 +563,7 @@ module Fluent
           # list is used so that we aren't modifying a hash while iterating through it.
           @cacheHash.each do |key, val|
             if cacheClearTime - @timeAdded[key] > @@RECORD_TIME_TO_LIVE
-              nodes_to_remove.append(key)
+              nodes_to_remove.push(key)
             end
           end
 
