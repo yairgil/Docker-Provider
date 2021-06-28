@@ -92,11 +92,25 @@ class KubeletUtils
           end
           @log.info "get_node_allocatable::systemReserved_cpu  #{systemReserved_cpu}"
         rescue => errorStr
-          # this will likely always reach this condition for AKS ~ change logic....
+          # this will likely always reach this condition for AKS ~ only applicable for hyrid + MDM combination
           @log.error "Error in get_node_allocatable::systemReserved_cpu: #{errorStr}"
           systemReserved_cpu = "0"
           ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
         end 
+
+        begin
+          explicitlyReserved_cpu = parsed_response["kubeletconfig"]["reservedCPUs"]
+          if explicitlyReserved_cpu.nil? || explicitlyReserved_cpu == ""
+            explicitlyReserved_cpu = "0"
+          end
+          @log.info "get_node_allocatable::explicitlyReserved_cpu  #{explicitlyReserved_cpu}"
+        rescue => errorStr
+          # this will likely always reach this condition for AKS ~ only applicable for hyrid + MDM combination
+          @log.error "Error in get_node_allocatable::explicitlyReserved_cpu: #{errorStr}"
+          explicitlyReserved_cpu = "0"
+          ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::explicitlyReserved_cpu: #{errorStr}")
+        end 
+
         begin
            systemReserved_memory = parsed_response["kubeletconfig"]["systemReserved"]["memory"]
            if systemReserved_memory.nil? || systemReserved_memory == ""
@@ -125,7 +139,11 @@ class KubeletUtils
         cpu_capacity_number = cpu_capacity.to_i * 1000.0 ** 2
         # subtract to get allocatable. Formula : Allocatable = Capacity - ( kube reserved + system reserved + eviction threshold )
         # https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
-        cpu_allocatable  = cpu_capacity_number - (KubernetesApiClient.getMetricNumericValue("cpu", kubereserved_cpu) + KubernetesApiClient.getMetricNumericValue("cpu", systemReserved_cpu))
+        if KubernetesApiClient.getMetricNumericValue("cpu", explicitlyReserved_cpu) > 0
+          cpu_allocatable  = cpu_capacity_number - KubernetesApiClient.getMetricNumericValue("cpu", explicitlyReserved_cpu)
+        else
+          cpu_allocatable  = cpu_capacity_number - (KubernetesApiClient.getMetricNumericValue("cpu", kubereserved_cpu) + KubernetesApiClient.getMetricNumericValue("cpu", systemReserved_cpu))
+        end
         # convert back to units similar to what we get for capacity
         cpu_allocatable = cpu_allocatable / (1000.0 ** 2)
         @log.info "CPU Allocatable #{cpu_allocatable}"
