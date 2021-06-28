@@ -15,7 +15,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 ##### Version microsoft/oms:ciprod05202021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05202021-hotfix (linux)
 ##### No Windows changes with this release, win-ciprod04222021 still current.
 ##### Code change log
-- Fixing a Ruby version-dependent bug ([].append() -> [].push())
+- Fixing a bug where the input plugin for NodeInventory dies if any windows nodes are rmeoved from the cluster.
 
 ### 05/20/2021 -
 ##### Version microsoft/oms:ciprod05202021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05202021 (linux)
