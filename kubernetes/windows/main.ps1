@@ -43,14 +43,20 @@ function Start-FileSystemWatcher {
 
 function Set-EnvironmentVariables {
     $domain = "opinsights.azure.com"
+    $cloud_environment = "public"
     if (Test-Path /etc/omsagent-secret/DOMAIN) {
         # TODO: Change to omsagent-secret before merging
         $domain = Get-Content /etc/omsagent-secret/DOMAIN
+        $cloud_environment = "national"
     }
 
     # Set DOMAIN
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Machine")
+
+    # Set CLOUD_ENVIRONMENT
+    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
+    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")
 
     $wsID = ""
     if (Test-Path /etc/omsagent-secret/WSID) {
@@ -58,19 +64,11 @@ function Set-EnvironmentVariables {
         $wsID = Get-Content /etc/omsagent-secret/WSID
     }
 
-    # Set DOMAIN
+    # Set WSID
     [System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Process")
     [System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Machine")
 
-    $wsKey = ""
-    if (Test-Path /etc/omsagent-secret/KEY) {
-        # TODO: Change to omsagent-secret before merging
-        $wsKey = Get-Content /etc/omsagent-secret/KEY
-    }
-
-    # Set KEY
-    [System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Process")
-    [System.Environment]::SetEnvironmentVariable("WSKEY", $wsKey, "Machine")
+    # Don't store WSKEY as environment variable
 
     $proxy = ""
     if (Test-Path /etc/omsagent-secret/PROXY) {
@@ -121,10 +119,48 @@ function Set-EnvironmentVariables {
         $env:AZMON_AGENT_CFG_SCHEMA_VERSION
     }
 
-    # Set environment variable for TELEMETRY_APPLICATIONINSIGHTS_KEY
-    $aiKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
-    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKey, "Process")
-    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKey, "Machine")
+    # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
+    $aiKeyURl = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH_URL')
+    if ($aiKeyURl) {
+        $aiKeyFetched = ""
+        # retry up to 5 times
+        for( $i = 1; $i -le 4; $i++) {
+            try {
+                $response = Invoke-WebRequest -uri $aiKeyURl -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
+
+                if ($response.StatusCode -ne 200) {
+                    Write-Host "Expecting reponse code 200, was: $($response.StatusCode), retrying"
+                    Start-Sleep -Seconds ([MATH]::Pow(2, $i) / 4)
+                }
+                else {
+                    $aiKeyFetched = $response.Content
+                    break
+                }
+            }
+            catch {
+                Write-Host "Exception encountered fetching instrumentation key:"
+                Write-Host $_.Exception
+            }
+        }
+        
+        # Check if the fetched IKey was properly encoded. if not then turn off telemetry
+        if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
+            Write-Host "Using cloud-specific instrumentation key"
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyFetched, "Process")
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyFetched, "Machine")
+        }
+        else {
+            # Couldn't fetch the Ikey, turn telemetry off
+            Write-Host "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
+            [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Process")
+            [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Machine")
+        }
+    }
+
+    $aiKeyDecoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
+    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Process")
+    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Machine")
+
 
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
@@ -237,9 +273,9 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
-function Start-Fluent {
+function Start-Fluent-Telegraf {
 
-    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service.
+    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
     # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\omsagentwindows\out_oms.so") }
 
@@ -253,9 +289,94 @@ function Start-Fluent {
         (Get-Content -Path C:/etc/fluent/fluent.conf -Raw)  -replace 'fluent-docker-parser.conf','fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
     }
 
+    # Start telegraf only in sidecar scraping mode
+    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
+    {
+        Write-Host "Starting telegraf..."
+        Start-Telegraf
+    }
+
     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
 
     Notepad.exe | Out-Null
+}
+
+function Start-Telegraf {
+    # Set default telegraf environment variables for prometheus scraping
+    Write-Host "**********Setting default environment variables for telegraf prometheus plugin..."
+    .\setdefaulttelegrafenvvariables.ps1
+
+    # run prometheus custom config parser
+    Write-Host "**********Running config parser for custom prometheus scraping**********"
+    ruby /opt/omsagentwindows/scripts/ruby/tomlparser-prom-customconfig.rb
+    Write-Host "**********End running config parser for custom prometheus scraping**********"
+
+
+    # Set required environment variable for telegraf prometheus plugin to run properly
+    Write-Host "Setting required environment variables for telegraf prometheus input plugin to run properly..."
+    $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
+    if (![string]::IsNullOrEmpty($kubernetesServiceHost)) {
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, "machine")
+        Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable KUBERNETES_SERVICE_HOST for target 'machine' since it is either null or empty"
+    }
+
+    $kubernetesServicePort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_PORT", "process")
+    if (![string]::IsNullOrEmpty($kubernetesServicePort)) {
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, "machine")
+        Write-Host "Successfully set environment variable KUBERNETES_SERVICE_PORT - $($kubernetesServicePort) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
+    }
+    
+    $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
+    if (![string]::IsNullOrEmpty($nodeIp)) {
+        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
+        Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
+    }
+
+    Write-Host "Installing telegraf service"
+    C:\opt\telegraf\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+
+    # Setting delay auto start for telegraf since there have been known issues with windows server and telegraf -
+    # https://github.com/influxdata/telegraf/issues/4081
+    # https://github.com/influxdata/telegraf/issues/3601
+    try {
+        $serverName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
+        if (![string]::IsNullOrEmpty($serverName)) {
+            sc.exe \\$serverName config telegraf start= delayed-auto
+            Write-Host "Successfully set delayed start for telegraf"
+
+        } else {
+            Write-Host "Failed to get environment variable PODNAME to set delayed telegraf start"
+        }
+    }
+    catch {
+            $e = $_.Exception
+            Write-Host $e
+            Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
+    }
+    Write-Host "Running telegraf service in test mode"
+    C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
+    Write-Host "Starting telegraf service"
+    C:\opt\telegraf\telegraf.exe --service start
+
+    # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
+    Get-Service telegraf | findstr Running
+    if ($? -eq $false)
+    {
+        Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
+        Start-Sleep -s 30
+        C:\opt\telegraf\telegraf.exe --service start
+        Get-Service telegraf
+    }
 }
 
 function Generate-Certificates {
@@ -288,16 +409,13 @@ Start-Transcript -Path main.txt
 Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
+
 Generate-Certificates
 Test-CertificatePath
-Start-Fluent
+Start-Fluent-Telegraf
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
 
 #check if fluentd service is running
 Get-Service fluentdwinaks
-
-
-
-

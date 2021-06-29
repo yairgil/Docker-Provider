@@ -1,8 +1,56 @@
 #!/bin/bash
 
+waitforlisteneronTCPport() {
+      local sleepdurationsecs=1
+      local totalsleptsecs=0
+      local port=$1
+      local waittimesecs=$2
+      local numeric='^[0-9]+$'
+      local varlistener=""
+
+      if [ -z "$1" ] || [ -z "$2" ]; then
+            echo "${FUNCNAME[0]} called with incorrect arguments<$1 , $2>. Required arguments <#port, #wait-time-in-seconds>"
+            return -1
+      else
+            
+            if [[ $port =~ $numeric ]] && [[ $waittimesecs =~ $numeric ]]; then
+                  #local varlistener=$(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ":25228$"')
+                  while true
+                  do
+                        if [ $totalsleptsecs -gt $waittimesecs ]; then
+                              echo "${FUNCNAME[0]} giving up waiting for listener on port:$port after $totalsleptsecs secs"
+                              return 1
+                        fi
+                        varlistener=$(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ":'"$port"'$"')
+                        if [ -z "$varlistener" ]; then
+                              #echo "${FUNCNAME[0]} waiting for $sleepdurationsecs more sec for listener on port:$port ..."
+                              sleep $sleepdurationsecs
+                              totalsleptsecs=$(($totalsleptsecs+1))
+                        else
+                              echo "${FUNCNAME[0]} found listener on port:$port in $totalsleptsecs secs"
+                              return 0
+                        fi
+                  done
+            else
+                  echo "${FUNCNAME[0]} called with non-numeric arguments<$1 , $2>. Required arguments <#port, #wait-time-in-seconds>"
+                  return -1
+            fi
+      fi
+}
+
 if [ -e "/etc/config/kube.conf" ]; then
     cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
+elif [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+    echo "setting omsagent conf file for prometheus sidecar"
+    cat /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
+    # omsadmin.sh replaces %MONITOR_AGENT_PORT% and %SYSLOG_PORT% in the monitor.conf and syslog.conf with default ports 25324 and 25224. 
+    # Since we are running 2 omsagents in the same pod, we need to use a different port for the sidecar, 
+    # else we will see the  Address already in use - bind(2) for 0.0.0.0:253(2)24 error.
+    # Look into omsadmin.sh scripts's configure_monitor_agent()/configure_syslog() and find_available_port() methods for more info.
+    sed -i -e 's/port %MONITOR_AGENT_PORT%/port 25326/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/monitor.conf
+    sed -i -e 's/port %SYSLOG_PORT%/port 25226/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
 else
+    echo "setting omsagent conf file for daemonset"
     sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 fi
 sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
@@ -27,6 +75,12 @@ sudo setfacl -m user:omsagent:rwx /var/opt/microsoft/docker-cimprov/log
 
 #Run inotify as a daemon to track changes to the mounted configmap.
 inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
+
+#Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
+      ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
+      inotifywait /etc/config/osm-settings --daemon --recursive --outfile "/opt/inotifyoutput-osm.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
+fi
 
 #resourceid override for loganalytics data.
 if [ -z $AKS_RESOURCE_ID ]; then
@@ -66,6 +120,24 @@ if [  -e "/etc/config/settings/config-version" ] && [  -s "/etc/config/settings/
       echo "export AZMON_AGENT_CFG_FILE_VERSION=$config_file_version" >> ~/.bashrc
       source ~/.bashrc
       echo "AZMON_AGENT_CFG_FILE_VERSION:$AZMON_AGENT_CFG_FILE_VERSION"
+fi
+
+#set OSM config schema version
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
+      ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
+      if [  -e "/etc/config/osm-settings/schema-version" ] && [  -s "/etc/config/osm-settings/schema-version" ]; then
+            #trim
+            osm_config_schema_version="$(cat /etc/config/osm-settings/schema-version | xargs)"
+            #remove all spaces
+            osm_config_schema_version="${osm_config_schema_version//[[:space:]]/}"
+            #take first 10 characters
+            osm_config_schema_version="$(echo $osm_config_schema_version| cut -c1-10)"
+
+            export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version
+            echo "export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version" >> ~/.bashrc
+            source ~/.bashrc
+            echo "AZMON_OSM_CFG_SCHEMA_VERSION:$AZMON_OSM_CFG_SCHEMA_VERSION"
+      fi
 fi
 
 export PROXY_ENDPOINT=""
@@ -150,69 +222,101 @@ else
       echo "LA Onboarding:Workspace Id not mounted, skipping the telemetry check"
 fi
 
-#Parse the configmap to set the right environment variables.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
+# Set environment variable for if public cloud by checking the workspace domain.
+if [ -z $domain ]; then
+  ClOUD_ENVIRONMENT="unknown"
+elif [ $domain == "opinsights.azure.com" ]; then
+  CLOUD_ENVIRONMENT="public"
+else
+  CLOUD_ENVIRONMENT="national"
+fi
+export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
+echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
 
-cat config_env_var | while read line; do
-    #echo $line
-    echo $line >> ~/.bashrc
-done
-source config_env_var
+# Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
+if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
+      for BACKOFF in {1..4}; do
+            KEY=$(curl -sS $APPLICATIONINSIGHTS_AUTH_URL )
+            # there's no easy way to get the HTTP status code from curl, so just check if the result is well formatted
+            if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
+                  break
+            else
+                  sleep $((2**$BACKOFF / 4))  # (exponential backoff)
+            fi
+      done
+
+      # validate that the retrieved data is an instrumentation key
+      if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
+            export APPLICATIONINSIGHTS_AUTH=$(echo $KEY)
+            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >> ~/.bashrc
+            echo "Using cloud-specific instrumentation key"
+      else
+            # no ikey can be retrieved. Disable telemetry and continue
+            export DISABLE_TELEMETRY=true
+            echo "export DISABLE_TELEMETRY=true" >> ~/.bashrc
+            echo "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
+      fi
+fi
 
 
-#Parse the configmap to set the right environment variables for health feature.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-health-config.rb
+aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)	
+export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey	
+echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc	
 
-cat health_config_env_var | while read line; do
-    #echo $line
-    echo $line >> ~/.bashrc
-done
-source health_config_env_var
+source ~/.bashrc
 
-#Parse the configmap to set the right environment variables for network policy manager (npm) integration.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+      #Parse the configmap to set the right environment variables.
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
 
-cat integration_npm_config_env_var | while read line; do
-    #echo $line
-    echo $line >> ~/.bashrc
-done
-source integration_npm_config_env_var
+      cat config_env_var | while read line; do
+            echo $line >> ~/.bashrc
+      done
+      source config_env_var
+fi
+
+#Parse the configmap to set the right environment variables for agent config.
+#Note > tomlparser-agent-config.rb has to be parsed first before td-agent-bit-conf-customizer.rb for fbit agent settings
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-agent-config.rb
+
+      cat agent_config_env_var | while read line; do
+            #echo $line
+            echo $line >> ~/.bashrc
+      done
+      source agent_config_env_var
+
+      #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
+
+      cat integration_npm_config_env_var | while read line; do
+            #echo $line
+            echo $line >> ~/.bashrc
+      done
+      source integration_npm_config_env_var
+fi
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
-if [ ! -e "/etc/config/kube.conf" ]; then
+if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       /opt/microsoft/omsagent/ruby/bin/ruby td-agent-bit-conf-customizer.rb
 fi
 
 #Parse the prometheus configmap to create a file with new custom settings.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prom-customconfig.rb
 
-#If config parsing was successful, a copy of the conf file with replaced custom settings file is created
-if [ ! -e "/etc/config/kube.conf" ]; then
-            if [ -e "/opt/telegraf-test.conf" ]; then
-                  echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test.conf -test
-                  if [ $? -eq 0 ]; then
-                        mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
-                  fi
-                  echo "****************End Telegraf Run in Test Mode**************************"
-            fi
-else
-      if [ -e "/opt/telegraf-test-rs.conf" ]; then
-                  echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test-rs.conf -test
-                  if [ $? -eq 0 ]; then
-                        mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
-                  fi
-                  echo "****************End Telegraf Run in Test Mode**************************"
-      fi
-fi
-
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
-      cat defaultpromenvvariables | while read line; do
-            echo $line >> ~/.bashrc
-      done
-      source defaultpromenvvariables
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+            cat defaultpromenvvariables-sidecar | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source defaultpromenvvariables-sidecar
+      else
+            cat defaultpromenvvariables | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source defaultpromenvvariables
+      fi
 else
       cat defaultpromenvvariables-rs | while read line; do
             echo $line >> ~/.bashrc
@@ -228,13 +332,37 @@ if [ -e "telemetry_prom_config_env_var" ]; then
       source telemetry_prom_config_env_var
 fi
 
-#Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-mdm-metrics-config.rb
 
-cat config_mdm_metrics_env_var | while read line; do
-    echo $line >> ~/.bashrc
-done
-source config_mdm_metrics_env_var
+#Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-mdm-metrics-config.rb
+
+      cat config_mdm_metrics_env_var | while read line; do
+            echo $line >> ~/.bashrc
+      done
+      source config_mdm_metrics_env_var
+
+      #Parse the configmap to set the right environment variables for metric collection settings
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-metric-collection-config.rb
+
+      cat config_metric_collection_env_var | while read line; do
+            echo $line >> ~/.bashrc
+      done
+      source config_metric_collection_env_var
+fi
+
+# OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
+      ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
+
+      if [ -e "integration_osm_config_env_var" ]; then
+            cat integration_osm_config_env_var | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source integration_osm_config_env_var
+      fi
+fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
@@ -292,11 +420,10 @@ fi
 echo "configured container runtime on kubelet is : "$CONTAINER_RUNTIME
 echo "export CONTAINER_RUNTIME="$CONTAINER_RUNTIME >> ~/.bashrc
 
-# enable these metrics in next agent release
-# export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
-# echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
-# export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
-# echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
+export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
+echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
+export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
+echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
 
 # default to docker metrics
 export KUBELET_RUNTIME_OPERATIONS_METRIC="kubelet_docker_operations"
@@ -409,18 +536,147 @@ echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
-#telegraf & fluentbit requirements
+#region check to auto-activate oneagent, to route container logs,
+#Intent is to activate one agent routing for all managed clusters with region in the regionllist, unless overridden by configmap
+# AZMON_CONTAINER_LOGS_ROUTE  will have route (if any) specified in the config map
+# AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE will have the final route that we compute & set, based on our region list logic
+echo "************start oneagent log routing checks************"
+# by default, use configmap route for safer side
+AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
+
+#trim region list
+oneagentregions="$(echo $AZMON_CONTAINERLOGS_ONEAGENT_REGIONS | xargs)"
+#lowercase region list
+typeset -l oneagentregions=$oneagentregions
+echo "oneagent regions: $oneagentregions"
+#trim current region
+currentregion="$(echo $AKS_REGION | xargs)"
+#lowercase current region
+typeset -l currentregion=$currentregion
+echo "current region: $currentregion"
+
+#initilze isoneagentregion as false
+isoneagentregion=false
+
+#set isoneagentregion as true if matching region is found
+if [ ! -z $oneagentregions ] && [ ! -z $currentregion ]; then
+  for rgn in $(echo $oneagentregions | sed "s/,/ /g"); do
+    if [ "$rgn" == "$currentregion" ]; then
+          isoneagentregion=true
+          echo "current region is in oneagent regions..."
+          break
+    fi
+  done
+else
+  echo "current region is not in oneagent regions..."
+fi
+
+if [ "$isoneagentregion" = true ]; then
+   #if configmap has a routing for logs, but current region is in the oneagent region list, take the configmap route
+   if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then
+      AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$AZMON_CONTAINER_LOGS_ROUTE
+      echo "oneagent region is true for current region:$currentregion and config map logs route is not empty. so using config map logs route as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+   else #there is no configmap route, so route thru oneagent
+      AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE="v2"
+      echo "oneagent region is true for current region:$currentregion and config map logs route is empty. so using oneagent as effective route:$AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+   fi
+else
+   echo "oneagent region is false for current region:$currentregion"
+fi
+
+
+#start oneagent
+if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+   if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
+      echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
+      echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
+      #trim
+      containerlogsroute="$(echo $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE | xargs)"
+      # convert to lowercase
+      typeset -l containerlogsroute=$containerlogsroute
+
+      echo "setting AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE as :$containerlogsroute"
+      export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute
+      echo "export AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE=$containerlogsroute" >> ~/.bashrc
+      source ~/.bashrc
+
+      if [ "$containerlogsroute" == "v2" ]; then
+            echo "activating oneagent..."
+            echo "configuring mdsd..."
+            cat /etc/mdsd.d/envmdsd | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source /etc/mdsd.d/envmdsd
+
+            echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+            export CIWORKSPACE_id=$CIWORKSPACE_id
+            echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
+            export CIWORKSPACE_key=$CIWORKSPACE_key
+            echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
+
+            source ~/.bashrc
+
+            dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+
+            echo "starting mdsd ..."
+            mdsd -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+
+            touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
+      fi
+   fi
+fi
+echo "************end oneagent log routing checks************"
+
+#If config parsing was successful, a copy of the conf file with replaced custom settings file is created
 if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "$CONTAINER_RUNTIME" == "docker" ]; then
-            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
-            telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
+            echo "****************Start Telegraf in Test Mode**************************"
+            /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf -test
+            if [ $? -eq 0 ]; then
+                  mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+            fi
+            echo "****************End Telegraf Run in Test Mode**************************"
       else
-            echo "since container run time is $CONTAINER_RUNTIME update the container log fluentbit Parser to cri from docker"
-            sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf
-            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
-            telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+            if [ -e "/opt/telegraf-test.conf" ]; then
+                  echo "****************Start Telegraf in Test Mode**************************"
+                  /opt/telegraf --config /opt/telegraf-test.conf -test
+                  if [ $? -eq 0 ]; then
+                        mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+                  fi
+                  echo "****************End Telegraf Run in Test Mode**************************"
+            fi
       fi
 else
+      if [ -e "/opt/telegraf-test-rs.conf" ]; then
+                  echo "****************Start Telegraf in Test Mode**************************"
+                  /opt/telegraf --config /opt/telegraf-test-rs.conf -test
+                  if [ $? -eq 0 ]; then
+                        mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+                  fi
+                  echo "****************End Telegraf Run in Test Mode**************************"
+      fi
+fi
+
+#telegraf & fluentbit requirements
+if [ ! -e "/etc/config/kube.conf" ]; then
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+            echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
+            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+      else
+            echo "starting fluent-bit and setting telegraf conf file for daemonset"
+            if [ "$CONTAINER_RUNTIME" == "docker" ]; then
+                  /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
+                  telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+            else
+                  echo "since container run time is $CONTAINER_RUNTIME update the container log fluentbit Parser to cri from docker"
+                  sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf
+                  /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
+                  telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+            fi
+      fi
+else
+      echo "starting fluent-bit and setting telegraf conf file for replicaset"
       /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
 fi
@@ -471,11 +727,20 @@ echo "export HOST_ETC=/hostfs/etc" >> ~/.bashrc
 export HOST_VAR=/hostfs/var
 echo "export HOST_VAR=/hostfs/var" >> ~/.bashrc
 
-aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)
-export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey
-echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc
-
-source ~/.bashrc
+if [ ! -e "/etc/config/kube.conf" ]; then
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+            echo "checking for listener on tcp #25229 and waiting for 30 secs if not.."
+            waitforlisteneronTCPport 25229 30
+      else
+            echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
+            waitforlisteneronTCPport 25226 30
+            echo "checking for listener on tcp #25228 and waiting for 30 secs if not.."
+            waitforlisteneronTCPport 25228 30
+      fi
+else
+      echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
+      waitforlisteneronTCPport 25226 30
+fi
 
 #start telegraf
 /opt/telegraf --config $telegrafConfFile &
@@ -484,37 +749,17 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
-#start oneagent
-if [ ! -e "/etc/config/kube.conf" ]; then
-   if [ ! -z $AZMON_CONTAINER_LOGS_ROUTE ]; then
-      echo "container logs route is defined as $AZMON_CONTAINER_LOGS_ROUTE"
-      #trim
-      containerlogsroute="$(echo $AZMON_CONTAINER_LOGS_ROUTE | xargs)"
-      # convert to lowercase
-      typeset -l containerlogsroute=$containerlogsroute
-      if [ "$containerlogsroute" == "v2" ]; then
-            echo "containerlogsroute $containerlogsroute"
-            echo "configuring mdsd..."
-            cat /etc/mdsd.d/envmdsd | while read line; do
-                  echo $line >> ~/.bashrc
-            done
-            source /etc/mdsd.d/envmdsd
 
-            echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
-            export CIWORKSPACE_id=$CIWORKSPACE_id
-            echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
-            export CIWORKSPACE_key=$CIWORKSPACE_key
-            echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
 
-            source ~/.bashrc
+# Write messages from the liveness probe to stdout (so telemetry picks it up)
+touch /dev/write-to-traces
 
-            dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
-            echo "starting mdsd ..."
-            mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-      fi
-   fi
-fi
+echo "stopping rsyslog..."
+service rsyslog stop
+
+echo "getting rsyslog status..."
+service rsyslog status
 
 shutdown() {
 	/opt/microsoft/omsagent/bin/service_control stop

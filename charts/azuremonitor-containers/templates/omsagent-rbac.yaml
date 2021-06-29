@@ -19,7 +19,7 @@ metadata:
     heritage: {{ .Release.Service }}
 rules:
 - apiGroups: [""]
-  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy", "namespaces", "services"]
+  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy", "namespaces", "services", "persistentvolumes"]
   verbs: ["list", "get", "watch"]
 - apiGroups: ["apps", "extensions", "autoscaling"]
   resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
@@ -28,15 +28,19 @@ rules:
   resources: ["healthstates"]
   verbs: ["get", "create", "patch"]
 - apiGroups: ["clusterconfig.azure.com"]
-  resources: ["azureclusteridentityrequests"]
+  resources: ["azureclusteridentityrequests", "azureclusteridentityrequests/status"]
   resourceNames: ["container-insights-clusteridentityrequest"]
   verbs: ["get", "create", "patch"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
+#arc k8s extension model grants access as part of the extension msi 
+#remove this explicit permission once the extension available in public preview
+{{- if (empty .Values.Azure.Extension.Name) }}
 - apiGroups: [""]
   resources: ["secrets"]
   resourceNames: ["container-insights-clusteridentityrequest-token"]
   verbs: ["get"]
+{{- end }}
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1

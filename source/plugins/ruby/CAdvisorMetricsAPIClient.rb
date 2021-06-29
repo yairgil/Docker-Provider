@@ -20,10 +20,12 @@ class CAdvisorMetricsAPIClient
   @clusterEnvVarCollectionEnabled = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
   @clusterStdErrLogCollectionEnabled = ENV["AZMON_COLLECT_STDERR_LOGS"]
   @clusterStdOutLogCollectionEnabled = ENV["AZMON_COLLECT_STDOUT_LOGS"]
+  @pvKubeSystemCollectionMetricsEnabled = ENV["AZMON_PV_COLLECT_KUBE_SYSTEM_METRICS"]
   @clusterLogTailExcludPath = ENV["AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH"]
   @clusterLogTailPath = ENV["AZMON_LOG_TAIL_PATH"]
   @clusterAgentSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
   @clusterContainerLogEnrich = ENV["AZMON_CLUSTER_CONTAINER_LOG_ENRICH"]
+  @clusterContainerLogSchemaVersion = ENV["AZMON_CONTAINER_LOG_SCHEMA_VERSION"]
 
   @dsPromInterval = ENV["TELEMETRY_DS_PROM_INTERVAL"]
   @dsPromFieldPassCount = ENV["TELEMETRY_DS_PROM_FIELDPASS_LENGTH"]
@@ -53,6 +55,7 @@ class CAdvisorMetricsAPIClient
   @@winNodePrevMetricRate = {}
   @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
+  @@telemetryPVKubeSystemMetricsTimeTracker = DateTime.now.to_time.to_i
 
   #Containers a hash of node name and the last time telemetry was sent for this node
   @@nodeTelemetryTimeTracker = {}
@@ -63,6 +66,7 @@ class CAdvisorMetricsAPIClient
   #cadvisor ports
   @@CADVISOR_SECURE_PORT = "10250"
   @@CADVISOR_NON_SECURE_PORT = "10255"
+
   def initialize
   end
 
@@ -83,40 +87,40 @@ class CAdvisorMetricsAPIClient
     end
 
     def getBaseCAdvisorUri(winNode)
-        cAdvisorSecurePort = isCAdvisorOnSecurePort()
+      cAdvisorSecurePort = isCAdvisorOnSecurePort()
 
+      if !!cAdvisorSecurePort == true
+        defaultHost = "https://localhost:#{@@CADVISOR_SECURE_PORT}"
+      else
+        defaultHost = "http://localhost:#{@@CADVISOR_NON_SECURE_PORT}"
+      end
+
+      if !winNode.nil?
+        nodeIP = winNode["InternalIP"]
+      else
+        nodeIP = ENV["NODE_IP"]
+      end
+
+      if !nodeIP.nil?
+        @Log.info("Using #{nodeIP} for CAdvisor Host")
         if !!cAdvisorSecurePort == true
-            defaultHost = "https://localhost:#{@@CADVISOR_SECURE_PORT}"
+          return "https://#{nodeIP}:#{@@CADVISOR_SECURE_PORT}"
         else
-            defaultHost = "http://localhost:#{@@CADVISOR_NON_SECURE_PORT}"
+          return "http://#{nodeIP}:#{@@CADVISOR_NON_SECURE_PORT}"
         end
-
+      else
+        @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost}")
         if !winNode.nil?
-            nodeIP = winNode["InternalIP"]
+          return nil
         else
-            nodeIP = ENV["NODE_IP"]
+          return defaultHost
         end
-
-        if !nodeIP.nil?
-            @Log.info("Using #{nodeIP} for CAdvisor Host")
-            if !!cAdvisorSecurePort == true
-                return "https://#{nodeIP}:#{@@CADVISOR_SECURE_PORT}"
-            else
-                return "http://#{nodeIP}:#{@@CADVISOR_NON_SECURE_PORT}"
-            end
-        else
-            @Log.warn ("NODE_IP environment variable not set. Using default as : #{defaultHost}")
-            if !winNode.nil?
-                return nil
-            else
-                return defaultHost
-            end
-        end
+      end
     end
 
     def getCAdvisorUri(winNode, relativeUri)
-        baseUri = getBaseCAdvisorUri(winNode)
-        return baseUri + relativeUri
+      baseUri = getBaseCAdvisorUri(winNode)
+      return baseUri + relativeUri
     end
 
     def getMetrics(winNode: nil, metricTime: Time.now.utc.iso8601)
@@ -245,20 +249,26 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
                       telemetryProps["dsPromUrl"] = @dsPromUrlCount
                     end
-                    #telemetry about containerlogs Routing for daemonset
-                    if (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
+                    #telemetry about containerlog Routing for daemonset
+                    if File.exist?(Constants::AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2_FILENAME)
+                      telemetryProps["containerLogsRoute"] = "v2"
+                    elsif (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
                       telemetryProps["containerLogsRoute"] = @containerLogsRoute
                     end
-                     #telemetry about health model
-                     if (!@hmEnabled.nil? && !@hmEnabled.empty?)
+                    #telemetry about health model
+                    if (!@hmEnabled.nil? && !@hmEnabled.empty?)
                       telemetryProps["hmEnabled"] = @hmEnabled
-                     end
-                     #telemetry for npm integration
-                     if (!@npmIntegrationAdvanced.nil? && !@npmIntegrationAdvanced.empty?)
-                       telemetryProps["int-npm-a"] = "1"
-                     elsif (!@npmIntegrationBasic.nil? && !@npmIntegrationBasic.empty?)
-                       telemetryProps["int-npm-b"] = "1"
-                     end
+                    end
+                    #telemetry for npm integration
+                    if (!@npmIntegrationAdvanced.nil? && !@npmIntegrationAdvanced.empty?)
+                      telemetryProps["int-npm-a"] = "1"
+                    elsif (!@npmIntegrationBasic.nil? && !@npmIntegrationBasic.empty?)
+                      telemetryProps["int-npm-b"] = "1"
+                    end
+                    #telemetry for Container log schema version clusterContainerLogSchemaVersion
+                    if (!@clusterContainerLogSchemaVersion.nil? && !@clusterContainerLogSchemaVersion.empty?)
+                      telemetryProps["containerLogVer"] = @clusterContainerLogSchemaVersion
+                    end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
                 end
@@ -299,8 +309,10 @@ class CAdvisorMetricsAPIClient
         end
         if !metricInfo.nil?
           metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryTotal", "containerGpumemoryTotalBytes", metricTime))
-          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed","containerGpumemoryUsedBytes", metricTime))
-          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle","containerGpuDutyCycle", metricTime))
+          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "memoryUsed", "containerGpumemoryUsedBytes", metricTime))
+          metricDataItems.concat(getContainerGpuMetricsAsInsightsMetrics(metricInfo, hostName, "dutyCycle", "containerGpuDutyCycle", metricTime))
+
+          metricDataItems.concat(getPersistentVolumeMetrics(metricInfo, hostName, "usedBytes", Constants::PV_USED_BYTES, metricTime))
         else
           @Log.warn("Couldn't get Insights metrics information for host: #{hostName} os:#{operatingSystem}")
         end
@@ -309,6 +321,78 @@ class CAdvisorMetricsAPIClient
         return metricDataItems
       end
       return metricDataItems
+    end
+
+    def getPersistentVolumeMetrics(metricJSON, hostName, metricNameToCollect, metricNameToReturn, metricPollTime)
+      telemetryTimeDifference = (DateTime.now.to_time.to_i - @@telemetryPVKubeSystemMetricsTimeTracker).abs
+      telemetryTimeDifferenceInMinutes = telemetryTimeDifference / 60
+
+      metricItems = []
+      clusterId = KubernetesApiClient.getClusterId
+      clusterName = KubernetesApiClient.getClusterName
+      begin
+        metricInfo = metricJSON
+        metricInfo["pods"].each do |pod|
+          podNamespace = pod["podRef"]["namespace"]
+          excludeNamespace = false
+          if (podNamespace.downcase == "kube-system") && @pvKubeSystemCollectionMetricsEnabled == "false"
+            excludeNamespace = true
+          end
+
+          if (!excludeNamespace && !pod["volume"].nil?)
+            pod["volume"].each do |volume|
+              if (!volume["pvcRef"].nil?)
+                pvcRef = volume["pvcRef"]
+                if (!pvcRef["name"].nil?)
+
+                  # A PVC exists on this volume
+                  podUid = pod["podRef"]["uid"]
+                  podName = pod["podRef"]["name"]
+                  pvcName = pvcRef["name"]
+                  pvcNamespace = pvcRef["namespace"]
+
+                  metricItem = {}
+                  metricItem["CollectionTime"] = metricPollTime
+                  metricItem["Computer"] = hostName
+                  metricItem["Name"] = metricNameToReturn
+                  metricItem["Value"] = volume[metricNameToCollect]
+                  metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
+                  metricItem["Namespace"] = Constants::INSIGTHTSMETRICS_TAGS_PV_NAMESPACE
+
+                  metricTags = {}
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = clusterId
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_UID] = podUid
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = podName
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_PVC_NAME] = pvcName
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE] = pvcNamespace
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_VOLUME_NAME] = volume["name"]
+                  metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = volume["capacityBytes"]
+
+                  metricItem["Tags"] = metricTags
+
+                  metricItems.push(metricItem)
+                end
+              end
+            end
+          end
+        end
+      rescue => errorStr
+        @Log.warn("getPersistentVolumeMetrics failed: #{errorStr} for metric #{metricNameToCollect}")
+        return metricItems
+      end
+
+      # If kube-system metrics collection enabled, send telemetry
+      begin
+        if telemetryTimeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES && @pvKubeSystemCollectionMetricsEnabled == "true"
+          ApplicationInsightsUtility.sendCustomEvent(Constants::PV_KUBE_SYSTEM_METRICS_ENABLED_EVENT, {})
+          @@telemetryPVKubeSystemMetricsTimeTracker = DateTime.now.to_time.to_i
+        end
+      rescue => errorStr
+        @Log.warn("getPersistentVolumeMetrics kube-system metrics enabled telemetry failed: #{errorStr}")
+      end
+
+      return metricItems
     end
 
     def getContainerGpuMetricsAsInsightsMetrics(metricJSON, hostName, metricNameToCollect, metricNametoReturn, metricPollTime)
@@ -330,18 +414,17 @@ class CAdvisorMetricsAPIClient
                   if (!accelerator[metricNameToCollect].nil?) #empty check is invalid for non-strings
                     containerName = container["name"]
                     metricValue = accelerator[metricNameToCollect]
-                    
 
                     metricItem = {}
                     metricItem["CollectionTime"] = metricPollTime
                     metricItem["Computer"] = hostName
                     metricItem["Name"] = metricNametoReturn
                     metricItem["Value"] = metricValue
-                    metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN 
+                    metricItem["Origin"] = Constants::INSIGHTSMETRICS_TAGS_ORIGIN
                     metricItem["Namespace"] = Constants::INSIGHTSMETRICS_TAGS_GPU_NAMESPACE
-                    
+
                     metricTags = {}
-                    metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID ] = clusterId
+                    metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERID] = clusterId
                     metricTags[Constants::INSIGHTSMETRICS_TAGS_CLUSTERNAME] = clusterName
                     metricTags[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME] = podUid + "/" + containerName
                     #metricTags[Constants::INSIGHTSMETRICS_TAGS_K8SNAMESPACE] = podNameSpace
@@ -357,9 +440,9 @@ class CAdvisorMetricsAPIClient
                     if (!accelerator["id"].nil? && !accelerator["id"].empty?)
                       metricTags[Constants::INSIGHTSMETRICS_TAGS_GPU_ID] = accelerator["id"]
                     end
-                  
+
                     metricItem["Tags"] = metricTags
-                    
+
                     metricItems.push(metricItem)
                   end
                 end
@@ -836,13 +919,13 @@ class CAdvisorMetricsAPIClient
           uri = URI.parse(cAdvisorUri)
           if isCAdvisorOnSecurePort()
             Net::HTTP.start(uri.host, uri.port,
-              :use_ssl => true, :open_timeout => 20, :read_timeout => 40,
-              :ca_file => "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-              :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
-            cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
-            cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
-            response = http.request(cAdvisorApiRequest)
-            @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+                            :use_ssl => true, :open_timeout => 20, :read_timeout => 40,
+                            :ca_file => "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+                            :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+              cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
+              cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
+              response = http.request(cAdvisorApiRequest)
+              @Log.info "Got response code #{response.code} from #{uri.request_uri}"
             end
           else
             Net::HTTP.start(uri.host, uri.port, :use_ssl => false, :open_timeout => 20, :read_timeout => 40) do |http|
@@ -855,19 +938,24 @@ class CAdvisorMetricsAPIClient
       rescue => error
         @Log.warn("CAdvisor api request for #{cAdvisorUri} failed: #{error}")
         telemetryProps = {}
-        telemetryProps["Computer"] = winNode["Hostname"]
+        if !winNode.nil?
+          hostName = winNode["Hostname"]
+        else
+          hostName = (OMS::Common.get_hostname)
+        end
+        telemetryProps["Computer"] = hostName
         ApplicationInsightsUtility.sendExceptionTelemetry(error, telemetryProps)
       end
       return response
     end
 
     def isCAdvisorOnSecurePort
-        cAdvisorSecurePort = false
-        # Check to see whether omsagent needs to use 10255(insecure) port or 10250(secure) port
-        if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
-          cAdvisorSecurePort = true
-        end
-        return cAdvisorSecurePort
+      cAdvisorSecurePort = false
+      # Check to see whether omsagent needs to use 10255(insecure) port or 10250(secure) port
+      if !@cAdvisorMetricsSecurePort.nil? && @cAdvisorMetricsSecurePort == "true"
+        cAdvisorSecurePort = true
+      end
+      return cAdvisorSecurePort
     end
   end
 end

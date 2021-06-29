@@ -11,12 +11,122 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
-### 09/25/2020 -
-> Note: This is hotfix agent release targetted ONLY for non-AKS clusters via Azure Monitor for containers HELM chart update
-##### Version microsoft/oms:ciprod09252020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod09252020 (linux)
-##### Version microsoft/oms:win-ciprod09252020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod09252020 (windows)
+### 05/20/2021 hotfix -
+##### Version microsoft/oms:ciprod05202021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05202021-hotfix (linux)
+##### No Windows changes with this release, win-ciprod04222021 still current.
 ##### Code change log
-- Fix azure json file crash in MDM path for azure arc k8s connected clusters
+- Fixing a bug where the input plugin for NodeInventory dies if any windows nodes are rmeoved from the cluster.
+
+### 05/20/2021 -
+##### Version microsoft/oms:ciprod05202021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05202021 (linux)
+##### No Windows changes with this release, win-ciprod04222021 still current.
+##### Code change log
+- Telegraf now waits 30 seconds on startup for network connections to complete (Linux only)
+- Change adding telegraf to the liveness probe reverted (Linux only)
+
+### 05/12/2021 -
+##### Version microsoft/oms:ciprod05122021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05122021 (linux)
+##### No Windows changes with this release, win-ciprod04222021 still current.
+##### Code change log
+- Upgrading oneagent to version 1.8 (only for Linux)
+- Enabling oneagent for container logs for East US 2
+
+### 04/22/2021 -
+##### Version microsoft/oms:ciprod04222021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04222021 (linux)
+##### Version microsoft/oms:win-ciprod04222021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod04222021 (windows)
+##### Code change log
+- Bug fixes for metrics cpuUsagePercentage and memoryWorkingSetPercentage for windows nodes
+- Added metrics for threshold violation
+- Made Job completion metric configurable
+- Udated default buffer sizes in fluent-bit
+- Updated recommended alerts
+- Fixed bug where logs written before agent starts up were not collected
+- Fixed bug which kept agent logs from being rotated
+- Bug fix for Windows Containerd container log collection
+- Bug fixes
+- Doc updates
+- Minor telemetry changes
+
+### 03/26/2021 -
+##### Version microsoft/oms:ciprod03262021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021 (linux)
+##### Version microsoft/oms:win-ciprod03262021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03262021 (windows)
+##### Code change log
+- Started collecting new metric - kubelet running pods count  
+- Onboarding script fixes to add explicit json output
+- Proxy and token updates for ARC
+- Doc updates for Microsoft charts repo release
+- Bug fixes for trailing whitespaces in enable-monitoring.sh script
+- Support for higher volume of prometheus metrics by scraping metrics from sidecar
+- Update to get new version of telegraf - 1.18
+- Add label and field selectors for prometheus scraping using annotations
+- Support for OSM integration
+- Removed wireserver calls to get CA certs since access is removed
+- Added liveness timeout for exec for linux containers
+
+### 02/23/2021 -
+##### Version microsoft/oms:ciprod02232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021 (linux)
+##### Version microsoft/oms:win-ciprod02232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod02232021 (windows)
+##### Code change log
+- ContainerLogV2 schema support for LogAnalytics & ADX (not usable externally yet)
+- Fix nodemetrics (cpuusageprecentage & memoryusagepercentage) metrics not flowing. This is fixed upstream for k8s versions >= 1.19.7 and >=1.20.2.
+- Fix cpu & memory usage exceeded threshold container metrics not flowing when requests and/or limits were not set
+- Mute some unused exceptions from going to telemetry
+- Collect containerimage (repository, image & imagetag) from spec (instead of runtime)
+- Add support for extension MSI for k8s arc
+- Use cloud specific instrumentation keys for telemetry
+- Picked up newer version for apt
+- Add priority class to daemonset (in our chart only)
+
+### 01/11/2021 -
+##### Version microsoft/oms:ciprod01112021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod01112021 (linux)
+##### Version microsoft/oms:win-ciprod01112021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod01112021 (windows)
+##### Code change log
+- Fixes for Linux Agent Replicaset Pod OOMing issue
+- Update fluentbit (1.14.2 to 1.6.8) for the Linux Daemonset 
+- Make Fluentbit settings: log_flush_interval_secs, tail_buf_chunksize_megabytes and tail_buf_maxsize_megabytes configurable via configmap
+- Support for PV inventory collection
+- Removal of Custom metric region check for Public cloud regions and update to use cloud environment variable to determine the custom metric support
+- For daemonset pods, add the dnsconfig to use ndots: 3 from ndots:5 to optimize the number of DNS API calls made
+- Fix for inconsistency in the collection container environment variables for the pods which has high number of containers
+- Fix for disabling of std{out;err} log_collection_settings via configmap issue in windows daemonset 
+- Update to use workspace key from mount file rather than environment variable for windows daemonset agent
+- Remove per container info logs in the container inventory
+- Enable ADX route for windows container logs
+- Remove logging to termination log in windows agent liveness probe
+
+### 11/09/2020 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod11092020 (windows)
+##### Code change log
+- Fix for duplicate windows metrics
+
+### 10/27/2020 -
+##### Version microsoft/oms:ciprod10272020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10272020 (linux)
+##### Version microsoft/oms:win-ciprod10272020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod10272020 (windows)
+##### Code change log
+- Activate oneagent in few AKS regions (koreacentral,norwayeast)
+- Disable syslog
+- Fix timeout for Windows daemonset liveness probe
+- Make request == limit for Windows daemonset resources (cpu & memory)
+- Schema v2 for container log (ADX only - applicable only for select customers for piloting)
+
+### 10/05/2020 -
+##### Version microsoft/oms:ciprod10052020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10052020 (linux)
+##### Version microsoft/oms:win-ciprod10052020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod10052020 (windows)
+##### Code change log
+- Health CRD to version v1 (from v1beta1) for k8s versions >= 1.19.0
+- Collection of PV usage metrics for PVs mounted by pods (kube-system pods excluded by default)(doc-link-needed)
+- Zero fill few custom metrics under a timer, also add zero filling for new PV usage metrics
+- Collection of additional Kubelet metrics ('kubelet_running_pod_count','volume_manager_total_volumes','kubelet_node_config_error','process_resident_memory_bytes','process_cpu_seconds_total','kubelet_runtime_operations_total','kubelet_runtime_operations_errors_total'). This also includes updates to 'kubelet' workbook to include these new metrics
+- Collection of Azure NPM (Network Policy Manager) metrics (basic & advanced. By default, NPM metrics collection is turned OFF)(doc-link-needed)
+- Support log collection when docker root is changed with knode. Tracked by [this](https://github.com/Azure/AKS/issues/1373) issue
+- Support for Pods in 'Terminating' state for nodelost scenarios
+- Fix for reduction in telemetry for custom metrics ingestion failures
+- Fix CPU capacity/limits metrics being 0 for Virtual nodes (VK)
+- Add new custom metric regions (eastus2,westus,australiasoutheast,brazilsouth,germanywestcentral,northcentralus,switzerlandnorth)
+- Enable strict SSL validation for AppInsights Ruby SDK
+- Turn off custom metrics upload for unsupported cluster types
+- Install CA certs from wire server for windows (in certain clouds)
 
 ### 09/16/2020 -
 > Note: This agent release targetted ONLY for non-AKS clusters via Azure Monitor for containers HELM chart update

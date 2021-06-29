@@ -3,14 +3,14 @@ MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
 
-ARG IMAGE_TAG=win-ciprod09252020
+ARG IMAGE_TAG=win-ciprod04222021
 
 # Do not split this into multiple RUN!
 # Docker creates a layer for every RUN-Statement
 RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
 # Fluentd depends on cool.io whose fat gem is only available for Ruby < 2.5, so need to specify --platform ruby when install Ruby > 2.5 and install msys2 to get dev tools
 RUN choco install -y ruby --version 2.6.5.1 --params "'/InstallDir:C:\ruby26'" \
-&& choco install -y msys2 --version 20190524.0.0.20191030 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby26\msys64'" \
+&& choco install -y msys2 --version 20200903.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby26\msys64'" \
 && choco install -y vim
 
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
@@ -47,6 +47,7 @@ RUN ./setup.ps1
 COPY main.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
+COPY setdefaulttelegrafenvvariables.ps1 /opt/omsagentwindows/scripts/powershell
 
 # copy ruby scripts to /opt folder
 COPY ./omsagentwindows/installer/scripts/*.rb /opt/omsagentwindows/scripts/ruby/
@@ -61,6 +62,9 @@ COPY ./omsagentwindows/installer/conf/fluent-cri-parser.conf /etc/fluent/
 COPY ./omsagentwindows/installer/conf/fluent-docker-parser.conf /etc/fluent/
 COPY ./omsagentwindows/installer/conf/fluent-bit.conf /etc/fluent-bit
 COPY ./omsagentwindows/installer/conf/out_oms.conf /etc/omsagentwindows
+
+# copy telegraf conf file
+COPY ./omsagentwindows/installer/conf/telegraf.conf /etc/telegraf/
 
 # copy keepcert alive ruby scripts
 COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/

@@ -25,6 +25,9 @@ spec:
     agentVersion: {{ .Values.omsagent.image.tag }}
     dockerProviderVersion: {{ .Values.omsagent.image.dockerProviderVersion }}
     schema-versions: "v1"
+    checksum/secret: {{ include (print $.Template.BasePath "/omsagent-secret.yaml") . | sha256sum }}
+    checksum/config: {{ toYaml .Values.omsagent.resources | sha256sum }}
+    checksum/logsettings: {{ toYaml .Values.omsagent.logsettings | sha256sum }}
   spec:
   {{- if .Values.omsagent.rbac }}
    serviceAccountName: omsagent
@@ -64,8 +67,16 @@ spec:
          valueFrom:
             fieldRef:
               fieldPath: status.hostIP
+       {{- if not (empty .Values.Azure.Extension.Name) }}
+       - name: ARC_K8S_EXTENSION_NAME
+         value: {{ .Values.Azure.Extension.Name | quote }} 
+       {{- end }}                       
        - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
          value: ""
+       - name: SIDECAR_SCRAPING_ENABLED
+         value: "false"
+       - name: ISTEST
+         value: {{ .Values.omsagent.ISTEST | quote }}       
        securityContext:
          privileged: true
        ports:
@@ -100,6 +111,9 @@ spec:
         - mountPath: /etc/config/settings/adx
           name: omsagent-adx-secret
           readOnly: true
+        - mountPath: /etc/config/osm-settings
+          name: osm-settings-vol-config
+          readOnly: true
        livenessProbe:
         exec:
          command:
@@ -108,6 +122,7 @@ spec:
          - "/opt/livenessprobe.sh"
         initialDelaySeconds: 60
         periodSeconds: 60
+        timeoutSeconds: 15
    {{- with .Values.omsagent.deployment.affinity }}
    affinity: {{- toYaml . | nindent 8 }}
    {{- end }}
@@ -149,4 +164,8 @@ spec:
       secret:
        secretName: omsagent-adx-secret
        optional: true
+    - name: osm-settings-vol-config
+      configMap:
+        name: container-azm-ms-osmconfig
+        optional: true
 {{- end }}

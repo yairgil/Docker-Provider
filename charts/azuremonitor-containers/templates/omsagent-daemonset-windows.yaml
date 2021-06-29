@@ -24,9 +24,21 @@ spec:
     agentVersion: {{ .Values.omsagent.image.tagWindows }}
     dockerProviderVersion: {{ .Values.omsagent.image.dockerProviderVersion }}
     schema-versions: "v1"
+    checksum/secret: {{ include (print $.Template.BasePath "/omsagent-secret.yaml") . | sha256sum }}
+    checksum/config: {{ toYaml .Values.omsagent.resources | sha256sum }}
   spec:
+   priorityClassName: omsagent
+   dnsConfig:
+     options:
+       - name: ndots
+         value: "3"
+{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion }}
+   nodeSelector:
+      kubernetes.io/os: windows
+{{- else }}
    nodeSelector:
       beta.kubernetes.io/os: windows
+{{- end }}
    {{- if .Values.omsagent.rbac }}
    serviceAccountName: omsagent
    {{- end }}
@@ -39,7 +51,7 @@ spec:
        {{- end }}
        imagePullPolicy: IfNotPresent
        resources:
-{{ toYaml .Values.omsagent.resources.daemonset | indent 9 }}
+{{ toYaml .Values.omsagent.resources.daemonsetwindows | indent 9 }}
        env:
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
@@ -69,6 +81,12 @@ spec:
          valueFrom:
             fieldRef:
               fieldPath: status.hostIP
+       - name: PODNAME
+         valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+       - name: SIDECAR_SCRAPING_ENABLED
+         value: "false"
        volumeMounts:
         - mountPath: C:\ProgramData\docker\containers
           name: docker-windows-containers
@@ -89,6 +107,7 @@ spec:
               - C:\opt\omsagentwindows\scripts\cmd\livenessProbe.cmd
           periodSeconds: 60
           initialDelaySeconds: 180
+          timeoutSeconds: 15
    {{- with .Values.omsagent.tolerations }}
    tolerations: {{- toYaml . | nindent 8 }}
    {{- end }}
@@ -99,6 +118,7 @@ spec:
     - name: docker-windows-containers
       hostPath:
         path: C:\ProgramData\docker\containers
+        type: DirectoryOrCreate
     - name: settings-vol-config
       configMap:
         name: container-azm-ms-agentconfig

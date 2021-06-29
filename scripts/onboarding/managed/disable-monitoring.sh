@@ -26,10 +26,10 @@ set -o pipefail
 
 # default release name used during onboarding
 releaseName="azmon-containers-release-1"
-# resource type for azure arc clusters
+# resource type for Azure Arc enabled Kubernetes clusters
 resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
-# resource provider for azure arc connected cluster
+# resource provider for Azure Arc enabled Kubernetes cluster
 arcK8sResourceProvider="Microsoft.Kubernetes/connectedClusters"
 # resource provider for azure redhat openshift v4 cluster
 aroV4ResourceProvider="Microsoft.RedHatOpenShift/OpenShiftClusters"
@@ -125,13 +125,13 @@ remove_monitoring_tags()
   echo "set the cluster subscription id: ${clusterSubscriptionId}"
   az account set -s ${clusterSubscriptionId}
 
-  # validate cluster identity for ARC k8s cluster
+  # validate cluster identity for Azure Arc enabled Kubernetes cluster
   if [ "$isArcK8sCluster" = true ] ; then
-   identitytype=$(az resource show -g ${clusterResourceGroup} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
+   identitytype=$(az resource show -g ${clusterResourceGroup} -n ${clusterName} --resource-type $resourceProvider --query identity.type -o json)
    identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"')
    echo "cluster identity type:" $identitytype
     if [[ "$identitytype" != "systemassigned" ]]; then
-      echo "-e only supported cluster identity is systemassigned for Azure ARC K8s cluster type"
+      echo "-e only supported cluster identity is systemassigned for Azure Arc enabled Kubernetes cluster type"
       exit 1
     fi
   fi
@@ -257,7 +257,7 @@ done
 
  # detect the resource provider from the provider name in the cluster resource id
  if [ $providerName = "microsoft.kubernetes/connectedclusters" ]; then
-    echo "provider cluster resource is of Azure ARC K8s cluster type"
+    echo "provider cluster resource is of Azure Arc enabled Kubernetes cluster type"
     isArcK8sCluster=true
     resourceProvider=$arcK8sResourceProvider
  elif [ $providerName = "microsoft.redhatopenshift/openshiftclusters" ]; then
@@ -280,9 +280,26 @@ done
 
 }
 
+validate_and_configure_supported_cloud() {
+  echo "get active azure cloud name configured to azure cli"
+  azureCloudName=$(az cloud show --query name -o tsv | tr "[:upper:]" "[:lower:]")
+  echo "active azure cloud name configured to azure cli: ${azureCloudName}"
+  if [ "$isArcK8sCluster" = true ]; then
+    if [ "$azureCloudName" != "azurecloud" -a  "$azureCloudName" != "azureusgovernment" ]; then
+      echo "-e only supported clouds are AzureCloud and AzureUSGovernment for Azure Arc enabled Kubernetes cluster type"
+      exit 1
+    fi
+  else
+    # For ARO v4, only supported cloud is public so just configure to public to keep the existing behavior
+    configure_to_public_cloud
+  fi
+}
 
 # parse args
 parse_args $@
+
+# validate and configure azure cloud
+validate_and_configure_supported_cloud
 
 # parse cluster resource id
 clusterSubscriptionId="$(echo $clusterResourceId | cut -d'/' -f3 | tr "[:upper:]" "[:lower:]")"
