@@ -565,8 +565,13 @@ if (![string]::IsNullOrEmpty($requiresCertBootstrap) -and `
     Bootstrap-CACertificates
 }
 
-Generate-Certificates
-Test-CertificatePath
+$isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH")
+if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
+    Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
+} else {
+    Generate-Certificates
+    Test-CertificatePath
+}
 Start-Fluent-Telegraf
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
