@@ -12,7 +12,7 @@ additional questions or comments.
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
 ### 07/02/2021 -
-##### Version microsoft/oms:ciprod07022021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod07022021 (linux)
+##### Version microsoft/oms:ciprod06112021-1 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06112021-1 (linux)
 ##### Version microsoft/oms:win-ciprod06112021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod06112021 (windows)
 ##### Code change log
 - Hotfix for crash in clean_cache in in_kube_node_inventory plugin
