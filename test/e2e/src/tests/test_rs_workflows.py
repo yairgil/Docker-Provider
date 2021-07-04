@@ -35,9 +35,9 @@ def test_rs_workflows(env_dict):
     rspodName = pod_list.items[0].metadata.name
     if not rspodName:
         pytest.fail("replicaset pod name should not be null or empty")
-        
+
     logcontent = get_log_file_content(
-        api_instance, constants.AGENT_RESOURCES_NAMESPACE, rspodName, constants.AGENT_OMSAGENT_LOG_PATH)
+        api_instance, constants.AGENT_RESOURCES_NAMESPACE, rspodName, constants.AGENT_FLUENTD_LOG_PATH)
     if not logcontent:
         pytest.fail("logcontent should not be null or empty for rs pod: {}".format(rspodName))
     loglines = logcontent.split("\n")
@@ -78,7 +78,7 @@ def test_rs_workflows(env_dict):
 
     if IsKubeContainerPerfInventorySuccessful == False:
         pytest.fail("KubeContainerPerfInventory stream not emitted successfully from pod:" + rspodName)
-   
+
     if IsKubeServicesInventorySuccessful == False:
         pytest.fail("KubeServicesInventory stream not emitted successfully from pod:" + rspodName)
 

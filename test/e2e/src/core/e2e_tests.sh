@@ -123,24 +123,28 @@ trap saveResults EXIT
 # validate common params
 validateCommonParameters
 
-# validate params
-validateArcConfTestParameters
+if [ "${IS_NON_ARC_K8S_TEST_ENVIRONMENT}" == "true" ]; then
+   echo "skipping installing of ARC K8s container insights extension since the test environment is non-arc K8s"
+else
+   # validate params
+   validateArcConfTestParameters
 
-# login to azure
-login_to_azure
+   # login to azure
+   login_to_azure
 
-# Wait for resources in ARC ns
-waitSuccessArc="$(waitForResources deployment azure-arc)"
-if [ "${waitSuccessArc}" == false ]; then
-    echo "deployment is not avilable in namespace - azure-arc"
-    exit 1
+   # Wait for resources in ARC ns
+   waitSuccessArc="$(waitForResources deployment azure-arc)"
+   if [ "${waitSuccessArc}" == false ]; then
+	  echo "deployment is not avilable in namespace - azure-arc"
+	  exit 1
+   fi
+
+   # add CLI extension
+   addArcK8sCLIExtension
+
+   # add ARC K8s container insights extension
+   createArcCIExtension
 fi
-
-# add CLI extension
-addArcK8sCLIExtension
-
-# add ARC K8s container insights extension
-createArcCIExtension
 
 # Wait for deployment resources in kube-system ns
 waitSuccessArc="$(waitForResources deployment omsagent-rs kube-system)"

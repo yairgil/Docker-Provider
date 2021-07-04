@@ -48,7 +48,7 @@ AGENT_WIN_DAEMONSET_NAME = 'omsagent-win'
 
 AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR = 'rsName=omsagent-rs'
 AGENT_DAEMON_SET_PODS_LABEL_SELECTOR = 'component=oms-agent'
-AGENT_OMSAGENT_LOG_PATH = '/var/opt/microsoft/omsagent/log/omsagent.log'
+AGENT_FLUENTD_LOG_PATH = '/var/opt/microsoft/docker-cimprov/log/fluentd.log'
 AGENT_REPLICASET_WORKFLOWS = ["kubePodInventoryEmitStreamSuccess", "kubeNodeInventoryEmitStreamSuccess"]
 
 # override this through setting enviornment variable if the expected restart count is > 0 for example applying configmap
