@@ -47,7 +47,8 @@ AGENT_DAEMONSET_NAME = 'omsagent'
 AGENT_WIN_DAEMONSET_NAME = 'omsagent-win'
 
 AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR = 'rsName=omsagent-rs'
-AGENT_DAEMON_SET_PODS_LABEL_SELECTOR = 'component=oms-agent'
+AGENT_DAEMON_SET_PODS_LABEL_SELECTOR = 'dsName=omsagent-ds'
+AGENT_DAEMON_SET_PODS_LABEL_SELECTOR_NON_ARC = 'component=oms-agent'
 AGENT_FLUENTD_LOG_PATH = '/var/opt/microsoft/docker-cimprov/log/fluentd.log'
 AGENT_REPLICASET_WORKFLOWS = ["kubePodInventoryEmitStreamSuccess", "kubeNodeInventoryEmitStreamSuccess"]
 

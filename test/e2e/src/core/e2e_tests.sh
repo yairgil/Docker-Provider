@@ -98,16 +98,6 @@ validateArcConfTestParameters() {
 		echo "ERROR: parameter CLUSTER_NAME is required." > ${results_dir}/error
 		python3 setup_failure_handler.py
 	fi
-
-	if [ -z $CI_ARC_RELEASE_TRAIN ]; then
-		echo "ERROR: parameter CI_ARC_RELEASE_TRAIN is required." > ${results_dir}/error
-		python3 setup_failure_handler.py
-	fi
-
-	if [ -z $CI_ARC_VERSION ]; then
-		echo "ERROR: parameter CI_ARC_VERSION is required." > ${results_dir}/error
-		python3 setup_failure_handler.py
-	fi
 }
 
 addArcConnectedK8sExtension() {
@@ -121,17 +111,16 @@ addArcK8sCLIExtension() {
 }
 
 createArcCIExtension() {
-	echo "creating extension type: Microsoft.AzureMonitor.Containers with release train: ${CI_ARC_RELEASE_TRAIN} and version: ${CI_ARC_VERSION}"
-	az k8s-extension create \
-    --cluster-name $CLUSTER_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --cluster-type connectedClusters \
-    --extension-type Microsoft.AzureMonitor.Containers \
-    --scope cluster \
-    --release-train $CI_ARC_RELEASE_TRAIN \
-    --name azuremonitor-containers \
-    --version $CI_ARC_VERSION
-    # 2> ${results_dir}/error || python3 setup_failure_handler.py
+	echo "creating extension type: Microsoft.AzureMonitor.Containers"
+    basicparameters="--cluster-name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --cluster-type connectedClusters --extension-type Microsoft.AzureMonitor.Containers --scope cluster --name azuremonitor-containers"
+    if [ ! -z "$CI_ARC_RELEASE_TRAIN" ]; then
+       basicparameters="$basicparameters  --release-train $CI_ARC_RELEASE_TRAIN"
+    fi
+    if [ ! -z "$CI_ARC_VERSION" ]; then
+       basicparameters="$basicparameters  --version $CI_ARC_VERSION"
+    fi
+
+	az k8s-extension create $basicparameters --configuration-settings omsagent.ISTEST=true 2> ${results_dir}/error || python3 setup_failure_handler.py
 }
 
 showArcCIExtension() {
