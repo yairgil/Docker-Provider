@@ -1,19 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 set -x
 set -e
 
 results_dir="${RESULTS_DIR:-/tmp/results}"
 
-function waitForResources {
+waitForResources() {
     available=false
     max_retries=60
     sleep_seconds=10
-    RESOURCETYPE=$1
-    NAMESPACE=$2
+    NAMESPACE=$1
+    RESOURCETYPE=$2
 	RESOURCE=$3
+    # if resource not specified, set to --all
+    if [ -z $RESOURCE ]; then
+       RESOURCE="--all"
+    fi
     for i in $(seq 1 $max_retries)
     do
-    if [[ ! $(kubectl wait --for=condition=available ${RESOURCETYPE} ${RESOURCE} --all --namespace ${NAMESPACE}) ]]; then
+    if [[ ! $(kubectl wait --for=condition=available ${RESOURCETYPE} ${RESOURCE} --namespace ${NAMESPACE}) ]]; then
         sleep ${sleep_seconds}
     else
         available=true
@@ -24,84 +28,134 @@ function waitForResources {
     echo "$available"
 }
 
-function validateCommonParameters {
-    if [[ -z "${TENANT_ID}" ]]; then
-		echo "ERROR: parameter TENANT_ID is required." > ${results_dir}/error
-		python3 setup_failure_handler.py
+
+waitForArcK8sClusterCreated() {
+    connectivityState=false
+    max_retries=60
+    sleep_seconds=10
+    for i in $(seq 1 $max_retries)
+    do
+    clusterState=$(az connectedk8s show --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --query connectivityStatus -o json)
+    clusterState=$(echo $clusterState | tr -d '"' | tr -d '"\r\n')
+    echo "cluster current state: ${clusterState}"
+    if [[ ("${clusterState}" == "Connected") || ("${clusterState}" == "Connecting") ]]; then
+        connectivityState=true
+        break
+    else
+       sleep ${sleep_seconds}
+    fi
+    done
+    echo "Arc K8s cluster connectivityState: $connectivityState"
+}
+
+waitForCIExtensionInstalled() {
+    installedState=false
+    max_retries=60
+    sleep_seconds=10
+    for i in $(seq 1 $max_retries)
+    do
+    installState=$(az k8s-extension show  --cluster-name $CLUSTER_NAME --resource-group $RESOURCE_GROUP  --cluster-type connectedClusters --name azuremonitor-containers --query installState -o json)
+    installState=$(echo $installState | tr -d '"' | tr -d '"\r\n')
+    echo "extension install state: ${installState}"
+    if [ "${installState}" == "Installed" ]; then
+        installedState=true
+        break
+    else
+       sleep ${sleep_seconds}
+    fi
+    done
+    echo "installedState: $installedState"
+}
+
+validateCommonParameters() {
+    if [ -z $TENANT_ID ]; then
+	   echo "ERROR: parameter TENANT_ID is required." > ${results_dir}/error
+	   python3 setup_failure_handler.py
 	fi
-	if [[ -z "${CLIENT_ID}" ]]; then
+	if [ -z $CLIENT_ID ]; then
 	   echo "ERROR: parameter CLIENT_ID is required." > ${results_dir}/error
 	   python3 setup_failure_handler.py
 	fi
 
-	if [[ -z "${CLIENT_SECRET}" ]]; then
+	if [ -z $CLIENT_SECRET ]; then
 	   echo "ERROR: parameter CLIENT_SECRET is required." > ${results_dir}/error
 	   python3 setup_failure_handler.py
 	fi
 }
 
-function validateArcConfTestParameters {
-	if [[ -z "${SUBSCRIPTION_ID}" ]]; then
-		echo "ERROR: parameter SUBSCRIPTION_ID is required." > ${results_dir}/error
-		python3 setup_failure_handler.py
+validateArcConfTestParameters() {
+	if [ -z $SUBSCRIPTION_ID ]; then
+	   echo "ERROR: parameter SUBSCRIPTION_ID is required." > ${results_dir}/error
+	   python3 setup_failure_handler.py
 	fi
 
-	if [[ -z "${RESOURCE_GROUP}" ]]; then
+	if [ -z $RESOURCE_GROUP ]]; then
 		echo "ERROR: parameter RESOURCE_GROUP is required." > ${results_dir}/error
 		python3 setup_failure_handler.py
 	fi
 
-	if [[ -z "${CLUSTER_NAME}" ]]; then
+	if [ -z $CLUSTER_NAME ]; then
 		echo "ERROR: parameter CLUSTER_NAME is required." > ${results_dir}/error
 		python3 setup_failure_handler.py
 	fi
 
-	if [[ -z "${CI_ARC_RELEASE_TRAIN}" ]]; then
+	if [ -z $CI_ARC_RELEASE_TRAIN ]; then
 		echo "ERROR: parameter CI_ARC_RELEASE_TRAIN is required." > ${results_dir}/error
 		python3 setup_failure_handler.py
 	fi
 
-	if [[ -z "${CI_ARC_VERSION}" ]]; then
+	if [ -z $CI_ARC_VERSION ]; then
 		echo "ERROR: parameter CI_ARC_VERSION is required." > ${results_dir}/error
 		python3 setup_failure_handler.py
 	fi
-
-	if [[ -z "${CI_TEST_BRANCH}" ]]; then
-		echo "ERROR: parameter CI_TEST_BRANCH is required." > ${results_dir}/error
-		python3 setup_failure_handler.py
-	fi
 }
 
-function addArcK8sCLIExtension {
+addArcConnectedK8sExtension() {
+   echo "adding Arc K8s connectedk8s extension"
+   az extension add --name connectedk8s 2> ${results_dir}/error || python3 setup_failure_handler.py
+}
+
+addArcK8sCLIExtension() {
+   echo "adding Arc K8s k8s-extension extension"
    az extension add --name k8s-extension 2> ${results_dir}/error || python3 setup_failure_handler.py
 }
 
-function createArcCIExtension {
+createArcCIExtension() {
+	echo "creating extension type: Microsoft.AzureMonitor.Containers with release train: ${CI_ARC_RELEASE_TRAIN} and version: ${CI_ARC_VERSION}"
 	az k8s-extension create \
     --cluster-name $CLUSTER_NAME \
     --resource-group $RESOURCE_GROUP \
     --cluster-type connectedClusters \
     --extension-type Microsoft.AzureMonitor.Containers \
-    --subscription $SUBSCRIPTION_ID \
     --scope cluster \
     --release-train $CI_ARC_RELEASE_TRAIN \
     --name azuremonitor-containers \
-    --version $CI_ARC_VERSION 2> ${results_dir}/error || python3 setup_failure_handler.py
+    --version $CI_ARC_VERSION
+    # 2> ${results_dir}/error || python3 setup_failure_handler.py
 }
 
-function deleteArcCIExtension {
+showArcCIExtension() {
+  echo "arc ci extension status"
+  az k8s-extension show  --cluster-name $CLUSTER_NAME --resource-group $RESOURCE_GROUP  --cluster-type connectedClusters --name azuremonitor-containers
+}
+
+deleteArcCIExtension() {
     az k8s-extension delete --name azuremonitor-containers \
     --cluster-type connectedClusters \
 	--cluster-name $CLUSTER_NAME \
 	--resource-group $RESOURCE_GROUP || python3 setup_failure_handler.py
 }
 
-function login_to_azure {
+login_to_azure() {
 	# Login with service principal
+    echo "login to azure using the SP creds"
 	az login --service-principal \
 	-u ${CLIENT_ID} \
 	-p ${CLIENT_SECRET} \
 	--tenant ${TENANT_ID} 2> ${results_dir}/error || python3 setup_failure_handler.py
+
+	echo "setting subscription: ${SUBSCRIPTION_ID} as default subscription"
+	az account set -s $SUBSCRIPTION_ID
 }
 
 
@@ -123,7 +177,17 @@ trap saveResults EXIT
 # validate common params
 validateCommonParameters
 
-if [ "${IS_NON_ARC_K8S_TEST_ENVIRONMENT}" == "true" ]; then
+IS_ARC_K8S_ENV="true"
+if [ -z $IS_NON_ARC_K8S_TEST_ENVIRONMENT ]; then
+   echo "arc k8s environment"
+else
+  if [ "$IS_NON_ARC_K8S_TEST_ENVIRONMENT" = "true" ]; then
+    IS_ARC_K8S_ENV="false"
+	echo "non arc k8s environment"
+  fi
+fi
+
+if [ "$IS_ARC_K8S_ENV" = "false" ]; then
    echo "skipping installing of ARC K8s container insights extension since the test environment is non-arc K8s"
 else
    # validate params
@@ -133,29 +197,41 @@ else
    login_to_azure
 
    # Wait for resources in ARC ns
-   waitSuccessArc="$(waitForResources deployment azure-arc)"
-   if [ "${waitSuccessArc}" == false ]; then
-	  echo "deployment is not avilable in namespace - azure-arc"
-	  exit 1
-   fi
+#    waitSuccessArc="$(waitForResources azure-arc deployment)"
+#    if [ "${waitSuccessArc}" = "false" ]; then
+# 	  echo "deployment is not avilable in namespace - azure-arc"
+# 	  exit 1
+#    fi
+
+   # add arc k8s connectedk8s extension
+   addArcConnectedK8sExtension
+
+   # wait for Arc K8s cluster to be created
+   waitForArcK8sClusterCreated
 
    # add CLI extension
    addArcK8sCLIExtension
 
    # add ARC K8s container insights extension
    createArcCIExtension
+
+   # show the ci extension status
+   showArcCIExtension
+
+   #wait for extension state to be installed
+   waitForCIExtensionInstalled
 fi
 
 # Wait for deployment resources in kube-system ns
-waitSuccessArc="$(waitForResources deployment omsagent-rs kube-system)"
-if [ "${waitSuccessArc}" == false ]; then
-    echo "omsagent-rs deployment is not avilable in namespace - kube-system"
-    exit 1
-fi
+# waitSuccessArc="$(waitForResources kube-system deployment omsagent-rs)"
+# if [ "${waitSuccessArc}" = "false" ]; then
+#     echo "omsagent-rs deployment is not avilable in namespace - kube-system"
+#     exit 1
+# fi
 
 # Wait for ds resources in kube-system ns
-# waitSuccessArc="$(waitForResources ds omsagent kube-system)"
-# if [ "${waitSuccessArc}" == false ]; then
+# waitSuccessArc="$(waitForResources kube-system ds omsagent)"
+# if [ "${waitSuccessArc}" = "false" ]; then
 #     echo "omsagent is not avilable in namespace - kube-system"
 #     exit 1
 # fi
