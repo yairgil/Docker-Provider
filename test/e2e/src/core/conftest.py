@@ -34,6 +34,9 @@ def env_dict():
             env_dict['CLIENT_ID'] = os.getenv('CLIENT_ID')
             env_dict['CLIENT_SECRET'] = os.getenv('CLIENT_SECRET')
             env_dict['IS_NON_ARC_K8S_TEST_ENVIRONMENT'] = os.getenv('IS_NON_ARC_K8S_TEST_ENVIRONMENT')
+            # released agent for Arc K8s still uses omsagent and when we rollout the agent with mdsd
+            # this shouldnt set after agent rollout with mdsd
+            env_dict['USING_OMSAGENT_BASE_AGENT'] = os.getenv('USING_OMSAGENT_BASE_AGENT')
 
             # get default query time interval for log analytics queries
             queryTimeInterval = int(os.getenv('DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES')) if os.getenv('DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES') else constants.DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES

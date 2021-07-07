@@ -36,8 +36,13 @@ def test_rs_workflows(env_dict):
     if not rspodName:
         pytest.fail("replicaset pod name should not be null or empty")
 
+    isOMSBaseAgent = env_dict.get('USING_OMSAGENT_BASE_AGENT')
+    agentLogPath = constants.AGENT_FLUENTD_LOG_PATH
+    if isOMSBaseAgent:
+        agentLogPath = constants.AGENT_OMSAGENT_LOG_PATH
+
     logcontent = get_log_file_content(
-        api_instance, constants.AGENT_RESOURCES_NAMESPACE, rspodName, constants.AGENT_FLUENTD_LOG_PATH)
+        api_instance, constants.AGENT_RESOURCES_NAMESPACE, rspodName, agentLogPath)
     if not logcontent:
         pytest.fail("logcontent should not be null or empty for rs pod: {}".format(rspodName))
     loglines = logcontent.split("\n")
