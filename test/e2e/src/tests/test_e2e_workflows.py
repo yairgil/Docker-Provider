@@ -80,7 +80,7 @@ def test_e2e_workflows(env_dict):
     # KubePodInventory
     query = constants.KUBE_POD_INVENTORY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('KUBE_POD_INVENTORY'))
 
@@ -91,7 +91,7 @@ def test_e2e_workflows(env_dict):
     # KubeNodeInventory
     query = constants.KUBE_NODE_INVENTORY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('KUBE_NODE_INVENTORY'))
 
@@ -102,7 +102,7 @@ def test_e2e_workflows(env_dict):
     # KubeServices
     query = constants.KUBE_SERVICES_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
          pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('KUBE_SERVICES'))
 
@@ -113,7 +113,7 @@ def test_e2e_workflows(env_dict):
     # KubeEvents
     query = constants.KUBE_EVENTS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('KUBE_EVENTS'))
 
@@ -124,7 +124,7 @@ def test_e2e_workflows(env_dict):
     # Container Node Inventory
     query = constants.CONTAINER_NODE_INVENTORY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_NODE_INVENTORY'))
 
@@ -136,7 +136,7 @@ def test_e2e_workflows(env_dict):
     # cpu capacity
     query = constants.NODE_PERF_CPU_CAPCITY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('NODE_PERF_CPU_CAPCITY'))
 
@@ -147,7 +147,7 @@ def test_e2e_workflows(env_dict):
     # memory capacity
     query = constants.NODE_PERF_MEMORY_CAPCITY_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('NODE_PERF_MEMORY_CAPCITY'))
 
@@ -158,7 +158,7 @@ def test_e2e_workflows(env_dict):
     # cpu allocatable
     query = constants.NODE_PERF_CPU_ALLOCATABLE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('NODE_PERF_CPU_ALLOCATABLE'))
 
@@ -169,7 +169,7 @@ def test_e2e_workflows(env_dict):
     # memory allocatable
     query = constants.NODE_PERF_MEMORY_ALLOCATABLE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('NODE_PERF_MEMORY_ALLOCATABLE'))
 
@@ -180,7 +180,7 @@ def test_e2e_workflows(env_dict):
     # cpu usage
     query = constants.NODE_PERF_CPU_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('NODE_PERF_CPU_USAGE'))
 
@@ -191,7 +191,7 @@ def test_e2e_workflows(env_dict):
     # memory rss usage
     query = constants.NODE_PERF_MEMORY_RSS_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('NODE_PERF_MEMORY_RSS_USAGE'))
 
@@ -202,7 +202,7 @@ def test_e2e_workflows(env_dict):
     # memory ws usage
     query = constants.NODE_PERF_MEMORY_WS_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('NODE_PERF_MEMORY_WS_USAGE'))
 
@@ -213,7 +213,7 @@ def test_e2e_workflows(env_dict):
     # restartime epoch
     query = constants.NODE_PERF_RESTART_TIME_EPOCH_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('NODE_PERF_RESTART_TIME_EPOCH'))
 
@@ -225,7 +225,7 @@ def test_e2e_workflows(env_dict):
     # container cpu limits
     query = constants.CONTAINER_PERF_CPU_LIMITS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_PERF_CPU_LIMITS'))
 
@@ -236,7 +236,7 @@ def test_e2e_workflows(env_dict):
     # container memory limits
     query = constants.CONTAINER_PERF_MEMORY_LIMITS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_PERF_MEMORY_LIMITS'))
 
@@ -247,7 +247,7 @@ def test_e2e_workflows(env_dict):
     # cpu requests
     query = constants.CONTAINER_PERF_CPU_REQUESTS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_PERF_CPU_REQUESTS'))
 
@@ -258,7 +258,7 @@ def test_e2e_workflows(env_dict):
     # memory requests
     query = constants.CONTAINER_PERF_MEMORY_REQUESTS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_PERF_MEMORY_REQUESTS_QUERY'))
 
@@ -269,7 +269,7 @@ def test_e2e_workflows(env_dict):
     # cpu usage
     query = constants.CONTAINER_PERF_CPU_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_PERF_CPU_USAGE'))
 
@@ -280,7 +280,7 @@ def test_e2e_workflows(env_dict):
     # memory rss usage
     query = constants.CONTAINER_PERF_MEMORY_RSS_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_PERF_MEMORY_RSS_USAGE'))
 
@@ -291,7 +291,7 @@ def test_e2e_workflows(env_dict):
     # memory ws usage
     query = constants.CONTAINER_PERF_MEMORY_WS_USAGE_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_PERF_MEMORY_WS_USAGE'))
 
@@ -302,7 +302,7 @@ def test_e2e_workflows(env_dict):
     # restart time epoch
     query = constants.CONTAINER_PERF_RESTART_TIME_EPOCH_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_PERF_RESTART_TIME_EPOCH'))
 
@@ -313,7 +313,7 @@ def test_e2e_workflows(env_dict):
     # Container log
     query = constants.CONTAINER_LOG_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('CONTAINER_LOG'))
 
@@ -324,7 +324,7 @@ def test_e2e_workflows(env_dict):
      # InsightsMetrics
     query = constants.INSIGHTS_METRICS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
-    result = requests.get(queryUrl, params=params, headers=Headers, verify=False)
+    result = requests.get(queryUrl, params=params, headers=Headers)
     if not result:
         pytest.fail("log analytics query response shouldnt be null or empty for workflow: {0}".format('INSIGHTS_METRICS'))
 

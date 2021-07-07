@@ -98,7 +98,7 @@ def test_node_metrics_e2e_workflow(env_dict):
         constants.METRICS_API_VERSION)
 
     response = requests.get(custommetricsUrl, params=params,
-                            headers=Headers, verify=False)
+                            headers=Headers)
 
     if not response:
         pytest.fail(
@@ -147,7 +147,7 @@ def test_node_metrics_e2e_workflow(env_dict):
         constants.METRICS_API_VERSION)
 
     response = requests.get(custommetricsUrl, params=params,
-                            headers=Headers, verify=False)
+                            headers=Headers)
 
     if not response:
         pytest.fail(
@@ -196,7 +196,7 @@ def test_node_metrics_e2e_workflow(env_dict):
         constants.METRICS_API_VERSION)
 
     response = requests.get(custommetricsUrl, params=params,
-                            headers=Headers, verify=False)
+                            headers=Headers)
 
     if not response:
         pytest.fail("response of the metrics query API shouldnt be null or empty")
@@ -244,7 +244,7 @@ def test_node_metrics_e2e_workflow(env_dict):
         constants.METRICS_API_VERSION)
 
     response = requests.get(custommetricsUrl, params=params,
-                            headers=Headers, verify=False)
+                            headers=Headers)
 
     if not response:
         pytest.fail("response of the metrics query API shouldnt be null or empty")
@@ -292,7 +292,7 @@ def test_node_metrics_e2e_workflow(env_dict):
         constants.METRICS_API_VERSION)
 
     response = requests.get(custommetricsUrl, params=params,
-                            headers=Headers, verify=False)
+                            headers=Headers)
 
     if not response:
         pytest.fail("response of the metrics query API shouldnt be null or empty")
@@ -339,7 +339,7 @@ def test_node_metrics_e2e_workflow(env_dict):
         constants.METRICS_API_VERSION)
 
     response = requests.get(custommetricsUrl, params=params,
-                            headers=Headers, verify=False)
+                            headers=Headers)
 
     if not response:
         pytest.fail("response of the metrics query API shouldnt be null or empty")
@@ -386,7 +386,7 @@ def test_node_metrics_e2e_workflow(env_dict):
         constants.METRICS_API_VERSION)
 
     response = requests.get(custommetricsUrl, params=params,
-                            headers=Headers, verify=False)
+                            headers=Headers)
 
     if not response:
         pytest.fail("response of the metrics query API shouldnt be null or empty")

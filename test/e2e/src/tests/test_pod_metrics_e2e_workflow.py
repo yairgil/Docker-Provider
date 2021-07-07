@@ -97,8 +97,7 @@ def test_pod_metrics_e2e_workflow(env_dict):
         constants.POD_METRICS_NAMESPACE,
         constants.METRICS_API_VERSION)
 
-    response = requests.get(custommetricsUrl, params=params,
-                            headers=Headers, verify=False)
+    response = requests.get(custommetricsUrl, params=params, headers=Headers)
 
     if not response:
         pytest.fail(
