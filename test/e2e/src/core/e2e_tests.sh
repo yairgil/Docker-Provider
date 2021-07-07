@@ -185,13 +185,6 @@ else
    # login to azure
    login_to_azure
 
-   # Wait for resources in ARC ns
-#    waitSuccessArc="$(waitForResources azure-arc deployment)"
-#    if [ "${waitSuccessArc}" = "false" ]; then
-# 	  echo "deployment is not avilable in namespace - azure-arc"
-# 	  exit 1
-#    fi
-
    # add arc k8s connectedk8s extension
    addArcConnectedK8sExtension
 
@@ -210,20 +203,6 @@ else
    #wait for extension state to be installed
    waitForCIExtensionInstalled
 fi
-
-# Wait for deployment resources in kube-system ns
-# waitSuccessArc="$(waitForResources kube-system deployment omsagent-rs)"
-# if [ "${waitSuccessArc}" = "false" ]; then
-#     echo "omsagent-rs deployment is not avilable in namespace - kube-system"
-#     exit 1
-# fi
-
-# Wait for ds resources in kube-system ns
-# waitSuccessArc="$(waitForResources kube-system ds omsagent)"
-# if [ "${waitSuccessArc}" = "false" ]; then
-#     echo "omsagent is not avilable in namespace - kube-system"
-#     exit 1
-# fi
 
 # The variable 'TEST_LIST' should be provided if we want to run specific tests. If not provided, all tests are run
 
