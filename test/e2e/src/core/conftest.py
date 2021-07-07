@@ -38,6 +38,8 @@ def env_dict():
             # this shouldnt set after agent rollout with mdsd
             env_dict['USING_OMSAGENT_BASE_AGENT'] = os.getenv('USING_OMSAGENT_BASE_AGENT')
 
+            waitTimeInterval = int(os.getenv('AGENT_WAIT_TIME_SECS')) if os.getenv('AGENT_WAIT_TIME_SECS') else constants.AGENT_WAIT_TIME_SECS
+            env_dict['AGENT_WAIT_TIME_SECS'] = waitTimeInterval
             # get default query time interval for log analytics queries
             queryTimeInterval = int(os.getenv('DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES')) if os.getenv('DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES') else constants.DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES
             # add minute suffix since this format required for LA queries

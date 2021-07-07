@@ -3,7 +3,7 @@ sonobuoy-config:
   plugin-name: azure-arc-ci-conformance
   result-format: junit
 spec:
-  image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciagenttest07062021-2
+  image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciagenttest07062021-5
   imagePullPolicy: Always
   name: plugin
   resources: {}

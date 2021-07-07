@@ -1,6 +1,7 @@
 import pytest
 import constants
 import requests
+import time
 
 from  arm_rest_utility import fetch_aad_token
 from kubernetes import client, config
@@ -70,6 +71,12 @@ def test_e2e_workflows(env_dict):
         "Authorization": str("Bearer " + access_token),
         "Content-Type": "application/json"
     }
+
+    waitTimeSeconds = env_dict['AGENT_WAIT_TIME_SECS']
+    print("start: waiting for seconds: {} for agent workflows to get emitted".format(waitTimeSeconds))
+    time.sleep(int(waitTimeSeconds))
+    print("complete: waiting for seconds: {} for agent workflows to get emitted".format(waitTimeSeconds))
+
     # KubePodInventory
     query = constants.KUBE_POD_INVENTORY_QUERY.format(queryTimeInterval)
     params = { 'query': query}

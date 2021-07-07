@@ -1,5 +1,6 @@
 import pytest
 import constants
+import time
 
 from kubernetes import client, config
 from kubernetes_pod_utility import get_pod_list, get_log_file_content
@@ -36,6 +37,11 @@ def test_ds_workflows(env_dict):
 
     if len(pod_list.items) <= 0:
         pytest.fail("number of items in daemonset pod list should be greater than 0")
+
+    waitTimeSeconds = env_dict['AGENT_WAIT_TIME_SECS']
+    print("start: waiting for seconds: {} for agent workflows to get emitted".format(waitTimeSeconds))
+    time.sleep(int(waitTimeSeconds))
+    print("complete: waiting for seconds: {} for agent workflows to get emitted".format(waitTimeSeconds))
 
     isOMSBaseAgent = env_dict.get('USING_OMSAGENT_BASE_AGENT')
     agentLogPath = constants.AGENT_FLUENTD_LOG_PATH
