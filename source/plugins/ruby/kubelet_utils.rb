@@ -41,24 +41,15 @@ class KubeletUtils
       end
     end
 
-    def get_node_allocatable
+    def get_node_allocatable(cpu_capacity, memory_capacity)
       begin
-        cpu_capacity = 1.0
-        memory_capacity = 1.0
-        cpu_allocatable = 1.0
-        memory_allocatable = 1.0
-        capacity_response = CAdvisorMetricsAPIClient.getAllMetricsCAdvisor(winNode: nil)
-        if !capacity_response.nil? && !capacity_response.body.nil?
-          all_metrics = capacity_response.body.split("\n")
-          #cadvisor machine metrics can exist with (>=1.19) or without dimensions (<1.19)
-          #so just checking startswith of metric name would be good enough to pick the metric value from exposition format
-          cpu_capacity = all_metrics.select { |m| m.start_with?("machine_cpu_cores") }.first.split.last.to_f * 1000
-          @log.info "get_node_allocatable::CPU Capacity #{cpu_capacity}"
-          memory_capacity_e = all_metrics.select { |m| m.start_with?("machine_memory_bytes") }.first.split.last
-          memory_capacity = BigDecimal(memory_capacity_e).to_f
-          @log.info "get_node_allocatable::Memory Capacity #{memory_capacity}"
+        if cpu_capacity == 0.0 || memory_capacity == 0.0
+          @log.error "kubelet_utils.rb::get_node_allocatble - cpu_capacity or memory_capacity values not set. Hence we cannot calculate allocatable values"
         end
 
+        cpu_allocatable = 1.0
+        memory_allocatable = 1.0
+       
         allocatable_response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode: nil)
         parsed_response = JSON.parse(allocatable_response.body)
 
