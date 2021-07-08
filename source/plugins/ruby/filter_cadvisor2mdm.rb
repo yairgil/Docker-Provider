@@ -378,7 +378,6 @@ module Fluent::Plugin
         end
       elsif @@controller_type.downcase == "daemonset"
         capacity_from_kubelet = KubeletUtils.get_node_capacity
-        allocatable_from_kubelet = KubeletUtils.get_node_allocatable
 
         # Error handling in case /metrics/cadvsior endpoint fails
         if !capacity_from_kubelet.nil? && capacity_from_kubelet.length > 1
@@ -388,6 +387,8 @@ module Fluent::Plugin
           # cpu_capacity and memory_capacity keep initialized value of 0.0
           @log.error "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
         end
+
+        allocatable_from_kubelet = KubeletUtils.get_node_allocatable(@cpu_capacity, @memory_capacity)
 
         # Error handling in case /configz endpoint fails
         if !allocatable_from_kubelet.nil? && allocatable_from_kubelet.length > 1
