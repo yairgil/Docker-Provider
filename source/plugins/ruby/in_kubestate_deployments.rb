@@ -45,7 +45,7 @@ module Fluent::Plugin
       super
     end
 
-    def start      
+    def start
       if @run_interval
         super
         if !ENV["DEPLOYMENTS_CHUNK_SIZE"].nil? && !ENV["DEPLOYMENTS_CHUNK_SIZE"].empty? && ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i > 0
@@ -56,11 +56,11 @@ module Fluent::Plugin
           @DEPLOYMENTS_CHUNK_SIZE = 500
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
-      
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
-        @thread = Thread.new(&method(:run_periodic))       
+        @thread = Thread.new(&method(:run_periodic))
       end
     end
 
@@ -82,14 +82,14 @@ module Fluent::Plugin
         batchTime = currentTime.utc.iso8601
 
         #set the running total for this batch to 0
-        @deploymentsRunningTotal = 0     
-      
+        @deploymentsRunningTotal = 0
+
         if ExtensionUtils.isAADMSIAuthMode()
-          $log.info("in_kubestate_deployments::enumerate: AAD AUTH MSI MODE")             
-          if !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+          $log.info("in_kubestate_deployments::enumerate: AAD AUTH MSI MODE")
+          if @tag.nil? || !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
-          end                            
-        end           
+          end
+        end
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kubestate_deployments::enumerate : Getting deployments from Kube API @ #{Time.now.utc.iso8601}")
@@ -193,7 +193,7 @@ module Fluent::Plugin
         end
 
         time = Fluent::Engine.now
-        metricItems.each do |insightsMetricsRecord|        
+        metricItems.each do |insightsMetricsRecord|
           insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
         end
 
@@ -240,6 +240,6 @@ module Fluent::Plugin
         @mutex.lock
       end
       @mutex.unlock
-    end    
+    end
   end
 end
