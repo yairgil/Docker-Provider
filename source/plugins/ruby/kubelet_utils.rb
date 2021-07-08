@@ -50,6 +50,8 @@ class KubeletUtils
         #cpu_allocatable = 1.0
         # memory_allocatable = 1.0
 
+        ApplicationInsightsUtility.sendCustomEvent('test_kaveesh_event', { cpu_capacity, memory_capacity })
+
         return [cpu_capacity, memory_capacity]
 
       #   allocatable_response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode: nil)
