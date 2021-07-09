@@ -17,7 +17,7 @@ Azure:
     httpProxy: ""
     httpsProxy: ""
     noProxy: ""
-    proxyCert: ""   
+    proxyCert: ""
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
@@ -39,7 +39,7 @@ omsagent:
   # chance to build pod for the node and give it to the scheduler)
   # Should be some number greater than default (0)
   priority: 10
-  
+
   # This used for running agent pods in test mode.
   # if set to true additional agent workflow logs will be emitted which are used for e2e and arc k8s conformance testing
   ISTEST: false
@@ -64,6 +64,8 @@ omsagent:
     tailbufmaxsizemegabytes: ""
     ## Applicable for only Azure Stack Edge K8s since it has custom mount path for container logs which will have symlink to /var/log path
     custommountpath: ""
+    ## Certain K8S environemt like Mirantis, on windows nodes, docker root path is different from standard path
+    windowscustomdockerhostpath: ""
 
   ## Configure node tolerations for scheduling onto nodes with taints
   ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/

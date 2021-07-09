@@ -116,9 +116,14 @@ spec:
       hostPath:
         path: C:\var
     - name: docker-windows-containers
+     {{- if .Values.omsagent.logsettings.windowscustomdockerhostpath }}
+      hostPath:
+        path: {{ .Values.omsagent.logsettings.windowscustomdockerhostpath }}
+     {{- else }}
       hostPath:
         path: C:\ProgramData\docker\containers
         type: DirectoryOrCreate
+     {{- end }}
     - name: settings-vol-config
       configMap:
         name: container-azm-ms-agentconfig
