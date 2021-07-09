@@ -1,4 +1,4 @@
-Note - This is private preview. For any support issues, please reach out to us at [askcoin@microsoft.com](mailto:askcoin@microsoft.com). Please don't open a support ticket.
+Note - This is limited private preview. For any support issues, please reach out to us at [askcoin@microsoft.com](mailto:askcoin@microsoft.com). Please don't open a support ticket.
 This private preview supports AAD MSI Auth using System Identity for Azure Kubernetes Clusters with Managed Identity.
 
 # Azure Monitor Container Insights
@@ -17,7 +17,7 @@ No change in the functionality and features whats supported and available - http
      ```
      The o/p of this command should be `{ "clientId": "msi" }`
   3. AKS Cluster(s) with Service Principal MUST be upgraded to use Managed Identity(MI). Refer https://docs.microsoft.com/en-us/azure/aks/use-managed-identity on how to upgrade to MI.
-  4. Install Azure CLI version 2.26.0 or higher and AKS-Preview CLI version 2.26.0 higher.
+  4. Install Azure CLI version 2.26.0 or higher and AKS-Preview CLI version 0.5.22 or higher.
 
      a. Install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) based on your platform
 
@@ -25,12 +25,14 @@ No change in the functionality and features whats supported and available - http
         ``` bash
          az extension add --name aks-preview
         ```
-     c. Verify Az CLI version or 2.26.0 or higher and aks-preview CLI version 0.5.22 or higher using below command
+     c. Verify Azure CLI version is 2.26.0 or higher and aks-preview CLI version 0.5.22 or higher using below command
         ``` bash
           az version
         ```
 
 ## How to onboard Container Insights with AAD MSI Auth
+
+> Note: `--enable-msi-auth-for-monitoring` newly flag introduced  for Monitoring addon AAD MSI auth enablement
 
 ### Existing AKS Clusters
 
@@ -39,12 +41,12 @@ No change in the functionality and features whats supported and available - http
 ```
 
 ### New AKS Clusters
-> Note: If you want to windows node pools or other features, you can add them
+> Note: If you want to windows node pools or other features, you can included in the command
 ``` bash
   az aks create  -g <clusterResourceGroup> -n <clusterName> --enable-addons monitoring --enable-msi-auth-for-monitoring
 ```
 
 ### Known Issues
-- For enabling of recommended alerts in AKS Insights page, you may need to click "Enable" button though its not required now with AAD MSI Auth but will be addressing this post preview release
+- For enabling of recommended alerts in AKS Insights page, you may need to click "Enable" button though its not required  with AAD MSI Auth but will be addressing this post preview release
 - This preview feature supported only in Azure Public cloud regions.
-- AAD MSI Auth feature not supported for AKS Clusters with `Bring your own Control Plane Managed Identity`
+- AAD MSI Auth feature not supported for AKS Clusters with [Bring your own Control Plane Managed Identity](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity#bring-your-own-control-plane-mi)
