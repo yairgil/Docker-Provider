@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	code.cloudfoundry.org/clock v1.0.1-0.20200131002207-86534f4ca3a5 // indirect
-	github.com/Azure/azure-kusto-go v0.1.4-0.20200427191510-041d4ed55f86
+	github.com/Azure/azure-kusto-go v0.3.2
 	github.com/Azure/go-autorest/autorest/azure/auth v0.4.2
 	github.com/fluent/fluent-bit-go v0.0.0-20171103221316-c4a158a6e3a7
 	github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680 // indirect

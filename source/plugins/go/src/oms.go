@@ -1285,7 +1285,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		//ADXFlushMutex.Lock()
 		//defer ADXFlushMutex.Unlock()
 		//MultiJSON support is not there yet
-		if ingestionErr := ADXIngestor.FromReader(ctx, r, ingest.IngestionMappingRef("ContainerLogV2Mapping", ingest.JSON), ingest.FileFormat(ingest.JSON)); ingestionErr != nil {
+		if _, ingestionErr := ADXIngestor.FromReader(ctx, r, ingest.IngestionMappingRef("ContainerLogV2Mapping", ingest.JSON), ingest.FileFormat(ingest.JSON)); ingestionErr != nil {
 			Log("Error when streaming to ADX Ingestion: %s", ingestionErr.Error())
 			//ADXIngestor = nil  //not required as per ADX team. Will keep it to indicate that we tried this approach
 
