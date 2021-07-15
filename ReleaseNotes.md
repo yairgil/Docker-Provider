@@ -11,6 +11,11 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
+### 07/13/2021 -
+##### Version microsoft/oms:win-ciprod06112021-2 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod06112021-2 (windows)
+##### Code change log
+- Hotfix for fixing NODE_IP environment variable not set issue for non sidecar mode
+
 ### 07/02/2021 -
 ##### Version microsoft/oms:ciprod06112021-1 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06112021-1 (linux)
 ##### Version microsoft/oms:win-ciprod06112021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod06112021 (windows)
