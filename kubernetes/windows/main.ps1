@@ -474,9 +474,6 @@ function Start-Telegraf {
     else {
         Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-
     $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
     if (![string]::IsNullOrEmpty($nodeIp)) {
         [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
@@ -486,12 +483,6 @@ function Start-Telegraf {
         Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
     }
 
-=======
-
->>>>>>> 6df299f9... Cherry picking hotfix changes to ci_dev (#605)
-=======
-
->>>>>>> ci_dev
     Write-Host "Installing telegraf service"
     C:\opt\telegraf\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
 
