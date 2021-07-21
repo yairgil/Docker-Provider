@@ -521,6 +521,25 @@ else
     mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 fi
 
+# set the log rotation for mdsd logs
+cat << EOF > /etc/logrotate.d/ci-agent
+${MDSD_LOG}/mdsd.* {
+    copytruncate
+    rotate 7
+    missingok
+    notifempty
+    delaycompress
+    compress
+    size 10M
+}
+EOF
+
+# Set up a cron job for logrotate and triggers job for every 5 mins
+if [ ! -f /etc/cron.d/ci-agent ]; then
+    echo "setting up cronjob for ci agent log rotation"
+    echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" > /etc/cron.d/ci-agent
+fi
+
 # no dependency on fluentd for prometheus side car container
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -e "/etc/config/kube.conf" ]; then
