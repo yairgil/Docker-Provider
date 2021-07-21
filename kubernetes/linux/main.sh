@@ -660,6 +660,25 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 touch /dev/write-to-traces
 
+# set the log rotation for mdsd
+cat << EOF > /etc/logrotate.d/ci-agent
+${MDSD_LOG}/mdsd.* {
+    copytruncate
+    rotate 7
+    missingok
+    notifempty
+    delaycompress
+    compress
+    size 10M
+}
+EOF
+
+# Set up a cron job for logrotate and triggers job for every 5 mins
+if [ ! -f /etc/cron.d/ci-agent ]; then
+    echo "setting up cronjob for ci agent log rotation"
+    echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" > /etc/cron.d/ci-agent
+fi
+
 echo "stopping rsyslog..."
 service rsyslog stop
 
