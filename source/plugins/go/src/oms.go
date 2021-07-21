@@ -959,6 +959,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 				if er != nil {
 					Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
+					UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
 					if MdsdInsightsMetricsMsgpUnixSocketClient != nil {
 						MdsdInsightsMetricsMsgpUnixSocketClient.Close()
 						MdsdInsightsMetricsMsgpUnixSocketClient = nil
@@ -970,6 +971,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 					return output.FLB_RETRY
 				} else {
 					numTelegrafMetricsRecords := len(msgPackEntries)
+					UpdateNumTelegrafMetricsSentTelemetry(numTelegrafMetricsRecords, 0, 0)
 					Log("Success::mdsd::Successfully flushed %d telegraf metrics records that was %d bytes to mdsd in %s ", numTelegrafMetricsRecords, bts, elapsed)
 				}
 		}
