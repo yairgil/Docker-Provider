@@ -16,6 +16,9 @@ wget https://github.com/microsoft/Docker-Provider/releases/download/06242021-one
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 
+#log rotate conf for mdsd and can be extended for other log files as well
+cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
+
 #download inotify tools for watching configmap changes
 sudo apt-get update
 sudo apt-get install inotify-tools -y
