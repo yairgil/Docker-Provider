@@ -34,9 +34,9 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 #install oneagent - Official bits (06/24/2021)
 wget https://github.com/microsoft/Docker-Provider/releases/download/06242021-oneagent/azure-mdsd_1.10.3-build.master.241_x86_64.deb
 
-/usr/bin/dpkg -i /opt/azure-mdsd*.deb
-cp -f /opt/mdsd.xml /etc/mdsd.d
-cp -f /opt/envmdsd /etc/mdsd.d
+/usr/bin/dpkg -i $tmpdir/azure-mdsd*.deb
+cp -f $tmpdir/mdsd.xml /etc/mdsd.d
+cp -f $tmpdir/envmdsd /etc/mdsd.d
 
 #download inotify tools for watching configmap changes
 sudo apt-get install inotify-tools -y
@@ -59,9 +59,9 @@ fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 
 
-rm -f /opt/azure-mdsd*.deb
-rm -f /opt/mdsd.xml
-rm -f /opt/envmdsd
+rm -f $tmpdir/azure-mdsd*.deb
+rm -f $tmpdir/mdsd.xml
+rm -f $tmpdir/envmdsd
 
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
