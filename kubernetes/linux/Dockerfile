@@ -2,8 +2,7 @@ FROM ubuntu:18.04
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
-ARG IMAGE_TAG=ciprod06112021
-ENV AGENT_VERSION ${IMAGE_TAG}
+
 ENV tmpdir /opt
 ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
 ENV MALLOC_ARENA_MAX 2
@@ -20,6 +19,10 @@ COPY setup.sh mdsd.xml envmdsd $tmpdir/
 WORKDIR ${tmpdir}
 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh
+
+# this invalidates docker's cache, so it should happen after setup.sh
+ARG IMAGE_TAG=ciprod06112021
+ENV AGENT_VERSION ${IMAGE_TAG}
 
 # copy docker provider shell bundle to use the agent image
 COPY main.sh defaultpromenvvariables defaultpromenvvariables-rs defaultpromenvvariables-sidecar $tmpdir/
