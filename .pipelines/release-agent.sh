@@ -4,7 +4,7 @@
 
 # These are plain pipeline variable which can be modified anyone in the team
 # AGENT_RELEASE=cidev
-# AGENT_IMAGE_TAG_SUFFIX=07232021
+# AGENT_IMAGE_TAG_SUFFIX=07222021
 
 #Name of the ACR for ciprod & cidev images
 ACR_NAME=containerinsightsprod.azurecr.io
