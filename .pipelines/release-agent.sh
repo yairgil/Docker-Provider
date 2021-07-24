@@ -4,7 +4,7 @@
 
 # These are plain pipeline variable which can be modified anyone in the team
 # AGENT_RELEASE=cidev
-# AGENT_IMAGE_TAG_SUFFIX=07222021
+# AGENT_IMAGE_TAG_SUFFIX=07232021
 
 #Name of the ACR for ciprod & cidev images
 ACR_NAME=containerinsightsprod.azurecr.io
@@ -37,10 +37,12 @@ if [ $? -ne 0 ]; then
 else
   echo "successfully loaded linux agent image tarball"
 fi
-# IMAGE_ID=$(docker images $IMAGE_NAME | awk '{print $3 }' | tail -1)
-# echo "Image Id is : ${IMAGE_ID}"
 prefix="Loadedimage:"
 IMAGE_NAME=$(echo $IMAGE_NAME | tr -d '"' | tr -d "[:space:]")
+echo "removing loaded image prefix - Loadedimage:"
+IMAGE_NAME=${IMAGE_NAME/#$prefix}
+echo "removing loaded image prefix - LoadedimageID:"
+prefix="LoadedimageID:"
 IMAGE_NAME=${IMAGE_NAME/#$prefix}
 echo "*** trimmed image name-:${IMAGE_NAME}"
 echo "tagging the image $IMAGE_NAME as ${AGENT_IMAGE_FULL_PATH}"
