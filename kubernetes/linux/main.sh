@@ -106,6 +106,9 @@ mkdir -p /var/opt/microsoft/docker-cimprov/state
 #Run inotify as a daemon to track changes to the mounted configmap.
 inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 
+inotifywait /var/log/pods --daemon --recursive --outfile "/opt/file-rotation" --event create --format '%w%f : %e : %T' --timefmt '+%s'
+/usr/bin/ruby2.6 /etc/fluent/plugin/logRotationCounter.rb &
+
 #Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
 if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
       ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then

@@ -130,6 +130,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/health/monitor_set.rb;                                               source/plugins/ruby/health/monitor_set.rb; 644; root; root
 /etc/fluent/plugin/health/unit_monitor.rb;                                              source/plugins/ruby/health/unit_monitor.rb; 644; root; root
 
+/etc/fluent/plugin/logRotationCounter.rb;								             	source/plugins/ruby/logRotationCounter.rb;	644; root; root
 /etc/fluent/plugin/ApplicationInsightsUtility.rb;								             	source/plugins/ruby/ApplicationInsightsUtility.rb;	644; root; root
 /etc/fluent/plugin/arc_k8s_cluster_identity.rb;                                        source/plugins/ruby/arc_k8s_cluster_identity.rb; 644; root; root
 /etc/fluent/plugin/CAdvisorMetricsAPIClient.rb;                                        source/plugins/ruby/CAdvisorMetricsAPIClient.rb;     644; root; root
