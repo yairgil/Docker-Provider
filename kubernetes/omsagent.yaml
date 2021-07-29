@@ -379,19 +379,13 @@ spec:
               memory: 225Mi
           env:
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
-            - name: AKS_CLUSTER_NAME
-              value: "VALUE_AKS_CLUSTER_NAME"
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
               value: "VALUE_AKS_RESOURCE_REGION_VALUE"
-            - name: FBIT_SERVICE_FLUSH_INTERVAL
-              value: "15"
-            - name: AKS_NODE_RESOURCE_GROUP
-              value: "VALUE_AKS_NODE_RESOURCE_GROUP"
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
-            #- name: ISTEST  
-            #  value: "true"
+            - name: ISTEST  
+              value: "true"
             #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"
@@ -613,17 +607,13 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
-            - name: AKS_CLUSTER_NAME
-              value: "VALUE_AKS_CLUSTER_NAME"
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
               value: "VALUE_AKS_RESOURCE_REGION_VALUE"
-            - name: AKS_NODE_RESOURCE_GROUP
-              value: "VALUE_AKS_NODE_RESOURCE_GROUP"
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
-            # - name: ISTEST  
-            #   value: "true"  
+            - name: ISTEST  
+              value: "true"  
             # Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"
