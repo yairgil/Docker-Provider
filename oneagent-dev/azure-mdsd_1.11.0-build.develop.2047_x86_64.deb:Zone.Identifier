@@ -1,3 +1,0 @@
-[ZoneTransfer]
-ZoneId=3
-HostUrl=https://dev.azure.com/msazure/_apis/resources/Containers/70099539/drop/x86_64/outputs?itemPath=drop%2Fx86_64%2Foutputs%2Fbuild%2Fmdsdsvc%2Fdebian%2Fazure-mdsd_1.11.0-build.develop.2047_x86_64.deb
