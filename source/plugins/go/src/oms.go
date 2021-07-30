@@ -1357,7 +1357,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		numContainerLogRecords = len(dataItemsADX)
 		Log("Success::ADX::Successfully wrote %d container log records to ADX in %s", numContainerLogRecords, elapsed)
 
-	} else { //ODS
+	} else if (ContainerLogSchemaV2 == true && len(dataItemsLAv2) > 0) || len(dataItemsLAv1) > 0) { //ODS
 		var logEntry interface{}
 		recordType := ""
 		loglinesCount := 0
@@ -1437,7 +1437,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		numContainerLogRecords = loglinesCount
 		Log("PostDataHelper::Info::Successfully flushed %d %s records to ODS in %s", numContainerLogRecords, recordType, elapsed)
 
-		}
+	}
 
 	ContainerLogTelemetryMutex.Lock()
 	defer ContainerLogTelemetryMutex.Unlock()
