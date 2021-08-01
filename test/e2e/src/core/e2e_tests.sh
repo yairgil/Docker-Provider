@@ -35,15 +35,17 @@ waitForArcK8sClusterCreated() {
     sleep_seconds=10
     for i in $(seq 1 $max_retries)
     do
-    clusterState=$(az connectedk8s show --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --query connectivityStatus -o json)
-    clusterState=$(echo $clusterState | tr -d '"' | tr -d '"\r\n')
-    echo "cluster current state: ${clusterState}"
-    if [[ ("${clusterState}" == "Connected") || ("${clusterState}" == "Connecting") ]]; then
-        connectivityState=true
-        break
-    else
-       sleep ${sleep_seconds}
-    fi
+      echo "iteration: ${i}, clustername: ${CLUSTER_NAME}, resourcegroup: ${RESOURCE_GROUP}"
+      clusterState=$(az connectedk8s show --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --query connectivityStatus -o json)
+      clusterState=$(echo $clusterState | tr -d '"' | tr -d '"\r\n')
+      echo "cluster current state: ${clusterState}"
+      if [ ! -z "$clusterState" ]; then     
+         if [[ ("${clusterState}" == "Connected") || ("${clusterState}" == "Connecting") ]]; then
+            connectivityState=true
+            break
+         fi
+      fi   
+      sleep ${sleep_seconds}
     done
     echo "Arc K8s cluster connectivityState: $connectivityState"
 }
@@ -54,15 +56,17 @@ waitForCIExtensionInstalled() {
     sleep_seconds=10
     for i in $(seq 1 $max_retries)
     do
-    installState=$(az k8s-extension show  --cluster-name $CLUSTER_NAME --resource-group $RESOURCE_GROUP  --cluster-type connectedClusters --name azuremonitor-containers --query installState -o json)
-    installState=$(echo $installState | tr -d '"' | tr -d '"\r\n')
-    echo "extension install state: ${installState}"
-    if [ "${installState}" == "Installed" ]; then
-        installedState=true
-        break
-    else
-       sleep ${sleep_seconds}
-    fi
+      echo "iteration: ${i}, clustername: ${CLUSTER_NAME}, resourcegroup: ${RESOURCE_GROUP}"
+      installState=$(az k8s-extension show  --cluster-name $CLUSTER_NAME --resource-group $RESOURCE_GROUP  --cluster-type connectedClusters --name azuremonitor-containers --query installState -o json)
+      installState=$(echo $installState | tr -d '"' | tr -d '"\r\n')
+      echo "extension install state: ${installState}"
+      if [ ! -z "$installState" ]; then     
+         if [ "${installState}" == "Installed" ]; then
+            installedState=true
+            break
+         fi
+      fi    
+      sleep ${sleep_seconds}
     done
     echo "installedState: $installedState"
 }
@@ -107,7 +111,7 @@ addArcConnectedK8sExtension() {
 
 addArcK8sCLIExtension() {
    echo "adding Arc K8s k8s-extension extension"
-   az extension add --name k8s-extension 2> ${results_dir}/error || python3 setup_failure_handler.py
+   az extension add --name k8s-extension
 }
 
 createArcCIExtension() {
@@ -120,7 +124,7 @@ createArcCIExtension() {
        basicparameters="$basicparameters  --version $CI_ARC_VERSION"
     fi
 
-	az k8s-extension create $basicparameters --configuration-settings omsagent.ISTEST=true 2> ${results_dir}/error || python3 setup_failure_handler.py
+   az k8s-extension create $basicparameters --configuration-settings omsagent.ISTEST=true 
 }
 
 showArcCIExtension() {
@@ -132,7 +136,7 @@ deleteArcCIExtension() {
     az k8s-extension delete --name azuremonitor-containers \
     --cluster-type connectedClusters \
 	--cluster-name $CLUSTER_NAME \
-	--resource-group $RESOURCE_GROUP || python3 setup_failure_handler.py
+	--resource-group $RESOURCE_GROUP 
 }
 
 login_to_azure() {
