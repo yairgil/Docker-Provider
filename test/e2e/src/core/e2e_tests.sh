@@ -136,7 +136,7 @@ deleteArcCIExtension() {
     az k8s-extension delete --name azuremonitor-containers \
     --cluster-type connectedClusters \
 	--cluster-name $CLUSTER_NAME \
-	--resource-group $RESOURCE_GROUP 
+	--resource-group $RESOURCE_GROUP --yes
 }
 
 login_to_azure() {
