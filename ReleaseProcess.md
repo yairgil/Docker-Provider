@@ -13,13 +13,11 @@ Here are the high-level instructions to get the CIPROD`<MM><DD><YYYY>` image for
 2. Make PR to ci_dev branch and once the PR approved, merge the changes to ci_dev
 3. Latest bits of ci_dev automatically deployed to CIDEV cluster in build subscription so just validated E2E to make sure everthing works
 4. If everything validated in DEV, make merge PR from ci_dev and ci_prod and merge once this reviewed by dev team
-6. Update following pipeline variables under ReleaseCandiate with version of chart and image tag
-    - CIHELMCHARTVERSION <VersionValue> # For example, 2.7.4
-    - CIImageTagSuffix <ImageTag> # ciprod08072020 or ciprod08072020-1 etc.
-7. Merge ci_dev and ci_prod branch which will trigger automatic deployment of latest bits to CIPROD cluster with CIPROD`<MM><DD><YYYY>` image to test and scale cluters, AKS, AKS-Engine
-   > Note: production image automatically pushed to CIPROD Public cloud ACR which will inturn replicated to Public cloud MCR.
+5. Once the PR to ci_prod approved, please go-ahead and merge, and wait for ci_prod build successfully completed
+6. Once the merged PR build successfully completed, update the value of AGENT_IMAGE_TAG_SUFFIX pipeline  variable by editing the Release [ci-prod-release](https://github-private.visualstudio.com/microsoft/_release?_a=releases&view=mine&definitionId=38)
+   > Note - value format of AGENT_IMAGE_TAG_SUFFIX pipeline should be in  `<MM><DD><YYYY>` for our releases
+7. Create a release by selecting the targetted build version  of the _docker-provider_Official-ci_prod release
 8. Validate all the scenarios against clusters in build subscription and scale clusters
-
 
 # 2. Perf and scale testing
 
