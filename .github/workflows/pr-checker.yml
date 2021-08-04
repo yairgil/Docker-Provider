@@ -1,8 +1,5 @@
 name: pullrequest-build-and-scan
 on:
-  push:
-    branches:
-      - grace/fix-vulnerabilities
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
