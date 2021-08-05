@@ -59,6 +59,9 @@ rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
 
+# remove build dependencies
+sudo apt-get remove ruby2.6-dev gcc make -y
+
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
 rm /etc/logrotate.d/alternatives /etc/logrotate.d/apt /etc/logrotate.d/azure-mdsd /etc/logrotate.d/rsyslog

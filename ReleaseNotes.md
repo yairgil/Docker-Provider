@@ -17,9 +17,9 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - Linux Agent
   - Fix for CPU spike which occurrs at around 6.30am UTC on every day because of unattended package upgrades
   - Update MDSD build which has fixes for the following issues
-     -	Undeterministic Core dump issue because of the non 200 status code and runtime exception stack unwindings
-     -	Reduce the verbosity of the error logs for OMS & ODS code paths.
-     - 	Increase Timeout for OMS Homing service API calls from 30s to 60s
+     - Undeterministic Core dump issue because of the non 200 status code and runtime exception stack unwindings
+     - Reduce the verbosity of the error logs for OMS & ODS code paths.
+     - Increase Timeout for OMS Homing service API calls from 30s to 60s
    - Fix for https://github.com/Azure/AKS/issues/2457
    - In replicaset, tailing of the mdsd.err log file to agent telemetry
 
