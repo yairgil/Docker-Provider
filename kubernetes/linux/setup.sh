@@ -44,8 +44,8 @@ sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
 
 # install ruby2.6
-sudo apt-get install software-properties-common -y
-sudo apt-add-repository ppa:brightbox/ruby-ng -y
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
+sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >> /etc/apt/sources.list
 sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
 # fluentd v1 gem
