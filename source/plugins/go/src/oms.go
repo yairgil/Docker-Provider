@@ -417,6 +417,8 @@ func updateContainerImageNameMaps() {
 
 		listOptions := metav1.ListOptions{}
 		listOptions.FieldSelector = fmt.Sprintf("spec.nodeName=%s", Computer)
+
+		// Context was added as a parameter, but we want the same behavior as before: see https://pkg.go.dev/context#TODO
 		pods, err := ClientSet.CoreV1().Pods("").List(context.TODO(), listOptions)
 
 		if err != nil {
