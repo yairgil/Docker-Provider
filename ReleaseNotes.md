@@ -22,6 +22,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
      - Increase Timeout for OMS Homing service API calls from 30s to 60s
    - Fix for https://github.com/Azure/AKS/issues/2457
    - In replicaset, tailing of the mdsd.err log file to agent telemetry
+   - Daemonset memory requests and limits increased by 25% due to additional hop with MDSD
 
 
 ### 07/13/2021 -

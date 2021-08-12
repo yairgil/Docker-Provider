@@ -373,10 +373,10 @@ spec:
           resources:
             limits:
               cpu: 500m
-              memory: 600Mi
+              memory: 750Mi
             requests:
               cpu: 75m
-              memory: 225Mi
+              memory: 300Mi
           env:
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_RESOURCE_ID
