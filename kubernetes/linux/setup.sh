@@ -9,8 +9,8 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
 
-#install oneagent - Official bits (06/24/2021)
-wget https://github.com/microsoft/Docker-Provider/releases/download/06242021-oneagent/azure-mdsd_1.10.3-build.master.241_x86_64.deb
+#install oneagent - Official bits (08/04/2021)
+wget https://github.com/microsoft/Docker-Provider/releases/download/08042021-oneagent/azure-mdsd_1.10.1-build.master.251_x86_64.deb
 
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
@@ -22,9 +22,6 @@ cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
 #download inotify tools for watching configmap changes
 sudo apt-get update
 sudo apt-get install inotify-tools -y
-
-#upgrade libsystemd0 to address CVE-2021-33910
-apt-get upgrade libsystemd0 -y
 
 #used to parse response of kubelet apis
 #ref: https://packages.ubuntu.com/search?keywords=jq
@@ -50,8 +47,8 @@ sudo apt-get update
 sudo apt-get install td-agent-bit=1.6.8 -y
 
 # install ruby2.6
-sudo apt-get install software-properties-common -y
-sudo apt-add-repository ppa:brightbox/ruby-ng -y
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
+sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >> /etc/apt/sources.list
 sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
 # fluentd v1 gem
@@ -64,6 +61,9 @@ rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+
+# remove build dependencies
+sudo apt-get remove ruby2.6-dev gcc make -y
 
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
