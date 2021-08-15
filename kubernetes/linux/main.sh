@@ -60,7 +60,8 @@ checkAgentLegacyOnboardingStatus() {
                             echo "Onboarding success"
                             return 0
                         elif  grep 'Failed to register certificate with OMS Homing service, giving up' "${MDSD_LOG}/mdsd.err"; then
-                             echo "Onboarding Failure. Reason: Failed to register certificate with OMS Homing service after retries"
+                             echo "Onboarding Failure: Reason: Failed to register certificate with OMS Homing service"
+                             echo "Onboarding Failure: Please verify log analytics workspace configuration such as existence of the workspace, workspace key and workspace enabled for public ingestion"
                              exit 1
                         fi
                         sleep $sleepdurationsecs
