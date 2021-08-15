@@ -1,31 +1,32 @@
 #!/bin/bash
 set -x
-set -e
 
 results_dir="${RESULTS_DIR:-/tmp/results}"
 
-waitForResources() {
-    available=false
+waitForResourcesReady() {
+    ready=false
     max_retries=60
     sleep_seconds=10
     NAMESPACE=$1
     RESOURCETYPE=$2
-	RESOURCE=$3
+	 RESOURCE=$3
     # if resource not specified, set to --all
     if [ -z $RESOURCE ]; then
        RESOURCE="--all"
     fi
     for i in $(seq 1 $max_retries)
     do
-    if [[ ! $(kubectl wait --for=condition=available ${RESOURCETYPE} ${RESOURCE} --namespace ${NAMESPACE}) ]]; then
+    if [[ ! $(kubectl wait --for=condition=Ready ${RESOURCETYPE} ${RESOURCE} --namespace ${NAMESPACE}) ]]; then
+        echo "waiting for the resource:${RESOURCE} of the type:${RESOURCETYPE} in namespace:${NAMESPACE} to be ready state, iteration:${i}"
         sleep ${sleep_seconds}
     else
-        available=true
+        echo "resource:${RESOURCE} of the type:${RESOURCETYPE} in namespace:${NAMESPACE} in ready state"
+        ready=true
         break
     fi
     done
 
-    echo "$available"
+    echo "waitForResourcesReady state: $ready"
 }
 
 
@@ -39,12 +40,12 @@ waitForArcK8sClusterCreated() {
       clusterState=$(az connectedk8s show --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --query connectivityStatus -o json)
       clusterState=$(echo $clusterState | tr -d '"' | tr -d '"\r\n')
       echo "cluster current state: ${clusterState}"
-      if [ ! -z "$clusterState" ]; then     
+      if [ ! -z "$clusterState" ]; then
          if [[ ("${clusterState}" == "Connected") || ("${clusterState}" == "Connecting") ]]; then
             connectivityState=true
             break
          fi
-      fi   
+      fi
       sleep ${sleep_seconds}
     done
     echo "Arc K8s cluster connectivityState: $connectivityState"
@@ -60,15 +61,15 @@ waitForCIExtensionInstalled() {
       installState=$(az k8s-extension show  --cluster-name $CLUSTER_NAME --resource-group $RESOURCE_GROUP  --cluster-type connectedClusters --name azuremonitor-containers --query installState -o json)
       installState=$(echo $installState | tr -d '"' | tr -d '"\r\n')
       echo "extension install state: ${installState}"
-      if [ ! -z "$installState" ]; then     
+      if [ ! -z "$installState" ]; then
          if [ "${installState}" == "Installed" ]; then
             installedState=true
             break
          fi
-      fi    
+      fi
       sleep ${sleep_seconds}
     done
-    echo "installedState: $installedState"
+    echo "container insights extension installedState: $installedState"
 }
 
 validateCommonParameters() {
@@ -124,7 +125,7 @@ createArcCIExtension() {
        basicparameters="$basicparameters  --version $CI_ARC_VERSION"
     fi
 
-   az k8s-extension create $basicparameters --configuration-settings omsagent.ISTEST=true 
+   az k8s-extension create $basicparameters --configuration-settings omsagent.ISTEST=true
 }
 
 showArcCIExtension() {
@@ -191,6 +192,9 @@ else
 
    # add arc k8s connectedk8s extension
    addArcConnectedK8sExtension
+
+   # wait for arc k8s pods to be ready state
+   waitForResourcesReady azure-arc pods
 
    # wait for Arc K8s cluster to be created
    waitForArcK8sClusterCreated
