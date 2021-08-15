@@ -38,6 +38,42 @@ waitforlisteneronTCPport() {
       fi
 }
 
+checkAgentLegacyOnboardingStatus() {
+      local sleepdurationsecs=1
+      local totalsleptsecs=0
+      local waittimesecs=$1
+      local numeric='^[0-9]+$'
+
+      if [ -z "$1" ]; then
+            echo "${FUNCNAME[0]} called with incorrect arguments<$1>. Required arguments <#wait-time-in-seconds>"
+            return -1
+      else
+
+            if [[ $waittimesecs =~ $numeric ]]; then
+                  while true
+                  do
+                        if [ $totalsleptsecs -gt $waittimesecs ]; then
+                              echo "${FUNCNAME[0]} giving up checking agent legacy onboarding status after $totalsleptsecs secs"
+                              exit 1
+                        fi
+                        if grep 'Onboarding success' "${MDSD_LOG}/mdsd.info"; then
+                            echo "Onboarding success"
+                            return 0
+                        elif  grep 'Failed to register certificate with OMS Homing service, giving up' "${MDSD_LOG}/mdsd.err"; then
+                             echo "Onboarding Failure. Reason: Failed to register certificate with OMS Homing service after retries"
+                             exit 1
+                        fi
+                        sleep $sleepdurationsecs
+                        totalsleptsecs=$(($totalsleptsecs+1))
+                  done
+            else
+                  echo "${FUNCNAME[0]} called with non-numeric arguments<$1>. Required arguments <#wait-time-in-seconds>"
+                  return -1
+            fi
+      fi
+}
+
+
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
 mkdir -p /var/opt/microsoft/docker-cimprov/state
 
@@ -671,6 +707,11 @@ service rsyslog stop
 
 echo "getting rsyslog status..."
 service rsyslog status
+
+if [ "${AAD_MSI_AUTH_MODE}" == "false" ]; then
+    echo "checking legacy agent onboarding status ..."
+    checkAgentLegacyOnboardingStatus 30
+fi
 
 shutdown() {
 	 pkill -f mdsd
