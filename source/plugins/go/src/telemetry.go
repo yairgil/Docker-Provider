@@ -184,7 +184,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				if fbitTailMemBufLimitMBs != "" {
 					telemetryDimensions["FbitMemBufLimitSizeMBs"] = fbitTailMemBufLimitMBs
 				}
-				SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
+				SendEvent(eventNameDaemonSetHeartbeat, telemetryDimensions)
 				flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 				TelemetryClient.Track(flushRateMetric)
 				logRateMetric := appinsights.NewMetricTelemetry(metricNameAvgLogGenerationRate, logRate)
