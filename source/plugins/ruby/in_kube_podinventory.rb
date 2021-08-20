@@ -20,6 +20,7 @@ module Fluent::Plugin
       require "yajl"
       require "set"
       require "time"
+      require "kubeclient"
 
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
@@ -76,6 +77,21 @@ module Fluent::Plugin
           @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end
         $log.info("in_kube_podinventory::start: PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
+
+        # create kubernetes watch client
+         ssl_options = {
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
+        }
+        timeouts = {
+          open: 60,  # default setting (in seconds)
+          read: nil  # read never times out
+        }
+        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
+        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
+        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed, timeouts: timeouts)
+        @informer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 15 * 60, logger: Logger.new(STDOUT))
+        @informer.start_worker
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -156,31 +172,34 @@ module Fluent::Plugin
         podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
         continuationToken = nil
-        $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
-        continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
-        $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
-        podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-        @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
-        if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-          $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
-          parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
-        else
-          $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
-        end
+        $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API using informer @ #{Time.now.utc.iso8601}")
+        podInventory = @informer.list
+        parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
 
-        #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        while (!continuationToken.nil? && !continuationToken.empty?)
-          podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-          continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
-          podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-          @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
-          if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-            $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-            parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
-          else
-            $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
-          end
-        end
+        # continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
+        # $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
+        # podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+        # @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
+        # if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
+        #   $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
+        #   parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
+        # else
+        #   $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
+        # end
+
+        # #If we receive a continuation token, make calls, process and flush data until we have processed all data
+        # while (!continuationToken.nil? && !continuationToken.empty?)
+        #   podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
+        #   continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+        #   podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+        #   @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
+        #   if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
+        #     $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+        #     parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
+        #   else
+        #     $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
+        #   end
+        # end
 
         @podInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - podInventoryStartTime)
         # Setting these to nil so that we dont hold memory until GC kicks in

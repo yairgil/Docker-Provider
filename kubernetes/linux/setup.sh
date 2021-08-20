@@ -56,6 +56,9 @@ gem install fluentd -v "1.12.2" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 
+# install kubeclient
+sudo apt-get install libmagickwand-dev -y
+sudo gem install kubeclient --no-document
 
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
