@@ -566,8 +566,8 @@ function Bootstrap-CACertificates {
 Start-Transcript -Path main.txt
 
 Remove-WindowsServiceIfItExists "fluentdwinaks"
-Set-EnvironmentVariables
-Start-FileSystemWatcher
+# Set-EnvironmentVariables
+# Start-FileSystemWatcher
 
 #Bootstrapping CA certs for non public clouds and AKS clusters
 $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
@@ -586,10 +586,10 @@ if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'tr
     Generate-Certificates
     Test-CertificatePath
 }
-Start-Fluent-Telegraf
+# Start-Fluent-Telegraf
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
-Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
+# Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
 
 #check if fluentd service is running
-Get-Service fluentdwinaks
+# Get-Service fluentdwinaks
