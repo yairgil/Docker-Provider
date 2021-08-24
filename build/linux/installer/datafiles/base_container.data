@@ -56,6 +56,9 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser-osm-config.rb;                                  build/linux/installer/scripts/tomlparser-osm-config.rb;     755; root; root
 /opt/test.json;			                                        build/linux/installer/conf/test.json;                    644; root; root
 
+/opt/omsagent.yaml;                                             kubernetes/omsagent.yaml; 644; root; root
+/opt/e2e-tests.yaml;                                            test/e2e/e2e-tests.yaml; 644; root; root
+
 
 
 /etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json;					                   build/linux/installer/conf/healthmonitorconfig.json; 644; root; root
@@ -178,7 +181,6 @@ MAINTAINER:              'Microsoft Corporation'
 
 /etc/fluent/plugin/out_health_forward.rb;			                                        source/plugins/ruby/out_health_forward.rb;	644; root; root
 /etc/fluent/plugin/out_mdm.rb;			                                                 source/plugins/ruby/out_mdm.rb;	644; root; root
-
 
 
 %Links
