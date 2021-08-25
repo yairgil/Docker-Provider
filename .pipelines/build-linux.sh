@@ -17,5 +17,4 @@ cd $DIR
 
 echo "------------ Bundle Shell Extension Scripts & HELM chart -------------------------"
 cd $DIR/../deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
-tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
-
+tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh $DIR/../kubernetes/omsagent.yaml $DIR/../test/e2e/e2e-tests.yaml
