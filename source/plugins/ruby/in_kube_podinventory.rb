@@ -21,6 +21,7 @@ module Fluent::Plugin
       require "set"
       require "time"
       require "kubeclient"
+      require "logger"
 
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
@@ -42,6 +43,7 @@ module Fluent::Plugin
       @controllerData = {}
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
+      @informer = nil
 
       @kubeperfTag = "oneagent.containerInsights.LINUX_PERF_BLOB"
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
@@ -78,20 +80,10 @@ module Fluent::Plugin
         end
         $log.info("in_kube_podinventory::start: PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
 
-        # create kubernetes watch client
-         ssl_options = {
-          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
-        }
-        timeouts = {
-          open: 60,  # default setting (in seconds)
-          read: nil  # read never times out
-        }
-        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
-        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
-        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed, timeouts: timeouts)
-        @informer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 15 * 60, logger: Logger.new(STDOUT))
-        @informer.start_worker
+        $log.info("in_kube_podinventory::start: initialize k8s informer - start @ #{Time.now.utc.iso8601}")
+        initializeInformer
+        $log.info("in_kube_podinventory::start: initialize k8s informer - end  @ #{Time.now.utc.iso8601}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -108,6 +100,23 @@ module Fluent::Plugin
         }
         @thread.join
         super # This super must be at the end of shutdown method
+      end
+    end
+
+    def initializeInformer
+      begin
+        # create kubernetes watch client
+        ssl_options = {
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
+        }
+        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
+        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
+        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options)
+        @informer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 15 * 60, logger: Logger.new(STDOUT), limit: @PODS_CHUNK_SIZE)
+        @informer.start_worker
+      rescue => errorStr
+        $log.warn "in_kube_podinventory::initializeInformer: failed to initialize informer: #{errorStr}"
       end
     end
 
@@ -173,7 +182,13 @@ module Fluent::Plugin
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API using informer @ #{Time.now.utc.iso8601}")
-        podInventory = @informer.list
+        podInventory = {}
+        if @informer.nil
+          $log.warn("in_kube_podinventory::enumerate : initializing informer since its nil @ #{Time.now.utc.iso8601}")
+          initializeInformer
+        end
+        podInventory["items"] = @informer.list
+        $log.info("in_kube_podinventory::enumerate: total size of pod items payload in bytes: #{podInventory["items"].to_s.size} @ #{Time.now.utc.iso8601}")
         parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
 
         # continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
@@ -532,11 +547,11 @@ module Fluent::Plugin
         @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
 
         podContainers = []
-        if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
+        if !item["status"].nil? && !item["status"]["containerStatuses"].nil? && !item["status"]["containerStatuses"].empty?
           podContainers = podContainers + item["status"]["containerStatuses"]
         end
         # Adding init containers to the record list as well.
-        if item["status"].key?("initContainerStatuses") && !item["status"]["initContainerStatuses"].empty?
+        if !item["status"].nil? && !item["status"]["initContainerStatuses"].nil? && !item["status"]["initContainerStatuses"].empty?
           podContainers = podContainers + item["status"]["initContainerStatuses"]
         end
         # if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty? #container status block start
@@ -578,15 +593,20 @@ module Fluent::Plugin
             if podReadyCondition == false
               record["ContainerStatus"] = "Unknown"
             else
-              record["ContainerStatus"] = containerStatus.keys[0]
+              record["ContainerStatus"] = containerStatus
             end
             #TODO : Remove ContainerCreationTimeStamp from here since we are sending it as a metric
             #Picking up both container and node start time from cAdvisor to be consistent
-            if containerStatus.keys[0] == "running"
+            if !containerStatus["running"].nil? && !containerStatus["running"].empty?
               record["ContainerCreationTimeStamp"] = container["state"]["running"]["startedAt"]
             else
-              if !containerStatus[containerStatus.keys[0]]["reason"].nil? && !containerStatus[containerStatus.keys[0]]["reason"].empty?
-                record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
+              if !containerStatus["terminated"].nil? && !containerStatus["terminated"].empty? &&
+                !containerStatus["terminated"]["reason"].nil? && !containerStatus["terminated"]["reason"].empty?
+                record["ContainerStatusReason"] = containerStatus["terminated"]["reason"]
+              end
+              if !containerStatus["waiting"].nil? && !containerStatus["waiting"].empty? &&
+                !containerStatus["waiting"]["reason"].nil? && !containerStatus["waiting"]["reason"].empty?
+                record["ContainerStatusReason"] = containerStatus["waiting"]["reason"]
               end
               # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
               if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
@@ -596,36 +616,38 @@ module Fluent::Plugin
 
             # Record the last state of the container. This may have information on why a container was killed.
             begin
-              if !container["lastState"].nil? && container["lastState"].keys.length == 1
-                lastStateName = container["lastState"].keys[0]
-                lastStateObject = container["lastState"][lastStateName]
-                if !lastStateObject.is_a?(Hash)
-                  raise "expected a hash object. This could signify a bug or a kubernetes API change"
+              lastStateName = ""
+              record["ContainerLastStatus"] = Hash.new
+              if !container["lastState"].nil? && !container["lastState"].empty?
+                if !container["lastState"]["terminated"].nil? && !container["lastState"]["terminated"].empty?
+                   lastStateName = "terminated"
+                elsif !container["lastState"]["waiting"].nil? && !container["lastState"]["waiting"].empty?
+                  lastStateName = "waiting"
                 end
+                if !lastStateName.empty?
+                  lastStateObject = container["lastState"][lastStateName]
+                  if !lastStateObject["reason"].nil? && !lastStateObject["reason"].empty? &&
+                    !lastStateObject["startedAt"].nil? && !lastStateObject["startedAt"].empty?
+                    !lastStateObject["finishedAt"].nil? && !lastStateObject["finishedAt"].empty?
+                    newRecord = Hash.new
+                    newRecord["lastState"] = lastStateName  # get the name of the last state (ex: terminated)
+                    lastStateReason = lastStateObject["reason"]
+                    # newRecord["reason"] = lastStateObject["reason"]  # (ex: OOMKilled)
+                    newRecord["reason"] = lastStateReason  # (ex: OOMKilled)
+                    newRecord["startedAt"] = lastStateObject["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
+                    lastFinishedTime = lastStateObject["finishedAt"]
+                    newRecord["finishedAt"] = lastFinishedTime  # (ex: 2019-07-02T14:58:52Z)
 
-                if lastStateObject.key?("reason") && lastStateObject.key?("startedAt") && lastStateObject.key?("finishedAt")
-                  newRecord = Hash.new
-                  newRecord["lastState"] = lastStateName  # get the name of the last state (ex: terminated)
-                  lastStateReason = lastStateObject["reason"]
-                  # newRecord["reason"] = lastStateObject["reason"]  # (ex: OOMKilled)
-                  newRecord["reason"] = lastStateReason  # (ex: OOMKilled)
-                  newRecord["startedAt"] = lastStateObject["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
-                  lastFinishedTime = lastStateObject["finishedAt"]
-                  newRecord["finishedAt"] = lastFinishedTime  # (ex: 2019-07-02T14:58:52Z)
+                    # only write to the output field if everything previously ran without error
+                    record["ContainerLastStatus"] = newRecord
 
-                  # only write to the output field if everything previously ran without error
-                  record["ContainerLastStatus"] = newRecord
-
-                  #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
-                  if lastStateReason.downcase == Constants::REASON_OOM_KILLED
-                    @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                    #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
+                    if lastStateReason.downcase == Constants::REASON_OOM_KILLED
+                      @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                    end
+                    lastStateReason = nil
                   end
-                  lastStateReason = nil
-                else
-                  record["ContainerLastStatus"] = Hash.new
                 end
-              else
-                record["ContainerLastStatus"] = Hash.new
               end
 
               #Populate mdm metric for container restart count if greater than 0
