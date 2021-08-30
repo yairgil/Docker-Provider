@@ -183,12 +183,8 @@ module Fluent::Plugin
         continuationToken = nil
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API using informer @ #{Time.now.utc.iso8601}")
         podInventory = {}
-        if @informer.nil
-          $log.warn("in_kube_podinventory::enumerate : initializing informer since its nil @ #{Time.now.utc.iso8601}")
-          initializeInformer
-        end
         podInventory["items"] = @informer.list
-        $log.info("in_kube_podinventory::enumerate: total size of pod items payload in bytes: #{podInventory["items"].to_s.size} @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_podinventory::enumerate: total size of pod items #{podInventory["items"].length} payload in bytes: #{podInventory["items"].to_s.size} @ #{Time.now.utc.iso8601}")
         parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
 
         # continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
@@ -488,7 +484,16 @@ module Fluent::Plugin
         end
 
         record["PodUid"] = podUid
-        record["PodLabel"] = [item["metadata"]["labels"]]
+        podLabel = {}
+        begin
+          if !item["metadata"]["labels"].nil? && !item["metadata"]["labels"].empty?
+            podLabel = openstruct_to_hash(item["metadata"]["labels"])
+          end
+          record["PodLabel"] = [podLabel]
+        rescue => error
+          $log.warn("failed to parse the pod labels for the pod: #{record["Name"]}")
+        end
+
         record["Namespace"] = podNameSpace
         record["PodCreationTimeStamp"] = item["metadata"]["creationTimestamp"]
         #for unscheduled (non-started) pods startTime does NOT exist
@@ -526,7 +531,7 @@ module Fluent::Plugin
         record["Computer"] = nodeName
         record["ClusterId"] = KubernetesApiClient.getClusterId
         record["ClusterName"] = KubernetesApiClient.getClusterName
-        record["ServiceName"] = getServiceNameFromLabels(item["metadata"]["namespace"], item["metadata"]["labels"], serviceRecords)
+        record["ServiceName"] = getServiceNameFromLabels(item["metadata"]["namespace"], podLabel, serviceRecords)
 
         if !item["metadata"]["ownerReferences"].nil?
           record["ControllerKind"] = item["metadata"]["ownerReferences"][0]["kind"]
@@ -593,7 +598,17 @@ module Fluent::Plugin
             if podReadyCondition == false
               record["ContainerStatus"] = "Unknown"
             else
-              record["ContainerStatus"] = containerStatus
+              containerState = "Unknown"
+              if !containerStatus.nil? && !containerStatus.empty?
+                if !containerStatus["running"].nil? && !containerStatus["running"].empty?
+                  containerState = "running"
+                elsif !containerStatus["terminated"].nil? && !containerStatus["terminated"].empty?
+                  containerState = "terminated"
+                elsif containerStatus["waiting"].nil? && !containerStatus["waiting"].empty?
+                  containerState = "waiting"
+                end
+              end
+              record["ContainerStatus"] = containerState
             end
             #TODO : Remove ContainerCreationTimeStamp from here since we are sending it as a metric
             #Picking up both container and node start time from cAdvisor to be consistent
@@ -713,6 +728,19 @@ module Fluent::Plugin
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return serviceName
+    end
+
+    def openstruct_to_hash(object, hash = {})
+      case object
+      when OpenStruct then
+        object.each_pair do |key, value|
+          hash[key] = openstruct_to_hash(value)
+        end
+        hash
+      when Array then
+        object.map { |v| openstruct_to_hash(v) }
+      else object
+      end
     end
   end # Kube_Pod_Input
 end # module
