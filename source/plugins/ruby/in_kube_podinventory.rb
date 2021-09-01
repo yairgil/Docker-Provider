@@ -112,7 +112,7 @@ module Fluent::Plugin
         }
         getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
         auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
-        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options)
+        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
         @informer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 15 * 60, logger: Logger.new(STDOUT), limit: @PODS_CHUNK_SIZE)
         @informer.start_worker
       rescue => errorStr
