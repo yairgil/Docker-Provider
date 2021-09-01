@@ -44,7 +44,8 @@ COPY ./omsagentwindows/*.zip /opt/omsagentwindows/
 COPY setup.ps1 /opt/omsagentwindows/scripts/powershell
 RUN ./setup.ps1
 
-COPY main.ps1 /opt/omsagentwindows/scripts/powershell
+COPY main.cmd /opt/omsagentwindows/scripts/powershell
+# COPY main.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
 COPY setdefaulttelegrafenvvariables.ps1 /opt/omsagentwindows/scripts/powershell
@@ -79,4 +80,4 @@ ENV AZMON_COLLECT_ENV False
 ENV CI_CERT_LOCATION "C://oms.crt"
 ENV CI_KEY_LOCATION "C://oms.key"
 
-ENTRYPOINT ["powershell", "C:\\opt\\omsagentwindows\\scripts\\powershell\\main.ps1"]
+ENTRYPOINT ["CMD", "C:\\opt\\omsagentwindows\\scripts\\powershell\\main.cmd"]
