@@ -563,7 +563,7 @@
 #     }
 # }
 
-# Start-Transcript -Path main.txt
+Start-Transcript -Path main.txt
 
 # Remove-WindowsServiceIfItExists "fluentdwinaks"
 # Set-EnvironmentVariables
@@ -595,3 +595,5 @@
 # Get-Service fluentdwinaks
 
 Write-Output "Commented everything in main.ps1 because nothing is running"
+
+notepad.exe
