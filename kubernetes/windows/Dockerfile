@@ -80,4 +80,4 @@ ENV AZMON_COLLECT_ENV False
 ENV CI_CERT_LOCATION "C://oms.crt"
 ENV CI_KEY_LOCATION "C://oms.key"
 
-CMD C:\opt\fluent-bit\bin\fluent-bit.exe -c \"C:\etc\fluent-bit\fluent-bit.conf\"" -e "C:\opt\omsagentwindows\out_oms.so\"
+ENTRYPOINT ["cmd.exe", "/c", "C:\\opt\\omsagentwindows\\scripts\\powershell\\main.cmd"]

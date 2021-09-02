@@ -3,6 +3,7 @@ echo "Adding in a second line"
 
 notepad.exe
 
+echo "reaches here after the notepad call"
 
 @REM C:\opt\fluent-bit\bin\fluent-bit.exe -c "C:\etc\fluent-bit\fluent-bit.conf" -e "C:\opt\omsagentwindows\out_oms.so"
 
