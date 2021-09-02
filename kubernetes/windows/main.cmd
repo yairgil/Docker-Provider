@@ -1,7 +1,7 @@
 echo "Finishing up with main.ps1..."
 echo "Adding in a second line"
 
-notepad.exe
+notepad.exe > stdout.txt 2> stderr.txt
 
 echo "reaches here after the notepad call"
 
