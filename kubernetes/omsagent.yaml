@@ -770,7 +770,7 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-nothing-is-running-12"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-nothing-is-running-11"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
