@@ -39,6 +39,12 @@ module Fluent
       @controllerData = {}
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
+      @isDisableKubeContainerPerf = false
+      @isDisableKubeGPUPerf = false
+      @isDisableKubeWinContainerInventory = false
+      @isDiableKubeServices = false
+      @isDisableMDM = false
+      @isDisableKPIAll = false
     end
 
     config_param :run_interval, :time, :default => 60
@@ -69,6 +75,36 @@ module Fluent
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.round(10).iso8601(6)}")
 
+        if !ENV["DISABLE_KPI_KUBE_CONTAINER_PERF"].nil? && !ENV["DISABLE_KPI_KUBE_CONTAINER_PERF"].empty? && ENV["DISABLE_KPI_KUBE_CONTAINER_PERF"].downcase == "true".downcase
+          @isDisableKubeContainerPerf = true
+        end
+        $log.info("in_kube_podinventory::start : isDisableKubeContainerPerf=#{@isDisableKubeContainerPerf} @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        if !ENV["DISABLE_KPI_KUBE_GPU_PERF"].nil? && !ENV["DISABLE_KPI_KUBE_GPU_PERF"].empty? && ENV["DISABLE_KPI_KUBE_GPU_PERF"].downcase == "true".downcase
+          @isDisableKubeGPUPerf = true
+        end
+        $log.info("in_kube_podinventory::start : isDisableKubeGPUPerf=#{@isDisableKubeGPUPerf} @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        if !ENV["DISABLE_KPI_WIN_CONTAINER_INVENTORY"].nil? && !ENV["DISABLE_KPI_WIN_CONTAINER_INVENTORY"].empty? && ENV["DISABLE_KPI_WIN_CONTAINER_INVENTORY"].downcase == "true".downcase
+          @isDisableKubeWinContainerInventory = true
+        end
+        $log.info("in_kube_podinventory::start : isDisableKubeWinContainerInventory=#{@isDisableKubeWinContainerInventory} @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        if !ENV["DISABLE_KPI_KUBE_SERVICES"].nil? && !ENV["DISABLE_KPI_KUBE_SERVICES"].empty? && ENV["DISABLE_KPI_KUBE_SERVICES"].downcase == "true".downcase
+          @isDiableKubeServices = true
+        end
+        $log.info("in_kube_podinventory::start : isDiableKubeServices=#{@isDiableKubeServices} @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        if !ENV["DISABLE_KPI_MDM"].nil? && !ENV["DISABLE_KPI_MDM"].empty? && ENV["DISABLE_KPI_MDM"].downcase == "true".downcase
+          @isDisableMDM = true
+        end
+        $log.info("in_kube_podinventory::start : isDisableMDM=#{@isDisableMDM} @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        if !ENV["DISABLE_KPI_ALL"].nil? && !ENV["DISABLE_KPI_ALL"].empty? && ENV["DISABLE_KPI_ALL"].downcase == "true".downcase
+          @isDisableKPIAll = true
+        end
+        $log.info("in_kube_podinventory::start : isDisableKPIAll=#{@isDisableKPIAll} @ #{Time.now.utc.round(10).iso8601(6)}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -88,112 +124,116 @@ module Fluent
     end
 
     def enumerate(podList = nil)
-      begin
-        podInventory = podList
-        telemetryFlush = false
-        @podCount = 0
-        @serviceCount = 0
-        @controllerSet = Set.new []
-        @winContainerCount = 0
-        @controllerData = {}
-        currentTime = Time.now
-        batchTime = currentTime.utc.iso8601
-        serviceRecords = []
-        @podInventoryE2EProcessingLatencyMs = 0
-        podInventoryStartTime = (Time.now.to_f * 1000).to_i
-        # Get services first so that we dont need to make a call for very chunk
-        $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
-        serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
-        # serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
-        $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+      if @isDisableKPIAll
+        $log.info("in_kube_podinventory::enumerate: ***isDisableKPIAll*** @ #{Time.now.utc.round(10).iso8601(6)}")
+      else
+        begin
+          podInventory = podList
+          telemetryFlush = false
+          @podCount = 0
+          @serviceCount = 0
+          @controllerSet = Set.new []
+          @winContainerCount = 0
+          @controllerData = {}
+          currentTime = Time.now
+          batchTime = currentTime.utc.iso8601
+          serviceRecords = []
+          @podInventoryE2EProcessingLatencyMs = 0
+          podInventoryStartTime = (Time.now.to_f * 1000).to_i
+          # Get services first so that we dont need to make a call for very chunk
+          $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+          serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
+          # serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
+          $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
 
-        if !serviceInfo.nil?
-          $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.round(10).iso8601(6)}")
-          serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
-          $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.round(10).iso8601(6)}")
-          serviceInfo = nil
-          # service inventory records much smaller and fixed size compared to serviceList
-          $log.info("in_kube_podinventory::enumerate:Start:getKubeServicesInventoryRecords @ #{Time.now.utc.round(10).iso8601(6)}")
-          serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
-          # updating for telemetry
-          @serviceCount += serviceRecords.length
-          serviceList = nil
-          $log.info("in_kube_podinventory::enumerate:End:getKubeServicesInventoryRecords @ #{Time.now.utc.round(10).iso8601(6)}")
-        end
+          if !serviceInfo.nil?
+            $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.round(10).iso8601(6)}")
+            serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
+            $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.round(10).iso8601(6)}")
+            serviceInfo = nil
+            # service inventory records much smaller and fixed size compared to serviceList
+            $log.info("in_kube_podinventory::enumerate:Start:getKubeServicesInventoryRecords @ #{Time.now.utc.round(10).iso8601(6)}")
+            serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
+            # updating for telemetry
+            @serviceCount += serviceRecords.length
+            serviceList = nil
+            $log.info("in_kube_podinventory::enumerate:End:getKubeServicesInventoryRecords @ #{Time.now.utc.round(10).iso8601(6)}")
+          end
 
-        # to track e2e processing latency
-        @podsAPIE2ELatencyMs = 0
-        podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-        # Initializing continuation token to nil
-        continuationToken = nil
-        $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
-        continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
-        $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
-        podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-        @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
-        if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-          $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
-          $log.info("in_kube_podinventory::enumerate:Start:parse_and_emit_records @ #{Time.now.utc.round(10).iso8601(6)}")
-          parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
-          $log.info("in_kube_podinventory::enumerate:End:parse_and_emit_records @ #{Time.now.utc.round(10).iso8601(6)}")
-        else
-          $log.warn "in_kube_podinventory::enumerate:Received empty podInventory @ #{Time.now.utc.round(10).iso8601(6)}"
-        end
-
-        #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        while (!continuationToken.nil? && !continuationToken.empty?)
+          # to track e2e processing latency
+          @podsAPIE2ELatencyMs = 0
           podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-          continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+          # Initializing continuation token to nil
+          continuationToken = nil
+          $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+          continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
+          $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
           podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-          @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
+          @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-            $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+            $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
             $log.info("in_kube_podinventory::enumerate:Start:parse_and_emit_records @ #{Time.now.utc.round(10).iso8601(6)}")
             parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
             $log.info("in_kube_podinventory::enumerate:End:parse_and_emit_records @ #{Time.now.utc.round(10).iso8601(6)}")
           else
             $log.warn "in_kube_podinventory::enumerate:Received empty podInventory @ #{Time.now.utc.round(10).iso8601(6)}"
           end
-        end
 
-        @podInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - podInventoryStartTime)
-        # Setting these to nil so that we dont hold memory until GC kicks in
-        podInventory = nil
-        serviceRecords = nil
-
-        # Adding telemetry to send pod telemetry every 5 minutes
-        timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
-        timeDifferenceInMinutes = timeDifference / 60
-        if (timeDifferenceInMinutes >= 5)
-          telemetryFlush = true
-          $log.info("in_kube_podinventory::enumerate:set telemetryFlush to true @ #{Time.now.utc.round(10).iso8601(6)}")
-        end
-
-        # Flush AppInsights telemetry once all the processing is done
-        if telemetryFlush == true
-          $log.info("in_kube_podinventory::enumerate:Start:telemetryFlush @ #{Time.now.utc.round(10).iso8601(6)}")
-          telemetryProperties = {}
-          telemetryProperties["Computer"] = @@hostName
-          telemetryProperties["PODS_CHUNK_SIZE"] = @PODS_CHUNK_SIZE
-          telemetryProperties["PODS_EMIT_STREAM_BATCH_SIZE"] = @PODS_EMIT_STREAM_BATCH_SIZE
-          ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
-          ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
-          ApplicationInsightsUtility.sendMetricTelemetry("ServiceCount", @serviceCount, {})
-          telemetryProperties["ControllerData"] = @controllerData.to_json
-          ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
-          if @winContainerCount > 0
-            telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
-            ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
+          #If we receive a continuation token, make calls, process and flush data until we have processed all data
+          while (!continuationToken.nil? && !continuationToken.empty?)
+            podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
+            continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+            podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+            @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
+            if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
+              $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+              $log.info("in_kube_podinventory::enumerate:Start:parse_and_emit_records @ #{Time.now.utc.round(10).iso8601(6)}")
+              parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
+              $log.info("in_kube_podinventory::enumerate:End:parse_and_emit_records @ #{Time.now.utc.round(10).iso8601(6)}")
+            else
+              $log.warn "in_kube_podinventory::enumerate:Received empty podInventory @ #{Time.now.utc.round(10).iso8601(6)}"
+            end
           end
-          ApplicationInsightsUtility.sendMetricTelemetry("PodInventoryE2EProcessingLatencyMs", @podInventoryE2EProcessingLatencyMs, telemetryProperties)
-          ApplicationInsightsUtility.sendMetricTelemetry("PodsAPIE2ELatencyMs", @podsAPIE2ELatencyMs, telemetryProperties)
-          @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
-          $log.info("in_kube_podinventory::enumerate:End:telemetryFlush @ #{Time.now.utc.round(10).iso8601(6)}")
+
+          @podInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - podInventoryStartTime)
+          # Setting these to nil so that we dont hold memory until GC kicks in
+          podInventory = nil
+          serviceRecords = nil
+
+          # Adding telemetry to send pod telemetry every 5 minutes
+          timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
+          timeDifferenceInMinutes = timeDifference / 60
+          if (timeDifferenceInMinutes >= 5)
+            telemetryFlush = true
+            $log.info("in_kube_podinventory::enumerate:set telemetryFlush to true @ #{Time.now.utc.round(10).iso8601(6)}")
+          end
+
+          # Flush AppInsights telemetry once all the processing is done
+          if telemetryFlush == true
+            $log.info("in_kube_podinventory::enumerate:Start:telemetryFlush @ #{Time.now.utc.round(10).iso8601(6)}")
+            telemetryProperties = {}
+            telemetryProperties["Computer"] = @@hostName
+            telemetryProperties["PODS_CHUNK_SIZE"] = @PODS_CHUNK_SIZE
+            telemetryProperties["PODS_EMIT_STREAM_BATCH_SIZE"] = @PODS_EMIT_STREAM_BATCH_SIZE
+            ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
+            ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
+            ApplicationInsightsUtility.sendMetricTelemetry("ServiceCount", @serviceCount, {})
+            telemetryProperties["ControllerData"] = @controllerData.to_json
+            ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
+            if @winContainerCount > 0
+              telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
+              ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
+            end
+            ApplicationInsightsUtility.sendMetricTelemetry("PodInventoryE2EProcessingLatencyMs", @podInventoryE2EProcessingLatencyMs, telemetryProperties)
+            ApplicationInsightsUtility.sendMetricTelemetry("PodsAPIE2ELatencyMs", @podsAPIE2ELatencyMs, telemetryProperties)
+            @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
+            $log.info("in_kube_podinventory::enumerate:End:telemetryFlush @ #{Time.now.utc.round(10).iso8601(6)}")
+          end
+        rescue => errorStr
+          $log.warn "in_kube_podinventory::enumerate:Failed in enumerate: #{errorStr} @ #{Time.now.utc.round(10).iso8601(6)}"
+          $log.debug_backtrace(errorStr.backtrace)
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
         end
-      rescue => errorStr
-        $log.warn "in_kube_podinventory::enumerate:Failed in enumerate: #{errorStr} @ #{Time.now.utc.round(10).iso8601(6)}"
-        $log.debug_backtrace(errorStr.backtrace)
-        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 
@@ -208,9 +248,12 @@ module Fluent
 
       begin #begin block start
         # Getting windows nodes from kubeapi
-        $log.info "in_kube_podinventory::parse_and_emit_records:Start:getWindowsNodesArray@ #{Time.now.utc.round(10).iso8601(6)}"
-        winNodes = KubernetesApiClient.getWindowsNodesArray
-        $log.info "in_kube_podinventory::parse_and_emit_records:End:getWindowsNodesArray @ #{Time.now.utc.round(10).iso8601(6)}"
+
+        if !@isDisableKubeWinContainerInventory
+          $log.info "in_kube_podinventory::parse_and_emit_records:Start:getWindowsNodesArray@ #{Time.now.utc.round(10).iso8601(6)}"
+          winNodes = KubernetesApiClient.getWindowsNodesArray
+          $log.info "in_kube_podinventory::parse_and_emit_records:End:getWindowsNodesArray @ #{Time.now.utc.round(10).iso8601(6)}"
+        end
 
         podInventory["items"].each do |item| #podInventory block start
           # pod inventory records
@@ -228,41 +271,45 @@ module Fluent
                           "DataItems" => [record.each { |k, v| record[k] = v }],
                         }
               eventStream.add(emitTime, wrapper) if wrapper
-              $log.info "in_kube_podinventory::parse_and_emit_records:Start:process_pod_inventory_record - PodName: #{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
-              @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
-              $log.info "in_kube_podinventory::parse_and_emit_records:End:process_pod_inventory_record - PodName: #{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
+              if !@isDisableMDM
+                $log.info "in_kube_podinventory::parse_and_emit_records:Start:process_pod_inventory_record - PodName: #{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
+                @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
+                $log.info "in_kube_podinventory::parse_and_emit_records:End:process_pod_inventory_record - PodName: #{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
+              end
             end
             $log.info "in_kube_podinventory::parse_and_emit_records:End:podInventoryRecords.each:PodName: #{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
           end
           # Setting this flag to true so that we can send ContainerInventory records for containers
           # on windows nodes and parse environment variables for these containers
-          if winNodes.length > 0
-            $log.info "in_kube_podinventory::parse_and_emit_records:Start: get windows container inventory records since winNodes length: #{winNodes.length } @ #{Time.now.utc.round(10).iso8601(6)}"
-            nodeName = ""
-            if !item["spec"]["nodeName"].nil?
-              nodeName = item["spec"]["nodeName"]
-            end
-            if (!nodeName.empty? && (winNodes.include? nodeName))
-              clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
-              #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
-              $log.info "in_kube_podinventory::parse_and_emit_records:getContainerInventoryRecords:start - nodeName: #{nodeName} and podName:#{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
-              containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar, true)
-              $log.info "in_kube_podinventory::parse_and_emit_records:getContainerInventoryRecords:end - nodeName: #{nodeName} and podName:#{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
+          if !@isDisableKubeWinContainerInventory
+            if winNodes.length > 0
+              $log.info "in_kube_podinventory::parse_and_emit_records:Start: get windows container inventory records since winNodes length: #{winNodes.length } @ #{Time.now.utc.round(10).iso8601(6)}"
+              nodeName = ""
+              if !item["spec"]["nodeName"].nil?
+                nodeName = item["spec"]["nodeName"]
+              end
+              if (!nodeName.empty? && (winNodes.include? nodeName))
+                clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
+                #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
+                $log.info "in_kube_podinventory::parse_and_emit_records:getContainerInventoryRecords:start - nodeName: #{nodeName} and podName:#{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
+                containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar, true)
+                $log.info "in_kube_podinventory::parse_and_emit_records:getContainerInventoryRecords:end - nodeName: #{nodeName} and podName:#{podName} @ #{Time.now.utc.round(10).iso8601(6)}"
 
-              # Send container inventory records for containers on windows nodes
-              @winContainerCount += containerInventoryRecords.length
-              containerInventoryRecords.each do |cirecord|
-                if !cirecord.nil?
-                  ciwrapper = {
-                    "DataType" => "CONTAINER_INVENTORY_BLOB",
-                    "IPName" => "ContainerInsights",
-                    "DataItems" => [cirecord.each { |k, v| cirecord[k] = v }],
-                  }
-                  eventStream.add(emitTime, ciwrapper) if ciwrapper
+                # Send container inventory records for containers on windows nodes
+                @winContainerCount += containerInventoryRecords.length
+                containerInventoryRecords.each do |cirecord|
+                  if !cirecord.nil?
+                    ciwrapper = {
+                      "DataType" => "CONTAINER_INVENTORY_BLOB",
+                      "IPName" => "ContainerInsights",
+                      "DataItems" => [cirecord.each { |k, v| cirecord[k] = v }],
+                    }
+                    eventStream.add(emitTime, ciwrapper) if ciwrapper
+                  end
                 end
               end
+              $log.info "in_kube_podinventory::parse_and_emit_records:End: get windows container inventory records since winNodes length: #{winNodes.length } @ #{Time.now.utc.round(10).iso8601(6)}"
             end
-            $log.info "in_kube_podinventory::parse_and_emit_records:End: get windows container inventory records since winNodes length: #{winNodes.length } @ #{Time.now.utc.round(10).iso8601(6)}"
           end
 
           if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && eventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
@@ -276,14 +323,15 @@ module Fluent
           end
 
           #container perf records
-          $log.info("in_kube_podinventory::parse_and_emit_records:Start:getContainerResourceRequestsAndLimits @ #{Time.now.utc.round(10).iso8601(6)}")
           containerMetricDataItems = []
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "cpu", "cpuRequestNanoCores", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "memory", "memoryRequestBytes", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "cpu", "cpuLimitNanoCores", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", batchTime))
-          $log.info("in_kube_podinventory::parse_and_emit_records:End:getContainerResourceRequestsAndLimits- containerMetricDataItems: #{containerMetricDataItems.length} @ #{Time.now.utc.round(10).iso8601(6)}")
-
+          if !@isDisableKubeContainerPerf
+            $log.info("in_kube_podinventory::parse_and_emit_records:Start:getContainerResourceRequestsAndLimits @ #{Time.now.utc.round(10).iso8601(6)}")
+            containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "cpu", "cpuRequestNanoCores", batchTime))
+            containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "memory", "memoryRequestBytes", batchTime))
+            containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "cpu", "cpuLimitNanoCores", batchTime))
+            containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", batchTime))
+            $log.info("in_kube_podinventory::parse_and_emit_records:End:getContainerResourceRequestsAndLimits- containerMetricDataItems: #{containerMetricDataItems.length} @ #{Time.now.utc.round(10).iso8601(6)}")
+          end
           $log.info("in_kube_podinventory::parse_and_emit_records:Start:Adding metric data items to the kubePerfEventStream : #{containerMetricDataItems.length} @ #{Time.now.utc.round(10).iso8601(6)}")
 
           containerMetricDataItems.each do |record|
@@ -304,15 +352,15 @@ module Fluent
           end
 
           # container GPU records
-          $log.info("in_kube_podinventory::parse_and_emit_records:Start:getContainerResourceRequestsAndLimitsAsInsightsMetrics @ #{Time.now.utc.round(10).iso8601(6)}")
-
           containerGPUInsightsMetricsDataItems = []
-          containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
-          containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
-          containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
-          containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
-          $log.info("in_kube_podinventory::parse_and_emit_records:End:getContainerResourceRequestsAndLimitsAsInsightsMetrics @ #{Time.now.utc.round(10).iso8601(6)}")
-
+          if !@isDisableKubeGPUPerf
+            $log.info("in_kube_podinventory::parse_and_emit_records:Start:getContainerResourceRequestsAndLimitsAsInsightsMetrics @ #{Time.now.utc.round(10).iso8601(6)}")
+            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "nvidia.com/gpu", "containerGpuRequests", batchTime))
+            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
+            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
+            containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
+            $log.info("in_kube_podinventory::parse_and_emit_records:End:getContainerResourceRequestsAndLimitsAsInsightsMetrics @ #{Time.now.utc.round(10).iso8601(6)}")
+          end
 
           $log.info("in_kube_podinventory::parse_and_emit_records:Start:Adding GPU metric data items to the insightsMetricsEventStream : #{containerGPUInsightsMetricsDataItems.length} @ #{Time.now.utc.round(10).iso8601(6)}")
 
@@ -369,37 +417,41 @@ module Fluent
         end
 
         if continuationToken.nil? #no more chunks in this batch to be sent, get all mdm pod inventory records to send
-          @log.info "START: Sending pod inventory mdm records to out_mdm @ #{Time.now.utc.round(10).iso8601(6)}"
-          pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
-          @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
-          mdm_pod_inventory_es = MultiEventStream.new
-          pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
-            mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
-          } if pod_inventory_mdm_records
-          router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
-          @log.info "END: Sending pod inventory mdm records to out_mdm @ #{Time.now.utc.round(10).iso8601(6)}"
+          if !@isDisableMDM
+            @log.info "START: Sending pod inventory mdm records to out_mdm @ #{Time.now.utc.round(10).iso8601(6)}"
+            pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
+            @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
+            mdm_pod_inventory_es = MultiEventStream.new
+            pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
+              mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
+            } if pod_inventory_mdm_records
+            router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
+            @log.info "END: Sending pod inventory mdm records to out_mdm @ #{Time.now.utc.round(10).iso8601(6)}"
+         end
         end
 
         if continuationToken.nil? # sending kube services inventory records
-          @log.info "START: Sending kube services inventory records @ #{Time.now.utc.round(10).iso8601(6)}"
-          kubeServicesEventStream = MultiEventStream.new
-          serviceRecords.each do |kubeServiceRecord|
-            if !kubeServiceRecord.nil?
-              # adding before emit to reduce memory foot print
-              kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
-              kubeServicewrapper = {
-                "DataType" => "KUBE_SERVICES_BLOB",
-                "IPName" => "ContainerInsights",
-                "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
-              }
-              kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
-              if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
-                $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.round(10).iso8601(6)}")
-                router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
-                kubeServicesEventStream = MultiEventStream.new
-                if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-                  $log.info("kubeServicesEventEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(6)}")
+          if !@isDiableKubeServices
+            @log.info "START: Sending kube services inventory records @ #{Time.now.utc.round(10).iso8601(6)}"
+            kubeServicesEventStream = MultiEventStream.new
+            serviceRecords.each do |kubeServiceRecord|
+              if !kubeServiceRecord.nil?
+                # adding before emit to reduce memory foot print
+                kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+                kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+                kubeServicewrapper = {
+                  "DataType" => "KUBE_SERVICES_BLOB",
+                  "IPName" => "ContainerInsights",
+                  "DataItems" => [kubeServiceRecord.each { |k, v| kubeServiceRecord[k] = v }],
+                }
+                kubeServicesEventStream.add(emitTime, kubeServicewrapper) if kubeServicewrapper
+                if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
+                  $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.round(10).iso8601(6)}")
+                  router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+                  kubeServicesEventStream = MultiEventStream.new
+                  if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                    $log.info("kubeServicesEventEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(6)}")
+                  end
                 end
               end
             end
@@ -546,10 +598,12 @@ module Fluent
         podRestartCount = 0
         record["PodRestartCount"] = 0
 
-        $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_pods_ready_metric - start @ #{Time.now.utc.round(10).iso8601(6)}"
-        #Invoke the helper method to compute ready/not ready mdm metric
-        @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
-        $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_pods_ready_metric - end @ #{Time.now.utc.round(10).iso8601(6)}"
+        if !@isDisableMDM
+          $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_pods_ready_metric - start @ #{Time.now.utc.round(10).iso8601(6)}"
+          #Invoke the helper method to compute ready/not ready mdm metric
+          @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
+          $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_pods_ready_metric - end @ #{Time.now.utc.round(10).iso8601(6)}"
+        end
 
         podContainers = []
         if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
@@ -610,9 +664,11 @@ module Fluent
               end
               # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
               if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
-                $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_terminated_job_metric - start @ #{Time.now.utc.round(10).iso8601(6)}"
-                @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
-                $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_terminated_job_metric - end @ #{Time.now.utc.round(10).iso8601(6)}"
+                if !@isDisableMDM
+                  $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_terminated_job_metric - start @ #{Time.now.utc.round(10).iso8601(6)}"
+                  @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
+                  $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_terminated_job_metric - end @ #{Time.now.utc.round(10).iso8601(6)}"
+                end
               end
             end
 
@@ -640,9 +696,11 @@ module Fluent
 
                   #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
                   if lastStateReason.downcase == Constants::REASON_OOM_KILLED
-                    $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_oom_killed_metric - start @ #{Time.now.utc.round(10).iso8601(6)}"
-                    @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
-                    $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_oom_killed_metric - end @ #{Time.now.utc.round(10).iso8601(6)}"
+                    if !@isDisableMDM
+                      $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_oom_killed_metric - start @ #{Time.now.utc.round(10).iso8601(6)}"
+                      @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                      $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_oom_killed_metric - end @ #{Time.now.utc.round(10).iso8601(6)}"
+                    end
                   end
                   lastStateReason = nil
                 else
@@ -654,9 +712,11 @@ module Fluent
 
               #Populate mdm metric for container restart count if greater than 0
               if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
-                $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_container_restarts_metric - start @ #{Time.now.utc.round(10).iso8601(6)}"
-                @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
-                $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_container_restarts_metric - end @ #{Time.now.utc.round(10).iso8601(6)}"
+                if !@isDisableMDM
+                  $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_container_restarts_metric - start @ #{Time.now.utc.round(10).iso8601(6)}"
+                  @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                  $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_container_restarts_metric - end @ #{Time.now.utc.round(10).iso8601(6)}"
+                end
               end
             rescue => errorStr
               $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"

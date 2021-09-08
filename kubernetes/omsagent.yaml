@@ -362,10 +362,10 @@ spec:
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
-      dnsConfig:    
+      dnsConfig:
         options:
           - name: ndots
-            value: "3"       
+            value: "3"
       containers:
         - name: omsagent
           image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05202021-hotfix"
@@ -384,7 +384,7 @@ spec:
             - name: AKS_REGION
               value: "VALUE_AKS_RESOURCE_REGION_VALUE"
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
-            - name: ISTEST  
+            - name: ISTEST
               value: "true"
             #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
@@ -599,13 +599,23 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
+            - name: DISABLE_KPI_ALL
+              value: "false"
+            - name: DISABLE_KPI_KUBE_CONTAINER_PERF
+              value: "false"
+            - name: DISABLE_KPI_KUBE_GPU_PERF
+              value: "false"
+            - name: DISABLE_KPI_WIN_CONTAINER_INVENTORY
+              value: "false"
+            - name: DISABLE_KPI_KUBE_SERVICES
+              value: "false"
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
               value: "VALUE_AKS_RESOURCE_REGION_VALUE"
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
-            - name: ISTEST  
-              value: "true"  
+            - name: ISTEST
+              value: "true"
             # Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"
@@ -754,10 +764,10 @@ spec:
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
-     dnsConfig:    
+     dnsConfig:
         options:
           - name: ndots
-            value: "3"     
+            value: "3"
      containers:
        - name: omsagent-win
          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod04222021"
