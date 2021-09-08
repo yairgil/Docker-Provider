@@ -143,6 +143,7 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("getClusterName failed: #{error}")
       end
+      @Log.info "KubernetesAPIClient::getClusterName-End*** @ #{Time.now.utc.round(10).iso8601(6)}"
       return @@ClusterName
     end
 
@@ -162,6 +163,7 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("getClusterId failed: #{error}")
       end
+      @Log.info "KubernetesAPIClient::getClusterId-End*** @ #{Time.now.utc.round(10).iso8601(6)}"
       return @@ClusterId
     end
 
@@ -177,6 +179,7 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("KubernetesApiClient::IsAROV3Cluster : IsAROV3Cluster failed #{error}")
       end
+      @Log.info "KubernetesAPIClient::isAROV3Cluster-End*** @ #{Time.now.utc.round(10).iso8601(6)}"
       return @@IsAROV3Cluster
     end
 
@@ -207,7 +210,7 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("KubernetesApiClient::isNodeMaster : node role request failed: #{error}")
       end
-
+      @Log.info "KubernetesAPIClient::isNodeMaster-End*** @ #{Time.now.utc.round(10).iso8601(6)}"
       return @@IsNodeMaster
     end
 
@@ -331,6 +334,7 @@ class KubernetesApiClient
     end
 
     def getWindowsNodesArray
+      @Log.info "KubernetesAPIClient::getWindowsNodesArray @ #{Time.now.utc.round(10).iso8601(6)}"
       return @@WinNodeArray
     end
 
@@ -390,6 +394,7 @@ class KubernetesApiClient
     end
 
     def getPodUid(podNameSpace, podMetadata)
+      @Log.info "KubernetesAPIClient::getPodUid:Start @ #{Time.now.utc.round(10).iso8601(6)}"
       podUid = nil
       begin
         if podNameSpace.eql?("kube-system") && !podMetadata.key?("ownerReferences")
@@ -410,6 +415,7 @@ class KubernetesApiClient
         @Log.warn "KubernetesApiClient::getPodUid:Failed to get poduid: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
+      @Log.info "KubernetesAPIClient::getPodUid:End @ #{Time.now.utc.round(10).iso8601(6)}"
       return podUid
     end
 
@@ -561,6 +567,7 @@ class KubernetesApiClient
       begin
         clusterId = getClusterId
         clusterName = getClusterName
+        podName = pod["metadata"]["name"]
         podNameSpace = pod["metadata"]["namespace"]
         if podNameSpace.eql?("kube-system") && !pod["metadata"].key?("ownerReferences")
           # The above case seems to be the only case where you have horizontal scaling of pods
@@ -593,9 +600,9 @@ class KubernetesApiClient
             nodeName = "" #unscheduled pod. We still want to collect limits & requests for GPU
           end
           podContainers.each do |container|
+            containerName = container["name"]
             @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
             metricValue = nil
-            containerName = container["name"]
             #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
             if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
               @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start:podContainers.each:ContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
