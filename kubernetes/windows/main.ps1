@@ -416,7 +416,7 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
-function Start-Fluent-Telegraf {
+function Start-Fluent {
 
     # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
     # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
@@ -430,13 +430,6 @@ function Start-Fluent-Telegraf {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
         (Get-Content -Path C:/etc/fluent/fluent.conf -Raw) -replace 'fluent-docker-parser.conf', 'fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
-    }
-
-    # Start telegraf only in sidecar scraping mode
-    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
-    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true') {
-        Write-Host "Starting telegraf..."
-        Start-Telegraf
     }
 
     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
@@ -569,6 +562,14 @@ Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
 
+
+    # Start telegraf only in sidecar scraping mode
+    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true') {
+        Write-Host "Starting telegraf..."
+        Start-Telegraf
+    }
+
 #Bootstrapping CA certs for non public clouds and AKS clusters
 $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
 $requiresCertBootstrap = [System.Environment]::GetEnvironmentVariable("REQUIRES_CERT_BOOTSTRAP")
@@ -586,7 +587,7 @@ if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'tr
     Generate-Certificates
     Test-CertificatePath
 }
-Start-Fluent-Telegraf
+Start-Fluent
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
