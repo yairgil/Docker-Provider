@@ -525,6 +525,7 @@ module Fluent
       @@RECORD_TIME_TO_LIVE = 60*20  # units are seconds, so clear the cache every 20 minutes.
 
       def initialize
+        $log.info "in_kube_nodes::NodeStatsCache:initialize:Start: @ #{Time.now.utc.round(10).iso8601(6)}"
         @cacheHash = {}
         @timeAdded = {}  # records when an entry was last added
         @lock = Mutex.new
@@ -532,16 +533,20 @@ module Fluent
 
         @cacheHash.default = 0.0
         @lastCacheClearTime = DateTime.now.to_time.to_i
+        $log.info "in_kube_nodes::NodeStatsCache:initialize:End: @ #{Time.now.utc.round(10).iso8601(6)}"
       end
 
       def get_capacity(node_name)
+        $log.info "in_kube_nodes::NodeStatsCache:get_capacity:Start: @ #{Time.now.utc.round(10).iso8601(6)}"
         @lock.synchronize do
           retval = @cacheHash[node_name]
           return retval
         end
+        $log.info "in_kube_nodes::NodeStatsCache:get_capacity:End: @ #{Time.now.utc.round(10).iso8601(6)}"
       end
 
       def set_capacity(host, val)
+        $log.info "in_kube_nodes::NodeStatsCache:set_capacity:Start: @ #{Time.now.utc.round(10).iso8601(6)}"
         # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
         current_time = DateTime.now.to_time.to_i
         if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
@@ -553,10 +558,11 @@ module Fluent
           @cacheHash[host] = val
           @timeAdded[host] = current_time
         end
+        $log.info "in_kube_nodes::NodeStatsCache:set_capacity:End: @ #{Time.now.utc.round(10).iso8601(6)}"
       end
 
       def clean_cache()
-        $log.info "in_kube_nodes::clean_cache: cleaning node cpu/mem cache"
+        $log.info "in_kube_nodes::NodeStatsCache:clean_cache:Start @ #{Time.now.utc.round(10).iso8601(6)}"
         cacheClearTime = DateTime.now.to_time.to_i
         @lock.synchronize do
           nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
@@ -572,6 +578,7 @@ module Fluent
             @timeAdded.delete(node_name)
           }
         end
+        $log.info "in_kube_nodes::NodeStatsCache:clean_cache:End @ #{Time.now.utc.round(10).iso8601(6)}"
       end
     end  # NodeCache
 
@@ -580,10 +587,12 @@ module Fluent
     @@memCache = NodeCache.new
 
     def cpu()
+      $log.info "in_kube_nodes::NodeStatsCache:cpu() @ #{Time.now.utc.round(10).iso8601(6)}"
       return @@cpuCache
     end
 
     def mem()
+      $log.info "in_kube_nodes::NodeStatsCache:mem() @ #{Time.now.utc.round(10).iso8601(6)}"
       return @@memCache
     end
   end
