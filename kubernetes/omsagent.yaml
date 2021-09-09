@@ -333,8 +333,8 @@ metadata:
 type: Opaque
 data:
   #BASE64 ENCODED (Both WSID & KEY) INSIDE DOUBLE QUOTE ("")
-  WSID: "VALUE_WSID"
-  KEY: "VALUE_KEY"
+  WSID: "YzcwZDMwMjUtZDhkMi00ZTI1LWI4YTUtNDFiMzhhMzFhN2Ey"
+  KEY: "ZHpFR2poeEJwK090TVBTMVVjeVMxSWdsVk93ZHJNSWdKdXZLNGJnOXBwSlluSWEyUFVMNDdVaWlOVUtIOExEZWxWVG81S1JwUVFKTDQxMzhqMnlmN2c9PQ=="
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -362,10 +362,10 @@ spec:
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
-      dnsConfig:
+      dnsConfig:    
         options:
           - name: ndots
-            value: "3"
+            value: "3"       
       containers:
         - name: omsagent
           image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08052021"
@@ -380,11 +380,11 @@ spec:
           env:
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_RESOURCE_ID
-              value: "VALUE_AKS_RESOURCE_ID_VALUE"
+              value: "/subscriptions/ce4d1293-71c0-4c72-bc55-133553ee9e50/resourcegroups/mistborn/providers/Microsoft.ContainerService/managedClusters/vin"
             - name: AKS_REGION
-              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+              value: "eastus"
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
-            - name: ISTEST
+            - name: ISTEST  
               value: "true"
             #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
@@ -397,7 +397,7 @@ spec:
                   fieldPath: status.hostIP
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: ""
+              value: "75cb887f-ce49-40c1-b8a2-01797b893da0"
             - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
               value: "koreacentral,norwayeast,eastus2"
             - name: USING_AAD_MSI_AUTH
@@ -608,12 +608,12 @@ spec:
               memory: 250Mi
           env:
             - name: AKS_RESOURCE_ID
-              value: "VALUE_AKS_RESOURCE_ID_VALUE"
+              value: "/subscriptions/ce4d1293-71c0-4c72-bc55-133553ee9e50/resourcegroups/mistborn/providers/Microsoft.ContainerService/managedClusters/vin"
             - name: AKS_REGION
-              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+              value: "eastus"
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
-            - name: ISTEST
-              value: "true"
+            - name: ISTEST  
+              value: "true"  
             # Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"
@@ -625,7 +625,7 @@ spec:
                   fieldPath: status.hostIP
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: ""
+              value: "75cb887f-ce49-40c1-b8a2-01797b893da0"
             # Add the below environment variable to true only in sidecar enabled regions, else set it to false
             - name: SIDECAR_SCRAPING_ENABLED
               value: "false"
@@ -764,13 +764,13 @@ spec:
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
-     dnsConfig:
+     dnsConfig:    
         options:
           - name: ndots
-            value: "3"
+            value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod06112021-2"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-telegraf-is-running-001"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
@@ -779,9 +779,9 @@ spec:
          env:
           # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
           - name: AKS_RESOURCE_ID
-            value: "VALUE_AKS_RESOURCE_ID_VALUE"
+            value: "/subscriptions/ce4d1293-71c0-4c72-bc55-133553ee9e50/resourcegroups/mistborn/providers/Microsoft.ContainerService/managedClusters/vin"
           - name: AKS_REGION
-            value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+            value: "eastus"
           #- name: ACS_RESOURCE_NAME
           #  value: "my_acs_cluster_name"
           - name: CONTROLLER_TYPE
@@ -802,7 +802,7 @@ spec:
             value: "false"
           # Update this with the user assigned msi client id for omsagent
           - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-            value: ""
+            value: "75cb887f-ce49-40c1-b8a2-01797b893da0"
           # Add this only for clouds that require cert bootstrapping
           # - name: REQUIRES_CERT_BOOTSTRAP
           #   value: "true"
@@ -917,3 +917,4 @@ spec:
   names:
     plural: healthstates
     kind: HealthState
+    

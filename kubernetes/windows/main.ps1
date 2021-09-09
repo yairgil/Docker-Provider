@@ -567,6 +567,12 @@ Start-Transcript -Path main.txt
 
 Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
+
+C:\opt\telegraf\telegraf.exe --service install --config "C:\opt\telegraf.conf"
+$serverName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
+sc.exe \\$serverName config telegraf start= delayed-auto
+C:\opt\telegraf\telegraf.exe --service start
+
 Start-FileSystemWatcher
 
 #Bootstrapping CA certs for non public clouds and AKS clusters
