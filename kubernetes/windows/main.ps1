@@ -565,6 +565,11 @@ function Bootstrap-CACertificates {
 
 Start-Transcript -Path main.txt
 
+C:\opt\telegraf\telegraf.exe --service install --config "C:\opt\telegraf.conf"
+$serverName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
+sc.exe \\$serverName config telegraf start= delayed-auto
+C:\opt\telegraf\telegraf.exe --service start
+
 Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
