@@ -21,13 +21,6 @@ IF EXIST C:\etc\omsagentwindows\renewcertificate.txt (
     exit /b  1
 )
 
-REM "Checking if fluentd service is running"
-sc query fluentdwinaks | findstr /i STATE | findstr RUNNING
-
-IF ERRORLEVEL 1 (
-    echo "Fluentd Service is NOT Running"
-    exit /b  1
-)
 
 exit /b 0
 
