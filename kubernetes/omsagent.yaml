@@ -770,11 +770,11 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-telgraf-is-collecting-5"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-telgraf-is-collecting-fluentd-not-running-1"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
-           cpu: 400m
+           cpu: 200m
            memory: 600Mi
          env:
           # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these

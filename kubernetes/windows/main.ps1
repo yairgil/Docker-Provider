@@ -439,7 +439,7 @@ function Start-Fluent-Telegraf {
         Start-Telegraf
     }
 
-    fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
+    # fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
 
     Notepad.exe | Out-Null
 }
@@ -597,4 +597,4 @@ Start-Fluent-Telegraf
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
 
 #check if fluentd service is running
-Get-Service fluentdwinaks
+# Get-Service fluentdwinaks
