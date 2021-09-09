@@ -221,10 +221,11 @@ class Inventory2MdmConvertor
   def process_record_for_pods_ready_metric(podControllerNameDimValue, podNamespaceDimValue, podStatusConditions)
     if @process_incoming_stream
       begin
-        @log.info "in process_record_for_pods_ready_metric..."
+        @log.info "Start:in process_record_for_pods_ready_metric for controllerName:#{podControllerNameDimValue} and Namespace:#{podNamespaceDimValue} @ #{Time.now.utc.round(10).iso8601(6)}"
         if podControllerNameDimValue.nil? || podControllerNameDimValue.empty?
           podControllerNameDimValue = "No Controller"
         end
+        @log.info "Start:process_record_for_pods_ready_metric determine PodReadyCondition for controllerName:#{podControllerNameDimValue} and Namespace:#{podNamespaceDimValue} @ #{Time.now.utc.round(10).iso8601(6)}"
         podReadyCondition = false
         if !podStatusConditions.nil? && !podStatusConditions.empty?
           podStatusConditions.each do |condition|
@@ -236,12 +237,17 @@ class Inventory2MdmConvertor
             end
           end
         end
+        @log.info "End:process_record_for_pods_ready_metric determine PodReadyCondition for controllerName:#{podControllerNameDimValue} and Namespace:#{podNamespaceDimValue} @ #{Time.now.utc.round(10).iso8601(6)}"
+
+        @log.info "Start:process_record_for_pods_ready_metric generatePodReadyMetrics for controllerName:#{podControllerNameDimValue} and Namespace:#{podNamespaceDimValue} @ #{Time.now.utc.round(10).iso8601(6)}"
         MdmMetricsGenerator.generatePodReadyMetrics(podControllerNameDimValue,
                                                     podNamespaceDimValue, podReadyCondition)
+        @log.info "End:process_record_for_pods_ready_metric generatePodReadyMetrics for controllerName:#{podControllerNameDimValue} and Namespace:#{podNamespaceDimValue} @ #{Time.now.utc.round(10).iso8601(6)}"
       rescue => errorStr
         @log.warn("Exception in process_record_for_pods_ready_metric: #{errorStr}")
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
+      @log.info "End:in process_record_for_pods_ready_metric for controllerName: #{podControllerNameDimValue} and Namespace: #{podNamespaceDimValue} @ #{Time.now.utc.round(10).iso8601(6)}"
     end
   end
 
