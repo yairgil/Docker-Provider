@@ -43,6 +43,7 @@ module Fluent
       @nodeInventoryE2EProcessingLatencyMs = 0
       @nodesAPIE2ELatencyMs = 0
       require_relative "constants"
+      @isDisableNodeStateCache = false
 
       @NodeCache = NodeStatsCache.new()
     end
@@ -73,6 +74,11 @@ module Fluent
           @NODES_EMIT_STREAM_BATCH_SIZE = 100
         end
         $log.info("in_kube_nodes::start : NODES_EMIT_STREAM_BATCH_SIZE  @ #{@NODES_EMIT_STREAM_BATCH_SIZE}")
+
+        if !ENV["DISABLE_NODE_STATE_CACHE"].nil? && !ENV["DISABLE_NODE_STATE_CACHE"].empty? && ENV["DISABLE_NODE_STATE_CACHE"].downcase == "true".downcase
+          @isDisableNodeStateCache = true
+        end
+        $log.info("in_kube_nodes::start :  isDisableNodeStateCache=#{@isDisableNodeStateCache} @ #{Time.now.utc.round(10).iso8601(10)}")
 
         @finished = false
         @condition = ConditionVariable.new
@@ -105,14 +111,14 @@ module Fluent
         nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
         continuationToken = nil
-        $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
         continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
-        $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
           parse_and_emit_records(nodeInventory, batchTime)
         else
           $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
@@ -121,11 +127,13 @@ module Fluent
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
           nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
+          $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API using getResourcesAndContinuationToken @ #{Time.now.utc.round(10).iso8601(10)}")
           continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
+          $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API using getResourcesAndContinuationToken @ #{Time.now.utc.round(10).iso8601(10)}")
           nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
           @nodesAPIE2ELatencyMs = @nodesAPIE2ELatencyMs + (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
           if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
             parse_and_emit_records(nodeInventory, batchTime)
           else
             $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
@@ -136,9 +144,12 @@ module Fluent
         timeDifference = (DateTime.now.to_time.to_i - @@nodeInventoryLatencyTelemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          $log.info("in_kube_nodes::enumerate:Start-NodeInventory latency telemetry flush @ #{Time.now.utc.round(10).iso8601(10)}")
           ApplicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, {})
           ApplicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, {})
+          $log.info("in_kube_nodes::enumerate:End-NodeInventory latency telemetry flush @ #{Time.now.utc.round(10).iso8601(10)}")
           @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
+          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         end
         # Setting this to nil so that we dont hold memory until GC kicks in
         nodeInventory = nil
@@ -162,7 +173,10 @@ module Fluent
         #get node inventory
         nodeInventory["items"].each do |item|
           # node inventory
+          nodeName = item["metadata"]["name"]
+          $log.info "in_kube_node::parse_and_emit_records:Start:getNodeInventoryRecord:nodeName: #{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}"
           nodeInventoryRecord = getNodeInventoryRecord(item, batchTime)
+          $log.info "in_kube_node::parse_and_emit_records:End:getNodeInventoryRecord:nodeName: #{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}"
           wrapper = {
             "DataType" => "KUBE_NODE_INVENTORY_BLOB",
             "IPName" => "ContainerInsights",
@@ -170,19 +184,25 @@ module Fluent
           }
           eventStream.add(emitTime, wrapper) if wrapper
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && eventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
             router.emit_stream(@tag, eventStream) if eventStream
-            $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
             router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
 
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(10)}")
             end
             eventStream = MultiEventStream.new
           end
 
           # container node inventory
+          $log.info "in_kube_node::parse_and_emit_records:Start:getNodeInventoryRecord:nodeName: #{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}"
+          nodeInventoryRecord = getNodeInventoryRecord(item, batchTime)
+          $log.info "in_kube_node::parse_and_emit_records:Start:getNodeInventoryRecord:nodeName: #{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}"
+
+          $log.info "in_kube_node::parse_and_emit_records:Start:getContainerNodeInventoryRecord:nodeName: #{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}"
           containerNodeInventoryRecord = getContainerNodeInventoryRecord(item, batchTime)
+          $log.info "in_kube_node::parse_and_emit_records:Start:getContainerNodeInventoryRecord:nodeName: #{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}"
           containerNodeInventoryWrapper = {
             "DataType" => "CONTAINER_NODE_INVENTORY_BLOB",
             "IPName" => "ContainerInsights",
@@ -191,11 +211,12 @@ module Fluent
           containerNodeInventoryEventStream.add(emitTime, containerNodeInventoryWrapper) if containerNodeInventoryWrapper
 
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && containerNodeInventoryEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_node::parse_and_emit_records:Start-number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
             router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+            $log.info("in_kube_node::parse_and_emit_records:End-number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
             containerNodeInventoryEventStream = MultiEventStream.new
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(10)}")
             end
           end
 
@@ -210,62 +231,97 @@ module Fluent
 
           # node metrics records
           nodeMetricRecords = []
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsFromNodeItem - cpu allocatable for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "cpu", "cpuAllocatableNanoCores", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
           end
+          $log.info("in_kube_node::parse_and_emit_records:End-parseNodeLimitsFromNodeItem - cpu allocatable for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsFromNodeItem - memory allocatable for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "allocatable", "memory", "memoryAllocatableBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
           end
+          $log.info("in_kube_node::parse_and_emit_records:End-parseNodeLimitsFromNodeItem - memory allocatable for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsFromNodeItem - cpu capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "cpu", "cpuCapacityNanoCores", batchTime)
+          $log.info("in_kube_node::parse_and_emit_records:End-parseNodeLimitsFromNodeItem - cpu capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
-            if is_windows_node
-              @NodeCache.cpu.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+            if !@isDisableNodeStateCache
+              if is_windows_node
+                $log.info("in_kube_node::parse_and_emit_records:Start-NodeCache.cpu.set_capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+                @NodeCache.cpu.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+                $log.info("in_kube_node::parse_and_emit_records:End-NodeCache.cpu.set_capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+              end
             end
           end
+
+
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsFromNodeItem - memory capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
+          $log.info("in_kube_node::parse_and_emit_records:End-parseNodeLimitsFromNodeItem - memory capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
-            if is_windows_node
-              @NodeCache.mem.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+            if !@isDisableNodeStateCache
+              if is_windows_node
+                $log.info("in_kube_node::parse_and_emit_records:Start-NodeCache.mem.set_capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+                @NodeCache.mem.set_capacity(nodeMetricRecord["DataItems"][0]["Host"], nodeMetricRecord["DataItems"][0]["Collections"][0]["Value"])
+                $log.info("in_kube_node::parse_and_emit_records:End-NodeCache.mem.set_capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+              end
             end
           end
+
           nodeMetricRecords.each do |metricRecord|
             metricRecord["DataType"] = "LINUX_PERF_BLOB"
             metricRecord["IPName"] = "LogManagement"
             kubePerfEventStream.add(emitTime, metricRecord) if metricRecord
           end
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::parse_and_emit_records:Start- number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
             router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            $log.info("in_kube_nodes::parse_and_emit_records:End- number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
             kubePerfEventStream = MultiEventStream.new
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("kubeNodePerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              $log.info("kubeNodePerfEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(10)}")
             end
           end
 
           # node GPU metrics record
           nodeGPUInsightsMetricsRecords = []
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsAsInsightsMetrics - nvidia.com/gpu allocatable for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           insightsMetricsRecord = KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(item, "allocatable", "nvidia.com/gpu", "nodeGpuAllocatable", batchTime)
           if !insightsMetricsRecord.nil? && !insightsMetricsRecord.empty?
             nodeGPUInsightsMetricsRecords.push(insightsMetricsRecord)
           end
+          $log.info("in_kube_node::parse_and_emit_records:End-parseNodeLimitsAsInsightsMetrics - nvidia.com/gpu allocatable for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsAsInsightsMetrics - nvidia.com/gpu capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           insightsMetricsRecord = KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(item, "capacity", "nvidia.com/gpu", "nodeGpuCapacity", batchTime)
           if !insightsMetricsRecord.nil? && !insightsMetricsRecord.empty?
             nodeGPUInsightsMetricsRecords.push(insightsMetricsRecord)
           end
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsAsInsightsMetrics - nvidia.com/gpu capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsAsInsightsMetrics - amd.com/gpu allocatable for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           insightsMetricsRecord = KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(item, "allocatable", "amd.com/gpu", "nodeGpuAllocatable", batchTime)
           if !insightsMetricsRecord.nil? && !insightsMetricsRecord.empty?
             nodeGPUInsightsMetricsRecords.push(insightsMetricsRecord)
           end
+          $log.info("in_kube_node::parse_and_emit_records:End-parseNodeLimitsAsInsightsMetrics - amd.com/gpu allocatable for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+
+          $log.info("in_kube_node::parse_and_emit_records:Start-parseNodeLimitsAsInsightsMetrics - amd.com/gpu capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
           insightsMetricsRecord = KubernetesApiClient.parseNodeLimitsAsInsightsMetrics(item, "capacity", "amd.com/gpu", "nodeGpuCapacity", batchTime)
           if !insightsMetricsRecord.nil? && !insightsMetricsRecord.empty?
             nodeGPUInsightsMetricsRecords.push(insightsMetricsRecord)
           end
+          $log.info("in_kube_node::parse_and_emit_records:End-parseNodeLimitsAsInsightsMetrics - amd.com/gpu capacity for node:#{nodeName} @ #{Time.now.utc.round(10).iso8601(10)}")
+
           nodeGPUInsightsMetricsRecords.each do |insightsMetricsRecord|
             wrapper = {
               "DataType" => "INSIGHTS_METRICS_BLOB",
@@ -275,17 +331,18 @@ module Fluent
             insightsMetricsEventStream.add(emitTime, wrapper) if wrapper
           end
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && insightsMetricsEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
             insightsMetricsEventStream = MultiEventStream.new
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(10)}")
             end
           end
           # Adding telemetry to send node telemetry every 10 minutes
           timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
           timeDifferenceInMinutes = timeDifference / 60
           if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+            $log.info("in_kube_nodes::parse_and_emit_records:Start-Telemetry Flush @ #{Time.now.utc.round(10).iso8601(10)}")
             properties = getNodeTelemetryProps(item)
             properties["KubernetesProviderID"] = nodeInventoryRecord["KubernetesProviderID"]
             capacityInfo = item["status"]["capacity"]
@@ -328,44 +385,45 @@ module Fluent
             end
             ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
             telemetrySent = true
+            $log.info("in_kube_nodes::parse_and_emit_records:End-Telemetry Flush @ #{Time.now.utc.round(10).iso8601(10)}")
           end
         end
         if telemetrySent == true
           @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
         if eventStream.count > 0
-          $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
           router.emit_stream(@tag, eventStream) if eventStream
-          $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
           router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(10)}")
           end
           eventStream = nil
         end
         if containerNodeInventoryEventStream.count > 0
-          $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
           router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
           containerNodeInventoryEventStream = nil
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(10)}")
           end
         end
 
         if kubePerfEventStream.count > 0
-          $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
           kubePerfEventStream = nil
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubeNodePerfInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            $log.info("kubeNodePerfInventoryEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(10)}")
           end
         end
         if insightsMetricsEventStream.count > 0
-          $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.round(10).iso8601(10)}")
           router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
           insightsMetricsEventStream = nil
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.round(10).iso8601(10)}")
           end
         end
       rescue => errorStr
@@ -373,7 +431,7 @@ module Fluent
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-      $log.info "in_kube_nodes::parse_and_emit_records:End #{Time.now.utc.iso8601}"
+      $log.info "in_kube_nodes::parse_and_emit_records:End #{Time.now.utc.round(10).iso8601(10)}"
     end
 
     def run_periodic
@@ -395,9 +453,9 @@ module Fluent
         @mutex.unlock
         if !done
           begin
-            $log.info("in_kube_nodes::run_periodic.enumerate.start #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::run_periodic.enumerate.start #{Time.now.utc.round(10).iso8601(10)}")
             enumerate
-            $log.info("in_kube_nodes::run_periodic.enumerate.end #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::run_periodic.enumerate.end #{Time.now.utc.round(10).iso8601(10)}")
           rescue => errorStr
             $log.warn "in_kube_nodes::run_periodic: enumerate Failed to retrieve node inventory: #{errorStr}"
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
@@ -410,6 +468,7 @@ module Fluent
 
     # TODO - move this method to KubernetesClient or helper class
     def getNodeInventoryRecord(item, batchTime = Time.utc.iso8601)
+      $log.info "in_kube_nodes::getNodeInventoryRecord:Start #{Time.now.utc.round(10).iso8601(10)}"
       record = {}
       begin
         record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
@@ -466,11 +525,13 @@ module Fluent
       rescue => errorStr
         $log.warn "in_kube_nodes::getNodeInventoryRecord:Failed: #{errorStr}"
       end
+      $log.info "in_kube_nodes::getNodeInventoryRecord:End #{Time.now.utc.round(10).iso8601(10)}"
       return record
     end
 
     # TODO - move this method to KubernetesClient or helper class
     def getContainerNodeInventoryRecord(item, batchTime = Time.utc.iso8601)
+      $log.info "in_kube_nodes::getContainerNodeInventoryRecord:Start #{Time.now.utc.round(10).iso8601(10)}"
       containerNodeInventoryRecord = {}
       begin
         containerNodeInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
@@ -487,11 +548,13 @@ module Fluent
       rescue => errorStr
         $log.warn "in_kube_nodes::getContainerNodeInventoryRecord:Failed: #{errorStr}"
       end
+      $log.info "in_kube_nodes::getContainerNodeInventoryRecord:End #{Time.now.utc.round(10).iso8601(10)}"
       return containerNodeInventoryRecord
     end
 
     # TODO - move this method to KubernetesClient or helper class
     def getNodeTelemetryProps(item)
+      $log.info "in_kube_nodes::getNodeTelemetryProps:Start #{Time.now.utc.round(10).iso8601(10)}"
       properties = {}
       begin
         properties["Computer"] = item["metadata"]["name"]
@@ -512,6 +575,7 @@ module Fluent
       rescue => errorStr
         $log.warn "in_kube_nodes::getContainerNodeIngetNodeTelemetryPropsventoryRecord:Failed: #{errorStr}"
       end
+      $log.info "in_kube_nodes::getNodeTelemetryProps:End #{Time.now.utc.round(10).iso8601(10)}"
       return properties
     end
   end # Kube_Node_Input
@@ -525,7 +589,7 @@ module Fluent
       @@RECORD_TIME_TO_LIVE = 60*20  # units are seconds, so clear the cache every 20 minutes.
 
       def initialize
-        $log.info "in_kube_nodes::NodeStatsCache:initialize:Start: @ #{Time.now.utc.round(10).iso8601(6)}"
+        $log.info "in_kube_nodes::NodeStatsCache:initialize:Start: @ #{Time.now.utc.round(10).iso8601(10)}"
         @cacheHash = {}
         @timeAdded = {}  # records when an entry was last added
         @lock = Mutex.new
@@ -533,20 +597,20 @@ module Fluent
 
         @cacheHash.default = 0.0
         @lastCacheClearTime = DateTime.now.to_time.to_i
-        $log.info "in_kube_nodes::NodeStatsCache:initialize:End: @ #{Time.now.utc.round(10).iso8601(6)}"
+        $log.info "in_kube_nodes::NodeStatsCache:initialize:End: @ #{Time.now.utc.round(10).iso8601(10)}"
       end
 
       def get_capacity(node_name)
-        $log.info "in_kube_nodes::NodeStatsCache:get_capacity:Start: @ #{Time.now.utc.round(10).iso8601(6)}"
+        $log.info "in_kube_nodes::NodeStatsCache:get_capacity:Start: @ #{Time.now.utc.round(10).iso8601(10)}"
         @lock.synchronize do
           retval = @cacheHash[node_name]
           return retval
         end
-        $log.info "in_kube_nodes::NodeStatsCache:get_capacity:End: @ #{Time.now.utc.round(10).iso8601(6)}"
+        $log.info "in_kube_nodes::NodeStatsCache:get_capacity:End: @ #{Time.now.utc.round(10).iso8601(10)}"
       end
 
       def set_capacity(host, val)
-        $log.info "in_kube_nodes::NodeStatsCache:set_capacity:Start: @ #{Time.now.utc.round(10).iso8601(6)}"
+        $log.info "in_kube_nodes::NodeStatsCache:set_capacity:Start: @ #{Time.now.utc.round(10).iso8601(10)}"
         # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
         current_time = DateTime.now.to_time.to_i
         if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
@@ -558,11 +622,11 @@ module Fluent
           @cacheHash[host] = val
           @timeAdded[host] = current_time
         end
-        $log.info "in_kube_nodes::NodeStatsCache:set_capacity:End: @ #{Time.now.utc.round(10).iso8601(6)}"
+        $log.info "in_kube_nodes::NodeStatsCache:set_capacity:End: @ #{Time.now.utc.round(10).iso8601(10)}"
       end
 
       def clean_cache()
-        $log.info "in_kube_nodes::NodeStatsCache:clean_cache:Start @ #{Time.now.utc.round(10).iso8601(6)}"
+        $log.info "in_kube_nodes::NodeStatsCache:clean_cache:Start @ #{Time.now.utc.round(10).iso8601(10)}"
         cacheClearTime = DateTime.now.to_time.to_i
         @lock.synchronize do
           nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
@@ -578,7 +642,7 @@ module Fluent
             @timeAdded.delete(node_name)
           }
         end
-        $log.info "in_kube_nodes::NodeStatsCache:clean_cache:End @ #{Time.now.utc.round(10).iso8601(6)}"
+        $log.info "in_kube_nodes::NodeStatsCache:clean_cache:End @ #{Time.now.utc.round(10).iso8601(10)}"
       end
     end  # NodeCache
 
@@ -587,12 +651,12 @@ module Fluent
     @@memCache = NodeCache.new
 
     def cpu()
-      $log.info "in_kube_nodes::NodeStatsCache:cpu() @ #{Time.now.utc.round(10).iso8601(6)}"
+      $log.info "in_kube_nodes::NodeStatsCache:cpu() @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@cpuCache
     end
 
     def mem()
-      $log.info "in_kube_nodes::NodeStatsCache:mem() @ #{Time.now.utc.round(10).iso8601(6)}"
+      $log.info "in_kube_nodes::NodeStatsCache:mem() @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@memCache
     end
   end

@@ -26,7 +26,7 @@ class KubernetesApiClient
   #@@IsLinuxCluster = nil
   @@KubeSystemNamespace = "kube-system"
   @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_client_log.txt"
-  @Log = Logger.new(@LogPath, 2, 100 * 1048576) #keep last 2 files, max log file size = 100M (# ganga - 100mb for debugging)
+  @Log = Logger.new(@LogPath, 2, 200 * 1048576) #keep last 2 files, max log file size = 100M (# ganga - 200MB for debugging)
   @@TokenFileName = "/var/run/secrets/kubernetes.io/serviceaccount/token"
   @@TokenStr = nil
   @@NodeMetrics = Hash.new
@@ -52,25 +52,25 @@ class KubernetesApiClient
             Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
               kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
               kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
-              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.round(10).iso8601(6)}"
+              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.round(10).iso8601(10)}"
               response = http.request(kubeApiRequest)
-              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.round(10).iso8601(6)}"
+              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.round(10).iso8601(10)}"
             end
           end
         end
       rescue => error
-        @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.round(10).iso8601(10)}")
       end
       if (!response.nil?)
         if (!response.body.nil? && response.body.empty?)
-          @Log.warn("KubernetesAPIClient::getKubeResourceInfo : Got empty response from Kube API for #{resource} @ #{Time.now.utc.round(10).iso8601(6)}")
+          @Log.warn("KubernetesAPIClient::getKubeResourceInfo : Got empty response from Kube API for #{resource} @ #{Time.now.utc.round(10).iso8601(10)}")
         end
       end
       return response
     end
 
     def getTokenStr
-      @Log.info "KubernetesAPIClient::getTokenStr @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getTokenStr @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@TokenStr if !@@TokenStr.nil?
       begin
         if File.exist?(@@TokenFileName) && File.readable?(@@TokenFileName)
@@ -84,7 +84,7 @@ class KubernetesApiClient
     end
 
     def getClusterRegion
-      @Log.info "KubernetesAPIClient::getClusterRegion @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getClusterRegion @ #{Time.now.utc.round(10).iso8601(10)}"
       if ENV["AKS_REGION"]
         return ENV["AKS_REGION"]
       else
@@ -94,7 +94,7 @@ class KubernetesApiClient
     end
 
     def getResourceUri(resource, api_group)
-      @Log.info "KubernetesAPIClient::getResourceUri @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getResourceUri @ #{Time.now.utc.round(10).iso8601(10)}"
       begin
         if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
           if api_group.nil?
@@ -112,7 +112,7 @@ class KubernetesApiClient
     end
 
     def getClusterName
-      @Log.info "KubernetesAPIClient::getClusterName @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getClusterName @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@ClusterName if !@@ClusterName.nil?
       @@ClusterName = "None"
       begin
@@ -126,9 +126,9 @@ class KubernetesApiClient
             @@ClusterName = cluster
           else
             kubesystemResourceUri = "namespaces/" + @@KubeSystemNamespace + "/pods"
-            @Log.info("KubernetesApiClient::getClusterName : Getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+            @Log.info("KubernetesApiClient::getClusterName : Getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
             podInfo = JSON.parse(getKubeResourceInfo(kubesystemResourceUri).body)
-            @Log.info("KubernetesApiClient::getClusterName : Done getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+            @Log.info("KubernetesApiClient::getClusterName : Done getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
             podInfo["items"].each do |items|
               if items["metadata"]["name"].include? "kube-controller-manager"
                 items["spec"]["containers"][0]["command"].each do |command|
@@ -143,12 +143,12 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("getClusterName failed: #{error}")
       end
-      @Log.info "KubernetesAPIClient::getClusterName-End*** @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getClusterName-End*** @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@ClusterName
     end
 
     def getClusterId
-      @Log.info "KubernetesAPIClient::getClusterId @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getClusterId @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@ClusterId if !@@ClusterId.nil?
       #By default initialize ClusterId to ClusterName.
       #<TODO> In ACS/On-prem, we need to figure out how we can generate ClusterId
@@ -163,12 +163,12 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("getClusterId failed: #{error}")
       end
-      @Log.info "KubernetesAPIClient::getClusterId-End*** @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getClusterId-End*** @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@ClusterId
     end
 
     def isAROV3Cluster
-      @Log.info "KubernetesAPIClient::isAROV3Cluster @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::isAROV3Cluster @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@IsAROV3Cluster if !@@IsAROV3Cluster.nil?
       @@IsAROV3Cluster = false
       begin
@@ -179,23 +179,23 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("KubernetesApiClient::IsAROV3Cluster : IsAROV3Cluster failed #{error}")
       end
-      @Log.info "KubernetesAPIClient::isAROV3Cluster-End*** @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::isAROV3Cluster-End*** @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@IsAROV3Cluster
     end
 
     def isAROv3MasterOrInfraPod(nodeName)
-      @Log.info "KubernetesAPIClient::isAROv3MasterOrInfraPod @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::isAROv3MasterOrInfraPod @ #{Time.now.utc.round(10).iso8601(10)}"
       return isAROV3Cluster() && (!nodeName.nil? && (nodeName.downcase.start_with?("infra-") || nodeName.downcase.start_with?("master-")))
     end
 
     def isNodeMaster
-      @Log.info "KubernetesAPIClient::isNodeMaster @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::isNodeMaster @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@IsNodeMaster if !@@IsNodeMaster.nil?
       @@IsNodeMaster = false
       begin
-        @Log.info("KubernetesApiClient::isNodeMaster : Getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesApiClient::isNodeMaster : Getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         allNodesInfo = JSON.parse(getKubeResourceInfo("nodes").body)
-        @Log.info("KubernetesApiClient::isNodeMaster : Done getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesApiClient::isNodeMaster : Done getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         if !allNodesInfo.nil? && !allNodesInfo.empty?
           thisNodeName = OMS::Common.get_hostname
           allNodesInfo["items"].each do |item|
@@ -210,7 +210,7 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("KubernetesApiClient::isNodeMaster : node role request failed: #{error}")
       end
-      @Log.info "KubernetesAPIClient::isNodeMaster-End*** @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::isNodeMaster-End*** @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@IsNodeMaster
     end
 
@@ -257,9 +257,9 @@ class KubernetesApiClient
     #    return @@IsLinuxCluster if !@@IsLinuxCluster.nil?
     #    @@IsLinuxCluster = true
     #    begin
-    #        @Log.info("KubernetesApiClient::isLinuxCluster : Getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+    #        @Log.info("KubernetesApiClient::isLinuxCluster : Getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
     #        allNodesInfo = JSON.parse(getKubeResourceInfo('nodes').body)
-    #        @Log.info("KubernetesApiClient::isLinuxCluster : Done getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+    #        @Log.info("KubernetesApiClient::isLinuxCluster : Done getting nodes from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
     #        if !allNodesInfo.nil? && !allNodesInfo.empty?
     #            allNodesInfo['items'].each do |item|
     #                if !(item['status']['nodeInfo']['operatingSystem'].casecmp('linux') == 0)
@@ -291,7 +291,7 @@ class KubernetesApiClient
 
     # returns a hash of windows node names and their internal IPs
     def getWindowsNodes
-      @Log.info "KubernetesAPIClient::getWindowsNodes:Start @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getWindowsNodes:Start @ #{Time.now.utc.round(10).iso8601(10)}"
       winNodes = []
       begin
         # get only windows nodes
@@ -330,11 +330,11 @@ class KubernetesApiClient
         @Log.warn("Error in get windows nodes: #{error}")
         return nil
       end
-      @Log.info "KubernetesAPIClient::getWindowsNodes:End @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getWindowsNodes:End @ #{Time.now.utc.round(10).iso8601(10)}"
     end
 
     def getWindowsNodesArray
-      @Log.info "KubernetesAPIClient::getWindowsNodesArray @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getWindowsNodesArray @ #{Time.now.utc.round(10).iso8601(10)}"
       return @@WinNodeArray
     end
 
@@ -342,9 +342,9 @@ class KubernetesApiClient
       containers = Hash.new
       begin
         kubesystemResourceUri = "namespaces/" + namespace + "/pods"
-        @Log.info("KubernetesApiClient::getContainerIDs : Getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesApiClient::getContainerIDs : Getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         podInfo = JSON.parse(getKubeResourceInfo(kubesystemResourceUri).body)
-        @Log.info("KubernetesApiClient::getContainerIDs : Done getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesApiClient::getContainerIDs : Done getting pods from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         podInfo["items"].each do |item|
           if (!item["status"].nil? && !item["status"].empty? && !item["status"]["containerStatuses"].nil? && !item["status"]["containerStatuses"].empty?)
             item["status"]["containerStatuses"].each do |cntr|
@@ -365,9 +365,9 @@ class KubernetesApiClient
         if showTimeStamp
           kubesystemResourceUri += "&timestamps=true"
         end
-        @Log.info("KubernetesApiClient::getContainerLogs : Getting logs from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesApiClient::getContainerLogs : Getting logs from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         containerLogs = getKubeResourceInfo(kubesystemResourceUri).body
-        @Log.info("KubernetesApiClient::getContainerLogs : Done getting logs from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesApiClient::getContainerLogs : Done getting logs from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
       rescue => error
         @Log.warn("Pod logs request failed: #{error}")
       end
@@ -384,9 +384,9 @@ class KubernetesApiClient
           kubesystemResourceUri += "&timestamps=true"
         end
         @Log.info("calling #{kubesystemResourceUri}")
-        @Log.info("KubernetesApiClient::getContainerLogsSinceTime : Getting logs from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesApiClient::getContainerLogsSinceTime : Getting logs from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
         containerLogs = getKubeResourceInfo(kubesystemResourceUri).body
-        @Log.info("KubernetesApiClient::getContainerLogsSinceTime : Done getting logs from Kube API @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesApiClient::getContainerLogsSinceTime : Done getting logs from Kube API @ #{Time.now.utc.round(10).iso8601(10)}")
       rescue => error
         @Log.warn("Pod logs request failed: #{error}")
       end
@@ -394,7 +394,7 @@ class KubernetesApiClient
     end
 
     def getPodUid(podNameSpace, podMetadata)
-      @Log.info "KubernetesAPIClient::getPodUid:Start @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getPodUid:Start @ #{Time.now.utc.round(10).iso8601(10)}"
       podUid = nil
       begin
         if podNameSpace.eql?("kube-system") && !podMetadata.key?("ownerReferences")
@@ -415,12 +415,12 @@ class KubernetesApiClient
         @Log.warn "KubernetesApiClient::getPodUid:Failed to get poduid: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-      @Log.info "KubernetesAPIClient::getPodUid:End @ #{Time.now.utc.round(10).iso8601(6)}"
+      @Log.info "KubernetesAPIClient::getPodUid:End @ #{Time.now.utc.round(10).iso8601(10)}"
       return podUid
     end
 
     def getContainerResourceRequestsAndLimits(pod, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
-      @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start @ #{Time.now.utc.round(10).iso8601(6)}")
+      @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start @ #{Time.now.utc.round(10).iso8601(10)}")
       metricItems = []
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
       timeDifferenceInMinutes = timeDifference / 60
@@ -428,9 +428,9 @@ class KubernetesApiClient
         clusterId = getClusterId
         podNameSpace = pod["metadata"]["namespace"]
         podName = pod["metadata"]["name"]
-        @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:getPodUid @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:getPodUid @ #{Time.now.utc.round(10).iso8601(10)}")
         podUid = getPodUid(podNameSpace, pod["metadata"])
-        @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:getPodUid @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:getPodUid @ #{Time.now.utc.round(10).iso8601(10)}")
         if podUid.nil?
           return metricItems
         end
@@ -441,11 +441,11 @@ class KubernetesApiClient
           nodeName = pod["spec"]["nodeName"]
         end
         # For ARO, skip the pods scheduled on to master or infra nodes to ingest
-        @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:isAROv3MasterOrInfraPod @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:isAROv3MasterOrInfraPod @ #{Time.now.utc.round(10).iso8601(10)}")
         if isAROv3MasterOrInfraPod(nodeName)
           return metricItems
         end
-        @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:isAROv3MasterOrInfraPod @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:isAROv3MasterOrInfraPod @ #{Time.now.utc.round(10).iso8601(10)}")
 
         podContainers = []
         if !pod["spec"]["containers"].nil? && !pod["spec"]["containers"].empty?
@@ -459,10 +459,10 @@ class KubernetesApiClient
         if (!podContainers.nil? && !podContainers.empty? && !pod["spec"]["nodeName"].nil?)
           podContainers.each do |container|
             containerName = container["name"]
-            @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+            @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
             #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
             if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
-              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:podContainers.each:getContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:podContainers.each:getContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
 
               metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
 
@@ -487,14 +487,14 @@ class KubernetesApiClient
               metricItems.push(metricItem)
               #Telemetry about omsagent requests and limits
               begin
-                @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:omsagent requests and limits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+                @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:omsagent requests and limits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
 
                 if (podName.downcase.start_with?("omsagent-") && podNameSpace.eql?("kube-system") && containerName.downcase.start_with?("omsagent"))
                   nodePodContainerKey = [nodeName, podName, containerName, metricNametoReturn].join("~~")
                   @@resourceLimitsTelemetryHash[nodePodContainerKey] = metricValue
                 end
                 if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
-                  @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:sendMetricTelemetry for omsagent requests and limits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+                  @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:sendMetricTelemetry for omsagent requests and limits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
 
                   @@resourceLimitsTelemetryHash.each { |key, value|
                     keyElements = key.split("~~")
@@ -512,22 +512,22 @@ class KubernetesApiClient
                   }
                   @@telemetryTimeTracker = DateTime.now.to_time.to_i
                   @@resourceLimitsTelemetryHash = {}
-                  @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:sendMetricTelemetry for omsagent requests and limits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+                  @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:sendMetricTelemetry for omsagent requests and limits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
                 end
-                @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:omsagent requests and limits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+                @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:omsagent requests and limits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
               rescue => errorStr
                 @Log.warn("Exception while generating Telemetry from getContainerResourceRequestsAndLimits failed: #{errorStr} for metric #{metricNameToCollect}")
               end
-              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:podContainers.each:getContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:podContainers.each:getContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
               #No container level limit for the given metric, so default to node level limit
             else
-              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:podContainers.each:getNodeLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:podContainers.each:getNodeLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
               nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
               if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
-                @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:podContainers.each:FoundNodeLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+                @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:Start:podContainers.each:FoundNodeLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
                 metricValue = @@NodeMetrics[nodeMetricsHashKey]
                 #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
-                @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:podContainers.each:FoundNodeLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+                @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:podContainers.each:FoundNodeLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
                 metricItem = {}
                 metricItem["DataItems"] = []
 
@@ -548,21 +548,21 @@ class KubernetesApiClient
                 metricItem["DataItems"].push(metricProps)
                 metricItems.push(metricItem)
               end
-              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:podContainers.each:getNodeLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:podContainers.each:getNodeLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
             end
-            @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+            @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
           end
         end
       rescue => error
         @Log.warn("getcontainerResourceRequestsAndLimits failed: #{error} for metric #{metricCategory} #{metricNameToCollect}")
         return metricItems
       end
-      @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End @ #{Time.now.utc.round(10).iso8601(6)}")
+      @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimits:End @ #{Time.now.utc.round(10).iso8601(10)}")
       return metricItems
     end #getContainerResourceRequestAndLimits
 
     def getContainerResourceRequestsAndLimitsAsInsightsMetrics(pod, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
-      @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start @ #{Time.now.utc.round(10).iso8601(6)}")
+      @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start @ #{Time.now.utc.round(10).iso8601(10)}")
       metricItems = []
       begin
         clusterId = getClusterId
@@ -601,21 +601,21 @@ class KubernetesApiClient
           end
           podContainers.each do |container|
             containerName = container["name"]
-            @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+            @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
             metricValue = nil
             #metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
             if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)
-              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start:podContainers.each:ContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start:podContainers.each:ContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
               metricValue = getMetricNumericValue(metricNameToCollect, container["resources"][metricCategory][metricNameToCollect])
-              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:End:podContainers.each:ContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:End:podContainers.each:ContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
             else
               #No container level limit for the given metric, so default to node level limit for non-gpu metrics
-              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start:podContainers.each:NoContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:Start:podContainers.each:NoContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
               if (metricNameToCollect.downcase != "nvidia.com/gpu") && (metricNameToCollect.downcase != "amd.com/gpu")
                 nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
                 metricValue = @@NodeMetrics[nodeMetricsHashKey]
               end
-              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:End:podContainers.each:NoContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+              @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:End:podContainers.each:NoContainerLevelLimits:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
             end
             if (!metricValue.nil?)
               metricItem = {}
@@ -636,14 +636,14 @@ class KubernetesApiClient
 
               metricItems.push(metricItem)
             end
-            @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:End:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+            @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:End:podContainers.each:PodName:#{podName},ContainerName:#{containerName},metricCategory:#{metricCategory},metricName:#{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
           end
         end
       rescue => error
-        @Log.warn("getcontainerResourceRequestsAndLimitsAsInsightsMetrics failed: #{error} for metric #{metricCategory} #{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(6)}")
+        @Log.warn("getcontainerResourceRequestsAndLimitsAsInsightsMetrics failed: #{error} for metric #{metricCategory} #{metricNameToCollect} @ #{Time.now.utc.round(10).iso8601(10)}")
         return metricItems
       end
-      @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:End @ #{Time.now.utc.round(10).iso8601(6)}")
+      @Log.info("KubernetesAPIClient:getContainerResourceRequestsAndLimitsAsInsightsMetrics:End @ #{Time.now.utc.round(10).iso8601(10)}")
       return metricItems
     end #getContainerResourceRequestAndLimitsAsInsightsMetrics
 
@@ -832,13 +832,13 @@ class KubernetesApiClient
       continuationToken = nil
       resourceInventory = nil
       begin
-        @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.round(10).iso8601(6)}"
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.round(10).iso8601(10)}"
         resourceInfo = getKubeResourceInfo(uri, api_group: api_group)
-        @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.round(10).iso8601(6)}"
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.round(10).iso8601(10)}"
         if !resourceInfo.nil?
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.round(10).iso8601(6)}"
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.round(10).iso8601(10)}"
           resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.round(10).iso8601(6)}"
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.round(10).iso8601(10)}"
           resourceInfo = nil
         end
         if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
@@ -867,12 +867,12 @@ class KubernetesApiClient
     end
 
     def getKubeServicesInventoryRecords(serviceList, batchTime = Time.utc.iso8601)
-      @Log.info("KubernetesAPIClient:getKubeServicesInventoryRecords:Start @ #{Time.now.utc.round(10).iso8601(6)}")
+      @Log.info("KubernetesAPIClient:getKubeServicesInventoryRecords:Start @ #{Time.now.utc.round(10).iso8601(10)}")
       kubeServiceRecords = []
       begin
         if (!serviceList.nil? && !serviceList.empty? && serviceList.key?("items") && !serviceList["items"].nil? && !serviceList["items"].empty?)
           servicesCount = serviceList["items"].length
-          @Log.info("KubernetesApiClient::getKubeServicesInventoryRecords : number of services in serviceList  #{servicesCount} @ #{Time.now.utc.round(10).iso8601(6)}")
+          @Log.info("KubernetesApiClient::getKubeServicesInventoryRecords : number of services in serviceList  #{servicesCount} @ #{Time.now.utc.round(10).iso8601(10)}")
           serviceList["items"].each do |item|
             kubeServiceRecord = {}
             kubeServiceRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
@@ -891,7 +891,7 @@ class KubernetesApiClient
         @Log.warn "KubernetesApiClient::getKubeServicesInventoryRecords:Failed with an error : #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-      @Log.info("KubernetesAPIClient:getKubeServicesInventoryRecords:End @ #{Time.now.utc.round(10).iso8601(6)}")
+      @Log.info("KubernetesAPIClient:getKubeServicesInventoryRecords:End @ #{Time.now.utc.round(10).iso8601(10)}")
       return kubeServiceRecords
     end
   end
