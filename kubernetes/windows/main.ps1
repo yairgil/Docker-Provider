@@ -43,48 +43,16 @@ function Start-FileSystemWatcher {
 
 function Set-EnvironmentVariables {
     $domain = "opinsights.azure.com"
-    $mcs_endpoint = "monitor.azure.com"
-    $cloud_environment = "azurepubliccloud"
+    $cloud_environment = "public"
     if (Test-Path /etc/omsagent-secret/DOMAIN) {
         # TODO: Change to omsagent-secret before merging
         $domain = Get-Content /etc/omsagent-secret/DOMAIN
-        if (![string]::IsNullOrEmpty($domain)) {
-            if ($domain -eq "opinsights.azure.com") {
-                $cloud_environment = "azurepubliccloud"
-                $mcs_endpoint = "monitor.azure.com"
-            } elseif ($domain -eq "opinsights.azure.cn") {
-                $cloud_environment = "azurechinacloud"
-                $mcs_endpoint = "monitor.azure.cn"
-            } elseif ($domain -eq "opinsights.azure.us") {
-                $cloud_environment = "azureusgovernmentcloud"
-                $mcs_endpoint = "monitor.azure.us"
-            } elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
-                $cloud_environment = "usnat"
-                $mcs_endpoint = "monitor.azure.eaglex.ic.gov"
-            } elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
-                $cloud_environment = "ussec"
-                $mcs_endpoint = "monitor.azure.microsoft.scloud"
-            } else {
-                Write-Host "Invalid or Unsupported domain name $($domain). EXITING....."
-                exit 1
-            }
-        } else {
-            Write-Host "Domain name either null or empty. EXITING....."
-            exit 1
-        }
+        $cloud_environment = "national"
     }
-
-    Write-Host "Log analytics domain: $($domain)"
-    Write-Host "MCS endpoint: $($mcs_endpoint)"
-    Write-Host "Cloud Environment: $($cloud_environment)"
 
     # Set DOMAIN
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
     [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Machine")
-
-    # Set MCS Endpoint
-    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Process")
-    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Machine")
 
     # Set CLOUD_ENVIRONMENT
     [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
@@ -151,28 +119,12 @@ function Set-EnvironmentVariables {
         $env:AZMON_AGENT_CFG_SCHEMA_VERSION
     }
 
-    # Need to do this before the SA fetch for AI key for airgapped clouds so that it is not overwritten with defaults.
-    $appInsightsAuth = [System.Environment]::GetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", "process")
-    if (![string]::IsNullOrEmpty($appInsightsAuth)) {
-        [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $appInsightsAuth, "machine")
-        Write-Host "Successfully set environment variable APPLICATIONINSIGHTS_AUTH - $($appInsightsAuth) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable APPLICATIONINSIGHTS_AUTH for target 'machine' since it is either null or empty"
-    }
-
-    $appInsightsEndpoint = [System.Environment]::GetEnvironmentVariable("APPLICATIONINSIGHTS_ENDPOINT", "process")
-    if (![string]::IsNullOrEmpty($appInsightsEndpoint)) {
-        [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_ENDPOINT", $appInsightsEndpoint, "machine")
-        Write-Host "Successfully set environment variable APPLICATIONINSIGHTS_ENDPOINT - $($appInsightsEndpoint) for target 'machine'..."
-    }
-
     # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
     $aiKeyURl = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH_URL')
     if ($aiKeyURl) {
         $aiKeyFetched = ""
         # retry up to 5 times
-        for ( $i = 1; $i -le 4; $i++) {
+        for( $i = 1; $i -le 4; $i++) {
             try {
                 $response = Invoke-WebRequest -uri $aiKeyURl -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
 
@@ -190,7 +142,7 @@ function Set-EnvironmentVariables {
                 Write-Host $_.Exception
             }
         }
-
+        
         # Check if the fetched IKey was properly encoded. if not then turn off telemetry
         if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
             Write-Host "Using cloud-specific instrumentation key"
@@ -209,104 +161,15 @@ function Set-EnvironmentVariables {
     [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Process")
     [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Machine")
 
-    # Setting environment variables required by the fluentd plugins
-    $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
-    if (![string]::IsNullOrEmpty($aksResourceId)) {
-        [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
-        Write-Host "Successfully set environment variable AKS_RESOURCE_ID - $($aksResourceId) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable AKS_RESOURCE_ID for target 'machine' since it is either null or empty"
-    }
-
-    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
-    if (![string]::IsNullOrEmpty($aksRegion)) {
-        [System.Environment]::SetEnvironmentVariable("AKS_REGION", $aksRegion, "machine")
-        Write-Host "Successfully set environment variable AKS_REGION - $($aksRegion) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
-    }
-
-    $controllerType = [System.Environment]::GetEnvironmentVariable("CONTROLLER_TYPE", "process")
-    if (![string]::IsNullOrEmpty($controllerType)) {
-        [System.Environment]::SetEnvironmentVariable("CONTROLLER_TYPE", $controllerType, "machine")
-        Write-Host "Successfully set environment variable CONTROLLER_TYPE - $($controllerType) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable CONTROLLER_TYPE for target 'machine' since it is either null or empty"
-    }
-
-    $osType = [System.Environment]::GetEnvironmentVariable("OS_TYPE", "process")
-    if (![string]::IsNullOrEmpty($osType)) {
-        [System.Environment]::SetEnvironmentVariable("OS_TYPE", $osType, "machine")
-        Write-Host "Successfully set environment variable OS_TYPE - $($osType) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable OS_TYPE for target 'machine' since it is either null or empty"
-    }
-
-    $userMsi = [System.Environment]::GetEnvironmentVariable("USER_ASSIGNED_IDENTITY_CLIENT_ID", "process")
-    if (![string]::IsNullOrEmpty($userMsi)) {
-        [System.Environment]::SetEnvironmentVariable("USER_ASSIGNED_IDENTITY_CLIENT_ID", $userMsi, "machine")
-        Write-Host "Successfully set environment variable USER_ASSIGNED_IDENTITY_CLIENT_ID - $($userMsi) for target 'machine'..."
-    }
-
-    $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
-    if (![string]::IsNullOrEmpty($hostName)) {
-        [System.Environment]::SetEnvironmentVariable("HOSTNAME", $hostName, "machine")
-        Write-Host "Successfully set environment variable HOSTNAME - $($hostName) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
-    }
-
-    # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH environment variable
-    $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH", "process")
-    if (![string]::IsNullOrEmpty($isAADMSIAuth)) {
-        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Process")
-        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Machine")
-        Write-Host "Successfully set environment variable AAD_MSI_AUTH_MODE - $($isAADMSIAuth) for target 'machine'..."
-    }
-
-    # check if use token proxy endpoint set via USE_IMDS_TOKEN_PROXY_END_POINT environment variable
-    $useIMDSTokenProxyEndpoint = [System.Environment]::GetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", "process")
-    if (![string]::IsNullOrEmpty($useIMDSTokenProxyEndpoint)) {
-        [System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Process")
-        [System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Machine")
-        Write-Host "Successfully set environment variable USE_IMDS_TOKEN_PROXY_END_POINT - $($useIMDSTokenProxyEndpoint) for target 'machine'..."
-    }
-    $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
-    if (![string]::IsNullOrEmpty($nodeIp)) {
-        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
-        Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
-    }
-
-    $agentVersion = [System.Environment]::GetEnvironmentVariable("AGENT_VERSION", "process")
-    if (![string]::IsNullOrEmpty($agentVersion)) {
-        [System.Environment]::SetEnvironmentVariable("AGENT_VERSION", $agentVersion, "machine")
-        Write-Host "Successfully set environment variable AGENT_VERSION - $($agentVersion) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable AGENT_VERSION for target 'machine' since it is either null or empty"
-    }
 
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
     .\setenv.ps1
-
-    # run mdm config parser
-    ruby /opt/omsagentwindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
-    .\setmdmenv.ps1
 }
 
 function Get-ContainerRuntime {
     # default container runtime and make default as containerd when containerd becomes default in AKS
     $containerRuntime = "docker"
-    $cAdvisorIsSecure = "false"
     $response = ""
     $NODE_IP = ""
     try {
@@ -346,18 +209,12 @@ function Get-ContainerRuntime {
                     if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
                         Write-Host "API call to https://$($NODE_IP):10250/pods succeeded"
                         $isPodsAPISuccess = $true
-                        $cAdvisorIsSecure = "true"
                     }
                 }
                 catch {
                     Write-Host "API call to https://$($NODE_IP):10250/pods failed"
                 }
             }
-
-            # set IS_SECURE_CADVISOR_PORT env for debug and telemetry purpose
-            Write-Host "Setting IS_SECURE_CADVISOR_PORT environment variable as $($cAdvisorIsSecure)"
-            [System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Process")
-            [System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Machine")
 
             if ($isPodsAPISuccess) {
                 if (![string]::IsNullOrEmpty($response.Content)) {
@@ -416,7 +273,7 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
-function Start-Fluent {
+function Start-Fluent-Telegraf {
 
     # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
     # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
@@ -429,7 +286,15 @@ function Start-Fluent {
     if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
-        (Get-Content -Path C:/etc/fluent/fluent.conf -Raw) -replace 'fluent-docker-parser.conf', 'fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
+        (Get-Content -Path C:/etc/fluent/fluent.conf -Raw)  -replace 'fluent-docker-parser.conf','fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
+    }
+
+    # Start telegraf only in sidecar scraping mode
+    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
+    {
+        Write-Host "Starting telegraf..."
+        Start-Telegraf
     }
 
     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
@@ -467,6 +332,7 @@ function Start-Telegraf {
     else {
         Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
     }
+    
     $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
     if (![string]::IsNullOrEmpty($nodeIp)) {
         [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
@@ -488,15 +354,14 @@ function Start-Telegraf {
             sc.exe \\$serverName config telegraf start= delayed-auto
             Write-Host "Successfully set delayed start for telegraf"
 
-        }
-        else {
+        } else {
             Write-Host "Failed to get environment variable PODNAME to set delayed telegraf start"
         }
     }
     catch {
-        $e = $_.Exception
-        Write-Host $e
-        Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
+            $e = $_.Exception
+            Write-Host $e
+            Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
     }
     Write-Host "Running telegraf service in test mode"
     C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
@@ -505,7 +370,8 @@ function Start-Telegraf {
 
     # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
     Get-Service telegraf | findstr Running
-    if ($? -eq $false) {
+    if ($? -eq $false)
+    {
         Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
         Start-Sleep -s 30
         C:\opt\telegraf\telegraf.exe --service start
@@ -538,56 +404,15 @@ function Test-CertificatePath {
     }
 }
 
-function Bootstrap-CACertificates {
-    try {
-        # This is required when the root CA certs are different for some clouds.
-        $certMountPath = "C:\ca"
-        Get-ChildItem $certMountPath |
-        Foreach-Object {
-            $absolutePath = $_.FullName
-            Write-Host "cert path: $($absolutePath)"
-            Import-Certificate -FilePath $absolutePath -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
-        }
-    }
-    catch {
-        $e = $_.Exception
-        Write-Host $e
-        Write-Host "exception occured in Bootstrap-CACertificates..."
-    }
-}
-
 Start-Transcript -Path main.txt
 
 Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
 
-
-    # Start telegraf only in sidecar scraping mode
-    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
-    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true') {
-        Write-Host "Starting telegraf..."
-        Start-Telegraf
-    }
-
-#Bootstrapping CA certs for non public clouds and AKS clusters
-$aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
-$requiresCertBootstrap = [System.Environment]::GetEnvironmentVariable("REQUIRES_CERT_BOOTSTRAP")
-if (![string]::IsNullOrEmpty($requiresCertBootstrap) -and `
-        $requiresCertBootstrap.ToLower() -eq 'true' -and `
-        ![string]::IsNullOrEmpty($aksResourceId) -and `
-        $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/")) {
-    Bootstrap-CACertificates
-}
-
-$isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH")
-if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
-    Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
-} else {
-    Generate-Certificates
-    Test-CertificatePath
-}
-Start-Fluent
+Generate-Certificates
+Test-CertificatePath
+Start-Fluent-Telegraf
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId

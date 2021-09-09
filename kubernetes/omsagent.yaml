@@ -770,7 +770,7 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-telgraf-is-collecting-1"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-telgraf-is-collecting-3"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
