@@ -590,7 +590,7 @@ else {
     Generate-Certificates
     Test-CertificatePath
 }
-Start-Fluent-Telegraf
+Start-Fluent
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId

@@ -770,7 +770,7 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-telgraf-is-collecting-fluentd-not-running-1"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-only-moved-telegraf-to-starting-2"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
