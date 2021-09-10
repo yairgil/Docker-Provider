@@ -52,23 +52,29 @@ function Set-EnvironmentVariables {
             if ($domain -eq "opinsights.azure.com") {
                 $cloud_environment = "azurepubliccloud"
                 $mcs_endpoint = "monitor.azure.com"
-            } elseif ($domain -eq "opinsights.azure.cn") {
+            }
+            elseif ($domain -eq "opinsights.azure.cn") {
                 $cloud_environment = "azurechinacloud"
                 $mcs_endpoint = "monitor.azure.cn"
-            } elseif ($domain -eq "opinsights.azure.us") {
+            }
+            elseif ($domain -eq "opinsights.azure.us") {
                 $cloud_environment = "azureusgovernmentcloud"
                 $mcs_endpoint = "monitor.azure.us"
-            } elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
+            }
+            elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
                 $cloud_environment = "usnat"
                 $mcs_endpoint = "monitor.azure.eaglex.ic.gov"
-            } elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
+            }
+            elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
                 $cloud_environment = "ussec"
                 $mcs_endpoint = "monitor.azure.microsoft.scloud"
-            } else {
+            }
+            else {
                 Write-Host "Invalid or Unsupported domain name $($domain). EXITING....."
                 exit 1
             }
-        } else {
+        }
+        else {
             Write-Host "Domain name either null or empty. EXITING....."
             exit 1
         }
@@ -416,7 +422,7 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
-function Start-Fluent-Telegraf {
+function Start-Fluent {
 
     # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
     # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
@@ -430,13 +436,6 @@ function Start-Fluent-Telegraf {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
         (Get-Content -Path C:/etc/fluent/fluent.conf -Raw) -replace 'fluent-docker-parser.conf', 'fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
-    }
-
-    # Start telegraf only in sidecar scraping mode
-    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
-    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true') {
-        Write-Host "Starting telegraf..."
-        Start-Telegraf
     }
 
     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
@@ -565,6 +564,10 @@ function Bootstrap-CACertificates {
 
 Start-Transcript -Path main.txt
 
+Write-Host "Starting telegraf..."
+Start-Telegraf
+
+
 Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
@@ -582,7 +585,8 @@ if (![string]::IsNullOrEmpty($requiresCertBootstrap) -and `
 $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH")
 if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
     Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
-} else {
+}
+else {
     Generate-Certificates
     Test-CertificatePath
 }
