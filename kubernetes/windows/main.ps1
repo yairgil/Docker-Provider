@@ -564,12 +564,12 @@ function Bootstrap-CACertificates {
 
 Start-Transcript -Path main.txt
 
+Remove-WindowsServiceIfItExists "fluentdwinaks"
+Set-EnvironmentVariables
+
 Write-Host "Starting telegraf..."
 Start-Telegraf
 
-
-Remove-WindowsServiceIfItExists "fluentdwinaks"
-Set-EnvironmentVariables
 Start-FileSystemWatcher
 
 #Bootstrapping CA certs for non public clouds and AKS clusters

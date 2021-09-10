@@ -770,7 +770,7 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-only-moved-telegraf-to-starting-2"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-kaveesh-only-moved-telegraf-to-starting-3"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
