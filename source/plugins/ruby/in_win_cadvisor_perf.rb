@@ -60,25 +60,31 @@ module Fluent::Plugin
         @@istestvar = ENV["ISTEST"]
 
         #Resetting this cache so that it is populated with the current set of containers with every call
+        $log.info("in_win_cadvisor_perf::enumerate.resetWinContainerIdCache.start @ #{Time.now.utc.round(10).iso8601(6)}")
         CAdvisorMetricsAPIClient.resetWinContainerIdCache()
+        $log.info("in_win_cadvisor_perf::enumerate.resetWinContainerIdCache.end @ #{Time.now.utc.round(10).iso8601(6)}")
         if (timeDifferenceInMinutes >= 5)
-          $log.info "in_win_cadvisor_perf: Getting windows nodes"
+          $log.info "in_win_cadvisor_perf: Getting windows nodes @ #{Time.now.utc.round(10).iso8601(6)}"
           nodes = KubernetesApiClient.getWindowsNodes()
           if !nodes.nil?
             @@winNodes = nodes
           end
-          $log.info "in_win_cadvisor_perf : Successuly got windows nodes after 5 minute interval"
+          $log.info "in_win_cadvisor_perf : Successuly got windows nodes after 5 minute interval @ #{Time.now.utc.round(10).iso8601(6)}"
           @@winNodeQueryTimeTracker = DateTime.now.to_time.to_i
         end
         @@winNodes.each do |winNode|
           eventStream = Fluent::MultiEventStream.new
+          $log.info("in_win_cadvisor_perf::enumerate.getMetrics.start @ #{Time.now.utc.round(10).iso8601(6)}")
           metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601)
+          $log.info("in_win_cadvisor_perf::enumerate.getMetrics.end @ #{Time.now.utc.round(10).iso8601(6)}")
           metricData.each do |record|
             if !record.empty?
               eventStream.add(time, record) if record
             end
           end
+          $log.info("in_win_cadvisor_perf::enumerate.metricsemit_stream.start @ #{Time.now.utc.round(10).iso8601(6)}")
           router.emit_stream(@tag, eventStream) if eventStream
+          $log.info("in_win_cadvisor_perf::enumerate.metricsemit_stream.end @ #{Time.now.utc.round(10).iso8601(6)}")
 
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -87,15 +93,21 @@ module Fluent::Plugin
           #start GPU InsightsMetrics items
           begin
             containerGPUusageInsightsMetricsDataItems = []
+            $log.info("in_win_cadvisor_perf::enumerate.getInsightsMetrics.start @ #{Time.now.utc.round(10).iso8601(6)}")
             containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601))
+            $log.info("in_win_cadvisor_perf::enumerate.getInsightsMetrics.start @ #{Time.now.utc.round(10).iso8601(6)}")
+
             insightsMetricsEventStream = Fluent::MultiEventStream.new
 
             containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
               insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
             end
 
+            $log.info("in_win_cadvisor_perf::enumerate.insightsmetricsemit_stream.start @ #{Time.now.utc.round(10).iso8601(6)}")
             router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
             router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
+            $log.info("in_win_cadvisor_perf::enumerate.insightsmetricsemit_stream.start @ #{Time.now.utc.round(10).iso8601(6)}")
+
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
               $log.info("winCAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
             end
@@ -112,7 +124,7 @@ module Fluent::Plugin
         cleanupTimeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
         cleanupTimeDifferenceInMinutes = cleanupTimeDifference / 60
         if (cleanupTimeDifferenceInMinutes >= 5)
-          $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache"
+          $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache @ #{Time.now.utc.round(10).iso8601(6)}"
           CAdvisorMetricsAPIClient.clearDeletedWinContainersFromCache()
           @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
         end

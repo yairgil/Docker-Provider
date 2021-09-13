@@ -64,15 +64,19 @@ module Fluent::Plugin
       begin
         eventStream = Fluent::MultiEventStream.new
         insightsMetricsEventStream = Fluent::MultiEventStream.new
+        $log.info("in_cadvisor_perf::enumerate.getMetrics.start @ #{Time.now.utc.round(10).iso8601(6)}")
         metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime )
+        $log.info("in_cadvisor_perf::enumerate.getMetrics.end @ #{Time.now.utc.round(10).iso8601(6)}")
         metricData.each do |record|
           eventStream.add(time, record) if record
         end
 
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream.start @ #{Time.now.utc.round(10).iso8601(6)}")
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@mdmtag, eventStream) if eventStream
         router.emit_stream(@containerhealthtag, eventStream) if eventStream
         router.emit_stream(@nodehealthtag, eventStream) if eventStream
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream.end #{Time.now.utc.round(10).iso8601(6)}")
 
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("cAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -82,14 +86,17 @@ module Fluent::Plugin
         begin
           if !@@isWindows.nil? && @@isWindows == false
             containerGPUusageInsightsMetricsDataItems = []
+            $log.info("in_cadvisor_perf::enumerate.getInsightsMetrics.start @ #{Time.now.utc.round(10).iso8601(6)}")
             containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))
+            $log.info("in_cadvisor_perf::enumerate.getInsightsMetrics.end #{Time.now.utc.round(10).iso8601(6)}")
 
-          containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
-            insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
-          end
-
+            $log.info("in_cadvisor_perf::enumerate.insightsmetricsemit_stream.start @ #{Time.now.utc.round(10).iso8601(6)}")
+            containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
+              insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
+            end
             router.emit_stream(@insightsmetricstag, insightsMetricsEventStream) if insightsMetricsEventStream
             router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
+            $log.info("in_cadvisor_perf::enumerate.insightsmetricsemit_stream.end @ #{Time.now.utc.round(10).iso8601(6)}")
 
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
               $log.info("cAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")

@@ -129,6 +129,7 @@ class CAdvisorMetricsAPIClient
     end
 
     def getMetrics(winNode: nil, metricTime: Time.now.utc.iso8601)
+      @Log.info("getMetrics:start @ #{Time.now.utc.round(10).iso8601(6)}")
       metricDataItems = []
       begin
         cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
@@ -202,6 +203,7 @@ class CAdvisorMetricsAPIClient
         @Log.warn("getContainerMetrics failed: #{error}")
         return metricDataItems
       end
+      @Log.info("getMetrics:end @ #{Time.now.utc.round(10).iso8601(6)}")
       return metricDataItems
     end
 
@@ -922,11 +924,11 @@ class CAdvisorMetricsAPIClient
 
     def getResponse(winNode, relativeUri)
       response = nil
-      @Log.info "Getting CAdvisor Uri Response"
+      @Log.info "Getting CAdvisor Uri Response @ #{Time.now.utc.round(10).iso8601(6)}"
       bearerToken = File.read("/var/run/secrets/kubernetes.io/serviceaccount/token")
       begin
         cAdvisorUri = getCAdvisorUri(winNode, relativeUri)
-        @Log.info "cAdvisorUri: #{cAdvisorUri}"
+        @Log.info "cAdvisorUri: #{cAdvisorUri} @ #{Time.now.utc.round(10).iso8601(6)}"
 
         if !cAdvisorUri.nil?
           uri = URI.parse(cAdvisorUri)
@@ -938,18 +940,18 @@ class CAdvisorMetricsAPIClient
               cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
               cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
               response = http.request(cAdvisorApiRequest)
-              @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+              @Log.info "Got response code #{response.code} from #{uri.request_uri} @ #{Time.now.utc.round(10).iso8601(6)}"
             end
           else
             Net::HTTP.start(uri.host, uri.port, :use_ssl => false, :open_timeout => 20, :read_timeout => 40) do |http|
               cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
               response = http.request(cAdvisorApiRequest)
-              @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+              @Log.info "Got response code #{response.code} from #{uri.request_uri} @ #{Time.now.utc.round(10).iso8601(6)}"
             end
           end
         end
       rescue => error
-        @Log.warn("CAdvisor api request for #{cAdvisorUri} failed: #{error}")
+        @Log.warn("CAdvisor api request for #{cAdvisorUri} failed: #{error} @ #{Time.now.utc.round(10).iso8601(6)}")
         telemetryProps = {}
         if !winNode.nil?
           hostName = winNode["Hostname"]
