@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 class MdmAlertTemplates
   Pod_metrics_template = '
     {

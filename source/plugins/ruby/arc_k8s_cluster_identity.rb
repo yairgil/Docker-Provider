@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'debug/open_nonstop'
 require "logger"
 require "net/http"
 require "net/https"

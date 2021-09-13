@@ -14,7 +14,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-
+require 'debug/open_nonstop'
 require 'fluent/output'
 require 'fluent/config/error'
 require 'fluent/clock'

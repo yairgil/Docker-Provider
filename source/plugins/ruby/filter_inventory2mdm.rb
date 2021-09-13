@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.  All rights reserved.
 
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require 'fluent/plugin/filter'
 
 module Fluent::Plugin

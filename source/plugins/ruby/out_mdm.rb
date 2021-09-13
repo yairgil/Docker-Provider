@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require 'fluent/plugin/output'
 
 module Fluent::Plugin
@@ -320,7 +320,7 @@ module Fluent::Plugin
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
           @last_telemetry_sent_time = Time.now
         end
-      rescue Net::HTTPClientException  => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException 
+      rescue Net::HTTPClientException  => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException
         if !response.nil? && !response.body.nil? #body will have actual error
           @log.info "Failed to Post Metrics to MDM : #{e} Response.body: #{response.body}"
         else

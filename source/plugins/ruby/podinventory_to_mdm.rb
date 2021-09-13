@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.  All rights reserved.
 
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require "logger"
 require "yajl/json_gem"
 require "time"

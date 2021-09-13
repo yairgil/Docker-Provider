@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require 'fluent/plugin/filter'
 
 module Fluent::Plugin

@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
@@ -11,7 +11,7 @@ module Fluent::Plugin
 
     @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
-  
+
 
     def initialize
       super
@@ -39,12 +39,13 @@ module Fluent::Plugin
       @winContainerCount = 0
       @controllerData = {}
       @podInventoryE2EProcessingLatencyMs = 0
-      @podsAPIE2ELatencyMs = 0    
-      
+      @podsAPIE2ELatencyMs = 0
+
       @kubeperfTag = "oneagent.containerInsights.LINUX_PERF_BLOB"
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
       @containerInventoryTag = "oneagent.containerInsights.CONTAINER_INVENTORY_BLOB"
-      @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB" 
+      @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
+      @isDisableKPIMDM = true
     end
 
     config_param :run_interval, :time, :default => 60
@@ -55,7 +56,7 @@ module Fluent::Plugin
       @inventoryToMdmConvertor = Inventory2MdmConvertor.new()
     end
 
-    def start      
+    def start
       if @run_interval
         super
         if !ENV["PODS_CHUNK_SIZE"].nil? && !ENV["PODS_CHUNK_SIZE"].empty? && ENV["PODS_CHUNK_SIZE"].to_i > 0
@@ -75,6 +76,12 @@ module Fluent::Plugin
           @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end
         $log.info("in_kube_podinventory::start: PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
+
+        if !ENV["DISABLE_KPI_MDM"].nil? && !ENV["DISABLE_KPI_MDM"].empty? && ENV["DISABLE_KPI_MDM"].downcase == "true".downcase
+          @isDisableKPIMDM = true
+        end
+        $log.info("in_kube_podinventory::start : isDisableKPIMDM=#{@isDisableKPIMDM} @ #{Time.now.utc.round(10).iso8601(10)}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -107,7 +114,7 @@ module Fluent::Plugin
         batchTime = currentTime.utc.iso8601
         serviceRecords = []
         @podInventoryE2EProcessingLatencyMs = 0
-        podInventoryStartTime = (Time.now.to_f * 1000).to_i            
+        podInventoryStartTime = (Time.now.to_f * 1000).to_i
 
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
@@ -197,8 +204,8 @@ module Fluent::Plugin
     end
 
     def parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime = Time.utc.iso8601)
-      currentTime = Time.now   
-      emitTime = Fluent::Engine.now  
+      currentTime = Time.now
+      emitTime = Fluent::Engine.now
       #batchTime = currentTime.utc.iso8601
       eventStream = Fluent::MultiEventStream.new
       containerInventoryStream = Fluent::MultiEventStream.new
@@ -214,8 +221,10 @@ module Fluent::Plugin
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
           podInventoryRecords.each do |record|
             if !record.nil?
-              eventStream.add(emitTime, record) if record                                      
-              @inventoryToMdmConvertor.process_pod_inventory_record(record)            
+              eventStream.add(emitTime, record) if record
+              if !@isDisableKPIMDM
+                @inventoryToMdmConvertor.process_pod_inventory_record(record)
+              end
             end
           end
           # Setting this flag to true so that we can send ContainerInventory records for containers
@@ -232,7 +241,7 @@ module Fluent::Plugin
               # Send container inventory records for containers on windows nodes
               @winContainerCount += containerInventoryRecords.length
               containerInventoryRecords.each do |cirecord|
-                if !cirecord.nil?                
+                if !cirecord.nil?
                   containerInventoryStream.add(emitTime, cirecord) if cirecord
                 end
               end
@@ -255,7 +264,7 @@ module Fluent::Plugin
           containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "cpu", "cpuLimitNanoCores", batchTime))
           containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", batchTime))
 
-          containerMetricDataItems.each do |record|            
+          containerMetricDataItems.each do |record|
             kubePerfEventStream.add(emitTime, record) if record
           end
 
@@ -274,7 +283,7 @@ module Fluent::Plugin
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "nvidia.com/gpu", "containerGpuLimits", batchTime))
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "amd.com/gpu", "containerGpuRequests", batchTime))
           containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "amd.com/gpu", "containerGpuLimits", batchTime))
-          containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|            
+          containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
             insightsMetricsEventStream.add(emitTime, insightsMetricsRecord) if insightsMetricsRecord
           end
 
@@ -325,14 +334,16 @@ module Fluent::Plugin
         end
 
         if continuationToken.nil? #no more chunks in this batch to be sent, get all mdm pod inventory records to send
-          @log.info "Sending pod inventory mdm records to out_mdm"
-          pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
-          @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
-          mdm_pod_inventory_es = Fluent::MultiEventStream.new
-          pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
-            mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
-          } if pod_inventory_mdm_records
-          router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
+          if !@isDisableKPIMDM
+            @log.info "Sending pod inventory mdm records to out_mdm"
+            pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
+            @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
+            mdm_pod_inventory_es = Fluent::MultiEventStream.new
+            pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
+              mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
+            } if pod_inventory_mdm_records
+            router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
+          end
         end
 
         if continuationToken.nil? # sending kube services inventory records
@@ -341,7 +352,7 @@ module Fluent::Plugin
             if !kubeServiceRecord.nil?
               # adding before emit to reduce memory foot print
               kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName              
+              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
               kubeServicesEventStream.add(emitTime, kubeServiceRecord) if kubeServiceRecord
               if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
                 $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
@@ -486,7 +497,9 @@ module Fluent::Plugin
         record["PodRestartCount"] = 0
 
         #Invoke the helper method to compute ready/not ready mdm metric
-        @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
+        if !@isDisableKPIMDM
+          @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
+        end
 
         podContainers = []
         if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
@@ -546,8 +559,10 @@ module Fluent::Plugin
                 record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
               end
               # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
-              if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
-                @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
+              if !@isDisableKPIMDM
+                if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
+                  @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
+                end
               end
             end
 
@@ -574,8 +589,10 @@ module Fluent::Plugin
                   record["ContainerLastStatus"] = newRecord
 
                   #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
-                  if lastStateReason.downcase == Constants::REASON_OOM_KILLED
-                    @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                  if !@isDisableKPIMDM
+                    if lastStateReason.downcase == Constants::REASON_OOM_KILLED
+                      @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                    end
                   end
                   lastStateReason = nil
                 else
@@ -586,8 +603,10 @@ module Fluent::Plugin
               end
 
               #Populate mdm metric for container restart count if greater than 0
-              if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
-                @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+              if !@isDisableKPIMDM
+                if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
+                  @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
+                end
               end
             rescue => errorStr
               $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"
@@ -648,6 +667,6 @@ module Fluent::Plugin
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return serviceName
-    end    
+    end
   end # Kube_Pod_Input
 end # module

@@ -48,6 +48,8 @@ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
 sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >> /etc/apt/sources.list
 sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
+# gangams - gem for debug purpose and remove after debugging
+gem install debug
 # fluentd v1 gem
 gem install fluentd -v "1.12.2" --no-document
 fluentd --setup ./fluent
@@ -60,7 +62,8 @@ rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
 
 # remove build dependencies
-sudo apt-get remove ruby2.6-dev gcc make -y
+# gangams - commented for debug wf stall issue
+# sudo apt-get remove ruby2.6-dev gcc make -y
 
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.

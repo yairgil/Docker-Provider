@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
@@ -18,7 +18,7 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "ApplicationInsightsUtility"
-      require_relative "constants"      
+      require_relative "constants"
 
       # refer tomlparser-agent-config for defaults
       # this configurable via configmap
@@ -41,7 +41,7 @@ module Fluent::Plugin
       super
     end
 
-    def start      
+    def start
       if @run_interval
         super
         if !ENV["HPA_CHUNK_SIZE"].nil? && !ENV["HPA_CHUNK_SIZE"].empty? && ENV["HPA_CHUNK_SIZE"].to_i > 0
@@ -78,7 +78,7 @@ module Fluent::Plugin
         batchTime = currentTime.utc.iso8601
 
         @hpaCount = 0
-       
+
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kubestate_hpa::enumerate : Getting HPAs from Kube API @ #{Time.now.utc.iso8601}")
@@ -186,7 +186,7 @@ module Fluent::Plugin
         end
 
         time = Fluent::Engine.now
-        metricItems.each do |insightsMetricsRecord|         
+        metricItems.each do |insightsMetricsRecord|
           insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
         end
 
@@ -231,6 +231,6 @@ module Fluent::Plugin
         @mutex.lock
       end
       @mutex.unlock
-    end    
+    end
   end
 end

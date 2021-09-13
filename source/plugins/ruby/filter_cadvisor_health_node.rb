@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require 'fluent/plugin/filter'
 
 module Fluent::Plugin
@@ -14,7 +14,7 @@ module Fluent::Plugin
     class CAdvisor2NodeHealthFilter < Filter
         include HealthModel
         Fluent::Plugin.register_filter('cadvisor_health_node', self)
-    
+
         attr_accessor :provider, :resources
 
         config_param :metrics_to_collect, :string, :default => 'cpuUsageNanoCores,memoryRssBytes'

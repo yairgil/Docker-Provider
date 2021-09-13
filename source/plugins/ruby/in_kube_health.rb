@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require 'fluent/plugin/input'
 
 require_relative "KubernetesApiClient"
@@ -48,7 +48,7 @@ module Fluent::Plugin
 
     def start
       begin
-        super 
+        super
         if @run_interval
           @finished = false
           @condition = ConditionVariable.new
@@ -89,8 +89,8 @@ module Fluent::Plugin
         return Fluent::MultiEventStream.new
     end
       begin
-        currentTime = Time.now   
-        emitTime = Fluent::Engine.now     
+        currentTime = Time.now
+        emitTime = Fluent::Engine.now
         batchTime = currentTime.utc.iso8601
         health_monitor_records = []
         eventStream = Fluent::MultiEventStream.new

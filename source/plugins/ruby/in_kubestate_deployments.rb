@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
-
+require 'debug/open_nonstop'
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
@@ -44,7 +44,7 @@ module Fluent::Plugin
       super
     end
 
-    def start      
+    def start
       if @run_interval
         super
         if !ENV["DEPLOYMENTS_CHUNK_SIZE"].nil? && !ENV["DEPLOYMENTS_CHUNK_SIZE"].empty? && ENV["DEPLOYMENTS_CHUNK_SIZE"].to_i > 0
@@ -55,11 +55,11 @@ module Fluent::Plugin
           @DEPLOYMENTS_CHUNK_SIZE = 500
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
-      
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
-        @thread = Thread.new(&method(:run_periodic))       
+        @thread = Thread.new(&method(:run_periodic))
       end
     end
 
@@ -81,8 +81,8 @@ module Fluent::Plugin
         batchTime = currentTime.utc.iso8601
 
         #set the running total for this batch to 0
-        @deploymentsRunningTotal = 0     
-      
+        @deploymentsRunningTotal = 0
+
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kubestate_deployments::enumerate : Getting deployments from Kube API @ #{Time.now.utc.iso8601}")
@@ -186,7 +186,7 @@ module Fluent::Plugin
         end
 
         time = Fluent::Engine.now
-        metricItems.each do |insightsMetricsRecord|        
+        metricItems.each do |insightsMetricsRecord|
           insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
         end
 
@@ -233,6 +233,6 @@ module Fluent::Plugin
         @mutex.lock
       end
       @mutex.unlock
-    end    
+    end
   end
 end
