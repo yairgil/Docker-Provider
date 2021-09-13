@@ -95,7 +95,7 @@ module Fluent::Plugin
             containerGPUusageInsightsMetricsDataItems = []
             $log.info("in_win_cadvisor_perf::enumerate.getInsightsMetrics.start @ #{Time.now.utc.round(10).iso8601(6)}")
             containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601))
-            $log.info("in_win_cadvisor_perf::enumerate.getInsightsMetrics.start @ #{Time.now.utc.round(10).iso8601(6)}")
+            $log.info("in_win_cadvisor_perf::enumerate.getInsightsMetrics.end @ #{Time.now.utc.round(10).iso8601(6)}")
 
             insightsMetricsEventStream = Fluent::MultiEventStream.new
 
@@ -106,7 +106,7 @@ module Fluent::Plugin
             $log.info("in_win_cadvisor_perf::enumerate.insightsmetricsemit_stream.start @ #{Time.now.utc.round(10).iso8601(6)}")
             router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
             router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
-            $log.info("in_win_cadvisor_perf::enumerate.insightsmetricsemit_stream.start @ #{Time.now.utc.round(10).iso8601(6)}")
+            $log.info("in_win_cadvisor_perf::enumerate.insightsmetricsemit_stream.end @ #{Time.now.utc.round(10).iso8601(6)}")
 
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
               $log.info("winCAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
