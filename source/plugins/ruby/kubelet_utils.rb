@@ -10,7 +10,7 @@ require "bigdecimal"
 
 class KubeletUtils
   @log_path = "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
-  @log = Logger.new(@log_path, 1, 5000000)
+  @log = Logger.new(@log_path, 0, 5000000)
 
   class << self
     def get_node_capacity

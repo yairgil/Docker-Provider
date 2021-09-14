@@ -35,7 +35,7 @@ module Fluent
       @log = nil
 
       if @enable_log
-        @log = Logger.new(@log_path, 1, 5000000)
+        @log = Logger.new(@log_path, 0, 5000000)
         @log.debug { "Starting filter_cadvisor2mdm plugin" }
       end
     end
@@ -186,7 +186,7 @@ module Fluent
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
-            end            
+            end
             @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["DataItems"][0]["Host"]} percentage: #{percentage_metric_value}"
 
             # do some sanity checking. Do we want this?

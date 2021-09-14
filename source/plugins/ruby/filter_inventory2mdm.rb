@@ -90,7 +90,7 @@ module Fluent
 			@log = nil
 
 			if @enable_log
-				@log = Logger.new(@log_path, 1, 5000000)
+				@log = Logger.new(@log_path, 0, 5000000)
 				@log.debug {'Starting filter_inventory2mdm plugin'}
 			end
 		end

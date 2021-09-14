@@ -26,7 +26,7 @@ class KubernetesApiClient
   #@@IsLinuxCluster = nil
   @@KubeSystemNamespace = "kube-system"
   @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_client_log.txt"
-  @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
+  @Log = Logger.new(@LogPath, 0, 20 * 1048576) #max log file size = 20M
   @@TokenFileName = "/var/run/secrets/kubernetes.io/serviceaccount/token"
   @@TokenStr = nil
   @@NodeMetrics = Hash.new

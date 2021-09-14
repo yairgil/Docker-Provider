@@ -39,9 +39,6 @@ module Fluent
       @controllerData = {}
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
-      @isDisablePodReadyMetric = false
-      @isDisableKPIMDM = true
-
     end
 
     config_param :run_interval, :time, :default => 60
@@ -71,18 +68,6 @@ module Fluent
           @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end
         $log.info("in_kube_podinventory::start : PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
-
-        if !ENV["DISABLE_POD_READY_MDM_METRIC"].nil? && !ENV["DISABLE_POD_READY_MDM_METRIC"].empty? && ENV["DISABLE_POD_READY_MDM_METRIC"].downcase == "true".downcase
-          @isDisablePodReadyMetric = true
-        end
-        $log.info("in_kube_podinventory::start : isDisablePodReadyMetric=#{@isDisablePodReadyMetric} @ #{Time.now.utc.round(10).iso8601(10)}")
-
-
-        if !ENV["DISABLE_KPI_MDM"].nil? && !ENV["DISABLE_KPI_MDM"].empty? && ENV["DISABLE_KPI_MDM"].downcase == "true".downcase
-          @isDisableKPIMDM = true
-        end
-        $log.info("in_kube_podinventory::start : isDisableKPIMDM=#{@isDisableKPIMDM} @ #{Time.now.utc.round(10).iso8601(10)}")
-
 
         @finished = false
         @condition = ConditionVariable.new
@@ -226,9 +211,7 @@ module Fluent
                           "DataItems" => [record.each { |k, v| record[k] = v }],
                         }
               eventStream.add(emitTime, wrapper) if wrapper
-              if !@isDisableKPIMDM
-                @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
-              end
+              @inventoryToMdmConvertor.process_pod_inventory_record(wrapper)
             end
           end
           # Setting this flag to true so that we can send ContainerInventory records for containers
@@ -341,7 +324,6 @@ module Fluent
         end
 
         if continuationToken.nil? #no more chunks in this batch to be sent, get all mdm pod inventory records to send
-          if !@isDisableKPIMDM
             @log.info "Sending pod inventory mdm records to out_mdm"
             pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
             @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
@@ -350,7 +332,6 @@ module Fluent
               mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
             } if pod_inventory_mdm_records
             router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
-          end
         end
 
         if continuationToken.nil? # sending kube services inventory records
@@ -509,13 +490,8 @@ module Fluent
         record["PodRestartCount"] = 0
 
         #Invoke the helper method to compute ready/not ready mdm metric
-        if !@isDisableKPIMDM
-          if !@isDisablePodReadyMetric
-            $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_pods_ready_metric:START @ #{Time.now.utc.round(10).iso8601(6)}"
-            @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
-            $log.info "in_kube_podinventory::getPodInventoryRecords:process_record_for_pods_ready_metric:END @ #{Time.now.utc.round(10).iso8601(6)}"
-          end
-        end
+
+        @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
 
         podContainers = []
         if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
@@ -574,11 +550,9 @@ module Fluent
               if !containerStatus[containerStatus.keys[0]]["reason"].nil? && !containerStatus[containerStatus.keys[0]]["reason"].empty?
                 record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
               end
-              if !@isDisableKPIMDM
-                # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
-                if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
-                  @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
-                end
+              # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
+              if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
+                @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
               end
             end
 
@@ -604,11 +578,9 @@ module Fluent
                   # only write to the output field if everything previously ran without error
                   record["ContainerLastStatus"] = newRecord
 
-                  if !@isDisableKPIMDM
-                    #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
-                    if lastStateReason.downcase == Constants::REASON_OOM_KILLED
-                      @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
-                    end
+                  #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
+                  if lastStateReason.downcase == Constants::REASON_OOM_KILLED
+                    @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
                   end
                   lastStateReason = nil
                 else
@@ -618,11 +590,9 @@ module Fluent
                 record["ContainerLastStatus"] = Hash.new
               end
 
-              if !@isDisableKPIMDM
-                #Populate mdm metric for container restart count if greater than 0
-                if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
+              #Populate mdm metric for container restart count if greater than 0
+              if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
                   @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
-                end
               end
             rescue => errorStr
               $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"

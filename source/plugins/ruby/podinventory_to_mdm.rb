@@ -82,7 +82,7 @@ class Inventory2MdmConvertor
 
   def initialize()
     @log_path = "/var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log"
-    @log = Logger.new(@log_path, 1, 5000000)
+    @log = Logger.new(@log_path, 0, 5000000)
     @pod_count_hash = {}
     @no_phase_dim_values_hash = {}
     @pod_count_by_phase = {}
