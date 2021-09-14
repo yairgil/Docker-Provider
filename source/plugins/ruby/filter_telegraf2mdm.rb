@@ -2,6 +2,7 @@
 
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 require 'fluent/plugin/filter'
 
 module Fluent::Plugin

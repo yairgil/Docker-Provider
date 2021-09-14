@@ -2,6 +2,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 class ProxyUtils
     class << self
         def getProxyConfiguration()

@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 require 'fluent/plugin/output'
 
 module Fluent::Plugin

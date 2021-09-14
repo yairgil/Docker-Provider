@@ -1,6 +1,8 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
+
 class ApplicationInsightsUtility
   require_relative "lib/application_insights"
   require_relative "omslog"

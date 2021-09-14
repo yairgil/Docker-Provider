@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 require "fluent/plugin/input"
 
 module Fluent::Plugin
@@ -124,9 +125,10 @@ module Fluent::Plugin
         cleanupTimeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
         cleanupTimeDifferenceInMinutes = cleanupTimeDifference / 60
         if (cleanupTimeDifferenceInMinutes >= 5)
-          $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache @ #{Time.now.utc.round(10).iso8601(6)}"
+          $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache:start @ #{Time.now.utc.round(10).iso8601(6)}"
           CAdvisorMetricsAPIClient.clearDeletedWinContainersFromCache()
           @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
+          $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache:end @ #{Time.now.utc.round(10).iso8601(6)}"
         end
       rescue => errorStr
         $log.warn "Failed to retrieve cadvisor metric data for windows nodes: #{errorStr}"

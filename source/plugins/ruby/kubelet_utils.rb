@@ -2,6 +2,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 require "logger"
 require "yajl/json_gem"
 require_relative "CAdvisorMetricsAPIClient"
@@ -13,7 +14,7 @@ class KubeletUtils
   if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     @log_path = "/etc/omsagentwindows/filter_cadvisor2mdm.log"
   else
-    @log_path = "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
+    @log_path = "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm-kubeutils.log"
   end
   @log = Logger.new(@log_path, 1, 5000000)
 

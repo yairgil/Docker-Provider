@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 require "fluent/plugin/input"
 
 module Fluent::Plugin
@@ -72,10 +73,23 @@ module Fluent::Plugin
         end
 
         $log.info("in_cadvisor_perf::enumerate.metricsemit_stream.start @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream-LINUX_PERF_BLOB.start @ #{Time.now.utc.round(10).iso8601(6)}")
         router.emit_stream(@tag, eventStream) if eventStream
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream-LINUX_PERF_BLOB.end @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream-mdm.cadvisorperf.start @ #{Time.now.utc.round(10).iso8601(6)}")
         router.emit_stream(@mdmtag, eventStream) if eventStream
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream-mdm.cadvisorperf.end @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream-kubehealth.DaemonSet.Container.start @ #{Time.now.utc.round(10).iso8601(6)}")
         router.emit_stream(@containerhealthtag, eventStream) if eventStream
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream-kubehealth.DaemonSet.Container.end @ #{Time.now.utc.round(10).iso8601(6)}")
+
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream-kubehealth.DaemonSet.Node.start @ #{Time.now.utc.round(10).iso8601(6)}")
         router.emit_stream(@nodehealthtag, eventStream) if eventStream
+        $log.info("in_cadvisor_perf::enumerate.metricsemit_stream-kubehealth.DaemonSet.Node.end @ #{Time.now.utc.round(10).iso8601(6)}")
+
         $log.info("in_cadvisor_perf::enumerate.metricsemit_stream.end #{Time.now.utc.round(10).iso8601(6)}")
 
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
@@ -94,9 +108,13 @@ module Fluent::Plugin
             containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
               insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
             end
+            $log.info("in_cadvisor_perf::enumerate.insightsmetricsemit_stream-INSIGHTS_METRICS_BLOB.start @ #{Time.now.utc.round(10).iso8601(6)}")
             router.emit_stream(@insightsmetricstag, insightsMetricsEventStream) if insightsMetricsEventStream
+            $log.info("in_cadvisor_perf::enumerate.insightsmetricsemit_stream-INSIGHTS_METRICS_BLOB.end @ #{Time.now.utc.round(10).iso8601(6)}")
+
+            $log.info("in_cadvisor_perf::enumerate.insightsmetricsemit_stream-mdm.cadvisorperf.start @ #{Time.now.utc.round(10).iso8601(6)}")
             router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
-            $log.info("in_cadvisor_perf::enumerate.insightsmetricsemit_stream.end @ #{Time.now.utc.round(10).iso8601(6)}")
+            $log.info("in_cadvisor_perf::enumerate.insightsmetricsemit_stream-mdm.cadvisorperf.end @ #{Time.now.utc.round(10).iso8601(6)}")
 
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
               $log.info("cAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")

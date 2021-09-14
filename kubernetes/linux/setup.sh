@@ -50,6 +50,8 @@ sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
 # gangams - gem for debug purpose and remove after debugging
 gem install debug
+gem install sigdump
+
 # fluentd v1 gem
 gem install fluentd -v "1.12.2" --no-document
 fluentd --setup ./fluent

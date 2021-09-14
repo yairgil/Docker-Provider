@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 class MdmAlertTemplates
   Pod_metrics_template = '
     {

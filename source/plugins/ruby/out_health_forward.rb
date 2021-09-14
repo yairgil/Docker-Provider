@@ -15,6 +15,7 @@
 #    limitations under the License.
 #
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 require 'fluent/output'
 require 'fluent/config/error'
 require 'fluent/clock'

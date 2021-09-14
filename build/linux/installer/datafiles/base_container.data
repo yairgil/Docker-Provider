@@ -251,6 +251,8 @@ chmod 666 /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
 touch /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 
+touch /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm-kubeutils.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm-kubeutils.log
 
 touch /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
@@ -302,7 +304,7 @@ if ${{PERFORMING_UPGRADE_NOT}}; then
    rmdir /etc/opt/microsoft/docker-cimprov/conf 2> /dev/null
    rmdir /etc/opt/microsoft/docker-cimprov 2> /dev/null
    rmdir /etc/opt/microsoft 2> /dev/null
-   rmdir /etc/opt 2> /dev/null  
+   rmdir /etc/opt 2> /dev/null
 fi
 
 %Preinstall_0

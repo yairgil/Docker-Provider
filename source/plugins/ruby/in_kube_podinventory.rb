@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 require 'fluent/plugin/input'
 
 module Fluent::Plugin
@@ -45,7 +46,7 @@ module Fluent::Plugin
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
       @containerInventoryTag = "oneagent.containerInsights.CONTAINER_INVENTORY_BLOB"
       @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
-      @isDisableKPIMDM = true
+      @isDisableKPIMDM = false
     end
 
     config_param :run_interval, :time, :default => 60

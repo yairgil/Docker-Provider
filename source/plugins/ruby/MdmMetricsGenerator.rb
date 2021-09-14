@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 require 'debug/open_nonstop'
+require 'sigdump/setup'
 class MdmMetricsGenerator
   require "logger"
   require "yajl/json_gem"
