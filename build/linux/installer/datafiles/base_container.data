@@ -251,9 +251,6 @@ chmod 666 /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
 touch /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 
-touch /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm-kubeutils.log
-chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm-kubeutils.log
-
 touch /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
 
