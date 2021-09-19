@@ -228,6 +228,7 @@ class CAdvisorMetricsAPIClient
           podNamespace = pod["podRef"]["namespace"]
           if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
             $log.warn("CAdvisorMetricsAPIClient::getContainerCpuMetricItems: excluded records for the namespace: #{podNamespace}")
+            next
           end
 
           if (!pod["containers"].nil?)
@@ -663,8 +664,8 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace)
-            $log.warn("CAdvisorMetricsAPIClient::getContainerMemoryMetricItems: excluded perf records for the namespace: #{podNameSpace}")
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+            $log.warn("CAdvisorMetricsAPIClient::getContainerMemoryMetricItems: excluded perf records for the namespace: #{podNamespace}")
             next
           end
           if (!pod["containers"].nil?)
@@ -916,8 +917,8 @@ class CAdvisorMetricsAPIClient
         metricInfo["pods"].each do |pod|
           podUid = pod["podRef"]["uid"]
           podNamespace = pod["podRef"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace)
-            $log.warn("CAdvisorMetricsAPIClient::getContainerStartTimeMetricItems: excluded records for the namespace: #{podNameSpace}")
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+            $log.warn("CAdvisorMetricsAPIClient::getContainerStartTimeMetricItems: excluded records for the namespace: #{podNamespace}")
             next
           end
           if (!pod["containers"].nil?)
