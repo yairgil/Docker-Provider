@@ -29,6 +29,7 @@ module Fluent::Plugin
 
       # Initilize enable/disable normal event collection
       @collectAllKubeEvents = false
+      @inventoryAndPerfExcludeNamespaces = []
     end
 
     config_param :run_interval, :time, :default => 60
@@ -63,6 +64,10 @@ module Fluent::Plugin
             @collectAllKubeEvents = true
             $log.warn("Normal kube events collection enabled for cluster")
           end
+        end
+        if !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].nil? && !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].empty?
+          @inventoryAndPerfExcludeNamespaces = ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"]
+          $log.info("in_kube_events::start: AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES #{@inventoryAndPerfExcludeNamespaces}")
         end
       end
     end
@@ -145,6 +150,11 @@ module Fluent::Plugin
       begin
         eventStream = Fluent::MultiEventStream.new
         events["items"].each do |items|
+          eventsNameSpace = items["metadata"]["namespace"]
+          if @inventoryAndPerfExcludeNamespaces.include?(eventsNameSpace)
+            $log.warn("Excluded kubeevent records for the namespace: #{eventsNameSpace}")
+            next
+          end
           record = {}
           #<BUGBUG> - Not sure if ingestion has the below mapping for this custom type. Fix it as part of fixed type conversion
           record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated

@@ -27,6 +27,7 @@ module Fluent::Plugin
       # refer tomlparser-agent-config for defaults
       # this configurable via configmap
       @DEPLOYMENTS_CHUNK_SIZE = 0
+      @inventoryAndPerfExcludeNamespaces = []
 
       @DEPLOYMENTS_API_GROUP = "apps"
       @@telemetryLastSentTime = DateTime.now.to_time.to_i
@@ -57,6 +58,10 @@ module Fluent::Plugin
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
 
+        if !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].nil? && !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].empty?
+          @inventoryAndPerfExcludeNamespaces = ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"]
+          $log.info("in_kubestate_deployments::start: AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES #{@inventoryAndPerfExcludeNamespaces}")
+        end
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -143,6 +148,10 @@ module Fluent::Plugin
         metricInfo["items"].each do |deployment|
           deploymentName = deployment["metadata"]["name"]
           deploymentNameSpace = deployment["metadata"]["namespace"]
+          if @inventoryAndPerfExcludeNamespaces.include?(deploymentNameSpace)
+            $log.warn("in_kubestate_deployments::parse_and_emit_records: Excluded records for the namespace: #{deploymentNameSpace}")
+            next
+          end
           deploymentCreatedTime = ""
           if !deployment["metadata"]["creationTimestamp"].nil?
             deploymentCreatedTime = deployment["metadata"]["creationTimestamp"]

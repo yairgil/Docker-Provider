@@ -33,6 +33,7 @@ module Fluent::Plugin
       # this configurable via configmap
       @PODS_CHUNK_SIZE = 0
       @PODS_EMIT_STREAM_BATCH_SIZE = 0
+      @inventoryAndPerfExcludeNamespaces = []
 
       @podCount = 0
       @serviceCount = 0
@@ -76,6 +77,11 @@ module Fluent::Plugin
           @PODS_EMIT_STREAM_BATCH_SIZE = 200
         end
         $log.info("in_kube_podinventory::start: PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
+        if !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].nil? && !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].empty?
+          @inventoryAndPerfExcludeNamespaces = ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"]
+          $log.info("in_kube_podinventory::start: AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES #{@inventoryAndPerfExcludeNamespaces}")
+        end
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -234,6 +240,11 @@ module Fluent::Plugin
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
         podInventory["items"].each do |item| #podInventory block start
+          podNameSpace = item["metadata"]["namespace"]
+          if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace)
+            $log.warn("in_kube_podinventory::parse_and_emit_records: Excluded records for the namespace: #{podNameSpace}")
+            next
+          end
           # pod inventory records
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
           podInventoryRecords.each do |record|

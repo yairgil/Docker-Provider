@@ -61,6 +61,7 @@ require_relative "ConfigParseErrorLogger"
 @fbitTailBufferMaxSizeMBs = 0
 @fbitTailMemBufLimitMBs = 0
 
+@inventoryAndPerfExcludeNamespaces = []
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -154,7 +155,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
 
         fbitTailBufferMaxSizeMBs = fbit_config[:tail_buf_maxsize_megabytes]
-        if !fbitTailBufferMaxSizeMBs.nil? && is_number?(fbitTailBufferMaxSizeMBs) && fbitTailBufferMaxSizeMBs.to_i > 0           
+        if !fbitTailBufferMaxSizeMBs.nil? && is_number?(fbitTailBufferMaxSizeMBs) && fbitTailBufferMaxSizeMBs.to_i > 0
           if fbitTailBufferMaxSizeMBs.to_i >= @fbitTailBufferChunkSizeMBs
             @fbitTailBufferMaxSizeMBs = fbitTailBufferMaxSizeMBs.to_i
             puts "Using config map value: tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs}"
@@ -168,13 +169,32 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         if  @fbitTailBufferChunkSizeMBs > 0  && @fbitTailBufferMaxSizeMBs == 0
           @fbitTailBufferMaxSizeMBs = @fbitTailBufferChunkSizeMBs
           puts "config::warn: since tail_buf_maxsize_megabytes not provided hence using tail_buf_maxsize_megabytes=#{@fbitTailBufferMaxSizeMBs} which is same as the value of tail_buf_chunksize_megabytes"
-        end 
+        end
 
         fbitTailMemBufLimitMBs = fbit_config[:tail_mem_buf_limit_megabytes]
         if !fbitTailMemBufLimitMBs.nil? && is_number?(fbitTailMemBufLimitMBs) && fbitTailMemBufLimitMBs.to_i > 0
           @fbitTailMemBufLimitMBs = fbitTailMemBufLimitMBs.to_i
           puts "Using config map value: tail_mem_buf_limit_megabytes  = #{@fbitTailMemBufLimitMBs}"
         end
+      end
+      if !parsedConfig[:agent_settings][:inventory_and_perf_data_collection_settings].nil?
+        inventoryAndPerfExcludeNamespaces = parsedConfig[:agent_settings][:inventory_and_perf_data_collection_settings][:exclude_namespaces]
+        if inventoryAndPerfExcludeNamespaces.kind_of?(Array)
+            # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
+            if inventoryAndPerfExcludeNamespaces.length > 0 && inventoryAndPerfExcludeNamespaces[0].kind_of?(String)
+              #Empty the array to use the values from configmap
+              inventoryAndPerfExcludeNamespaces.each do |namespace|
+                if @inventoryAndPerfExcludeNamespaces.empty?
+                  # To not append , for the first element
+                  @inventoryAndPerfExcludeNamespaces.concat(namespace)
+                else
+                  @inventoryAndPerfExcludeNamespaces.concat("," + namespace)
+                end
+              end
+              puts "config::Using config map setting for inventory_and_perf_data_collection_settings to exclude namespace"
+            end
+        end
+
       end
     end
   rescue => errorStr
@@ -218,10 +238,14 @@ if !file.nil?
   end
   if @fbitTailBufferMaxSizeMBs > 0
     file.write("export FBIT_TAIL_BUFFER_MAX_SIZE=#{@fbitTailBufferMaxSizeMBs}\n")
-  end 
+  end
   if @fbitTailMemBufLimitMBs > 0
     file.write("export FBIT_TAIL_MEM_BUF_LIMIT=#{@fbitTailMemBufLimitMBs}\n")
-  end 
+  end
+
+  if !@inventoryAndPerfExcludeNamespaces.nil? && @inventoryAndPerfExcludeNamespaces.length > 0
+    file.write("export AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES=#{@inventoryAndPerfExcludeNamespaces}\n")
+  end
   # Close file after writing all environment variables
   file.close
 else

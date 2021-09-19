@@ -37,6 +37,7 @@ class CAdvisorMetricsAPIClient
   @hmEnabled = ENV["AZMON_CLUSTER_ENABLE_HEALTH_MODEL"]
   @npmIntegrationBasic = ENV["TELEMETRY_NPM_INTEGRATION_METRICS_BASIC"]
   @npmIntegrationAdvanced = ENV["TELEMETRY_NPM_INTEGRATION_METRICS_ADVANCED"]
+  @inventoryAndPerfExcludeNamespaces = []
 
   @os_type = ENV["OS_TYPE"]
   if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
@@ -73,6 +74,10 @@ class CAdvisorMetricsAPIClient
   @@CADVISOR_NON_SECURE_PORT = "10255"
 
   def initialize
+    if !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].nil? && !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].empty?
+      @inventoryAndPerfExcludeNamespaces = ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"]
+      $log.info("CAdvisorMetricsAPIClient::initialize: AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES #{@inventoryAndPerfExcludeNamespaces}")
+    end
   end
 
   class << self
@@ -221,6 +226,9 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+            $log.warn("CAdvisorMetricsAPIClient::getContainerCpuMetricItems: excluded records for the namespace: #{podNamespace}")
+          end
 
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
@@ -235,17 +243,17 @@ class CAdvisorMetricsAPIClient
               metricItem["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricItem["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
-              
+
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
               metricCollection["Value"] = metricValue
 
               metricItem["json_Collections"] = []
-              metricCollections = []               
-              metricCollections.push(metricCollection)        
+              metricCollections = []
+              metricCollections.push(metricCollection)
               metricItem["json_Collections"] = metricCollections.to_json
-              metricItems.push(metricItem)      
-              
+              metricItems.push(metricItem)
+
               #Telemetry about agent performance
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
@@ -277,7 +285,7 @@ class CAdvisorMetricsAPIClient
                     end
                     #telemetry about containerlog Routing for daemonset
                     telemetryProps["containerLogsRoute"] = @containerLogsRoute
-                   
+
                     #telemetry about health model
                     if (!@hmEnabled.nil? && !@hmEnabled.empty?)
                       telemetryProps["hmEnabled"] = @hmEnabled
@@ -361,6 +369,10 @@ class CAdvisorMetricsAPIClient
           if (podNamespace.downcase == "kube-system") && @pvKubeSystemCollectionMetricsEnabled == "false"
             excludeNamespace = true
           end
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+            $log.warn("CAdvisorMetricsAPIClient::getPersistentVolumeMetrics: excluded records for the namespace: #{podNamespace}")
+            excludeNamespace = true
+          end
 
           if (!excludeNamespace && !pod["volume"].nil?)
             pod["volume"].each do |volume|
@@ -428,7 +440,10 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
-
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+            $log.warn("CAdvisorMetricsAPIClient::getContainerGpuMetricsAsInsightsMetrics: excluded records for the namespace: #{podNamespace}")
+            next
+          end
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
               #gpu metrics
@@ -518,7 +533,10 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
-
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+            $log.warn("CAdvisorMetricsAPIClient::getContainerCpuMetricItemRate: excluded records for the namespace: #{podNamespace}")
+            next
+          end
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
               #cpu metric
@@ -526,13 +544,13 @@ class CAdvisorMetricsAPIClient
               containerName = container["name"]
               metricValue = container["cpu"][cpuMetricNameToCollect]
               metricTime = metricPollTime #container["cpu"]["time"]
-            
+
               metricItem = {}
               metricItem["Timestamp"] = metricTime
               metricItem["Host"] = hostName
               metricItem["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricItem["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
-              
+
               metricItem["json_Collections"] = []
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
@@ -567,9 +585,9 @@ class CAdvisorMetricsAPIClient
               end
 
               metricCollection["Value"] = metricValue
-              
-              metricCollections = []               
-              metricCollections.push(metricCollection)        
+
+              metricCollections = []
+              metricCollections.push(metricCollection)
               metricItem["json_Collections"] = metricCollections.to_json
               metricItems.push(metricItem)
               #Telemetry about agent performance
@@ -645,6 +663,10 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
+          if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace)
+            $log.warn("CAdvisorMetricsAPIClient::getContainerMemoryMetricItems: excluded perf records for the namespace: #{podNameSpace}")
+            next
+          end
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
               containerName = container["name"]
@@ -656,16 +678,16 @@ class CAdvisorMetricsAPIClient
               metricItem["Host"] = hostName
               metricItem["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricItem["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
-           
+
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
               metricCollection["Value"] = metricValue
 
               metricItem["json_Collections"] = []
-              metricCollections = []  
-              metricCollections.push(metricCollection)        
+              metricCollections = []
+              metricCollections.push(metricCollection)
               metricItem["json_Collections"] = metricCollections.to_json
-              metricItems.push(metricItem) 
+              metricItems.push(metricItem)
 
               #Telemetry about agent performance
               begin
@@ -709,21 +731,21 @@ class CAdvisorMetricsAPIClient
         if !node[metricCategory].nil?
           metricValue = node[metricCategory][metricNameToCollect]
           metricTime = metricPollTime #node[metricCategory]["time"]
-                 
+
           metricItem["Timestamp"] = metricTime
           metricItem["Host"] = hostName
           metricItem["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
           metricItem["InstanceName"] = clusterId + "/" + nodeName
 
-         
+
           metricCollection = {}
           metricCollection["CounterName"] = metricNametoReturn
           metricCollection["Value"] = metricValue
 
           metricItem["json_Collections"] = []
-          metricCollections = []               
-          metricCollections.push(metricCollection)   
-          metricItem["json_Collections"] = metricCollections.to_json               
+          metricCollections = []
+          metricCollections.push(metricCollection)
+          metricItem["json_Collections"] = metricCollections.to_json
         end
       rescue => error
         @Log.warn("getNodeMetricItem failed: #{error} for metric #{metricNameToCollect}")
@@ -826,19 +848,19 @@ class CAdvisorMetricsAPIClient
               end
             end
           end
-                  
+
           metricItem["Timestamp"] = metricTime
           metricItem["Host"] = hostName
           metricItem["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
           metricItem["InstanceName"] = clusterId + "/" + nodeName
-     
+
           metricCollection = {}
           metricCollection["CounterName"] = metricNametoReturn
           metricCollection["Value"] = metricValue
 
           metricItem["json_Collections"] = []
-          metricCollections = []               
-          metricCollections.push(metricCollection)        
+          metricCollections = []
+          metricCollections.push(metricCollection)
           metricItem["json_Collections"] = metricCollections.to_json
         end
       rescue => error
@@ -861,21 +883,21 @@ class CAdvisorMetricsAPIClient
         metricValue = node["startTime"]
         metricTime = metricPollTime #Time.now.utc.iso8601 #2018-01-30T19:36:14Z
 
-       
+
         metricItem["Timestamp"] = metricTime
         metricItem["Host"] = hostName
         metricItem["ObjectName"] = Constants::OBJECT_NAME_K8S_NODE
         metricItem["InstanceName"] = clusterId + "/" + nodeName
 
-       
+
         metricCollection = {}
         metricCollection["CounterName"] = metricNametoReturn
         #Read it from /proc/uptime
         metricCollection["Value"] = DateTime.parse(metricTime).to_time.to_i - IO.read("/proc/uptime").split[0].to_f
 
         metricItem["json_Collections"] = []
-        metricCollections = []               
-        metricCollections.push(metricCollection)        
+        metricCollections = []
+        metricCollections.push(metricCollection)
         metricItem["json_Collections"] = metricCollections.to_json
       rescue => error
         @Log.warn("getNodeLastRebootTimeMetric failed: #{error} ")
@@ -893,6 +915,11 @@ class CAdvisorMetricsAPIClient
         metricInfo = metricJSON
         metricInfo["pods"].each do |pod|
           podUid = pod["podRef"]["uid"]
+          podNamespace = pod["podRef"]["namespace"]
+          if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace)
+            $log.warn("CAdvisorMetricsAPIClient::getContainerStartTimeMetricItems: excluded records for the namespace: #{podNameSpace}")
+            next
+          end
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
               containerName = container["name"]
@@ -904,14 +931,14 @@ class CAdvisorMetricsAPIClient
               metricItem["Host"] = hostName
               metricItem["ObjectName"] = Constants::OBJECT_NAME_K8S_CONTAINER
               metricItem["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
-            
+
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
               metricCollection["Value"] = DateTime.parse(metricValue).to_time.to_i
 
               metricItem["json_Collections"] = []
-              metricCollections = []               
-              metricCollections.push(metricCollection)        
+              metricCollections = []
+              metricCollections.push(metricCollection)
               metricItem["json_Collections"] = metricCollections.to_json
               metricItems.push(metricItem)
             end

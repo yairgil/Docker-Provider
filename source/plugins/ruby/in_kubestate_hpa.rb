@@ -24,6 +24,7 @@ module Fluent::Plugin
       # refer tomlparser-agent-config for defaults
       # this configurable via configmap
       @HPA_CHUNK_SIZE = 0
+      @inventoryAndPerfExcludeNamespaces = []
 
       @HPA_API_GROUP = "autoscaling"
 
@@ -53,6 +54,10 @@ module Fluent::Plugin
           @HPA_CHUNK_SIZE = 2000
         end
         $log.info("in_kubestate_hpa::start : HPA_CHUNK_SIZE  @ #{@HPA_CHUNK_SIZE}")
+        if !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].nil? && !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].empty?
+          @inventoryAndPerfExcludeNamespaces = ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"]
+          $log.info("in_kubestate_hpa::start: AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES #{@inventoryAndPerfExcludeNamespaces}")
+        end
 
         @finished = false
         @condition = ConditionVariable.new
@@ -131,6 +136,10 @@ module Fluent::Plugin
         metricInfo["items"].each do |hpa|
           hpaName = hpa["metadata"]["name"]
           hpaNameSpace = hpa["metadata"]["namespace"]
+          if @inventoryAndPerfExcludeNamespaces.include?(hpaNameSpace)
+            $log.warn("in_kubestate_hpa::parse_and_emit_records: Excluded kubehpa records for the namespace: #{hpaNameSpace}")
+            next
+          end
           hpaCreatedTime = ""
           if !hpa["metadata"]["creationTimestamp"].nil?
             hpaCreatedTime = hpa["metadata"]["creationTimestamp"]

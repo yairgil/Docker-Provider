@@ -19,6 +19,7 @@ module Fluent::Plugin
       require_relative "CAdvisorMetricsAPIClient"
       require_relative "kubernetes_container_inventory"
       require_relative "extension_utils"
+      @inventoryAndPerfExcludeNamespaces = []
     end
 
     config_param :run_interval, :time, :default => 60
@@ -36,6 +37,10 @@ module Fluent::Plugin
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@telemetryTimeTracker = DateTime.now.to_time.to_i
+        if !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].nil? && !ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"].empty?
+          @inventoryAndPerfExcludeNamespaces = ENV["AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES"]
+          $log.info("in_container_inventory::start: AZMON_INVENTORY_AND_PERF_EXCLUDED_NAMESPACES  @ #{@inventoryAndPerfExcludeNamespaces}")
+        end
       end
     end
 
@@ -76,6 +81,11 @@ module Fluent::Plugin
             podList = JSON.parse(response.body)
             if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
               podList["items"].each do |item|
+                podNameSpace = item["metadata"]["namespace"]
+                if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace)
+                  $log.warn("in_container_inventory::enumerate: excluded records for the namespace: #{podNameSpace}")
+                  next
+                end
                 containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar)
                 containerInventoryRecords.each do |containerRecord|
                   ContainerInventoryState.writeContainerState(containerRecord)
