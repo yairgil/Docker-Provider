@@ -61,12 +61,11 @@
         },
         "threshold": {
             "type": "int",
-            "defaultValue": 95,
+            "defaultValue": 0,
             "metadata": {
                 "description": "The threshold value at which the alert is activated."
             },
-            "minValue": 1,
-            "maxValue": 100
+            "minValue": 0
         },
         "timeAggregation": {
             "type": "string",
@@ -142,7 +141,7 @@
                     "allOf": [
                         {
                             "name": "1st criterion",
-                            "metricName": "cpuExceededPercentage",
+                            "metricName": "cpuThresholdViolated",
                             "metricNamespace": "Insights.Container/containers",
                             "dimensions": [
                                 {
