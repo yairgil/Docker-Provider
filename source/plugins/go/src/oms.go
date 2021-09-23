@@ -1704,6 +1704,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	if strings.Compare(ContainerLogsRoute, ContainerLogsADXRoute) == 0 {
 		//check if adx clusteruri, clientid & secret are set
+		//also check if default database name is overriden through config
 		var err error
 		AdxClusterUri, err = ReadFileContents(PluginConfiguration["adx_cluster_uri_path"])
 		if err != nil {
@@ -1712,20 +1713,6 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		if !isValidUrl(AdxClusterUri) {
 			Log("Invalid AdxClusterUri %s", AdxClusterUri)
 			AdxClusterUri = ""
-		}
-		AdxClientID, err = ReadFileContents(PluginConfiguration["adx_client_id_path"])
-		if err != nil {
-			Log("Error when reading AdxClientID %s", err)
-		}
-
-		AdxTenantID, err = ReadFileContents(PluginConfiguration["adx_tenant_id_path"])
-		if err != nil {
-			Log("Error when reading AdxTenantID %s", err)
-		}
-
-		AdxClientSecret, err = ReadFileContents(PluginConfiguration["adx_client_secret_path"])
-		if err != nil {
-			Log("Error when reading AdxClientSecret %s", err)
 		}
 
 		// Try to read the ADX database name from config. Default to DefaultAdsDatabaseName if not set
@@ -1739,6 +1726,21 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		if len(AdxDatabaseName) == 0 {
 			Log("Adx database name unexpecedly empty (check config?) - will default to '%s'", DefaultAdxDatabaseName)
 			AdxDatabaseName = DefaultAdxDatabaseName
+		}
+		
+		AdxClientID, err = ReadFileContents(PluginConfiguration["adx_client_id_path"])
+		if err != nil {
+			Log("Error when reading AdxClientID %s", err)
+		}
+
+		AdxTenantID, err = ReadFileContents(PluginConfiguration["adx_tenant_id_path"])
+		if err != nil {
+			Log("Error when reading AdxTenantID %s", err)
+		}
+
+		AdxClientSecret, err = ReadFileContents(PluginConfiguration["adx_client_secret_path"])
+		if err != nil {
+			Log("Error when reading AdxClientSecret %s", err)
 		}
 
 		if len(AdxClusterUri) > 0 && len(AdxClientID) > 0 && len(AdxClientSecret) > 0 && len(AdxTenantID) > 0 {
