@@ -117,6 +117,9 @@ const MdsdOutputStreamIdTagPrefix = "dcr-"
 //env variable to container type
 const ContainerTypeEnv = "CONTAINER_TYPE"
 
+//Default ADX destination database name, can be overriden through configuration
+const DefaultAdxDatabaseName = "containerinsights"
+
 var (
 	// PluginConfiguration the plugins configuration
 	PluginConfiguration map[string]string
@@ -166,6 +169,8 @@ var (
 	AdxTenantID string
 	//ADX client secret
 	AdxClientSecret string
+	//ADX destination database name, default is DefaultAdxDatabaseName, can be overridden in configuration
+	AdxDatabaseName string
 	// container log or container log v2 tag name for oneagent route
 	MdsdContainerLogTagName string
 	// kubemonagent events tag name for oneagent route
@@ -1721,6 +1726,19 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		AdxClientSecret, err = ReadFileContents(PluginConfiguration["adx_client_secret_path"])
 		if err != nil {
 			Log("Error when reading AdxClientSecret %s", err)
+		}
+
+		// Try to read the ADX database name from config. Default to DefaultAdsDatabaseName if not set
+		AdxDatabaseName, err = ReadFileContents(PluginConfiguration["adx_database_name_path"])
+		if err != nil {
+			Log("No database name provided (err %s), will default to '%s'", err, DefaultAdxDatabaseName)
+			AdxDatabaseName = DefaultAdxDatabaseName
+		}
+
+		// Check the len of the provided name for database and use default if 0, just to be sure
+		if len(AdxDatabaseName) == 0 {
+			Log("Adx database name unexpecedly empty (check config?) - will default to '%s'", DefaultAdxDatabaseName)
+			AdxDatabaseName = DefaultAdxDatabaseName
 		}
 
 		if len(AdxClusterUri) > 0 && len(AdxClientID) > 0 && len(AdxClientSecret) > 0 && len(AdxTenantID) > 0 {
