@@ -168,7 +168,7 @@ Write-Host("copying out_oms.so file to : $publishdir")
 Copy-Item -Path (Join-path -Path $outomsgoplugindir -ChildPath "out_oms.so")  -Destination $publishdir -Force
 Write-Host("successfully copied out_oms.so file to : $publishdir") -ForegroundColor Green
 
-# compile and build the liveness probe
+# compile and build the liveness probe cpp code
 Write-Host("Start:build livenessprobe cpp code")
 $livenessprobesrcpath = Join-Path -Path $builddir  -ChildPath "windows\installer\livenessprobe\livenessprobe.cpp"
 $livenessprobeexepath = Join-Path -Path $builddir  -ChildPath "windows\installer\livenessprobe\livenessprobe.exe"
@@ -178,6 +178,7 @@ if (Test-Path -Path $livenessprobeexepath){
     Write-Host("livenessprobe.exe exists which indicates cpp build step succeeded") -ForegroundColor Green
 } else {
     Write-Host("livenessprobe.exe doesnt exist which indicates cpp build step failed") -ForegroundColor Red
+    exit
 }
 
 $installerdir = Join-Path -Path $builddir -ChildPath "common\installer"

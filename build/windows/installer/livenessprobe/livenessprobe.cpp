@@ -17,7 +17,9 @@
 #define FLUENTDWINAKS_SERVICE_NOT_RUNNING  0x00000004
 #define UNEXPECTED_ERROR                   0xFFFFFFFF
 
-
+/*
+  check if the process running or not for given exe file name
+*/
 bool IsProcessRunning(const wchar_t * const executableName) {
     PROCESSENTRY32 entry;
     entry.dwSize = sizeof(PROCESSENTRY32);
@@ -41,13 +43,18 @@ bool IsProcessRunning(const wchar_t * const executableName) {
     return false;
 }
 
-
+/*
+  check if the file exists
+*/
 bool IsFileExists(const wchar_t* const fileName)
 {
     DWORD dwAttrib = GetFileAttributes(fileName);
     return dwAttrib != INVALID_FILE_SIZE;
 }
 
+/*
+ Get the status of the service for given service name
+*/
 int GetServiceStatus(const wchar_t * const serivceName)
 {
     SC_HANDLE theService, scm;
@@ -82,7 +89,7 @@ int GetServiceStatus(const wchar_t * const serivceName)
     return ssStatus.dwCurrentState;
 }
 /**
- <executablename> <servicename> <filesystemwatcherfilepath> <certificaterenewalpath>
+ <exe> <servicename> <filesystemwatcherfilepath> <certificaterenewalpath>
 **/
 int _tmain(int argc, wchar_t * argv[])
 {
