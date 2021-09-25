@@ -1,5 +1,3 @@
-// OMSProbeExe.cpp : This file contains the 'main' function. Program execution begins and ends there.
-
 #ifndef UNICODE
 #define UNICODE
 #endif
@@ -28,6 +26,7 @@ bool IsProcessRunning(const wchar_t * const executableName) {
 
     if (!Process32First(snapshot, &entry)) {
         CloseHandle(snapshot);
+        wprintf_s(L"ERROR:IsProcessRunning::Process32First failed");
         return false;
     }
 
@@ -55,15 +54,16 @@ int GetServiceStatus(const wchar_t * const serivceName)
     SERVICE_STATUS_PROCESS ssStatus;
     DWORD dwBytesNeeded;
 
-
     scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE);
     if (!scm) {
+        wprintf_s(L"ERROR:GetServiceStatus::OpenSCManager failed");
         return UNEXPECTED_ERROR;
     }
 
     theService = OpenService(scm, serivceName, SERVICE_QUERY_STATUS);
     if (!theService) {
         CloseServiceHandle(scm);
+        wprintf_s(L"ERROR:GetServiceStatus::OpenService failed");
         return UNEXPECTED_ERROR;
     }
 
@@ -75,12 +75,15 @@ int GetServiceStatus(const wchar_t * const serivceName)
     CloseServiceHandle(scm);
 
     if (result == 0) {
+         wprintf_s(L"ERROR:GetServiceStatus:QueryServiceStatusEx failed");
         return UNEXPECTED_ERROR;
     }
 
     return ssStatus.dwCurrentState;
 }
-
+/**
+ <executablename> <servicename> <filesystemwatcherfilepath> <certificaterenewalpath>
+**/
 int _tmain(int argc, wchar_t * argv[])
 {
     wprintf_s(L"INFO:number of passed arguments - %d \n", argc);

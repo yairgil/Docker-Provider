@@ -46,6 +46,7 @@ RUN ./setup.ps1
 
 COPY main.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
+COPY ./omsagentwindows/installer/scripts/livenessprobe/livenessprobe.exe /opt/omsagentwindows/scripts/cmd/
 COPY ./omsagentwindows/installer/scripts/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
 COPY setdefaulttelegrafenvvariables.ps1 /opt/omsagentwindows/scripts/powershell
 
