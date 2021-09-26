@@ -95,6 +95,7 @@ int GetServiceStatus(const wchar_t *const serivceName)
 
     return ssStatus.dwCurrentState;
 }
+
 /**
  <exe> <servicename> <filesystemwatcherfilepath> <certificaterenewalpath>
 **/
