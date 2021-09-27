@@ -148,7 +148,7 @@ module Fluent::Plugin
         metricInfo["items"].each do |deployment|
           deploymentName = deployment["metadata"]["name"]
           deploymentNameSpace = deployment["metadata"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(deploymentNameSpace)
+          if @inventoryAndPerfExcludeNamespaces.include?(deploymentNameSpace) && !KubernetesApiClient.isAgentResource(deploymentName, deploymentNameSpace)
             $log.warn("in_kubestate_deployments::parse_and_emit_records: Excluded records for the namespace: #{deploymentNameSpace}")
             next
           end

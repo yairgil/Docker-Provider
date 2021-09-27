@@ -19,6 +19,7 @@ module Fluent::Plugin
       require_relative "CAdvisorMetricsAPIClient"
       require_relative "kubernetes_container_inventory"
       require_relative "extension_utils"
+      require_relative "KubernetesApiClient"
       @inventoryAndPerfExcludeNamespaces = []
     end
 
@@ -82,7 +83,8 @@ module Fluent::Plugin
             if !podList.nil? && !podList.empty? && podList.key?("items") && !podList["items"].nil? && !podList["items"].empty?
               podList["items"].each do |item|
                 podNameSpace = item["metadata"]["namespace"]
-                if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace)
+                podName = item["metadata"]["name"]
+                if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace) && !KubernetesApiClient.isAgentResource(podName, podNameSpace)
                   $log.warn("in_container_inventory::enumerate: excluded records for the namespace: #{podNameSpace}")
                   next
                 end

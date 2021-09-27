@@ -456,19 +456,19 @@ class KubernetesApiClient
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
               metricCollection["Value"] = metricValue
-              
+
               metricProps["json_Collections"] = []
-              metricCollections = []               
-              metricCollections.push(metricCollection)        
+              metricCollections = []
+              metricCollections.push(metricCollection)
               metricProps["json_Collections"] = metricCollections.to_json
-              metricItems.push(metricProps)             
+              metricItems.push(metricProps)
               #No container level limit for the given metric, so default to node level limit
             else
               nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
               if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
                 metricValue = @@NodeMetrics[nodeMetricsHashKey]
                 #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
-                               
+
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
                 metricProps["Host"] = nodeName
@@ -481,10 +481,10 @@ class KubernetesApiClient
                 metricCollection["CounterName"] = metricNametoReturn
                 metricCollection["Value"] = metricValue
                 metricProps["json_Collections"] = []
-                metricCollections = []                  
-                metricCollections.push(metricCollection)        
+                metricCollections = []
+                metricCollections.push(metricCollection)
                 metricProps["json_Collections"] = metricCollections.to_json
-                metricItems.push(metricProps)              
+                metricItems.push(metricProps)
               end
             end
           end
@@ -615,11 +615,11 @@ class KubernetesApiClient
           metricCollection["CounterName"] = metricNametoReturn
           metricCollection["Value"] = metricValue
           metricCollections = []
-          metricCollections.push(metricCollection) 
-         
+          metricCollections.push(metricCollection)
+
           metricItem["json_Collections"] = []
           metricItem["json_Collections"] = metricCollections.to_json
-         
+
           #push node level metrics to a inmem hash so that we can use it looking up at container level.
           #Currently if container level cpu & memory limits are not defined we default to node level limits
           @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
@@ -817,6 +817,9 @@ class KubernetesApiClient
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return kubeServiceRecords
+    end
+    def isAgentResource(name, nameSpace)
+      return (!name.nil? && name.downcase.start_with?("omsagent-") && !nameSpace.nil? && nameSpace.eql?("kube-system"))
     end
   end
 end

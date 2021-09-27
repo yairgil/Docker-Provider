@@ -226,7 +226,7 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace) && !KubernetesApiClient.isAgentResource(podName, podNamespace)
             $log.warn("CAdvisorMetricsAPIClient::getContainerCpuMetricItems: excluded records for the namespace: #{podNamespace}")
             next
           end
@@ -370,7 +370,7 @@ class CAdvisorMetricsAPIClient
           if (podNamespace.downcase == "kube-system") && @pvKubeSystemCollectionMetricsEnabled == "false"
             excludeNamespace = true
           end
-          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace) && !KubernetesApiClient.isAgentResource(pod["podRef"]["name"], podNamespace)
             $log.warn("CAdvisorMetricsAPIClient::getPersistentVolumeMetrics: excluded records for the namespace: #{podNamespace}")
             excludeNamespace = true
           end
@@ -441,7 +441,7 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace) && !KubernetesApiClient.isAgentResource(podName, podNamespace)
             $log.warn("CAdvisorMetricsAPIClient::getContainerGpuMetricsAsInsightsMetrics: excluded records for the namespace: #{podNamespace}")
             next
           end
@@ -534,7 +534,7 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace) && !KubernetesApiClient.isAgentResource(podName, podNamespace)
             $log.warn("CAdvisorMetricsAPIClient::getContainerCpuMetricItemRate: excluded records for the namespace: #{podNamespace}")
             next
           end
@@ -664,7 +664,7 @@ class CAdvisorMetricsAPIClient
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
           podNamespace = pod["podRef"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace) && !KubernetesApiClient.isAgentResource(podName, podNamespace)
             $log.warn("CAdvisorMetricsAPIClient::getContainerMemoryMetricItems: excluded perf records for the namespace: #{podNamespace}")
             next
           end
@@ -917,7 +917,8 @@ class CAdvisorMetricsAPIClient
         metricInfo["pods"].each do |pod|
           podUid = pod["podRef"]["uid"]
           podNamespace = pod["podRef"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace)
+          podName = pod["podRef"]["name"]
+          if @inventoryAndPerfExcludeNamespaces.include?(podNamespace) && !KubernetesApiClient.isAgentResource(podName, podNamespace)
             $log.warn("CAdvisorMetricsAPIClient::getContainerStartTimeMetricItems: excluded records for the namespace: #{podNamespace}")
             next
           end

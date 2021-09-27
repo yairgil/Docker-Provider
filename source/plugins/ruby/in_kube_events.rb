@@ -151,7 +151,7 @@ module Fluent::Plugin
         eventStream = Fluent::MultiEventStream.new
         events["items"].each do |items|
           eventsNameSpace = items["metadata"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(eventsNameSpace)
+          if @inventoryAndPerfExcludeNamespaces.include?(eventsNameSpace) && !KubernetesApiClient.isAgentResource(items["metadata"]["name"], eventsNameSpace)
             $log.warn("Excluded kubeevent records for the namespace: #{eventsNameSpace}")
             next
           end
