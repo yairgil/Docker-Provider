@@ -179,16 +179,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       end
       if !parsedConfig[:agent_settings][:inventory_and_perf_data_collection_settings].nil?
         inventoryAndPerfExcludeNamespaces = parsedConfig[:agent_settings][:inventory_and_perf_data_collection_settings][:exclude_namespaces]
+        puts "config::inventory_and_perf_data_collection_settings excluded_namespaces:#{inventoryAndPerfExcludeNamespaces}"
         if inventoryAndPerfExcludeNamespaces.kind_of?(Array)
+          puts "config::inventoryAndPerfExcludeNamespaces is array kind"
             # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
             if inventoryAndPerfExcludeNamespaces.length > 0 && inventoryAndPerfExcludeNamespaces[0].kind_of?(String)
               #Empty the array to use the values from configmap
               inventoryAndPerfExcludeNamespaces.each do |namespace|
-                if @inventoryAndPerfExcludeNamespaces.empty?
-                  # To not append , for the first element
-                  @inventoryAndPerfExcludeNamespaces.concat(namespace)
-                else
-                  @inventoryAndPerfExcludeNamespaces.concat("," + namespace)
+                if  !@inventoryAndPerfExcludeNamespaces.include?(namespace)
+                    @inventoryAndPerfExcludeNamespaces.push(namespace)
                 end
               end
               puts "config::Using config map setting for inventory_and_perf_data_collection_settings to exclude namespace"

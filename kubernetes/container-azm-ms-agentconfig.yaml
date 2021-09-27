@@ -153,8 +153,8 @@ data:
     #   tail_buf_chunksize_megabytes = "1"            # default value is 32kb (comment out this line for default)
     #   tail_buf_maxsize_megabytes = "1"              # defautl value is 32kb (comment out this line for default)
     [agent_settings.inventory_and_perf_data_collection_settings]
-        # In the absense of this cofigmap, default value for exclude_namespaces = []
-        exclude_namespaces = ["kube-system"]
+      # In the absense of this cofigmap, default value for exclude_namespaces = []
+      exclude_namespaces = ["kube-system"]
 metadata:
   name: container-azm-ms-agentconfig
   namespace: kube-system

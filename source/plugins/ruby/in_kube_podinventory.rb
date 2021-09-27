@@ -241,7 +241,7 @@ module Fluent::Plugin
         winNodes = KubernetesApiClient.getWindowsNodesArray
         podInventory["items"].each do |item| #podInventory block start
           podNameSpace = item["metadata"]["namespace"]
-          if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace)
+          if @inventoryAndPerfExcludeNamespaces.include?(podNameSpace) && !KubernetesApiClient.isAgentResource(item["metadata"]["name"], podNameSpace)
             $log.warn("in_kube_podinventory::parse_and_emit_records: Excluded records for the namespace: #{podNameSpace}")
             next
           end
