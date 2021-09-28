@@ -128,7 +128,7 @@ module Fluent::Plugin
           telemetryProperties["Computer"] = hostName
           telemetryProperties["ContainerCount"] = containerInventory.length
           if !addonTokenAdapterImageTag.empty?
-            telemetryProperties["addon-token-adapter"] = addonTokenAdapterImageTag
+            telemetryProperties["addonTokenAdapterImageTag"] = addonTokenAdapterImageTag
           end
           ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
         end
