@@ -282,6 +282,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     file.write(commands)
     commands = get_command_windows('AZMON_CONTAINER_LOG_SCHEMA_VERSION', @containerLogSchemaVersion)
     file.write(commands)
+    commands = get_command_windows('AZMON_ADX_DATABASE_NAME', @adxDatabaseName)
+    file.write(commands)
 
     # Close file after writing all environment variables
     file.close
