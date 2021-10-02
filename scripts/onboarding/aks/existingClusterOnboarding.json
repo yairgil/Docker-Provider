@@ -1,0 +1,176 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "aksResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "AKS Cluster Resource ID"
+            }
+        },
+        "workspaceLocation": {
+            "type": "string",
+            "metadata": {
+                "description": "Worksapce Location for data collection rule"
+            }
+        },
+        "workspaceResourceId": {
+            "type": "string",
+            "metadata": {
+                "description": "Full Resource ID of the log analitycs workspace that will be used for data destination. For example /subscriptions/00000000-0000-0000-0000-0000-00000000/resourceGroups/ResourceGroupName/providers/Microsoft.operationalinsights/workspaces/ws_xyz"
+            }
+        }
+    },
+    "variables": {
+        "clusterName": "[split(parameters('aksResourceId'),'/')[8]]",
+        "dcrName": "[Concat('DCR', '-', split(parameters('workspaceResourceId'),'/')[8])]",
+        "dataCollectionRuleId": "[resourceId('Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "[Concat('aks-monitoring-msi-dcr', '-',  uniqueString(variables('dcrName')))]",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[split(parameters('workspaceResourceId'),'/')[2]]",
+            "resourceGroup": "[split(parameters('workspaceResourceId'),'/')[4]]",
+            "properties": {
+              "mode": "Incremental",
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                    {
+                        "type": "Microsoft.Insights/dataCollectionRules",
+                        "apiVersion": "2019-11-01-preview",
+                        "name": "[variables('dcrName')]",
+                        "location": "[parameters('workspaceLocation')]",
+                        "kind": "Linux",
+                        "properties": {
+                            "dataSources": {
+                                "extensions": [
+                                    {
+                                        "name": "ContainerInsightsExtension",
+                                        "streams": [
+                                            "Microsoft-Perf",
+                                            "Microsoft-ContainerInventory",
+                                            "Microsoft-ContainerLog",
+                                            "Microsoft-ContainerLogV2",
+                                            "Microsoft-ContainerNodeInventory",
+                                            "Microsoft-KubeEvents",
+                                            "Microsoft-KubeHealth",
+                                            "Microsoft-KubeMonAgentEvents",
+                                            "Microsoft-KubeNodeInventory",
+                                            "Microsoft-KubePodInventory",
+                                            "Microsoft-KubePVInventory",
+                                            "Microsoft-KubeServices",
+                                            "Microsoft-InsightsMetrics"
+                                        ],
+                                        "extensionName": "ContainerInsights"
+                                    }
+                                ]
+                            },
+                            "destinations": {
+                                "logAnalytics": [
+                                    {
+                                        "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                                        "name": "ciworkspace"
+                                    }
+                                ]
+                            },
+                            "dataFlows": [
+                                {
+                                    "streams": [
+                                        "Microsoft-Perf",
+                                        "Microsoft-ContainerInventory",
+                                        "Microsoft-ContainerLog",
+                                        "Microsoft-ContainerLogV2",
+                                        "Microsoft-ContainerNodeInventory",
+                                        "Microsoft-KubeEvents",
+                                        "Microsoft-KubeHealth",
+                                        "Microsoft-KubeMonAgentEvents",
+                                        "Microsoft-KubeNodeInventory",
+                                        "Microsoft-KubePodInventory",
+                                        "Microsoft-KubePVInventory",
+                                        "Microsoft-KubeServices",
+                                        "Microsoft-InsightsMetrics"
+                                    ],
+                                    "destinations": [
+                                        "ciworkspace"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+              },
+              "parameters": {}
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "[Concat('aks-monitoring-msi-dcra', '-',  uniqueString(parameters('aksResourceId')))]",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[split(parameters('aksResourceId'),'/')[2]]",
+            "resourceGroup": "[split(parameters('aksResourceId'),'/')[4]]",
+            "dependsOn": [
+                "[Concat('aks-monitoring-msi-dcr', '-',  uniqueString(variables('dcrName')))]"
+            ],
+            "properties": {
+              "mode": "Incremental",
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                    {
+                        "type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+                        "name": "[concat(variables('clusterName'),'/microsoft.insights/', parameters('associationName'))]",
+                        "apiVersion": "2019-11-01-preview",
+                        "properties": {
+                            "description": "Association of data collection rule. Deleting this association will break the data collection for this AKS Cluster.",
+                            "dataCollectionRuleId": "[variables('dataCollectionRuleId')]"
+                        }
+                    }
+
+                ]
+              },
+              "parameters": {}
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "[Concat('aks-monitoring-msi', '-',  uniqueString(parameters('clusterResourceId')))]",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[split(parameters('aksResourceId'),'/')[2]]",
+            "resourceGroup": "[split(parameters('aksResourceId'),'/')[4]]",
+            "dependsOn": [
+                "[Concat('aks-monitoring-msi-dcra', '-',  uniqueString(parameters('aksResourceId')))]",
+            ],
+            "properties": {
+              "mode": "Incremental",
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                    {
+                        "type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+                        "name": "[concat(variables('clusterName'),'/microsoft.insights/', parameters('associationName'))]",
+                        "apiVersion": "2019-11-01-preview",
+                        "properties": {
+                            "description": "Association of data collection rule. Deleting this association will break the data collection for this AKS Cluster.",
+                            "dataCollectionRuleId": "[variables('dataCollectionRuleId')]"
+                        }
+                    }
+
+                ]
+              },
+              "parameters": {}
+            }
+        }
+    ]
+}
