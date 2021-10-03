@@ -31,6 +31,12 @@
             "metadata": {
                 "description": "Full Resource ID of the log analitycs workspace that will be used for data destination. For example /subscriptions/00000000-0000-0000-0000-0000-00000000/resourceGroups/ResourceGroupName/providers/Microsoft.operationalinsights/workspaces/ws_xyz"
             }
+        },
+        "dcrResourceTagValues": {
+            "type": "object",
+            "metadata": {
+              "description": "Existing or new tags on DCR Cluster Resource"
+            }
         }
     },
     "variables": {
@@ -63,7 +69,8 @@
                         "apiVersion": "2019-11-01-preview",
                         "name": "[variables('dcrName')]",
                         "location": "[parameters('workspaceLocation')]",
-                        "kind": "Linux",
+                        "tags": "[parameters('dcrResourceTagValues')]",
+                        "kind": "Custom",
                         "properties": {
                             "dataSources": {
                                 "extensions": [

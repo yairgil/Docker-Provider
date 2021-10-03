@@ -20,6 +20,13 @@
       },
       "workspaceLocation": {
         "value": "<workspaceLocation>"
+      },
+      "dcrResourceTagValues": {
+        "value": {
+          "<existing-tag-name1>": "<existing-tag-value1>",
+          "<existing-tag-name2>": "<existing-tag-value2>",
+          "<existing-tag-nameN>": "<existing-tag-valueN>"
+        }
       }
     }
   }
