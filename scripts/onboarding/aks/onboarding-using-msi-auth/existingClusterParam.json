@@ -8,6 +8,13 @@
       "aksResourceLocation": {
         "value": "<aksClusterLocation>"
       },
+      "aksResourceTagValues": {
+        "value": {
+          "<existing-tag-name1>": "<existing-tag-value1>",
+          "<existing-tag-name2>": "<existing-tag-value2>",
+          "<existing-tag-nameN>": "<existing-tag-valueN>"
+        }
+      },
       "workspaceResourceId": {
         "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>"
       },
