@@ -10,9 +10,9 @@
       },
       "aksResourceTagValues": {
         "value": {
-          "<existing-tag-name1>": "<existing-tag-value1>",
-          "<existing-tag-name2>": "<existing-tag-value2>",
-          "<existing-tag-nameN>": "<existing-tag-valueN>"
+          "<existingOrnew-tag-name1>": "<existingOrnew-tag-value1>",
+          "<existingOrnew-tag-name2>": "<existingOrnew-tag-value2>",
+          "<existingOrnew-tag-nameN>": "<existingOrnew-tag-valueN>"
         }
       },
       "workspaceResourceId": {
@@ -23,9 +23,9 @@
       },
       "dcrResourceTagValues": {
         "value": {
-          "<existing-tag-name1>": "<existing-tag-value1>",
-          "<existing-tag-name2>": "<existing-tag-value2>",
-          "<existing-tag-nameN>": "<existing-tag-valueN>"
+          "<existingOrnew-tag-name1>": "<existingOrnew-tag-value1>",
+          "<existingOrnew-tag-name2>": "<existingOrnew-tag-value2>",
+          "<existingOrnew-tag-nameN>": "<existingOrnew-tag-valueN>"
         }
       }
     }

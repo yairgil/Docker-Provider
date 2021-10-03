@@ -70,7 +70,7 @@
                         "name": "[variables('dcrName')]",
                         "location": "[parameters('workspaceLocation')]",
                         "tags": "[parameters('dcrResourceTagValues')]",
-                        "kind": "Custom",
+                        "kind": "Linux",
                         "properties": {
                             "dataSources": {
                                 "extensions": [
