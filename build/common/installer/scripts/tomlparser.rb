@@ -178,18 +178,21 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
     #Get ADX database name setting
     begin
-      if !parsedConfig[:log_collection_settings][:adx_database_name].nil? 
-        if !parsedConfig[:log_collection_settings][:adx_database_name].empty?
-           @adxDatabaseName = parsedConfig[:log_collection_settings][:adx_database_name]
+      if !parsedConfig[:log_collection_settings][:adx_database].nil? && !parsedConfig[:log_collection_settings][:adx_database][:name].nil?
+        if !parsedConfig[:log_collection_settings][:adx_database][:name].empty?
+           @adxDatabaseName = parsedConfig[:log_collection_settings][:adx_database][:name]
            puts "config::Using config map setting for ADX database name : #{@adxDatabaseName}"
         else 
-           puts "config::Ignoring config map settings and using default value since provided adx database name value is empty"    
-        end         
+           puts "config::Ignoring config map settings and using default value '#{@adxDatabaseName}' since provided adx database name value is empty"    
+        end   
+      else      
+        puts "config::No ADX database name set, using default value : #{@adxDatabaseName}"
       end
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for adx database name - #{errorStr}, using default #{@adxDatabaseName}, please check config map for errors")
     end
 
+    end
   end
 end
 
