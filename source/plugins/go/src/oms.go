@@ -1741,7 +1741,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 
 		// AdxDatabaseName should never get in a state where its length is 0, but it doesn't hurt to add the check
-		if len(AdxClusterUri) > 0 && len(AdxClientID) > 0 && len(AdxClientSecret) > 0 && len(AdxTenantID) > 0 && len(AdxDatabaseName) == 0 {
+		if len(AdxClusterUri) > 0 && len(AdxClientID) > 0 && len(AdxClientSecret) > 0 && len(AdxTenantID) > 0 && len(AdxDatabaseName) > 0 {
 			ContainerLogsRouteADX = true
 			Log("Routing container logs thru %s route...", ContainerLogsADXRoute)
 			fmt.Fprintf(os.Stdout, "Routing container logs thru %s route...\n", ContainerLogsADXRoute)
