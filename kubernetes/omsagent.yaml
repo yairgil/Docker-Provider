@@ -373,12 +373,18 @@ spec:
           resources:
             limits:
               cpu: 500m
-              memory: 600Mi
+              memory: 750Mi
             requests:
               cpu: 75m
-              memory: 225Mi
+              memory: 325Mi
           env:
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
+            - name: FBIT_SERVICE_FLUSH_INTERVAL
+              value: "15"
+            - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+              value: "1"
+            - name: FBIT_TAIL_BUFFER_MAX_SIZE
+              value: "1"
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
