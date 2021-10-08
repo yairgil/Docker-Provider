@@ -45,7 +45,7 @@
         "clusterName": "[split(parameters('aksResourceId'),'/')[8]]",
         "workspaceSubscriptionId": "[split(parameters('workspaceResourceId'),'/')[2]]",
         "workspaceResourceGroup": "[split(parameters('workspaceResourceId'),'/')[4]]",
-        "dcrName": "[Concat('CIDCR', '-', split(parameters('workspaceResourceId'),'/')[8])]",
+        "dcrName": "[Concat('DCR', '-', split(parameters('workspaceResourceId'),'/')[8])]",
         "associationName":  "ContainerInsightsExtension",
         "dataCollectionRuleId": "[resourceId(variables('workspaceSubscriptionId'), variables('workspaceResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
     },
