@@ -19,6 +19,7 @@ module Fluent::Plugin
       require_relative "CAdvisorMetricsAPIClient"
       require_relative "kubernetes_container_inventory"
       require_relative "extension_utils"
+      @addonTokenAdapterImageTag = ""
     end
 
     config_param :run_interval, :time, :default => 60
@@ -57,7 +58,6 @@ module Fluent::Plugin
       containerInventory = Array.new
       eventStream = Fluent::MultiEventStream.new
       hostName = ""
-      addonTokenAdapterImageTag = ""
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
       if ExtensionUtils.isAADMSIAuthMode()
         $log.info("in_container_inventory::enumerate: AAD AUTH MSI MODE")
@@ -83,12 +83,12 @@ module Fluent::Plugin
                   if hostName.empty? && !containerRecord["Computer"].empty?
                     hostName = containerRecord["Computer"]
                   end
-                  if addonTokenAdapterImageTag.empty? && ExtensionUtils.isAADMSIAuthMode()
+                  if @addonTokenAdapterImageTag.empty? && ExtensionUtils.isAADMSIAuthMode()
                      if !containerRecord["ElementName"].nil? && !containerRecord["ElementName"].empty? &&
-                      containerRecord["ElementName"].include?("kube-system") &&
+                      containerRecord["ElementName"].include?("_kube-system_") &&
                       containerRecord["ElementName"].include?("addon-token-adapter_omsagent")
                       if !containerRecord["ImageTag"].nil? && !containerRecord["ImageTag"].empty?
-                        addonTokenAdapterImageTag = containerRecord["ImageTag"]
+                        @addonTokenAdapterImageTag = containerRecord["ImageTag"]
                       end
                      end
                   end
@@ -127,8 +127,8 @@ module Fluent::Plugin
           telemetryProperties = {}
           telemetryProperties["Computer"] = hostName
           telemetryProperties["ContainerCount"] = containerInventory.length
-          if !addonTokenAdapterImageTag.empty?
-            telemetryProperties["addonTokenAdapterImageTag"] = addonTokenAdapterImageTag
+          if !@addonTokenAdapterImageTag.empty?
+            telemetryProperties["addonTokenAdapterImageTag"] = @addonTokenAdapterImageTag
           end
           ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
         end
