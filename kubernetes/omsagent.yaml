@@ -373,10 +373,10 @@ spec:
           resources:
             limits:
               cpu: 500m
-              memory: 600Mi
+              memory: 750Mi
             requests:
               cpu: 75m
-              memory: 225Mi
+              memory: 325Mi
           env:
             - name: FBIT_SERVICE_FLUSH_INTERVAL
               value: "15"
