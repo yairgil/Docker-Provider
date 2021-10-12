@@ -403,7 +403,7 @@ spec:
                   fieldPath: status.hostIP
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: ""
+              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
               value: "koreacentral,norwayeast,eastus2"
             - name: USING_AAD_MSI_AUTH
