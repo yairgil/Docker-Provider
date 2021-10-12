@@ -486,7 +486,7 @@ spec:
         #           fieldPath: status.hostIP
         #     # Update this with the user assigned msi client id for omsagent
         #     - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-        #       value: ""
+        #       value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
         #     - name: USING_AAD_MSI_AUTH
         #       value: "false"
         #    securityContext:
@@ -631,7 +631,7 @@ spec:
                   fieldPath: status.hostIP
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: ""
+              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             # Add the below environment variable to true only in sidecar enabled regions, else set it to false
             - name: SIDECAR_SCRAPING_ENABLED
               value: "false"
@@ -808,7 +808,7 @@ spec:
             value: "false"
           # Update this with the user assigned msi client id for omsagent
           - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-            value: ""
+            value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
           # Add this only for clouds that require cert bootstrapping
           # - name: REQUIRES_CERT_BOOTSTRAP
           #   value: "true"
