@@ -21,6 +21,7 @@ module Fluent::Plugin
       require_relative "extension_utils"
       require_relative "KubernetesApiClient"
       @inventoryAndPerfExcludeNamespaces = []
+      @addonTokenAdapterImageTag = ""
     end
 
     config_param :run_interval, :time, :default => 60
@@ -94,6 +95,15 @@ module Fluent::Plugin
                   if hostName.empty? && !containerRecord["Computer"].empty?
                     hostName = containerRecord["Computer"]
                   end
+                  if @addonTokenAdapterImageTag.empty? && ExtensionUtils.isAADMSIAuthMode()
+                     if !containerRecord["ElementName"].nil? && !containerRecord["ElementName"].empty? &&
+                      containerRecord["ElementName"].include?("_kube-system_") &&
+                      containerRecord["ElementName"].include?("addon-token-adapter_omsagent")
+                      if !containerRecord["ImageTag"].nil? && !containerRecord["ImageTag"].empty?
+                        @addonTokenAdapterImageTag = containerRecord["ImageTag"]
+                      end
+                     end
+                  end
                   containerIds.push containerRecord["InstanceID"]
                   containerInventory.push containerRecord
                 end
@@ -129,6 +139,9 @@ module Fluent::Plugin
           telemetryProperties = {}
           telemetryProperties["Computer"] = hostName
           telemetryProperties["ContainerCount"] = containerInventory.length
+          if !@addonTokenAdapterImageTag.empty?
+            telemetryProperties["addonTokenAdapterImageTag"] = @addonTokenAdapterImageTag
+          end
           ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
         end
       rescue => errorStr
