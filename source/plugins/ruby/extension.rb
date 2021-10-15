@@ -59,6 +59,11 @@ class Extension
               else
                 $log.warn("Extension::get_config::received outputStreams is either nil or empty")
               end
+              extensionSettings = extensionConfig["extensionSettings"]
+              if !extensionSettings.nil? && !extensionSettings.empty?
+                $log.info("Extension::get_config extensionSettings:#{extensionSettings}")
+                 extConfig["extensionSettings"] = extensionSettings
+              end
             end
           else
             $log.warn("Extension::get_config::received extensionConfigurations from fluentsocket is either nil or empty")
