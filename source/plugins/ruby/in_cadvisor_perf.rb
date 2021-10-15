@@ -22,9 +22,8 @@ module Fluent::Plugin
       require_relative "omslog"
       require_relative "constants"
       require_relative "extension_utils"      
-      @extensionSettings = Hash.new
       @perfUsageFrequencyInMin = 1
-      @isEmitPerf = true
+      @perfUsageMetricSampleCount = 1
     end
 
     config_param :run_interval, :time, :default => 60
@@ -85,17 +84,24 @@ module Fluent::Plugin
           extensionSettings  = ExtensionUtils.getOutputStreamId("extensionSettings")
           if !extensionSettings.nil? && !extensionSettings.empty?
             extensionSettings.each do |k, v|
-              $log.info("in_cadvisor_perf::enumerate:extensionSettings  key#{k}, value: #{v}")
-              @extensionSettings[k] = v
+              $log.info("in_cadvisor_perf::enumerate:extensionSettings  key#{k}, value: #{v}")              
                if k.downcase == 'perfUsageFrequencyInMin'.downcase
-                 if v.to_i > 1
+                 if v.to_i > 1 && v.to_i != @perfUsageFrequencyInMin 
                    @perfUsageFrequencyInMin = v.to_i
                  end 
                end
             end
+            @perfUsageMetricSampleCount = @perfUsageFrequencyInMin
           end 
         end    
-                   
+        
+        @perfUsageMetricSampleCount = @perfUsageMetricSampleCount - 1
+        if @perfUsageMetricSampleCount <= 0
+          $log.info("in_cadvisor_perf::enumerate: emitting perf usage metrics  @ #{Time.now.utc.iso8601}")
+          router.emit_stream(@tag, eventStream) if eventStream
+          @perfUsageMetricSampleCount = @perfUsageFrequencyInMin
+        end
+        
         router.emit_stream(@mdmtag, eventStream) if eventStream
         router.emit_stream(@containerhealthtag, eventStream) if eventStream
         router.emit_stream(@nodehealthtag, eventStream) if eventStream

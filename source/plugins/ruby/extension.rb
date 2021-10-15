@@ -18,6 +18,11 @@ class Extension
 
   def get_output_stream_id(datatypeId)
     @cache_lock.synchronize {
+      # force extension settings to get every time to handle dynamic change
+      if datatypeId.downcase == Constants.EXTENSION_SETTINGS
+        @cache = get_config()
+        return @cache[datatypeId]
+      end
       if @cache.has_key?(datatypeId)
         return @cache[datatypeId]
       else
