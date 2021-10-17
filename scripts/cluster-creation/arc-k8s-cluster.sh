@@ -12,6 +12,12 @@ install-helm()
   sudo mv linux-amd64/helm /usr/local/bin/helm
 }
 
+install-kubectl()
+{
+  sudo curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+}
+
 download-and-install-azure-cli()
 {
   # https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest#install-with-one-command
@@ -162,6 +168,18 @@ sudo mkdir $TEMP_DIR && cd $TEMP_DIR
 echo "validate args"
 parse_args $@
 
+echo "installing azure cli ..."
+download-and-install-azure-cli
+echo "installing azure cli completed."
+
+echo "installing helm client ..."
+install-helm
+echo "installing helm client completed."
+
+echo "installing kubectl client ..."
+install-kubectl
+echo "installing kubectl client completed."
+
 echo "set the ${DefaultCloud} for azure cli"
 az cloud set -n $DefaultCloud
 
@@ -170,14 +188,6 @@ az login --use-device-code
 
 echo "set the subscription ${subscriptionId} for cli"
 az account set -s $subscriptionId
-
-echo "installing helm client ..."
-install-helm
-echo "installing helm client completed."
-
-echo "installing azure cli ..."
-download-and-install-azure-cli
-echo "installing azure cli completed."
 
 echo "installing arc k8s extensions and pre-requisistes ..."
 install_arc_k8s_prerequisites
