@@ -110,7 +110,7 @@ class Constants
   CONTAINER_INVENTORY_DATA_TYPE = "CONTAINER_INVENTORY_BLOB"
   CONTAINER_NODE_INVENTORY_DATA_TYPE = "CONTAINER_NODE_INVENTORY_BLOB"
   PERF_DATA_TYPE = "LINUX_PERF_BLOB"
-  INSIGHTS_METRICS_DATA_TYPE = "INSIGHTS_METRICS_BLOB"  
+  INSIGHTS_METRICS_DATA_TYPE = "INSIGHTS_METRICS_BLOB"
   KUBE_SERVICES_DATA_TYPE = "KUBE_SERVICES_BLOB"
   KUBE_POD_INVENTORY_DATA_TYPE = "KUBE_POD_INVENTORY_BLOB"
   KUBE_NODE_INVENTORY_DATA_TYPE = "KUBE_NODE_INVENTORY_BLOB"
@@ -123,13 +123,13 @@ class Constants
 
   #ContainerInsights Extension (AMCS)
   CI_EXTENSION_NAME = "ContainerInsights"
-  CI_EXTENSION_VERSION = "1"  
+  CI_EXTENSION_VERSION = "1"
   #Current CI extension config size is ~5KB and going with 20KB to handle any future scenarios
   CI_EXTENSION_CONFIG_MAX_BYTES = 20480
-  ONEAGENT_FLUENT_SOCKET_NAME = "/var/run/mdsd/default_fluent.socket" 
+  ONEAGENT_FLUENT_SOCKET_NAME = "/var/run/mdsd/default_fluent.socket"
   #Tag prefix for output stream
   EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX = "dcr-"
-  EXTENSION_SETTINGS = "extensionsettings"
+  EXTENSION_SETTINGS = "extensionSettings"
 
   LINUX_LOG_PATH = $in_unit_test.nil? ? "/var/opt/microsoft/docker-cimprov/log/" : "./"
   WINDOWS_LOG_PATH = $in_unit_test.nil? ? "/etc/omsagentwindows/" : "./"

@@ -21,7 +21,7 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
-      require_relative "extension_utils"      
+      require_relative "extension_utils"
       @perfUsageFrequencyInMin = 1
       @perfUsageMetricSampleCount = 1
     end
@@ -81,27 +81,26 @@ module Fluent::Plugin
           end
 	        $log.info("in_cadvisor_perf::enumerate: using perf tag -#{@tag} @ #{Time.now.utc.iso8601}")
           $log.info("in_cadvisor_perf::enumerate: using insightsmetrics tag -#{@insightsmetricstag} @ #{Time.now.utc.iso8601}")
-          extensionSettings  = ExtensionUtils.getOutputStreamId("extensionSettings")
+          extensionSettings  = ExtensionUtils.getOutputStreamId(Constants::EXTENSION_SETTINGS)
           if !extensionSettings.nil? && !extensionSettings.empty?
             extensionSettings.each do |k, v|
-              $log.info("in_cadvisor_perf::enumerate:extensionSettings  key#{k}, value: #{v}")              
-               if k.downcase == 'perfUsageFrequencyInMin'.downcase
-                 if v.to_i > 1 && v.to_i != @perfUsageFrequencyInMin 
+               if k.casecmp?('perfUsageFrequencyInMin')
+                 if v.to_i > 1 && v.to_i != @perfUsageFrequencyInMin
                    @perfUsageFrequencyInMin = v.to_i
-                 end 
+                   $log.info("in_cadvisor_perf::enumerate:extensionSettings  key: #{k}, value: #{v}")
+                 end
                end
             end
-            @perfUsageMetricSampleCount = @perfUsageFrequencyInMin
-          end 
-        end    
-        
+          end
+        end
+
         @perfUsageMetricSampleCount = @perfUsageMetricSampleCount - 1
         if @perfUsageMetricSampleCount <= 0
           $log.info("in_cadvisor_perf::enumerate: emitting perf usage metrics  @ #{Time.now.utc.iso8601}")
           router.emit_stream(@tag, eventStream) if eventStream
           @perfUsageMetricSampleCount = @perfUsageFrequencyInMin
         end
-        
+
         router.emit_stream(@mdmtag, eventStream) if eventStream
         router.emit_stream(@containerhealthtag, eventStream) if eventStream
         router.emit_stream(@nodehealthtag, eventStream) if eventStream
