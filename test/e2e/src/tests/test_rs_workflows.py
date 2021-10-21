@@ -49,7 +49,7 @@ def test_rs_workflows(env_dict):
         agentLogPath = constants.AGENT_OMSAGENT_LOG_PATH
 
     logcontent = get_log_file_content(
-        api_instance, constants.AGENT_RESOURCES_NAMESPACE, rspodName, agentLogPath)
+        api_instance, constants.AGENT_RESOURCES_NAMESPACE, rspodName, constants.OMSAGENT_MAIN_CONTAINER_NAME, agentLogPath)
     if not logcontent:
         pytest.fail("logcontent should not be null or empty for rs pod: {}".format(rspodName))
     loglines = logcontent.split("\n")
