@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: highscale-deployment-10-kb-minute
+  namespace: default
+  labels:
+    app: highscale-deployment-10-kb-minute
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: highscale-deployment-10-kb-minute
+  template:
+    metadata:
+      labels:
+        app: highscale-deployment-10-kb-minute
+    spec:
+      containers:
+      - name: highscale
+        image: davidmichelman/highscale:10
+        imagePullPolicy: Always
+        env:
+          - name: MB_LOGGED_PER_MINUTE
+            value: "0.01"
+          - name: LOG_LINE_LENGTH_BYTES
+            value: "40"
+        resources:
+          requests:
+            memory: "100Mi"
+          limits:
+            memory: "200Mi"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/os
+                operator: In
+                values:
+                - linux
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: highscale-deployment-10-kb-minute-win
+  namespace: default
+  labels:
+    app: highscale-deployment-10-kb-minute-win
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: highscale-deployment-10-kb-minute-win
+  template:
+    metadata:
+      labels:
+        app: highscale-deployment-10-kb-minute-win
+    spec:
+      containers:
+      - name: highscale
+        image: davidmichelman/highscale:win-v1
+        imagePullPolicy: Always
+        env:
+          - name: MB_LOGGED_PER_MINUTE
+            value: "0.01"
+          - name: LOG_LINE_LENGTH_BYTES
+            value: "40"
+        resources:
+          requests:
+            memory: "500Mi"
+          limits:
+            memory: "500Mi"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/os
+                operator: In
+                values:
+                - windows
