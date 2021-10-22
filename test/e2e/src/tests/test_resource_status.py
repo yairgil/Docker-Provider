@@ -1,5 +1,6 @@
 import pytest
 import constants
+import time
 
 from kubernetes import client, config
 from results_utility import append_result_output
@@ -20,6 +21,9 @@ def test_resource_status(env_dict):
         #config.load_kube_config()
     except Exception as e:
         pytest.fail("Error loading the in-cluster config: " + str(e))
+
+    waitTimeSeconds = env_dict['AGENT_WAIT_TIME_SECS']
+    time.sleep(int(waitTimeSeconds))
 
     # checking the deployment status
     check_kubernetes_deployment_status(
