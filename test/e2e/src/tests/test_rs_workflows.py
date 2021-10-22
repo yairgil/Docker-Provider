@@ -39,9 +39,7 @@ def test_rs_workflows(env_dict):
 
 
     waitTimeSeconds = env_dict['AGENT_WAIT_TIME_SECS']
-    print("start: waiting for seconds: {} for agent workflows to get emitted".format(waitTimeSeconds))
     time.sleep(int(waitTimeSeconds))
-    print("complete: waiting for seconds: {} for agent workflows to get emitted".format(waitTimeSeconds))
 
     isOMSBaseAgent = env_dict.get('USING_OMSAGENT_BASE_AGENT')
     agentLogPath = constants.AGENT_FLUENTD_LOG_PATH
