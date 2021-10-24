@@ -15,12 +15,19 @@ extensionInstanceName="azuremonitor-containers"
 # resource type for azure log analytics workspace
 workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
 workspaceSolutionResourceProvider="Microsoft.OperationsManagement/solutions"
+agentK8sNamespace="kube-system"
+agentK8sSecretName="omsagent-secret"
+agentK8sDeploymentName="omsagent-rs"
+agentK8sLinuxDaemonsetName="omsagent"
+workspaceId=""
+workspacePrimarySharedKey=""
 contactUSMessage="Please contact us by emailing askcoin@microsoft.com if you need any help with this script captured logs"
 dataCapHelpMessage="Please review and increase data cap https://docs.microsoft.com/en-us/azure/azure-monitor/logs/manage-cost-storage"
 workspacePrivateLinkMessage="Please review this doc https://docs.microsoft.com/en-us/azure/azure-monitor/logs/private-link-security"
 azureCLIInstallLinkMessage="Please install Azure-CLI as per the instructions https://docs.microsoft.com/en-us/cli/azure/install-azure-cli and rerun the troubleshooting script"
 kubectlInstallLinkMessage="Please install kubectl as per the instructions https://kubernetes.io/docs/tasks/tools/#kubectl and rerun the troubleshooting script"
 jqInstallLinkMessage="Please install jq as per instructions https://stedolan.github.io/jq/download/ and rerun the troubleshooting script"
+ciExtensionReOnboarding="Please reinstall extension as per instructions https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-enable-arc-enabled-clusters?toc=/azure/azure-arc/kubernetes/toc.json"
 
 log_message() {
   echo "$@"
@@ -172,7 +179,7 @@ validate_ci_extension() {
      exit 1
   fi
   if [ $provisioningState = "Succeeded" ]; then
-     log_message "-e error expected state of extension provisioningState MUST be Succeeded state but actual state is ${provisioningState}"     
+     log_message "-e error expected state of extension provisioningState MUST be Succeeded state but actual state is ${provisioningState}"
      log_message ${contactUSMessage}
      exit 1
   fi
@@ -250,32 +257,96 @@ validate_ci_extension() {
     log_message ${dataCapHelpMessage}
     exit 1
   fi
+
+
+  workspaceId=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.customerId)
+  log_message "workspaceId: ${workspaceId}"
+
+  workspaceKey=$(az rest --method post --uri $logAnalyticsWorkspaceResourceID/sharedKeys?api-version=2015-11-01-preview --query primarySharedKey -o json)
+  workspacePrimarySharedKey=$(echo $workspaceKey | tr -d '"')
 }
 
-validate_ci_agent_pods() { 
+validate_az_cli_installed_or_not() {
+  if command_exists az; then
+    log_message "detected azure cli installed"
+    azCLIVersion=$(az -v)
+    log_message "azure-cli version: ${azCLIVersion}"
+    azCLIExtension=$(az extension list --query "[?name=='k8s-extension'].name | [0]")
+    if [ $azCLIExtension = "k8s-extension" ]; then
+        azCLIExtensionVersion=$(az extension list --query "[?name=='k8s-extension'].version | [0]")
+        log_message "detected k8s-extension and current installed version: ${azCLIExtensionVersion}"
+        log_message "updating the k8s-extension version to latest available one"
+        az extension update --name 'k8s-extension'
+    else
+      log_message "adding k8s-extension since k8s-extension doesnt exist as installed"
+      az extension add --name 'k8s-extension'
+    fi
+    azCLIExtensionVersion=$(az extension list --query "[?name=='k8s-extension'].version | [0]")
+    log_message "current installed k8s-extension version: ${azCLIExtensionVersion}"
+  else
+    log_message "-e error azure cli doesnt exist as installed"
+    log_message ${azureCLIInstallLinkMessage}
+    exit 1
+  fi
+}
+
+validate_ci_agent_pods() {
+  # verify the id and key of the workspace matches with workspace key value in the secret
+  wsID=$(kubectl get secrets ${omsagent-secret} -n ${agentK8sNamespace} -o json | jq -r ".data.WSID")
+  wsID=$(echo $wsID | base64 -d)
+
+  wsKEY=$(kubectl get secrets ${omsagent-secret} -n ${agentK8sNamespace} -o json | jq -r ".data.KEY")
+  wsKEY=$(echo $wsKEY | base64 -d)
+
+  if [[ "$workspaceId" != "$wsID" ]]; then
+    log_message "-e error workspaceId: ${workspaceID} of the workspace doesnt match with workspaceId: ${wsID} value in the omsagent secret"
+    log_message $ciExtensionReOnboarding
+    exit 1
+  fi
+  if [[ "$workspacePrimarySharedKey" != "$wsKEY" ]]; then
+    log_message "-e error workspacePrimarySharedKey of the workspace doesnt match with workspacekey value value in the omsagent secret"
+    log_message $ciExtensionReOnboarding
+    exit 1
+  fi
+
+  # verify state of agent deployment
+  readyReplicas=$(kubectl get deployments -n kube-system ${agentK8sDeploymentName} -o json | jq '.status.readyReplicas')
+  if [[ "$readyReplicas" != "1" ]]; then
+     log_message "-e error number of readyReplicas of agent deployment MUST be 1"
+     exit 1
+  fi
+  replicas=$(kubectl get deployments -n kube-system ${agentK8sDeploymentName} -o json | jq '.status.replicas')
+  if [[ "$replicas" != "1" ]]; then
+     log_message "-e error number of replicas of agent deployment MUST be 1"
+     exit 1
+  fi
+
+  # verify state of agent ds
+  currentNumberScheduled=$(kubectl get ds -n kube-system ${agentK8sLinuxDaemonsetName} -o json | jq '.status.currentNumberScheduled')
+  desiredNumberScheduled=$(kubectl get ds -n kube-system ${agentK8sLinuxDaemonsetName} -o json | jq '.status.desiredNumberScheduled')
+  if [[ "$currentNumberScheduled" != "$desiredNumberScheduled" ]]; then
+     log_message "-e error desiredNumberScheduled: ${desiredNumberScheduled} doesnt match with currentNumberScheduled: ${currentNumberScheduled}"
+     log_message "-e error please fix the pod scheduling issues of omsagent daemonset pods in namespace: ${agentK8sNamespace}"
+     exit 1
+  fi
+
+  numberAvailable=$(kubectl get ds -n kube-system ${agentK8sLinuxDaemonsetName} -o json | jq '.status.numberAvailable')
+  if [[ "$numberAvailable" != "$currentNumberScheduled" ]]; then
+     log_message "-e error numberAvailable: ${numberAvailable} doesnt match with currentNumberScheduled: ${currentNumberScheduled}"
+     log_message "-e error please fix the pod scheduling issues of omsagent daemonset pods in namespace: ${agentK8sNamespace}"
+     exit 1
+  fi
+  numberReady=$(kubectl get ds -n kube-system ${agentK8sLinuxDaemonsetName} -o json | jq '.status.numberReady')
+  if [[ "$numberAvailable" != "$numberReady" ]]; then
+     log_message "-e error numberAvailable: ${numberAvailable} doesnt match with numberReady: ${numberReady}"
+     log_message "-e error please fix the pod scheduling issues of omsagent daemonset pods in namespace: ${agentK8sNamespace}"
+     exit 1
+  fi
 
 }
 
-if command_exists az; then
-   log_message "detected azure cli installed"
-   azCLIVersion=$(az -v)
-   log_message "azure-cli version: ${azCLIVersion}"
-   azCLIExtension=$(az extension list --query "[?name=='k8s-extension'].name | [0]")
-   if [ $azCLIExtension = "k8s-extension" ]; then
-      azCLIExtensionVersion=$(az extension list --query "[?name=='k8s-extension'].version | [0]")
-      log_message "detected k8s-extension and current installed version: ${azCLIExtensionVersion}"
-      az extension update --name 'k8s-extension'
-   else
-     log_message "adding k8s-extension since k8s-extension doesnt exist as installed"
-     az extension add --name 'k8s-extension'
-   fi
-   azCLIExtensionVersion=$(az extension list --query "[?name=='k8s-extension'].version | [0]")
-   log_message "current installed k8s-extension version: ${azCLIExtensionVersion}"
-else
-  log_message "-e error azure cli doesnt exist as installed"
-  log_message ${azureCLIInstallLinkMessage}  
-  exit 1
-fi
+# verify azure cli installed or not
+validate_az_cli_installed_or_not
 
 # parse and validate args
 parse_args $@
@@ -300,13 +371,13 @@ validate_ci_extension $azureCloudName $clusterSubscriptionId $clusterResourceGro
 
 # validate ci agent pods
 if command_exists kubectl; then
-   if command_exists jq; then 
+   if command_exists jq; then
      log_message "-e error jq doesnt exist as installed"
      log_message $jqInstallLinkMessage
      exit 1
    fi
-   validate_ci_agent_pods 
-else 
+   validate_ci_agent_pods
+else
   log_message "-e error kubectl doesnt exist as installed"
   log_message ${kubectlInstallLinkMessage}
   exit 1
