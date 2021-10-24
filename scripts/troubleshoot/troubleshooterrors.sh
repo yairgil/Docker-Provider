@@ -178,7 +178,7 @@ validate_ci_extension() {
      log_message ${contactUSMessage}
      exit 1
   fi
-  if [ $provisioningState = "Succeeded" ]; then
+  if [ $provisioningState != "Succeeded" ]; then
      log_message "-e error expected state of extension provisioningState MUST be Succeeded state but actual state is ${provisioningState}"
      log_message ${contactUSMessage}
      exit 1
@@ -238,14 +238,14 @@ validate_ci_extension() {
   publicNetworkAccessForIngestion=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.publicNetworkAccessForIngestion)
   log_message "workspace publicNetworkAccessForIngestion: ${publicNetworkAccessForIngestion}"
   if [[ "$publicNetworkAccessForIngestion" != "Enabled" ]]; then
-     log_message "-e error Unless private link configured, publicNetworkAccessForIngestion MUST be enabled for data ingestion"
+     log_message "-e error Unless private link configuration, publicNetworkAccessForIngestion MUST be enabled for data ingestion"
      log_message ${workspacePrivateLinkMessage}
      exit 1
   fi
   publicNetworkAccessForQuery=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.publicNetworkAccessForQuery)
   log_message "workspace publicNetworkAccessForQuery: ${publicNetworkAccessForQuery}"
-  if [[ "$publicNetworkAccessForIngestion" != "Enabled" ]]; then
-    log_message "-e error Unless private link configured, publicNetworkAccessForQuery MUST be enabled for data query"
+  if [[ "$publicNetworkAccessForQuery" != "Enabled" ]]; then
+    log_message "-e error Unless private link configuration, publicNetworkAccessForQuery MUST be enabled for data query"
     log_message ${workspacePrivateLinkMessage}
     exit 1
   fi
@@ -257,7 +257,6 @@ validate_ci_extension() {
     log_message ${dataCapHelpMessage}
     exit 1
   fi
-
 
   workspaceId=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.customerId)
   log_message "workspaceId: ${workspaceId}"
@@ -310,33 +309,33 @@ validate_ci_agent_pods() {
   fi
 
   # verify state of agent deployment
-  readyReplicas=$(kubectl get deployments -n kube-system ${agentK8sDeploymentName} -o json | jq '.status.readyReplicas')
+  readyReplicas=$(kubectl get deployments -n ${agentK8sNamespace} ${agentK8sDeploymentName} -o json | jq '.status.readyReplicas')
   if [[ "$readyReplicas" != "1" ]]; then
      log_message "-e error number of readyReplicas of agent deployment MUST be 1"
      exit 1
   fi
-  replicas=$(kubectl get deployments -n kube-system ${agentK8sDeploymentName} -o json | jq '.status.replicas')
+  replicas=$(kubectl get deployments -n ${agentK8sNamespace} ${agentK8sDeploymentName} -o json | jq '.status.replicas')
   if [[ "$replicas" != "1" ]]; then
      log_message "-e error number of replicas of agent deployment MUST be 1"
      exit 1
   fi
 
   # verify state of agent ds
-  currentNumberScheduled=$(kubectl get ds -n kube-system ${agentK8sLinuxDaemonsetName} -o json | jq '.status.currentNumberScheduled')
-  desiredNumberScheduled=$(kubectl get ds -n kube-system ${agentK8sLinuxDaemonsetName} -o json | jq '.status.desiredNumberScheduled')
+  currentNumberScheduled=$(kubectl get ds -n ${agentK8sNamespace} ${agentK8sLinuxDaemonsetName} -o json | jq '.status.currentNumberScheduled')
+  desiredNumberScheduled=$(kubectl get ds -n ${agentK8sNamespace} ${agentK8sLinuxDaemonsetName} -o json | jq '.status.desiredNumberScheduled')
   if [[ "$currentNumberScheduled" != "$desiredNumberScheduled" ]]; then
      log_message "-e error desiredNumberScheduled: ${desiredNumberScheduled} doesnt match with currentNumberScheduled: ${currentNumberScheduled}"
      log_message "-e error please fix the pod scheduling issues of omsagent daemonset pods in namespace: ${agentK8sNamespace}"
      exit 1
   fi
 
-  numberAvailable=$(kubectl get ds -n kube-system ${agentK8sLinuxDaemonsetName} -o json | jq '.status.numberAvailable')
+  numberAvailable=$(kubectl get ds -n ${agentK8sNamespace} ${agentK8sLinuxDaemonsetName} -o json | jq '.status.numberAvailable')
   if [[ "$numberAvailable" != "$currentNumberScheduled" ]]; then
      log_message "-e error numberAvailable: ${numberAvailable} doesnt match with currentNumberScheduled: ${currentNumberScheduled}"
      log_message "-e error please fix the pod scheduling issues of omsagent daemonset pods in namespace: ${agentK8sNamespace}"
      exit 1
   fi
-  numberReady=$(kubectl get ds -n kube-system ${agentK8sLinuxDaemonsetName} -o json | jq '.status.numberReady')
+  numberReady=$(kubectl get ds -n ${agentK8sNamespace} ${agentK8sLinuxDaemonsetName} -o json | jq '.status.numberReady')
   if [[ "$numberAvailable" != "$numberReady" ]]; then
      log_message "-e error numberAvailable: ${numberAvailable} doesnt match with numberReady: ${numberReady}"
      log_message "-e error please fix the pod scheduling issues of omsagent daemonset pods in namespace: ${agentK8sNamespace}"
@@ -357,6 +356,7 @@ clusterResourceGroup="$(echo $clusterResourceId | cut -d'/' -f5)"
 providerName="$(echo $clusterResourceId | cut -d'/' -f7)"
 clusterName="$(echo $clusterResourceId | cut -d'/' -f9)"
 
+# get the current active azure cloud of the az cli
 azureCloudName=$(az cloud show --query name -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
 log_message "azure cloud name: ${azureCloudName}"
 
