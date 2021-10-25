@@ -1,5 +1,14 @@
 # Troubleshoot Guide for Azure Monitor for containers
 
+# Azure Arc-enabled Kubernetes
+The table below summarizes known issues you may face while using Azure Monitor for containers .
+
+| Issues and Error Messages  | Action |
+| ---- | --- |
+| Error Message `No data for selected filters`  | It may take some time to establish monitoring data flow for newly created clusters. Please allow at least 10-15 minutes for data to appear for your cluster. |
+| Error Message `Error retrieving data` | While Azure Arc-enabled Kubernetes cluster is setting up for health and performance monitoring, a connection is established between the cluster and Azure Log Analytics workspace. Log Analytics workspace is used to store all monitoring data for your cluster. This error may occurr when your Log Analytics workspace has been deleted or lost. Please check whether your Log Analytics workspace is available. To find your Log Analytics workspace go [here.](https://docs.microsoft.com/en-us/azure/log-analytics/log-analytics-manage-access) and your workspace is available. If the workspace is missing, you will have to delete and create Microsoft.AzureMonitor.Containers extension https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-enable-arc-enabled-clusters?toc=/azure/azure-arc/kubernetes/toc.json. |
+
+
 # Azure Kubernetes Service (AKS)
 The table below summarizes known issues you may face while using Azure Monitor for containers .
 
