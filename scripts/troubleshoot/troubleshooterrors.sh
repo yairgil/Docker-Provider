@@ -173,12 +173,13 @@ validate_ci_extension() {
   fi
 
   provisioningState=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName  --query "provisioningState")
+  log_message "Extension provisioningState: ${provisioningState}"
   if [ -z "$provisioningState" ]; then
      log_message "-e error provisioningState either null or empty in the config settings"
      log_message ${contactUSMessage}
      exit 1
   fi
-  if [ $provisioningState != "Succeeded" ]; then
+  if [ "$provisioningState" != "Succeeded" ]; then
      log_message "-e error expected state of extension provisioningState MUST be Succeeded state but actual state is ${provisioningState}"
      log_message ${contactUSMessage}
      exit 1
