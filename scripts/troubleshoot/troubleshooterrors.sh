@@ -227,7 +227,8 @@ validate_ci_extension() {
     isClusterAndWorkspaceInSameSubscription=false
     set_azure_subscription $workspaceSubscriptionId
   fi
-  workspaceList=$(az resource list -g $workspaceResourceGroup -n $workspaceName --resource-type $workspaceResourceProvider)
+  workspaceList=$(az resource list -g "$workspaceResourceGroup" -n "$workspaceName" --resource-type $workspaceResourceProvider)
+  log_message "workspace info:${workspaceList}"
   if [ "$workspaceList" = "[]" ]; then
      log_message "-e error workspace:${logAnalyticsWorkspaceResourceID} doesnt exist"
      exit 1
