@@ -380,11 +380,12 @@ validate_ci_extension $azureCloudName $clusterSubscriptionId $clusterResourceGro
 # validate ci agent pods
 if command_exists kubectl; then
    if command_exists jq; then
+       validate_ci_agent_pods
+   else
      log_message "-e error jq doesnt exist as installed"
      log_message $jqInstallLinkMessage
      exit 1
    fi
-   validate_ci_agent_pods
 else
   log_message "-e error kubectl doesnt exist as installed"
   log_message ${kubectlInstallLinkMessage}
