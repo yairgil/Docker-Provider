@@ -16,6 +16,7 @@ extensionInstanceName="azuremonitor-containers"
 workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
 workspaceSolutionResourceProvider="Microsoft.OperationsManagement/solutions"
 agentK8sNamespace="kube-system"
+azureArcK8sNamespace="azure-arc"
 agentK8sSecretName="omsagent-secret"
 agentK8sDeploymentName="omsagent-rs"
 agentK8sLinuxDaemonsetName="omsagent"
@@ -365,6 +366,28 @@ validate_ci_agent_pods() {
 
 }
 
+get_nodes_pods_crds_info() {
+
+  log_message "nodes"
+  kubectl get nodes >> $logFile
+
+  log_message "kube-system pods"
+  kubectl get get po -n ${agentK8sNamespace} >> $logFile
+
+  log_message "azurearck8spods"
+  kubectl get po -n ${azureArcK8sNamespace} >> $logFile
+
+  log_message "crds"
+  kubectl get crds -A >> $logFile
+
+  log_message "azureclusteridentityrequests crds"
+  kubectl get crds azureclusteridentityrequests.clusterconfig.azure.com >> $logFile
+  kubectl get azureclusteridentityrequests -n ${azureArcK8sNamespace}  >> $logFile
+
+  log_message "container-insights-clusteridentityrequest crd"
+  kubectl describe  azureclusteridentityrequests -n ${azureArcK8sNamespace} container-insights-clusteridentityrequest >> $logFile
+}
+
 # verify azure cli installed or not
 validate_az_cli_installed_or_not
 
@@ -404,6 +427,9 @@ else
   log_message ${kubectlInstallLinkMessage}
   exit 1
 fi
+
+# get nodes and pods status
+get_nodes_pods_crds_info
 
 log_message "Everything looks good according to this script."
 log_message $contactUSMessage
