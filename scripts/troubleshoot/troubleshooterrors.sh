@@ -243,30 +243,30 @@ validate_ci_extension() {
      exit 1
   fi
 
-  publicNetworkAccessForIngestion=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.publicNetworkAccessForIngestion)
+  publicNetworkAccessForIngestion=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.publicNetworkAccessForIngestion -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
   log_message "workspace publicNetworkAccessForIngestion: ${publicNetworkAccessForIngestion}"
-  if [[ "$publicNetworkAccessForIngestion" != "Enabled" ]]; then
+  if [ "$publicNetworkAccessForIngestion" != "enabled" ]; then
      log_message "-e error Unless private link configuration, publicNetworkAccessForIngestion MUST be enabled for data ingestion"
      log_message ${workspacePrivateLinkMessage}
      exit 1
   fi
-  publicNetworkAccessForQuery=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.publicNetworkAccessForQuery)
+  publicNetworkAccessForQuery=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.publicNetworkAccessForQuery -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
   log_message "workspace publicNetworkAccessForQuery: ${publicNetworkAccessForQuery}"
-  if [[ "$publicNetworkAccessForQuery" != "Enabled" ]]; then
+  if [ "$publicNetworkAccessForQuery" != "enabled" ]; then
     log_message "-e error Unless private link configuration, publicNetworkAccessForQuery MUST be enabled for data query"
     log_message ${workspacePrivateLinkMessage}
     exit 1
   fi
 
-  workspaceCappingDailyQuotaGb=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.workspaceCapping.dailyQuotaGb)
+  workspaceCappingDailyQuotaGb=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.workspaceCapping.dailyQuotaGb -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
   log_message "workspaceCapping dailyQuotaGb: ${workspaceCappingDailyQuotaGb}"
-  if [[ "$workspaceCappingDailyQuotaGb" != "1.0" ]]; then
+  if [ "$workspaceCappingDailyQuotaGb" != "1.0" ]; then
     log_message "-e error workspace configured daily quota and verify ingestion data reaching over the quota: ${workspaceCappingDailyQuotaGb}"
     log_message ${dataCapHelpMessage}
     exit 1
   fi
 
-  workspaceId=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.customerId)
+  workspaceId=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.customerId -o tsv | tr -d "[:space:]")
   log_message "workspaceId: ${workspaceId}"
 
   workspaceKey=$(az rest --method post --uri $logAnalyticsWorkspaceResourceID/sharedKeys?api-version=2015-11-01-preview --query primarySharedKey -o json)
