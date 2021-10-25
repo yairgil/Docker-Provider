@@ -235,11 +235,11 @@ validate_ci_extension() {
      exit 1
   fi
 
-  ciSolutionResourceId="/subscriptions/${workspaceSubscriptionId}/resourceGroups/${workspaceResourceGroup}/Microsoft.OperationsManagement/solutions/ContainerInsights(${workspaceName})"
-  ciSolutionResourceName=$(az resource show --ids "$ciSolutionResourceId"  --query name)
-  if [[ "$ciSolutionResourceName" != "ContainerInsights(${workspaceName})" ]]; then
-     log_message "-e error ContainerInsights solution on workspace ${logAnalyticsWorkspaceResourceID} doesnt exist"
-     log_message ${contactUSMessage}
+  ciSolutionResourceName="ContainerInsights(${workspaceName})"
+  workspaceSolutionList=$(az resource list -g $workspaceResourceGroup -n $ciSolutionResourceName --resource-type $workspaceSolutionResourceProvider)
+  log_message "workspace solution info:${workspaceSolutionList}"
+  if [ "$workspaceSolutionList" = "[]" ]; then
+     log_message "-e error ContainerInsights solution on workspace:${logAnalyticsWorkspaceResourceID} doesnt exist"
      exit 1
   fi
 
