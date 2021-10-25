@@ -258,10 +258,10 @@ validate_ci_extension() {
     exit 1
   fi
 
-  workspaceCappingDailyQuotaGb=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.workspaceCapping.dailyQuotaGb -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
+  workspaceCappingDailyQuotaGb=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.workspaceCapping.dailyQuotaGb -o tsv  | tr -d "[:space:]")
   log_message "workspaceCapping dailyQuotaGb: ${workspaceCappingDailyQuotaGb}"
   if [ "$workspaceCappingDailyQuotaGb" != "-1.0" ]; then
-    log_message "-e error workspace configured daily quota and verify ingestion data reaching over the quota: ${workspaceCappingDailyQuotaGb}"
+    log_message "-e error workspace configured daily quota and verify ingestion data reaching over the quota:${workspaceCappingDailyQuotaGb}"
     log_message ${dataCapHelpMessage}
     exit 1
   fi
