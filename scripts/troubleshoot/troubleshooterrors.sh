@@ -159,13 +159,14 @@ command_exists() {
 validate_ci_extension() {
   extension=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName)
   log_message $extension
-  configurationSettings=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName --query "configurationSettings.logAnalyticsWorkspaceResourceID")
+  configurationSettings=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName --query "configurationSettings")
   if [ -z "$configurationSettings" ]; then
      log_message "-e error configurationSettings either null or empty"
      log_message ${contactUSMessage}
      exit 1
   fi
-  logAnalyticsWorkspaceResourceID=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName --query "configurationSettings.logAnalyticsWorkspaceResourceID")
+  logAnalyticsWorkspaceResourceID=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName --query "configurationSettings.logAnalyticsWorkspaceResourceID" -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
+  log_message "Extension logAnalyticsWorkspaceResourceID: ${logAnalyticsWorkspaceResourceID}"
   if [ -z "$logAnalyticsWorkspaceResourceID" ]; then
      log_message "-e error logAnalyticsWorkspaceResourceID either null or empty in the config settings"
      log_message ${contactUSMessage}
