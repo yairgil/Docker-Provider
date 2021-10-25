@@ -160,6 +160,7 @@ command_exists() {
 }
 
 validate_ci_extension() {
+  log_message "START:validate_ci_extension"
   extension=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName)
   log_message $extension
   configurationSettings=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName --query "configurationSettings")
@@ -281,6 +282,8 @@ validate_ci_extension() {
 
   workspaceKey=$(az rest --method post --uri $logAnalyticsWorkspaceResourceID/sharedKeys?api-version=2015-11-01-preview --query primarySharedKey -o json)
   workspacePrimarySharedKey=$(echo $workspaceKey | tr -d '"')
+
+  log_message "END:validate_ci_extension"
 }
 
 validate_az_cli_installed_or_not() {
@@ -308,6 +311,7 @@ validate_az_cli_installed_or_not() {
 }
 
 validate_ci_agent_pods() {
+  log_message "START:validate_ci_agent_pods"
   # verify the id and key of the workspace matches with workspace key value in the secret
   wsID=$(kubectl get secrets ${agentK8sSecretName} -n ${agentK8sNamespace} -o json | jq -r ".data.WSID")
   wsID=$(echo $wsID | base64 -d)
@@ -365,11 +369,11 @@ validate_ci_agent_pods() {
      log_message "-e error please fix the pod scheduling issues of omsagent daemonset pods in namespace: ${agentK8sNamespace}"
      exit 1
   fi
-
+  log_message "END:validate_ci_agent_pods"
 }
 
 validate_ci_agent_identity_status() {
-
+  log_message "START:validate_ci_agent_identity_status"
   log_message "Info of ${agentArcK8sIdentityCRDName} in namespace ${azureArcK8sNamespace}"
   kubectl get  azureclusteridentityrequests -n ${azureArcK8sNamespace} ${agentArcK8sIdentityCRDName} -o json >> $logFile
   status=$(kubectl get  azureclusteridentityrequests -n ${azureArcK8sNamespace} ${agentArcK8sIdentityCRDName} -o json | jq -r '.status')
@@ -402,18 +406,19 @@ validate_ci_agent_identity_status() {
      log_message $timesyncHelpMessage
      exit 1
   fi
+  log_message "END:validate_ci_agent_identity_status"
 }
 
 get_nodes_pods_crds_info() {
-
+  log_message "START:get_nodes_pods_crds_info"
   log_message "nodes"
   kubectl get nodes >> $logFile
 
   log_message "kube-system pods"
-  kubectl get get po -n ${agentK8sNamespace} >> $logFile
+  kubectl get pods -n ${agentK8sNamespace} >> $logFile
 
   log_message "azurearck8spods"
-  kubectl get po -n ${azureArcK8sNamespace} >> $logFile
+  kubectl get pods -n ${azureArcK8sNamespace} >> $logFile
 
   log_message "crds"
   kubectl get crds -A >> $logFile
@@ -424,6 +429,7 @@ get_nodes_pods_crds_info() {
 
   log_message "container-insights-clusteridentityrequest crd"
   kubectl describe  azureclusteridentityrequests -n ${azureArcK8sNamespace} container-insights-clusteridentityrequest >> $logFile
+  log_message "END:get_nodes_pods_crds_info"
 }
 
 # verify azure cli installed or not
