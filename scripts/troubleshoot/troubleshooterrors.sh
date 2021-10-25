@@ -16,7 +16,7 @@ extensionInstanceName="azuremonitor-containers"
 workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
 workspaceSolutionResourceProvider="Microsoft.OperationsManagement/solutions"
 agentK8sNamespace="kube-system"
-agentK8sSecretName="omsagent-secret"
+agentK8sSecretName="agentK8sSecretName"
 agentK8sDeploymentName="omsagent-rs"
 agentK8sLinuxDaemonsetName="omsagent"
 workspaceId=""
@@ -244,14 +244,14 @@ validate_ci_extension() {
   fi
 
   publicNetworkAccessForIngestion=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.publicNetworkAccessForIngestion -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
-  log_message "workspace publicNetworkAccessForIngestion: ${publicNetworkAccessForIngestion}"
+  log_message "workspace publicNetworkAccessForIngestion:${publicNetworkAccessForIngestion}"
   if [ "$publicNetworkAccessForIngestion" != "enabled" ]; then
      log_message "-e error Unless private link configuration, publicNetworkAccessForIngestion MUST be enabled for data ingestion"
      log_message ${workspacePrivateLinkMessage}
      exit 1
   fi
   publicNetworkAccessForQuery=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.publicNetworkAccessForQuery -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
-  log_message "workspace publicNetworkAccessForQuery: ${publicNetworkAccessForQuery}"
+  log_message "workspace publicNetworkAccessForQuery:${publicNetworkAccessForQuery}"
   if [ "$publicNetworkAccessForQuery" != "enabled" ]; then
     log_message "-e error Unless private link configuration, publicNetworkAccessForQuery MUST be enabled for data query"
     log_message ${workspacePrivateLinkMessage}
@@ -259,7 +259,7 @@ validate_ci_extension() {
   fi
 
   workspaceCappingDailyQuotaGb=$(az resource show --ids ${logAnalyticsWorkspaceResourceID} --query properties.workspaceCapping.dailyQuotaGb -o tsv  | tr -d "[:space:]")
-  log_message "workspaceCapping dailyQuotaGb: ${workspaceCappingDailyQuotaGb}"
+  log_message "workspaceCapping dailyQuotaGb:${workspaceCappingDailyQuotaGb}"
   if [ "$workspaceCappingDailyQuotaGb" != "-1.0" ]; then
     log_message "-e error workspace configured daily quota and verify ingestion data reaching over the quota:${workspaceCappingDailyQuotaGb}"
     log_message ${dataCapHelpMessage}
@@ -299,10 +299,11 @@ validate_az_cli_installed_or_not() {
 
 validate_ci_agent_pods() {
   # verify the id and key of the workspace matches with workspace key value in the secret
-  wsID=$(kubectl get secrets ${omsagent-secret} -n ${agentK8sNamespace} -o json | jq -r ".data.WSID")
+  wsID=$(kubectl get secrets ${agentK8sSecretName} -n ${agentK8sNamespace} -o json | jq -r ".data.WSID")
   wsID=$(echo $wsID | base64 -d)
+  log_message "workspaceId: ${wsID} value in the ${agentK8sSecretName}"
 
-  wsKEY=$(kubectl get secrets ${omsagent-secret} -n ${agentK8sNamespace} -o json | jq -r ".data.KEY")
+  wsKEY=$(kubectl get secrets ${agentK8sSecretName} -n ${agentK8sNamespace} -o json | jq -r ".data.KEY")
   wsKEY=$(echo $wsKEY | base64 -d)
 
   if [[ "$workspaceId" != "$wsID" ]]; then
