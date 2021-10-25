@@ -172,19 +172,20 @@ validate_ci_extension() {
      exit 1
   fi
 
-  provisioningState=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName  --query "provisioningState")
+  provisioningState=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName  --query "provisioningState" -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
   log_message "Extension provisioningState: ${provisioningState}"
   if [ -z "$provisioningState" ]; then
      log_message "-e error provisioningState either null or empty in the config settings"
      log_message ${contactUSMessage}
      exit 1
   fi
-  if [ "$provisioningState" != "Succeeded" ]; then
-     log_message "-e error expected state of extension provisioningState MUST be Succeeded state but actual state is ${provisioningState}"
+  if [ "$provisioningState" != "succeeded" ]; then
+     log_message "-e error expected state of extension provisioningState MUST be succeeded state but actual state is ${provisioningState}"
      log_message ${contactUSMessage}
      exit 1
   fi
   logAnalyticsWorkspaceDomain=$(az k8s-extension show -c ${4} -g ${3} -t $clusterType -n $extensionInstanceName --query 'configurationSettings."omsagent.domain"')
+  log_message "Extension logAnalyticsWorkspaceDomain: ${logAnalyticsWorkspaceDomain}"
   if [ -z "$logAnalyticsWorkspaceDomain" ]; then
      log_message "-e error logAnalyticsWorkspaceDomain either null or empty in the config settings"
      log_message ${contactUSMessage}
@@ -192,18 +193,21 @@ validate_ci_extension() {
   fi
   azureCloudName=${1}
   if [ "$azureCloudName" = "azureusgovernment" ]; then
+     log_message "az cli configured cloud name:$azureCloudName"
      if [ $logAnalyticsWorkspaceDomain = "opinsights.azure.us" ]; then
         log_message "-e error expected value of logAnalyticsWorkspaceDomain  MUST opinsights.azure.us but actual value is ${logAnalyticsWorkspaceDomain}"
         log_message ${contactUSMessage}
         exit 1
      fi
   elif [ "$azureCloudName" = "azurecloud" ]; then
+    log_message "az cli configured cloud name:$azureCloudName"
     if [ $logAnalyticsWorkspaceDomain = "opinsights.azure.com" ]; then
       log_message "-e error expected value of logAnalyticsWorkspaceDomain  MUST opinsights.azure.com but actual value is ${logAnalyticsWorkspaceDomain}"
       log_message ${contactUSMessage}
       exit 1
     fi
   elif [ "$azureCloudName" = "azurechinacloud" ]; then
+    log_message "az cli configured cloud name:$azureCloudName"
     if [ $logAnalyticsWorkspaceDomain = "opinsights.azure.cn" ]; then
       log_message "-e error expected value of logAnalyticsWorkspaceDomain  MUST opinsights.azure.cn but actual value is ${logAnalyticsWorkspaceDomain}"
       log_message ${contactUSMessage}
@@ -214,6 +218,7 @@ validate_ci_extension() {
   workspaceSubscriptionId="$(echo ${logAnalyticsWorkspaceResourceID} | cut -d'/' -f3 | tr "[:upper:]" "[:lower:]")"
   workspaceResourceGroup="$(echo ${logAnalyticsWorkspaceResourceID} | cut -d'/' -f5)"
   workspaceName="$(echo ${logAnalyticsWorkspaceResourceID} | cut -d'/' -f9)"
+  log_message "workspaceSubscriptionId:${workspaceSubscriptionId} workspaceResourceGroup:${workspaceResourceGroup} workspaceName:${workspaceName}"
 
   clusterSubscriptionId=${2}
   # set the azure subscription to azure cli if the workspace in different sub than cluster
