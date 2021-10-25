@@ -283,7 +283,7 @@ validate_ci_extension() {
   workspaceKey=$(az rest --method post --uri $logAnalyticsWorkspaceResourceID/sharedKeys?api-version=2015-11-01-preview --query primarySharedKey -o json)
   workspacePrimarySharedKey=$(echo $workspaceKey | tr -d '"')
 
-  log_message "END:validate_ci_extension"
+  log_message "END:validate_ci_extension:SUCCESS"
 }
 
 validate_az_cli_installed_or_not() {
@@ -369,7 +369,7 @@ validate_ci_agent_pods() {
      log_message "-e error please fix the pod scheduling issues of omsagent daemonset pods in namespace: ${agentK8sNamespace}"
      exit 1
   fi
-  log_message "END:validate_ci_agent_pods"
+  log_message "END:validate_ci_agent_pods:SUCCESS"
 }
 
 validate_ci_agent_identity_status() {
@@ -406,7 +406,7 @@ validate_ci_agent_identity_status() {
      log_message $timesyncHelpMessage
      exit 1
   fi
-  log_message "END:validate_ci_agent_identity_status"
+  log_message "END:validate_ci_agent_identity_status:SUCCESS"
 }
 
 get_nodes_pods_crds_info() {
@@ -429,8 +429,11 @@ get_nodes_pods_crds_info() {
 
   log_message "container-insights-clusteridentityrequest crd"
   kubectl describe  azureclusteridentityrequests -n ${azureArcK8sNamespace} container-insights-clusteridentityrequest >> $logFile
-  log_message "END:get_nodes_pods_crds_info"
+  log_message "END:get_nodes_pods_crds_info:SUCCESS"
 }
+
+datetime=$(date -u)
+log_message "Script Execution start @ ${datetime}"
 
 # verify azure cli installed or not
 validate_az_cli_installed_or_not
