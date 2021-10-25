@@ -4,7 +4,7 @@
 # Prerequisites :
 #     Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 
-# bash troubelshooterror.sh --resource-id <clusterResourceId> --kube-context <kube-context> --cloudName
+# bash troubelshooterror.sh --resource-id <clusterResourceId> --kube-context <kube-context>
 
 set -e
 set -o pipefail
@@ -433,7 +433,7 @@ get_nodes_pods_crds_info() {
 }
 
 datetime=$(date -u)
-log_message "Script Execution start @ ${datetime}"
+log_message "*** Script Execution start @ ${datetime} ***"
 
 # verify azure cli installed or not
 validate_az_cli_installed_or_not

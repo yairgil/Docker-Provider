@@ -91,7 +91,7 @@ Steps:
 - Download and execute the script
   ``` bash
      curl -LO https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_dev/scripts/troubleshoot/troubleshooterrors.sh
-     bash troubleshooterrors.sh --resource-id <clusterResourceId> --kube-context <kubeContextofK8sCluster>
+     bash troubleshooterrors.sh --resource-id <azureArcK8sConnectedClusterResourceId> --kube-context <kubeContextofK8sCluster>
   ```
 - This script will generate a TroubleshootDump.log which collects detailed information about container health onboarding.
 Please send this file to [AskCoin](mailto:askcoin@microsoft.com). We will respond back to you.
