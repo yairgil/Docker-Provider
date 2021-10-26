@@ -6,6 +6,7 @@ on:
       - ci_dev
       - ci_prod
       - vishwa/10262021
+      - vishwa/10262021-2
 jobs:
   LINUX-build-and-scan:
     runs-on: ubuntu-latest
