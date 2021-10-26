@@ -130,6 +130,9 @@ class Constants
   #Tag prefix for output stream
   EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX = "dcr-"
   EXTENSION_SETTINGS = "extensionSettings"
+  #atm, this is key common key used for all the data types
+  #dependening on final implementation, either this needs to be renamed or have separate keys
+  EXTENSION_SETTINGS_KEY = "perfUsageFrequencyInMin"
 
   LINUX_LOG_PATH = $in_unit_test.nil? ? "/var/opt/microsoft/docker-cimprov/log/" : "./"
   WINDOWS_LOG_PATH = $in_unit_test.nil? ? "/etc/omsagentwindows/" : "./"

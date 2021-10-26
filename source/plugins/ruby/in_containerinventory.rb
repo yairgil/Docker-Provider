@@ -22,6 +22,8 @@ module Fluent::Plugin
       require_relative "KubernetesApiClient"
       @inventoryAndPerfExcludeNamespaces = []
       @addonTokenAdapterImageTag = ""
+      @frequencyInMin = 1
+      @metricSampleCount = 1
     end
 
     config_param :run_interval, :time, :default => 60
@@ -71,6 +73,17 @@ module Fluent::Plugin
           @tag = ExtensionUtils.getOutputStreamId(Constants::CONTAINER_INVENTORY_DATA_TYPE)
         end
         $log.info("in_container_inventory::enumerate: using tag -#{@tag} @ #{Time.now.utc.iso8601}")
+        extensionSettings  = ExtensionUtils.getOutputStreamId(Constants::EXTENSION_SETTINGS)
+        if !extensionSettings.nil? && !extensionSettings.empty?
+          extensionSettings.each do |k, v|
+             if k.casecmp?(constants.EXTENSION_SETTINGS_KEY)
+               if v.to_i > 1 && v.to_i != @frequencyInMin
+                 @frequencyInMin = v.to_i
+                 $log.info("in_container_inventory::enumerate:extensionSettings  key: #{k}, value: #{v}")
+               end
+             end
+          end
+        end
       end
       begin
         containerRuntimeEnv = ENV["CONTAINER_RUNTIME"]
@@ -126,11 +139,17 @@ module Fluent::Plugin
         containerInventory.each do |record|
           eventStream.add(emitTime, record) if record
         end
-        router.emit_stream(@tag, eventStream) if eventStream
-        @@istestvar = ENV["ISTEST"]
-        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
-          $log.info("containerInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+
+        @metricSampleCount = @metricSampleCount - 1
+        if @metricSampleCount <= 0
+          router.emit_stream(@tag, eventStream) if eventStream
+          @@istestvar = ENV["ISTEST"]
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
+            $log.info("containerInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
+          @metricSampleCount = @frequencyInMin
         end
+
         $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")
         timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60

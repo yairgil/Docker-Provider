@@ -30,6 +30,7 @@ module Fluent::Plugin
       # Initilize enable/disable normal event collection
       @collectAllKubeEvents = false
       @inventoryAndPerfExcludeNamespaces = []
+      @frequencyInMin = 1
     end
 
     config_param :run_interval, :time, :default => 60
@@ -98,6 +99,22 @@ module Fluent::Plugin
             @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_EVENTS_DATA_TYPE)
           end
           $log.info("in_kube_events::enumerate: using kubeevents tag -#{@tag} @ #{Time.now.utc.iso8601}")
+          extensionSettings  = ExtensionUtils.getOutputStreamId(Constants::EXTENSION_SETTINGS)
+          if !extensionSettings.nil? && !extensionSettings.empty?
+            extensionSettings.each do |k, v|
+               if k.casecmp?(constants.EXTENSION_SETTINGS_KEY)
+                 if v.to_i > 1 && v.to_i != @frequencyInMin
+                   @frequencyInMin = v.to_i
+                   $log.info("in_kube_events::enumerate:extensionSettings  key: #{k}, value: #{v}")
+                 end
+               end
+            end
+          end
+
+          if @frequencyInMin > 1
+            @run_interval = @frequencyInMin * 60
+            $log.info("in_kube_events::enumerate:update run interval: #{@run_interval} seconds")
+          end
         end
         # Initializing continuation token to nil
         continuationToken = nil

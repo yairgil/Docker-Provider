@@ -47,6 +47,8 @@ module Fluent::Plugin
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
       @containerInventoryTag = "oneagent.containerInsights.CONTAINER_INVENTORY_BLOB"
       @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
+      @frequencyInMin = 1
+      @metricSampleCount = 1
     end
 
     config_param :run_interval, :time, :default => 60
@@ -103,6 +105,7 @@ module Fluent::Plugin
 
     def enumerate(podList = nil)
       begin
+        @metricSampleCount = @metricSampleCount - 1
         podInventory = podList
         telemetryFlush = false
         @podCount = 0
@@ -137,6 +140,17 @@ module Fluent::Plugin
            $log.info("in_kube_podinventory::enumerate: using containerinventory tag -#{@containerInventoryTag} @ #{Time.now.utc.iso8601}")
            $log.info("in_kube_podinventory::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")
            $log.info("in_kube_podinventory::enumerate: using kubepodinventory tag -#{@tag} @ #{Time.now.utc.iso8601}")
+           extensionSettings  = ExtensionUtils.getOutputStreamId(Constants::EXTENSION_SETTINGS)
+           if !extensionSettings.nil? && !extensionSettings.empty?
+             extensionSettings.each do |k, v|
+                if k.casecmp?(constants.EXTENSION_SETTINGS_KEY)
+                  if v.to_i > 1 && v.to_i != @frequencyInMin
+                    @frequencyInMin = v.to_i
+                    $log.info("in_kube_nodes::enumerate:extensionSettings  key: #{k}, value: #{v}")
+                  end
+                end
+             end
+           end
         end
 
         # Get services first so that we dont need to make a call for very chunk
@@ -224,6 +238,9 @@ module Fluent::Plugin
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
+      if @metricSampleCount <= 0
+        @metricSampleCount = @frequencyInMin
+      end
     end
 
     def parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime = Time.utc.iso8601)
@@ -275,11 +292,13 @@ module Fluent::Plugin
           end
 
           if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && eventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_podinventory::parse_and_emit_records: number of pod inventory records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            if @metricSampleCount <= 0
+              $log.info("in_kube_podinventory::parse_and_emit_records: number of pod inventory records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
+              router.emit_stream(@tag, eventStream) if eventStream
             end
-            router.emit_stream(@tag, eventStream) if eventStream
             eventStream = Fluent::MultiEventStream.new
           end
 
@@ -295,10 +314,12 @@ module Fluent::Plugin
           end
 
           if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_podinventory::parse_and_emit_records: number of container perf records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("kubeContainerPerfEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            if @metricSampleCount <= 0
+              $log.info("in_kube_podinventory::parse_and_emit_records: number of container perf records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                $log.info("kubeContainerPerfEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
             end
             kubePerfEventStream = Fluent::MultiEventStream.new
           end
@@ -324,37 +345,45 @@ module Fluent::Plugin
         end  #podInventory block end
 
         if eventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records: number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@tag, eventStream) if eventStream
-          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          if @metricSampleCount <= 0
+            $log.info("in_kube_podinventory::parse_and_emit_records: number of pod inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@tag, eventStream) if eventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
           eventStream = nil
         end
 
         if containerInventoryStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records: number of windows container inventory records emitted #{containerInventoryStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@containerInventoryTag, containerInventoryStream) if containerInventoryStream
-          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubeWindowsContainerInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          if @metricSampleCount <= 0
+            $log.info("in_kube_podinventory::parse_and_emit_records: number of windows container inventory records emitted #{containerInventoryStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@containerInventoryTag, containerInventoryStream) if containerInventoryStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubeWindowsContainerInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
           containerInventoryStream = nil
         end
 
         if kubePerfEventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records: number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-          kubePerfEventStream = nil
-          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubeContainerPerfEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          if @metricSampleCount <= 0
+            $log.info("in_kube_podinventory::parse_and_emit_records: number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubeContainerPerfEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
+          kubePerfEventStream = nil
         end
 
         if insightsMetricsEventStream.count > 0
-          $log.info("in_kube_podinventory::parse_and_emit_records: number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
-          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          if @metricSampleCount <= 0
+            $log.info("in_kube_podinventory::parse_and_emit_records: number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
           insightsMetricsEventStream = nil
         end
@@ -371,29 +400,31 @@ module Fluent::Plugin
         end
 
         if continuationToken.nil? # sending kube services inventory records
-          kubeServicesEventStream = Fluent::MultiEventStream.new
-          serviceRecords.each do |kubeServiceRecord|
-            if !kubeServiceRecord.nil?
-              # adding before emit to reduce memory foot print
-              kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
-              kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
-              kubeServicesEventStream.add(emitTime, kubeServiceRecord) if kubeServiceRecord
-              if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
-                $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-                router.emit_stream(@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
-                kubeServicesEventStream = Fluent::MultiEventStream.new
-                if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-                  $log.info("kubeServicesEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          if @metricSampleCount <= 0
+            kubeServicesEventStream = Fluent::MultiEventStream.new
+            serviceRecords.each do |kubeServiceRecord|
+              if !kubeServiceRecord.nil?
+                # adding before emit to reduce memory foot print
+                kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
+                kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
+                kubeServicesEventStream.add(emitTime, kubeServiceRecord) if kubeServiceRecord
+                if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
+                  $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+                  router.emit_stream(@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+                  kubeServicesEventStream = Fluent::MultiEventStream.new
+                  if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                    $log.info("kubeServicesEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+                  end
                 end
               end
             end
-          end
 
-          if kubeServicesEventStream.count > 0
-            $log.info("in_kube_podinventory::parse_and_emit_records : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("kubeServicesEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            if kubeServicesEventStream.count > 0
+              $log.info("in_kube_podinventory::parse_and_emit_records : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                $log.info("kubeServicesEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
             end
           end
           kubeServicesEventStream = nil

@@ -7,10 +7,10 @@ module Fluent::Plugin
   class Kube_nodeInventory_Input < Input
     Fluent::Plugin.register_input("kube_nodes", self)
 
-    def initialize (kubernetesApiClient=nil, 
-                    applicationInsightsUtility=nil, 
-                    extensionUtils=nil, 
-                    env=nil, 
+    def initialize (kubernetesApiClient=nil,
+                    applicationInsightsUtility=nil,
+                    extensionUtils=nil,
+                    env=nil,
                     telemetry_flush_interval=nil)
       super()
 
@@ -36,8 +36,8 @@ module Fluent::Plugin
       @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
       @@osmConfigMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
       @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
-  
-  
+
+
       @@rsPromInterval = @env["TELEMETRY_RS_PROM_INTERVAL"]
       @@rsPromFieldPassCount = @env["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
       @@rsPromFieldDropCount = @env["TELEMETRY_RS_PROM_FIELDDROP_LENGTH"]
@@ -64,6 +64,8 @@ module Fluent::Plugin
       require_relative "constants"
 
       @NodeCache = NodeStatsCache.new()
+      @frequencyInMin = 1
+      @metricSampleCount = 1
     end
 
     config_param :run_interval, :time, :default => 60
@@ -116,6 +118,7 @@ module Fluent::Plugin
 
     def enumerate
       begin
+        @metricSampleCount = @metricSampleCount - 1
         nodeInventory = nil
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
@@ -142,9 +145,19 @@ module Fluent::Plugin
           $log.info("in_kube_nodes::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_nodes::enumerate: using containernodeinventory tag -#{@ContainerNodeInventoryTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_nodes::enumerate: using kubenodeinventory tag -#{@tag} @ #{Time.now.utc.iso8601}")
+          extensionSettings  = ExtensionUtils.getOutputStreamId(Constants::EXTENSION_SETTINGS)
+          if !extensionSettings.nil? && !extensionSettings.empty?
+            extensionSettings.each do |k, v|
+               if k.casecmp?(constants.EXTENSION_SETTINGS_KEY)
+                 if v.to_i > 1 && v.to_i != @frequencyInMin
+                   @frequencyInMin = v.to_i
+                   $log.info("in_kube_nodes::enumerate:extensionSettings  key: #{k}, value: #{v}")
+                 end
+               end
+            end
+          end
         end
         nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
@@ -190,6 +203,9 @@ module Fluent::Plugin
         $log.debug_backtrace(errorStr.backtrace)
         @applicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
+      if @metricSampleCount <= 0
+        @metricSampleCount = @frequencyInMin
+      end
     end # end enumerate
 
     def parse_and_emit_records(nodeInventory, batchTime = Time.utc.iso8601)
@@ -208,13 +224,15 @@ module Fluent::Plugin
           nodeInventoryRecord = getNodeInventoryRecord(item, batchTime)
           eventStream.add(emitTime, nodeInventoryRecord) if nodeInventoryRecord
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && eventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@tag, eventStream) if eventStream
+            if @metricSampleCount <= 0
+              $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@tag, eventStream) if eventStream
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
+            end
             $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@MDMKubeNodeInventoryTag, eventStream) if eventStream
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-            end
             eventStream = Fluent::MultiEventStream.new
           end
 
@@ -223,11 +241,13 @@ module Fluent::Plugin
           containerNodeInventoryEventStream.add(emitTime, containerNodeInventoryRecord) if containerNodeInventoryRecord
 
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && containerNodeInventoryEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
-            containerNodeInventoryEventStream = Fluent::MultiEventStream.new
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            if @metricSampleCount <= 0
+              $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+              containerNodeInventoryEventStream = Fluent::MultiEventStream.new
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
             end
           end
 
@@ -272,12 +292,14 @@ module Fluent::Plugin
             kubePerfEventStream.add(emitTime, metricRecord) if metricRecord
           end
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
-            $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
-            router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-            kubePerfEventStream = Fluent::MultiEventStream.new
-            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-              $log.info("kubeNodePerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            if @metricSampleCount <= 0
+              $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+              router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+              if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                $log.info("kubeNodePerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+              end
             end
+            kubePerfEventStream = Fluent::MultiEventStream.new
           end
 
           # node GPU metrics record
@@ -391,31 +413,37 @@ module Fluent::Plugin
           @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
         if eventStream.count > 0
-          $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@tag, eventStream) if eventStream
+          if @metricSampleCount <= 0
+            $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@tag, eventStream) if eventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
+          end
           $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@MDMKubeNodeInventoryTag, eventStream) if eventStream
-          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-          end
           eventStream = nil
         end
         if containerNodeInventoryEventStream.count > 0
-          $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
-          containerNodeInventoryEventStream = nil
-          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          if @metricSampleCount <= 0
+            $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
+          containerNodeInventoryEventStream = nil
         end
 
         if kubePerfEventStream.count > 0
-          $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
-          router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-          kubePerfEventStream = nil
-          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-            $log.info("kubeNodePerfInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          if @metricSampleCount <= 0
+            $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
+            router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubeNodePerfInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
+          kubePerfEventStream = nil
         end
         if insightsMetricsEventStream.count > 0
           $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
