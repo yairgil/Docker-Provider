@@ -37,6 +37,8 @@ module Fluent::Plugin
       @NodeName = OMS::Common.get_hostname
       @ClusterId = KubernetesApiClient.getClusterId
       @ClusterName = KubernetesApiClient.getClusterName
+      @frequencyInMin = 1
+      @metricSampleCount = 1
     end
 
     config_param :run_interval, :time, :default => 60
@@ -82,6 +84,7 @@ module Fluent::Plugin
 
     def enumerate
       begin
+        @metricSampleCount = @metricSampleCount - 1
         deploymentList = nil
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
@@ -93,6 +96,17 @@ module Fluent::Plugin
           $log.info("in_kubestate_deployments::enumerate: AAD AUTH MSI MODE")
           if @tag.nil? || !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end
+          extensionSettings  = ExtensionUtils.getOutputStreamId(Constants::EXTENSION_SETTINGS)
+          if !extensionSettings.nil? && !extensionSettings.empty?
+            extensionSettings.each do |k, v|
+               if k.casecmp?(constants.EXTENSION_SETTINGS_KEY)
+                 if v.to_i > 1 && v.to_i != @frequencyInMin
+                   @frequencyInMin = v.to_i
+                   $log.info("in_kube_nodes::enumerate:extensionSettings  key: #{k}, value: #{v}")
+                 end
+               end
+            end
           end
         end
         # Initializing continuation token to nil
@@ -137,6 +151,9 @@ module Fluent::Plugin
       rescue => errorStr
         $log.warn "in_kubestate_deployments::enumerate:Failed in enumerate: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry("in_kubestate_deployments::enumerate:Failed in enumerate: #{errorStr}")
+      end
+      if @metricSampleCount <= 0
+        @metricSampleCount = @frequencyInMin
       end
     end # end enumerate
 
@@ -206,13 +223,14 @@ module Fluent::Plugin
           insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
         end
 
-        router.emit_stream(@tag, insightsMetricsEventStream) if insightsMetricsEventStream
-        $log.info("successfully emitted #{metricItems.length()} kube_state_deployment metrics")
-
-        @deploymentsRunningTotal = @deploymentsRunningTotal + metricItems.length()
-        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
-          $log.info("kubestatedeploymentsInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+        if @metricSampleCount <= 0
+          router.emit_stream(@tag, insightsMetricsEventStream) if insightsMetricsEventStream
+          $log.info("successfully emitted #{metricItems.length()} kube_state_deployment metrics")
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
+            $log.info("kubestatedeploymentsInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
         end
+        @deploymentsRunningTotal = @deploymentsRunningTotal + metricItems.length()
       rescue => error
         $log.warn("in_kubestate_deployments::parse_and_emit_records failed: #{error} ")
         ApplicationInsightsUtility.sendExceptionTelemetry("in_kubestate_deployments::parse_and_emit_records failed: #{error}")
