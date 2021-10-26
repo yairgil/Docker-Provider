@@ -143,7 +143,7 @@ module Fluent::Plugin
            extensionSettings  = ExtensionUtils.getOutputStreamId(Constants::EXTENSION_SETTINGS)
            if !extensionSettings.nil? && !extensionSettings.empty?
              extensionSettings.each do |k, v|
-                if k.casecmp?(constants.EXTENSION_SETTINGS_KEY)
+                if k.casecmp?(Constants::EXTENSION_SETTINGS_KEY)
                   if v.to_i > 1 && v.to_i != @frequencyInMin
                     @frequencyInMin = v.to_i
                     $log.info("in_kube_nodes::enumerate:extensionSettings  key: #{k}, value: #{v}")

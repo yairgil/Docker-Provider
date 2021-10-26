@@ -20,6 +20,7 @@ module Fluent::Plugin
       require_relative "kubernetes_container_inventory"
       require_relative "extension_utils"
       require_relative "KubernetesApiClient"
+      require_relative "constants"
       @inventoryAndPerfExcludeNamespaces = []
       @addonTokenAdapterImageTag = ""
       @frequencyInMin = 1
@@ -76,7 +77,7 @@ module Fluent::Plugin
         extensionSettings  = ExtensionUtils.getOutputStreamId(Constants::EXTENSION_SETTINGS)
         if !extensionSettings.nil? && !extensionSettings.empty?
           extensionSettings.each do |k, v|
-             if k.casecmp?(constants.EXTENSION_SETTINGS_KEY)
+             if k.casecmp?(Constants::EXTENSION_SETTINGS_KEY)
                if v.to_i > 1 && v.to_i != @frequencyInMin
                  @frequencyInMin = v.to_i
                  $log.info("in_container_inventory::enumerate:extensionSettings  key: #{k}, value: #{v}")
