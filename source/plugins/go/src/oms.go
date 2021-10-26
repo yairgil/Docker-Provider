@@ -1701,19 +1701,19 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	ContainerLogsRouteV2 = false
 	ContainerLogsRouteADX = false
-
-	// Try to read the ADX database name from environment variables. Default to DefaultAdsDatabaseName if not set. This SHOULD be set by tomlparser.rb so
-	// it's a highly unexpected event if it isn't.
-	// It should be set by the logic in tomlparser.rb EVEN if ADX logging isn't enabled
-	AdxDatabaseName := strings.TrimSpace(os.Getenv("AZMON_ADX_DATABASE_NAME"))
-
-	// Check the len of the provided name for database and use default if 0, just to be sure
-	if len(AdxDatabaseName) == 0 {
-		Log("Adx database name unexpecedly empty (check config AND implementation, should have been set by tomlparser.rb?) - will default to '%s'", DefaultAdxDatabaseName)
-		AdxDatabaseName = DefaultAdxDatabaseName
-	}
 	
 	if strings.Compare(ContainerLogsRoute, ContainerLogsADXRoute) == 0 {
+		// Try to read the ADX database name from environment variables. Default to DefaultAdsDatabaseName if not set. 
+		// This SHOULD be set by tomlparser.rb so it's a highly unexpected event if it isn't.
+		// It should be set by the logic in tomlparser.rb EVEN if ADX logging isn't enabled
+		AdxDatabaseName := strings.TrimSpace(os.Getenv("AZMON_ADX_DATABASE_NAME"))
+
+		// Check the len of the provided name for database and use default if 0, just to be sure
+		if len(AdxDatabaseName) == 0 {
+			Log("Adx database name unexpecedly empty (check config AND implementation, should have been set by tomlparser.rb?) - will default to '%s'", DefaultAdxDatabaseName)
+			AdxDatabaseName = DefaultAdxDatabaseName
+		}
+
 		//check if adx clusteruri, clientid & secret are set
 		var err error
 		AdxClusterUri, err = ReadFileContents(PluginConfiguration["adx_cluster_uri_path"])
