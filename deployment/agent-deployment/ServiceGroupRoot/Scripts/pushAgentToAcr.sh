@@ -12,14 +12,22 @@ if [ -z $AGENT_RELEASE ]; then
   echo "-e error AGENT_RELEASE shouldnt be empty. check release variables"
   exit 1
 fi
-#!
-if [ -z $AGENT_IMAGE_FULL_PATH ]; then
-  echo "-e error AGENT_IMAGE_FULL_PATH shouldnt be empty. check release variables"
+
+#Make sure that tag being pushed will not overwrite an existing tag in mcr
+MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/containerinsights/ciprod/tags/list`"
+if [ $? -ne 0 ]; then         
+   echo "-e error unable to get list of mcr tags for azuremonitor/containerinsights/ciprod repository"
+   exit 1
+fi
+TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'"$AGENT_RELEASE$AGENT_IMAGE_TAG_SUFFIX"'"])')
+
+if $TAG_EXISTS; then
+  echo "-e error ${AGENT_IMAGE_TAG_SUFFIX} already exists in mcr. make sure the image tag is unique"
   exit 1
 fi
 
-if [ -z $CDPX_ACR ]; then
-  echo "-e error value of CDPX_ACR shouldn't be empty. check release variables"
+if [ -z $AGENT_IMAGE_FULL_PATH ]; then
+  echo "-e error AGENT_IMAGE_FULL_PATH shouldnt be empty. check release variables"
   exit 1
 fi
 
@@ -55,7 +63,7 @@ else
 fi     
 
 echo "Pushing ${AGENT_IMAGE_FULL_PATH} to ${ACR_NAME}"
-az acr import --name $ACR_NAME --registry $CDPX_REGISTRY --source ${CDPX_ACR}/official/${CDPX_REPO_NAME}:${CDPX_TAG} --image $AGENT_IMAGE_FULL_PATH
+az acr import --name $ACR_NAME --registry $CDPX_REGISTRY --source official/${CDPX_REPO_NAME}:${CDPX_TAG} --image $AGENT_IMAGE_FULL_PATH
 if [ $? -eq 0 ]; then
   echo "Retagged and pushed image successfully"
 else
