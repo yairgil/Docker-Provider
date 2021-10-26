@@ -1,12 +1,13 @@
 name: pullrequest-build-and-scan
 on:
+  push:
+    branches:
+      - vishwa/10262021
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
       - ci_dev
       - ci_prod
-      - vishwa/10262021
-      - vishwa/10262021-2
 jobs:
   LINUX-build-and-scan:
     runs-on: ubuntu-latest
