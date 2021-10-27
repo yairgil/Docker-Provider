@@ -292,7 +292,7 @@ validate_az_cli_installed_or_not() {
     azCLIVersion=$(az -v)
     log_message "azure-cli version: ${azCLIVersion}"
     azCLIExtension=$(az extension list --query "[?name=='k8s-extension'].name | [0]")
-    if [ $azCLIExtension = "k8s-extension" ]; then
+    if [ "$azCLIExtension" = "k8s-extension" ]; then
         azCLIExtensionVersion=$(az extension list --query "[?name=='k8s-extension'].version | [0]")
         log_message "detected k8s-extension and current installed version: ${azCLIExtensionVersion}"
         log_message "updating the k8s-extension version to latest available one"
