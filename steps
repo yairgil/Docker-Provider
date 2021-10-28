@@ -1,0 +1,63 @@
+1. setup
+[] test infrastructure (to measure log loss) - david and amol
+- cluster
+- logging container
+- performance logging in agent
+- log loss detection queries
+[x] sync with grace - david will set up on thrusday
+
+2. try a few ideas, measure performance impact and accuracy
+2.1: measurement criteria:
+    - cross platform? (linux and windows)
+    - additional cpu usage
+    - additional mem usage
+    - additional disk io usage
+
+2.2: possible implementation methods
+[] using fbit metrics
+[] simultaneously reading log files with a separate process - david start on this
+
+
+3. select one, make it production ready
+[] measure long term cpu/mem impact
+
+
+
+architecture proposal:
+There will be three "systems":
+    1. "out_oms.go": log line counter and control system implemented in out_oms.go. This process will keep a global count of log lines and tell the "source counter" which log files to read.
+    2. new golang process will have two internal systems:
+        2.1: "souce counter": will count log lines from rotated log files
+        2.2: "mdsd log scraper": 
+
+flow 1:
+    1. out_oms.go will randomly pick a new container to measure log loss from (maybe every 100th container?). It will monitor logs from the container for x seconds
+    2. out_oms.go will tell the source counter to independently count log lines from that container. This will be done by polling at a low frequency (since latency does not mater very much to the source counter and polling is a lot more efficient than using inotify)
+    3. When x seconds have passed the source counter will retrieve a count of log lines from out_oms.go and compare its count to out_oms.go. It will then report the counts through prometheus (as per joby's request)
+
+flow 2:
+    1. out_oms.go will count all logs sent to mdsd and report the count to the mdsd log scraper
+    2. the mdsd log scraper will read the mdsd.qos log file and count the sucessfully sent records
+    3. the mdsd log scraper will compare the two counts and report the counts/difference through prometheus
+
+
+open questions:
+    - how will multiline logs impact the source collector? can out_oms.go look through log lines for \n to compensate for multiline logs?
+    - 
+
+
+
+
+
+Query for detecting lost sequence numbers:
+```
+ContainerLog
+//| serialize ContainerID, LogEntry
+| extend sequence = tolong(extract("Sequence number=([0-9]+) random", 1, LogEntry))
+| sort by ContainerID, sequence asc
+| extend nextSeq = next(sequence, 1), nextContainerID = next(ContainerID, 1)
+| extend diff = nextSeq - sequence
+| project ContainerID, sequence, nextContainerID, nextSeq, diff
+| where ContainerID == nextContainerID
+| where diff > 1
+```
