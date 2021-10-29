@@ -25,7 +25,7 @@ const monitoring_time_seconds = 30
 var extra_wait time.Duration
 
 func init() {
-	extra_wait, _ := time.ParseDuration("10s")
+	extra_wait, _ = time.ParseDuration("10s")
 }
 
 // TODO: can these args be passed by reference?

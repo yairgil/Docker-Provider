@@ -22,7 +22,6 @@ import (
 	"github.com/tinylib/msgp/msgp"
 
 	"Docker-Provider/source/plugins/go/src/extension"
-	log_loss_monitoring "Docker-Provider/source/plugins/go/src/log_loss_monitoring"
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
@@ -1119,7 +1118,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
 
-		log_loss_monitoring.Process_log_batch(containerID, k8sNamespace, k8sPodName, containerName, logEntry, logEntryTimeStamp)
+		Process_log_batch(&containerID, &k8sNamespace, &k8sPodName, &containerName, &logEntry, &logEntryTimeStamp)
 
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
 		if ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true {
