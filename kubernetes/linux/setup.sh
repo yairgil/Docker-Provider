@@ -52,7 +52,7 @@ sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >>
 sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
 # fluentd v1 gem
-gem install fluentd -v "1.12.2" --no-document
+gem install fluentd -v "1.14.2" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 
