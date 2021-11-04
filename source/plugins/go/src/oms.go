@@ -1118,7 +1118,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
 
-		Process_log_batch(&containerID, &k8sNamespace, &k8sPodName, &containerName, &logEntry, &logEntryTimeStamp)
+		Process_log_batch(containerID, k8sNamespace, k8sPodName, containerName, logEntry, logEntryTimeStamp)
 
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
 		if ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true {

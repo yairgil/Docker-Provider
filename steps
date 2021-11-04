@@ -47,6 +47,11 @@ open questions:
 
 
 
+priority for demo:
+0. rough perf numbers measurement (so we have a general idea)
+1. end-to-end demo
+2. good performance numbers measurement
+
 
 
 Query for detecting lost sequence numbers:

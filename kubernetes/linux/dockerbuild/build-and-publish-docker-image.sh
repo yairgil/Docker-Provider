@@ -82,6 +82,14 @@ fi
 
 }
 
+build_log_line_counter()
+{
+  echo "building log line counter"
+  cd $baseDir/source/utils/log_line_counter
+  go build
+  echo "building log line counter completed"
+}
+
 build_docker_provider()
 {
   echo "building docker provider shell bundle"
@@ -103,6 +111,8 @@ build_docker_image()
 {
   echo "build docker image: $image and image tage is $imageTag"
   cd $baseDir/kubernetes/linux
+  
+  # sudo docker build -t baseimage:latest --build-arg IMAGE_TAG=$imageTag  .
   sudo docker build -t $image --build-arg IMAGE_TAG=$imageTag  .
 
   echo "build docker image completed"
@@ -130,6 +140,8 @@ dockerFileDir=$baseDir/kubernetes/linux
 echo "source code base directory: $baseDir"
 echo "build directory for docker provider: $buildDir"
 echo "docker file directory: $dockerFileDir"
+
+build_log_line_counter
 
 # build docker provider shell bundle
 build_docker_provider
