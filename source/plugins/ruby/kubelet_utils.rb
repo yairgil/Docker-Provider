@@ -47,8 +47,8 @@ class KubeletUtils
           @log.error "kubelet_utils.rb::get_node_allocatble - cpu_capacity or memory_capacity values not set. Hence we cannot calculate allocatable values"
         end
 
-        cpu_capacity = BigDecimal(cpu_capacity).to_f
-        memory_capacity = BigDecimal(memory_capacity).to_f
+        cpu_capacity = BigDecimal(cpu_capacity, 2).to_f
+        memory_capacity = BigDecimal(memory_capacity, 2).to_f
 
         cpu_allocatable = 1.0
         memory_allocatable = 1.0
@@ -134,13 +134,15 @@ class KubeletUtils
         end
         # convert back to units similar to what we get for capacity
         cpu_allocatable = cpu_allocatable / (1000.0 ** 2)
-        @log.info "CPU Allocatable #{cpu_allocatable}"
 
         memory_allocatable = memory_capacity - (KubernetesApiClient.getMetricNumericValue("memory", kubereserved_memory) + KubernetesApiClient.getMetricNumericValue("memory", systemReserved_memory) + KubernetesApiClient.getMetricNumericValue("memory", evictionHard_memory))
+
+        cpu_allocatable = BigDecimal(cpu_allocatable, 2).to_f
+        memory_allocatable = BigDecimal(memory_allocatable, 2).to_f
+
+        @log.info "CPU Allocatable #{cpu_allocatable}"
         @log.info "Memory Allocatable #{memory_allocatable}"
 
-        cpu_allocatable = BigDecimal(cpu_allocatable).to_f
-        memory_allocatable = BigDecimal(memory_allocatable).to_f
 
         return [cpu_allocatable, memory_allocatable]
       rescue => errorStr
