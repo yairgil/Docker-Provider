@@ -1,41 +1,41 @@
 TMPDIR="/opt"
 cd $TMPDIR
 
-#Download utf-8 encoding capability on the omsagent container.
-#upgrade apt to latest version
-apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
+# #Download utf-8 encoding capability on the omsagent container.
+# #upgrade apt to latest version
+# apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
-sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
-    dpkg-reconfigure --frontend=noninteractive locales && \
-    update-locale LANG=en_US.UTF-8
+# sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+#     dpkg-reconfigure --frontend=noninteractive locales && \
+#     update-locale LANG=en_US.UTF-8
 
-#install oneagent - Official bits (10/7/2021)
-wget https://github.com/microsoft/Docker-Provider/releases/download/1.14/azure-mdsd_1.14.2-build.master.284_x86_64.deb
+# #install oneagent - Official bits (10/7/2021)
+# wget https://github.com/microsoft/Docker-Provider/releases/download/1.14/azure-mdsd_1.14.2-build.master.284_x86_64.deb
 
-/usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
-cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
-cp -f $TMPDIR/envmdsd /etc/mdsd.d
+# /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
+# cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
+# cp -f $TMPDIR/envmdsd /etc/mdsd.d
 
-#log rotate conf for mdsd and can be extended for other log files as well
-cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
+# #log rotate conf for mdsd and can be extended for other log files as well
+# cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
 
-#download inotify tools for watching configmap changes
-sudo apt-get update
-sudo apt-get install inotify-tools -y
+# #download inotify tools for watching configmap changes
+# sudo apt-get update
+# sudo apt-get install inotify-tools -y
 
-#used to parse response of kubelet apis
-#ref: https://packages.ubuntu.com/search?keywords=jq
-sudo apt-get install jq=1.5+dfsg-2 -y
+# #used to parse response of kubelet apis
+# #ref: https://packages.ubuntu.com/search?keywords=jq
+# sudo apt-get install jq=1.5+dfsg-2 -y
 
-#used to setcaps for ruby process to read /proc/env
-sudo apt-get install libcap2-bin -y
+# #used to setcaps for ruby process to read /proc/env
+# sudo apt-get install libcap2-bin -y
 
-wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_linux_amd64.tar.gz
-tar -zxvf telegraf-1.18.0_linux_amd64.tar.gz
+# wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_linux_amd64.tar.gz
+# tar -zxvf telegraf-1.18.0_linux_amd64.tar.gz
 
-mv /opt/telegraf-1.18.0/usr/bin/telegraf /opt/telegraf
+# mv /opt/telegraf-1.18.0/usr/bin/telegraf /opt/telegraf
 
-chmod 777 /opt/telegraf
+# chmod 777 /opt/telegraf
 
 # Use wildcard version so that it doesnt require to touch this file
 /$TMPDIR/docker-cimprov-*.*.*-*.x86_64.sh --install
@@ -58,7 +58,6 @@ gem install gyoku iso8601 --no-doc
 
 
 rm -f $TMPDIR/docker-cimprov*.sh
-rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
 
