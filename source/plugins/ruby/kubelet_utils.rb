@@ -65,6 +65,7 @@ class KubeletUtils
         rescue => errorStr
           @log.error "Error in get_node_allocatable::kubereserved_cpu: #{errorStr}"
           kubereserved_cpu = "0.0"
+          ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_cpu: #{errorStr}")
         end 
 
         begin
@@ -76,6 +77,7 @@ class KubeletUtils
         rescue => errorStr
           @log.error "Error in get_node_allocatable::kubereserved_memory: #{errorStr}"
           kubereserved_memory = "0.0"
+          ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_memory: #{errorStr}")
         end 
         begin
           systemReserved_cpu = parsed_response["kubeletconfig"]["systemReserved"]["cpu"]
@@ -87,6 +89,7 @@ class KubeletUtils
           # this will likely always reach this condition for AKS ~ only applicable for hyrid + MDM combination
           @log.error "Error in get_node_allocatable::systemReserved_cpu: #{errorStr}"
           systemReserved_cpu = "0.0"
+          ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::systemReserved_cpu: #{errorStr}")
         end 
 
         begin
@@ -99,6 +102,7 @@ class KubeletUtils
           # this will likely always reach this condition for AKS ~ only applicable for hyrid + MDM combination
           @log.error "Error in get_node_allocatable::explicitlyReserved_cpu: #{errorStr}"
           explicitlyReserved_cpu = "0.0"
+          ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::explicitlyReserved_cpu: #{errorStr}")
         end 
 
         begin
@@ -110,6 +114,7 @@ class KubeletUtils
         rescue => errorStr
            @log.error "Error in get_node_allocatable::systemReserved_memory: #{errorStr}"
            systemReserved_memory = "0.0"
+          ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::systemReserved_memory: #{errorStr}")
         end 
 
         begin
@@ -121,6 +126,7 @@ class KubeletUtils
         rescue => errorStr
           @log.error "Error in get_node_allocatable::evictionHard_memory: #{errorStr}"
           evictionHard_memory = "0.0"
+          ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::evictionHard_memory: #{errorStr}")
         end 
 
         # do calculation in nanocore since that's what KubernetesApiClient.getMetricNumericValue expects
@@ -142,7 +148,6 @@ class KubeletUtils
 
         @log.info "CPU Allocatable #{cpu_allocatable}"
         @log.info "Memory Allocatable #{memory_allocatable}"
-
 
         return [cpu_allocatable, memory_allocatable]
       rescue => errorStr
