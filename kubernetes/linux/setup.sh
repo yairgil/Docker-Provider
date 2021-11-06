@@ -41,20 +41,20 @@ cd $TMPDIR
 /$TMPDIR/docker-cimprov-*.*.*-*.x86_64.sh --install
 
 #download and install fluent-bit(td-agent-bit)
-wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
-sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
+# wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
+# sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
 # sudo apt-get update
 # sudo apt-get install td-agent-bit=1.6.8 -y
 
 # install ruby2.6
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
-sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >> /etc/apt/sources.list
+# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
+# sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >> /etc/apt/sources.list
 # sudo apt-get update
-sudo apt-get install ruby2.6 ruby2.6-dev gcc make  td-agent-bit=1.6.8  nano less -y
+# sudo apt-get install ruby2.6 ruby2.6-dev gcc make  td-agent-bit=1.6.8  nano less -y
 # fluentd v1 gem
-gem install fluentd -v "1.12.2" --no-document
-fluentd --setup ./fluent
-gem install gyoku iso8601 --no-doc
+# gem install fluentd -v "1.12.2" --no-document
+# fluentd --setup ./fluent
+# gem install gyoku iso8601 --no-doc
 
 
 rm -f $TMPDIR/docker-cimprov*.sh

@@ -365,11 +365,11 @@ const (
 )
 
 func createLogger() *log.Logger {
-	var logfile *os.File
 
 	osType := os.Getenv("OS_TYPE")
 
 	var logPath string
+	var log_underlying_file *os.File
 
 	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
 		logPath = "/var/opt/microsoft/docker-cimprov/log/fluent-bit-out-oms-runtime.log"
@@ -379,7 +379,7 @@ func createLogger() *log.Logger {
 
 	if _, err := os.Stat(logPath); err == nil {
 		fmt.Printf("File Exists. Opening file in append mode...\n")
-		logfile, err = os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0600)
+		log_underlying_file, err = os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
 			SendException(err.Error())
 			fmt.Printf(err.Error())
@@ -388,14 +388,14 @@ func createLogger() *log.Logger {
 
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
 		fmt.Printf("File Doesnt Exist. Creating file...\n")
-		logfile, err = os.Create(logPath)
+		log_underlying_file, err = os.Create(logPath)
 		if err != nil {
 			SendException(err.Error())
 			fmt.Printf(err.Error())
 		}
 	}
 
-	logger := log.New(logfile, "", 0)
+	logger := log.New(log_underlying_file, "", 0)
 
 	logger.SetOutput(&lumberjack.Logger{
 		Filename:   logPath,
@@ -406,6 +406,21 @@ func createLogger() *log.Logger {
 	})
 
 	logger.SetFlags(log.Ltime | log.Lshortfile | log.LstdFlags)
+
+	// flush fluent-bit-out-oms-runtime.log at a reasonable rate (by default it's flushed like once a minute?)
+	TimeTicker := time.NewTicker(5 * time.Second)
+	go func() {
+		for range TimeTicker.C {
+			logger.Println("log flush ticker running")
+			err := log_underlying_file.Sync()
+			if err != nil {
+				// also write this error directly to standard out (since the log file is having trouble)
+				fmt.Printf("Error flushing log file: %s\n", err.Error())
+				logger.Printf("Error flushing log file: %s", err.Error())
+			}
+		}
+	}()
+
 	return logger
 }
 

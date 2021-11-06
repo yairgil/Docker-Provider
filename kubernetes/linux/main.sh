@@ -620,7 +620,7 @@ fi
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             echo "starting log line counter"
-            /bin/log_line_counter &
+            /opt/log_line_counter &
       fi
 fi
 
