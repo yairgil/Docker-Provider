@@ -41,7 +41,7 @@ func main() {
 		log.Fatal("FATAL: Could not read coms directory", err.Error())
 	}
 	for _, f := range files {
-		Log("found file \"", f.Name(), "\" at starup")
+		Log("found file \"%s\" at startup", f.Name())
 		go monitor_file(coms_dir + f.Name())
 	}
 
@@ -155,50 +155,50 @@ func monitor_file(messageFileName string) {
 		return
 	}
 
-	count_channel_list := make([]chan int, 1)
+	// timeup_channel := get_timer_channel(end_time, 5 * time.Second)
+
+	count_channel_list := make([]chan int, 0)
 	count_channel_list = append(count_channel_list, watch_specific_log_file(filename, start_time, end_time))
-	var timeup_channel chan bool = make(chan bool)
-	go wait_then_stop(end_time, timeup_channel)
 
 	// yes there is a race condition here (between tailing the initial log file and setting up the watch. Fix if this ever is productionized)
 
 	/////////
 
-	Log("setting up watcher")
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		Log("ERROR: could not create watcher", err.Error())
-	}
-	defer watcher.Close()
+	// 	Log("setting up watcher")
+	// 	watcher, err := fsnotify.NewWatcher()
+	// 	if err != nil {
+	// 		Log("ERROR: could not create watcher", err.Error())
+	// 	}
+	// 	defer watcher.Close()
 
-	Log("adding directory to watcher")
-	err = watcher.Add(filename)
-	if err != nil {
-		Log("ERROR: could not watch log file %s", err.Error())
-	}
+	// 	Log("adding directory to watcher")
+	// 	err = watcher.Add(filename)
+	// 	if err != nil {
+	// 		Log("ERROR: could not watch log file %s", err.Error())
+	// 	}
 
-outerloop:
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			Log("got watcher event %v, %v", event, ok)
-			if !ok {
-				Log("ERROR:", err)
-				return
-			}
-			if event.Op&fsnotify.Create == fsnotify.Create {
-				Log("new log file (was rotated): " + event.Name)
-				count_channel_list = append(count_channel_list, watch_specific_log_file(filename, start_time, end_time))
-			}
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				Log("ERROR:", err)
-			}
-		case <-timeup_channel:
-			Log("done watching")
-			break outerloop
-		}
-	}
+	// outerloop:
+	// 	for {
+	// 		select {
+	// 		case event, ok := <-watcher.Events:
+	// 			Log("got watcher event %v, %v", event, ok)
+	// 			if !ok {
+	// 				Log("ERROR:", err)
+	// 				return
+	// 			}
+	// 			if event.Op&fsnotify.Create == fsnotify.Create {
+	// 				Log("new log file (was rotated): " + event.Name)
+	// 				count_channel_list = append(count_channel_list, watch_specific_log_file(filename, start_time, end_time))
+	// 			}
+	// 		case err, ok := <-watcher.Errors:
+	// 			if !ok {
+	// 				Log("ERROR:", err)
+	// 			}
+	// 		case <-timeup_channel:
+	// 			Log("done watching")
+	// 			break outerloop
+	// 		}
+	// 	}
 
 	var linecount int = 0
 
@@ -247,6 +247,10 @@ func watch_specific_log_file(filename string, start_time time.Time, end_time tim
 
 	count_return_channel := make(chan int)
 
+	timeup_channel := get_timer_channel(end_time, 5*time.Second)
+
+	// count_return_channel <- 0
+
 	go func() {
 		var line_count int
 
@@ -260,24 +264,30 @@ func watch_specific_log_file(filename string, start_time time.Time, end_time tim
 		defer container_tailer.Stop()
 		defer container_tailer.Cleanup()
 
-		for line := range container_tailer.Lines {
-			if line.Err != nil {
-				FLBLogger.Printf("ERROR: error reading file: %s\n", err.Error())
-			}
-			// Log("read line from log file %s", line.Text)
-
-			logTime, err := time.Parse(time.RFC3339, get_first_word(line.Text))
-			if err != nil {
-				FLBLogger.Printf("ERROR: error parsing time: %s\n", err.Error())
-				FLBLogger.Printf("ERROR: line was \"%s\"\n", line.Text)
-			}
-
-			if !logTime.Before(start_time) {
-				if logTime.Before(end_time) {
-					line_count += 1
-				} else {
-					break
+	outerForLoop:
+		for {
+			select {
+			case line := <-container_tailer.Lines:
+				if line.Err != nil {
+					FLBLogger.Printf("ERROR: error reading file: %s\n", err.Error())
 				}
+				// Log("read line from log file %s", line.Text)
+
+				logTime, err := time.Parse(time.RFC3339, get_first_word(line.Text))
+				if err != nil {
+					FLBLogger.Printf("ERROR: error parsing time: %s\n", err.Error())
+					FLBLogger.Printf("ERROR: line was \"%s\"\n", line.Text)
+				}
+
+				if !logTime.Before(start_time) {
+					if logTime.Before(end_time) {
+						line_count += 1
+					} else {
+						break
+					}
+				}
+			case <-timeup_channel:
+				break outerForLoop
 			}
 		}
 
@@ -289,8 +299,13 @@ func watch_specific_log_file(filename string, start_time time.Time, end_time tim
 	return count_return_channel
 }
 
-func wait_then_stop(timeToStop time.Time, return_channel chan bool) {
-	time.Sleep(time.Until(timeToStop))
-	time.Sleep(5 * time.Second) // do an extra sleep for a few seconds
-	return_channel <- true
+func get_timer_channel(timeToStop time.Time, extra_delay time.Duration) chan bool {
+	var timeup_channel chan bool = make(chan bool)
+	go func() {
+		time.Sleep(time.Until(timeToStop) + extra_delay)
+		// time.Sleep(extra_delay) // do an extra sleep for a few seconds
+		timeup_channel <- true
+		close(timeup_channel)
+	}()
+	return timeup_channel
 }
