@@ -6,21 +6,15 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"strings"
 	"time"
 
 	// these two dependencies need an OSS review before being released.
 	// hpcloud/tail is pretty important to have, we could do without fsnotify (but being cross platform might take more work)
 
-	"github.com/hpcloud/tail"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
-
-func wait_then_stop(timeToStop time.Time, tailObj *tail.Tail) {
-	time.Sleep(time.Until(timeToStop))
-	time.Sleep(5000 * time.Millisecond)
-	tailObj.Stop()
-}
 
 func get_first_word(input string) string {
 	for i := range input {
@@ -39,7 +33,7 @@ func get_container_log_file_name(dir string, containerID string) (string, error)
 
 	for _, f := range files {
 		if strings.Contains(f.Name(), containerID) {
-			return f.Name(), nil
+			return path.Join(dir, f.Name()), nil
 		}
 	}
 	return "", errors.New("container log file not found")
@@ -91,7 +85,6 @@ func createLogger() *log.Logger {
 	TimeTicker := time.NewTicker(5 * time.Second)
 	go func() {
 		for range TimeTicker.C {
-			logger.Println("log flush ticker running")
 			err := logfile.Sync()
 			if err != nil {
 				// also write this error directly to standard out (since the log file is having trouble)
