@@ -37,6 +37,30 @@ spec:
    serviceAccountName: omsagent
    {{- end }}
    containers:
+     - name: addon-token-adapter
+       image: azurearcfork8sdev.azurecr.io/arc-preview/msi-adapter:0.0.10
+       imagePullPolicy: IfNotPresent
+       env:
+       - name: TOKEN_NAMESPACE
+         value: azure-arc
+       - name: EXTENSION_ARMID
+         value: {{ .Values.Azure.Extension.ResourceId }}
+       - name: EXTENSION_NAME
+         value: {{ .Values.Azure.Extension.Name }}
+       - name: CLUSTER_IDENTITY
+         value: "false"
+       - name: CLUSTER_TYPE
+         value: ConnectedClusters
+       - name: MANAGED_IDENTITY_AUTH
+         value: "true"
+       - name: TEST_MODE
+         value: "false"
+       - name: TEST_FILE
+         value: "/data/token"
+       securityContext:
+         capabilities:
+           add:
+             - NET_ADMIN
      - name: omsagent
        {{- if eq (.Values.omsagent.domain | lower) "opinsights.azure.cn" }}
        image: "mcr.azk8s.cn/azuremonitor/containerinsights/ciprod:{{ .Values.omsagent.image.tag }}"
@@ -47,6 +71,8 @@ spec:
        resources:
 {{ toYaml .Values.omsagent.resources.daemonsetlinux | indent 9 }}
        env:
+       - name: USING_AAD_MSI_AUTH
+         value: {{ .Values.omsagent.enableMSIAuth | quote }}
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.omsagent.env.clusterId | quote }}
@@ -143,6 +169,8 @@ spec:
        resources:
 {{ toYaml .Values.omsagent.resources.daemonsetlinuxsidecar | indent 9 }}
        env:
+       - name: USING_AAD_MSI_AUTH
+         value: {{ .Values.omsagent.enableMSIAuth | quote }}
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.omsagent.env.clusterId | quote }}

@@ -19,6 +19,8 @@ module Fluent::Plugin
       require_relative "constants"
       require_relative "arc_k8s_cluster_identity"
       require_relative "proxy_utils"
+      require_relative "extension_utils"
+
 
       @@token_resource_url = "https://monitoring.azure.com/"
       # AAD auth supported only in public cloud and handle other clouds when enabled
@@ -114,8 +116,16 @@ module Fluent::Plugin
           # arc k8s cluster uses cluster identity
           if (!!@isArcK8sCluster)
             @log.info "using cluster identity token since cluster is azure arc k8s cluster"
-            @cluster_identity = ArcK8sClusterIdentity.new
-            @cached_access_token = @cluster_identity.get_cluster_identity_token
+            if ExtensionUtils.isAADMSIAuthMode()
+              @log.info "using aad msi auth"
+              @isAADMSIAuth = true
+              msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
+              @parsed_token_uri = URI.parse(msi_endpoint)
+              @cached_access_token = get_access_token
+            else
+              @cluster_identity = ArcK8sClusterIdentity.new
+              @cached_access_token = @cluster_identity.get_cluster_identity_token
+            end
           else
             # azure json file only used for aks and doesnt exist in non-azure envs
             file = File.read(@@azure_json_path)
@@ -319,10 +329,14 @@ module Fluent::Plugin
     def send_to_mdm(post_body)
       begin
         if (!!@isArcK8sCluster)
-          if @cluster_identity.nil?
-            @cluster_identity = ArcK8sClusterIdentity.new
+          if (!!@isAADMSIAuth)
+            access_token = get_access_token
+          else
+            if @cluster_identity.nil?
+              @cluster_identity = ArcK8sClusterIdentity.new
+            end
+            access_token = @cluster_identity.get_cluster_identity_token
           end
-          access_token = @cluster_identity.get_cluster_identity_token
         else
           access_token = get_access_token
         end
