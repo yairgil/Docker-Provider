@@ -175,7 +175,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             # convert the protocol prefix in lowercase for validation
             proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
             if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+               echo "-e error proxy endpoint should be in this format http(s)://<hostOrIP>:<port> or http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             fi
             # remove the protocol
             url="$(echo ${PROXY_ENDPOINT/$proto/})"
@@ -190,8 +190,8 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             # extract the port
             port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
 
-            if [ -z "$user" -o -z "$pwd" -o -z "$host" -o -z "$port" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+            if [ -z "$host" -o -z "$port" ]; then
+               echo "-e error proxy endpoint should be in this format http(s)://<hostOrIP>:<port> or http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             else
                echo "successfully validated provided proxy endpoint is valid and expected format"
             fi
@@ -202,11 +202,12 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             echo "export MDSD_PROXY_MODE=$MDSD_PROXY_MODE" >> ~/.bashrc
             export MDSD_PROXY_ADDRESS=$proto$hostport
             echo "export MDSD_PROXY_ADDRESS=$MDSD_PROXY_ADDRESS" >> ~/.bashrc
-            export MDSD_PROXY_USERNAME=$user
-            echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
-            export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
-            echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
-
+            if [ ! -z "$user" -a ! -z "$pwd" ]; then
+               export MDSD_PROXY_USERNAME=$user
+               echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
+               export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
+               echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
+            fi
             #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
             export MDSD_ODS_COMPRESSION_LEVEL=0
             echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
