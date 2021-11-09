@@ -34,26 +34,26 @@ spec:
   {{- end }}
    containers:
      - name: addon-token-adapter
-      image: azurearcfork8sdev.azurecr.io/arc-preview/msi-adapter:0.0.10
-      imagePullPolicy: IfNotPresent
-      env:
-      - name: TOKEN_NAMESPACE
-        value: azure-arc
-      - name: EXTENSION_ARMID
-        value: {{ .Values.Azure.Extension.ResourceId }}
-      - name: EXTENSION_NAME
-        value: {{ .Values.Azure.Extension.Name }}
-      - name: CLUSTER_IDENTITY
-        value: "false"
-      - name: CLUSTER_TYPE
-        value: ConnectedClusters
-      - name: MANAGED_IDENTITY_AUTH
-        value: "true"
-      - name: TEST_MODE
-        value: "false"
-      - name: TEST_FILE
-        value: "/data/token"
-      securityContext:
+       image: azurearcfork8sdev.azurecr.io/arc-preview/msi-adapter:0.0.10
+       imagePullPolicy: IfNotPresent
+       env:
+       - name: TOKEN_NAMESPACE
+         value: azure-arc
+       - name: EXTENSION_ARMID
+         value: {{ .Values.Azure.Extension.ResourceId }}
+       - name: EXTENSION_NAME
+         value: {{ .Values.Azure.Extension.Name }}
+       - name: CLUSTER_IDENTITY
+         value: "false"
+       - name: CLUSTER_TYPE
+         value: ConnectedClusters
+       - name: MANAGED_IDENTITY_AUTH
+         value: "true"
+       - name: TEST_MODE
+         value: "false"
+       - name: TEST_FILE
+         value: "/data/token"
+       securityContext:
         capabilities:
            add:
             - NET_ADMIN
