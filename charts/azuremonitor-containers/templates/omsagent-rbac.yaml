@@ -37,14 +37,24 @@ rules:
   verbs: ["get", "create", "patch"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
-#arc k8s extension model grants access as part of the extension msi
-#remove this explicit permission once the extension available in public preview
-{{- if (empty .Values.Azure.Extension.Name) }}
-- apiGroups: [""]
-  resources: ["secrets"]
-  resourceNames: ["container-insights-clusteridentityrequest-token"]
-  verbs: ["get"]
+---
+kind: Role
+{{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
+apiVersion: rbac.authorization.k8s.io/v1
+{{- else }}
+apiVersion: rbac.authorization.k8s.io/v1beta1
 {{- end }}
+metadata:
+  namespace: kube-system
+  name: omsagent-extension-identity-reader
+  labels:
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+- apiGroups: ["clusterconfig.azure.com"]
+  resources: ["azureclusteridentityrequests", "azureclusteridentityrequests/status"]
+  verbs: ["get", "create", "patch"]
 ---
 kind: ClusterRoleBinding
 {{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
@@ -65,5 +75,26 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: omsagent-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: RoleBinding
+{{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
+apiVersion: rbac.authorization.k8s.io/v1
+{{- else }}
+apiVersion: rbac.authorization.k8s.io/v1beta1
+{{- end }}
+metadata:
+  name: omsagentrolebinding
+  labels:
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+subjects:
+  - kind: ServiceAccount
+    name: omsagent
+    namespace: kube-system
+roleRef:
+  kind: Role
+  name: omsagent-extension-identity-reader
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
