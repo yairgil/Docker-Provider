@@ -10,7 +10,7 @@ spec:
   serviceAccounts:
     - name: omsagent
       namespace: kube-system
-  tokenNamespace: azure-arc
+  tokenNamespace: kube-system
 ---
 {{- end }}
 apiVersion:  clusterconfig.azure.com/v1beta1
@@ -21,6 +21,6 @@ metadata:
 spec:
   audience: https://monitoring.azure.com/
   {{- if not (empty .Values.Azure.Extension.Name) }}
-  resourceId: {{ .Values.Azure.Extension.Name }} 
+  resourceId: {{ .Values.Azure.Extension.Name }}
   {{- end }}
 {{- end }}

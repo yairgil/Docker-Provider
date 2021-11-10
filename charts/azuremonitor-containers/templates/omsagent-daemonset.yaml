@@ -42,7 +42,7 @@ spec:
        imagePullPolicy: IfNotPresent
        env:
        - name: TOKEN_NAMESPACE
-         value: azure-arc
+         value: kube-system
        - name: EXTENSION_ARMID
          value: {{ .Values.Azure.Extension.ResourceId }}
        - name: EXTENSION_NAME

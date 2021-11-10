@@ -85,6 +85,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 {{- end }}
 metadata:
   name: omsagentrolebinding
+  namespace: kube-system
   labels:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
