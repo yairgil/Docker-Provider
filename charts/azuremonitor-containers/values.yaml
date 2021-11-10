@@ -21,7 +21,7 @@ Azure:
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/cidev"
-    tag: "ciarcmsi11082021"
+    tag: "ciarcmsi11102021"
     tagWindows: "win-ciprod10132021"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "16.0.0-0"

@@ -119,6 +119,7 @@ module Fluent::Plugin
             if ExtensionUtils.isAADMSIAuthMode()
               @log.info "using aad msi auth"
               @isAADMSIAuth = true
+              @useMsi = true
               msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
               @parsed_token_uri = URI.parse(msi_endpoint)
               @cached_access_token = get_access_token
