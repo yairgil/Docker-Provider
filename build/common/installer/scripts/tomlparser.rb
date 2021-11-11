@@ -26,6 +26,7 @@ require_relative "ConfigParseErrorLogger"
 @containerLogSchemaVersion = ""
 @collectAllKubeEvents = false
 @containerLogsRoute = "v2" # default for linux
+@adxDatabaseName = "containerinsights" # default for all configurations
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
 end
@@ -175,6 +176,21 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       ConfigParseErrorLogger.logError("Exception while reading config map settings for container logs route - #{errorStr}, using defaults, please check config map for errors")
     end
 
+    #Get ADX database name setting
+    begin
+      if !parsedConfig[:log_collection_settings][:adx_database].nil? && !parsedConfig[:log_collection_settings][:adx_database][:name].nil?
+        if !parsedConfig[:log_collection_settings][:adx_database][:name].empty?
+           @adxDatabaseName = parsedConfig[:log_collection_settings][:adx_database][:name]
+           puts "config::Using config map setting for ADX database name : #{@adxDatabaseName}"
+        else 
+           puts "config::Ignoring config map settings and using default value '#{@adxDatabaseName}' since provided adx database name value is empty"    
+        end   
+      else      
+        puts "config::No ADX database name set, using default value : #{@adxDatabaseName}"
+      end
+    rescue => errorStr
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for adx database name - #{errorStr}, using default #{@adxDatabaseName}, please check config map for errors")
+    end
   end
 end
 
@@ -218,6 +234,7 @@ if !file.nil?
   file.write("export AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS=#{@collectAllKubeEvents}\n")
   file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{@containerLogsRoute}\n")
   file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{@containerLogSchemaVersion}\n")
+  file.write("export AZMON_ADX_DATABASE_NAME=#{@adxDatabaseName}\n")
   # Close file after writing all environment variables
   file.close
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
@@ -265,6 +282,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     commands = get_command_windows('AZMON_CONTAINER_LOGS_ROUTE', @containerLogsRoute)
     file.write(commands)
     commands = get_command_windows('AZMON_CONTAINER_LOG_SCHEMA_VERSION', @containerLogSchemaVersion)
+    file.write(commands)
+    commands = get_command_windows('AZMON_ADX_DATABASE_NAME', @adxDatabaseName)
     file.write(commands)
 
     # Close file after writing all environment variables

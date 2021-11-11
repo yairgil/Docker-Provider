@@ -24,7 +24,7 @@ restore:
 
 build:
   commands:
-    - !!defaultcommand
+    - !!buildcommand
       name: 'Build Docker Provider Shell Bundle'
       command: '.pipelines/build-linux.sh'
       fail_on_stderr: false
@@ -45,6 +45,10 @@ build:
           to: 'build'
           include:
             - '**'
+        - from: 'test/e2e'
+          to: 'build'
+          include:
+            - '*.yaml'
 
 package:
   commands:

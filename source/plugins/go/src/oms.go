@@ -117,6 +117,9 @@ const MdsdOutputStreamIdTagPrefix = "dcr-"
 //env variable to container type
 const ContainerTypeEnv = "CONTAINER_TYPE"
 
+//Default ADX destination database name, can be overriden through configuration
+const DefaultAdxDatabaseName = "containerinsights"
+
 var (
 	// PluginConfiguration the plugins configuration
 	PluginConfiguration map[string]string
@@ -166,6 +169,8 @@ var (
 	AdxTenantID string
 	//ADX client secret
 	AdxClientSecret string
+	//ADX destination database name, default is DefaultAdxDatabaseName, can be overridden in configuration
+	AdxDatabaseName string
 	// container log or container log v2 tag name for oneagent route
 	MdsdContainerLogTagName string
 	// kubemonagent events tag name for oneagent route
@@ -1717,6 +1722,17 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerLogsRouteADX = false
 
 	if strings.Compare(ContainerLogsRoute, ContainerLogsADXRoute) == 0 {
+		// Try to read the ADX database name from environment variables. Default to DefaultAdsDatabaseName if not set. 
+		// This SHOULD be set by tomlparser.rb so it's a highly unexpected event if it isn't.
+		// It should be set by the logic in tomlparser.rb EVEN if ADX logging isn't enabled
+		AdxDatabaseName := strings.TrimSpace(os.Getenv("AZMON_ADX_DATABASE_NAME"))
+
+		// Check the len of the provided name for database and use default if 0, just to be sure
+		if len(AdxDatabaseName) == 0 {
+			Log("Adx database name unexpecedly empty (check config AND implementation, should have been set by tomlparser.rb?) - will default to '%s'", DefaultAdxDatabaseName)
+			AdxDatabaseName = DefaultAdxDatabaseName
+		}
+
 		//check if adx clusteruri, clientid & secret are set
 		var err error
 		AdxClusterUri, err = ReadFileContents(PluginConfiguration["adx_cluster_uri_path"])
@@ -1727,6 +1743,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			Log("Invalid AdxClusterUri %s", AdxClusterUri)
 			AdxClusterUri = ""
 		}
+
 		AdxClientID, err = ReadFileContents(PluginConfiguration["adx_client_id_path"])
 		if err != nil {
 			Log("Error when reading AdxClientID %s", err)
@@ -1742,7 +1759,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			Log("Error when reading AdxClientSecret %s", err)
 		}
 
-		if len(AdxClusterUri) > 0 && len(AdxClientID) > 0 && len(AdxClientSecret) > 0 && len(AdxTenantID) > 0 {
+		// AdxDatabaseName should never get in a state where its length is 0, but it doesn't hurt to add the check
+		if len(AdxClusterUri) > 0 && len(AdxClientID) > 0 && len(AdxClientSecret) > 0 && len(AdxTenantID) > 0 && len(AdxDatabaseName) > 0 {
 			ContainerLogsRouteADX = true
 			Log("Routing container logs thru %s route...", ContainerLogsADXRoute)
 			fmt.Fprintf(os.Stdout, "Routing container logs thru %s route...\n", ContainerLogsADXRoute)
