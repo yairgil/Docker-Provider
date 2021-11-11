@@ -20,14 +20,6 @@ var (
 	Log = FLBLogger.Printf
 )
 
-// simpler plan:
-/*
-1. the logic for tailing files will be taken out of monitor_file() and extracted into it's own goroutine (tailfile()). It will output a count on a channel when time is up
-2. monitor_file() will watch its log file for fsnotify.Create events. It will then start a new tailfile() goroutine whenever that happens.
-2.1 monitor_file() will also create a time-is-up goroutine which will triger a cancelation of the watch
-3. when time is up monitor_file() will wait for a log count from each of the tailfile() goruotines sequentially.
-*/
-
 // This is where out_oms.go will write containers to monitor and it's log counts
 const coms_dir = "/var/log_counts/"
 
@@ -111,9 +103,6 @@ type secondMessageStruct struct {
 func monitor_file(messageFileName string) {
 
 	// first get the config (contains which container to track and for how long)
-
-	log.Println("")
-
 	configFile, err := tail.TailFile(messageFileName, tail.Config{Follow: true, MustExist: true, Poll: false})
 	if err != nil {
 		FLBLogger.Printf("ERROR: error opening file: %s\n", err.Error())
@@ -202,10 +191,8 @@ func monitor_file(messageFileName string) {
 
 	var linecount int = 0
 
-	for i, count_chan := range count_channel_list {
-		Log("waiting for response from a chanel %d", i)
+	for _, count_chan := range count_channel_list {
 		for count := range count_chan {
-			Log("got response from chanel %d: %d lines", i, count)
 			linecount += count
 		}
 	}
@@ -231,7 +218,7 @@ func monitor_file(messageFileName string) {
 	Log("finished everything for container " + filename + ", counted " + fmt.Sprint(linecount) + " logs, recieved count of " + fmt.Sprint(secondMessage.Final_log_count) + " from oms.go\n")
 
 	if secondMessage.Final_log_count != linecount {
-		fmt.Printf("Log lines were missed! fbit counted %d lines, %d lines actually logged. (container %s)\n", secondMessage.Final_log_count, linecount, filename)
+		fmt.Printf("Log lines were missed! fbit counted %d lines, %d lines actually logged. (starttime: %s, endtime: %s, container %s)\n", secondMessage.Final_log_count, linecount, start_time.Format(time.RFC3339Nano), end_time.Format(time.RFC3339Nano), filename)
 	}
 
 	// TODO: uncomment this when done debugging
@@ -256,7 +243,7 @@ func watch_specific_log_file(filename string, start_time time.Time, end_time tim
 
 		Log("opening container log file " + filename)
 
-		container_tailer, err := tail.TailFile(filename, tail.Config{Follow: true, MustExist: true, Poll: false, Logger: FLBLogger})
+		container_tailer, err := tail.TailFile(filename, tail.Config{Follow: true, MustExist: true, Poll: true, Logger: FLBLogger})
 		if err != nil {
 			FLBLogger.Printf("ERROR: error opening file: %s\n", err.Error())
 			return
@@ -268,8 +255,14 @@ func watch_specific_log_file(filename string, start_time time.Time, end_time tim
 		for {
 			select {
 			case line := <-container_tailer.Lines:
+				if line == nil {
+					Log("ERROR: container_tailer.Lines gave a nil")
+					continue
+				}
+
 				if line.Err != nil {
 					FLBLogger.Printf("ERROR: error reading file: %s\n", err.Error())
+					continue
 				}
 				// Log("read line from log file %s", line.Text)
 
@@ -277,13 +270,15 @@ func watch_specific_log_file(filename string, start_time time.Time, end_time tim
 				if err != nil {
 					FLBLogger.Printf("ERROR: error parsing time: %s\n", err.Error())
 					FLBLogger.Printf("ERROR: line was \"%s\"\n", line.Text)
+					continue
 				}
 
 				if !logTime.Before(start_time) {
 					if logTime.Before(end_time) {
 						line_count += 1
 					} else {
-						break
+						// we've read past the last requested log line
+						break outerForLoop
 					}
 				}
 			case <-timeup_channel:

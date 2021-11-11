@@ -180,6 +180,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/out_mdm.rb;			                                                 source/plugins/ruby/out_mdm.rb;	644; root; root
 
 /opt/log_line_counter;                                                                  source/utils/log_line_counter/log_line_counter; 555; root; root
+/opt/count_file_rotations.py;                                                           source/utils/count_file_rotations.py; 555; root; root
 
 
 %Links

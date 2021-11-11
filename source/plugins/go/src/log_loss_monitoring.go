@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -19,7 +20,8 @@ var start_monitoring_time map[string]time.Time
 //TODO: need to clean old containers out of this map. otherwise it will grow forever
 var all_containers map[string]bool // this map is being used as a set. bool is the value type because it's the smallest type
 
-const target_ratio = 1.0
+var target_ratio float64
+
 const monitoring_time_seconds time.Duration = time.Second * 30
 const extra_wait time.Duration = time.Second * 10
 
@@ -34,6 +36,13 @@ func init() {
 	stop_monitoring_time = make(map[string]time.Time)
 	start_monitoring_time = make(map[string]time.Time)
 	all_containers = make(map[string]bool)
+
+	var err error
+	target_ratio, err = strconv.ParseFloat(os.Getenv("LOG_COUNTING_TARGET_RATIO"), 32)
+	if err != nil {
+		fmt.Printf("invalid value passed into LOG_COUNTING_TARGET_RATIO: %s", os.Getenv("LOG_COUNTING_TARGET_RATIO"))
+		os.Exit(99)
+	}
 }
 
 // TODO: can these args be passed by reference?
@@ -42,7 +51,7 @@ func Process_log_batch(containerID string, k8sNamespace string, k8sPodName strin
 	if !container_seen {
 		Log("seeing new container")
 		//TODO: decide if we should track this container
-		if rand.Float32() <= target_ratio {
+		if rand.Float64() <= target_ratio {
 			all_containers[containerID] = true
 			container_tracked = true
 			// log_path_by_container[*containerID] = struct {
