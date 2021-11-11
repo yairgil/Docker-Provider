@@ -17,6 +17,7 @@ import (
 const IMDSTokenPathForWindows = "c:/etc/imds-access-token/token" // only used in windows
 const AMCSAgentConfigAPIVersion = "2020-08-01-preview"
 const AMCSIngestionTokenAPIVersion = "2020-04-01-preview"
+const IMDSEndpointHost = "localhost:40342" // only used in windows
 const MaxRetries = 3
 
 var IMDSToken string
@@ -103,7 +104,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 	if (useIMDSTokenProxyEndPoint != "" && strings.Compare(strings.ToLower(useIMDSTokenProxyEndPoint), "true") == 0) {
 		Log("Info Reading IMDS Access Token from IMDS Token proxy endpoint")
 		mcsEndpoint := os.Getenv("MCS_ENDPOINT")
-		msi_endpoint_string := fmt.Sprintf("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://%s/", mcsEndpoint)
+		msi_endpoint_string := fmt.Sprintf("http://%s/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://%s/", IMDSEndpointHost, mcsEndpoint)
 		var msi_endpoint *url.URL
 		msi_endpoint, err := url.Parse(msi_endpoint_string)
 		if err != nil {
