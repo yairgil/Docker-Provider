@@ -37,6 +37,8 @@ spec:
        image: azurearcfork8sdev.azurecr.io/arc-preview/msi-adapter:0.0.10
        imagePullPolicy: IfNotPresent
        env:
+       - name: AZMON_COLLECT_ENV
+         value: "false"
        - name: TOKEN_NAMESPACE
          value: kube-system
        - name: EXTENSION_ARMID
