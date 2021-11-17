@@ -66,3 +66,16 @@ ContainerLog
 | where ContainerID == nextContainerID
 | where diff > 1
 ```
+
+
+
+UPDATED:
+
+Iteration 1: 
+Goal: get something visible out by end of sprint (not into production, but usable)
+
+[] get log rotation rate & size of log files (in mb, including headers), to get size of data generated
+[] get telemetry from output plugin about how much each container is emitting and average record length
+(won't be 100% accurate, but should be close enough for a time series)
+
+[] send out a design doc, don't do a full design review

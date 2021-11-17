@@ -2,11 +2,6 @@ import os
 import time
 import re
 
-# set up the regex to strip the containerd log headder
-header_regex = re.compile("^(.+) (stdout|stderr) (F|P) ", re.MULTILINE)
-seq_number_regex = re.compile("Sequence number=([0-9]+)")
-
-
 if __name__ == '__main__':
     existing_log_files = {}
     while True:
@@ -22,10 +17,11 @@ if __name__ == '__main__':
                     if rotated_file_name not in existing_log_files[container_full_path]:
                         existing_log_files[container_full_path].append(rotated_file_name)
                         # print all sequence numbers found
-                        with open("/opt/write-to-traces", "a") as output_log_file:
-                            output_log_file.write("file rotated: " + container_full_path + "__" + rotated_file_name)
+                        filesize_bytes = os.path.getsize(os.path.join(container_full_path, rotated_file_name))
+                        with open("/dev/write-to-traces-2", "a") as output_log_file:
+                            output_log_file.write("file rotated at " + filesize_bytes + " bytes: " + container_full_path + "__" + rotated_file_name + "\n")
                     
                     # garbage cleanup
                     if len(existing_log_files[container_full_path]) > 5:
-                        with open("/opt/write-to-traces", "a") as output_log_file:
-                            output_log_file.write("garbage collecting " + existing_log_files[container_full_path].pop(0))
+                        with open("/dev/write-to-traces-2", "a") as output_log_file:
+                            output_log_file.write("garbage collecting " + existing_log_files[container_full_path].pop(0) + "\n")

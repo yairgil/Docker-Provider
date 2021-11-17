@@ -733,6 +733,7 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 touch /dev/write-to-traces
+touch /dev/write-to-traces-2
 
 echo "stopping rsyslog..."
 service rsyslog stop
@@ -745,7 +746,7 @@ echo "starting log rotation counter"
 python /opt/count_file_rotations.py &
 
 echo "routing fluent bit tail output to traces"
-tail -f /var/opt/microsoft/docker-cimprov/log/fluent-bit.log >> /dev/write-to-traces &&
+tail -f /var/opt/microsoft/docker-cimprov/log/fluent-bit.log | grep "handle rotation()" | >> /dev/write-to-traces &&
 
 
 
