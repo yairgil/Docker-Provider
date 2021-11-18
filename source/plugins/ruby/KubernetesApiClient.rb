@@ -388,7 +388,7 @@ class KubernetesApiClient
     def getPodUid(podNameSpace, podMetadata)
       podUid = nil
       begin
-        if podNameSpace.eql?("kube-system") && !podMetadata.key?("ownerReferences")
+        if podNameSpace.eql?("kube-system") && podMetadata["ownerReferences"].nil?
           # The above case seems to be the only case where you have horizontal scaling of pods
           # but no controller, in which case cAdvisor picks up kubernetes.io/config.hash
           # instead of the actual poduid. Since this uid is not being surface into the UX
@@ -502,7 +502,7 @@ class KubernetesApiClient
         clusterId = getClusterId
         clusterName = getClusterName
         podNameSpace = pod["metadata"]["namespace"]
-        if podNameSpace.eql?("kube-system") && !pod["metadata"].key?("ownerReferences")
+        if podNameSpace.eql?("kube-system") && pod["metadata"]["ownerReferences"].nil?
           # The above case seems to be the only case where you have horizontal scaling of pods
           # but no controller, in which case cAdvisor picks up kubernetes.io/config.hash
           # instead of the actual poduid. Since this uid is not being surface into the UX
