@@ -105,6 +105,7 @@ module Fluent::Plugin
 
     def initializeInformer
       begin
+        logger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kuberenetes_watch_client.log", 1, 5000000)
         # create kubernetes watch client
         ssl_options = {
           ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
@@ -113,7 +114,7 @@ module Fluent::Plugin
         getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
         auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
         client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
-        @informer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 15 * 60, logger: Logger.new(STDOUT), limit: @PODS_CHUNK_SIZE)
+        @informer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 15 * 60, logger: logger, limit: @PODS_CHUNK_SIZE)
         @informer.start_worker
       rescue => errorStr
         $log.warn "in_kube_podinventory::initializeInformer: failed to initialize informer: #{errorStr}"
@@ -186,31 +187,6 @@ module Fluent::Plugin
         podInventory["items"] = @informer.list
         $log.info("in_kube_podinventory::enumerate: total size of pod items #{podInventory["items"].length} payload in bytes: #{podInventory["items"].to_s.size} @ #{Time.now.utc.iso8601}")
         parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
-
-        # continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
-        # $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
-        # podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-        # @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
-        # if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-        #   $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
-        #   parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
-        # else
-        #   $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
-        # end
-
-        # #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        # while (!continuationToken.nil? && !continuationToken.empty?)
-        #   podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-        #   continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
-        #   podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-        #   @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
-        #   if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-        #     $log.info("in_kube_podinventory::enumerate : number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-        #     parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
-        #   else
-        #     $log.warn "in_kube_podinventory::enumerate:Received empty podInventory"
-        #   end
-        # end
 
         @podInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - podInventoryStartTime)
         # Setting these to nil so that we dont hold memory until GC kicks in
