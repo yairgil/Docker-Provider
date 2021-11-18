@@ -69,7 +69,7 @@ module Fluent::Plugin
           eventStream.add(time, record) if record
         end
 
-        if ExtensionUtils.isAADMSIAuthMode()
+        if ExtensionUtils.isAADMSIAuthMode() && !@@isWindows.nil? && @@isWindows == false
           $log.info("in_cadvisor_perf::enumerate: AAD AUTH MSI MODE")
           if @tag.nil? || !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
