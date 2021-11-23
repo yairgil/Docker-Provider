@@ -43,7 +43,8 @@ module Fluent::Plugin
       @controllerData = {}
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
-      @informer = nil
+      @podsInformer = nil
+      @servicesInformer = nil
 
       @kubeperfTag = "oneagent.containerInsights.LINUX_PERF_BLOB"
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
@@ -81,7 +82,7 @@ module Fluent::Plugin
         $log.info("in_kube_podinventory::start: PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
 
         $log.info("in_kube_podinventory::start: initialize k8s informer - start @ #{Time.now.utc.iso8601}")
-        initializeInformer
+        initializeInformers
         $log.info("in_kube_podinventory::start: initialize k8s informer - end  @ #{Time.now.utc.iso8601}")
 
         @finished = false
@@ -103,9 +104,10 @@ module Fluent::Plugin
       end
     end
 
-    def initializeInformer
+    def  initializeInformers
       begin
-        logger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kuberenetes_watch_client.log", 1, 5000000)
+        podsLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_pods_watch_client.log", 1, 5000000)
+        servicesLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_services_watch_client.log", 1, 5000000)
         # create kubernetes watch client
         ssl_options = {
           ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
@@ -114,10 +116,15 @@ module Fluent::Plugin
         getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
         auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
         client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
-        @informer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 15 * 60, logger: logger, limit: @PODS_CHUNK_SIZE)
-        @informer.start_worker
+        $log.info("in_kube_podinventory::initializeInformers: initilaize and start podsInformer")
+        @podsInformer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 60 * 60, logger: podsLogger, limit: @PODS_CHUNK_SIZE, allowWatchBookmarks: true)
+        @podsInformer.start_worker
+        $log.info("in_kube_podinventory::initializeInformers: initilaize and start servicesInformer")
+        @servicesInformer = Kubeclient::Informer.new(client, "services", reconcile_timeout: 60 * 60, logger: servicesLogger, limit: nil, allowWatchBookmarks: true)
+        @servicesInformer.start_worker
+
       rescue => errorStr
-        $log.warn "in_kube_podinventory::initializeInformer: failed to initialize informer: #{errorStr}"
+        $log.warn "in_kube_podinventory:: initializeInformers: failed to initialize informer: #{errorStr}"
       end
     end
 
@@ -160,22 +167,28 @@ module Fluent::Plugin
         end
 
         # Get services first so that we dont need to make a call for very chunk
-        $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
-        serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
-        # serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
-        $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_podinventory::enumerate : Getting services from Kube API using informer @ #{Time.now.utc.iso8601}")
+        serviceList = @servicesInformer.list
+        serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
+        # updating for telemetry
+        @serviceCount += serviceRecords.length
 
-        if !serviceInfo.nil?
-          $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
-          serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
-          $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
-          serviceInfo = nil
-          # service inventory records much smaller and fixed size compared to serviceList
-          serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
-          # updating for telemetry
-          @serviceCount += serviceRecords.length
-          serviceList = nil
-        end
+        # $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
+        # serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
+        # # serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
+        # $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
+
+        # if !serviceInfo.nil?
+        #   $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
+        #   serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
+        #   $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
+        #   serviceInfo = nil
+        #   # service inventory records much smaller and fixed size compared to serviceList
+        #   serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
+        #   # updating for telemetry
+        #   @serviceCount += serviceRecords.length
+        #   serviceList = nil
+        # end
 
         # to track e2e processing latency
         @podsAPIE2ELatencyMs = 0
@@ -184,7 +197,7 @@ module Fluent::Plugin
         continuationToken = nil
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API using informer @ #{Time.now.utc.iso8601}")
         podInventory = {}
-        podInventory["items"] = @informer.list
+        podInventory["items"] = @podsInformer.list
         $log.info("in_kube_podinventory::enumerate: total size of pod items #{podInventory["items"].length} payload in bytes: #{podInventory["items"].to_s.size} @ #{Time.now.utc.iso8601}")
         parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
 
