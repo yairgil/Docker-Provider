@@ -157,6 +157,16 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
       fi
 fi
 
+# gangams - disable compression since MDSD libcurl has known issues
+export MDSD_ODS_COMPRESSION_LEVEL=0
+echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
+# enable libcurl for both ODS Uploads and OMS homing service calls
+export ENABLE_CURL_UPLOAD=true
+echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
+# increase release rate to reduce memory growth
+export TCMALLOC_RELEASE_RATE=3
+echo "export TCMALLOC_RELEASE_RATE=$TCMALLOC_RELEASE_RATE" >> ~/.bashrc
+
 export PROXY_ENDPOINT=""
 # Check for internet connectivity or workspace deletion
 if [ -e "/etc/omsagent-secret/WSID" ]; then
