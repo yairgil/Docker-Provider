@@ -1,6 +1,8 @@
 TMPDIR="/opt"
 cd $TMPDIR
 
+set -e
+
 # #Download utf-8 encoding capability on the omsagent container.
 # #upgrade apt to latest version
 # apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
@@ -37,8 +39,23 @@ cd $TMPDIR
 
 # chmod 777 /opt/telegraf
 
+echo "building docker provider shell bundle"
+cd /src/build/linux
+echo "trigger make to build docker build provider shell bundle"
+make kit
+echo "building docker provider shell bundle completed"
+cd -
+
 # Use wildcard version so that it doesnt require to touch this file
-/$TMPDIR/docker-cimprov-*.*.*-*.x86_64.sh --install
+/src/kubernetes/linux/Linux_ULINUX_1.0_x64_64_Release/docker-cimprov-*.*.*-*.x86_64.sh --install
+
+# cleanup to make the resulting image smaller
+go clean -cache
+rm -rf /src/kubernetes/linux/Linux_ULINUX_1.0_x64_64_Release
+rm -rf /src/intermediate
+rm -rf /root/go/pkg/mod
+rm -rf /usr/local/go/pkg/linux_amd64 /usr/local/go/pkg/linux_amd64_race/
+
 
 #download and install fluent-bit(td-agent-bit)
 # wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
@@ -62,7 +79,9 @@ rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
 
 # remove build dependencies
-sudo apt-get remove ruby2.6-dev gcc make -y
+# TODO: put these back
+# sudo apt-get remove ruby2.6-dev gcc make -y
+
 
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.

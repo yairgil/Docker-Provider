@@ -4,179 +4,227 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
+	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
-//TODO: thread safe
-var logs_by_container map[string]int
-var log_file_names map[string]string
-var stop_monitoring_time map[string]time.Time
-var start_monitoring_time map[string]time.Time
+//TODO: garbage collection (if pods are being frequently recycled then these two maps will grow without bound)
+var logged_bytes_by_container = make(map[string]int64)
+var container_id_to_pod_folder = make(map[string]string)
+var container_id_to_name = make(map[string]string)
 
-//TODO: need to clean old containers out of this map. otherwise it will grow forever
-var all_containers map[string]bool // this map is being used as a set. bool is the value type because it's the smallest type
+type container_pod_name struct {
+	namespace_pod string
+	name          string
+}
 
-var target_ratio float64
+var container_pod_name_to_id = make(map[container_pod_name]string)
 
-const monitoring_time_seconds time.Duration = time.Second * 30
-const extra_wait time.Duration = time.Second * 10
+//TODO: replace with thread safe maps
+// (FW = File Watcher)
+var FW_existing_log_files = make(map[string][]string)  // containerid -> file names
+var FW_bytes_logged_rotated = make(map[string]int64)   // containerid -> count
+var FW_bytes_logged_unrotated = make(map[string]int64) // containerid -> count
+var FW_container_last_seen = make(map[string]int64)    // containerid -> sequence_number
+var current_iteration_count int64 = 0
 
-var followed_containers int64 = 0
+var process_logs_mut = &sync.Mutex{}
 
-//TODO: thread safe
-var latest_seen_time time.Time = time.Date(1970, 0, 0, 0, 0, 0, 0, time.UTC)
+var read_disk_mut = &sync.Mutex{}
+
+var enabled bool
 
 func init() {
-	logs_by_container = make(map[string]int)
-	log_file_names = make(map[string]string)
-	stop_monitoring_time = make(map[string]time.Time)
-	start_monitoring_time = make(map[string]time.Time)
-	all_containers = make(map[string]bool)
+	enabled = os.Getenv("CONTROLLER_TYPE") == "DaemonSet"
+	enabled = enabled && (os.Getenv("DISABLE_LOG_TRACKING") != "true")
 
-	var err error
-	target_ratio, err = strconv.ParseFloat(os.Getenv("LOG_COUNTING_TARGET_RATIO"), 32)
-	if err != nil {
-		fmt.Printf("invalid value passed into LOG_COUNTING_TARGET_RATIO: %s", os.Getenv("LOG_COUNTING_TARGET_RATIO"))
-		os.Exit(99)
+	if enabled {
+		enabled = true
+
+		write_counts_ticker := time.NewTicker(10 * time.Second)
+		go write_counts_to_traces(write_counts_ticker)
+
+		track_rotations_ticker := time.NewTicker(time.Second)
+		go track_log_rotations(track_rotations_ticker)
 	}
 }
 
 // TODO: can these args be passed by reference?
-func Process_log_batch(containerID string, k8sNamespace string, k8sPodName string, containerName string, logEntry string, logTime string) {
-	container_tracked, container_seen := all_containers[containerID]
-	if !container_seen {
-		Log("seeing new container")
-		//TODO: decide if we should track this container
-		if rand.Float64() <= target_ratio {
-			all_containers[containerID] = true
-			container_tracked = true
-			// log_path_by_container[*containerID] = struct {
-			// 	path_a string
-			// 	path_b string
-			// }{*k8sNamespace + "_" + *k8sPodName, *containerName}
-			// kube-system_omsagent-qz74z_f5f369a7-4094-4f58-bdb9-23c35121e491
+// TODO: is strlen O(1) op?
+// TODO: when scale testing also measure disk usage (should measure cpu, mem, disk, and lost logs when scale testing)
+// 			does running a separate process impact cpu/mem/disk/lost logs
+func Process_log_batch(containerID *string, k8sNamespace *string, k8sPodName *string, containerName *string, logEntry *string, logTime *string) {
+	if enabled {
+		process_logs_mut.Lock()
+		defer process_logs_mut.Unlock()
 
-			log_time_parsed, err := time.Parse(time.RFC3339Nano, logTime)
-			if err != nil {
-				// send the error to telemetry
-				fmt.Printf("Invalid time format seen in log loss monitoring: %s", logTime)
-			} else {
-				// last_log_time[*containerID] = parsed_time
-			}
+		_, container_old := logged_bytes_by_container[*containerID]
+		if !container_old {
+			logged_bytes_by_container[*containerID] = 0
+		}
 
-			log_file_name := k8sPodName + "_" + fmt.Sprint(followed_containers)
+		logged_bytes_by_container[*containerID] += (int64)(len(*logTime)+len(" stdout f ")+len(*logEntry)) + 1 // (an extra byte for the trailing \n in the source log file)
+		if _, container_seen_before := container_id_to_pod_folder[*containerID]; !container_seen_before {
+			container_id_to_pod_folder[*containerID] = *k8sNamespace + "_" + *k8sPodName
+			container_id_to_name[*containerID] = *containerName
 
-			logs_by_container[containerID] = 0
-			start_monitoring_time[containerID] = log_time_parsed
-			stop_monitoring_time[containerID] = start_monitoring_time[containerID].Add(monitoring_time_seconds)
-			log_file_names[containerID] = log_file_name
-
-			message := fmt.Sprintf("choosing to monitor new container %s, will be monitored from %s to %s", containerID, start_monitoring_time[containerID].Format(time.RFC3339Nano), stop_monitoring_time[containerID].Format(time.RFC3339Nano))
-			Log(message)
-
-			followed_containers += 1
-			go monitor_container(containerID, start_monitoring_time[containerID], stop_monitoring_time[containerID], log_file_name)
-
-		} else {
-			all_containers[containerID] = false
-			container_tracked = false
+			container_pod_name_to_id[container_pod_name{namespace_pod: *k8sNamespace + "_" + *k8sPodName, name: *containerName}] = *containerID
 		}
 	}
-
-	parsed_time, err := time.Parse(time.RFC3339, logTime)
-	if err != nil {
-		// send the error to telemetry
-		fmt.Printf("Invalid time format seen in log loss monitoring: %s", logTime)
-	}
-
-	//TODO: not sure if we need to check that this is after the log start time, does fbit deliver messages in-order?
-	var not_too_early = !parsed_time.Before(start_monitoring_time[containerID])
-	var not_too_late = parsed_time.Before(stop_monitoring_time[containerID])
-	if container_tracked && not_too_early && not_too_late {
-		logs_by_container[containerID] += 1
-		Log(fmt.Sprintf(" ******** counting log line from container %s, log line is: %s  (diagnostics: container_tracked: %v, parsed_time: %s, !parsed_time.Before(start_monitoring_time[containerID]): %v, parsed_time.Before(stop_monitoring_time[containerID]): %v, log_file_names[containerID]: %s, time.Now(): %s", containerID, logEntry, container_tracked, logTime, not_too_early, not_too_late, log_file_names[containerID], time.Now().Format(time.RFC3339Nano)))
-	} else {
-		Log(fmt.Sprintf(" ******** NOT counting log line from container %s, log line is: %s  (diagnostics: container_tracked: %v, parsed_time: %s, !parsed_time.Before(start_monitoring_time[containerID]): %v, parsed_time.Before(stop_monitoring_time[containerID]): %v, log_file_names[containerID]: %s, time.Now(): %s", containerID, logEntry, container_tracked, logTime, not_too_early, not_too_late, log_file_names[containerID], time.Now().Format(time.RFC3339Nano)))
-	}
-
-	if latest_seen_time.Before(parsed_time) {
-		latest_seen_time = parsed_time
-	}
 }
 
-func monitor_container(containerID string, start_time time.Time, end_time time.Time, message_file_name string) {
-
-	Log(fmt.Sprintf("in monitor_container(%s, %s, %s, %s) at time %s", containerID, start_time.Format(time.RFC3339Nano), end_time.Format(time.RFC3339Nano), message_file_name, time.Now().Format(time.RFC3339Nano)))
-
-	start_monitoring_time_text, err := start_time.MarshalText()
-	if err != nil {
-		Log(fmt.Sprintf("log-loss-counter: Error converting time to text? (how is this possible?): %s", err.Error()))
-		return
-	}
-
-	stop_monitoring_time_text, err := end_time.MarshalText()
-	if err != nil {
-		Log(fmt.Sprintf("log-loss-counter: Error converting time to text? (how is this possible?): %s", err.Error()))
-		return
-	}
-
-	output_str := fmt.Sprintf("{\"ContainerID\": \"%s\", \"StartTime\": \"%s\", \"EndTime\": \"%s\"}\n", containerID, start_monitoring_time_text, stop_monitoring_time_text)
-	err = create_or_append_to_file("/var/log_counts", message_file_name, output_str)
-	if err != nil {
-		Log(fmt.Sprintf("log-loss-counter: Error creating file for %s", err.Error()))
-		return
-	}
-
-	// wait for the specified duration to be over
-	wait_end_time := end_time.Add(extra_wait) // wait a few extra seconds for any logs logged right at the time cutoff to be read
-	Log(fmt.Sprintf("about to wait for logs past time %s (time.Now(): %s)", wait_end_time.Format(time.RFC3339Nano), time.Now().Format(time.RFC3339Nano)))
-	for latest_seen_time.Before(wait_end_time) {
-		time.Sleep(time.Second * 2) // 1 secondd chosen arbitrairly
-	}
-	Log("done sleeping, last seen time is %s (time.Now(): %s)", latest_seen_time.Format(time.RFC3339Nano), time.Now().Format(time.RFC3339Nano))
-
-	// write to file to signify that monitoring is done and close the file. It will be the log_line_counter's responsibility to delete the file
-	end_log_count := logs_by_container[containerID]
-	output_str = fmt.Sprintf("{\"Final_log_count\": %d}\n", end_log_count)
-	err = create_or_append_to_file("/var/log_counts", message_file_name, output_str)
-	if err != nil {
-		Log(fmt.Sprintf("log-loss-counter: Error creating file for container %s, error is %s", containerID, err.Error()))
-	}
-
-	Log(fmt.Sprintf("done monitoring container %s, final log count: %d", containerID, end_log_count))
-
-	// allow monitoring this container again
-	//TODO: go maps are not thread safe (how is that possible? threading is golang's main feature)
-	delete(logs_by_container, containerID)
-	delete(stop_monitoring_time, containerID)
-	delete(start_monitoring_time, containerID)
-	delete(all_containers, containerID)
-}
-
-// iotuil's single-line function for writing text to a file doesn't append
-func create_or_append_to_file(folder string, filename string, text string) error {
-	_, err := os.Stat(folder)
-	if os.IsNotExist(err) {
-		err = os.Mkdir(folder, 0755)
+func write_counts_to_traces(ticker *time.Ticker) {
+	// putting this code in a sub-function so that it can use defer
+	inner_func := func() {
+		file, err := os.OpenFile("/dev/write-to-traces", os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
-			Log(fmt.Sprintf("log-loss-counter: Error creating folder: %s", err.Error()))
-			return err
+			Log("Error opening /dev/write-to-traces", err.Error())
+		}
+		defer file.Close()
+
+		process_logs_mut.Lock() // TODO: this lock might be held for too long. Maybe to the file operations, then lock and compare to saved data?
+		defer process_logs_mut.Unlock()
+		read_disk_mut.Lock()
+		defer read_disk_mut.Unlock()
+
+		for containerID, logs_counted := range logged_bytes_by_container {
+
+			// skip containers which have been stopped
+			// TODO: actually delete stale containers from all the different maps
+			if iter_count, seen := FW_container_last_seen[containerID]; seen && iter_count >= current_iteration_count-2 {
+				filename_header := container_id_to_pod_folder[containerID]
+				container_name := container_id_to_name[containerID]
+				filesystem_bytes := FW_bytes_logged_rotated[containerID] + FW_bytes_logged_unrotated[containerID]
+				_, err := file.WriteString(get_CRI_header() + fmt.Sprintf(`{"filename_header": "%s", "container_name": "%s", "log_bytes_counted": %d, "log_bytes_fs": %d}`, filename_header, container_name, logs_counted, filesystem_bytes) + "\n")
+				if err != nil {
+					Log("error writing to traces:", err.Error())
+				}
+			}
 		}
 	}
 
-	f, err := os.OpenFile(filepath.Join(folder, filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		Log(fmt.Sprintf("log-loss-counter: Error opening file for tracked container: %s", err.Error()))
-		return err
+	for range ticker.C {
+		inner_func()
 	}
-	defer f.Close()
-	if _, err := f.WriteString(text); err != nil {
-		Log(fmt.Sprintf("log-loss-counter: Error writing to file for tracked container: %s", err.Error()))
-		return err
+}
+
+func get_CRI_header() string {
+	return time.Now().Format(time.RFC3339Nano) + " stdout F "
+}
+
+// // iotuil's single-line function for writing text to a file doesn't append
+// func create_or_append_to_file(folder string, filename string, text string) error {
+// 	_, err := os.Stat(folder)
+// 	if os.IsNotExist(err) {
+// 		err = os.Mkdir(folder, 0755)
+// 		if err != nil {
+// 			Log(fmt.Sprintf("log-loss-counter: Error creating folder: %s", err.Error()))
+// 			return err
+// 		}
+// 	}
+
+// 	f, err := os.OpenFile(filepath.Join(folder, filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+// 	if err != nil {
+// 		Log(fmt.Sprintf("log-loss-counter: Error opening file for tracked container: %s", err.Error()))
+// 		return err
+// 	}
+// 	defer f.Close()
+// 	if _, err := f.WriteString(text); err != nil {
+// 		Log(fmt.Sprintf("log-loss-counter: Error writing to file for tracked container: %s", err.Error()))
+// 		return err
+// 	}
+// 	return nil
+// }
+
+func track_log_rotations(ticker *time.Ticker) {
+	inner_func := func() {
+		read_disk_mut.Lock()
+		defer read_disk_mut.Unlock()
+
+		pod_folders, err := ioutil.ReadDir("/var/log/pods")
+		if err != nil {
+			Log("ERROR: reading dir /var/log/pods: " + err.Error())
+		}
+		for _, pod_folder := range pod_folders {
+			container_folders, err := ioutil.ReadDir(filepath.Join("/var/log/pods", pod_folder.Name()))
+			if err != nil {
+				Log("ERROR: reading dir" + err.Error())
+				continue
+			}
+			for _, container_folder := range container_folders {
+				container_id, container_seen := log_folder_to_container_id(pod_folder.Name(), container_folder.Name())
+				FW_container_last_seen[container_id] = current_iteration_count
+				if !container_seen {
+					continue
+				}
+				container_full_path := filepath.Join("/var/log/pods", pod_folder.Name(), container_folder.Name())
+				var rotated_file_names []string
+				log_files, err := ioutil.ReadDir(container_full_path)
+				if err != nil {
+					Log("ERROR: reading dir " + err.Error())
+				}
+				for _, logfilename := range log_files {
+					if !strings.Contains(logfilename.Name(), ".gz") && logfilename.Name() != "0.log" {
+						rotated_file_names = append(rotated_file_names, logfilename.Name())
+					}
+					if logfilename.Name() == "0.log" {
+						current_log_file, err := os.Stat(filepath.Join(container_full_path, logfilename.Name()))
+						if err != nil {
+							Log("ERROR: getting file statistics" + err.Error())
+						}
+						FW_bytes_logged_unrotated[container_id] = current_log_file.Size()
+					}
+				}
+
+				_, container_already_tracked := FW_existing_log_files[container_id]
+				if !container_already_tracked {
+					FW_existing_log_files[container_id] = make([]string, 0)
+					FW_bytes_logged_rotated[container_id] = 0
+					FW_bytes_logged_unrotated[container_id] = 0
+				}
+
+				for _, rotated_file_name := range rotated_file_names {
+					if !contains(FW_existing_log_files[container_id], rotated_file_name) {
+						Log(fmt.Sprintf("log file %s, %s is new", container_full_path, rotated_file_name))
+						FW_existing_log_files[container_id] = append(FW_existing_log_files[container_id], rotated_file_name)
+
+						fi, err := os.Stat(filepath.Join(container_full_path, rotated_file_name))
+						if err != nil {
+							Log("ERROR: getting file statistics" + err.Error())
+						}
+						FW_bytes_logged_rotated[container_id] += fi.Size()
+					}
+				}
+				if len(FW_existing_log_files[container_id]) > 8 { // I've never seen 8 unrotated log files kept around at once
+					FW_existing_log_files[container_id] = FW_existing_log_files[container_id][1:]
+				}
+			}
+		}
 	}
-	return nil
+
+	for range ticker.C {
+		current_iteration_count += 1
+		inner_func()
+	}
+}
+
+func log_folder_to_container_id(folder_name string, container_name string) (string, bool) {
+	parts := strings.Split(folder_name, "_")
+	namespace_and_pod_name := strings.Join(parts[:2], "_")
+	key := container_pod_name{namespace_pod: namespace_and_pod_name, name: container_name}
+	id, exists := container_pod_name_to_id[key]
+	return id, exists
+}
+
+func contains(str_slice []string, target_str string) bool {
+	for _, val := range str_slice {
+		if val == target_str {
+			return true
+		}
+	}
+	return false
 }

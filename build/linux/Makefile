@@ -106,7 +106,8 @@ endif
 # Build targets
 # TODO - fix plugintests and enable it back
 # all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin rubypluginstests
-all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin
+# all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin
+all : PROVIDER_STATUS KIT_STATUS kit
 
 clean :
 	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target
@@ -151,7 +152,7 @@ rubypluginstests :
 # Assume we ALWAYS build DPKG, but only build RPM if --enable-ulinux is speified in configure.
 
 kit : CONTAINERLIB_FILENAME = libcontainer.so
-kit : fluentbitplugin
+kit : 
 
 
 	@echo "========================= Performing Building RPM and DPKG packages"

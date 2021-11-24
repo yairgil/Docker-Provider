@@ -416,7 +416,6 @@ func createLogger() *log.Logger {
 	TimeTicker := time.NewTicker(5 * time.Second)
 	go func() {
 		for range TimeTicker.C {
-			logger.Println("log flush ticker running")
 			err := log_underlying_file.Sync()
 			if err != nil {
 				// also write this error directly to standard out (since the log file is having trouble)
@@ -1138,7 +1137,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
 
-		Process_log_batch(containerID, k8sNamespace, k8sPodName, containerName, logEntry, logEntryTimeStamp)
+		Process_log_batch(&containerID, &k8sNamespace, &k8sPodName, &containerName, &logEntry, &logEntryTimeStamp)
 
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
 		if ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true {
@@ -1722,7 +1721,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerLogsRouteADX = false
 
 	if strings.Compare(ContainerLogsRoute, ContainerLogsADXRoute) == 0 {
-		// Try to read the ADX database name from environment variables. Default to DefaultAdsDatabaseName if not set. 
+		// Try to read the ADX database name from environment variables. Default to DefaultAdsDatabaseName if not set.
 		// This SHOULD be set by tomlparser.rb so it's a highly unexpected event if it isn't.
 		// It should be set by the logic in tomlparser.rb EVEN if ADX logging isn't enabled
 		AdxDatabaseName := strings.TrimSpace(os.Getenv("AZMON_ADX_DATABASE_NAME"))

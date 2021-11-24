@@ -78,4 +78,14 @@ Goal: get something visible out by end of sprint (not into production, but usabl
 [] get telemetry from output plugin about how much each container is emitting and average record length
 (won't be 100% accurate, but should be close enough for a time series)
 
-[] send out a design doc, don't do a full design review
+[x] send out a design doc, don't do a full design review
+[] scale testing
+
+TODO: add how data will look in telemetry to design doc and any optimizations on the telemetry
+
+
+
+
+Iteration 2:
+[] export in prometheus format
+[] compare byte counts in Kusto and agent (keep a separate byte count for kusto)

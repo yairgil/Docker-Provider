@@ -11,7 +11,7 @@ fbplugin:
 	rm -rf *.so *.h *~
 	@echo "========================= go get  ========================="
 	# TODO: is this even needed? Does go build not automatically download dependencies?
-	go get
+	# go get
 	@echo "========================= go build  ========================="
 	go build -ldflags "-X 'main.revision=$(BUILDVERSION)' -X 'main.builddate=$(BUILDDATE)'" -buildmode=c-shared -o out_oms.so .
 

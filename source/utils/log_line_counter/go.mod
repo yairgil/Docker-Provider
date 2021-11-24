@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/fsnotify/fsnotify v1.5.1
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hpcloud/tail v1.0.0
 	github.com/nxadm/tail v1.4.8
 	golang.org/x/sys v0.0.0-20211006194710-c8a6f5223071 // indirect

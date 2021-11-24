@@ -632,12 +632,12 @@ else
 fi
 
 
-if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-            echo "starting log line counter"
-            /opt/log_line_counter &
-      fi
-fi
+# if [ ! -e "/etc/config/kube.conf" ]; then
+#       if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+#             echo "starting log line counter"
+#             /opt/log_line_counter &
+#       fi
+# fi
 
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
@@ -733,7 +733,6 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 touch /dev/write-to-traces
-touch /dev/write-to-traces-2
 
 echo "stopping rsyslog..."
 service rsyslog stop
@@ -743,7 +742,7 @@ service rsyslog status
 
 
 echo "starting log rotation counter"
-python /opt/count_file_rotations.py &
+# python /opt/count_file_rotations.py &
 
 echo "routing fluent bit tail output to traces"
 tail -f /var/opt/microsoft/docker-cimprov/log/fluent-bit.log | grep "handle rotation()" | >> /dev/write-to-traces &&
