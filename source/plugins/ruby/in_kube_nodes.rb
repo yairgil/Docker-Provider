@@ -170,34 +170,12 @@ module Fluent::Plugin
 
         # Initializing continuation token to nil
         continuationToken = nil
-        $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-        # KubernetesApiClient.getNodesResourceUri is a pure function, so call it from the actual module instead of from the mock
-        # resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
-        # continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
-        # $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-        # nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-        # @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
-        # if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-        #   $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-        #   parse_and_emit_records(nodeInventory, batchTime)
-        # else
-        #   $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
-        # end
-
-        # #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        # while (!continuationToken.nil? && !continuationToken.empty?)
-        #   nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-        #   continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
-        #   nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-        #   @nodesAPIE2ELatencyMs = @nodesAPIE2ELatencyMs + (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
-        #   if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-        #     $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-        #     parse_and_emit_records(nodeInventory, batchTime)
-        #   else
-        #     $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
-        #   end
-        # end
-
+        $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API using informer @ #{Time.now.utc.iso8601}")
+        nodeInventory = {}
+        nodeInventory["items"] = @nodesInformer.list
+        @nodesAPIE2ELatencyMs = (Time.now.to_f * 1000).to_i - nodesAPIChunkStartTime
+        $log.info("in_kube_nodes::enumerate: total size of node items #{nodeInventory["items"].length} payload in bytes: #{nodeInventory["items"].to_s.size} @ #{Time.now.utc.iso8601}")
+        parse_and_emit_records(nodeInventory, batchTime)
         @nodeInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - nodeInventoryStartTime)
         timeDifference = (DateTime.now.to_time.to_i - @@nodeInventoryLatencyTelemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60

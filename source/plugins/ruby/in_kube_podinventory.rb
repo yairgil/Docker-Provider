@@ -168,27 +168,13 @@ module Fluent::Plugin
 
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API using informer @ #{Time.now.utc.iso8601}")
-        serviceList = @servicesInformer.list
+        serviceList = {}
+        serviceList["items"] = @servicesInformer.list
+        $log.info("in_kube_podinventory::enumerate: total size of service items #{serviceList["items"].length} payload in bytes: #{serviceList["items"].to_s.size} @ #{Time.now.utc.iso8601}")
         serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
         # updating for telemetry
         @serviceCount += serviceRecords.length
 
-        # $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
-        # serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
-        # # serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
-        # $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
-
-        # if !serviceInfo.nil?
-        #   $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
-        #   serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
-        #   $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
-        #   serviceInfo = nil
-        #   # service inventory records much smaller and fixed size compared to serviceList
-        #   serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)
-        #   # updating for telemetry
-        #   @serviceCount += serviceRecords.length
-        #   serviceList = nil
-        # end
 
         # to track e2e processing latency
         @podsAPIE2ELatencyMs = 0
@@ -199,6 +185,7 @@ module Fluent::Plugin
         podInventory = {}
         podInventory["items"] = @podsInformer.list
         $log.info("in_kube_podinventory::enumerate: total size of pod items #{podInventory["items"].length} payload in bytes: #{podInventory["items"].to_s.size} @ #{Time.now.utc.iso8601}")
+        @podsAPIE2ELatencyMs = (Time.now.to_f * 1000).to_i - podsAPIChunkStartTime)
         parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
 
         @podInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - podInventoryStartTime)

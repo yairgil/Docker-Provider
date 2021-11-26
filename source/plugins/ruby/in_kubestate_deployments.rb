@@ -74,6 +74,24 @@ module Fluent::Plugin
         super # This super must be at the end of shutdown method
       end
     end
+    def  initializeInformers
+      begin
+        nodesLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_deployments_watch_client.log", 1, 5000000)
+        # create kubernetes watch client
+        ssl_options = {
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
+        }
+        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
+        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
+        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
+        $log.info("in_kubestate_deployments::initializeInformers: initilaize and start deploymentsInformer")
+        @deploymentsInformer = Kubeclient::Informer.new(client, "deployments", reconcile_timeout: 60 * 60, logger: nodesLogger, limit: @DEPLOYMENTS_CHUNK_SIZE, fieldSelector: nil, allowWatchBookmarks: true)
+        @deploymentsInformer.start_worker
+      rescue => errorStr
+        $log.warn "in_kubestate_deployments:: initializeInformers: failed to initialize informer: #{errorStr}"
+      end
+    end
 
     def enumerate
       begin
@@ -92,26 +110,12 @@ module Fluent::Plugin
         end
         # Initializing continuation token to nil
         continuationToken = nil
-        $log.info("in_kubestate_deployments::enumerate : Getting deployments from Kube API @ #{Time.now.utc.iso8601}")
-        continuationToken, deploymentList = KubernetesApiClient.getResourcesAndContinuationToken("deployments?limit=#{@DEPLOYMENTS_CHUNK_SIZE}", api_group: @DEPLOYMENTS_API_GROUP)
-        $log.info("in_kubestate_deployments::enumerate : Done getting deployments from Kube API @ #{Time.now.utc.iso8601}")
-        if (!deploymentList.nil? && !deploymentList.empty? &&  !deploymentList["items"].nil? && !deploymentList["items"].empty?)
-          $log.info("in_kubestate_deployments::enumerate : number of deployment items :#{deploymentList["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-          parse_and_emit_records(deploymentList, batchTime)
-        else
-          $log.warn "in_kubestate_deployments::enumerate:Received empty deploymentList"
-        end
+        $log.info("in_kubestate_deployments::enumerate : Getting deployments from Kube API using informer @ #{Time.now.utc.iso8601}")
+        deploymentList = {}
+        deploymentList["items"] = @deploymentsInformer.list
+        parse_and_emit_records(deploymentList, batchTime)
+        $log.info("in_kubestate_deployments::enumerate : Done getting deployments from Kube API using informer @ #{Time.now.utc.iso8601}")
 
-        #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        while (!continuationToken.nil? && !continuationToken.empty?)
-          continuationToken, deploymentList = KubernetesApiClient.getResourcesAndContinuationToken("deployments?limit=#{@DEPLOYMENTS_CHUNK_SIZE}&continue=#{continuationToken}", api_group: @DEPLOYMENTS_API_GROUP)
-          if (!deploymentList.nil? && !deploymentList.empty? && !deploymentList["items"].nil? && !deploymentList["items"].empty?)
-            $log.info("in_kubestate_deployments::enumerate : number of deployment items :#{deploymentList["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-            parse_and_emit_records(deploymentList, batchTime)
-          else
-            $log.warn "in_kubestate_deployments::enumerate:Received empty deploymentList"
-          end
-        end
 
         # Setting this to nil so that we dont hold memory until GC kicks in
         deploymentList = nil

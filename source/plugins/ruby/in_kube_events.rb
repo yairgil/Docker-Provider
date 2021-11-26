@@ -97,7 +97,7 @@ module Fluent::Plugin
         if !@collectAllKubeEvents
            fieldSelector = "type!=Normal"
         end
-        @eventsInformer = Kubeclient::Informer.new(client, "nodes", reconcile_timeout: 60 * 60, logger: eventsLogger, limit: @EVENTS_CHUNK_SIZE, fieldselector: fieldSelector, allowWatchBookmarks: true)
+        @eventsInformer = Kubeclient::Informer.new(client, "events", reconcile_timeout: 60 * 60, logger: eventsLogger, limit: @EVENTS_CHUNK_SIZE, fieldselector: fieldSelector, allowWatchBookmarks: true)
         @eventsInformer.start_worker
       rescue => errorStr
         $log.warn "in_kube_events:: initializeInformers: failed to initialize informer: #{errorStr}"
@@ -122,13 +122,11 @@ module Fluent::Plugin
         end
         # Initializing continuation token to nil
         continuationToken = nil
-        $log.info("in_kube_events::enumerate : Getting events from Kube API @ #{Time.now.utc.iso8601}")
-        if @collectAllKubeEvents
-          continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?limit=#{@EVENTS_CHUNK_SIZE}")
-        else
-          continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?fieldSelector=type!=Normal&limit=#{@EVENTS_CHUNK_SIZE}")
-        end
-        $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_events::enumerate : Getting events from Kube API using informer @ #{Time.now.utc.iso8601}")
+        eventList = {}
+        eventList["items"] = @eventsInformer.list
+        $log.info("in_kube_events::enumerate : Done getting events from Kube API using informer @ #{Time.now.utc.iso8601}")
+
         if (!eventList.nil? && !eventList.empty? && !eventList["items"].nil? && !eventList["items"].empty?)
           eventsCount = eventList["items"].length
           $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
