@@ -29,6 +29,7 @@ module Fluent::Plugin
 
       # Initilize enable/disable normal event collection
       @collectAllKubeEvents = false
+      @eventsInformer = nil
     end
 
     config_param :run_interval, :time, :default => 60
@@ -64,6 +65,9 @@ module Fluent::Plugin
             $log.warn("Normal kube events collection enabled for cluster")
           end
         end
+        $log.info("in_kube_events::start: initialize k8s informer - start @ #{Time.now.utc.iso8601}")
+        initializeInformers
+        $log.info("in_kube_events::start: initialize k8s informer - end  @ #{Time.now.utc.iso8601}")
       end
     end
 
@@ -75,6 +79,28 @@ module Fluent::Plugin
         }
         @thread.join
         super
+      end
+    end
+    def  initializeInformers
+      begin
+        eventsLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_events_watch_client.log", 1, 5000000)
+        # create kubernetes watch client
+        ssl_options = {
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
+        }
+        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
+        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
+        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
+        $log.info("in_kube_events::initializeInformers: initilaize and start eventsInformer")
+        fieldSelector = nil
+        if !@collectAllKubeEvents
+           fieldSelector = "type!=Normal"
+        end
+        @eventsInformer = Kubeclient::Informer.new(client, "nodes", reconcile_timeout: 60 * 60, logger: eventsLogger, limit: @EVENTS_CHUNK_SIZE, fieldselector: fieldSelector, allowWatchBookmarks: true)
+        @eventsInformer.start_worker
+      rescue => errorStr
+        $log.warn "in_kube_events:: initializeInformers: failed to initialize informer: #{errorStr}"
       end
     end
 
@@ -103,7 +129,7 @@ module Fluent::Plugin
           continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?fieldSelector=type!=Normal&limit=#{@EVENTS_CHUNK_SIZE}")
         end
         $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
-        if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+        if (!eventList.nil? && !eventList.empty? && !eventList["items"].nil? && !eventList["items"].empty?)
           eventsCount = eventList["items"].length
           $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
           newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
@@ -114,7 +140,7 @@ module Fluent::Plugin
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
           continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?fieldSelector=type!=Normal&limit=#{@EVENTS_CHUNK_SIZE}&continue=#{continuationToken}")
-          if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+          if (!eventList.nil? && !eventList.empty? && !eventList["items"].nil? && !eventList["items"].empty?)
             eventsCount = eventList["items"].length
             $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
             newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)

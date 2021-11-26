@@ -117,10 +117,10 @@ module Fluent::Plugin
         auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
         client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
         $log.info("in_kube_podinventory::initializeInformers: initilaize and start podsInformer")
-        @podsInformer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 60 * 60, logger: podsLogger, limit: @PODS_CHUNK_SIZE, allowWatchBookmarks: true)
+        @podsInformer = Kubeclient::Informer.new(client, "pods", reconcile_timeout: 60 * 60, logger: podsLogger, limit: @PODS_CHUNK_SIZE, fieldSelector: nil, allowWatchBookmarks: true)
         @podsInformer.start_worker
         $log.info("in_kube_podinventory::initializeInformers: initilaize and start servicesInformer")
-        @servicesInformer = Kubeclient::Informer.new(client, "services", reconcile_timeout: 60 * 60, logger: servicesLogger, limit: nil, allowWatchBookmarks: true)
+        @servicesInformer = Kubeclient::Informer.new(client, "services", reconcile_timeout: 60 * 60, logger: servicesLogger, limit: nil, fieldSelector: nil, allowWatchBookmarks: true)
         @servicesInformer.start_worker
 
       rescue => errorStr

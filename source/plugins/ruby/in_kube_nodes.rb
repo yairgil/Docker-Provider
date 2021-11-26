@@ -7,10 +7,10 @@ module Fluent::Plugin
   class Kube_nodeInventory_Input < Input
     Fluent::Plugin.register_input("kube_nodes", self)
 
-    def initialize (kubernetesApiClient=nil, 
-                    applicationInsightsUtility=nil, 
-                    extensionUtils=nil, 
-                    env=nil, 
+    def initialize (kubernetesApiClient=nil,
+                    applicationInsightsUtility=nil,
+                    extensionUtils=nil,
+                    env=nil,
                     telemetry_flush_interval=nil)
       super()
 
@@ -36,8 +36,8 @@ module Fluent::Plugin
       @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
       @@osmConfigMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
       @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
-  
-  
+
+
       @@rsPromInterval = @env["TELEMETRY_RS_PROM_INTERVAL"]
       @@rsPromFieldPassCount = @env["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
       @@rsPromFieldDropCount = @env["TELEMETRY_RS_PROM_FIELDDROP_LENGTH"]
@@ -64,6 +64,7 @@ module Fluent::Plugin
       require_relative "constants"
 
       @NodeCache = NodeStatsCache.new()
+      @nodesInformer = nil
     end
 
     config_param :run_interval, :time, :default => 60
@@ -100,6 +101,9 @@ module Fluent::Plugin
         @thread = Thread.new(&method(:run_periodic))
         @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
+        $log.info("in_kube_nodes::start: initialize k8s informer - start @ #{Time.now.utc.iso8601}")
+        initializeInformers
+        $log.info("in_kube_nodes::start: initialize k8s informer - end  @ #{Time.now.utc.iso8601}")
       end
     end
 
@@ -111,6 +115,25 @@ module Fluent::Plugin
         }
         @thread.join
         super # This super must be at the end of shutdown method
+      end
+    end
+
+    def  initializeInformers
+      begin
+        nodesLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_nodes_watch_client.log", 1, 5000000)
+        # create kubernetes watch client
+        ssl_options = {
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
+        }
+        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
+        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
+        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
+        $log.info("in_kube_nodes::initializeInformers: initilaize and start nodesInformer")
+        @nodesInformer = Kubeclient::Informer.new(client, "nodes", reconcile_timeout: 60 * 60, logger: nodesLogger, limit: @NODES_CHUNK_SIZE, fieldSelector: nil, allowWatchBookmarks: true)
+        @nodesInformer.start_worker
+      rescue => errorStr
+        $log.warn "in_kube_nodes:: initializeInformers: failed to initialize informer: #{errorStr}"
       end
     end
 
@@ -149,31 +172,31 @@ module Fluent::Plugin
         continuationToken = nil
         $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         # KubernetesApiClient.getNodesResourceUri is a pure function, so call it from the actual module instead of from the mock
-        resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
-        continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
-        $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-        nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-        @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
-        if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-          parse_and_emit_records(nodeInventory, batchTime)
-        else
-          $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
-        end
+        # resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
+        # continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
+        # $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+        # nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+        # @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
+        # if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
+        #   $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+        #   parse_and_emit_records(nodeInventory, batchTime)
+        # else
+        #   $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
+        # end
 
-        #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        while (!continuationToken.nil? && !continuationToken.empty?)
-          nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-          continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
-          nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-          @nodesAPIE2ELatencyMs = @nodesAPIE2ELatencyMs + (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
-          if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-            parse_and_emit_records(nodeInventory, batchTime)
-          else
-            $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
-          end
-        end
+        # #If we receive a continuation token, make calls, process and flush data until we have processed all data
+        # while (!continuationToken.nil? && !continuationToken.empty?)
+        #   nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
+        #   continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
+        #   nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
+        #   @nodesAPIE2ELatencyMs = @nodesAPIE2ELatencyMs + (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
+        #   if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
+        #     $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+        #     parse_and_emit_records(nodeInventory, batchTime)
+        #   else
+        #     $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
+        #   end
+        # end
 
         @nodeInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - nodeInventoryStartTime)
         timeDifference = (DateTime.now.to_time.to_i - @@nodeInventoryLatencyTelemetryTimeTracker).abs
@@ -498,7 +521,7 @@ module Fluent::Plugin
         # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
         # populate the KubeNodeInventory Status field. A possible value for this field could be "Ready OutofDisk"
         # implying that the node is ready for hosting pods, however its out of disk.
-        if item["status"].key?("conditions") && !item["status"]["conditions"].empty?
+        if !item["status"]["conditions"].nil? && !item["status"]["conditions"].empty?
           allNodeConditions = ""
           item["status"]["conditions"].each do |condition|
             if condition["status"] == "True"
