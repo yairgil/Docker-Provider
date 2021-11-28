@@ -7,6 +7,7 @@ def get_CRI_header():
     return datetime.datetime.now().isoformat("T") + "000Z stdout F "
 
 if __name__ == '__main__' and os.environ["DISABLE_PYTHON_LOG_TRACKING"] != "true":
+    print("counting log rotations in python")
     existing_log_files = {}
     total_bytes_logged = {}
     last_print_time = time.time()
@@ -38,4 +39,5 @@ if __name__ == '__main__' and os.environ["DISABLE_PYTHON_LOG_TRACKING"] != "true
             with open("/dev/write-to-traces", "a") as output_log_file:
                 for container_full_path in existing_log_files.keys():
                     output_log_file.write(get_CRI_header() + "{\"rot_size\": " + str(total_bytes_logged[container_full_path]) + ", \"pod_and_container\": \"" + container_full_path + "\"}\n")
-
+else:
+    print('not counting rotations in python ( os.environ["DISABLE_PYTHON_LOG_TRACKING"] = ' + os.environ["DISABLE_PYTHON_LOG_TRACKING"] + ")")

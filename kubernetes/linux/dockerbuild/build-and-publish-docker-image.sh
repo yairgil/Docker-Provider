@@ -114,7 +114,7 @@ build_docker_image()
   
   # sudo docker build -t baseimage:latest --build-arg IMAGE_TAG=$imageTag  .
   # sudo docker build -t $image --build-arg IMAGE_TAG=$imageTag  .
-  docker build -t $image --progress plain --build-arg IMAGE_TAG=$imageTag  $baseDir
+  docker build -t $image --build-arg IMAGE_TAG=$imageTag  $baseDir
 
   echo "build docker image completed"
 }

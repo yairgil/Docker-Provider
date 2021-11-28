@@ -2,6 +2,7 @@ package main
 
 //TODO: replace all panics with actuall error handling
 
+
 import (
 	"fmt"
 	"io/ioutil"
