@@ -18,6 +18,8 @@ module Fluent::Plugin
       require "yajl/json_gem"
       require "yajl"
       require "time"
+      require "kubeclient"
+      require "logger"
 
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"

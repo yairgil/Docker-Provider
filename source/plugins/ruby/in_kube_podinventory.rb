@@ -185,7 +185,7 @@ module Fluent::Plugin
         podInventory = {}
         podInventory["items"] = @podsInformer.list
         $log.info("in_kube_podinventory::enumerate: total size of pod items #{podInventory["items"].length} payload in bytes: #{podInventory["items"].to_s.size} @ #{Time.now.utc.iso8601}")
-        @podsAPIE2ELatencyMs = (Time.now.to_f * 1000).to_i - podsAPIChunkStartTime)
+        @podsAPIE2ELatencyMs = ((Time.now.to_f * 1000).to_i - podsAPIChunkStartTime)
         parse_and_emit_records(podInventory, serviceRecords, continuationToken, batchTime)
 
         @podInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - podInventoryStartTime)

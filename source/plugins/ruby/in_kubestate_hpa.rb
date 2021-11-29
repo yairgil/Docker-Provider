@@ -33,6 +33,7 @@ module Fluent::Plugin
       @NodeName = OMS::Common.get_hostname
       @ClusterId = KubernetesApiClient.getClusterId
       @ClusterName = KubernetesApiClient.getClusterName
+      @hpaInformer = nil
     end
 
     config_param :run_interval, :time, :default => 60
@@ -54,6 +55,10 @@ module Fluent::Plugin
         end
         $log.info("in_kubestate_hpa::start : HPA_CHUNK_SIZE  @ #{@HPA_CHUNK_SIZE}")
 
+        $log.info("in_kubestate_hpa::start: initialize k8s informer - start @ #{Time.now.utc.iso8601}")
+        initializeInformers
+        $log.info("in_kubestate_hpa::start: initialize k8s informer - end  @ #{Time.now.utc.iso8601}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -69,6 +74,25 @@ module Fluent::Plugin
         }
         @thread.join
         super
+      end
+    end
+
+    def  initializeInformers
+      begin
+        hpaLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_hpa_watch_client.log", 1, 5000000)
+        # create kubernetes watch client
+        ssl_options = {
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
+        }
+        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
+        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
+        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/apis/autoscaling/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
+        $log.info("in_kubestate_hpa::initializeInformers: initilaize and start hpaInformer")
+        @hpaInformer = Kubeclient::Informer.new(client, "horizontalpodautoscalers", reconcile_timeout: 60 * 60, logger: hpaLogger, limit: @HPA_CHUNK_SIZE, fieldSelector: nil, allowWatchBookmarks: true)
+        @hpaInformer.start_worker
+      rescue => errorStr
+        $log.warn "in_kubestate_hpa:: initializeInformers: failed to initialize informer: #{errorStr}"
       end
     end
 
@@ -90,23 +114,14 @@ module Fluent::Plugin
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kubestate_hpa::enumerate : Getting HPAs from Kube API @ #{Time.now.utc.iso8601}")
-        continuationToken, hpaList = KubernetesApiClient.getResourcesAndContinuationToken("horizontalpodautoscalers?limit=#{@HPA_CHUNK_SIZE}", api_group: @HPA_API_GROUP)
-        $log.info("in_kubestate_hpa::enumerate : Done getting HPAs from Kube API @ #{Time.now.utc.iso8601}")
-        if (!hpaList.nil? && !hpaList.empty? && hpaList.key?("items") && !hpaList["items"].nil? && !hpaList["items"].empty?)
-          parse_and_emit_records(hpaList, batchTime)
+        hpaList = {}
+        hpaList["items"] = @hpaInformer.list
+        if (!hpaList.nil? && !hpaList.empty? && !hpaList["items"].nil? && !hpaList["items"].empty?)
+           parse_and_emit_records(hpaList, batchTime)
         else
           $log.warn "in_kubestate_hpa::enumerate:Received empty hpaList"
         end
-
-        #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        while (!continuationToken.nil? && !continuationToken.empty?)
-          continuationToken, hpaList = KubernetesApiClient.getResourcesAndContinuationToken("horizontalpodautoscalers?limit=#{@HPA_CHUNK_SIZE}&continue=#{continuationToken}", api_group: @HPA_API_GROUP)
-          if (!hpaList.nil? && !hpaList.empty? && hpaList.key?("items") && !hpaList["items"].nil? && !hpaList["items"].empty?)
-            parse_and_emit_records(hpaList, batchTime)
-          else
-            $log.warn "in_kubestate_hpa::enumerate:Received empty hpaList"
-          end
-        end
+        $log.info("in_kubestate_hpa::enumerate : Done getting HPAs from Kube API using informer @ #{Time.now.utc.iso8601}")
 
         # Setting this to nil so that we dont hold memory until GC kicks in
         hpaList = nil

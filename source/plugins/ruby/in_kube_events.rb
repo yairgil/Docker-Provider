@@ -13,6 +13,8 @@ module Fluent::Plugin
       require "yajl/json_gem"
       require "yajl"
       require "time"
+      require "kubeclient"
+      require "logger"
 
       require_relative "KubernetesApiClient"
       require_relative "oms_common"
@@ -97,7 +99,7 @@ module Fluent::Plugin
         if !@collectAllKubeEvents
            fieldSelector = "type!=Normal"
         end
-        @eventsInformer = Kubeclient::Informer.new(client, "events", reconcile_timeout: 60 * 60, logger: eventsLogger, limit: @EVENTS_CHUNK_SIZE, fieldselector: fieldSelector, allowWatchBookmarks: true)
+        @eventsInformer = Kubeclient::Informer.new(client, "events", reconcile_timeout: 60 * 60, logger: eventsLogger, limit: @EVENTS_CHUNK_SIZE, fieldSelector: fieldSelector, allowWatchBookmarks: true)
         @eventsInformer.start_worker
       rescue => errorStr
         $log.warn "in_kube_events:: initializeInformers: failed to initialize informer: #{errorStr}"
@@ -133,18 +135,6 @@ module Fluent::Plugin
           newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
         else
           $log.warn "in_kube_events::enumerate:Received empty eventList"
-        end
-
-        #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        while (!continuationToken.nil? && !continuationToken.empty?)
-          continuationToken, eventList = KubernetesApiClient.getResourcesAndContinuationToken("events?fieldSelector=type!=Normal&limit=#{@EVENTS_CHUNK_SIZE}&continue=#{continuationToken}")
-          if (!eventList.nil? && !eventList.empty? && !eventList["items"].nil? && !eventList["items"].empty?)
-            eventsCount = eventList["items"].length
-            $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
-            newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
-          else
-            $log.warn "in_kube_events::enumerate:Received empty eventList"
-          end
         end
 
         # Setting this to nil so that we dont hold memory until GC kicks in

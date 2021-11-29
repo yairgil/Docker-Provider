@@ -16,6 +16,8 @@ module Fluent::Plugin
       require "yajl"
       require "date"
       require "time"
+      require "kubeclient"
+      require "logger"
 
       require_relative "KubernetesApiClient"
       require_relative "oms_common"
@@ -57,6 +59,10 @@ module Fluent::Plugin
         end
         $log.info("in_kubestate_deployments::start : DEPLOYMENTS_CHUNK_SIZE  @ #{@DEPLOYMENTS_CHUNK_SIZE}")
 
+        $log.info("in_kubestate_deployments::start: initialize k8s informer - start @ #{Time.now.utc.iso8601}")
+        initializeInformers
+        $log.info("in_kubestate_deployments::start: initialize k8s informer - end  @ #{Time.now.utc.iso8601}")
+
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -76,7 +82,7 @@ module Fluent::Plugin
     end
     def  initializeInformers
       begin
-        nodesLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_deployments_watch_client.log", 1, 5000000)
+        deploymentsLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_deployments_watch_client.log", 1, 5000000)
         # create kubernetes watch client
         ssl_options = {
           ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
@@ -84,9 +90,9 @@ module Fluent::Plugin
         }
         getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
         auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
-        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
+        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/apis/apps/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
         $log.info("in_kubestate_deployments::initializeInformers: initilaize and start deploymentsInformer")
-        @deploymentsInformer = Kubeclient::Informer.new(client, "deployments", reconcile_timeout: 60 * 60, logger: nodesLogger, limit: @DEPLOYMENTS_CHUNK_SIZE, fieldSelector: nil, allowWatchBookmarks: true)
+        @deploymentsInformer = Kubeclient::Informer.new(client, "deployments", reconcile_timeout: 60 * 60, logger: deploymentsLogger, limit: @DEPLOYMENTS_CHUNK_SIZE, fieldSelector: nil, allowWatchBookmarks: true)
         @deploymentsInformer.start_worker
       rescue => errorStr
         $log.warn "in_kubestate_deployments:: initializeInformers: failed to initialize informer: #{errorStr}"
@@ -113,7 +119,11 @@ module Fluent::Plugin
         $log.info("in_kubestate_deployments::enumerate : Getting deployments from Kube API using informer @ #{Time.now.utc.iso8601}")
         deploymentList = {}
         deploymentList["items"] = @deploymentsInformer.list
-        parse_and_emit_records(deploymentList, batchTime)
+        if (!deploymentList.nil? && !deploymentList.empty? && !deploymentList["items"].nil? && !deploymentList["items"].empty?)
+            parse_and_emit_records(deploymentList, batchTime)
+        else
+          $log.warn "in_kubestate_deployments::enumerate:Received empty deployments list"
+        end
         $log.info("in_kubestate_deployments::enumerate : Done getting deployments from Kube API using informer @ #{Time.now.utc.iso8601}")
 
 
