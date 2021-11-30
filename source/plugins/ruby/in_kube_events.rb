@@ -31,7 +31,12 @@ module Fluent::Plugin
 
       # Initilize enable/disable normal event collection
       @collectAllKubeEvents = false
-      @eventsInformer = nil
+      @k8sWatchClient = nil
+      @watchthread = nil
+      @resourceVersion = 0
+      @fieldSelector = nil
+      @eventQueryState = []
+      @events = {}
     end
 
     config_param :run_interval, :time, :default => 60
@@ -52,24 +57,23 @@ module Fluent::Plugin
           @EVENTS_CHUNK_SIZE = 4000
         end
         $log.info("in_kube_events::start : EVENTS_CHUNK_SIZE  @ #{@EVENTS_CHUNK_SIZE}")
-
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
+        @eventsStateLock = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         collectAllKubeEventsSetting = ENV["AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS"]
         if !collectAllKubeEventsSetting.nil? && !collectAllKubeEventsSetting.empty?
           if collectAllKubeEventsSetting.casecmp("false") == 0
             @collectAllKubeEvents = false
+            @fieldSelector = "type!=Normal"
             $log.warn("Normal kube events collection disabled for cluster")
           else
             @collectAllKubeEvents = true
             $log.warn("Normal kube events collection enabled for cluster")
           end
         end
-        $log.info("in_kube_events::start: initialize k8s informer - start @ #{Time.now.utc.iso8601}")
-        initializeInformers
-        $log.info("in_kube_events::start: initialize k8s informer - end  @ #{Time.now.utc.iso8601}")
+        @watchthread = Thread.new(&method(:watch_events))
       end
     end
 
@@ -80,29 +84,8 @@ module Fluent::Plugin
           @condition.signal
         }
         @thread.join
+        @watchthread.join
         super
-      end
-    end
-    def  initializeInformers
-      begin
-        eventsLogger = Logger.new("/var/opt/microsoft/docker-cimprov/log/kubernetes_events_watch_client.log", 1, 5000000)
-        # create kubernetes watch client
-        ssl_options = {
-          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
-        }
-        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
-        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
-        client = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed)
-        $log.info("in_kube_events::initializeInformers: initilaize and start eventsInformer")
-        fieldSelector = nil
-        if !@collectAllKubeEvents
-           fieldSelector = "type!=Normal"
-        end
-        @eventsInformer = Kubeclient::Informer.new(client, "events", reconcile_timeout: 60 * 60, logger: eventsLogger, limit: @EVENTS_CHUNK_SIZE, fieldSelector: fieldSelector, allowWatchBookmarks: true)
-        @eventsInformer.start_worker
-      rescue => errorStr
-        $log.warn "in_kube_events:: initializeInformers: failed to initialize informer: #{errorStr}"
       end
     end
 
@@ -111,9 +94,8 @@ module Fluent::Plugin
         eventList = nil
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
-        eventQueryState = getEventQueryState
-        newEventQueryState = []
         @eventsCount = 0
+        eventQueryState = []
 
         if ExtensionUtils.isAADMSIAuthMode()
           $log.info("in_kube_events::enumerate: AAD AUTH MSI MODE")
@@ -124,22 +106,26 @@ module Fluent::Plugin
         end
         # Initializing continuation token to nil
         continuationToken = nil
-        $log.info("in_kube_events::enumerate : Getting events from Kube API using informer @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_events::enumerate : Getting events obtained from watch @ #{Time.now.utc.iso8601}")
         eventList = {}
-        eventList["items"] = @eventsInformer.list
-        $log.info("in_kube_events::enumerate : Done getting events from Kube API using informer @ #{Time.now.utc.iso8601}")
+        @eventsStateLock.synchronize do
+          eventList["items"] = @events.values.dup
+          eventQueryState = @currentEventQueryState
+          @events.clear
+        end
+        $log.info("in_kube_events::enumerate : Getting events obtained from watch @ #{Time.now.utc.iso8601}")
 
         if (!eventList.nil? && !eventList.empty? && !eventList["items"].nil? && !eventList["items"].empty?)
           eventsCount = eventList["items"].length
           $log.info "in_kube_events::enumerate:Received number of events in eventList is #{eventsCount} @ #{Time.now.utc.iso8601}"
-          newEventQueryState = parse_and_emit_records(eventList, eventQueryState, newEventQueryState, batchTime)
+          parse_and_emit_records(eventList, batchTime)
         else
           $log.warn "in_kube_events::enumerate:Received empty eventList"
         end
 
         # Setting this to nil so that we dont hold memory until GC kicks in
         eventList = nil
-        writeEventQueryState(newEventQueryState)
+        writeEventQueryState(eventQueryState)
 
         # Flush AppInsights telemetry once all the processing is done, only if the number of events flushed is greater than 0
         if (@eventsCount > 0)
@@ -152,7 +138,7 @@ module Fluent::Plugin
       end
     end # end enumerate
 
-    def parse_and_emit_records(events, eventQueryState, newEventQueryState, batchTime = Time.utc.iso8601)
+    def parse_and_emit_records(events, batchTime = Time.utc.iso8601)
       currentTime = Time.now
       emitTime = Fluent::Engine.now
       @@istestvar = ENV["ISTEST"]
@@ -163,11 +149,6 @@ module Fluent::Plugin
           #<BUGBUG> - Not sure if ingestion has the below mapping for this custom type. Fix it as part of fixed type conversion
           record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
           eventId = items["metadata"]["uid"] + "/" + items["count"].to_s
-          newEventQueryState.push(eventId)
-          if !eventQueryState.empty? && eventQueryState.include?(eventId)
-            next
-          end
-
           nodeName = items["source"].key?("host") ? items["source"]["host"] : (OMS::Common.get_hostname)
           # For ARO v3 cluster, drop the master and infra node sourced events to ingest
           if KubernetesApiClient.isAROV3Cluster && !nodeName.nil? && !nodeName.empty? &&
@@ -200,7 +181,6 @@ module Fluent::Plugin
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-      return newEventQueryState
     end
 
     def run_periodic
@@ -266,5 +246,146 @@ module Fluent::Plugin
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
+
+    def getK8sWatchClient
+      if @k8sWatchClient.nil?
+        ssl_options = {
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+          verify_ssl: OpenSSL::SSL::VERIFY_PEER,
+        }
+        timeouts = {
+          open: 60,  # default setting (in seconds)
+          read: nil  # read never times out
+        }
+        getTokenStr = "Bearer " + KubernetesApiClient.getTokenStr
+        auth_options = { bearer_token: KubernetesApiClient.getTokenStr }
+        @k8sWatchClient = Kubeclient::Client.new("https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/", "v1", ssl_options: ssl_options, auth_options: auth_options, as: :parsed, timeouts: timeouts)
+      end
+      return @k8sWatchClient
+    end
+
+    def watch_events
+      loop do
+        begin
+            @eventsStateLock.synchronize do
+              @currentEventQueryState = getEventQueryState
+            end
+            client = getK8sWatchClient
+            if @resourceVersion == 0
+              eventList = client.get_events(limit: @EVENTS_CHUNK_SIZE, field_selector: @fieldSelector)
+              @resourceVersion = eventList["metadata"]["resourceVersion"]
+              continue = eventList["metadata"]["continue"]
+              if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+                  eventList["items"].each do |item|
+                    eventId = item["metadata"]["uid"] + "/" + item["count"].to_s
+                    eventItem = getEventOptimizedItem(item)
+                    @eventsStateLock.synchronize do
+                      if @currentEventQueryState.empty? || !@currentEventQueryState.include?(eventId)
+                        @events[eventId] = eventItem
+                        @currentEventQueryState.push(eventId)
+                      end
+                    end
+                  end
+              end
+              while !continue.nil? && !continue.empty?
+                eventList = client.get_events(limit: @EVENTS_CHUNK_SIZE, continue: continue, field_selector: @fieldSelector)
+                @resourceVersion = eventList["metadata"]["resourceVersion"]
+                continue = eventList["metadata"]["continue"]
+                if (!eventList.nil? && !eventList.empty? && eventList.key?("items") && !eventList["items"].nil? && !eventList["items"].empty?)
+                    eventList["items"].each do |item|
+                      eventId = item["metadata"]["uid"] + "/" + item["count"].to_s
+                      eventItem = getEventOptimizedItem(item)
+                      @eventsStateLock.synchronize do
+                        if @currentEventQueryState.empty? || !@currentEventQueryState.include?(eventId)
+                          @events[eventId] = eventItem
+                          @currentEventQueryState.push(eventId)
+                        end
+                      end
+                    end
+                end
+              end
+            end
+            watcher = client.watch_events(resource_version: @resourceVersion, field_selector: @fieldSelector, allowWatchBookmarks: true, as: :parsed)
+            stop_reason = 'disconnect'
+            watcher.each do |notice|
+                item = notice["object"]
+                # extract latest resource version to use for watch reconnect
+                if !item.nil? && !item.empty? &&
+                !item["metadata"].nil? && !item["metadata"].empty?  &&
+                !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
+                @resourceVersion = item["metadata"]["resourceVersion"]
+                end
+                case notice["type"]
+                when 'BOOKMARK' then
+                  $log.info("BOOKMARK event and resource version: #{resourceVersion}")
+                when 'ADDED', 'MODIFIED' then
+                item = notice["object"]
+                eventId = item["metadata"]["uid"] + "/" + item["count"].to_s
+                eventItem = getEventOptimizedItem(item)
+                @eventsStateLock.synchronize do
+                  if @currentEventQueryState.empty? || !@currentEventQueryState.include?(eventId)
+                    @events[eventId] = eventItem
+                    @currentEventQueryState.push(eventId)
+                  end
+                end
+                when 'DELETED' then
+                eventId = item["metadata"]["uid"] + "/" + item["count"].to_s
+                @eventsStateLock.synchronize do
+                  @events.delete(eventId)
+                end
+                when 'ERROR'
+                  $log.warn("ERROR event and resource version: #{resourceVersion}")
+                  stop_reason = 'error'
+                  # enforce list in case of error such as resource verison expired or version too long error etc.
+                  @resourceVersion = 0
+                break
+                else
+                  $log.warn("Unsupported event type #{notice["type"]}")
+                end
+            end
+        rescue => exceptionStr
+           $log.warn("Watch session got broken with reason: #{stop_reason} and exception: #{exceptionStr}")
+        end
+      end
+    end
+
+    def getEventOptimizedItem(resourceItem)
+      item = {}
+      item["metadata"] =  {}
+      if !resourceItem["metadata"].nil?
+          item["metadata"]["uid"] =  resourceItem["metadata"]["uid"]
+          item["metadata"]["creationTimestamp"] =  resourceItem["metadata"]["creationTimestamp"]
+      end
+      item["source"] =  {}
+      if !resourceItem["source"].nil? && !resourceItem["source"].empty?
+          if !resourceItem["source"]["host"].nil? && !resourceItem["source"]["host"].empty?
+              item["source"]["host"] = resourceItem["source"]["host"]
+          end
+          item["source"]["component"] = {}
+          if !resourceItem["source"]["component"].nil? && !resourceItem["source"]["component"].empty?
+              item["source"]["component"] = resourceItem["source"]["component"]
+          end
+      end
+      item["involvedObject"] =  {}
+      if !resourceItem["involvedObject"].nil? && !resourceItem["involvedObject"].empty?
+          item["involvedObject"]["kind"] =  {}
+          if !resourceItem["involvedObject"]["kind"].nil? && !resourceItem["involvedObject"]["kind"].empty?
+              item["involvedObject"]["kind"] = resourceItem["involvedObject"]["kind"]
+          end
+          item["involvedObject"]["namespace"] =  {}
+          if !resourceItem["involvedObject"]["namespace"].nil? && !resourceItem["involvedObject"]["namespace"].empty?
+              item["involvedObject"]["namespace"] = resourceItem["involvedObject"]["namespace"]
+          end
+      end
+      item["reason"] = resourceItem["reason"]
+      item["message"] = resourceItem["message"]
+      item["type"] = resourceItem["type"]
+      item["firstTimestamp"] = resourceItem["firstTimestamp"]
+      item["lastTimestamp"] = resourceItem["lastTimestamp"]
+      item["count"] = resourceItem["count"]
+      return item
+  end
+
+
   end # Kube_Event_Input
 end # module
