@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from os import error
 import os
 import subprocess
@@ -7,6 +8,7 @@ import sys
 from itertools import product
 import traceback
 import random
+from colorama import Fore
 
 import pdb
 
@@ -16,7 +18,7 @@ if sys.version_info < MIN_PYTHON:
 
 
 def run_command_get_output(cmd):
-    # print("\t\t\t[debug] running command: " + cmd)
+    print(Fore.GREEN + "\t\t\t[debug] running command: " + cmd + Fore.RESET)
     process = subprocess.Popen(["bash", "-c", cmd], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     output, error = process.communicate()
     if error is not None and len(error) > 0:
@@ -45,13 +47,18 @@ def validate_setting_combos(settings):
     return True
 
 def main():
-
+    print("starting AKS cluster (could take a long time)")
     run_command_get_output("az aks start -g davidscaletest_group -n davidscaletest")
 
-    settings = {"LOG_WRITER_REPLICAS": ["1", "10", "20", "40", "50", "60", "70", "80", "90"], 
-                "DISABLE_LOG_TRACKING": ["false", "true"], 
-                "DISABLE_PYTHON_LOG_TRACKING": ["false", "true"],
-                "AGENT_IMAGE": ["mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021", "davidmichelman/countrotations:v62"]}
+    settings = {"LOG_WRITER_REPLICAS": ["10"] * 20, 
+                # "DISABLE_LOG_TRACKING": ["false", "true"], 
+                "DISABLE_LOG_TRACKING": ["false"], 
+                # "DISABLE_PYTHON_LOG_TRACKING": ["false", "true"],
+                "DISABLE_PYTHON_LOG_TRACKING": ["true"],
+                # "AGENT_IMAGE": ["mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021", "davidmichelman/countrotations:v62"]
+                "AGENT_IMAGE": ["davidmichelman/countrotations:v62"]
+                # "AGENT_IMAGE": ["mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021"]
+                }
 
     data_items_multiple = {"cpu_usage_fbit_agg",
                     "mem_usage_fbit_agg",
@@ -121,11 +128,12 @@ def run_test(settings, monitor_time_minutes=7):
         while int(run_command_get_output("kubectl get pods -n default | grep -v Running | wc -l")) > 1:
             time.sleep(1)
         
-        start_time = time.time()
         time.sleep(1)
 
         ds_pod_name = run_command_get_output('kubectl get pods -n kube-system | grep omsagent | grep -v omsagent-rs | xargs | cut -d " " -f1')
         print("ds pod: " + ds_pod_name)
+
+        # ds_pod_name = run_command_get_output('kubectl exec ' + ds_pod_name + " -c omsagent -- apt-get install -y sysstat")
 
         if len(ds_pod_name) < len("omsagent-xxxxx"):
             print("failed to get omsagent pod name")
@@ -134,7 +142,7 @@ def run_test(settings, monitor_time_minutes=7):
             pass
 
         while len(run_command_get_output('kubectl exec ' + ds_pod_name + ' -c omsagent -- echo "container ready"')) < len("container ready"):
-            time.sleep(2)
+            time.sleep(5)
         
         recorded_results_agg = {}
         recorded_results_single = {}
@@ -160,6 +168,9 @@ def run_test(settings, monitor_time_minutes=7):
         recorded_results_agg["disk_kb_write_per_sec_agg"] = []
 
         last_loop_end_time = time.time()
+
+        start_time = time.time()
+        end_time = start_time + monitor_time_minutes * 60
 
         for i in range(monitor_time_minutes * 2):
             time.sleep(max(last_loop_end_time + 30 - time.time(), 0))
@@ -252,7 +263,7 @@ def run_test(settings, monitor_time_minutes=7):
             last_loop_end_time = time.time()
 
         print("done logging, waiting a minute for logs to show up in kusto")
-        end_time = time.time()
+        # end_time = time.time()
         time.sleep(90)
         
         query_logs_lost = """ContainerLog

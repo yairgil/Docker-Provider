@@ -2,7 +2,6 @@ package main
 
 //TODO: replace all panics with actuall error handling
 
-
 import (
 	"fmt"
 	"io/ioutil"
@@ -40,6 +39,15 @@ var read_disk_mut = &sync.Mutex{}
 var enabled bool
 
 func init() {
+	// if os.Getenv("ENABLE_PROFILING") == "true" {
+	// 	// TODO: remove this when done profiling
+	// 	prof := profile.Start()
+	// 	go func() {
+	// 		time.Sleep(time.Second * 60 * 10)
+	// 		prof.Stop()
+	// 	}()
+	// }
+
 	enabled = os.Getenv("CONTROLLER_TYPE") == "DaemonSet"
 	enabled = enabled && (os.Getenv("DISABLE_LOG_TRACKING") != "true")
 
@@ -49,7 +57,7 @@ func init() {
 		write_counts_ticker := time.NewTicker(10 * time.Second)
 		go write_counts_to_traces(write_counts_ticker)
 
-		track_rotations_ticker := time.NewTicker(time.Second)
+		track_rotations_ticker := time.NewTicker(10 * time.Second)
 		go track_log_rotations(track_rotations_ticker)
 	}
 }

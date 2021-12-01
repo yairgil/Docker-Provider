@@ -85,6 +85,13 @@ Goal: get something visible out by end of sprint (not into production, but usabl
 TODO: add how data will look in telemetry to design doc and any optimizations on the telemetry
 
 
+Iteration 1.5:
+[] for highscale, are any other types being affected by the log tracker
+[] Need to reduce decrease in log volume down to 1%ish (ideally 0%)
+[] Validate that cpu and memory usage changes are negative
+[] fix disk metrics
+[] walk through this with Vishwa
+
 
 
 Iteration 2:
