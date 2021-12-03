@@ -27,6 +27,7 @@ require_relative "ConfigParseErrorLogger"
 @collectAllKubeEvents = false
 @containerLogsRoute = "v2" # default for linux
 @adxDatabaseName = "containerinsights" # default for all configurations
+@allEventsAndLogsToAdx = false # default value is to send kube events to log analytics and otherwise respect specific settings for containerlogs destination
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
 end
@@ -191,6 +192,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for adx database name - #{errorStr}, using default #{@adxDatabaseName}, please check config map for errors")
     end
+
+    #Get send all events to ADX setting (both container logs and kube events)
+    begin
+      if !parsedConfig[:log_collection_settings][:all_events_and_logs_to_adx].nil? && !parsedConfig[:log_collection_settings][:all_events_and_logs_to_adx][:enabled].nil?
+        @allEventsAndLogsToAdx = parsedConfig[:log_collection_settings][:all_events_and_logs_to_adx][:enabled]
+        puts "config::Using config map setting value '#{@allEventsAndLogsToAdx}' for routing all events and logs to ADX"
+      else
+        puts "config::Using default setting value '#{@allEventsAndLogsToAdx}' for routing all events and logs to ADX"
+      end
+    rescue => errorStr
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for routing all events and logs to ADX - #{errorStr}, using default value '#{@allEventsAndLogsToAdx}', please check config map for errors")
+    end    
   end
 end
 
@@ -235,6 +248,7 @@ if !file.nil?
   file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{@containerLogsRoute}\n")
   file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{@containerLogSchemaVersion}\n")
   file.write("export AZMON_ADX_DATABASE_NAME=#{@adxDatabaseName}\n")
+  file.write("export AZMON_ALL_EVENTS_AND_LOGS_TO_ADX=#{@allEventsAndLogsToAdx}\n")
   # Close file after writing all environment variables
   file.close
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
@@ -284,6 +298,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     commands = get_command_windows('AZMON_CONTAINER_LOG_SCHEMA_VERSION', @containerLogSchemaVersion)
     file.write(commands)
     commands = get_command_windows('AZMON_ADX_DATABASE_NAME', @adxDatabaseName)
+    file.write(commands)
+    commands = get_command_windows('AZMON_ALL_EVENTS_AND_LOGS_TO_ADX', @allEventsAndLogsToAdx)
     file.write(commands)
 
     # Close file after writing all environment variables
