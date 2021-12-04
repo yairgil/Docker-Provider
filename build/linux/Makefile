@@ -82,6 +82,9 @@ INSTALLER_TMPDIR := $(INTERMEDIATE_DIR)/installer_tmp
 # GO Source dir for custom fluent bit plugin
 GO_SOURCE_DIR := $(SOURCE_DIR)/plugins/go/src
 
+# GO Source dir for apiproxy
+API_PROXY_SOURCE_DIR := $(SOURCE_DIR)/apiproxy
+
 ifeq ($(ENABLE_DEBUG),1)
 PROV_DEBUG_FLAGS := -g
 endif
@@ -106,7 +109,7 @@ endif
 # Build targets
 # TODO - fix plugintests and enable it back
 # all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin rubypluginstests
-all : PROVIDER_STATUS KIT_STATUS kit fluentbitplugin
+all : PROVIDER_STATUS KIT_STATUS kit apiproxy fluentbitplugin
 
 clean :
 	$(RMDIR) $(BASE_DIR)/build/cppunit_result.* $(BASE_DIR)/installer/intermediate $(BASE_DIR)/intermediate $(BASE_DIR)/target
@@ -123,6 +126,15 @@ PROVIDER_STATUS:
 KIT_STATUS:
 	@echo "========================= Performing Building provider tests"
 
+
+#---------------------------------------------------------------------------------
+# apiproxy. This is required to access k8s APIs via proxy server
+#
+apiproxy :
+	@echo "========================= Building apiproxy go code"
+	$(MKPATH) $(INTERMEDIATE_DIR)
+	make -C $(API_PROXY_SOURCE_DIR) apiproxy
+	$(COPY) $(API_PROXY_SOURCE_DIR)/apiproxy $(INTERMEDIATE_DIR)
 
 #---------------------------------------------------------------------------------
 # fluentbit go plugin build. This is required to send container logs to ODS endpoint
@@ -151,7 +163,7 @@ rubypluginstests :
 # Assume we ALWAYS build DPKG, but only build RPM if --enable-ulinux is speified in configure.
 
 kit : CONTAINERLIB_FILENAME = libcontainer.so
-kit : fluentbitplugin
+kit : apiproxy fluentbitplugin
 
 
 	@echo "========================= Performing Building RPM and DPKG packages"

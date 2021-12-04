@@ -29,6 +29,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlrb/string_utils.rb;                                    source/toml-parser/tomlrb/string_utils.rb; 644; root; root
 /opt/tomlrb/version.rb;                                         source/toml-parser/tomlrb/version.rb; 644; root; root
 
+/opt/apiproxy/apiproxy;                                                 intermediate/${{BUILD_CONFIGURATION}}/apiproxy;  	755; root; root
+
 /opt/td-agent-bit/bin/out_oms.so;                                       intermediate/${{BUILD_CONFIGURATION}}/out_oms.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf;		         build/linux/installer/conf/prometheus-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf;			            build/linux/installer/conf/td-agent-bit.conf;                    644; root; root
@@ -211,6 +213,7 @@ MAINTAINER:              'Microsoft Corporation'
 /var/opt/microsoft/docker-cimprov/log;                  755; root; root
 /var/opt/microsoft/linuxmonagent/log;                   755; root; root
 
+/opt/apiproxy;                              755; root; root;sysdir
 /opt/td-agent-bit;                          755; root; root;sysdir
 /opt/td-agent-bit/bin;                      755; root; root;sysdir
 /etc/telegraf;                              755; root; root;sysdir
@@ -309,7 +312,7 @@ if ${{PERFORMING_UPGRADE_NOT}}; then
    rmdir /etc/opt/microsoft/docker-cimprov/conf 2> /dev/null
    rmdir /etc/opt/microsoft/docker-cimprov 2> /dev/null
    rmdir /etc/opt/microsoft 2> /dev/null
-   rmdir /etc/opt 2> /dev/null  
+   rmdir /etc/opt 2> /dev/null
 fi
 
 %Preinstall_0
