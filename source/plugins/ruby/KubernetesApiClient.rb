@@ -50,20 +50,29 @@ class KubernetesApiClient
       @Log.info "Getting Kube resource: #{resource}"
       begin
         resourceUri = getResourceUri(resource, api_group)
-        if !resourceUri.nil?
-          uri = URI.parse(resourceUri)
-          if !File.exist?(@@CaFile)
-            raise "#{@@CaFile} doesnt exist"
-          else
-            Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
-              kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
-              kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
-              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
-              response = http.request(kubeApiRequest)
-              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+          if !resourceUri.nil?
+            uri = URI.parse(resourceUri)
+            if ENV["USE_KUBERNETES_API_PROXY"] && resource.include?("pods?limit")
+              Net::HTTP.start(uri.host, uri.port) do |http|
+                kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
+                @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+                response = http.request(kubeApiRequest)
+                @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+              end
+            else
+              if !File.exist?(@@CaFile)
+                raise "#{@@CaFile} doesnt exist"
+              else
+                Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
+                  kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
+                  kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
+                  @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+                  response = http.request(kubeApiRequest)
+                  @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+                end
+              end
             end
           end
-        end
       rescue => error
         @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.iso8601}")
       end
@@ -99,17 +108,21 @@ class KubernetesApiClient
 
     def getResourceUri(resource, api_group, env=ENV)
       begin
-        if env["KUBERNETES_SERVICE_HOST"] && env["KUBERNETES_PORT_443_TCP_PORT"]
-          if api_group.nil?
-            return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/api/" + @@ApiVersion + "/" + resource
-          elsif api_group == @@ApiGroupApps
-            return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/apis/apps/" + @@ApiVersionApps + "/" + resource
-          elsif api_group == @@ApiGroupHPA
-            return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/apis/" + @@ApiGroupHPA + "/" + @@ApiVersionHPA + "/" + resource
-          end
+        if env["USE_KUBERNETES_API_PROXY"] && resource.include?("pods?limit")
+          return "http://#{env["KUBERNETES_API_PROXY_HOST"]}:#{env["KUBERNETES_API_PROXY_HOST_PORT"]}/" + resource
         else
-          @Log.warn ("Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{env["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{env["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri")
-          return nil
+          if env["KUBERNETES_SERVICE_HOST"] && env["KUBERNETES_PORT_443_TCP_PORT"]
+            if api_group.nil?
+              return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/api/" + @@ApiVersion + "/" + resource
+            elsif api_group == @@ApiGroupApps
+              return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/apis/apps/" + @@ApiVersionApps + "/" + resource
+            elsif api_group == @@ApiGroupHPA
+              return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/apis/" + @@ApiGroupHPA + "/" + @@ApiVersionHPA + "/" + resource
+            end
+          else
+            @Log.warn ("Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{env["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{env["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri")
+            return nil
+          end
         end
       end
     end
@@ -456,19 +469,19 @@ class KubernetesApiClient
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
               metricCollection["Value"] = metricValue
-              
+
               metricProps["json_Collections"] = []
-              metricCollections = []               
-              metricCollections.push(metricCollection)        
+              metricCollections = []
+              metricCollections.push(metricCollection)
               metricProps["json_Collections"] = metricCollections.to_json
-              metricItems.push(metricProps)             
+              metricItems.push(metricProps)
               #No container level limit for the given metric, so default to node level limit
             else
               nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
               if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
                 metricValue = @@NodeMetrics[nodeMetricsHashKey]
                 #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
-                               
+
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
                 metricProps["Host"] = nodeName
@@ -481,10 +494,10 @@ class KubernetesApiClient
                 metricCollection["CounterName"] = metricNametoReturn
                 metricCollection["Value"] = metricValue
                 metricProps["json_Collections"] = []
-                metricCollections = []                  
-                metricCollections.push(metricCollection)        
+                metricCollections = []
+                metricCollections.push(metricCollection)
                 metricProps["json_Collections"] = metricCollections.to_json
-                metricItems.push(metricProps)              
+                metricItems.push(metricProps)
               end
             end
           end
@@ -615,11 +628,11 @@ class KubernetesApiClient
           metricCollection["CounterName"] = metricNametoReturn
           metricCollection["Value"] = metricValue
           metricCollections = []
-          metricCollections.push(metricCollection) 
-         
+          metricCollections.push(metricCollection)
+
           metricItem["json_Collections"] = []
           metricItem["json_Collections"] = metricCollections.to_json
-         
+
           #push node level metrics to a inmem hash so that we can use it looking up at container level.
           #Currently if container level cpu & memory limits are not defined we default to node level limits
           @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
@@ -763,12 +776,17 @@ class KubernetesApiClient
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
         if !resourceInfo.nil?
           @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
-          resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          if ENV["USE_KUBERNETES_API_PROXY"] && uri.include?("pods?limit")
+            resourceInventory = {}
+            resourceInventory["items"] = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+          else
+            resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+            if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
+              continuationToken = resourceInventory["metadata"]["continue"]
+            end
+          end
           resourceInfo = nil
-        end
-        if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
-          continuationToken = resourceInventory["metadata"]["continue"]
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
         end
       rescue => errorStr
         @Log.warn "KubernetesApiClient::getResourcesAndContinuationToken:Failed in get resources for #{uri} and continuation token: #{errorStr}"

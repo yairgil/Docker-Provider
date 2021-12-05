@@ -594,7 +594,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
          fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
 
-       if [ "${K8S_API_PROXY}" == "true" ]; then
+       if [ "${USE_KUBERNETES_API_PROXY}" == "true" ]; then
          echo "*** starting k8s API proxy ***"
          /opt/apiproxy/apiproxy &
        fi
