@@ -157,15 +157,6 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
       fi
 fi
 
-# Disable compression in libcurl path since MDSD has known issues and enable the compression once we get the MDSD drop with fixes for compression issue
-export MDSD_ODS_COMPRESSION_LEVEL=0
-echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
-# enable libcurl for both ODS Uploads and OMS homing service calls
-export ENABLE_CURL_UPLOAD=true
-echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
-# increase release rate to reduce memory growth
-export TCMALLOC_RELEASE_RATE=3
-echo "export TCMALLOC_RELEASE_RATE=$TCMALLOC_RELEASE_RATE" >> ~/.bashrc
 
 export PROXY_ENDPOINT=""
 # Check for internet connectivity or workspace deletion
@@ -568,6 +559,15 @@ else
   echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
   export MDSD_FLUENT_SOCKET_PORT="29230"
   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+  # Disable compression in libcurl path since MDSD has known issues and enable the compression once we get the MDSD drop with fixes for compression issue
+  export MDSD_ODS_COMPRESSION_LEVEL=0
+  echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
+  # enable libcurl for both ODS Uploads and OMS homing service calls
+  export ENABLE_CURL_UPLOAD=true
+  echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
+  # increase release rate to reduce memory growth
+  export TCMALLOC_RELEASE_RATE=3
+  echo "export TCMALLOC_RELEASE_RATE=$TCMALLOC_RELEASE_RATE" >> ~/.bashrc
 fi
 source ~/.bashrc
 
