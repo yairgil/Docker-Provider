@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -258,4 +259,28 @@ func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []
 	}
 
 	return msgpBytes
+}
+
+// includes files in subdirectories
+func GetSizeOfAllFilesInDir(root_dir string) map[string]int64 {
+	output_map := make(map[string]int64)
+	getSizeOfAllFilesInDirImpl(&root_dir, &output_map)
+	return output_map
+}
+
+func getSizeOfAllFilesInDirImpl(preceeding_dir *string, storage_dict *map[string]int64) {
+	// container_full_path := filepath.Join(preceeding_dir_segments)
+	files_and_folders, err := ioutil.ReadDir(*preceeding_dir)
+	if err != nil {
+		Log("ERROR: reading dir " + err.Error())
+	}
+	for _, next_file := range files_and_folders {
+		file_name := filepath.Join(*preceeding_dir, next_file.Name())
+		if next_file.IsDir() {
+			// need to recurse more
+			getSizeOfAllFilesInDirImpl(&file_name, storage_dict)
+		} else {
+			(*storage_dict)[file_name] = next_file.Size()
+		}
+	}
 }

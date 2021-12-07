@@ -21,8 +21,7 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	Log("Initializing out_oms go plugin for fluentbit")
-	var agentVersion string
-	agentVersion = os.Getenv("AGENT_VERSION")
+	agentVersion := os.Getenv("AGENT_VERSION")
 
 	osType := os.Getenv("OS_TYPE")
 	if strings.Compare(strings.ToLower(osType), "windows") == 0 {

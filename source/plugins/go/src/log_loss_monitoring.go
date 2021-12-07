@@ -9,11 +9,44 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-//TODO: garbage collection (if pods are being frequently recycled then these two maps will grow without bound)
-var logged_bytes_by_container = make(map[string]int64)
+/*
+Garbage collection:
+This code contains two main threads: FW (File Watcher) and Main (fbit's main thread). Both threads have maps of containers.
+
+The FW thread can tell if a container has been deleted because it can see the container's file on disk disappear.
+
+The Main thread doesn't have a good way of telling a container has disappeared, because it only has access to the incoming log stream (And the container might have
+just stopped logging for a long time)
+
+Therefore, how will the main thread delete entries for old containers? Otherwise it's memory usage will grow unboundedly as containers come and go.
+Also, the Main thread needs to do as little work as possible because it's on the logging critical path (any delay from it will directly the log volume)
+
+The implemented solution: 
+1. The FW thread will keep a public count of the number of containers on disk. 
+
+2. Every time the Main thread sees a new container and it has significantly more containers stored in its internal data
+structures than are in the public count, it will pick five containers from its internal data structures and write their
+IDs to a shared chanel (deleted_containers_query) (in a non-blocking way, if the channel is full then retry later)
+
+3. The FW thread will read the containerIds form deleted_containers_query, then if they are not on disk then write the 
+containerIds back to a second shared channel (deleted_containers_response)
+
+4. The Main thread will read from deleted_containers_response (also non-blocking) and delete any recieved
+containerIDs from it's own tables. (the delay is so that any logs from a freshly deleted container will have time to go through fbit)
+
+Motivation: with this method, the Main thread should store about 1.2x as many containers as are on disk (assuming it queries about deleted containers
+in a evenly distributed way). If more than 1/5 of the containers in the Main thread's data structures are deleted, then on average query more
+than one deleted containerId. That will cause the number of containers the Main thread is storing to shrink.
+*/
+
+
+// Main thread managed data structures:
+var container_to_arr_index = make(map[string]int)
+var bytes_logged_storage = Make_QuickDeleteSlice()
 var container_id_to_pod_folder = make(map[string]string)
 var container_id_to_name = make(map[string]string)
 
@@ -21,72 +54,117 @@ type container_pod_name struct {
 	namespace_pod string
 	name          string
 }
-
 var container_pod_name_to_id = make(map[container_pod_name]string)
 
-//TODO: replace with thread safe maps
+var deletion_query_index = 0
+
+
+
+// File Watcher managed data structures
 // (FW = File Watcher)
 var FW_existing_log_files = make(map[string][]string)  // containerid -> file names
 var FW_bytes_logged_rotated = make(map[string]int64)   // containerid -> count
 var FW_bytes_logged_unrotated = make(map[string]int64) // containerid -> count
-var FW_container_last_seen = make(map[string]int64)    // containerid -> sequence_number
-var current_iteration_count int64 = 0
+// var FW_container_last_seen = make(map[string]int64)    // containerid -> sequence_number
+// var current_iteration_count int64 = 0
+var num_containers_on_disk = 0
+
+
+// Shared objects
+var deleted_containers_query = make(chan string, 5)  // There might be a lot more than 5 containers  of 10 chosen arbitrairly
+var deleted_containers_response = make(chan string, 5)  // capacity of 10 chosen arbitrairly
+
 
 var process_logs_mut = &sync.Mutex{}
-
 var read_disk_mut = &sync.Mutex{}
-
 var enabled bool
+var last_telem_sent_time = time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 func init() {
-	// if os.Getenv("ENABLE_PROFILING") == "true" {
-	// 	// TODO: remove this when done profiling
-	// 	prof := profile.Start()
-	// 	go func() {
-	// 		time.Sleep(time.Second * 60 * 10)
-	// 		prof.Stop()
-	// 	}()
-	// }
-
 	enabled = os.Getenv("CONTROLLER_TYPE") == "DaemonSet"
 	enabled = enabled && (os.Getenv("DISABLE_LOG_TRACKING") != "true")
 
 	if enabled {
-		enabled = true
+		write_counts_ticker := time.NewTicker(5 * time.Minute)
+		go write_telemetry(write_counts_ticker)
 
-		write_counts_ticker := time.NewTicker(10 * time.Second)
-		go write_counts_to_traces(write_counts_ticker)
-
+		//TODO: turn this frequency down
 		track_rotations_ticker := time.NewTicker(10 * time.Second)
 		go track_log_rotations(track_rotations_ticker)
 	}
 }
 
-// TODO: can these args be passed by reference?
-// TODO: is strlen O(1) op?
 // TODO: when scale testing also measure disk usage (should measure cpu, mem, disk, and lost logs when scale testing)
 // 			does running a separate process impact cpu/mem/disk/lost logs
 func Process_log_batch(containerID *string, k8sNamespace *string, k8sPodName *string, containerName *string, logEntry *string, logTime *string) {
 	if enabled {
-		process_logs_mut.Lock()
-		defer process_logs_mut.Unlock()
+		log_count_index, container_old := container_to_arr_index[*containerID]
 
-		_, container_old := logged_bytes_by_container[*containerID]
 		if !container_old {
-			logged_bytes_by_container[*containerID] = 0
-		}
+			// this branch only executes when a new container is seen, so it doesn't have to be very optimized
+			process_logs_mut.Lock() // only grab this lock when a new container is seen. Slices are thread safe so we don't need to lock it
+			defer process_logs_mut.Unlock()
 
-		logged_bytes_by_container[*containerID] += (int64)(len(*logTime)+len(" stdout f ")+len(*logEntry)) + 1 // (an extra byte for the trailing \n in the source log file)
-		if _, container_seen_before := container_id_to_pod_folder[*containerID]; !container_seen_before {
+			log_count_index := bytes_logged_storage.get_free_index()
+			container_to_arr_index[*containerID] = log_count_index
+
 			container_id_to_pod_folder[*containerID] = *k8sNamespace + "_" + *k8sPodName
 			container_id_to_name[*containerID] = *containerName
-
 			container_pod_name_to_id[container_pod_name{namespace_pod: *k8sNamespace + "_" + *k8sPodName, name: *containerName}] = *containerID
+
+			// do garbage collection
+			// TODO: explain why garbage collection is done when a new container is added
+			if atomic.LoadInt32(&num_containers_on_disk) > len(container_to_arr_index) * 1.2 {
+				// send some containerIDs to the FW thread to check if they are deleted from disk
+				for i := 0; i < 5; i++ {
+					deletion_query_index = (deletion_query_index + 1) % len(bytes_logged_storage.container_id)
+
+					// use select to write to the channel in a non-blocking way
+					select {
+					case deleted_containers_query <- bytes_logged_storage.container_id[deletion_query_index]:
+						continue
+					default:
+						break
+					}
+				}
+
+				// now delete any returned containers (this will probably run the next time a container is added)
+				for ;; {
+					select {
+					case deleted_id := <- deleted_containers_response:
+						deleted_container_index := container_to_arr_index[*deleted_id]
+						bytes_logged_storage.remove_index(deleted_container_index)
+
+						delete(container_to_arr_index[*deleted_id])
+						delete(container_id_to_pod_folder[*deleted_id])
+						delete(container_id_to_name[*deleted_id])
+					default:
+						break
+					}
+				}
+			}
 		}
+		log_bytes := len(*logTime) + len(" stdout f ") + len(*logEntry) + 1 // (an extra byte for the trailing \n in the source log file)
+
+		// this should be fine, but maybe double check that the atomic read/write fixes any concurency issues?
+		atomic.AddInt64(&bytes_logged_storage.log_counts[log_count_index], (int64) log_bytes)
 	}
 }
 
-func write_counts_to_traces(ticker *time.Ticker) {
+func write_telemetry(ticker *time.Ticker) {
+	// Default:
+
+	// every 10 minutes per node: single new metric (one value is metric "value", other value in CustomDimensions)
+	// Total number of bytes tried to log (file size) and total number of bytes in plugin
+
+	// Enableable by default every 5 minutes:
+	// - Put by-container data in a log fine inside the container (not telemetry)
+	// 	- Container foobar: 10% logs lost
+
+	// - send values in raw bytes (don't report megabytes or anything like that)
+	//
+	//
+
 	// putting this code in a sub-function so that it can use defer
 	inner_func := func() {
 		file, err := os.OpenFile("/dev/write-to-traces", os.O_APPEND|os.O_WRONLY, 0644)
@@ -100,18 +178,16 @@ func write_counts_to_traces(ticker *time.Ticker) {
 		read_disk_mut.Lock()
 		defer read_disk_mut.Unlock()
 
-		for containerID, logs_counted := range logged_bytes_by_container {
+		for containerID, log_count_index := range container_to_arr_index {
+			logs_counted := atomic.LoadInt64(&bytes_logged_storage[log_count_index])
 
-			// skip containers which have been stopped
-			// TODO: actually delete stale containers from all the different maps
-			if iter_count, seen := FW_container_last_seen[containerID]; seen && iter_count >= current_iteration_count-2 {
-				filename_header := container_id_to_pod_folder[containerID]
-				container_name := container_id_to_name[containerID]
-				filesystem_bytes := FW_bytes_logged_rotated[containerID] + FW_bytes_logged_unrotated[containerID]
-				_, err := file.WriteString(get_CRI_header() + fmt.Sprintf(`{"filename_header": "%s", "container_name": "%s", "log_bytes_counted": %d, "log_bytes_fs": %d}`, filename_header, container_name, logs_counted, filesystem_bytes) + "\n")
-				if err != nil {
-					Log("error writing to traces:", err.Error())
-				}
+			filename_header := container_id_to_pod_folder[containerID]
+			container_name := container_id_to_name[containerID]
+			filesystem_bytes := FW_bytes_logged_rotated[containerID] + FW_bytes_logged_unrotated[containerID]
+			// TODO: move file IO out of this loop? (because the mutex is held during this loop, so make it as fast as possible)
+			_, err := file.WriteString(get_CRI_header() + fmt.Sprintf(`{"filename_header": "%s", "container_name": "%s", "bytes_at_output_plugin": %d, "bytes_at_log_file": %d}`, filename_header, container_name, logs_counted, filesystem_bytes) + "\n")
+			if err != nil {
+				Log("error writing to traces:", err.Error())
 			}
 		}
 	}
@@ -125,101 +201,99 @@ func get_CRI_header() string {
 	return time.Now().Format(time.RFC3339Nano) + " stdout F "
 }
 
-// // iotuil's single-line function for writing text to a file doesn't append
-// func create_or_append_to_file(folder string, filename string, text string) error {
-// 	_, err := os.Stat(folder)
-// 	if os.IsNotExist(err) {
-// 		err = os.Mkdir(folder, 0755)
-// 		if err != nil {
-// 			Log(fmt.Sprintf("log-loss-counter: Error creating folder: %s", err.Error()))
-// 			return err
-// 		}
-// 	}
-
-// 	f, err := os.OpenFile(filepath.Join(folder, filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-// 	if err != nil {
-// 		Log(fmt.Sprintf("log-loss-counter: Error opening file for tracked container: %s", err.Error()))
-// 		return err
-// 	}
-// 	defer f.Close()
-// 	if _, err := f.WriteString(text); err != nil {
-// 		Log(fmt.Sprintf("log-loss-counter: Error writing to file for tracked container: %s", err.Error()))
-// 		return err
-// 	}
-// 	return nil
-// }
-
 func track_log_rotations(ticker *time.Ticker) {
 	inner_func := func() {
 		read_disk_mut.Lock()
 		defer read_disk_mut.Unlock()
 
-		pod_folders, err := ioutil.ReadDir("/var/log/pods")
-		if err != nil {
-			Log("ERROR: reading dir /var/log/pods: " + err.Error())
-		}
-		for _, pod_folder := range pod_folders {
-			container_folders, err := ioutil.ReadDir(filepath.Join("/var/log/pods", pod_folder.Name()))
-			if err != nil {
-				Log("ERROR: reading dir" + err.Error())
+		// this needs a way to return an error
+		all_files_and_sizes := GetSizeOfAllFilesInDir("/var/log/pods")
+		containers_seen_this_iter := make(map[string]bool)
+
+		for filepath := range all_files_and_sizes {
+			// we don't care about compressed log files
+			if ! strings.Contains(filepath, ".gz") {
 				continue
 			}
-			for _, container_folder := range container_folders {
-				container_id, container_seen := log_folder_to_container_id(pod_folder.Name(), container_folder.Name())
-				FW_container_last_seen[container_id] = current_iteration_count
-				if !container_seen {
-					continue
-				}
-				container_full_path := filepath.Join("/var/log/pods", pod_folder.Name(), container_folder.Name())
-				var rotated_file_names []string
-				log_files, err := ioutil.ReadDir(container_full_path)
+
+			filepath_parts := filepath.Split(filepath, "/")  // TODO: this will be different for windows
+
+			//TODO: need some safety here
+			pod_folder := filepath_parts[4]
+			container_folder := folderpath_parts[5]
+			log_file_name := folderpath_parts[6]
+
+			container_id, container_seen := log_folder_to_container_id(pod_folder, container_folder)
+			containers_seen_this_iter[container_id] = true
+
+
+			_, container_already_tracked := FW_most_recent_log_file[container_id]
+			if !container_already_tracked {
+				FW_most_recent_log_file[container_id] = "0.log.19700101-000001"  // Highly unlikely this code will be run before the unix epoch
+				FW_bytes_logged_rotated[container_id] = 0
+				FW_bytes_logged_unrotated[container_id] = 0
+			}
+
+			if log_file_name == "0.log" {
+				current_log_file, err := os.Stat(filepath.Join(container_full_path, logfilename.Name()))
 				if err != nil {
-					Log("ERROR: reading dir " + err.Error())
+					Log("ERROR: getting file statistics" + err.Error())
 				}
-				for _, logfilename := range log_files {
-					if !strings.Contains(logfilename.Name(), ".gz") && logfilename.Name() != "0.log" {
-						rotated_file_names = append(rotated_file_names, logfilename.Name())
-					}
-					if logfilename.Name() == "0.log" {
-						current_log_file, err := os.Stat(filepath.Join(container_full_path, logfilename.Name()))
-						if err != nil {
-							Log("ERROR: getting file statistics" + err.Error())
-						}
-						FW_bytes_logged_unrotated[container_id] = current_log_file.Size()
-					}
-				}
+				FW_bytes_logged_unrotated[container_id] = current_log_file.Size()
+			} else if !contains(FW_existing_log_files[container_id], log_file_name) {
+				Log(fmt.Sprintf("log file %s, %s is new", container_full_path, rotated_file_name))
+				FW_existing_log_files[container_id] = append(FW_existing_log_files[container_id], rotated_file_name)
 
-				_, container_already_tracked := FW_existing_log_files[container_id]
-				if !container_already_tracked {
-					FW_existing_log_files[container_id] = make([]string, 0)
-					FW_bytes_logged_rotated[container_id] = 0
-					FW_bytes_logged_unrotated[container_id] = 0
+				fi, err := os.Stat(filepath.Join(container_full_path, rotated_file_name))
+				if err != nil {
+					Log("ERROR: getting file statistics" + err.Error())
 				}
+				FW_bytes_logged_rotated[container_id] += fi.Size()
 
-				for _, rotated_file_name := range rotated_file_names {
-					if !contains(FW_existing_log_files[container_id], rotated_file_name) {
-						Log(fmt.Sprintf("log file %s, %s is new", container_full_path, rotated_file_name))
-						FW_existing_log_files[container_id] = append(FW_existing_log_files[container_id], rotated_file_name)
-
-						fi, err := os.Stat(filepath.Join(container_full_path, rotated_file_name))
-						if err != nil {
-							Log("ERROR: getting file statistics" + err.Error())
-						}
-						FW_bytes_logged_rotated[container_id] += fi.Size()
-					}
-				}
-				if len(FW_existing_log_files[container_id]) > 8 { // I've never seen 8 unrotated log files kept around at once
+				if len(FW_existing_log_files[container_id]) > 6 { // I've never seen 6 unrotated log files kept around at once
 					FW_existing_log_files[container_id] = FW_existing_log_files[container_id][1:]
 				}
 			}
 		}
+
+		// garbage collection: delete any containers which didn't have log files.
+		deletion_list := make([]string, 0)
+		for _, containerId := range container_to_arr_index {
+			if _, container_seen = containers_seen_this_iter[containerId]; !container_seen {
+				deletion_list = append(deletion_list, containerId)
+
+				delete(FW_existing_log_files, containerId)
+				delete(FW_bytes_logged_rotated, containerId)
+				delete(FW_bytes_logged_unrotated, containerId)
+			}
+		}
+
+		for ;; {
+			// use select to write to the channel in a non-blocking way
+			select {
+			case test_container_id := <- deleted_containers_query
+				if _, container_exists := FW_bytes_logged_rotated[test_container_id]; !container_exists {
+					select {
+					case deleted_containers_response <- test_contest_container_id:
+						continue
+					default:
+						continue
+					}
+				}
+			default:
+				break
+			}
+		}
+
+		atomic.StoreInt32(&num_containers_on_disk, len(FW_existing_log_files))
 	}
 
 	for range ticker.C {
-		current_iteration_count += 1
 		inner_func()
 	}
 }
+
+
 
 func log_folder_to_container_id(folder_name string, container_name string) (string, bool) {
 	parts := strings.Split(folder_name, "_")

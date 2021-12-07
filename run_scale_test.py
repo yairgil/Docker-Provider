@@ -18,7 +18,7 @@ if sys.version_info < MIN_PYTHON:
 
 
 def run_command_get_output(cmd):
-    print(Fore.GREEN + "\t\t\t[debug] running command: " + cmd + Fore.RESET)
+    # print(Fore.GREEN + "\t\t\t[debug] running command: " + cmd + Fore.RESET)
     process = subprocess.Popen(["bash", "-c", cmd], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     output, error = process.communicate()
     if error is not None and len(error) > 0:
@@ -50,13 +50,13 @@ def main():
     print("starting AKS cluster (could take a long time)")
     run_command_get_output("az aks start -g davidscaletest_group -n davidscaletest")
 
-    settings = {"LOG_WRITER_REPLICAS": ["10"] * 20, 
-                # "DISABLE_LOG_TRACKING": ["false", "true"], 
-                "DISABLE_LOG_TRACKING": ["false"], 
+    settings = {"LOG_WRITER_REPLICAS": ["40"] * 40, 
+                "DISABLE_LOG_TRACKING": ["false", "true"], 
+                # "DISABLE_LOG_TRACKING": ["false"], 
                 # "DISABLE_PYTHON_LOG_TRACKING": ["false", "true"],
                 "DISABLE_PYTHON_LOG_TRACKING": ["true"],
-                # "AGENT_IMAGE": ["mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021", "davidmichelman/countrotations:v62"]
-                "AGENT_IMAGE": ["davidmichelman/countrotations:v62"]
+                # "AGENT_IMAGE": ["mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021", "davidmichelman/countrotations:v67"]
+                "AGENT_IMAGE": ["davidmichelman/countrotations:v67"]
                 # "AGENT_IMAGE": ["mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021"]
                 }
 
@@ -91,9 +91,9 @@ def main():
 
     all_setting_combos = list(dict_product(settings))
     random.shuffle(all_setting_combos)
-    for run_settings in all_setting_combos:
+    for i, run_settings in enumerate(all_setting_combos):
         if validate_setting_combos(run_settings):
-            print("starting new run with settings: ", run_settings)
+            print("starting run " + str(i) + " with settings: ", run_settings)
             run_test(run_settings)
         else:
            print("skipping run with invalid settings: ", run_settings) 
@@ -102,7 +102,7 @@ def main():
     run_command_get_output("az aks stop -g davidscaletest_group -n davidscaletest")
 
 
-def run_test(settings, monitor_time_minutes=7):
+def run_test(settings, monitor_time_minutes=10):
     try:
         run_command_get_output("kubectl delete -f scale-test.yaml")
 

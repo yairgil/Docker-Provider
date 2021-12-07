@@ -740,10 +740,6 @@ service rsyslog stop
 echo "getting rsyslog status..."
 service rsyslog status
 
-
-echo "starting log rotation counter"
-python /opt/count_file_rotations.py &
-
 echo "routing fluent bit tail output to traces"
 tail -f /var/opt/microsoft/docker-cimprov/log/fluent-bit.log | grep "handle rotation()" | >> /dev/write-to-traces &&
 

@@ -24,7 +24,7 @@ spec:
           - name: MB_LOGGED_PER_MINUTE
             value: "5"
           - name: LOG_LINE_LENGTH_BYTES
-            value: "1000"
+            value: "50"
           - name: INITIAL_DELAY_SECONDS
             value: "60"
         resources:
@@ -450,7 +450,7 @@ spec:
           value: "0.0"
         # image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021
         image: <AGENT_IMAGE>
-        # image: "davidmichelman/countrotations:v62"
+        # image: "davidmichelman/countrotations:v66"
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -531,7 +531,7 @@ spec:
         - name: USING_AAD_MSI_AUTH
           value: "false"
         # image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021
-        # image: "davidmichelman/countrotations:v62"
+        # image: "davidmichelman/countrotations:v66"
         image: <AGENT_IMAGE>
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -676,7 +676,7 @@ spec:
       containers:
         - name: omsagent
           # image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10082021"
-          # image: "davidmichelman/countrotations:v62"
+          # image: "davidmichelman/countrotations:v66"
           image: <AGENT_IMAGE>
           imagePullPolicy: IfNotPresent
           resources:

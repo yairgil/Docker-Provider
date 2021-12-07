@@ -79,18 +79,24 @@ Goal: get something visible out by end of sprint (not into production, but usabl
 (won't be 100% accurate, but should be close enough for a time series)
 
 [x] send out a design doc, don't do a full design review
-[] scale testing
-    [] scale test against current production agent image
+[x] scale testing
+    [x] scale test against current production agent image
 
 TODO: add how data will look in telemetry to design doc and any optimizations on the telemetry
 
 
 Iteration 1.5:
 [] for highscale, are any other types being affected by the log tracker
-[] Need to reduce decrease in log volume down to 1%ish (ideally 0%)
-[] Validate that cpu and memory usage changes are negative
+[x] Need to reduce decrease in log volume down to 1%ish (ideally 0%)
+[x] Validate that cpu and memory usage changes are negative
 [] fix disk metrics
-[] walk through this with Vishwa
+[x] walk through this with Vishwa
+[] compensate for namespace ignore and stdout/stderr ignore
+    - ignore any customized namespaces entirely (for cleanliness, we'll still get a lot of data)
+    - ${AZMON_LOG_TAIL_PATH}
+[] double check, do we tail logs for containers in entirely ignored namespaces?
+[] need to account for logtag (P or F)
+[] use a separate output plugin for log tracking? (or see if there's a size calculator filter plugin?)
 
 
 
