@@ -157,7 +157,7 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
       fi
 fi
 
-# gangams - disable compression since MDSD libcurl has known issues
+# Disable compression in libcurl path since MDSD has known issues and enable the compression once we get the MDSD drop with fixes for compression issue
 export MDSD_ODS_COMPRESSION_LEVEL=0
 echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
 # enable libcurl for both ODS Uploads and OMS homing service calls
@@ -568,9 +568,6 @@ else
   echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
   export MDSD_FLUENT_SOCKET_PORT="29230"
   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
-
-  export ENABLE_CURL_UPLOAD="true"
-  echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
 fi
 source ~/.bashrc
 
