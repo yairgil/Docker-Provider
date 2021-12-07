@@ -10,7 +10,7 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     update-locale LANG=en_US.UTF-8
 
 #install oneagent - Official bits (10/7/2021)
-wget https://github.com/microsoft/Docker-Provider/releases/download/1.15.0-build.develop/azure-mdsd_1.15.0-build.develop.2510_x86_64.deb
+wget https://github.com/microsoft/Docker-Provider/releases/download/1.15.0-build.develop/azure-mdsd_1.14.2-build.master.300_x86_64.deb
 
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
