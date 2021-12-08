@@ -12,7 +12,7 @@ apiproxy:
 	@echo "========================= go get  ========================="
 	go get
 	@echo "========================= go build  ========================="
-	go build -ldflags "-X 'main.revision=$(BUILDVERSION)' -X 'main.builddate=$(BUILDDATE)'" .
+	go build -ldflags "-X 'main.revision=$(BUILDVERSION)' -X 'main.builddate=$(BUILDDATE)'" -o apiproxy .
 	@echo "========================= make binary as executable  ========================="
 	chmod +x apiproxy
 
