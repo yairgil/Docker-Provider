@@ -60,6 +60,11 @@ var (
 	PromMonitorPodsLabelSelectorLength int
 	//Tracks the number of monitor kubernetes pods field selectors and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
 	PromMonitorPodsFieldSelectorLength int
+
+	//Tracks the number of logs lost in Fluent Bit (in bytes)
+	LogsLostInFluentBit int64
+	//Number of logs written to disk by application containers (what we should be sending to LA) (in bytes)
+	LogsWrittenToDisk int64
 )
 
 const (
@@ -82,6 +87,7 @@ const (
 	metricNameErrorCountKubeMonEventsMDSDClientCreateError      = "KubeMonEventsMDSDClientCreateErrorsCount"
 	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent  = "ContainerLogs2ADXSendErrorCount"
 	metricNameErrorCountContainerLogsADXClientCreateError       = "ContainerLogsADXClientCreateErrorCount"
+	metricNameLostLogs                                          = "LogsLost"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -100,6 +106,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 	}
 
 	ContainerLogTelemetryTicker = time.NewTicker(time.Second * time.Duration(telemetryPushInterval))
+	TenMinuteTicker := time.NewTicker(time.Second * time.Duration(600))
 
 	start := time.Now()
 	SendEvent(eventNameContainerLogInit, make(map[string]string))
@@ -125,6 +132,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		promMonitorPodsNamespaceLength := PromMonitorPodsNamespaceLength
 		promMonitorPodsLabelSelectorLength := PromMonitorPodsLabelSelectorLength
 		promMonitorPodsFieldSelectorLength := PromMonitorPodsFieldSelectorLength
+		logsLostInFluentBit := LogsLostInFluentBit
+		logsWrittenToDisk := LogsWrittenToDisk
 
 		TelegrafMetricsSentCount = 0.0
 		TelegrafMetricsSendErrorCount = 0.0
@@ -144,8 +153,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		KubeMonEventsMDSDClientCreateErrors = 0.0
 		ContainerLogTelemetryMutex.Unlock()
 
+		telemetryDimensions := make(map[string]string)
 		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
-			telemetryDimensions := make(map[string]string)
 			if strings.Compare(strings.ToLower(os.Getenv("CONTAINER_TYPE")), "prometheussidecar") == 0 {
 				telemetryDimensions["CustomPromMonitorPods"] = promMonitorPods
 				if promMonitorPodsNamespaceLength > 0 {
@@ -222,7 +231,15 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		if kubeMonEventsMDSDClientCreateErrors > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountKubeMonEventsMDSDClientCreateError, kubeMonEventsMDSDClientCreateErrors))
 		}
-
+		select { // this is how to read from a channel in a non-blocking way
+		case <-TenMinuteTicker.C:
+			if LogsLostInFluentBit > 0 {
+				metric := appinsights.NewMetricTelemetry(metricNameLostLogs, float64(logsLostInFluentBit))
+				metric.Properties["bytes_logged_to_disk"] = strconv.FormatInt(logsWrittenToDisk, 10)
+				TelemetryClient.Track(metric)
+			}
+		default:
+		}
 		start = time.Now()
 	}
 }

@@ -96,7 +96,6 @@ Iteration 1.5:
     - ${AZMON_LOG_TAIL_PATH}
 [] double check, do we tail logs for containers in entirely ignored namespaces?
 [] need to account for logtag (P or F)
-[] use a separate output plugin for log tracking? (or see if there's a size calculator filter plugin?)
 
 
 
