@@ -157,7 +157,7 @@ module Fluent::Plugin
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
-        continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
+        continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationTokenFromProxy("pods?limit=#{@PODS_CHUNK_SIZE}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
         podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
@@ -171,7 +171,7 @@ module Fluent::Plugin
         #If we receive a continuation token, make calls, process and flush data until we have processed all data
         while (!continuationToken.nil? && !continuationToken.empty?)
           podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-          continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+          continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationTokenFromProxy("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
           podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
           @podsAPIE2ELatencyMs = @podsAPIE2ELatencyMs + (podsAPIChunkEndTime - podsAPIChunkStartTime)
           if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)

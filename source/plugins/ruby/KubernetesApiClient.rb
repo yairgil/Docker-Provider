@@ -52,14 +52,6 @@ class KubernetesApiClient
         resourceUri = getResourceUri(resource, api_group)
           if !resourceUri.nil?
             uri = URI.parse(resourceUri)
-            if ENV["USE_KUBERNETES_API_PROXY"] && resource.include?("pods?limit")
-              Net::HTTP.start(uri.host, uri.port) do |http|
-                kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
-                @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
-                response = http.request(kubeApiRequest)
-                @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
-              end
-            else
               if !File.exist?(@@CaFile)
                 raise "#{@@CaFile} doesnt exist"
               else
@@ -71,6 +63,31 @@ class KubernetesApiClient
                   @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
                 end
               end
+          end
+      rescue => error
+        @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.iso8601}")
+      end
+      if (!response.nil?)
+        if (!response.body.nil? && response.body.empty?)
+          @Log.warn("KubernetesAPIClient::getKubeResourceInfo : Got empty response from Kube API for #{resource} @ #{Time.now.utc.iso8601}")
+        end
+      end
+      return response
+    end
+
+    def getKubeResourceInfoFromProxy(resource, api_group: nil)
+      headers = {}
+      response = nil
+      @Log.info "Getting Kube resource: #{resource}"
+      begin
+        resourceUri = getResourceUriForProxy(resource, api_group)
+          if !resourceUri.nil?
+            uri = URI.parse(resourceUri)
+            Net::HTTP.start(uri.host, uri.port) do |http|
+              kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
+              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+              response = http.request(kubeApiRequest)
+              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
             end
           end
       rescue => error
@@ -108,9 +125,6 @@ class KubernetesApiClient
 
     def getResourceUri(resource, api_group, env=ENV)
       begin
-        if env["USE_KUBERNETES_API_PROXY"] && resource.include?("pods?limit")
-          return "http://#{env["KUBERNETES_API_PROXY_HOST"]}:#{env["KUBERNETES_API_PROXY_HOST_PORT"]}/" + resource
-        else
           if env["KUBERNETES_SERVICE_HOST"] && env["KUBERNETES_PORT_443_TCP_PORT"]
             if api_group.nil?
               return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/api/" + @@ApiVersion + "/" + resource
@@ -123,8 +137,13 @@ class KubernetesApiClient
             @Log.warn ("Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{env["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{env["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri")
             return nil
           end
-        end
       end
+    end
+
+    def getResourceUriForProxy(resource, api_group, env=ENV)
+       # hardcoding the resource for test purpose
+       # return "https://#{env["KUBERNETES_API_PROXY_HOST"]}:#{env["KUBERNETES_API_PROXY_HOST_PORT"]}/" + "pods"
+       return "http://localhost:8080/pods"
     end
 
     def getClusterName(env=ENV)
@@ -776,14 +795,9 @@ class KubernetesApiClient
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
         if !resourceInfo.nil?
           @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
-          if ENV["USE_KUBERNETES_API_PROXY"] && uri.include?("pods?limit")
-            resourceInventory = {}
-            resourceInventory["items"] = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
-          else
-            resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
-            if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
-              continuationToken = resourceInventory["metadata"]["continue"]
-            end
+          resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+          if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
+            continuationToken = resourceInventory["metadata"]["continue"]
           end
           resourceInfo = nil
           @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
@@ -795,6 +809,31 @@ class KubernetesApiClient
       end
       return continuationToken, resourceInventory
     end #getResourcesAndContinuationToken
+
+    def getResourcesAndContinuationTokenFromProxy(uri, api_group: nil)
+      continuationToken = nil
+      resourceInventory = nil
+      begin
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
+        resourceInfo = getKubeResourceInfoFromProxy(uri, api_group: api_group)
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
+        if !resourceInfo.nil?
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+          if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
+            continuationToken = resourceInventory["metadata"]["continue"]
+          end
+          resourceInfo = nil
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getResourcesAndContinuationToken:Failed in get resources for #{uri} and continuation token: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        resourceInventory = nil
+      end
+      return continuationToken, resourceInventory
+    end #getResourcesAndContinuationTokenFromProxy
+
 
     def getKubeAPIServerUrl(env=ENV)
       apiServerUrl = nil
