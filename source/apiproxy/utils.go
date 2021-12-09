@@ -46,9 +46,28 @@ func createLogger() *log.Logger {
 	return logger
 }
 
+func getOptimizedServiceItem(service *v1.Service) ServiceItem {
+	serviceItem := ServiceItem{
+		Metadata: ServiceMetaData{
+			Name:      service.Name,
+			Namespace: service.Namespace,
+		},
+		Spec: ServiceSpec{
+			ClusterIP: service.Spec.ClusterIP,
+			Type:      string(service.Spec.Type),
+		},
+	}
+	serviceItem.Spec.Selector = make(map[string]string)
+	for k, v := range service.Spec.Selector {
+		serviceItem.Spec.Selector[k] = v
+	}
+
+	return serviceItem
+}
+
 func getOptimizedPodItem(pod *v1.Pod) PodItem {
 	podItem := PodItem{
-		Metadata: MetaData{
+		Metadata: PodMetaData{
 			Name:              pod.Name,
 			Namespace:         pod.Namespace,
 			ResourceVersion:   pod.ResourceVersion,

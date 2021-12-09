@@ -1,16 +1,29 @@
 package main
 
 type PodItem struct {
-	Metadata MetaData `json:"metadata"`
-	Spec     Spec     `json:"spec"`
-	Status   Status   `json:"status"`
+	Metadata PodMetaData `json:"metadata"`
+	Spec     PodSpec     `json:"spec"`
+	Status   PodStatus   `json:"status"`
 }
-type Spec struct {
+
+type PodMetaData struct {
+	Name              string             `json:"name"`
+	Namespace         string             `json:"namespace"`
+	ResourceVersion   string             `json:"ResourceVersion"`
+	CreationTimestamp string             `json:"creationTimestamp"`
+	UID               string             `json:"uid"`
+	DeletionTimestamp string             `json:"deletionTimestamp,omitempty"`
+	Annotations       *map[string]string `json:"annotations,omitempty"`
+	Labels            *map[string]string `json:"labels"`
+	OwnerReferences   []OwnerReference   `json:"ownerReferences,omitempty"`
+}
+
+type PodSpec struct {
 	NodeName       string      `json:"nodeName"`
 	Containers     []Container `json:"containers"`
 	InitContainers []Container `json:"initContainers"`
 }
-type Status struct {
+type PodStatus struct {
 	StartTime             string            `json:"startTime,omitempty"`
 	Reason                string            `json:"reason,omitempty"`
 	PodIP                 string            `json:"podIP,omitempty"`
@@ -66,18 +79,6 @@ type Container struct {
 type ResourceRequirements struct {
 	Limits   map[string]string `json:"limits,omitempty"`
 	Requests map[string]string `json:"requests,omitempty"`
-}
-
-type MetaData struct {
-	Name              string             `json:"name"`
-	Namespace         string             `json:"namespace"`
-	ResourceVersion   string             `json:"ResourceVersion"`
-	CreationTimestamp string             `json:"creationTimestamp"`
-	UID               string             `json:"uid"`
-	DeletionTimestamp string             `json:"deletionTimestamp,omitempty"`
-	Annotations       *map[string]string `json:"annotations,omitempty"`
-	Labels            *map[string]string `json:"labels"`
-	OwnerReferences   []OwnerReference   `json:"ownerReferences,omitempty"`
 }
 
 type OwnerReference struct {
