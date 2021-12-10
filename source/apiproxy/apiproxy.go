@@ -47,6 +47,31 @@ var (
 	Log = Logger.Printf
 )
 
+// ResourceType defines the possible types of events.
+type ResourceType string
+
+const (
+	Pods        ResourceType = "PODS"
+	Nodes       ResourceType = "NODES"
+	Deployments ResourceType = "DEPLOYMENTS"
+	Events      ResourceType = "EVENTS"
+	Services    ResourceType = "SERVICES"
+)
+
+func clearCache(resourceType ResourceType) {
+	Log("apiproxy::clearCache:: clearing the cache for the resource type : %s", resourceType)
+	switch resourceType {
+	case Pods:
+		PodCacheRWLock.Lock()
+		for k := range PodItemsCache {
+			delete(PodItemsCache, k)
+		}
+		PodCacheRWLock.Unlock()
+	default:
+		Log("Unsupported resource type")
+	}
+}
+
 func listAndWatchPods() {
 	for {
 		if PodsResourceVersion == "" {
@@ -56,10 +81,12 @@ func listAndWatchPods() {
 			podList, err = ClientSet.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{Limit: POD_CHUNK_SIZE})
 			if err != nil {
 				Log("apiproxy::listAndWatchPods::get pods failed with an error : %s", err.Error())
-				time.Sleep(time.Second * 5) // avoid bombading the API server if its broken. // TODO - implement exponential backoff
+				time.Sleep(time.Second * 30) // avoid bombading the API server if the API server has issues to serve API calls. // TODO - implement exponential backoff??
 				continue
 			}
 			Log("apiproxy::listAndWatchPods::pod count : %d \n", len(podList.Items))
+			// clear the previous PodItems cache since either initial or refresh cache scenario
+			clearCache(Pods)
 			for _, pod := range podList.Items {
 				PodCacheRWLock.Lock()
 				PodItemsCache[string(pod.UID)] = getOptimizedPodItem(&pod)
@@ -290,7 +317,7 @@ func pods(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		j, _ := json.Marshal(podsResponse)
 		elapsed := time.Since(start)
-		Log("apiproxy::pods::Time taken for JSON serilization (milliseconds) :%.2f \n", elapsed.Milliseconds())
+		Log("apiproxy::pods::Time taken for JSON serilization (milliseconds): %d \n", elapsed.Milliseconds())
 		w.Write(j)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
