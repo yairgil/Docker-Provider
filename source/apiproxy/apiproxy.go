@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	//"github.com/vmihailenco/msgpack/v5"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -316,6 +317,7 @@ func pods(w http.ResponseWriter, r *http.Request) {
 		PodCacheRWLock.RUnlock()
 		start := time.Now()
 		j, _ := json.Marshal(podsResponse)
+		//j, _ := msgpack.Marshal(podsResponse)
 		elapsed := time.Since(start)
 		Log("apiproxy::pods::Time taken for JSON serilization (milliseconds): %d \n", elapsed.Milliseconds())
 		w.Write(j)
@@ -374,7 +376,7 @@ func main() {
 	var err error
 
 	// path MUST be empty for incluster scenario
-	var kubeconfigPath = "" // "/home/sshadmin/gangams-aks-hyperscale-test/gangams-aks-hyperscale-test"
+	var kubeconfigPath = "/home/sshadmin/gangams-aks-hyperscale-test/gangams-aks-hyperscale-test"
 
 	ClientSet, err = createClient(kubeconfigPath)
 	if err != nil {
