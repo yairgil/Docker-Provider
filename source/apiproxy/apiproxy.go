@@ -376,7 +376,7 @@ func main() {
 	var err error
 
 	// path MUST be empty for incluster scenario
-	var kubeconfigPath = "/home/sshadmin/gangams-aks-hyperscale-test/gangams-aks-hyperscale-test"
+	var kubeconfigPath = ""
 
 	ClientSet, err = createClient(kubeconfigPath)
 	if err != nil {
