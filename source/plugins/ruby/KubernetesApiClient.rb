@@ -8,7 +8,9 @@ class KubernetesApiClient
   require "net/https"
   require "uri"
   require "time"
+  require 'msgpack'
 
+  require_relative "ApplicationInsightsUtility"
   require_relative "oms_common"
   require_relative "constants"
 
@@ -83,12 +85,15 @@ class KubernetesApiClient
         resourceUri = getResourceUriForProxy(resource, api_group)
           if !resourceUri.nil?
             uri = URI.parse(resourceUri)
+            startTime = (Time.now.to_f * 1000).to_i
             Net::HTTP.start(uri.host, uri.port) do |http|
               kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
               @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
               response = http.request(kubeApiRequest)
               @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
             end
+            podsInventoryAPILatencyMs = ((Time.now.to_f * 1000).to_i - startTime)
+          ApplicationInsightsUtility.sendMetricTelemetry("PodsAPIOnlyLatencyMs", podsInventoryAPILatencyMs, {})
           end
       rescue => error
         @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.iso8601}")
@@ -819,7 +824,17 @@ class KubernetesApiClient
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
         if !resourceInfo.nil?
           @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
-          resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+          startTime = (Time.now.to_f * 1000).to_i
+          telemetryProperties = {}
+          telemetryProperties["MsgEncoding"] = "JSON"
+          if !ENV["KUBERNETES_PROXY_API_MSG_ENCODING"].nil? && !ENV["KUBERNETES_PROXY_API_MSG_ENCODING"].empty? && ENV["KUBERNETES_PROXY_API_MSG_ENCODING"].include?("MSGPACK")
+            resourceInventory = MessagePack.unpack(StringIO.new(resourceInfo.body))
+            telemetryProperties["MsgEncoding"] = "MSGPACK"
+          else
+            resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+          end
+          podsInventoryParsingLatencyMs = ((Time.now.to_f * 1000).to_i - startTime)
+          ApplicationInsightsUtility.sendMetricTelemetry("PodInventoryE2EParsingLatencyMs", podsInventoryParsingLatencyMs, telemetryProperties)
           if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
             continuationToken = resourceInventory["metadata"]["continue"]
           end

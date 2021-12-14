@@ -187,6 +187,7 @@ module Fluent::Plugin
         podInventory = nil
         serviceRecords = nil
 
+        telemetryFlush = true # emit every sample for hyperscale test and revert this change after testing
         # Adding telemetry to send pod telemetry every 5 minutes
         timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
@@ -416,9 +417,12 @@ module Fluent::Plugin
         @mutex.unlock
         if !done
           begin
+            startTime = (Time.now.to_f * 1000).to_i
             $log.info("in_kube_podinventory::run_periodic.enumerate.start #{Time.now.utc.iso8601}")
             enumerate
             $log.info("in_kube_podinventory::run_periodic.enumerate.end #{Time.now.utc.iso8601}")
+            endTime = (Time.now.to_f * 1000).to_i
+            $log.info("in_kube_podinventory::run_periodic.enumerate.total(ms) #{endTime - startTime}")
           rescue => errorStr
             $log.warn "in_kube_podinventory::run_periodic: enumerate Failed to retrieve pod inventory: #{errorStr}"
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
@@ -513,11 +517,11 @@ module Fluent::Plugin
         @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
 
         podContainers = []
-        if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
+        if !item["status"]["containerStatuses"].nil? && item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
           podContainers = podContainers + item["status"]["containerStatuses"]
         end
         # Adding init containers to the record list as well.
-        if item["status"].key?("initContainerStatuses") && !item["status"]["initContainerStatuses"].empty?
+        if !item["status"]["initContainerStatuses"].nil? && item["status"].key?("initContainerStatuses") && !item["status"]["initContainerStatuses"].empty?
           podContainers = podContainers + item["status"]["initContainerStatuses"]
         end
         # if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty? #container status block start

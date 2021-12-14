@@ -7,10 +7,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
-	//msgpack "github.com/vmihailenco/msgpack/v5"
+	msgpack "github.com/vmihailenco/msgpack/v5"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -24,6 +25,10 @@ import (
 const (
 	POD_CHUNK_SIZE     int64 = 1000
 	SERVICE_CHUNK_SIZE int64 = 500
+)
+
+var (
+	MessageEncoding string = "MSGPACK"
 )
 
 var (
@@ -306,7 +311,7 @@ func pods(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		fmt.Printf("apiproxy::pods::get Pods invoked :%s \n", time.Now().UTC().String())
-
+		respStartTime := time.Now()
 		podsResponse := make(map[string][]PodItem)
 		PodCacheRWLock.RLock()
 		Log("apiproxy::pods::get Pods invoked with Pod count :%d \n", len(PodItemsCache))
@@ -316,11 +321,23 @@ func pods(w http.ResponseWriter, r *http.Request) {
 		}
 		PodCacheRWLock.RUnlock()
 		start := time.Now()
-		j, _ := json.Marshal(podsResponse)
-		//j, _ := msgpack.Marshal(podsResponse)
+		var byteArray []byte
+		var err error
+		if strings.EqualFold(MessageEncoding, "MSGPACK") {
+			byteArray, err = msgpack.Marshal(podsResponse)
+		} else {
+			byteArray, err = json.Marshal(podsResponse)
+		}
 		elapsed := time.Since(start)
-		Log("apiproxy::pods::Time taken for JSON serilization (milliseconds): %d \n", elapsed.Milliseconds())
-		w.Write(j)
+		Log("apiproxy::pods::Time taken for %s serilization (milliseconds): %d \n", MessageEncoding, elapsed.Milliseconds())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "Marshalling of the Pod item cache failed with an error : %s", err.Error())
+		} else {
+			w.Write(byteArray)
+		}
+		responseTime := time.Since(respStartTime)
+		Log("apiproxy::pods::Time taken to respond the PODS request (milliseconds): %d \n", responseTime.Milliseconds())
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "Not supported method")
@@ -376,13 +393,19 @@ func main() {
 	var err error
 
 	// path MUST be empty for incluster scenario
-	var kubeconfigPath = ""
+	var kubeconfigPath = "" //"/home/sshadmin/gangams-aks-hyperscale-test/gangams-aks-hyperscale-test"
 
 	ClientSet, err = createClient(kubeconfigPath)
 	if err != nil {
 		Log("create Kubernetes client failed with an error :%s", err.Error())
 		os.Exit(1)
 	}
+
+	msgEncoding := os.Getenv("KUBERNETES_PROXY_API_MSG_ENCODING") // MSGPACK or JSON
+	if msgEncoding != "" {
+		MessageEncoding = msgEncoding
+	}
+	Log("Using default message encoding for the response :%s", MessageEncoding)
 
 	//go listAndWatchServices()
 	go listAndWatchPods()
