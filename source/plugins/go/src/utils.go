@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Azure/azure-kusto-go/kusto"
@@ -264,23 +265,81 @@ func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []
 // includes files in subdirectories
 func GetSizeOfAllFilesInDir(root_dir string) map[string]int64 {
 	output_map := make(map[string]int64)
-	getSizeOfAllFilesInDirImpl(&root_dir, &output_map)
+	getSizeOfAllFilesInDirImpl(&root_dir, "", &output_map)
 	return output_map
 }
 
-func getSizeOfAllFilesInDirImpl(preceeding_dir *string, storage_dict *map[string]int64) {
+func getSizeOfAllFilesInDirImpl(root_dir *string, preceeding_dir string, storage_dict *map[string]int64) {
 	// container_full_path := filepath.Join(preceeding_dir_segments)
-	files_and_folders, err := ioutil.ReadDir(*preceeding_dir)
+	files_and_folders, err := ioutil.ReadDir(filepath.Join(*root_dir, preceeding_dir))
 	if err != nil {
 		Log("ERROR: reading dir " + err.Error())
 	}
 	for _, next_file := range files_and_folders {
-		file_name := filepath.Join(*preceeding_dir, next_file.Name())
+		file_name := filepath.Join(preceeding_dir, next_file.Name())
 		if next_file.IsDir() {
 			// need to recurse more
-			getSizeOfAllFilesInDirImpl(&file_name, storage_dict)
+			getSizeOfAllFilesInDirImpl(root_dir, file_name, storage_dict)
 		} else {
 			(*storage_dict)[file_name] = next_file.Size()
 		}
 	}
+}
+
+type QuickDeleteSlice struct {
+	log_counts            []int64
+	container_identifiers []string
+	free_list             []int
+	management_mut        *sync.Mutex
+}
+
+func Make_QuickDeleteSlice() QuickDeleteSlice {
+	retval := QuickDeleteSlice{}
+	// default size is 300 because a single node is unlikely to have more than 300 containers. This way the data structure is unlikely to ever need
+	// to stop and copy all the values.
+	retval.log_counts = make([]int64, 0, 300)
+	retval.container_identifiers = make([]string, 0, 300)
+	retval.free_list = make([]int, 0, 300)
+	retval.management_mut = &sync.Mutex{}
+
+	return retval
+}
+
+func (collection *QuickDeleteSlice) insert_new_container(container_identifier string) int {
+	// returns the index where the new container was stored
+	collection.management_mut.Lock()
+	defer collection.management_mut.Unlock()
+
+	free_index := -1
+
+	if len(collection.free_list) > 0 {
+		free_index = collection.free_list[len(collection.free_list)-1]
+		collection.free_list = collection.free_list[:len(collection.free_list)-1]
+		collection.log_counts[free_index] = 0
+		collection.container_identifiers[free_index] = ""
+	} else {
+		collection.log_counts = append(collection.log_counts, 0)
+		collection.container_identifiers = append(collection.container_identifiers, "")
+		free_index = len(collection.log_counts) - 1
+	}
+	collection.container_identifiers[free_index] = container_identifier
+	return free_index
+}
+
+func (collection *QuickDeleteSlice) remove_index(index int) {
+	collection.management_mut.Lock()
+	defer collection.management_mut.Unlock()
+
+	collection.log_counts[index] = -1
+	collection.container_identifiers[index] = ""
+	collection.free_list = append(collection.free_list, index)
+}
+
+func slice_contains(str_slice []string, target_str string) bool {
+	for _, val := range str_slice {
+		if val == target_str {
+			return true
+		}
+	}
+	return false
 }

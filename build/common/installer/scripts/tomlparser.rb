@@ -27,6 +27,7 @@ require_relative "ConfigParseErrorLogger"
 @collectAllKubeEvents = false
 @containerLogsRoute = "v2" # default for linux
 @adxDatabaseName = "containerinsights" # default for all configurations
+@disableLogLossTracking = "false"
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
 end
@@ -191,6 +192,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for adx database name - #{errorStr}, using default #{@adxDatabaseName}, please check config map for errors")
     end
+
+    #Get log loss tracking disablement setting
+    begin
+      if !parsedConfig[:log_collection_settings][:track_lost_logs].nil? && !parsedConfig[:log_collection_settings][:track_lost_logs][:enabled].nil?
+        if !parsedConfig[:log_collection_settings][:track_lost_logs][:enabled].empty?
+           @disableLogLossTracking = parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled]
+           puts "config::Using config map setting for log loss tracking : #{@disableLogLossTracking}"
+          end
+        end
+      rescue => errorStr
+        ConfigParseErrorLogger.logError("Exception while reading config map settings for cluster level container log enrichment - #{errorStr}, using defaults, please check config map for errors")
+      end
   end
 end
 
@@ -235,6 +248,7 @@ if !file.nil?
   file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{@containerLogsRoute}\n")
   file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{@containerLogSchemaVersion}\n")
   file.write("export AZMON_ADX_DATABASE_NAME=#{@adxDatabaseName}\n")
+  file.write("export AZMON_DISABLE_LOG_LOSS_TRACKING=#{@disableLogLossTracking}")
   # Close file after writing all environment variables
   file.close
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
@@ -284,6 +298,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     commands = get_command_windows('AZMON_CONTAINER_LOG_SCHEMA_VERSION', @containerLogSchemaVersion)
     file.write(commands)
     commands = get_command_windows('AZMON_ADX_DATABASE_NAME', @adxDatabaseName)
+    file.write(commands)
+    commands = get_command_windows('AZMON_DISABLE_LOG_LOSS_TRACKING', @disableLogLossTracking)
     file.write(commands)
 
     # Close file after writing all environment variables

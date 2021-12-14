@@ -225,7 +225,7 @@ var (
 
 var (
 	// FLBLogger stream
-	FLBLogger = createLogger()
+	FLBLogger = createLogger("fluent-bit-out-oms-runtime.log")
 	// Log wrapper function
 	Log = FLBLogger.Printf
 )
@@ -369,7 +369,7 @@ const (
 	InsightsMetrics
 )
 
-func createLogger() *log.Logger {
+func createLogger(log_file_name string) *log.Logger {
 
 	osType := os.Getenv("OS_TYPE")
 
@@ -377,9 +377,9 @@ func createLogger() *log.Logger {
 	var log_underlying_file *os.File
 
 	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
-		logPath = "/var/opt/microsoft/docker-cimprov/log/fluent-bit-out-oms-runtime.log"
+		logPath = "/var/opt/microsoft/docker-cimprov/log/" + log_file_name
 	} else {
-		logPath = "/etc/omsagentwindows/fluent-bit-out-oms-runtime.log"
+		logPath = "/etc/omsagentwindows/" + log_file_name
 	}
 
 	if _, err := os.Stat(logPath); err == nil {
