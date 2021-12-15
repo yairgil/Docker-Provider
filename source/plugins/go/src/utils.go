@@ -263,6 +263,8 @@ func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []
 }
 
 // includes files in subdirectories
+// TODO: consider replacing this with a iterator of some sort, constructing the map of
+// files all at once might use more memory than necessary
 func GetSizeOfAllFilesInDir(root_dir string) map[string]int64 {
 	output_map := make(map[string]int64)
 	getSizeOfAllFilesInDirImpl(&root_dir, "", &output_map)
@@ -290,6 +292,7 @@ type QuickDeleteSlice struct {
 	log_counts            []int64
 	container_identifiers []string
 	free_list             []int
+	string_to_arr_index   map[string]int
 	management_mut        *sync.Mutex
 }
 
@@ -300,6 +303,7 @@ func Make_QuickDeleteSlice() QuickDeleteSlice {
 	retval.log_counts = make([]int64, 0, 300)
 	retval.container_identifiers = make([]string, 0, 300)
 	retval.free_list = make([]int, 0, 300)
+	retval.string_to_arr_index = make(map[string]int)
 	retval.management_mut = &sync.Mutex{}
 
 	return retval

@@ -77,6 +77,8 @@ var log_loss_logger *log.Logger
 func init() {
 	enabled = os.Getenv("CONTROLLER_TYPE") == "DaemonSet"
 
+	enabled = enabled && !(strings.ToLower(os.Getenv("IN_UNIT_TEST")) == "true")
+
 	// toggle env var is meant to be set by Microsoft, customer can set AZMON_DISABLE_LOG_LOSS_TRACKING through a configmap
 	enabled = enabled && (os.Getenv("AZMON_DISABLE_LOG_LOSS_TRACKING") != "true") && (os.Getenv("AZMON_DISABLE_LOG_LOSS_TRACKING_TOGGLE") != "true")
 
@@ -99,7 +101,7 @@ func init() {
 
 		//TODO: turn this frequency down
 		track_rotations_ticker := time.NewTicker(10 * time.Second)
-		go track_log_rotations(track_rotations_ticker.C)
+		go track_log_rotations(track_rotations_ticker.C, "/var/log/pods")
 	}
 }
 
@@ -196,7 +198,6 @@ func write_telemetry(ticker <-chan time.Time) {
 
 			total_bytes_logged += logs_counted
 			total_bytes_on_disk += rotated_bytes + unrotated_bytes
-
 			log_loss_logger.Printf(`{"namespace_pod_container": "%s", "bytes_at_log_file": %d, "bytes_at_output_plugin": %d}`, container_identifier, rotated_bytes+unrotated_bytes, logs_counted)
 
 			// these variables live in telemetry.go
@@ -210,18 +211,18 @@ func write_telemetry(ticker <-chan time.Time) {
 	}
 }
 
-func track_log_rotations(ticker <-chan time.Time) {
+func track_log_rotations(ticker <-chan time.Time, watch_dir string) {
 	inner_func := func() {
 		read_disk_mut.Lock()
 		defer read_disk_mut.Unlock()
 
 		// this needs a way to return an error
-		all_files_and_sizes := GetSizeOfAllFilesInDir("/var/log/pods")
+		all_files_and_sizes := GetSizeOfAllFilesInDir(watch_dir)
 		containers_seen_this_iter := make(map[string]bool)
 
 		for filepath, file_size := range all_files_and_sizes {
 			// we don't care about compressed log files
-			if !strings.Contains(filepath, ".gz") {
+			if strings.HasSuffix(filepath, ".gz") {
 				continue
 			}
 
@@ -232,10 +233,12 @@ func track_log_rotations(ticker <-chan time.Time) {
 				Log("illegal file found in pod log dir: %v", filepath)
 				continue
 			}
-			pod_folder := filepath_parts[0]
-			container_identifier := strings.Split(pod_folder, "_")[0] + "_" + strings.Split(pod_folder, "_")[1]
+			pod_folder_parts := strings.Split(filepath_parts[0], "_")
+			namespace_folder := pod_folder_parts[0]
+			pod_folder := pod_folder_parts[1]
 			container_folder := filepath_parts[1]
 			log_file_name := filepath_parts[2]
+			container_identifier := namespace_folder + "_" + pod_folder + "_" + container_folder // should be of the format namespace_podname-garbage_containername
 
 			containers_seen_this_iter[container_identifier] = true
 
@@ -275,7 +278,7 @@ func track_log_rotations(ticker <-chan time.Time) {
 			// use select to write to the channel in a non-blocking way
 			select {
 			case container_identifier := <-deleted_containers_query:
-				if _, container_exists := FW_bytes_logged_rotated[container_identifier]; !container_exists {
+				if _, container_exists := FW_bytes_logged_unrotated[container_identifier]; !container_exists {
 					select {
 					case deleted_containers_response <- container_identifier:
 						continue
@@ -288,7 +291,7 @@ func track_log_rotations(ticker <-chan time.Time) {
 			}
 		}
 
-		atomic.StoreInt32(&num_containers_on_disk, int32(len(FW_existing_log_files)))
+		atomic.StoreInt32(&num_containers_on_disk, int32(len(FW_bytes_logged_unrotated)))
 	}
 
 	for range ticker {

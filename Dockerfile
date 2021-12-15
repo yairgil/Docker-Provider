@@ -61,6 +61,7 @@ COPY source /src/source
 # COPY kubernetes /src/kubernetes
 
 RUN cd /src/build/linux && make fluentbitplugin
+# RUN cd /src/build/linux && go build -ldflags "-X main.revision=16.0.0.0 -X main.builddate=$(date +%Y-%M-%dT%H%M%SZ)" -buildmode=c-shared -o out_oms.so .
 
 
 
