@@ -2,9 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"testing"
 )
 
@@ -144,8 +145,8 @@ func Test_GetSizeOfAllFilesInDir(t *testing.T) {
 	}
 }
 
-func Test_Make_QuickDeleteSlice(t *testing.T) {
-	qs := Make_QuickDeleteSlice()
+func Test_Make_AddressableMap(t *testing.T) {
+	qs := Make_AddressableMap()
 	if qs.container_identifiers == nil {
 		t.Error("qs.container_identifiers == nil")
 	}
@@ -159,67 +160,128 @@ func Test_Make_QuickDeleteSlice(t *testing.T) {
 	}
 }
 
-func Test_QuickDeleteSliceStuff(t *testing.T) {
-	qs := Make_QuickDeleteSlice()
-	first_index := qs.insert_new_container("never")
-	second_index := qs.insert_new_container("gonna")
-	third_index := qs.insert_new_container("give")
+func Test_AddressableMapStuff(t *testing.T) {
+	qs := Make_AddressableMap()
+	first_index, first_new := qs.get("never")
+	*first_index = 1
+	second_index, second_new := qs.get("gonna")
+	*second_index = 2
+	third_index, third_new := qs.get("give")
+	*third_index = 3
 
-	fmt.Print(qs.log_counts)
-	fmt.Print(qs.container_identifiers)
-	fmt.Print(qs.free_list)
+	a, b := qs.get("never")
+	assert(t, first_new, "first_new == true")
+	assert(t, b == false, "b == false")
+	assert(t, *a == 1, "a != 1")
 
-	if qs.container_identifiers[first_index] != "never" {
-		t.Error("qs.container_identifiers[first_index] != \"never\"")
-	}
-	if qs.container_identifiers[second_index] != "gonna" {
-		t.Error("qs.container_identifiers[second_index] != \"gonna\"")
-	}
-	if qs.container_identifiers[third_index] != "give" {
-		t.Error("qs.container_identifiers[third_index] != \"give\"")
-	}
+	a, b = qs.get("gonna")
+	assert(t, second_new, "second_new == true")
+	assert(t, b == false, "b == false")
+	assert(t, *a == 2, "a != 2")
 
-	qs.remove_index(second_index)
-	if qs.container_identifiers[second_index] != "" {
-		t.Error("qs.container_identifiers[second_index] != \"\"")
-	}
+	a, b = qs.get("give")
+	assert(t, third_new, "third_new == true")
+	assert(t, b == false, "b == false")
+	assert(t, *a == 3, "a != 3")
 
-	fourth_index := qs.insert_new_container("up")
-	if qs.container_identifiers[fourth_index] != "up" {
-		t.Error("qs.container_identifiers[fourth_index] != \"up\"")
+	qs.delete("gonna")
+	if qs.container_identifiers[1] != "" {
+		t.Error("qs.container_identifiers[1] != \"\"")
 	}
+	assert(t, len(qs.free_list) == 1, `len(qs.free_list) == 1`)
 
-	qs.remove_index(first_index)
-	if qs.container_identifiers[first_index] != "" {
-		t.Error("qs.container_identifiers[first_index] != \"\"")
-	}
+	fourth_index, fourth_new := qs.get("up")
+	*fourth_index = 4
+	a, b = qs.get("up")
+	assert(t, fourth_new, "fourth_new != true")
+	assert(t, b == false, "b == false")
+	assert(t, *a == 4, "a != 4")
 
-	if qs.container_identifiers[third_index] != "give" {
-		t.Error("qs.container_identifiers[third_index] != \"give\"  (second)")
-	}
+	assert(t, qs.container_identifiers[0] == "never", `qs.container_identifiers[0] == "never"`)
+	assert(t, qs.container_identifiers[1] == "up", `qs.container_identifiers[1] == "up"`)
+	assert(t, qs.container_identifiers[2] == "give", `qs.container_identifiers[2] == "give"`)
+
+	assert(t, qs.log_counts[0] == 1, `qs.log_counts[0] == 1`)
+	assert(t, qs.log_counts[1] == 4, `qs.log_counts[1] == 4`)
+	assert(t, qs.log_counts[2] == 3, `qs.log_counts[2] == 3`)
+
+	assert(t, len(qs.free_list) == 0, `len(qs.free_list) == 0`)
+
+	qs.delete("never")
+	assert(t, qs.container_identifiers[0] == "", `qs.container_identifiers[0] != ""`)
+	assert(t, qs.container_identifiers[1] == "up", `qs.container_identifiers[1] != "up"`)
+	assert(t, qs.container_identifiers[2] == "give", `qs.container_identifiers[2] != "give"`)
+	assert(t, len(qs.free_list) == 1, `len(qs.free_list) == 1`)
+
+	qs.delete("up")
+	assert(t, len(qs.free_list) == 2, `len(qs.free_list) == 2`)
+
+	qs.delete("give")
+	assert(t, len(qs.free_list) == 3, `len(qs.free_list) == give`)
+	assert(t, len(qs.string_to_arr_index) == 0, `len(qs.string_to_arr_index) == 0`)
 }
 
-func Test_slice_contains(t *testing.T) {
+func Test_duplicate_addressable_map(t *testing.T) {
+	qs1 := Make_AddressableMap()
+	a, b := qs1.export_values()
+	assert(t, len(a) == 0, `len(a) == 0`)
+	assert(t, len(b) == 0, `len(b) == 0`)
+
+	qs2 := Make_AddressableMap()
+	first_index, _ := qs2.get("never")
+	*first_index = 1
+	second_index, _ := qs2.get("gonna")
+	*second_index = 2
+	third_index, _ := qs2.get("give")
+	*third_index = 3
+	qs2.delete("gonna")
+
+	get_index := func(str_slice []string, target_val string) int {
+		for ind, val := range str_slice {
+			if val == target_val {
+				return ind
+			}
+		}
+		panic("string not found in slice")
+	}
+
+	a, b = qs2.export_values()
+	assert(t, len(b) == 2, `qs2_copy.len(b) == 2`)
+	assert(t, b[get_index(a, "never")] == 1, `b[get_index(a, "never")] == 1`)
+	assert(t, b[get_index(a, "give")] == 3, `b[get_index(a, "give")] == 3`)
+}
+
+func Test_slice_contains_str(t *testing.T) {
 	a := []string{}
-	if slice_contains(a, "asdf") {
-		t.Errorf("!slice_contains(%v, \"asdf\")", a)
+	if slice_contains_str(a, "asdf") {
+		t.Errorf("!slice_contains_str(%v, \"asdf\")", a)
 	}
 
 	b := []string{"asdf", "asdfasdf", "asdfasdfasdf"}
-	if !slice_contains(b, "asdf") {
-		t.Errorf("!slice_contains(%v, \"asdf\")", b)
+	if !slice_contains_str(b, "asdf") {
+		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
 	}
-	if !slice_contains(b, "asdfasdf") {
-		t.Errorf("!slice_contains(%v, \"asdf\")", b)
+	if !slice_contains_str(b, "asdfasdf") {
+		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
 	}
-	if !slice_contains(b, "asdfasdfasdf") {
-		t.Errorf("!slice_contains(%v, \"asdf\")", b)
+	if !slice_contains_str(b, "asdfasdfasdf") {
+		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
 	}
-	if slice_contains(b, "foobar") {
-		t.Errorf("!slice_contains(%v, \"asdf\")", b)
+	if slice_contains_str(b, "foobar") {
+		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
 	}
-	if slice_contains(b, "") {
-		t.Errorf("!slice_contains(%v, \"asdf\")", b)
+	if slice_contains_str(b, "") {
+		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
 	}
 
+}
+
+func assert(t *testing.T, expression bool, error_message string) {
+	if !expression {
+		_, file, no, ok := runtime.Caller(1)
+		if !ok {
+			panic("couldn't get calling function (this is a test error, not a code error)")
+		}
+		t.Error("condition not satisfied at " + file + ":" + strconv.Itoa(no) + ": " + error_message)
+	}
 }

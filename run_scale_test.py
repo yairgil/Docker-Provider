@@ -50,13 +50,13 @@ def main():
     print("starting AKS cluster (could take a long time)")
     run_command_get_output("az aks start -g davidscaletest_group -n davidscaletest")
 
-    settings = {"LOG_WRITER_REPLICAS": ["40"] * 40, 
-                "DISABLE_LOG_TRACKING": ["false", "true"], 
+    settings = {"LOG_WRITER_REPLICAS": ["40"] * 20, 
+                "AZMON_DISABLE_LOG_LOSS_TRACKING": ["false", "true"], 
                 # "DISABLE_LOG_TRACKING": ["false"], 
                 # "DISABLE_PYTHON_LOG_TRACKING": ["false", "true"],
                 "DISABLE_PYTHON_LOG_TRACKING": ["true"],
                 # "AGENT_IMAGE": ["mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021", "davidmichelman/countrotations:v67"]
-                "AGENT_IMAGE": ["davidmichelman/countrotations:v67"]
+                "AGENT_IMAGE": ["davidmichelman/countrotations:v77"]
                 # "AGENT_IMAGE": ["mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021"]
                 }
 

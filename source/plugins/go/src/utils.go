@@ -288,7 +288,11 @@ func getSizeOfAllFilesInDirImpl(root_dir *string, preceeding_dir string, storage
 	}
 }
 
-type QuickDeleteSlice struct {
+/*
+Requirements:
+	- multiple threads can read at once or update log counts
+*/
+type AddressableMap struct {
 	log_counts            []int64
 	container_identifiers []string
 	free_list             []int
@@ -296,8 +300,8 @@ type QuickDeleteSlice struct {
 	management_mut        *sync.Mutex
 }
 
-func Make_QuickDeleteSlice() QuickDeleteSlice {
-	retval := QuickDeleteSlice{}
+func Make_AddressableMap() AddressableMap {
+	retval := AddressableMap{}
 	// default size is 300 because a single node is unlikely to have more than 300 containers. This way the data structure is unlikely to ever need
 	// to stop and copy all the values.
 	retval.log_counts = make([]int64, 0, 300)
@@ -309,37 +313,65 @@ func Make_QuickDeleteSlice() QuickDeleteSlice {
 	return retval
 }
 
-func (collection *QuickDeleteSlice) insert_new_container(container_identifier string) int {
-	// returns the index where the new container was stored
-	collection.management_mut.Lock()
-	defer collection.management_mut.Unlock()
+//TODO: better func name
+// creates an entry for new containers (the second return value will be true if the container is new)
+func (collection *AddressableMap) get(container_identifier string) (*int64, bool) {
+	slice_index, container_seen := collection.string_to_arr_index[container_identifier]
+	if !container_seen {
+		collection.management_mut.Lock()
+		defer collection.management_mut.Unlock()
 
-	free_index := -1
-
-	if len(collection.free_list) > 0 {
-		free_index = collection.free_list[len(collection.free_list)-1]
-		collection.free_list = collection.free_list[:len(collection.free_list)-1]
-		collection.log_counts[free_index] = 0
-		collection.container_identifiers[free_index] = ""
-	} else {
-		collection.log_counts = append(collection.log_counts, 0)
-		collection.container_identifiers = append(collection.container_identifiers, "")
-		free_index = len(collection.log_counts) - 1
+		if len(collection.free_list) > 0 {
+			slice_index = collection.free_list[len(collection.free_list)-1]
+			collection.free_list = collection.free_list[:len(collection.free_list)-1]
+			collection.log_counts[slice_index] = 0
+			collection.container_identifiers[slice_index] = ""
+		} else {
+			collection.log_counts = append(collection.log_counts, 0)
+			collection.container_identifiers = append(collection.container_identifiers, "")
+			slice_index = len(collection.log_counts) - 1
+		}
+		collection.container_identifiers[slice_index] = container_identifier
+		collection.string_to_arr_index[container_identifier] = slice_index
 	}
-	collection.container_identifiers[free_index] = container_identifier
-	return free_index
+
+	return &collection.log_counts[slice_index], !container_seen
 }
 
-func (collection *QuickDeleteSlice) remove_index(index int) {
+func (collection *AddressableMap) delete(container_identifier string) {
 	collection.management_mut.Lock()
 	defer collection.management_mut.Unlock()
+
+	index := collection.string_to_arr_index[container_identifier]
 
 	collection.log_counts[index] = -1
 	collection.container_identifiers[index] = ""
 	collection.free_list = append(collection.free_list, index)
+	delete(collection.string_to_arr_index, container_identifier)
 }
 
-func slice_contains(str_slice []string, target_str string) bool {
+func (collection *AddressableMap) len() int {
+	collection.management_mut.Lock()
+	defer collection.management_mut.Unlock()
+	return len(collection.container_identifiers)
+}
+
+func (collection *AddressableMap) export_values() ([]string, []int64) {
+	collection.management_mut.Lock()
+	defer collection.management_mut.Unlock()
+
+	identifiers := make([]string, 0, len(collection.container_identifiers))
+	values := make([]int64, 0, len(collection.container_identifiers))
+
+	for k, v := range collection.string_to_arr_index {
+		identifiers = append(identifiers, k)
+		values = append(values, collection.log_counts[v])
+	}
+
+	return identifiers, values
+}
+
+func slice_contains_str(str_slice []string, target_str string) bool {
 	for _, val := range str_slice {
 		if val == target_str {
 			return true
