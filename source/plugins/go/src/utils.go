@@ -289,8 +289,7 @@ func getSizeOfAllFilesInDirImpl(root_dir *string, preceeding_dir string, storage
 }
 
 /*
-Requirements:
-	- multiple threads can read at once or update log counts
+This data structure is sort of like a map except that
 */
 type AddressableMap struct {
 	log_counts            []int64
@@ -313,7 +312,6 @@ func Make_AddressableMap() AddressableMap {
 	return retval
 }
 
-//TODO: better func name
 // creates an entry for new containers (the second return value will be true if the container is new)
 func (collection *AddressableMap) get(container_identifier string) (*int64, bool) {
 	slice_index, container_seen := collection.string_to_arr_index[container_identifier]

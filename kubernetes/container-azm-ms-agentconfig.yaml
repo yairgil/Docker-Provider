@@ -44,7 +44,7 @@ data:
           # When this is enabled (enabled = true), all kube events including normal events will be collected
 
         [log_collection_settings.track_dropped_logs]
-          # Statistics about wether all logs from each container are kept (logs will be dropped if the collection system is throttled)
+          # Collect statistics about wether all container logs make it to Log Analytics (logs can be dropped if the data rate is too high)
           enabled = true
           # When this is disabled (enabled = false), statistics about log collection throttling will not be kept
 
@@ -153,10 +153,10 @@ data:
     # The following settings are "undocumented", we don't recommend uncommenting them unless directed by Microsoft.
     # They increase the maximum stdout/stderr log collection rate but will also cause higher cpu/memory usage.
     [agent_settings.fbit_config]
-      log_flush_interval_secs = "1"                 # default value is 15
-      tail_mem_buf_limit_megabytes = "10"           # default value is 10
-      tail_buf_chunksize_megabytes = "2"            # default value is 32kb (comment out this line for default)
-      tail_buf_maxsize_megabytes = "5"              # defautl value is 32kb (comment out this line for default)
+      # log_flush_interval_secs = "1"                 # default value is 15
+      # tail_mem_buf_limit_megabytes = "10"           # default value is 10
+      # tail_buf_chunksize_megabytes = "1"            # default value is 32kb (comment out this line for default)
+      # tail_buf_maxsize_megabytes = "1"              # defautl value is 32kb (comment out this line for default)
 
 metadata:
   name: container-azm-ms-agentconfig
