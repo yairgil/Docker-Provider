@@ -631,14 +631,6 @@ else
       fi
 fi
 
-
-# if [ ! -e "/etc/config/kube.conf" ]; then
-#       if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-#             echo "starting log line counter"
-#             /opt/log_line_counter &
-#       fi
-# fi
-
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
@@ -739,11 +731,6 @@ service rsyslog stop
 
 echo "getting rsyslog status..."
 service rsyslog status
-
-echo "routing fluent bit tail output to traces"
-tail -f /var/opt/microsoft/docker-cimprov/log/fluent-bit.log | grep "handle rotation()" | >> /dev/write-to-traces &&
-
-
 
 checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
 
