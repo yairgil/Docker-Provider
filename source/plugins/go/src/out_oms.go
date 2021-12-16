@@ -45,6 +45,8 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		Log("Telemetry is not enabled for the plugin %s \n", output.FLBPluginConfigKey(ctx, "Name"))
 		return output.FLB_OK
 	}
+
+	SetupLogLossTracker()
 	return output.FLB_OK
 }
 
