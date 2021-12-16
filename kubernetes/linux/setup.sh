@@ -9,8 +9,8 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
 
-#install oneagent - Official bits (08/04/2021)
-wget https://github.com/microsoft/Docker-Provider/releases/download/06242021-oneagent/azure-mdsd_1.10.3-build.master.257_x86_64.deb
+#install oneagent - Official bits (10/7/2021)
+wget https://github.com/microsoft/Docker-Provider/releases/download/1.14/azure-mdsd_1.14.2-build.master.284_x86_64.deb
 
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
@@ -52,7 +52,7 @@ sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >>
 sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
 # fluentd v1 gem
-gem install fluentd -v "1.12.2" --no-document
+gem install fluentd -v "1.14.2" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 

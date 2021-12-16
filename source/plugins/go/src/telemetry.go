@@ -60,7 +60,6 @@ var (
 	PromMonitorPodsLabelSelectorLength int
 	//Tracks the number of monitor kubernetes pods field selectors and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
 	PromMonitorPodsFieldSelectorLength int
-
 	//Tracks the number of logs lost in Fluent Bit (in bytes)
 	LogsLostInFluentBit int64
 	//Number of logs written to disk by application containers (what we should be sending to LA) (in bytes)
@@ -424,9 +423,9 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 		TelemetryClient.Track(traceTelemetryItem)
 	}
 
-	// traceEntry := strings.Join(logLines, "\n")
-	// traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
-	// traceTelemetryItem.Properties["tag"] = tag
-	// TelemetryClient.Track(traceTelemetryItem)
+	traceEntry := strings.Join(logLines, "\n")
+	traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
+	traceTelemetryItem.Properties["tag"] = tag
+	TelemetryClient.Track(traceTelemetryItem)
 	return output.FLB_OK
 }
