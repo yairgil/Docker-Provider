@@ -225,7 +225,7 @@ var (
 
 var (
 	// FLBLogger stream
-	FLBLogger = createLogger("fluent-bit-out-oms-runtime.log")
+	FLBLogger = createLogger("", "fluent-bit-out-oms-runtime.log")
 	// Log wrapper function
 	Log = FLBLogger.Printf
 )
@@ -369,7 +369,8 @@ const (
 	InsightsMetrics
 )
 
-func createLogger(log_file_name string) *log.Logger {
+// base_path should be "" in production. It exists for unit tests
+func createLogger(base_path string, log_file_name string) *log.Logger {
 
 	osType := os.Getenv("OS_TYPE")
 
@@ -387,7 +388,7 @@ func createLogger(log_file_name string) *log.Logger {
 		log_underlying_file, err = os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
 			SendException(err.Error())
-			fmt.Printf(err.Error())
+			fmt.Printf("%s", err.Error())
 		}
 	}
 
@@ -396,7 +397,7 @@ func createLogger(log_file_name string) *log.Logger {
 		log_underlying_file, err = os.Create(logPath)
 		if err != nil {
 			SendException(err.Error())
-			fmt.Printf(err.Error())
+			fmt.Printf("%s", err.Error())
 		}
 	}
 

@@ -86,7 +86,7 @@ func SetupLogLossTracker() {
 	enabled = enabled && strings.ToLower(os.Getenv("AZMON_COLLECT_STDOUT_LOGS")) == "true" && strings.ToLower(os.Getenv("AZMON_COLLECT_STDERR_LOGS")) == "true"
 
 	if enabled {
-		log_loss_logger = createLogger("container-log-counts.log")
+		log_loss_logger = createLogger("", "container-log-counts.log")
 
 		for _, excluded_namespace := range strings.Split(os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES"), ",") {
 			disabled_namespaces[excluded_namespace] = true
