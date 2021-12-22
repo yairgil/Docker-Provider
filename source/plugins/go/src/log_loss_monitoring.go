@@ -44,7 +44,7 @@ than one deleted containerId. That will cause the number of containers the Main 
 
 // Main thread managed data structures:
 // var m_container_to_arr_index = make(map[string]int64)
-var m_bytes_logged_storage AddressableMap = Make_AddressableMap()
+var m_bytes_logged_storage AddressableMap
 
 var m_deletion_query_index = 0
 
@@ -56,23 +56,49 @@ type FwRecord struct {
 	existing_log_files []string
 }
 
-var FW_records = make(map[string]FwRecord) // identifier -> file names
+var FW_records map[string]FwRecord // identifier -> file names
 // var FW_bytes_logged_rotated = make(map[string]int64)   // identifier -> count
 // var FW_bytes_logged_unrotated = make(map[string]int64) // identifier -> count
 // var current_iteration_count int64 = 0
-var num_containers_on_disk int32 = 0
+var num_containers_on_disk int32
 
 // Shared objects
-var deleted_containers_query = make(chan string, 5)    // There might be a lot more than 5 containers  of 10 chosen arbitrairly
-var deleted_containers_response = make(chan string, 5) // capacity of 10 chosen arbitrairly
+var deleted_containers_query chan string    // There might be a lot more than 5 containers  of 10 chosen arbitrairly
+var deleted_containers_response chan string // capacity of 10 chosen arbitrairly
 
-var process_logs_mut = &sync.Mutex{}
-var read_disk_mut = &sync.Mutex{}
+var process_logs_mut sync.Mutex
+var read_disk_mut sync.Mutex
 var enabled bool
 
-var disabled_namespaces = make(map[string]bool)
+var disabled_namespaces map[string]bool
 
 var log_loss_logger *log.Logger
+
+func init() {
+	init_log_loss_monitoring_globals()
+}
+
+// This function exists for unit tests, it lets each test reset all global variables at the start of each test
+func init_log_loss_monitoring_globals() {
+	m_bytes_logged_storage = Make_AddressableMap()
+
+	m_deletion_query_index = 0
+
+	FW_records = make(map[string]FwRecord) // identifier -> file names
+	// var FW_bytes_logged_rotated = make(map[string]int64)   // identifier -> count
+	// var FW_bytes_logged_unrotated = make(map[string]int64) // identifier -> count
+	// var current_iteration_count int64 = 0
+	num_containers_on_disk = 0
+
+	// Shared objects
+	deleted_containers_query = make(chan string, 5)    // There might be a lot more than 5 containers  of 10 chosen arbitrairly
+	deleted_containers_response = make(chan string, 5) // capacity of 10 chosen arbitrairly
+
+	process_logs_mut = sync.Mutex{}
+	read_disk_mut = sync.Mutex{}
+
+	disabled_namespaces = make(map[string]bool)
+}
 
 func SetupLogLossTracker() {
 	enabled = os.Getenv("CONTROLLER_TYPE") == "DaemonSet"

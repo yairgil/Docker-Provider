@@ -9,6 +9,8 @@ import (
 )
 
 func Test_Process_log(t *testing.T) {
+	init_log_loss_monitoring_globals()
+
 	containerID := "containerID"
 	k8sNamespace := "k8sNamespace"
 	k8sPodName := "k8sPodName"
@@ -41,6 +43,8 @@ func Test_Process_log(t *testing.T) {
 }
 
 func Test_track_log_rotations(t *testing.T) {
+	init_log_loss_monitoring_globals()
+
 	test_dir := filepath.Join(get_repo_root_dir(), "test", "unit-tests", "other-test-directories", "log-loss-detection", "pods_1")
 
 	if len(FW_records) != 0 {
@@ -115,6 +119,8 @@ func Test_track_log_rotations(t *testing.T) {
 }
 
 func get_repo_root_dir() string {
+	init_log_loss_monitoring_globals()
+
 	dir, err := os.Getwd()
 	if err != nil {
 		panic(err)
