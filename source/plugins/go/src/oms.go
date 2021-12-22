@@ -388,7 +388,7 @@ func createLogger(base_path string, log_file_name string) *log.Logger {
 		log_underlying_file, err = os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
 			SendException(err.Error())
-			fmt.Printf("%s", err.Error())
+			fmt.Printf("%s, (file is %s)", err.Error(), logPath)
 		}
 	}
 
@@ -397,7 +397,7 @@ func createLogger(base_path string, log_file_name string) *log.Logger {
 		log_underlying_file, err = os.Create(logPath)
 		if err != nil {
 			SendException(err.Error())
-			fmt.Printf("%s", err.Error())
+			fmt.Printf("%s, (file is %s)", err.Error(), logPath)
 		}
 	}
 

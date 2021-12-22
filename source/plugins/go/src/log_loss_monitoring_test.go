@@ -67,11 +67,11 @@ func Test_track_log_rotations(t *testing.T) {
 	track_log_rotations(ch, test_dir)
 
 	if len(FW_records) != 15 {
-		t.Error("FW_existing_log_files did not start empty in unit test (this is probably a test problem, not a code problem)")
+		t.Error("FW_existing_log_files did not have the correct number of records")
 	}
 
 	if num_containers_on_disk != 15 {
-		t.Error("FW_existing_log_files did not start empty in unit test (this is probably a test problem, not a code problem)")
+		t.Error("FW_existing_log_files did not have the correct number of records")
 	}
 
 	if FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].unrotated_bytes != 10 {
