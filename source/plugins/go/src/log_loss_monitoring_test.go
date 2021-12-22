@@ -48,15 +48,7 @@ func Test_track_log_rotations(t *testing.T) {
 	test_dir := filepath.Join(get_repo_root_dir(), "test", "unit-tests", "other-test-directories", "log-loss-detection", "pods_1")
 
 	if len(FW_records) != 0 {
-		t.Error("FW_existing_log_files did not start empty in unit test (this is probably a test problem, not a code problem)")
-	}
-
-	if len(FW_records) != 0 {
-		t.Error("FW_bytes_logged_rotated did not start empty in unit test (this is probably a test problem, not a code problem)")
-	}
-
-	if len(FW_records) != 0 {
-		t.Error("FW_bytes_logged_unrotated did not start empty in unit test (this is probably a test problem, not a code problem)")
+		t.Error("FW_records did not start empty in unit test (this is probably a test problem, not a code problem)")
 	}
 
 	ch := make(chan time.Time)
@@ -67,11 +59,11 @@ func Test_track_log_rotations(t *testing.T) {
 	track_log_rotations(ch, test_dir)
 
 	if len(FW_records) != 15 {
-		t.Error("FW_existing_log_files did not have the correct number of records")
+		t.Error("FW_records did not have the correct number of records")
 	}
 
 	if num_containers_on_disk != 15 {
-		t.Error("FW_existing_log_files did not have the correct number of records")
+		t.Error("FW_records != 15")
 	}
 
 	if FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].unrotated_bytes != 10 {
