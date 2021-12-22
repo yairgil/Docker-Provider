@@ -11,7 +11,7 @@ on:
       - ci_prod
 jobs:
   Golang-Tests:
-    runs-on: ubuntu:18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -21,7 +21,7 @@ jobs:
           cd ${{ github.workspace }}
           ./test/unit-tests/run_go_tests.sh
   Ruby-Tests:
-    runs-on: ubuntu:18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
