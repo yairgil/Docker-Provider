@@ -11,17 +11,17 @@ on:
       - ci_prod
 jobs:
   Golang-Tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu:18.04
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
       - name: Run unit tests
         run: |
-          mkdir -p /var/opt/microsoft/docker-cimprov/log/  
+          sudo mkdir -p /var/opt/microsoft/docker-cimprov/log/  
           cd ${{ github.workspace }}
           ./test/unit-tests/run_go_tests.sh
   Ruby-Tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu:18.04
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
