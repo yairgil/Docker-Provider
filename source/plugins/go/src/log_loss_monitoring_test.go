@@ -47,6 +47,12 @@ func Test_track_log_rotations(t *testing.T) {
 
 	test_dir := filepath.Join(get_repo_root_dir(), "test", "unit-tests", "other-test-directories", "log-loss-detection", "pods_1")
 
+	if _, err := os.Stat(filepath.Join(test_dir, "marker.txt")); os.IsNotExist(err) {
+		message := "unit test Test_track_log_rotations() not in the right directory. The test setup is wrong"
+		t.Error(message)
+		panic(message)
+	}
+
 	if len(FW_records) != 0 {
 		t.Error("FW_records did not start empty in unit test (this is probably a test problem, not a code problem)")
 	}
