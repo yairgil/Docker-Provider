@@ -59,24 +59,24 @@ func Test_track_log_rotations(t *testing.T) {
 	track_log_rotations(ch, test_dir)
 
 	if len(FW_records) != 15 {
-		t.Error("FW_records did not have the correct number of records")
+		t.Errorf("FW_records did not have the correct number of records, actually had actually %d", len(FW_records))
 	}
 
 	if num_containers_on_disk != 15 {
-		t.Error("FW_records != 15")
+		t.Errorf("num_containers_on_disk != 15, was actually %d", num_containers_on_disk)
 	}
 
 	if FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].unrotated_bytes != 10 {
-		t.Error("incorrect number of bytes unrotated")
+		t.Errorf("incorrect number of bytes unrotated, was actually %d", FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].unrotated_bytes)
 	}
 
 	if FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].rotated_bytes != 20 {
-		t.Error("incorrect number of bytes rotated")
+		t.Errorf("incorrect number of bytes rotated, was actually %d", FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].rotated_bytes)
 	}
 
 	if len(FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].existing_log_files) != 1 &&
 		FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].existing_log_files[0] != "0.log.20211214-201022" {
-		t.Error("incorrect number of bytes rotated")
+		t.Error("incorrect set of existing log files")
 	}
 
 	deleted_containers_query <- "default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"
