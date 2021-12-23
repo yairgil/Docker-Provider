@@ -1,0 +1,115 @@
+2021-12-14T20:09:28.252890405Z stderr F I1214 20:09:28.252670       1 flags.go:59] FLAG: --add-dir-header="false"
+2021-12-14T20:09:28.252926805Z stderr F I1214 20:09:28.252748       1 flags.go:59] FLAG: --alsologtostderr="false"
+2021-12-14T20:09:28.252936905Z stderr F I1214 20:09:28.252753       1 flags.go:59] FLAG: --bind-address="0.0.0.0"
+2021-12-14T20:09:28.252943905Z stderr F I1214 20:09:28.252759       1 flags.go:59] FLAG: --bind-address-hard-fail="false"
+2021-12-14T20:09:28.252952605Z stderr F I1214 20:09:28.252763       1 flags.go:59] FLAG: --cleanup="false"
+2021-12-14T20:09:28.252966905Z stderr F I1214 20:09:28.252767       1 flags.go:59] FLAG: --cleanup-ipvs="true"
+2021-12-14T20:09:28.252971105Z stderr F I1214 20:09:28.252771       1 flags.go:59] FLAG: --cluster-cidr="10.244.0.0/16"
+2021-12-14T20:09:28.252975405Z stderr F I1214 20:09:28.252775       1 flags.go:59] FLAG: --config=""
+2021-12-14T20:09:28.252979605Z stderr F I1214 20:09:28.252779       1 flags.go:59] FLAG: --config-sync-period="15m0s"
+2021-12-14T20:09:28.252984005Z stderr F I1214 20:09:28.252783       1 flags.go:59] FLAG: --conntrack-max-per-core="32768"
+2021-12-14T20:09:28.252990205Z stderr F I1214 20:09:28.252787       1 flags.go:59] FLAG: --conntrack-min="131072"
+2021-12-14T20:09:28.252996705Z stderr F I1214 20:09:28.252791       1 flags.go:59] FLAG: --conntrack-tcp-timeout-close-wait="1h0m0s"
+2021-12-14T20:09:28.253020905Z stderr F I1214 20:09:28.252795       1 flags.go:59] FLAG: --conntrack-tcp-timeout-established="24h0m0s"
+2021-12-14T20:09:28.253027405Z stderr F I1214 20:09:28.252799       1 flags.go:59] FLAG: --detect-local-mode=""
+2021-12-14T20:09:28.253034505Z stderr F I1214 20:09:28.252803       1 flags.go:59] FLAG: --feature-gates=""
+2021-12-14T20:09:28.253043705Z stderr F I1214 20:09:28.252808       1 flags.go:59] FLAG: --healthz-bind-address="0.0.0.0:10256"
+2021-12-14T20:09:28.253048205Z stderr F I1214 20:09:28.252812       1 flags.go:59] FLAG: --healthz-port="10256"
+2021-12-14T20:09:28.253052205Z stderr F I1214 20:09:28.252816       1 flags.go:59] FLAG: --help="false"
+2021-12-14T20:09:28.253056205Z stderr F I1214 20:09:28.252820       1 flags.go:59] FLAG: --hostname-override=""
+2021-12-14T20:09:28.253060605Z stderr F I1214 20:09:28.252824       1 flags.go:59] FLAG: --iptables-masquerade-bit="14"
+2021-12-14T20:09:28.253064905Z stderr F I1214 20:09:28.252828       1 flags.go:59] FLAG: --iptables-min-sync-period="1s"
+2021-12-14T20:09:28.253068905Z stderr F I1214 20:09:28.252831       1 flags.go:59] FLAG: --iptables-sync-period="30s"
+2021-12-14T20:09:28.253087505Z stderr F I1214 20:09:28.252835       1 flags.go:59] FLAG: --ipvs-exclude-cidrs="[]"
+2021-12-14T20:09:28.253092005Z stderr F I1214 20:09:28.252843       1 flags.go:59] FLAG: --ipvs-min-sync-period="0s"
+2021-12-14T20:09:28.253095605Z stderr F I1214 20:09:28.252847       1 flags.go:59] FLAG: --ipvs-scheduler=""
+2021-12-14T20:09:28.253100305Z stderr F I1214 20:09:28.252851       1 flags.go:59] FLAG: --ipvs-strict-arp="false"
+2021-12-14T20:09:28.253105605Z stderr F I1214 20:09:28.252855       1 flags.go:59] FLAG: --ipvs-sync-period="30s"
+2021-12-14T20:09:28.253111905Z stderr F I1214 20:09:28.252859       1 flags.go:59] FLAG: --ipvs-tcp-timeout="0s"
+2021-12-14T20:09:28.253118505Z stderr F I1214 20:09:28.252863       1 flags.go:59] FLAG: --ipvs-tcpfin-timeout="0s"
+2021-12-14T20:09:28.253132205Z stderr F I1214 20:09:28.252867       1 flags.go:59] FLAG: --ipvs-udp-timeout="0s"
+2021-12-14T20:09:28.253136305Z stderr F I1214 20:09:28.252872       1 flags.go:59] FLAG: --kube-api-burst="10"
+2021-12-14T20:09:28.253140305Z stderr F I1214 20:09:28.252878       1 flags.go:59] FLAG: --kube-api-content-type="application/vnd.kubernetes.protobuf"
+2021-12-14T20:09:28.253145005Z stderr F I1214 20:09:28.252886       1 flags.go:59] FLAG: --kube-api-qps="5"
+2021-12-14T20:09:28.253149505Z stderr F I1214 20:09:28.252894       1 flags.go:59] FLAG: --kubeconfig="/var/lib/kubelet/kubeconfig"
+2021-12-14T20:09:28.253153905Z stderr F I1214 20:09:28.252901       1 flags.go:59] FLAG: --log-backtrace-at=":0"
+2021-12-14T20:09:28.253157705Z stderr F I1214 20:09:28.252915       1 flags.go:59] FLAG: --log-dir=""
+2021-12-14T20:09:28.253170704Z stderr F I1214 20:09:28.252919       1 flags.go:59] FLAG: --log-file=""
+2021-12-14T20:09:28.253175204Z stderr F I1214 20:09:28.252923       1 flags.go:59] FLAG: --log-file-max-size="1800"
+2021-12-14T20:09:28.253179704Z stderr F I1214 20:09:28.252927       1 flags.go:59] FLAG: --log-flush-frequency="5s"
+2021-12-14T20:09:28.253183604Z stderr F I1214 20:09:28.252930       1 flags.go:59] FLAG: --logtostderr="true"
+2021-12-14T20:09:28.253190804Z stderr F I1214 20:09:28.252934       1 flags.go:59] FLAG: --masquerade-all="false"
+2021-12-14T20:09:28.253197704Z stderr F I1214 20:09:28.252938       1 flags.go:59] FLAG: --master=""
+2021-12-14T20:09:28.253204404Z stderr F I1214 20:09:28.252941       1 flags.go:59] FLAG: --metrics-bind-address="0.0.0.0:10249"
+2021-12-14T20:09:28.253217204Z stderr F I1214 20:09:28.252945       1 flags.go:59] FLAG: --metrics-port="10249"
+2021-12-14T20:09:28.253221104Z stderr F I1214 20:09:28.252949       1 flags.go:59] FLAG: --nodeport-addresses="[]"
+2021-12-14T20:09:28.253225304Z stderr F I1214 20:09:28.252954       1 flags.go:59] FLAG: --one-output="false"
+2021-12-14T20:09:28.253229204Z stderr F I1214 20:09:28.252957       1 flags.go:59] FLAG: --oom-score-adj="-999"
+2021-12-14T20:09:28.253233104Z stderr F I1214 20:09:28.252962       1 flags.go:59] FLAG: --profiling="false"
+2021-12-14T20:09:28.253270704Z stderr F I1214 20:09:28.252968       1 flags.go:59] FLAG: --proxy-mode=""
+2021-12-14T20:09:28.253295004Z stderr F I1214 20:09:28.252976       1 flags.go:59] FLAG: --proxy-port-range=""
+2021-12-14T20:09:28.253305704Z stderr F I1214 20:09:28.252983       1 flags.go:59] FLAG: --show-hidden-metrics-for-version=""
+2021-12-14T20:09:28.253319204Z stderr F I1214 20:09:28.252995       1 flags.go:59] FLAG: --skip-headers="false"
+2021-12-14T20:09:28.253323404Z stderr F I1214 20:09:28.253016       1 flags.go:59] FLAG: --skip-log-headers="false"
+2021-12-14T20:09:28.253328104Z stderr F I1214 20:09:28.253022       1 flags.go:59] FLAG: --stderrthreshold="2"
+2021-12-14T20:09:28.253332104Z stderr F I1214 20:09:28.253045       1 flags.go:59] FLAG: --udp-timeout="250ms"
+2021-12-14T20:09:28.253336104Z stderr F I1214 20:09:28.253050       1 flags.go:59] FLAG: --v="3"
+2021-12-14T20:09:28.253343804Z stderr F I1214 20:09:28.253053       1 flags.go:59] FLAG: --version="false"
+2021-12-14T20:09:28.253350104Z stderr F I1214 20:09:28.253059       1 flags.go:59] FLAG: --vmodule=""
+2021-12-14T20:09:28.253356304Z stderr F I1214 20:09:28.253063       1 flags.go:59] FLAG: --write-config-to=""
+2021-12-14T20:09:28.253444404Z stderr F W1214 20:09:28.253075       1 server.go:226] WARNING: all flags other than --config, --write-config-to, and --cleanup are deprecated. Please begin using a config file ASAP.
+2021-12-14T20:09:28.253478604Z stderr F I1214 20:09:28.253126       1 feature_gate.go:243] feature gates: &{map[]}
+2021-12-14T20:09:28.253501904Z stderr F I1214 20:09:28.253246       1 feature_gate.go:243] feature gates: &{map[]}
+2021-12-14T20:09:28.253796304Z stderr F W1214 20:09:28.253636       1 proxier.go:651] Failed to read file /lib/modules/5.4.0-1062-azure/modules.builtin with error open /lib/modules/5.4.0-1062-azure/modules.builtin: no such file or directory. You can ignore this message when kube-proxy is running inside container without mounting /lib/modules
+2021-12-14T20:09:28.705719535Z stderr F W1214 20:09:28.705386       1 proxier.go:661] Failed to load kernel module ip_vs with modprobe. You can ignore this message when kube-proxy is running inside container without mounting /lib/modules
+2021-12-14T20:09:28.709057231Z stderr F W1214 20:09:28.708896       1 proxier.go:661] Failed to load kernel module ip_vs_rr with modprobe. You can ignore this message when kube-proxy is running inside container without mounting /lib/modules
+2021-12-14T20:09:28.711281928Z stderr F W1214 20:09:28.711136       1 proxier.go:661] Failed to load kernel module ip_vs_wrr with modprobe. You can ignore this message when kube-proxy is running inside container without mounting /lib/modules
+2021-12-14T20:09:28.713701825Z stderr F W1214 20:09:28.713595       1 proxier.go:661] Failed to load kernel module ip_vs_sh with modprobe. You can ignore this message when kube-proxy is running inside container without mounting /lib/modules
+2021-12-14T20:09:28.716117722Z stderr F W1214 20:09:28.715989       1 proxier.go:661] Failed to load kernel module nf_conntrack with modprobe. You can ignore this message when kube-proxy is running inside container without mounting /lib/modules
+2021-12-14T20:09:28.728191807Z stderr F I1214 20:09:28.728012       1 cert_rotation.go:137] Starting client certificate rotation controller
+2021-12-14T20:09:28.80521071Z stderr F I1214 20:09:28.804983       1 node.go:172] Successfully retrieved node IP: 10.240.0.4
+2021-12-14T20:09:28.80525471Z stderr F I1214 20:09:28.805028       1 server_others.go:142] kube-proxy node IP is an IPv4 address (10.240.0.4), assume IPv4 operation
+2021-12-14T20:09:28.858721343Z stderr F W1214 20:09:28.858519       1 server_others.go:584] Unknown proxy mode "", assuming iptables proxy
+2021-12-14T20:09:28.858765143Z stderr F I1214 20:09:28.858673       1 server_others.go:182] DetectLocalMode: 'ClusterCIDR'
+2021-12-14T20:09:28.858777243Z stderr F I1214 20:09:28.858698       1 server_others.go:185] Using iptables Proxier.
+2021-12-14T20:09:28.858914442Z stderr F I1214 20:09:28.858821       1 proxier.go:287] iptables(IPv4) masquerade mark: 0x00004000
+2021-12-14T20:09:28.858930242Z stderr F I1214 20:09:28.858852       1 proxier.go:334] iptables(IPv4) sync params: minSyncPeriod=1s, syncPeriod=30s, burstSyncs=2
+2021-12-14T20:09:28.859025742Z stderr F I1214 20:09:28.858924       1 proxier.go:346] iptables(IPv4) supports --random-fully
+2021-12-14T20:09:28.859344442Z stderr F I1214 20:09:28.859170       1 server.go:650] Version: v1.20.9
+2021-12-14T20:09:28.859780541Z stderr F I1214 20:09:28.859604       1 server.go:795] getConntrackMax: using scaled conntrack-max-per-core
+2021-12-14T20:09:28.859798541Z stderr F I1214 20:09:28.859695       1 conntrack.go:52] Setting nf_conntrack_max to 262144
+2021-12-14T20:09:28.86100644Z stderr F I1214 20:09:28.860058       1 bounded_frequency_runner.go:192] sync-runner Loop running
+2021-12-14T20:09:28.86103084Z stderr F I1214 20:09:28.860078       1 proxier_health.go:107] starting healthz on 0.0.0.0:10256
+2021-12-14T20:09:28.86105014Z stderr F I1214 20:09:28.860212       1 config.go:224] Starting endpoint slice config controller
+2021-12-14T20:09:28.86105794Z stderr F I1214 20:09:28.860229       1 shared_informer.go:240] Waiting for caches to sync for endpoint slice config
+2021-12-14T20:09:28.86106424Z stderr F I1214 20:09:28.860319       1 config.go:315] Starting service config controller
+2021-12-14T20:09:28.86106874Z stderr F I1214 20:09:28.860331       1 shared_informer.go:240] Waiting for caches to sync for service config
+2021-12-14T20:09:28.86107384Z stderr F I1214 20:09:28.860433       1 reflector.go:219] Starting reflector *v1.Service (15m0s) from k8s.io/client-go/informers/factory.go:134
+2021-12-14T20:09:28.86107914Z stderr F I1214 20:09:28.860484       1 reflector.go:255] Listing and watching *v1.Service from k8s.io/client-go/informers/factory.go:134
+2021-12-14T20:09:28.86108794Z stderr F I1214 20:09:28.860441       1 reflector.go:219] Starting reflector *v1beta1.EndpointSlice (15m0s) from k8s.io/client-go/informers/factory.go:134
+2021-12-14T20:09:28.86109554Z stderr F I1214 20:09:28.860521       1 reflector.go:255] Listing and watching *v1beta1.EndpointSlice from k8s.io/client-go/informers/factory.go:134
+2021-12-14T20:09:28.86861293Z stderr F I1214 20:09:28.868416       1 service.go:275] Service kube-system/metrics-server updated: 1 ports
+2021-12-14T20:09:28.86863663Z stderr F I1214 20:09:28.868502       1 service.go:275] Service default/kubernetes updated: 1 ports
+2021-12-14T20:09:28.86864323Z stderr F I1214 20:09:28.868529       1 service.go:275] Service kube-system/healthmodel-replicaset-service updated: 1 ports
+2021-12-14T20:09:28.86871513Z stderr F I1214 20:09:28.868561       1 service.go:275] Service kube-system/kube-dns updated: 2 ports
+2021-12-14T20:09:28.960751714Z stderr F I1214 20:09:28.960561       1 shared_informer.go:247] Caches are synced for service config 
+2021-12-14T20:09:28.960795114Z stderr F I1214 20:09:28.960602       1 config.go:322] Calling handler.OnServiceSynced()
+2021-12-14T20:09:28.960806414Z stderr F I1214 20:09:28.960578       1 shared_informer.go:247] Caches are synced for endpoint slice config 
+2021-12-14T20:09:28.960814114Z stderr F I1214 20:09:28.960692       1 config.go:231] Calling handler.OnEndpointSlicesSynced()
+2021-12-14T20:09:28.960931914Z stderr F I1214 20:09:28.960804       1 proxier.go:818] Not syncing iptables until Services and Endpoints have been received from master
+2021-12-14T20:09:28.961787613Z stderr F I1214 20:09:28.961614       1 service.go:390] Adding new service port "kube-system/healthmodel-replicaset-service" at 10.0.14.49:25227/TCP
+2021-12-14T20:09:28.961830313Z stderr F I1214 20:09:28.961672       1 service.go:390] Adding new service port "kube-system/kube-dns:dns" at 10.0.0.10:53/UDP
+2021-12-14T20:09:28.961852213Z stderr F I1214 20:09:28.961689       1 service.go:390] Adding new service port "kube-system/kube-dns:dns-tcp" at 10.0.0.10:53/TCP
+2021-12-14T20:09:28.961862913Z stderr F I1214 20:09:28.961703       1 service.go:390] Adding new service port "kube-system/metrics-server" at 10.0.241.55:443/TCP
+2021-12-14T20:09:28.961875013Z stderr F I1214 20:09:28.961716       1 service.go:390] Adding new service port "default/kubernetes:https" at 10.0.0.1:443/TCP
+2021-12-14T20:09:28.961918113Z stderr F I1214 20:09:28.961825       1 endpointslicecache.go:335] Setting endpoints for "kube-system/kube-dns:dns-tcp" to [10.244.0.2:53 10.244.0.5:53]
+2021-12-14T20:09:28.961931513Z stderr F I1214 20:09:28.961856       1 endpointslicecache.go:335] Setting endpoints for "kube-system/kube-dns:dns" to [10.244.0.2:53 10.244.0.5:53]
+2021-12-14T20:09:28.961970713Z stderr F I1214 20:09:28.961881       1 endpointslicecache.go:335] Setting endpoints for "kube-system/metrics-server" to [10.244.0.3:443]
+2021-12-14T20:09:28.961991213Z stderr F I1214 20:09:28.961911       1 endpointslicecache.go:335] Setting endpoints for "default/kubernetes:https" to [52.143.92.12:443]
+2021-12-14T20:09:28.962008013Z stderr F I1214 20:09:28.961930       1 endpointslicecache.go:335] Setting endpoints for "kube-system/healthmodel-replicaset-service" to [10.244.0.23:25227]
+2021-12-14T20:09:28.962115513Z stderr F I1214 20:09:28.962049       1 proxier.go:858] Stale udp service kube-system/kube-dns:dns -> 10.0.0.10
+2021-12-14T20:09:28.962183713Z stderr F I1214 20:09:28.962092       1 proxier.go:871] Syncing iptables rules
+2021-12-14T20:09:29.033678523Z stderr F I1214 20:09:29.033374       1 service_health.go:183] Not saving endpoints for unknown healthcheck "kube-system/kube-dns"
+2021-12-14T20:09:29.033709923Z stderr F I1214 20:09:29.033444       1 service_health.go:183] Not saving endpoints for unknown healthcheck "kube-system/metrics-server"
+2021-12-14T20:09:29.033728623Z stderr F I1214 20:09:29.033455       1 service_health.go:183] Not saving endpoints for unknown healthcheck "kube-system/healthmodel-replicaset-service"
+2021-12-14T20:09:29.040503514Z stderr F I1214 20:09:29.040250       1 proxier.go:826] syncProxyRules took 79.3903ms
