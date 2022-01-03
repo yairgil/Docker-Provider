@@ -354,7 +354,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		}
 	}
 
-	PromMonitorPods = os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS")
+	PromMonitorPods = os.Getenv("CUSTOM_PROM_MONITOR_PODS")
 
 	PromMonitorPodsNamespaceLength = 0
 	promMonPodsNamespaceLength := os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS_NS_LENGTH")

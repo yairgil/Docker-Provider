@@ -55,6 +55,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
 /opt/tomlparser-osm-config.rb;                                  build/linux/installer/scripts/tomlparser-osm-config.rb;     755; root; root
 /opt/test.json;			                                        build/linux/installer/conf/test.json;                    644; root; root
+/opt/env_vars;				                                        build/linux/installer/conf/env_vars;                    644; root; root
 
 
 

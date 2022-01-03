@@ -223,7 +223,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             File.open(file_name, "w") { |file| file.puts new_contents }
             puts "config::Successfully substituted the placeholders in telegraf conf file for replicaset"
             #Set environment variables for telemetry
-            file = File.open("telemetry_prom_config_env_var", "w")
+            file = File.open("prom_config_env_var", "w")
             if !file.nil?
               file.write("export TELEMETRY_RS_PROM_INTERVAL=\"#{interval}\"\n")
               #Setting array lengths as environment variables for telemetry purposes
@@ -325,10 +325,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Successfully substituted the placeholders in telegraf conf file for custom prometheus scraping"
             #Set environment variables for telemetry in the sidecar container
             if (!@containerType.nil? && @containerType.casecmp(@promSideCar) == 0)
-              file = File.open("telemetry_prom_config_env_var", "w")
+              file = File.open("prom_config_env_var", "w")
               if !file.nil?
                 #Setting array lengths as environment variables for telemetry purposes
-                file.write("export TELEMETRY_CUSTOM_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
+                file.write("export CUSTOM_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
                 file.write("export TELEMETRY_CUSTOM_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
                 file.write("export TELEMETRY_CUSTOM_PROM_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectorsLength}\"\n")
                 file.write("export TELEMETRY_CUSTOM_PROM_FIELD_SELECTOR_LENGTH=\"#{kubernetesFieldSelectorsLength}\"\n")
@@ -381,7 +381,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Successfully substituted the placeholders in telegraf conf file for daemonset"
 
             #Set environment variables for telemetry
-            file = File.open("telemetry_prom_config_env_var", "w")
+            file = File.open("prom_config_env_var", "w")
             if !file.nil?
               file.write("export TELEMETRY_DS_PROM_INTERVAL=\"#{interval}\"\n")
               #Setting array lengths as environment variables for telemetry purposes
