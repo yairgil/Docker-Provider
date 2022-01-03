@@ -11,6 +11,8 @@ class KubernetesApiClient
 
   require_relative "oms_common"
   require_relative "constants"
+  require_relative "WatchStream"
+  require_relative "kubernetes_container_inventory"
 
   @@ApiVersion = "v1"
   @@ApiVersionApps = "v1"
@@ -88,7 +90,7 @@ class KubernetesApiClient
       end
     end
 
-    def getClusterRegion(env=ENV)
+    def getClusterRegion(env = ENV)
       if env["AKS_REGION"]
         return env["AKS_REGION"]
       else
@@ -97,7 +99,7 @@ class KubernetesApiClient
       end
     end
 
-    def getResourceUri(resource, api_group, env=ENV)
+    def getResourceUri(resource, api_group, env = ENV)
       begin
         if env["KUBERNETES_SERVICE_HOST"] && env["KUBERNETES_PORT_443_TCP_PORT"]
           if api_group.nil?
@@ -114,7 +116,7 @@ class KubernetesApiClient
       end
     end
 
-    def getClusterName(env=ENV)
+    def getClusterName(env = ENV)
       return @@ClusterName if !@@ClusterName.nil?
       @@ClusterName = "None"
       begin
@@ -148,7 +150,7 @@ class KubernetesApiClient
       return @@ClusterName
     end
 
-    def getClusterId(env=ENV)
+    def getClusterId(env = ENV)
       return @@ClusterId if !@@ClusterId.nil?
       #By default initialize ClusterId to ClusterName.
       #<TODO> In ACS/On-prem, we need to figure out how we can generate ClusterId
@@ -456,19 +458,19 @@ class KubernetesApiClient
               metricCollection = {}
               metricCollection["CounterName"] = metricNametoReturn
               metricCollection["Value"] = metricValue
-              
+
               metricProps["json_Collections"] = []
-              metricCollections = []               
-              metricCollections.push(metricCollection)        
+              metricCollections = []
+              metricCollections.push(metricCollection)
               metricProps["json_Collections"] = metricCollections.to_json
-              metricItems.push(metricProps)             
+              metricItems.push(metricProps)
               #No container level limit for the given metric, so default to node level limit
             else
               nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
               if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
                 metricValue = @@NodeMetrics[nodeMetricsHashKey]
                 #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
-                               
+
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
                 metricProps["Host"] = nodeName
@@ -481,10 +483,10 @@ class KubernetesApiClient
                 metricCollection["CounterName"] = metricNametoReturn
                 metricCollection["Value"] = metricValue
                 metricProps["json_Collections"] = []
-                metricCollections = []                  
-                metricCollections.push(metricCollection)        
+                metricCollections = []
+                metricCollections.push(metricCollection)
                 metricProps["json_Collections"] = metricCollections.to_json
-                metricItems.push(metricProps)              
+                metricItems.push(metricProps)
               end
             end
           end
@@ -615,11 +617,11 @@ class KubernetesApiClient
           metricCollection["CounterName"] = metricNametoReturn
           metricCollection["Value"] = metricValue
           metricCollections = []
-          metricCollections.push(metricCollection) 
-         
+          metricCollections.push(metricCollection)
+
           metricItem["json_Collections"] = []
           metricItem["json_Collections"] = metricCollections.to_json
-         
+
           #push node level metrics to a inmem hash so that we can use it looking up at container level.
           #Currently if container level cpu & memory limits are not defined we default to node level limits
           @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
@@ -778,7 +780,7 @@ class KubernetesApiClient
       return continuationToken, resourceInventory
     end #getResourcesAndContinuationToken
 
-    def getKubeAPIServerUrl(env=ENV)
+    def getKubeAPIServerUrl(env = ENV)
       apiServerUrl = nil
       begin
         if env["KUBERNETES_SERVICE_HOST"] && env["KUBERNETES_PORT_443_TCP_PORT"]
@@ -817,6 +819,357 @@ class KubernetesApiClient
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return kubeServiceRecords
+    end
+
+    # Accepts the following options:
+    #   :namespace (string) - the namespace of the entity.
+    #   :name (string) - the name of the entity to watch.
+    #   :label_selector (string) - a selector to restrict the list of returned objects by labels.
+    #   :field_selector (string) - a selector to restrict the list of returned objects by fields.
+    #   :resource_version (string) - shows changes that occur after passed version of a resource.
+    #   :allow_watch_bookmarks (bool) - flag to indicate whether to use bookmark or not.
+    def watch(resource_name, options = {})
+      begin
+        if !File.exist?(@@CaFile)
+          raise "#{@@CaFile} doesnt exist"
+        end
+        http_options = {
+          use_ssl: true,
+          open_timeout: 60,
+          read_timeout: 240, # https://github.com/kubernetes-client/java/issues/1370 https://github.com/kubernetes-client/java/issues/1578
+          ca_file: @@CaFile,
+          verify_mode: OpenSSL::SSL::VERIFY_PEER,
+        }
+        http_headers = {
+          Authorization: "Bearer " + getTokenStr,
+        }
+        ns = ""
+        if !options[:namespace].to_s.empty?
+          ns = "namespaces/#{namespace}/"
+        end
+        path = "watch/#{ns}#{resource_name}"
+        path += "/#{options[:name]}" if options[:name]
+        api_endpoint = "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/" + @@ApiVersion + "/" + "#{path}"
+        uri = URI.parse(api_endpoint)
+        params = {}
+        WATCH_ARGUMENTS.each { |k, v| params[k] = options[v] if options[v] }
+        uri.query = URI.encode_www_form(params) if params.any?
+        watcher = WatchStream.new(
+          uri,
+          http_options,
+          http_headers,
+          @Log
+        )
+        return watcher unless block_given?
+        begin
+          watcher.each(&block)
+        ensure
+          watcher.finish if watcher
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::watch:Failed with an error : #{errorStr}"
+      end
+    end
+
+    def getOptimizedItem(resource, resourceItem, winNodes = [])
+      case resource
+      when "pods"
+        return getPodOptimizedItem(resourceItem, winNodes)
+      when "nodes"
+        return getNodeOptimizedItem(resourceItem)
+      when "services"
+        return getServiceOptimizedItem(resourceItem)
+      when "deployments"
+        return getDeploymentOptimizedItem(resourceItem)
+      when "horizontalpodautoscalers"
+        return getHpaOptimizedItem(resourceItem)
+      else
+        return resourceItem
+      end
+    end
+
+    def getServiceOptimizedItem(resourceItem)
+      item = {}
+      item["metadata"] = {}
+      if !resourceItem["metadata"].nil?
+        item["metadata"]["name"] = resourceItem["metadata"]["name"]
+        item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
+      end
+      item["spec"] = {}
+      if !resourceItem["spec"].nil?
+        item["spec"]["selector"] = []
+        if !resourceItem["spec"]["selector"].nil?
+          item["spec"]["selector"] = resourceItem["spec"]["selector"]
+        end
+        item["spec"]["clusterIP"] = ""
+        if !resourceItem["spec"]["clusterIP"].nil?
+          item["spec"]["clusterIP"] = resourceItem["spec"]["clusterIP"]
+        end
+        item["spec"]["type"] = ""
+        if !resourceItem["spec"]["type"].nil?
+          item["spec"]["type"] = resourceItem["spec"]["type"]
+        end
+      end
+      return item
+    end
+
+    def isWindowsPodItem(podItem, winNodes)
+      isWindowsPod = false
+      if !winNodes.nil? && !winNodes.empty?
+        nodeName = (!podItem["spec"].nil? && !podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
+        if !nodeName.empty? && winNodes.include?(nodeName)
+          isWindowsPod = true
+        end
+      end
+      return isWindowsPod
+    end
+
+    def getPodOptimizedItem(resourceItem, winNodes)
+      item = {}
+      begin
+        item["metadata"] = {}
+        if !resourceItem["metadata"].nil?
+          if !resourceItem["metadata"]["annotations"].nil?
+            item["metadata"]["annotations"] = resourceItem["metadata"]["annotations"]
+          end
+          if !resourceItem["metadata"]["labels"].nil?
+            item["metadata"]["labels"] = resourceItem["metadata"]["labels"]
+          end
+          if !resourceItem["metadata"]["ownerReferences"].nil?
+            item["metadata"]["ownerReferences"] = resourceItem["metadata"]["ownerReferences"]
+          end
+          item["metadata"]["name"] = resourceItem["metadata"]["name"]
+          item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
+          item["metadata"]["resourceVersion"] = resourceItem["metadata"]["resourceVersion"]
+          item["metadata"]["uid"] = resourceItem["metadata"]["uid"]
+          item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
+          if !resourceItem["metadata"]["deletionTimestamp"].nil?
+            item["metadata"]["deletionTimestamp"] = resourceItem["metadata"]["deletionTimestamp"]
+          end
+        end
+        isWindowsPod = isWindowsPodItem(resourceItem, winNodes)
+        item["spec"] = {}
+        if !resourceItem["spec"].nil?
+          item["spec"]["containers"] = []
+          isDisableClusterCollectEnvVar = false
+          clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
+          if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
+            isDisableClusterCollectEnvVar = true
+          end
+          if !resourceItem["spec"]["containers"].nil?
+            resourceItem["spec"]["containers"].each do |container|
+              currentContainer = {}
+              currentContainer["name"] = container["name"]
+              currentContainer["resources"] = container["resources"]
+              # fields required for windows containers records
+              if isWindowsPod
+                currentContainer["image"] = container["image"]
+                currentContainer["ports"] = container["ports"]
+                currentContainer["command"] = container["command"]
+                currentContainer["EnvironmentVar"] = ""
+                if !isDisableClusterCollectEnvVar
+                  currentContainer["env"] = KubernetesContainerInventory.obtainContainerEnvironmentVarsFromPodsResponse(resourceItem, container)
+                end
+              end
+              item["spec"]["containers"].push(currentContainer)
+            end
+          end
+          item["spec"]["initContainers"] = []
+          if !resourceItem["spec"]["initContainers"].nil?
+            resourceItem["spec"]["initContainers"].each do |container|
+              currentContainer = {}
+              currentContainer["name"] = container["name"]
+              currentContainer["resources"] = container["resources"]
+              # fields required for windows containers records
+              if isWindowsPod
+                currentContainer["image"] = container["image"]
+                currentContainer["ports"] = container["ports"]
+                currentContainer["command"] = container["command"]
+                currentContainer["EnvironmentVar"] = ""
+                if !isDisableClusterCollectEnvVar
+                  currentContainer["env"] = KubernetesContainerInventory.obtainContainerEnvironmentVarsFromPodsResponse(resourceItem, container)
+                end
+              end
+              item["spec"]["initContainers"].push(currentContainer)
+            end
+          end
+          item["spec"]["nodeName"] = ""
+          if !resourceItem["spec"]["nodeName"].nil?
+            item["spec"]["nodeName"] = resourceItem["spec"]["nodeName"]
+          end
+        end
+        item["status"] = {}
+        if !resourceItem["status"].nil?
+          item["status"] = resourceItem["status"]
+          if !resourceItem["status"]["startTime"].nil?
+            item["status"]["startTime"] = resourceItem["status"]["startTime"]
+          end
+          if !resourceItem["status"]["reason"].nil?
+            item["status"]["reason"] = resourceItem["status"]["reason"]
+          end
+          if !resourceItem["status"]["podIP"].nil?
+            item["status"]["podIP"] = resourceItem["status"]["podIP"]
+          end
+          if !resourceItem["status"]["phase"].nil?
+            item["status"]["phase"] = resourceItem["status"]["phase"]
+          end
+          item["status"]["conditions"] = []
+          if !resourceItem["status"]["conditions"].nil?
+            resourceItem["status"]["conditions"].each do |condition|
+              currentCondition = {}
+              currentCondition["type"] = condition["type"]
+              currentCondition["status"] = condition["status"]
+              ## TODO - check if we need this
+              currentCondition["lastTransitionTime"] = condition["lastTransitionTime"]
+              item["status"]["conditions"].push(currentCondition)
+            end
+          end
+          item["status"]["initContainerStatuses"] = []
+          if !resourceItem["status"]["initContainerStatuses"].nil?
+            resourceItem["status"]["initContainerStatuses"].each do |containerStatus|
+              currentContainerStatus = {}
+              currentContainerStatus["containerID"] = containerStatus["containerID"]
+              currentContainerStatus["name"] = containerStatus["name"]
+              currentContainerStatus["restartCount"] = containerStatus["restartCount"]
+              currentContainerStatus["state"] = containerStatus["state"]
+              currentContainerStatus["lastState"] = containerStatus["lastState"]
+              if isWindowsPod
+                currentContainerStatus["imageID"] = containerStatus["imageID"]
+              end
+              item["status"]["initContainerStatuses"].push(currentContainerStatus)
+            end
+          end
+          item["status"]["containerStatuses"] = []
+          if !resourceItem["status"]["containerStatuses"].nil?
+            resourceItem["status"]["containerStatuses"].each do |containerStatus|
+              currentContainerStatus = {}
+              currentContainerStatus["containerID"] = containerStatus["containerID"]
+              currentContainerStatus["name"] = containerStatus["name"]
+              currentContainerStatus["restartCount"] = containerStatus["restartCount"]
+              currentContainerStatus["state"] = containerStatus["state"]
+              currentContainerStatus["lastState"] = containerStatus["lastState"]
+              if isWindowsPod
+                currentContainerStatus["imageID"] = containerStatus["imageID"]
+              end
+              item["status"]["containerStatuses"].push(currentContainerStatus)
+            end
+          end
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getPodOptimizedItem:Failed with an error : #{errorStr}"
+      end
+      return item
+    end
+
+    def getNodeOptimizedItem(resourceItem)
+      item = {}
+      begin
+        item["metadata"] = {}
+        if !resourceItem["metadata"].nil?
+          item["metadata"]["name"] = resourceItem["metadata"]["name"]
+          item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
+          if !resourceItem["metadata"]["labels"].nil?
+            item["metadata"]["labels"] = resourceItem["metadata"]["labels"]
+          end
+        end
+        item["spec"] = {}
+        if !resourceItem["spec"].nil?
+          if !resourceItem["spec"]["providerID"].nil? && !resourceItem["spec"]["providerID"].empty?
+            item["spec"]["providerID"] = resourceItem["spec"]["providerID"]
+          end
+        end
+        item["status"] = {}
+        if !resourceItem["status"].nil?
+          item["status"]["conditions"] = resourceItem["status"]["conditions"]
+          item["status"]["nodeInfo"] = {}
+          nodeInfo = {}
+          if !resourceItem["status"]["nodeInfo"].nil? && !resourceItem["status"]["nodeInfo"].empty?
+            nodeInfo["kubeletVersion"] = resourceItem["status"]["nodeInfo"]["kubeletVersion"]
+            nodeInfo["kubeProxyVersion"] = resourceItem["status"]["nodeInfo"]["kubeProxyVersion"]
+            nodeInfo["osImage"] = resourceItem["status"]["nodeInfo"]["osImage"]
+            nodeInfo["containerRuntimeVersion"] = resourceItem["status"]["nodeInfo"]["containerRuntimeVersion"]
+            nodeInfo["operatingSystem"] = resourceItem["status"]["nodeInfo"]["operatingSystem"]
+            nodeInfo["kernelVersion"] = resourceItem["status"]["nodeInfo"]["kernelVersion"]
+          end
+          item["status"]["nodeInfo"] = nodeInfo
+          item["status"]["allocatable"] = resourceItem["status"]["allocatable"]
+          item["status"]["capacity"] = resourceItem["status"]["capacity"]
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getNodeOptimizedItem:Failed with an error : #{errorStr}"
+      end
+      return item
+    end
+
+    def getDeploymentOptimizedItem(resourceItem)
+      item = {}
+      item["metadata"] = {}
+      if !resourceItem["metadata"].nil?
+        item["metadata"]["name"] = resourceItem["metadata"]["name"]
+        item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
+      end
+      item["spec"] = {}
+      if !resourceItem["spec"].nil?
+        item["spec"]["strategy"] = {}
+        if !resourceItem["spec"]["strategy"].nil? && !resourceItem["spec"]["strategy"].empty? && !resourceItem["spec"]["strategy"]["type"].nil?
+          item["spec"]["strategy"]["type"] = resourceItem["spec"]["strategy"]["type"]
+        end
+        if !resourceItem["spec"]["replicas"].nil?
+          item["spec"]["replicas"] = resourceItem["spec"]["replicas"]
+        end
+      end
+      item["status"] = {}
+      if !resourceItem["status"].nil?
+        if !resourceItem["status"]["readyReplicas"].nil?
+          item["status"]["readyReplicas"] = resourceItem["status"]["readyReplicas"]
+        end
+        if !resourceItem["status"]["updatedReplicas"].nil?
+          item["status"]["updatedReplicas"] = resourceItem["status"]["updatedReplicas"]
+        end
+        if !resourceItem["status"]["availableReplicas"].nil?
+          item["status"]["availableReplicas"] = resourceItem["status"]["availableReplicas"]
+        end
+      end
+      return item
+    end
+
+    def getHpaOptimizedItem(resourceItem)
+      item = {}
+      item["metadata"] = {}
+      if !resourceItem["metadata"].nil?
+        item["metadata"]["name"] = resourceItem["metadata"]["name"]
+        item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
+        item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
+      end
+      item["spec"] = {}
+      if !resourceItem["spec"].nil?
+        if !resourceItem["spec"]["minReplicas"].nil?
+          item["spec"]["minReplicas"] = resourceItem["spec"]["minReplicas"]
+        end
+        if !resourceItem["spec"]["maxReplicas"].nil?
+          item["spec"]["maxReplicas"] = resourceItem["spec"]["maxReplicas"]
+        end
+        item["spec"]["scaleTargetRef"] = {}
+        if !resourceItem["spec"]["scaleTargetRef"].nil? && !resourceItem["spec"]["scaleTargetRef"]["kind"].nil?
+          item["spec"]["scaleTargetRef"]["kind"] = resourceItem["spec"]["scaleTargetRef"]["kind"]
+        end
+        if !resourceItem["spec"]["scaleTargetRef"].nil? && !resourceItem["spec"]["scaleTargetRef"]["name"].nil?
+          item["spec"]["scaleTargetRef"]["name"] = resourceItem["spec"]["scaleTargetRef"]["name"]
+        end
+      end
+      item["status"] = {}
+      if !resourceItem["status"].nil?
+        if !resourceItem["status"]["currentReplicas"].nil?
+          item["status"]["currentReplicas"] = resourceItem["status"]["currentReplicas"]
+        end
+        if !resourceItem["status"]["desiredReplicas"].nil?
+          item["status"]["desiredReplicas"] = resourceItem["status"]["desiredReplicas"]
+        end
+        if !resourceItem["status"]["lastScaleTime"].nil?
+          item["status"]["lastScaleTime"] = resourceItem["status"]["lastScaleTime"]
+        end
+      end
+      return item
     end
   end
 end

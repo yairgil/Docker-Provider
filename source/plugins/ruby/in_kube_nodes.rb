@@ -1,17 +1,17 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require 'fluent/plugin/input'
+require "fluent/plugin/input"
 
 module Fluent::Plugin
   class Kube_nodeInventory_Input < Input
     Fluent::Plugin.register_input("kube_nodes", self)
 
-    def initialize (kubernetesApiClient=nil, 
-                    applicationInsightsUtility=nil, 
-                    extensionUtils=nil, 
-                    env=nil, 
-                    telemetry_flush_interval=nil)
+    def initialize(kubernetesApiClient = nil,
+                   applicationInsightsUtility = nil,
+                   extensionUtils = nil,
+                   env = nil,
+                   telemetry_flush_interval = nil)
       super()
 
       require "yaml"
@@ -36,8 +36,7 @@ module Fluent::Plugin
       @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
       @@osmConfigMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
       @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
-  
-  
+
       @@rsPromInterval = @env["TELEMETRY_RS_PROM_INTERVAL"]
       @@rsPromFieldPassCount = @env["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
       @@rsPromFieldDropCount = @env["TELEMETRY_RS_PROM_FIELDDROP_LENGTH"]
@@ -64,6 +63,9 @@ module Fluent::Plugin
       require_relative "constants"
 
       @NodeCache = NodeStatsCache.new()
+      @watchNodesThread = nil
+      @nodeItemsCache = {}
+      #@nodeItemsCacheSizeKB = 0
     end
 
     config_param :run_interval, :time, :default => 60
@@ -97,6 +99,8 @@ module Fluent::Plugin
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
+        @nodeCacheMutex = Mutex.new
+        @watchNodesThread = Thread.new(&method(:watch_nodes))
         @thread = Thread.new(&method(:run_periodic))
         @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
@@ -110,6 +114,7 @@ module Fluent::Plugin
           @condition.signal
         }
         @thread.join
+        @watchNodesThread.join
         super # This super must be at the end of shutdown method
       end
     end
@@ -138,7 +143,7 @@ module Fluent::Plugin
           if @tag.nil? || !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = @extensionUtils.getOutputStreamId(Constants::KUBE_NODE_INVENTORY_DATA_TYPE)
           end
-	        $log.info("in_kube_nodes::enumerate: using perf tag -#{@kubeperfTag} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_nodes::enumerate: using perf tag -#{@kubeperfTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_nodes::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_nodes::enumerate: using containernodeinventory tag -#{@ContainerNodeInventoryTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_nodes::enumerate: using kubenodeinventory tag -#{@tag} @ #{Time.now.utc.iso8601}")
@@ -147,11 +152,11 @@ module Fluent::Plugin
 
         # Initializing continuation token to nil
         continuationToken = nil
-        $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-        # KubernetesApiClient.getNodesResourceUri is a pure function, so call it from the actual module instead of from the mock
-        resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
-        continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
-        $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+        nodeInventory = {}
+        @nodeCacheMutex.synchronize {
+          nodeInventory["items"] = @nodeItemsCache.values.clone
+          #@nodeItemsCacheSizeKB = @nodeItemsCache.to_s.length / 1024
+        }
         nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
@@ -160,21 +165,6 @@ module Fluent::Plugin
         else
           $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
         end
-
-        #If we receive a continuation token, make calls, process and flush data until we have processed all data
-        while (!continuationToken.nil? && !continuationToken.empty?)
-          nodesAPIChunkStartTime = (Time.now.to_f * 1000).to_i
-          continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
-          nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
-          @nodesAPIE2ELatencyMs = @nodesAPIE2ELatencyMs + (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
-          if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-            $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-            parse_and_emit_records(nodeInventory, batchTime)
-          else
-            $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
-          end
-        end
-
         @nodeInventoryE2EProcessingLatencyMs = ((Time.now.to_f * 1000).to_i - nodeInventoryStartTime)
         timeDifference = (DateTime.now.to_time.to_i - @@nodeInventoryLatencyTelemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
@@ -312,80 +302,80 @@ module Fluent::Plugin
           # Adding telemetry to send node telemetry every 10 minutes
           timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
           timeDifferenceInMinutes = timeDifference / 60
-          if (timeDifferenceInMinutes >= @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          #if (timeDifferenceInMinutes >= @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          begin
+            properties = getNodeTelemetryProps(item)
+            properties["KubernetesProviderID"] = nodeInventoryRecord["KubernetesProviderID"]
+            capacityInfo = item["status"]["capacity"]
+
+            ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
             begin
-              properties = getNodeTelemetryProps(item)
-              properties["KubernetesProviderID"] = nodeInventoryRecord["KubernetesProviderID"]
-              capacityInfo = item["status"]["capacity"]
-
-              ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
-              begin
-                if (!capacityInfo["nvidia.com/gpu"].nil?) && (!capacityInfo["nvidia.com/gpu"].empty?)
-                  properties["nvigpus"] = capacityInfo["nvidia.com/gpu"]
-                end
-
-                if (!capacityInfo["amd.com/gpu"].nil?) && (!capacityInfo["amd.com/gpu"].empty?)
-                  properties["amdgpus"] = capacityInfo["amd.com/gpu"]
-                end
-              rescue => errorStr
-                $log.warn "Failed in getting GPU telemetry in_kube_nodes : #{errorStr}"
-                $log.debug_backtrace(errorStr.backtrace)
-                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+              if (!capacityInfo["nvidia.com/gpu"].nil?) && (!capacityInfo["nvidia.com/gpu"].empty?)
+                properties["nvigpus"] = capacityInfo["nvidia.com/gpu"]
               end
 
-              # Telemetry for data collection config for replicaset
-              if (File.file?(@@configMapMountPath))
-                properties["collectAllKubeEvents"] = @@collectAllKubeEvents
+              if (!capacityInfo["amd.com/gpu"].nil?) && (!capacityInfo["amd.com/gpu"].empty?)
+                properties["amdgpus"] = capacityInfo["amd.com/gpu"]
               end
-
-              #telemetry about prometheus metric collections settings for replicaset
-              if (File.file?(@@promConfigMountPath))
-                properties["rsPromInt"] = @@rsPromInterval
-                properties["rsPromFPC"] = @@rsPromFieldPassCount
-                properties["rsPromFDC"] = @@rsPromFieldDropCount
-                properties["rsPromServ"] = @@rsPromK8sServiceCount
-                properties["rsPromUrl"] = @@rsPromUrlCount
-                properties["rsPromMonPods"] = @@rsPromMonitorPods
-                properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
-                properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
-                properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
-              end
-              # telemetry about osm metric settings for replicaset
-              if (File.file?(@@osmConfigMountPath))
-                properties["osmNamespaceCount"] = @@osmNamespaceCount
-              end
-              ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
-              telemetrySent = true
-
-              # Telemetry for data collection config for replicaset
-              if (File.file?(@@configMapMountPath))
-                properties["collectAllKubeEvents"] = @@collectAllKubeEvents
-              end
-
-              #telemetry about prometheus metric collections settings for replicaset
-              if (File.file?(@@promConfigMountPath))
-                properties["rsPromInt"] = @@rsPromInterval
-                properties["rsPromFPC"] = @@rsPromFieldPassCount
-                properties["rsPromFDC"] = @@rsPromFieldDropCount
-                properties["rsPromServ"] = @@rsPromK8sServiceCount
-                properties["rsPromUrl"] = @@rsPromUrlCount
-                properties["rsPromMonPods"] = @@rsPromMonitorPods
-                properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
-                properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
-                properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
-              end
-              # telemetry about osm metric settings for replicaset
-              if (File.file?(@@osmConfigMountPath))
-                properties["osmNamespaceCount"] = @@osmNamespaceCount
-              end
-              @applicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
-              telemetrySent = true
             rescue => errorStr
-              $log.warn "Failed in getting telemetry in_kube_nodes : #{errorStr}"
+              $log.warn "Failed in getting GPU telemetry in_kube_nodes : #{errorStr}"
               $log.debug_backtrace(errorStr.backtrace)
-              @applicationInsightsUtility.sendExceptionTelemetry(errorStr)
+              ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
             end
+
+            # Telemetry for data collection config for replicaset
+            if (File.file?(@@configMapMountPath))
+              properties["collectAllKubeEvents"] = @@collectAllKubeEvents
+            end
+
+            #telemetry about prometheus metric collections settings for replicaset
+            if (File.file?(@@promConfigMountPath))
+              properties["rsPromInt"] = @@rsPromInterval
+              properties["rsPromFPC"] = @@rsPromFieldPassCount
+              properties["rsPromFDC"] = @@rsPromFieldDropCount
+              properties["rsPromServ"] = @@rsPromK8sServiceCount
+              properties["rsPromUrl"] = @@rsPromUrlCount
+              properties["rsPromMonPods"] = @@rsPromMonitorPods
+              properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
+              properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
+              properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
+            end
+            # telemetry about osm metric settings for replicaset
+            if (File.file?(@@osmConfigMountPath))
+              properties["osmNamespaceCount"] = @@osmNamespaceCount
+            end
+            ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
+            telemetrySent = true
+
+            # Telemetry for data collection config for replicaset
+            if (File.file?(@@configMapMountPath))
+              properties["collectAllKubeEvents"] = @@collectAllKubeEvents
+            end
+
+            #telemetry about prometheus metric collections settings for replicaset
+            if (File.file?(@@promConfigMountPath))
+              properties["rsPromInt"] = @@rsPromInterval
+              properties["rsPromFPC"] = @@rsPromFieldPassCount
+              properties["rsPromFDC"] = @@rsPromFieldDropCount
+              properties["rsPromServ"] = @@rsPromK8sServiceCount
+              properties["rsPromUrl"] = @@rsPromUrlCount
+              properties["rsPromMonPods"] = @@rsPromMonitorPods
+              properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
+              properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
+              properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
+            end
+            # telemetry about osm metric settings for replicaset
+            if (File.file?(@@osmConfigMountPath))
+              properties["osmNamespaceCount"] = @@osmNamespaceCount
+            end
+            @applicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
+            telemetrySent = true
+          rescue => errorStr
+            $log.warn "Failed in getting telemetry in_kube_nodes : #{errorStr}"
+            $log.debug_backtrace(errorStr.backtrace)
+            @applicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end
+          #end
         end
         if telemetrySent == true
           @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
@@ -566,18 +556,121 @@ module Fluent::Plugin
         end
         properties["NODES_CHUNK_SIZE"] = @NODES_CHUNK_SIZE
         properties["NODES_EMIT_STREAM_BATCH_SIZE"] = @NODES_EMIT_STREAM_BATCH_SIZE
+        #properties["NODE_ITEMS_CACHE_SIZE_KB"] = @nodeItemsCacheSizeKB
       rescue => errorStr
         $log.warn "in_kube_nodes::getContainerNodeIngetNodeTelemetryPropsventoryRecord:Failed: #{errorStr}"
       end
       return properties
     end
+
+    def watch_nodes
+      nodesResourceVersion = nil
+      loop do
+        begin
+          if nodesResourceVersion.nil?
+            # clear cache before filling the cache with list
+            @nodeCacheMutex.synchronize {
+              @nodeItemsCache.clear()
+            }
+            continuationToken = nil
+            $log.info("in_kube_nodes::watch_nodes : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+            resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
+            continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
+            $log.info("in_kube_nodes::watch_nodes : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+            if (!nodeInventory.nil? && !nodeInventory.empty?)
+              nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
+              if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
+                $log.info("in_kube_nodes::watch_nodes : number of node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
+                nodeInventory["items"].each do |item|
+                  key = item["metadata"]["uid"]
+                  nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
+                  @nodeCacheMutex.synchronize {
+                    @nodeItemsCache[key] = nodeItem
+                  }
+                end
+              end
+            else
+              $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory"
+            end
+            while (!continuationToken.nil? && !continuationToken.empty?)
+              continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
+              if (!nodeInventory.nil? && !nodeInventory.empty?)
+                nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
+                if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
+                  $log.info("in_kube_nodes::watch_nodes : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+                  nodeInventory["items"].each do |item|
+                    key = item["metadata"]["uid"]
+                    nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
+                    @nodeCacheMutex.synchronize {
+                      @nodeItemsCache[key] = nodeItem
+                    }
+                  end
+                end
+              else
+                $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory"
+              end
+            end
+          end
+          $log.info("in_kube_nodes::watch_nodes:Establishing Watch connection for nodes with resourceversion: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+          watcher = KubernetesApiClient.watch("nodes", resource_version: nodesResourceVersion, allow_watch_bookmarks: true)
+          if watcher.nil?
+            $log.warn("in_kube_nodes::watch_nodes:watch API returned nil watcher for watch connection with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+          else
+            watcher.each do |notice|
+              case notice["type"]
+              when "ADDED", "MODIFIED", "DELETED", "BOOKMARK"
+                item = notice["object"]
+                # extract latest resource version to use for watch reconnect
+                if !item.nil? && !item.empty? &&
+                   !item["metadata"].nil? && !item["metadata"].empty? &&
+                   !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
+                  nodesResourceVersion = item["metadata"]["resourceVersion"]
+                  $log.info("in_kube_nodes::watch_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+                else
+                  $log.info("in_kube_nodes::watch_nodes: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                  nodesResourceVersion = nil
+                  # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
+                  break
+                end
+                if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
+                  key = item["metadata"]["uid"]
+                  nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
+                  @nodeCacheMutex.synchronize {
+                    @nodeItemsCache[key] = nodeItem
+                  }
+                elsif notice["type"] == "DELETED"
+                  key = item["metadata"]["uid"]
+                  @nodeCacheMutex.synchronize {
+                    @nodeItemsCache.delete(key)
+                  }
+                end
+              when "ERROR"
+                nodesResourceVersion = nil
+                $log.warn("in_kube_nodes::watch_nodes:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
+                break
+              else
+                $log.warn("in_kube_nodes::watch_nodes:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
+              end
+            end
+          end
+        rescue Net::ReadTimeout => errorStr
+          $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+        rescue => errorStr
+          $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+          nodesResourceVersion = nil
+          sleep(5) # do not overwhelm the api-server if api-server broken
+        ensure
+          watcher.finish if watcher
+        end
+      end
+    end
   end # Kube_Node_Input
+
   class NodeStatsCache
     # inner class for caching implementation (CPU and memory caching is handled the exact same way, so logic to do so is moved to a private inner class)
     # (to reduce code duplication)
     class NodeCache
-
-      @@RECORD_TIME_TO_LIVE = 60*20  # units are seconds, so clear the cache every 20 minutes.
+      @@RECORD_TIME_TO_LIVE = 60 * 20  # units are seconds, so clear the cache every 20 minutes.
 
       def initialize
         @cacheHash = {}
@@ -622,14 +715,13 @@ module Fluent::Plugin
             end
           end
 
-          nodes_to_remove.each {|node_name|
+          nodes_to_remove.each { |node_name|
             @cacheHash.delete(node_name)
             @timeAdded.delete(node_name)
           }
         end
       end
     end  # NodeCache
-
 
     @@cpuCache = NodeCache.new
     @@memCache = NodeCache.new

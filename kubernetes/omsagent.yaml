@@ -26,7 +26,7 @@ rules:
     verbs: ["list", "get", "watch"]
   - apiGroups: ["apps", "extensions", "autoscaling"]
     resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
-    verbs: ["list"]
+    verbs: ["list", "watch"]
   - apiGroups: ["azmon.container.insights"]
     resources: ["healthstates"]
     verbs: ["get", "create", "patch"]
@@ -607,7 +607,7 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
             limits:
-              cpu: 1
+              cpu: 2
               memory: 1Gi
             requests:
               cpu: 150m
@@ -927,4 +927,3 @@ spec:
   names:
     plural: healthstates
     kind: HealthState
-    
