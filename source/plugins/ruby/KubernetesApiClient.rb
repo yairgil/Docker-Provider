@@ -1000,7 +1000,6 @@ class KubernetesApiClient
         end
         item["status"] = {}
         if !resourceItem["status"].nil?
-          item["status"] = resourceItem["status"]
           if !resourceItem["status"]["startTime"].nil?
             item["status"]["startTime"] = resourceItem["status"]["startTime"]
           end
