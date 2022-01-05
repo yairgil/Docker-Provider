@@ -184,7 +184,6 @@ module Fluent::Plugin
         end
 
         # Flush AppInsights telemetry once all the processing is done
-        telemetryFlush = true
         if telemetryFlush == true
           telemetryProperties = {}
           telemetryProperties["Computer"] = @@hostName
