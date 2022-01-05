@@ -573,14 +573,14 @@ module Fluent::Plugin
               @nodeItemsCache.clear()
             }
             continuationToken = nil
-            $log.info("in_kube_nodes::watch_nodes : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::watch_nodes:Getting nodes from Kube API since nodesResourceVersion is #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
             resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
             continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
-            $log.info("in_kube_nodes::watch_nodes : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_nodes::watch_nodes:Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
             if (!nodeInventory.nil? && !nodeInventory.empty?)
               nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
               if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-                $log.info("in_kube_nodes::watch_nodes : number of node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
+                $log.info("in_kube_nodes::watch_nodes: number of node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
                 nodeInventory["items"].each do |item|
                   key = item["metadata"]["uid"]
                   nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)

@@ -675,19 +675,20 @@ module Fluent::Plugin
             winNodes = KubernetesApiClient.getWindowsNodes()
             isCheckedWindowsNodes = true
           end
+          $log.info("in_kube_podinventory::watch_pods:number of windows nodes: #{winNodes.length} @ #{Time.now.utc.iso8601}")
           if podsResourceVersion.nil?
             # clear cache before filling the cache with list
             @podCacheMutex.synchronize {
               @podItemsCache.clear()
             }
             continuationToken = nil
-            $log.info("in_kube_podinventory::watch_pods : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::watch_pods:Getting pods from Kube API since podsResourceVersion is #{podsResourceVersion}  @ #{Time.now.utc.iso8601}")
             continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
-            $log.info("in_kube_podinventory::watch_pods : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::watch_pods:Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
             if (!podInventory.nil? && !podInventory.empty?)
               podsResourceVersion = podInventory["metadata"]["resourceVersion"]
               if (podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-                $log.info("in_kube_podinventory::watch_pods : number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
+                $log.info("in_kube_podinventory::watch_pods:number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
                 podInventory["items"].each do |item|
                   key = item["metadata"]["uid"]
                   podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
@@ -704,7 +705,7 @@ module Fluent::Plugin
               if (!podInventory.nil? && !podInventory.empty?)
                 podsResourceVersion = podInventory["metadata"]["resourceVersion"]
                 if (podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-                  $log.info("in_kube_podinventory::watch_pods : number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+                  $log.info("in_kube_podinventory::watch_pods:number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
                   podInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
                     podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
@@ -732,9 +733,9 @@ module Fluent::Plugin
                    !item["metadata"].nil? && !item["metadata"].empty? &&
                    !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
                   podsResourceVersion = item["metadata"]["resourceVersion"]
-                  $log.info("in_kube_podinventory::watch_pods: received event type: #{notice["type"]} with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
+                  $log.info("in_kube_podinventory::watch_pods:received event type: #{notice["type"]} with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
                 else
-                  $log.info("in_kube_podinventory::watch_pods: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                  $log.info("in_kube_podinventory::watch_pods:received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
                   podsResourceVersion = nil
                   # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
                   break
@@ -759,6 +760,7 @@ module Fluent::Plugin
                 $log.warn("in_kube_podinventory::watch_pods:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
               end
             end
+            $log.info("in_kube_podinventory::watch_pods:Watch connection got disconnected for pods with resourceversion: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
           end
         rescue Net::ReadTimeout => errorStr
           $log.warn("in_kube_podinventory::watch_pods:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
