@@ -15,8 +15,7 @@ waitforlisteneronTCPport() {
 
             if [[ $port =~ $numeric ]] && [[ $waittimesecs =~ $numeric ]]; then
                   #local varlistener=$(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ":25228$"')
-                  while true
-                  do
+                  while true; do
                         if [ $totalsleptsecs -gt $waittimesecs ]; then
                               echo "${FUNCNAME[0]} giving up waiting for listener on port:$port after $totalsleptsecs secs"
                               return 1
@@ -25,7 +24,7 @@ waitforlisteneronTCPport() {
                         if [ -z "$varlistener" ]; then
                               #echo "${FUNCNAME[0]} waiting for $sleepdurationsecs more sec for listener on port:$port ..."
                               sleep $sleepdurationsecs
-                              totalsleptsecs=$(($totalsleptsecs+1))
+                              totalsleptsecs=$(($totalsleptsecs + 1))
                         else
                               echo "${FUNCNAME[0]} found listener on port:$port in $totalsleptsecs secs"
                               return 0
@@ -57,23 +56,22 @@ checkAgentOnboardingStatus() {
                         successMessage="Loaded data sources"
                         failureMessage="Failed to load data sources into config"
                   fi
-                  while true
-                  do
-                     if [ $totalsleptsecs -gt $waittimesecs ]; then
-                        echo "${FUNCNAME[0]} giving up checking agent onboarding status after $totalsleptsecs secs"
-                        return 1
-                     fi
+                  while true; do
+                        if [ $totalsleptsecs -gt $waittimesecs ]; then
+                              echo "${FUNCNAME[0]} giving up checking agent onboarding status after $totalsleptsecs secs"
+                              return 1
+                        fi
 
-                     if grep "$successMessage" "${MDSD_LOG}/mdsd.info"; then
-                        echo "Onboarding success"
-                        return 0
-                     elif  grep "$failureMessage" "${MDSD_LOG}/mdsd.err"; then
-                        echo "Onboarding Failure: Reason: Failed to onboard the agent"
-                        echo "Onboarding Failure: Please verify log analytics workspace configuration such as existence of the workspace, workspace key and workspace enabled for public ingestion"
-                        return 1
-                     fi
-                     sleep $sleepdurationsecs
-                     totalsleptsecs=$(($totalsleptsecs+1))
+                        if grep "$successMessage" "${MDSD_LOG}/mdsd.info"; then
+                              echo "Onboarding success"
+                              return 0
+                        elif grep "$failureMessage" "${MDSD_LOG}/mdsd.err"; then
+                              echo "Onboarding Failure: Reason: Failed to onboard the agent"
+                              echo "Onboarding Failure: Please verify log analytics workspace configuration such as existence of the workspace, workspace key and workspace enabled for public ingestion"
+                              return 1
+                        fi
+                        sleep $sleepdurationsecs
+                        totalsleptsecs=$(($totalsleptsecs + 1))
                   done
             else
                   echo "${FUNCNAME[0]} called with non-numeric arguments<$2>. Required arguments <#wait-time-in-seconds>"
@@ -82,7 +80,6 @@ checkAgentOnboardingStatus() {
       fi
 }
 
-
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
 mkdir -p /var/opt/microsoft/docker-cimprov/state
 
@@ -90,8 +87,8 @@ mkdir -p /var/opt/microsoft/docker-cimprov/state
 inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 
 #Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
-if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
-      ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
+if [[ ((! -e "/etc/config/kube.conf") && ("${CONTAINER_TYPE}" == "PrometheusSidecar")) ||
+      ((-e "/etc/config/kube.conf") && ("${SIDECAR_SCRAPING_ENABLED}" == "false")) ]]; then
       inotifywait /etc/config/osm-settings --daemon --recursive --outfile "/opt/inotifyoutput-osm.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 fi
 
@@ -100,58 +97,58 @@ if [ -z $AKS_RESOURCE_ID ]; then
       echo "not setting customResourceId"
 else
       export customResourceId=$AKS_RESOURCE_ID
-      echo "export customResourceId=$AKS_RESOURCE_ID" >> ~/.bashrc
+      echo "export customResourceId=$AKS_RESOURCE_ID" >>~/.bashrc
       source ~/.bashrc
       echo "customResourceId:$customResourceId"
       export customRegion=$AKS_REGION
-      echo "export customRegion=$AKS_REGION" >> ~/.bashrc
+      echo "export customRegion=$AKS_REGION" >>~/.bashrc
       source ~/.bashrc
       echo "customRegion:$customRegion"
 fi
 
 #set agent config schema version
-if [  -e "/etc/config/settings/schema-version" ] && [  -s "/etc/config/settings/schema-version" ]; then
+if [ -e "/etc/config/settings/schema-version" ] && [ -s "/etc/config/settings/schema-version" ]; then
       #trim
       config_schema_version="$(cat /etc/config/settings/schema-version | xargs)"
       #remove all spaces
       config_schema_version="${config_schema_version//[[:space:]]/}"
       #take first 10 characters
-      config_schema_version="$(echo $config_schema_version| cut -c1-10)"
+      config_schema_version="$(echo $config_schema_version | cut -c1-10)"
 
       export AZMON_AGENT_CFG_SCHEMA_VERSION=$config_schema_version
-      echo "export AZMON_AGENT_CFG_SCHEMA_VERSION=$config_schema_version" >> ~/.bashrc
+      echo "export AZMON_AGENT_CFG_SCHEMA_VERSION=$config_schema_version" >>~/.bashrc
       source ~/.bashrc
       echo "AZMON_AGENT_CFG_SCHEMA_VERSION:$AZMON_AGENT_CFG_SCHEMA_VERSION"
 fi
 
 #set agent config file version
-if [  -e "/etc/config/settings/config-version" ] && [  -s "/etc/config/settings/config-version" ]; then
+if [ -e "/etc/config/settings/config-version" ] && [ -s "/etc/config/settings/config-version" ]; then
       #trim
       config_file_version="$(cat /etc/config/settings/config-version | xargs)"
       #remove all spaces
       config_file_version="${config_file_version//[[:space:]]/}"
       #take first 10 characters
-      config_file_version="$(echo $config_file_version| cut -c1-10)"
+      config_file_version="$(echo $config_file_version | cut -c1-10)"
 
       export AZMON_AGENT_CFG_FILE_VERSION=$config_file_version
-      echo "export AZMON_AGENT_CFG_FILE_VERSION=$config_file_version" >> ~/.bashrc
+      echo "export AZMON_AGENT_CFG_FILE_VERSION=$config_file_version" >>~/.bashrc
       source ~/.bashrc
       echo "AZMON_AGENT_CFG_FILE_VERSION:$AZMON_AGENT_CFG_FILE_VERSION"
 fi
 
 #set OSM config schema version
-if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
-      ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
-      if [  -e "/etc/config/osm-settings/schema-version" ] && [  -s "/etc/config/osm-settings/schema-version" ]; then
+if [[ ((! -e "/etc/config/kube.conf") && ("${CONTAINER_TYPE}" == "PrometheusSidecar")) ||
+      ((-e "/etc/config/kube.conf") && ("${SIDECAR_SCRAPING_ENABLED}" == "false")) ]]; then
+      if [ -e "/etc/config/osm-settings/schema-version" ] && [ -s "/etc/config/osm-settings/schema-version" ]; then
             #trim
             osm_config_schema_version="$(cat /etc/config/osm-settings/schema-version | xargs)"
             #remove all spaces
             osm_config_schema_version="${osm_config_schema_version//[[:space:]]/}"
             #take first 10 characters
-            osm_config_schema_version="$(echo $osm_config_schema_version| cut -c1-10)"
+            osm_config_schema_version="$(echo $osm_config_schema_version | cut -c1-10)"
 
             export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version
-            echo "export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version" >> ~/.bashrc
+            echo "export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version" >>~/.bashrc
             source ~/.bashrc
             echo "AZMON_OSM_CFG_SCHEMA_VERSION:$AZMON_OSM_CFG_SCHEMA_VERSION"
       fi
@@ -175,7 +172,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             # convert the protocol prefix in lowercase for validation
             proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
             if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+                  echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             fi
             # remove the protocol
             url="$(echo ${PROXY_ENDPOINT/$proto/})"
@@ -191,53 +188,53 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
 
             if [ -z "$user" -o -z "$pwd" -o -z "$host" -o -z "$port" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+                  echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             else
-               echo "successfully validated provided proxy endpoint is valid and expected format"
+                  echo "successfully validated provided proxy endpoint is valid and expected format"
             fi
 
-            echo $pwd > /opt/microsoft/docker-cimprov/proxy_password
+            echo $pwd >/opt/microsoft/docker-cimprov/proxy_password
 
             export MDSD_PROXY_MODE=application
-            echo "export MDSD_PROXY_MODE=$MDSD_PROXY_MODE" >> ~/.bashrc
+            echo "export MDSD_PROXY_MODE=$MDSD_PROXY_MODE" >>~/.bashrc
             export MDSD_PROXY_ADDRESS=$proto$hostport
-            echo "export MDSD_PROXY_ADDRESS=$MDSD_PROXY_ADDRESS" >> ~/.bashrc
+            echo "export MDSD_PROXY_ADDRESS=$MDSD_PROXY_ADDRESS" >>~/.bashrc
             export MDSD_PROXY_USERNAME=$user
-            echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
+            echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >>~/.bashrc
             export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
-            echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
-            
+            echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >>~/.bashrc
+
             #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
             export MDSD_ODS_COMPRESSION_LEVEL=0
-            echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
+            echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >>~/.bashrc
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
-         echo "Making curl request to oms endpint with domain: $domain and proxy: $PROXY_ENDPOINT"
-         curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+            echo "Making curl request to oms endpint with domain: $domain and proxy: $PROXY_ENDPOINT"
+            curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
       else
-         echo "Making curl request to oms endpint with domain: $domain"
-         curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
+            echo "Making curl request to oms endpint with domain: $domain"
+            curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
       fi
 
       if [ $? -ne 0 ]; then
             if [ ! -z "$PROXY_ENDPOINT" ]; then
-               echo "Making curl request to ifconfig.co with proxy: $PROXY_ENDPOINT"
-               RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT`
+                  echo "Making curl request to ifconfig.co with proxy: $PROXY_ENDPOINT"
+                  RET=$(curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT)
             else
-               echo "Making curl request to ifconfig.co"
-               RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co`
+                  echo "Making curl request to ifconfig.co"
+                  RET=$(curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co)
             fi
             if [ $RET -eq 000 ]; then
                   echo "-e error    Error resolving host during the onboarding request. Check the internet connectivity and/or network policy on the cluster"
             else
                   # Retrying here to work around network timing issue
                   if [ ! -z "$PROXY_ENDPOINT" ]; then
-                    echo "ifconfig check succeeded, retrying oms endpoint with proxy..."
-                    curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+                        echo "ifconfig check succeeded, retrying oms endpoint with proxy..."
+                        curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
                   else
-                    echo "ifconfig check succeeded, retrying oms endpoint..."
-                    curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
+                        echo "ifconfig check succeeded, retrying oms endpoint..."
+                        curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
                   fi
 
                   if [ $? -ne 0 ]; then
@@ -253,59 +250,57 @@ else
       echo "LA Onboarding:Workspace Id not mounted, skipping the telemetry check"
 fi
 
-
 # Set environment variable for if public cloud by checking the workspace domain.
 if [ -z $domain ]; then
-  ClOUD_ENVIRONMENT="unknown"
+      ClOUD_ENVIRONMENT="unknown"
 elif [ $domain == "opinsights.azure.com" ]; then
-  CLOUD_ENVIRONMENT="azurepubliccloud"
+      CLOUD_ENVIRONMENT="azurepubliccloud"
 elif [ $domain == "opinsights.azure.cn" ]; then
-  CLOUD_ENVIRONMENT="azurechinacloud"
+      CLOUD_ENVIRONMENT="azurechinacloud"
 elif [ $domain == "opinsights.azure.us" ]; then
-  CLOUD_ENVIRONMENT="azureusgovernmentcloud"
+      CLOUD_ENVIRONMENT="azureusgovernmentcloud"
 elif [ $domain == "opinsights.azure.eaglex.ic.gov" ]; then
-  CLOUD_ENVIRONMENT="usnat"
+      CLOUD_ENVIRONMENT="usnat"
 elif [ $domain == "opinsights.azure.microsoft.scloud" ]; then
-  CLOUD_ENVIRONMENT="ussec"
+      CLOUD_ENVIRONMENT="ussec"
 fi
 export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
-echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
+echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >>~/.bashrc
 
 #consisten naming conventions with the windows
 export DOMAIN=$domain
-echo "export DOMAIN=$DOMAIN" >> ~/.bashrc
+echo "export DOMAIN=$DOMAIN" >>~/.bashrc
 export WSID=$workspaceId
-echo "export WSID=$WSID" >> ~/.bashrc
+echo "export WSID=$WSID" >>~/.bashrc
 
 # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
-if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
+if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
       for BACKOFF in {1..4}; do
-            KEY=$(curl -sS $APPLICATIONINSIGHTS_AUTH_URL )
+            KEY=$(curl -sS $APPLICATIONINSIGHTS_AUTH_URL)
             # there's no easy way to get the HTTP status code from curl, so just check if the result is well formatted
             if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
                   break
             else
-                  sleep $((2**$BACKOFF / 4))  # (exponential backoff)
+                  sleep $((2 ** $BACKOFF / 4)) # (exponential backoff)
             fi
       done
 
       # validate that the retrieved data is an instrumentation key
       if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
             export APPLICATIONINSIGHTS_AUTH=$(echo $KEY)
-            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >> ~/.bashrc
+            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
             echo "Using cloud-specific instrumentation key"
       else
             # no ikey can be retrieved. Disable telemetry and continue
             export DISABLE_TELEMETRY=true
-            echo "export DISABLE_TELEMETRY=true" >> ~/.bashrc
+            echo "export DISABLE_TELEMETRY=true" >>~/.bashrc
             echo "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
       fi
 fi
 
-
 aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)
 export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey
-echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc
+echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >>~/.bashrc
 
 source ~/.bashrc
 
@@ -314,7 +309,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       /usr/bin/ruby2.6 tomlparser.rb
 
       cat config_env_var | while read line; do
-            echo $line >> ~/.bashrc
+            echo $line >>~/.bashrc
       done
       source config_env_var
 fi
@@ -326,7 +321,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
 
       cat agent_config_env_var | while read line; do
             #echo $line
-            echo $line >> ~/.bashrc
+            echo $line >>~/.bashrc
       done
       source agent_config_env_var
 
@@ -335,7 +330,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
 
       cat integration_npm_config_env_var | while read line; do
             #echo $line
-            echo $line >> ~/.bashrc
+            echo $line >>~/.bashrc
       done
       source integration_npm_config_env_var
 fi
@@ -352,18 +347,18 @@ fi
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             cat defaultpromenvvariables-sidecar | while read line; do
-                  echo $line >> ~/.bashrc
+                  echo $line >>~/.bashrc
             done
             source defaultpromenvvariables-sidecar
       else
             cat defaultpromenvvariables | while read line; do
-                  echo $line >> ~/.bashrc
+                  echo $line >>~/.bashrc
             done
             source defaultpromenvvariables
       fi
 else
       cat defaultpromenvvariables-rs | while read line; do
-            echo $line >> ~/.bashrc
+            echo $line >>~/.bashrc
       done
       source defaultpromenvvariables-rs
 fi
@@ -371,7 +366,7 @@ fi
 #Sourcing telemetry environment variable file if it exists
 if [ -e "telemetry_prom_config_env_var" ]; then
       cat telemetry_prom_config_env_var | while read line; do
-            echo $line >> ~/.bashrc
+            echo $line >>~/.bashrc
       done
       source telemetry_prom_config_env_var
 fi
@@ -384,20 +379,19 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             #Sourcing config environment variable file if it exists
             if [ -e "side_car_fbit_config_env_var" ]; then
                   cat side_car_fbit_config_env_var | while read line; do
-                        echo $line >> ~/.bashrc
+                        echo $line >>~/.bashrc
                   done
                   source side_car_fbit_config_env_var
             fi
       fi
 fi
 
-
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       /usr/bin/ruby2.6 tomlparser-mdm-metrics-config.rb
 
       cat config_mdm_metrics_env_var | while read line; do
-            echo $line >> ~/.bashrc
+            echo $line >>~/.bashrc
       done
       source config_mdm_metrics_env_var
 
@@ -405,19 +399,19 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       /usr/bin/ruby2.6 tomlparser-metric-collection-config.rb
 
       cat config_metric_collection_env_var | while read line; do
-            echo $line >> ~/.bashrc
+            echo $line >>~/.bashrc
       done
       source config_metric_collection_env_var
 fi
 
 # OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
-if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
-      ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
+if [[ ((! -e "/etc/config/kube.conf") && ("${CONTAINER_TYPE}" == "PrometheusSidecar")) ||
+      ((-e "/etc/config/kube.conf") && ("${SIDECAR_SCRAPING_ENABLED}" == "false")) ]]; then
       /usr/bin/ruby2.6 tomlparser-osm-config.rb
 
       if [ -e "integration_osm_config_env_var" ]; then
             cat integration_osm_config_env_var | while read line; do
-                  echo $line >> ~/.bashrc
+                  echo $line >>~/.bashrc
             done
             source integration_osm_config_env_var
       fi
@@ -427,7 +421,7 @@ fi
 echo "Making wget request to cadvisor endpoint with port 10250"
 #Defaults to use port 10255
 cAdvisorIsSecure=false
-RET_CODE=`wget --server-response https://$NODE_IP:10250/stats/summary --no-check-certificate --header="Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" 2>&1 | awk '/^  HTTP/{print $2}'`
+RET_CODE=$(wget --server-response https://$NODE_IP:10250/stats/summary --no-check-certificate --header="Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" 2>&1 | awk '/^  HTTP/{print $2}')
 if [ $RET_CODE -eq 200 ]; then
       cAdvisorIsSecure=true
 fi
@@ -439,17 +433,17 @@ export NODE_NAME=""
 if [ "$cAdvisorIsSecure" = true ]; then
       echo "Wget request using port 10250 succeeded. Using 10250"
       export IS_SECURE_CADVISOR_PORT=true
-      echo "export IS_SECURE_CADVISOR_PORT=true" >> ~/.bashrc
+      echo "export IS_SECURE_CADVISOR_PORT=true" >>~/.bashrc
       export CADVISOR_METRICS_URL="https://$NODE_IP:10250/metrics"
-      echo "export CADVISOR_METRICS_URL=https://$NODE_IP:10250/metrics" >> ~/.bashrc
+      echo "export CADVISOR_METRICS_URL=https://$NODE_IP:10250/metrics" >>~/.bashrc
       echo "Making curl request to cadvisor endpoint /pods with port 10250 to get the configured container runtime on kubelet"
       podWithValidContainerId=$(curl -s -k -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://$NODE_IP:10250/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
 else
       echo "Wget request using port 10250 failed. Using port 10255"
       export IS_SECURE_CADVISOR_PORT=false
-      echo "export IS_SECURE_CADVISOR_PORT=false" >> ~/.bashrc
+      echo "export IS_SECURE_CADVISOR_PORT=false" >>~/.bashrc
       export CADVISOR_METRICS_URL="http://$NODE_IP:10255/metrics"
-      echo "export CADVISOR_METRICS_URL=http://$NODE_IP:10255/metrics" >> ~/.bashrc
+      echo "export CADVISOR_METRICS_URL=http://$NODE_IP:10255/metrics" >>~/.bashrc
       echo "Making curl request to cadvisor endpoint with port 10255 to get the configured container runtime on kubelet"
       podWithValidContainerId=$(curl -s http://$NODE_IP:10255/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
 fi
@@ -461,13 +455,13 @@ if [ ! -z "$podWithValidContainerId" ]; then
       containerRuntime=$(echo $containerRuntime | tr "[:upper:]" "[:lower:]")
       nodeName=$(echo $nodeName | tr "[:upper:]" "[:lower:]")
       # update runtime only if its not empty, not null and not startswith docker
-      if [ -z "$containerRuntime" -o "$containerRuntime" == null  ]; then
+      if [ -z "$containerRuntime" -o "$containerRuntime" == null ]; then
             echo "using default container runtime as $CONTAINER_RUNTIME since got containeRuntime as empty or null"
       elif [[ $containerRuntime != docker* ]]; then
             export CONTAINER_RUNTIME=$containerRuntime
       fi
 
-      if [ -z "$nodeName" -o "$nodeName" == null  ]; then
+      if [ -z "$nodeName" -o "$nodeName" == null ]; then
             echo "-e error nodeName in /pods API response is empty"
       else
             export NODE_NAME=$nodeName
@@ -477,31 +471,31 @@ else
 fi
 
 echo "configured container runtime on kubelet is : "$CONTAINER_RUNTIME
-echo "export CONTAINER_RUNTIME="$CONTAINER_RUNTIME >> ~/.bashrc
+echo "export CONTAINER_RUNTIME="$CONTAINER_RUNTIME >>~/.bashrc
 
 export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
-echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
+echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >>~/.bashrc
 export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
-echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
+echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >>~/.bashrc
 
 # default to docker metrics
 export KUBELET_RUNTIME_OPERATIONS_METRIC="kubelet_docker_operations"
 export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="kubelet_docker_operations_errors"
 
 if [ "$CONTAINER_RUNTIME" != "docker" ]; then
-   # these metrics are avialble only on k8s versions <1.18 and will get deprecated from 1.18
-   export KUBELET_RUNTIME_OPERATIONS_METRIC="kubelet_runtime_operations"
-   export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="kubelet_runtime_operations_errors"
+      # these metrics are avialble only on k8s versions <1.18 and will get deprecated from 1.18
+      export KUBELET_RUNTIME_OPERATIONS_METRIC="kubelet_runtime_operations"
+      export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="kubelet_runtime_operations_errors"
 fi
 
 echo "set caps for ruby process to read container env from proc"
 sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby2.6
-echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
-echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
+echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >>~/.bashrc
+echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >>~/.bashrc
 
 source ~/.bashrc
 
-echo $NODE_NAME > /var/opt/microsoft/docker-cimprov/state/containerhostname
+echo $NODE_NAME >/var/opt/microsoft/docker-cimprov/state/containerhostname
 #check if file was written successfully.
 cat /var/opt/microsoft/docker-cimprov/state/containerhostname
 
@@ -514,87 +508,120 @@ dpkg -l | grep docker-cimprov | awk '{print $2 " " $3}'
 DOCKER_CIMPROV_VERSION=$(dpkg -l | grep docker-cimprov | awk '{print $3}')
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
-echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
+echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >>~/.bashrc
 
 #skip imds lookup since not used either legacy or aad msi auth path
 export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
-echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
+echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >>~/.bashrc
 # this used by mdsd to determine cloud specific LA endpoints
 export OMS_TLD=$domain
-echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc
+echo "export OMS_TLD=$OMS_TLD" >>~/.bashrc
 cat /etc/mdsd.d/envmdsd | while read line; do
-   echo $line >> ~/.bashrc
+      echo $line >>~/.bashrc
 done
 source /etc/mdsd.d/envmdsd
 MDSD_AAD_MSI_AUTH_ARGS=""
 # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH
 export AAD_MSI_AUTH_MODE=false
 if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
-   echo "*** activating oneagent in aad auth msi mode ***"
-   # msi auth specific args
-   MDSD_AAD_MSI_AUTH_ARGS="-a -A"
-   export AAD_MSI_AUTH_MODE=true
-   echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
-   # this used by mdsd to determine the cloud specific AMCS endpoints
-   export customEnvironment=$CLOUD_ENVIRONMENT
-   echo "export customEnvironment=$customEnvironment" >> ~/.bashrc
-   export MDSD_FLUENT_SOCKET_PORT="28230"
-   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
-   export ENABLE_MCS="true"
-   echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
-   export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
-   echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
-   export MDSD_USE_LOCAL_PERSISTENCY="false"
-   echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
+      echo "*** activating oneagent in aad auth msi mode ***"
+      # msi auth specific args
+      MDSD_AAD_MSI_AUTH_ARGS="-a -A"
+      export AAD_MSI_AUTH_MODE=true
+      echo "export AAD_MSI_AUTH_MODE=true" >>~/.bashrc
+      # this used by mdsd to determine the cloud specific AMCS endpoints
+      export customEnvironment=$CLOUD_ENVIRONMENT
+      echo "export customEnvironment=$customEnvironment" >>~/.bashrc
+      export MDSD_FLUENT_SOCKET_PORT="28230"
+      echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >>~/.bashrc
+      export ENABLE_MCS="true"
+      echo "export ENABLE_MCS=$ENABLE_MCS" >>~/.bashrc
+      export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
+      echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >>~/.bashrc
+      export MDSD_USE_LOCAL_PERSISTENCY="false"
+      echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >>~/.bashrc
 else
-  echo "*** activating oneagent in legacy auth mode ***"
-  CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
-  #use the file path as its secure than env
-  CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"
-  echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
-  export CIWORKSPACE_id=$CIWORKSPACE_id
-  echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
-  export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
-  echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
-  export MDSD_FLUENT_SOCKET_PORT="29230"
-  echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+      echo "*** activating oneagent in legacy auth mode ***"
+      CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
+      #use the file path as its secure than env
+      CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"
+      echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
+      export CIWORKSPACE_id=$CIWORKSPACE_id
+      echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >>~/.bashrc
+      export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile
+      echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >>~/.bashrc
+      export MDSD_FLUENT_SOCKET_PORT="29230"
+      echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >>~/.bashrc
 fi
 source ~/.bashrc
 
 dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
 if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-    echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."
-    #use tenant name to avoid unix socket conflict and different ports for port conflict
-    #roleprefix to use container specific mdsd socket
-    export TENANT_NAME="${CONTAINER_TYPE}"
-    echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
-    export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
-    echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
-    source ~/.bashrc
-    mkdir /var/run/mdsd-${CONTAINER_TYPE}
-    # add -T 0xFFFF for full traces
-    mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+      echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."
+      #use tenant name to avoid unix socket conflict and different ports for port conflict
+      #roleprefix to use container specific mdsd socket
+      export TENANT_NAME="${CONTAINER_TYPE}"
+      echo "export TENANT_NAME=$TENANT_NAME" >>~/.bashrc
+      export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
+      echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >>~/.bashrc
+      source ~/.bashrc
+      mkdir /var/run/mdsd-${CONTAINER_TYPE}
+      # add -T 0xFFFF for full traces
+      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 else
-    echo "starting mdsd mode in main container..."
-    # add -T 0xFFFF for full traces
-    mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>> /dev/null &
+      echo "starting mdsd mode in main container..."
+      # add -T 0xFFFF for full traces
+      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
 fi
 
 # Set up a cron job for logrotation
 if [ ! -f /etc/cron.d/ci-agent ]; then
-    echo "setting up cronjob for ci agent log rotation"
-    echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" > /etc/cron.d/ci-agent
+      echo "setting up cronjob for ci agent log rotation"
+      echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" >/etc/cron.d/ci-agent
 fi
 
 # no dependency on fluentd for prometheus side car container
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -e "/etc/config/kube.conf" ]; then
-         echo "*** starting fluentd v1 in daemonset"
-         fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+            echo "*** starting fluentd v1 in daemonset"
+            fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
-        echo "*** starting fluentd v1 in replicaset"
-        fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+            case $NUM_OF_FLUENTD_WORKERS in
+            3)
+                  export NUM_OF_FLUENTD_WORKERS=3
+                  export FLUENTD_POD_INVENTORY_WORKER_ID=2
+                  export FLUENTD_NODE_INVENTORY_WORKER_ID=1
+                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+                  ;;
+            2)
+                 export NUM_OF_FLUENTD_WORKERS=2
+                 export FLUENTD_POD_INVENTORY_WORKER_ID=1
+                 export FLUENTD_NODE_INVENTORY_WORKER_ID=1
+                 export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+                  ;;
+
+            *)
+                 export NUM_OF_FLUENTD_WORKERS=1
+                 export FLUENTD_POD_INVENTORY_WORKER_ID=0
+                 export FLUENTD_NODE_INVENTORY_WORKER_ID=0
+                 export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+                  ;;
+            esac
+            echo "export NUM_OF_FLUENTD_WORKERS=$NUM_OF_FLUENTD_WORKERS" >>~/.bashrc
+            echo "export FLUENTD_POD_INVENTORY_WORKER_ID=$FLUENTD_POD_INVENTORY_WORKER_ID" >>~/.bashrc
+            echo "export FLUENTD_NODE_INVENTORY_WORKER_ID=$FLUENTD_NODE_INVENTORY_WORKER_ID" >>~/.bashrc
+            echo "export FLUENTD_OTHER_INVENTORY_WORKER_ID=$FLUENTD_OTHER_INVENTORY_WORKER_ID" >>~/.bashrc
+            source ~/.bashrc
+
+            echo "*** fluentd worker configuration ***"
+            echo "num of workers:${NUM_OF_FLUENTD_WORKERS}"
+            echo "pod inventory worker id: ${FLUENTD_POD_INVENTORY_WORKER_ID}"
+            echo "node inventory worker id: ${FLUENTD_NODE_INVENTORY_WORKER_ID}"
+            echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
+
+            echo "*** starting fluentd v1 in replicaset"
+            fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       fi
 fi
 
@@ -621,13 +648,13 @@ if [ ! -e "/etc/config/kube.conf" ]; then
       fi
 else
       if [ -e "/opt/telegraf-test-rs.conf" ]; then
-                  echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test-rs.conf --input-filter file -test
-                  if [ $? -eq 0 ]; then
-                        mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
-                        echo "Moving test conf file to telegraf replicaset conf since test run succeeded"
-                  fi
-                  echo "****************End Telegraf Run in Test Mode**************************"
+            echo "****************Start Telegraf in Test Mode**************************"
+            /opt/telegraf --config /opt/telegraf-test-rs.conf --input-filter file -test
+            if [ $? -eq 0 ]; then
+                  mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+                  echo "Moving test conf file to telegraf replicaset conf since test run succeeded"
+            fi
+            echo "****************End Telegraf Run in Test Mode**************************"
       fi
 fi
 
@@ -671,15 +698,15 @@ else
 fi
 
 export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id
-echo "export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id" >> ~/.bashrc
+echo "export TELEMETRY_AKS_RESOURCE_ID=$telemetry_aks_resource_id" >>~/.bashrc
 export TELEMETRY_AKS_REGION=$telemetry_aks_region
-echo "export TELEMETRY_AKS_REGION=$telemetry_aks_region" >> ~/.bashrc
+echo "export TELEMETRY_AKS_REGION=$telemetry_aks_region" >>~/.bashrc
 export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name
-echo "export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name" >> ~/.bashrc
+echo "export TELEMETRY_CLUSTER_NAME=$telemetry_cluster_name" >>~/.bashrc
 export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name
-echo "export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name" >> ~/.bashrc
+echo "export TELEMETRY_ACS_RESOURCE_NAME=$telemetry_acs_resource_name" >>~/.bashrc
 export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type
-echo "export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type" >> ~/.bashrc
+echo "export TELEMETRY_CLUSTER_TYPE=$telemetry_cluster_type" >>~/.bashrc
 
 #if [ ! -e "/etc/config/kube.conf" ]; then
 #   nodename=$(cat /hostfs/etc/hostname)
@@ -691,15 +718,15 @@ echo "replacing nodename in telegraf config"
 sed -i -e "s/placeholder_hostname/$nodename/g" $telegrafConfFile
 
 export HOST_MOUNT_PREFIX=/hostfs
-echo "export HOST_MOUNT_PREFIX=/hostfs" >> ~/.bashrc
+echo "export HOST_MOUNT_PREFIX=/hostfs" >>~/.bashrc
 export HOST_PROC=/hostfs/proc
-echo "export HOST_PROC=/hostfs/proc" >> ~/.bashrc
+echo "export HOST_PROC=/hostfs/proc" >>~/.bashrc
 export HOST_SYS=/hostfs/sys
-echo "export HOST_SYS=/hostfs/sys" >> ~/.bashrc
+echo "export HOST_SYS=/hostfs/sys" >>~/.bashrc
 export HOST_ETC=/hostfs/etc
-echo "export HOST_ETC=/hostfs/etc" >> ~/.bashrc
+echo "export HOST_ETC=/hostfs/etc" >>~/.bashrc
 export HOST_VAR=/hostfs/var
-echo "export HOST_VAR=/hostfs/var" >> ~/.bashrc
+echo "export HOST_VAR=/hostfs/var" >>~/.bashrc
 
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
@@ -735,9 +762,10 @@ service rsyslog status
 checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
 
 shutdown() {
-	 pkill -f mdsd
-	}
+      pkill -f mdsd
+}
 
 trap "shutdown" SIGTERM
 
-sleep inf & wait
+sleep inf &
+wait
