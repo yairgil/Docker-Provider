@@ -1,8 +1,9 @@
 #!/bin/bash
 
 
-# usage: writeGlobalVar ENABLE_SIDECAR_SCRAPING true
-writeGlobalVar() {
+# please use this instead of adding env vars to bashrc directly
+# usage: setGlobalEnvVar ENABLE_SIDECAR_SCRAPING true
+setGlobalEnvVar() {
       export "$1"="$2"
       echo "export \"$1\"=\"$2\"" >> /opt/env_vars
 }
@@ -90,6 +91,7 @@ checkAgentOnboardingStatus() {
       fi
 }
 
+
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
 mkdir -p /var/opt/microsoft/docker-cimprov/state
 
@@ -106,9 +108,9 @@ fi
 if [ -z $AKS_RESOURCE_ID ]; then
       echo "not setting customResourceId"
 else
-      writeGlobalVar "customResourceId" "$AKS_RESOURCE_ID"
+      setGlobalEnvVar "customResourceId" "$AKS_RESOURCE_ID"
       echo "customResourceId:$customResourceId"
-      writeGlobalVar "customRegion" "$AKS_REGION"
+      setGlobalEnvVar "customRegion" "$AKS_REGION"
       echo "customRegion:$customRegion"
 fi
 
@@ -121,7 +123,7 @@ if [  -e "/etc/config/settings/schema-version" ] && [  -s "/etc/config/settings/
       #take first 10 characters
       config_schema_version="$(echo $config_schema_version| cut -c1-10)"
 
-      writeGlobalVar "AZMON_AGENT_CFG_SCHEMA_VERSION" "$config_schema_version"
+      setGlobalEnvVar "AZMON_AGENT_CFG_SCHEMA_VERSION" "$config_schema_version"
       echo "AZMON_AGENT_CFG_SCHEMA_VERSION:$AZMON_AGENT_CFG_SCHEMA_VERSION"
 fi
 
@@ -134,7 +136,7 @@ if [  -e "/etc/config/settings/config-version" ] && [  -s "/etc/config/settings/
       #take first 10 characters
       config_file_version="$(echo $config_file_version| cut -c1-10)"
 
-      writeGlobalVar "AZMON_AGENT_CFG_FILE_VERSION" $config_file_version
+      setGlobalEnvVar "AZMON_AGENT_CFG_FILE_VERSION" $config_file_version
       echo "AZMON_AGENT_CFG_FILE_VERSION:$AZMON_AGENT_CFG_FILE_VERSION"
 fi
 
@@ -149,7 +151,7 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
             #take first 10 characters
             osm_config_schema_version="$(echo $osm_config_schema_version| cut -c1-10)"
 
-            writeGlobalVar "AZMON_OSM_CFG_SCHEMA_VERSION" "$osm_config_schema_version"
+            setGlobalEnvVar "AZMON_OSM_CFG_SCHEMA_VERSION" "$osm_config_schema_version"
             echo "AZMON_OSM_CFG_SCHEMA_VERSION:$AZMON_OSM_CFG_SCHEMA_VERSION"
       fi
 fi
@@ -195,12 +197,12 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
 
             echo $pwd > /opt/microsoft/docker-cimprov/proxy_password
 
-            writeGlobalVar "MDSD_PROXY_MODE" "application"
-            writeGlobalVar "MDSD_PROXY_ADDRESS" "$proto$hostport"
-            writeGlobalVar "MDSD_PROXY_USERNAME" "$user"
-            writeGlobalVar "MDSD_PROXY_PASSWORD_FILE" "/opt/microsoft/docker-cimprov/proxy_password"
+            setGlobalEnvVar "MDSD_PROXY_MODE" "application"
+            setGlobalEnvVar "MDSD_PROXY_ADDRESS" "$proto$hostport"
+            setGlobalEnvVar "MDSD_PROXY_USERNAME" "$user"
+            setGlobalEnvVar "MDSD_PROXY_PASSWORD_FILE" "/opt/microsoft/docker-cimprov/proxy_password"
             #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
-            writeGlobalVar "MDSD_ODS_COMPRESSION_LEVEL" "0"
+            setGlobalEnvVar "MDSD_ODS_COMPRESSION_LEVEL" "0"
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
@@ -259,10 +261,10 @@ elif [ $domain == "opinsights.azure.eaglex.ic.gov" ]; then
 elif [ $domain == "opinsights.azure.microsoft.scloud" ]; then
   CLOUD_ENVIRONMENT="ussec"
 fi
-writeGlobalVar "CLOUD_ENVIRONMENT" $CLOUD_ENVIRONMENT
+setGlobalEnvVar "CLOUD_ENVIRONMENT" $CLOUD_ENVIRONMENT
 #consisten naming conventions with the windows
-writeGlobalVar "DOMAIN" $domain
-writeGlobalVar "WSID" $workspaceId
+setGlobalEnvVar "DOMAIN" $domain
+setGlobalEnvVar "WSID" $workspaceId
 
 # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
 if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
@@ -278,17 +280,16 @@ if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSI
 
       # validate that the retrieved data is an instrumentation key
       if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
-            writeGlobalVar "APPLICATIONINSIGHTS_AUTH" $(echo $KEY)
+            setGlobalEnvVar "APPLICATIONINSIGHTS_AUTH" $(echo $KEY)
             echo "Using cloud-specific instrumentation key"
       else
             # no ikey can be retrieved. Disable telemetry and continue
-            writeGlobalVar "DISABLE_TELEMETRY" "true"
+            setGlobalEnvVar "DISABLE_TELEMETRY" "true"
             echo "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
       fi
 fi
-
 aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)
-writeGlobalVar "TELEMETRY_APPLICATIONINSIGHTS_KEY" "$aikey"
+setGlobalEnvVar "TELEMETRY_APPLICATIONINSIGHTS_KEY" "$aikey"
 
 
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
@@ -403,13 +404,13 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
       fi
 fi
 
-
+# If the prometheus sidecar isn't doing anything then there's no need to run mdsd and telegraf in it. 
 if [[ ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) && 
       ( "${CUSTOM_PROM_MONITOR_PODS}" == "false" ) && 
       ( "${OSM_CONFIGURATION_NAMESPACES_COUNT}" -eq 0 ) ]]; then
-      writeGlobalVar MUTE_PROM_SIDECAR true
+      setGlobalEnvVar MUTE_PROM_SIDECAR true
 else
-      writeGlobalVar MUTE_PROM_SIDECAR false
+      setGlobalEnvVar MUTE_PROM_SIDECAR false
 fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
@@ -427,14 +428,14 @@ export NODE_NAME=""
 
 if [ "$cAdvisorIsSecure" = true ]; then
       echo "Wget request using port 10250 succeeded. Using 10250"
-      writeGlobalVar "IS_SECURE_CADVISOR_PORT" "true"
-      writeGlobalVar "CADVISOR_METRICS_URL" "https://$NODE_IP:10250/metrics"
+      setGlobalEnvVar "IS_SECURE_CADVISOR_PORT" "true"
+      setGlobalEnvVar "CADVISOR_METRICS_URL" "https://$NODE_IP:10250/metrics"
       echo "Making curl request to cadvisor endpoint /pods with port 10250 to get the configured container runtime on kubelet"
       podWithValidContainerId=$(curl -s -k -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://$NODE_IP:10250/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
 else
       echo "Wget request using port 10250 failed. Using port 10255"
-      writeGlobalVar "IS_SECURE_CADVISOR_PORT" "false"
-      writeGlobalVar "CADVISOR_METRICS_URL" "http://$NODE_IP:10255/metrics"
+      setGlobalEnvVar "IS_SECURE_CADVISOR_PORT" "false"
+      setGlobalEnvVar "CADVISOR_METRICS_URL" "http://$NODE_IP:10255/metrics"
       echo "Making curl request to cadvisor endpoint with port 10255 to get the configured container runtime on kubelet"
       podWithValidContainerId=$(curl -s http://$NODE_IP:10255/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
 fi
@@ -455,27 +456,26 @@ if [ ! -z "$podWithValidContainerId" ]; then
       if [ -z "$nodeName" -o "$nodeName" == null  ]; then
             echo "-e error nodeName in /pods API response is empty"
       else
-            #TODO: This is never written to bashrc or /opt/env_vars, why?
-            export NODE_NAME=$nodeName
+            setGlobalEnvVar NODE_NAME $nodeName
       fi
 else
       echo "-e error either /pods API request failed or no running pods"
 fi
 
 echo "configured container runtime on kubelet is : "$CONTAINER_RUNTIME
-writeGlobalVar "CONTAINER_RUNTIME" "$CONTAINER_RUNTIME"
+setGlobalEnvVar "CONTAINER_RUNTIME" "$CONTAINER_RUNTIME"
 
-writeGlobalVar "KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC" "kubelet_runtime_operations_total"
-writeGlobalVar "KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC" "kubelet_runtime_operations_errors_total"
+setGlobalEnvVar "KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC" "kubelet_runtime_operations_total"
+setGlobalEnvVar "KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC" "kubelet_runtime_operations_errors_total"
 
 # default to docker metrics
 if [ "$CONTAINER_RUNTIME" != "docker" ]; then
    # these metrics are avialble only on k8s versions <1.18 and will get deprecated from 1.18
-   writeGlobalVar "KUBELET_RUNTIME_OPERATIONS_METRIC" "kubelet_runtime_operations"
-   writeGlobalVar "KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC" "kubelet_runtime_operations_errors"
+   setGlobalEnvVar "KUBELET_RUNTIME_OPERATIONS_METRIC" "kubelet_runtime_operations"
+   setGlobalEnvVar "KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC" "kubelet_runtime_operations_errors"
 else
-   writeGlobalVar "KUBELET_RUNTIME_OPERATIONS_METRIC" "kubelet_docker_operations"
-   writeGlobalVar "KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC" "kubelet_docker_operations_errors"
+   setGlobalEnvVar "KUBELET_RUNTIME_OPERATIONS_METRIC" "kubelet_docker_operations"
+   setGlobalEnvVar "KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC" "kubelet_docker_operations_errors"
 fi
 
 echo "set caps for ruby process to read container env from proc"
@@ -493,12 +493,12 @@ dpkg -l | grep docker-cimprov | awk '{print $2 " " $3}'
 
 DOCKER_CIMPROV_VERSION=$(dpkg -l | grep docker-cimprov | awk '{print $3}')
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
-writeGlobalVar "DOCKER_CIMPROV_VERSION" "$DOCKER_CIMPROV_VERSION"
+setGlobalEnvVar "DOCKER_CIMPROV_VERSION" "$DOCKER_CIMPROV_VERSION"
 
 #skip imds lookup since not used either legacy or aad msi auth path
-writeGlobalVar "SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" "true"
+setGlobalEnvVar "SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" "true"
 # this used by mdsd to determine cloud specific LA endpoints
-writeGlobalVar "OMS_TLD" "$domain"
+setGlobalEnvVar "OMS_TLD" "$domain"
 cat /etc/mdsd.d/envmdsd | while read line; do
    echo $line >> /opt/env_vars
 done
@@ -510,28 +510,28 @@ if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
    echo "*** activating oneagent in aad auth msi mode ***"
    # msi auth specific args
    MDSD_AAD_MSI_AUTH_ARGS="-a -A"
-   writeGlobalVar "AAD_MSI_AUTH_MODE" "true"
+   setGlobalEnvVar "AAD_MSI_AUTH_MODE" "true"
    # this used by mdsd to determine the cloud specific AMCS endpoints
-   writeGlobalVar "customEnvironment" "$CLOUD_ENVIRONMENT"
-   writeGlobalVar "ENABLE_MCS" "true"
-   writeGlobalVar "MONITORING_USE_GENEVA_CONFIG_SERVICE" "false"
-   writeGlobalVar "MDSD_USE_LOCAL_PERSISTENCY" "false"
+   setGlobalEnvVar "customEnvironment" "$CLOUD_ENVIRONMENT"
+   setGlobalEnvVar "ENABLE_MCS" "true"
+   setGlobalEnvVar "MONITORING_USE_GENEVA_CONFIG_SERVICE" "false"
+   setGlobalEnvVar "MDSD_USE_LOCAL_PERSISTENCY" "false"
 else
    echo "*** activating oneagent in legacy auth mode ***"
-   writeGlobalVar "AAD_MSI_AUTH_MODE" "false"
+   setGlobalEnvVar "AAD_MSI_AUTH_MODE" "false"
    #use the file path as its secure than env
-   writeGlobalVar "CIWORKSPACE_id" "$(cat /etc/omsagent-secret/WSID)"
-   writeGlobalVar "CIWORKSPACE_keyFile" "/etc/omsagent-secret/KEY"
+   setGlobalEnvVar "CIWORKSPACE_id" "$(cat /etc/omsagent-secret/WSID)"
+   setGlobalEnvVar "CIWORKSPACE_keyFile" "/etc/omsagent-secret/KEY"
    echo "setting mdsd workspaceid & key for workspace:$CIWORKSPACE_id"
 fi
-writeGlobalVar "MDSD_FLUENT_SOCKET_PORT" "29230"
+setGlobalEnvVar "MDSD_FLUENT_SOCKET_PORT" "29230"
 
 dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
 if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
       echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."
-      writeGlobalVar "MDSD_ROLE_PREFIX" "/var/run/mdsd-${CONTAINER_TYPE}/default"
+      setGlobalEnvVar "MDSD_ROLE_PREFIX" "/var/run/mdsd-${CONTAINER_TYPE}/default"
       mkdir /var/run/mdsd-${CONTAINER_TYPE}
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
@@ -604,7 +604,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
                   telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
             else
-                  echo "not starting fluent-bit in prometheus sidecar (monitor_kubernetes_pods == false)"
+                  echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape)"
             fi
       else
             echo "starting fluent-bit and setting telegraf conf file for daemonset"
@@ -639,11 +639,11 @@ else
       telemetry_cluster_type="AKS"
 fi
 
-writeGlobalVar "TELEMETRY_AKS_RESOURCE_ID" "$telemetry_aks_resource_id"
-writeGlobalVar "TELEMETRY_AKS_REGION" "$telemetry_aks_region"
-writeGlobalVar "TELEMETRY_CLUSTER_NAME" "$telemetry_cluster_name"
-writeGlobalVar "TELEMETRY_ACS_RESOURCE_NAME" "$telemetry_acs_resource_name"
-writeGlobalVar "TELEMETRY_CLUSTER_TYPE" "$telemetry_cluster_type"
+setGlobalEnvVar "TELEMETRY_AKS_RESOURCE_ID" "$telemetry_aks_resource_id"
+setGlobalEnvVar "TELEMETRY_AKS_REGION" "$telemetry_aks_region"
+setGlobalEnvVar "TELEMETRY_CLUSTER_NAME" "$telemetry_cluster_name"
+setGlobalEnvVar "TELEMETRY_ACS_RESOURCE_NAME" "$telemetry_acs_resource_name"
+setGlobalEnvVar "TELEMETRY_CLUSTER_TYPE" "$telemetry_cluster_type"
 
 #if [ ! -e "/etc/config/kube.conf" ]; then
 #   nodename=$(cat /hostfs/etc/hostname)
@@ -654,11 +654,11 @@ echo "nodename: $nodename"
 echo "replacing nodename in telegraf config"
 sed -i -e "s/placeholder_hostname/$nodename/g" $telegrafConfFile
 
-writeGlobalVar "HOST_MOUNT_PREFIX" "/hostfs"
-writeGlobalVar "HOST_PROC" "/hostfs/proc"
-writeGlobalVar "HOST_SYS" "/hostfs/sys"
-writeGlobalVar "HOST_ETC" "/hostfs/etc"
-writeGlobalVar "HOST_VAR" "/hostfs/var"
+setGlobalEnvVar "HOST_MOUNT_PREFIX" "/hostfs"
+setGlobalEnvVar "HOST_PROC" "/hostfs/proc"
+setGlobalEnvVar "HOST_SYS" "/hostfs/sys"
+setGlobalEnvVar "HOST_ETC" "/hostfs/etc"
+setGlobalEnvVar "HOST_VAR" "/hostfs/var"
 
 if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
       if [ ! -e "/etc/config/kube.conf" ]; then
@@ -683,7 +683,7 @@ if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
       echo "telegraf version: $(/opt/telegraf --version)"
       dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 else
-      echo "not starting telegraf (monitor_kubernetes_pods != true)"
+      echo "not starting telegraf (no metrics to scrape)"
 fi
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'

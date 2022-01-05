@@ -19,7 +19,7 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
     fi
 fi
 
-# if this is the prometheus sidecar and kubernetes pod scraping is not enabled then the rest of the liveness probe doesn't apply
+# if this is the prometheus sidecar and there are no prometheus metrics to scrape then the rest of the liveness probe doesn't apply
 if [[ "${CONTAINER_TYPE}" == "PrometheusSidecar" && "${MUTE_PROM_SIDECAR}" == "true" ]]; then
  exit 0
 fi
