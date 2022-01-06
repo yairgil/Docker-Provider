@@ -665,6 +665,7 @@ module Fluent::Plugin
     end
 
     def watch_pods
+      $log.info("in_kube_podinventory::watch_pods:Start @ #{Time.now.utc.iso8601}")
       podsResourceVersion = nil
       isCheckedWindowsNodes = false
       loop do
@@ -691,10 +692,18 @@ module Fluent::Plugin
                 $log.info("in_kube_podinventory::watch_pods:number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
                 podInventory["items"].each do |item|
                   key = item["metadata"]["uid"]
-                  podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
-                  @podCacheMutex.synchronize {
-                    @podItemsCache[key] = podItem
-                  }
+                  if !key.nil? && !key.empty?
+                    podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
+                    if !podItem.nil? && !podItem.empty?
+                      @podCacheMutex.synchronize {
+                        @podItemsCache[key] = podItem
+                      }
+                    else
+                      $log.warn "in_kube_podinventory::watch_pods:Received podItem either empty or nil"
+                    end
+                  else
+                    $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty"
+                  end
                 end
               end
             else
@@ -708,10 +717,18 @@ module Fluent::Plugin
                   $log.info("in_kube_podinventory::watch_pods:number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
                   podInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
-                    podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
-                    @podCacheMutex.synchronize {
-                      @podItemsCache[key] = podItem
-                    }
+                    if !key.nil? && !key.empty?
+                      podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
+                      if !podItem.nil? && !podItem.empty?
+                        @podCacheMutex.synchronize {
+                          @podItemsCache[key] = podItem
+                        }
+                      else
+                        $log.warn "in_kube_podinventory::watch_pods:Received podItem is empty or nil"
+                      end
+                    else
+                      $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty"
+                    end
                   end
                 end
               else
@@ -719,62 +736,80 @@ module Fluent::Plugin
               end
             end
           end
-          $log.info("in_kube_podinventory::watch_pods:Establishing Watch connection for pods with resourceversion: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
-          watcher = KubernetesApiClient.watch("pods", resource_version: podsResourceVersion, allow_watch_bookmarks: true)
-          if watcher.nil?
-            $log.warn("in_kube_podinventory::watch_pods:watch API returned nil watcher for watch connection with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
-          else
-            watcher.each do |notice|
-              case notice["type"]
-              when "ADDED", "MODIFIED", "DELETED", "BOOKMARK"
-                item = notice["object"]
-                # extract latest resource version to use for watch reconnect
-                if !item.nil? && !item.empty? &&
-                   !item["metadata"].nil? && !item["metadata"].empty? &&
-                   !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
-                  podsResourceVersion = item["metadata"]["resourceVersion"]
-                  $log.info("in_kube_podinventory::watch_pods:received event type: #{notice["type"]} with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
-                else
-                  $log.info("in_kube_podinventory::watch_pods:received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+          begin
+            $log.info("in_kube_podinventory::watch_pods:Establishing Watch connection for pods with resourceversion: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
+            watcher = KubernetesApiClient.watch("pods", resource_version: podsResourceVersion, allow_watch_bookmarks: true)
+            if watcher.nil?
+              $log.warn("in_kube_podinventory::watch_pods:watch API returned nil watcher for watch connection with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
+            else
+              watcher.each do |notice|
+                case notice["type"]
+                when "ADDED", "MODIFIED", "DELETED", "BOOKMARK"
+                  item = notice["object"]
+                  # extract latest resource version to use for watch reconnect
+                  if !item.nil? && !item.empty? &&
+                     !item["metadata"].nil? && !item["metadata"].empty? &&
+                     !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
+                    podsResourceVersion = item["metadata"]["resourceVersion"]
+                    $log.info("in_kube_podinventory::watch_pods:received event type: #{notice["type"]} with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
+                  else
+                    $log.info("in_kube_podinventory::watch_pods:received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                    podsResourceVersion = nil
+                    # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
+                    break
+                  end
+                  if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
+                    key = item["metadata"]["uid"]
+                    if !key.nil? && !key.empty?
+                      podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
+                      if !podItem.nil? && !podItem.empty?
+                        @podCacheMutex.synchronize {
+                          @podItemsCache[key] = podItem
+                        }
+                      else
+                        $log.warn "in_kube_podinventory::watch_pods:Received podItem is empty or nil"
+                      end
+                    else
+                      $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty"
+                    end
+                  elsif notice["type"] == "DELETED"
+                    key = item["metadata"]["uid"]
+                    if !key.nil? && !key.empty?
+                      @podCacheMutex.synchronize {
+                        @podItemsCache.delete(key)
+                      }
+                    end
+                  end
+                when "ERROR"
                   podsResourceVersion = nil
-                  # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
+                  $log.warn("in_kube_podinventory::watch_pods:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
                   break
+                else
+                  $log.warn("in_kube_podinventory::watch_pods:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
                 end
-                if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
-                  key = item["metadata"]["uid"]
-                  podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
-                  @podCacheMutex.synchronize {
-                    @podItemsCache[key] = podItem
-                  }
-                elsif notice["type"] == "DELETED"
-                  key = item["metadata"]["uid"]
-                  @podCacheMutex.synchronize {
-                    @podItemsCache.delete(key)
-                  }
-                end
-              when "ERROR"
-                podsResourceVersion = nil
-                $log.warn("in_kube_podinventory::watch_pods:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
-                break
-              else
-                $log.warn("in_kube_podinventory::watch_pods:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
               end
+              $log.info("in_kube_podinventory::watch_pods:Watch connection got disconnected for pods with resourceversion: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
             end
-            $log.info("in_kube_podinventory::watch_pods:Watch connection got disconnected for pods with resourceversion: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
+          rescue Net::ReadTimeout => errorStr
+            ## This expected if there is no activity more than readtimeout value used in the connection
+            $log.warn("in_kube_podinventory::watch_pods:Watch failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+          rescue => errorStr
+            $log.warn("in_kube_podinventory::watch_pods:Watch failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            podsResourceVersion = nil
+            sleep(5) # do not overwhelm the api-server if api-server broken
+          ensure
+            watcher.finish if watcher
           end
-        rescue Net::ReadTimeout => errorStr
-          $log.warn("in_kube_podinventory::watch_pods:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
         rescue => errorStr
           $log.warn("in_kube_podinventory::watch_pods:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           podsResourceVersion = nil
-          sleep(5) # do not overwhelm the api-server if api-server broken
-        ensure
-          watcher.finish if watcher
         end
       end
+      $log.info("in_kube_podinventory::watch_pods:End @ #{Time.now.utc.iso8601}")
     end
 
     def watch_services
+      $log.info("in_kube_podinventory::watch_services:Start @ #{Time.now.utc.iso8601}")
       servicesResourceVersion = nil
       loop do
         begin
@@ -783,9 +818,9 @@ module Fluent::Plugin
             @serviceCacheMutex.synchronize {
               @serviceItemsCache.clear()
             }
-            $log.info("in_kube_podinventory::watch_services : Getting services from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::watch_services:Getting services from Kube API @ #{Time.now.utc.iso8601}")
             serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
-            $log.info("in_kube_podinventory::watch_services : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::watch_services: Done getting services from Kube API @ #{Time.now.utc.iso8601}")
             if !serviceInfo.nil?
               $log.info("in_kube_podinventory::watch_services:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
               serviceInventory = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
@@ -794,13 +829,21 @@ module Fluent::Plugin
               if (!serviceInventory.nil? && !serviceInventory.empty?)
                 servicesResourceVersion = serviceInventory["metadata"]["resourceVersion"]
                 if (serviceInventory.key?("items") && !serviceInventory["items"].nil? && !serviceInventory["items"].empty?)
-                  $log.info("in_kube_podinventory::watch_services : number of service items #{serviceInventory["items"].length} @ #{Time.now.utc.iso8601}")
+                  $log.info("in_kube_podinventory::watch_services:number of service items #{serviceInventory["items"].length} @ #{Time.now.utc.iso8601}")
                   serviceInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
-                    serviceItem = KubernetesApiClient.getOptimizedItem("services", item)
-                    @serviceCacheMutex.synchronize {
-                      @serviceItemsCache[key] = serviceItem
-                    }
+                    if !key.nil? && !key.empty?
+                      serviceItem = KubernetesApiClient.getOptimizedItem("services", item)
+                      if !serviceItem.nil? && !serviceItem.empty?
+                        @serviceCacheMutex.synchronize {
+                          @serviceItemsCache[key] = serviceItem
+                        }
+                      else
+                        $log.warn "in_kube_podinventory::watch_services:Received serviceItem either nil or empty"
+                      end
+                    else
+                      $log.warn "in_kube_podinventory::watch_services:Received serviceuid either nil or empty"
+                    end
                   end
                 end
               else
@@ -809,59 +852,74 @@ module Fluent::Plugin
               serviceInventory = nil
             end
           end
-
-          $log.info("in_kube_podinventory::watch_services:Establishing Watch connection for services with resourceversion: #{servicesResourceVersion} @ #{Time.now.utc.iso8601}")
-          watcher = KubernetesApiClient.watch("services", resource_version: servicesResourceVersion, allow_watch_bookmarks: true)
-          if watcher.nil?
-            $log.warn("in_kube_podinventory::watch_services:watch API returned nil watcher for watch connection with resource version: #{servicesResourceVersion} @ #{Time.now.utc.iso8601}")
-          else
-            watcher.each do |notice|
-              case notice["type"]
-              when "ADDED", "MODIFIED", "DELETED", "BOOKMARK"
-                item = notice["object"]
-                # extract latest resource version to use for watch reconnect
-                if !item.nil? && !item.empty? &&
-                   !item["metadata"].nil? && !item["metadata"].empty? &&
-                   !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
-                  servicesResourceVersion = item["metadata"]["resourceVersion"]
-                  $log.info("in_kube_podinventory::watch_services: received event type: #{notice["type"]} with resource version: #{servicesResourceVersion} @ #{Time.now.utc.iso8601}")
-                else
-                  $log.info("in_kube_podinventory::watch_services: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+          begin
+            $log.info("in_kube_podinventory::watch_services:Establishing Watch connection for services with resourceversion: #{servicesResourceVersion} @ #{Time.now.utc.iso8601}")
+            watcher = KubernetesApiClient.watch("services", resource_version: servicesResourceVersion, allow_watch_bookmarks: true)
+            if watcher.nil?
+              $log.warn("in_kube_podinventory::watch_services:watch API returned nil watcher for watch connection with resource version: #{servicesResourceVersion} @ #{Time.now.utc.iso8601}")
+            else
+              watcher.each do |notice|
+                case notice["type"]
+                when "ADDED", "MODIFIED", "DELETED", "BOOKMARK"
+                  item = notice["object"]
+                  # extract latest resource version to use for watch reconnect
+                  if !item.nil? && !item.empty? &&
+                     !item["metadata"].nil? && !item["metadata"].empty? &&
+                     !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
+                    servicesResourceVersion = item["metadata"]["resourceVersion"]
+                    $log.info("in_kube_podinventory::watch_services: received event type: #{notice["type"]} with resource version: #{servicesResourceVersion} @ #{Time.now.utc.iso8601}")
+                  else
+                    $log.info("in_kube_podinventory::watch_services: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                    servicesResourceVersion = nil
+                    # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
+                    break
+                  end
+                  if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
+                    key = item["metadata"]["uid"]
+                    if !key.nil? && !key.empty?
+                      serviceItem = KubernetesApiClient.getOptimizedItem("services", item)
+                      if !serviceItem.nil? && !serviceItem.empty?
+                        @serviceCacheMutex.synchronize {
+                          @serviceItemsCache[key] = serviceItem
+                        }
+                      else
+                        $log.warn "in_kube_podinventory::watch_services:Received serviceItem either nil or empty"
+                      end
+                    else
+                      $log.warn "in_kube_podinventory::watch_services:Received serviceuid either nil or empty"
+                    end
+                  elsif notice["type"] == "DELETED"
+                    key = item["metadata"]["uid"]
+                    if !key.nil? && !key.empty?
+                      @serviceCacheMutex.synchronize {
+                        @serviceItemsCache.delete(key)
+                      }
+                    end
+                  end
+                when "ERROR"
                   servicesResourceVersion = nil
-                  # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
+                  $log.warn("in_kube_podinventory::watch_services:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
                   break
+                else
+                  $log.warn("in_kube_podinventory::watch_services:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
                 end
-                if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
-                  key = item["metadata"]["uid"]
-                  serviceItem = KubernetesApiClient.getOptimizedItem("services", item)
-                  @serviceCacheMutex.synchronize {
-                    @serviceItemsCache[key] = serviceItem
-                  }
-                elsif notice["type"] == "DELETED"
-                  key = item["metadata"]["uid"]
-                  @serviceCacheMutex.synchronize {
-                    @serviceItemsCache.delete(key)
-                  }
-                end
-              when "ERROR"
-                servicesResourceVersion = nil
-                $log.warn("in_kube_podinventory::watch_services:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
-                break
-              else
-                $log.warn("in_kube_podinventory::watch_services:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
               end
             end
+          rescue Net::ReadTimeout => errorStr
+            $log.warn("in_kube_podinventory::watch_services:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+          rescue => errorStr
+            $log.warn("in_kube_podinventory::watch_services:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            servicesResourceVersion = nil
+            sleep(5) # do not overwhelm the api-server if api-server broken
+          ensure
+            watcher.finish if watcher
           end
-        rescue Net::ReadTimeout => errorStr
-          $log.warn("in_kube_podinventory::watch_services:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
         rescue => errorStr
           $log.warn("in_kube_podinventory::watch_services:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           servicesResourceVersion = nil
-          sleep(5) # do not overwhelm the api-server if api-server broken
-        ensure
-          watcher.finish if watcher
         end
       end
+      $log.info("in_kube_podinventory::watch_services:End @ #{Time.now.utc.iso8601}")
     end
   end # Kube_Pod_Input
 end # module

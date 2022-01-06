@@ -867,7 +867,7 @@ class KubernetesApiClient
           watcher.finish if watcher
         end
       rescue => errorStr
-        @Log.warn "KubernetesApiClient::watch:Failed with an error : #{errorStr}"
+        @Log.warn "KubernetesApiClient::watch:Failed with an error: #{errorStr}"
       end
     end
 
@@ -890,25 +890,29 @@ class KubernetesApiClient
 
     def getServiceOptimizedItem(resourceItem)
       item = {}
-      item["metadata"] = {}
-      if !resourceItem["metadata"].nil?
-        item["metadata"]["name"] = resourceItem["metadata"]["name"]
-        item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
-      end
-      item["spec"] = {}
-      if !resourceItem["spec"].nil?
-        item["spec"]["selector"] = []
-        if !resourceItem["spec"]["selector"].nil?
-          item["spec"]["selector"] = resourceItem["spec"]["selector"]
+      begin
+        item["metadata"] = {}
+        if !resourceItem["metadata"].nil?
+          item["metadata"]["name"] = resourceItem["metadata"]["name"]
+          item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
         end
-        item["spec"]["clusterIP"] = ""
-        if !resourceItem["spec"]["clusterIP"].nil?
-          item["spec"]["clusterIP"] = resourceItem["spec"]["clusterIP"]
+        item["spec"] = {}
+        if !resourceItem["spec"].nil?
+          item["spec"]["selector"] = []
+          if !resourceItem["spec"]["selector"].nil?
+            item["spec"]["selector"] = resourceItem["spec"]["selector"]
+          end
+          item["spec"]["clusterIP"] = ""
+          if !resourceItem["spec"]["clusterIP"].nil?
+            item["spec"]["clusterIP"] = resourceItem["spec"]["clusterIP"]
+          end
+          item["spec"]["type"] = ""
+          if !resourceItem["spec"]["type"].nil?
+            item["spec"]["type"] = resourceItem["spec"]["type"]
+          end
         end
-        item["spec"]["type"] = ""
-        if !resourceItem["spec"]["type"].nil?
-          item["spec"]["type"] = resourceItem["spec"]["type"]
-        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getServiceOptimizedItem:Failed with an error : #{errorStr}"
       end
       return item
     end
@@ -1102,71 +1106,79 @@ class KubernetesApiClient
 
     def getDeploymentOptimizedItem(resourceItem)
       item = {}
-      item["metadata"] = {}
-      if !resourceItem["metadata"].nil?
-        item["metadata"]["name"] = resourceItem["metadata"]["name"]
-        item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
-      end
-      item["spec"] = {}
-      if !resourceItem["spec"].nil?
-        item["spec"]["strategy"] = {}
-        if !resourceItem["spec"]["strategy"].nil? && !resourceItem["spec"]["strategy"].empty? && !resourceItem["spec"]["strategy"]["type"].nil?
-          item["spec"]["strategy"]["type"] = resourceItem["spec"]["strategy"]["type"]
+      begin
+        item["metadata"] = {}
+        if !resourceItem["metadata"].nil?
+          item["metadata"]["name"] = resourceItem["metadata"]["name"]
+          item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
         end
-        if !resourceItem["spec"]["replicas"].nil?
-          item["spec"]["replicas"] = resourceItem["spec"]["replicas"]
+        item["spec"] = {}
+        if !resourceItem["spec"].nil?
+          item["spec"]["strategy"] = {}
+          if !resourceItem["spec"]["strategy"].nil? && !resourceItem["spec"]["strategy"].empty? && !resourceItem["spec"]["strategy"]["type"].nil?
+            item["spec"]["strategy"]["type"] = resourceItem["spec"]["strategy"]["type"]
+          end
+          if !resourceItem["spec"]["replicas"].nil?
+            item["spec"]["replicas"] = resourceItem["spec"]["replicas"]
+          end
         end
-      end
-      item["status"] = {}
-      if !resourceItem["status"].nil?
-        if !resourceItem["status"]["readyReplicas"].nil?
-          item["status"]["readyReplicas"] = resourceItem["status"]["readyReplicas"]
+        item["status"] = {}
+        if !resourceItem["status"].nil?
+          if !resourceItem["status"]["readyReplicas"].nil?
+            item["status"]["readyReplicas"] = resourceItem["status"]["readyReplicas"]
+          end
+          if !resourceItem["status"]["updatedReplicas"].nil?
+            item["status"]["updatedReplicas"] = resourceItem["status"]["updatedReplicas"]
+          end
+          if !resourceItem["status"]["availableReplicas"].nil?
+            item["status"]["availableReplicas"] = resourceItem["status"]["availableReplicas"]
+          end
         end
-        if !resourceItem["status"]["updatedReplicas"].nil?
-          item["status"]["updatedReplicas"] = resourceItem["status"]["updatedReplicas"]
-        end
-        if !resourceItem["status"]["availableReplicas"].nil?
-          item["status"]["availableReplicas"] = resourceItem["status"]["availableReplicas"]
-        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getDeploymentOptimizedItem:Failed with an error : #{errorStr}"
       end
       return item
     end
 
     def getHpaOptimizedItem(resourceItem)
       item = {}
-      item["metadata"] = {}
-      if !resourceItem["metadata"].nil?
-        item["metadata"]["name"] = resourceItem["metadata"]["name"]
-        item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
-        item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
-      end
-      item["spec"] = {}
-      if !resourceItem["spec"].nil?
-        if !resourceItem["spec"]["minReplicas"].nil?
-          item["spec"]["minReplicas"] = resourceItem["spec"]["minReplicas"]
+      begin
+        item["metadata"] = {}
+        if !resourceItem["metadata"].nil?
+          item["metadata"]["name"] = resourceItem["metadata"]["name"]
+          item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
+          item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
         end
-        if !resourceItem["spec"]["maxReplicas"].nil?
-          item["spec"]["maxReplicas"] = resourceItem["spec"]["maxReplicas"]
+        item["spec"] = {}
+        if !resourceItem["spec"].nil?
+          if !resourceItem["spec"]["minReplicas"].nil?
+            item["spec"]["minReplicas"] = resourceItem["spec"]["minReplicas"]
+          end
+          if !resourceItem["spec"]["maxReplicas"].nil?
+            item["spec"]["maxReplicas"] = resourceItem["spec"]["maxReplicas"]
+          end
+          item["spec"]["scaleTargetRef"] = {}
+          if !resourceItem["spec"]["scaleTargetRef"].nil? && !resourceItem["spec"]["scaleTargetRef"]["kind"].nil?
+            item["spec"]["scaleTargetRef"]["kind"] = resourceItem["spec"]["scaleTargetRef"]["kind"]
+          end
+          if !resourceItem["spec"]["scaleTargetRef"].nil? && !resourceItem["spec"]["scaleTargetRef"]["name"].nil?
+            item["spec"]["scaleTargetRef"]["name"] = resourceItem["spec"]["scaleTargetRef"]["name"]
+          end
         end
-        item["spec"]["scaleTargetRef"] = {}
-        if !resourceItem["spec"]["scaleTargetRef"].nil? && !resourceItem["spec"]["scaleTargetRef"]["kind"].nil?
-          item["spec"]["scaleTargetRef"]["kind"] = resourceItem["spec"]["scaleTargetRef"]["kind"]
+        item["status"] = {}
+        if !resourceItem["status"].nil?
+          if !resourceItem["status"]["currentReplicas"].nil?
+            item["status"]["currentReplicas"] = resourceItem["status"]["currentReplicas"]
+          end
+          if !resourceItem["status"]["desiredReplicas"].nil?
+            item["status"]["desiredReplicas"] = resourceItem["status"]["desiredReplicas"]
+          end
+          if !resourceItem["status"]["lastScaleTime"].nil?
+            item["status"]["lastScaleTime"] = resourceItem["status"]["lastScaleTime"]
+          end
         end
-        if !resourceItem["spec"]["scaleTargetRef"].nil? && !resourceItem["spec"]["scaleTargetRef"]["name"].nil?
-          item["spec"]["scaleTargetRef"]["name"] = resourceItem["spec"]["scaleTargetRef"]["name"]
-        end
-      end
-      item["status"] = {}
-      if !resourceItem["status"].nil?
-        if !resourceItem["status"]["currentReplicas"].nil?
-          item["status"]["currentReplicas"] = resourceItem["status"]["currentReplicas"]
-        end
-        if !resourceItem["status"]["desiredReplicas"].nil?
-          item["status"]["desiredReplicas"] = resourceItem["status"]["desiredReplicas"]
-        end
-        if !resourceItem["status"]["lastScaleTime"].nil?
-          item["status"]["lastScaleTime"] = resourceItem["status"]["lastScaleTime"]
-        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getHpaOptimizedItem:Failed with an error : #{errorStr}"
       end
       return item
     end

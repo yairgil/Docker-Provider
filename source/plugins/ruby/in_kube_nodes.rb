@@ -564,6 +564,7 @@ module Fluent::Plugin
     end
 
     def watch_nodes
+      $log.info("in_kube_nodes::watch_nodes:Start @ #{Time.now.utc.iso8601}")
       nodesResourceVersion = nil
       loop do
         begin
@@ -583,10 +584,18 @@ module Fluent::Plugin
                 $log.info("in_kube_nodes::watch_nodes: number of node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
                 nodeInventory["items"].each do |item|
                   key = item["metadata"]["uid"]
-                  nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
-                  @nodeCacheMutex.synchronize {
-                    @nodeItemsCache[key] = nodeItem
-                  }
+                  if !key.nil? && !key.empty?
+                    nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
+                    if !nodeItem.nil? && !nodeItem.empty?
+                      @nodeCacheMutex.synchronize {
+                        @nodeItemsCache[key] = nodeItem
+                      }
+                    else
+                      $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty"
+                    end
+                  else
+                    $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty"
+                  end
                 end
               end
             else
@@ -600,10 +609,18 @@ module Fluent::Plugin
                   $log.info("in_kube_nodes::watch_nodes : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
                   nodeInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
-                    nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
-                    @nodeCacheMutex.synchronize {
-                      @nodeItemsCache[key] = nodeItem
-                    }
+                    if !key.nil? && !key.empty?
+                      nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
+                      if !nodeItem.nil? && !nodeItem.empty?
+                        @nodeCacheMutex.synchronize {
+                          @nodeItemsCache[key] = nodeItem
+                        }
+                      else
+                        $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty"
+                      end
+                    else
+                      $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty"
+                    end
                   end
                 end
               else
@@ -611,58 +628,74 @@ module Fluent::Plugin
               end
             end
           end
-          $log.info("in_kube_nodes::watch_nodes:Establishing Watch connection for nodes with resourceversion: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
-          watcher = KubernetesApiClient.watch("nodes", resource_version: nodesResourceVersion, allow_watch_bookmarks: true)
-          if watcher.nil?
-            $log.warn("in_kube_nodes::watch_nodes:watch API returned nil watcher for watch connection with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
-          else
-            watcher.each do |notice|
-              case notice["type"]
-              when "ADDED", "MODIFIED", "DELETED", "BOOKMARK"
-                item = notice["object"]
-                # extract latest resource version to use for watch reconnect
-                if !item.nil? && !item.empty? &&
-                   !item["metadata"].nil? && !item["metadata"].empty? &&
-                   !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
-                  nodesResourceVersion = item["metadata"]["resourceVersion"]
-                  $log.info("in_kube_nodes::watch_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
-                else
-                  $log.info("in_kube_nodes::watch_nodes: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+          begin
+            $log.info("in_kube_nodes::watch_nodes:Establishing Watch connection for nodes with resourceversion: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+            watcher = KubernetesApiClient.watch("nodes", resource_version: nodesResourceVersion, allow_watch_bookmarks: true)
+            if watcher.nil?
+              $log.warn("in_kube_nodes::watch_nodes:watch API returned nil watcher for watch connection with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+            else
+              watcher.each do |notice|
+                case notice["type"]
+                when "ADDED", "MODIFIED", "DELETED", "BOOKMARK"
+                  item = notice["object"]
+                  # extract latest resource version to use for watch reconnect
+                  if !item.nil? && !item.empty? &&
+                     !item["metadata"].nil? && !item["metadata"].empty? &&
+                     !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
+                    nodesResourceVersion = item["metadata"]["resourceVersion"]
+                    $log.info("in_kube_nodes::watch_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+                  else
+                    $log.info("in_kube_nodes::watch_nodes: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                    nodesResourceVersion = nil
+                    # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
+                    break
+                  end
+                  if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
+                    key = item["metadata"]["uid"]
+                    if !key.nil? && !key.empty?
+                      nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
+                      if !nodeItem.nil? && !nodeItem.empty?
+                        @nodeCacheMutex.synchronize {
+                          @nodeItemsCache[key] = nodeItem
+                        }
+                      else
+                        $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty"
+                      end
+                    else
+                      $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty"
+                    end
+                  elsif notice["type"] == "DELETED"
+                    key = item["metadata"]["uid"]
+                    if !key.nil? && !key.empty?
+                      @nodeCacheMutex.synchronize {
+                        @nodeItemsCache.delete(key)
+                      }
+                    end
+                  end
+                when "ERROR"
                   nodesResourceVersion = nil
-                  # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
+                  $log.warn("in_kube_nodes::watch_nodes:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
                   break
+                else
+                  $log.warn("in_kube_nodes::watch_nodes:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
                 end
-                if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
-                  key = item["metadata"]["uid"]
-                  nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
-                  @nodeCacheMutex.synchronize {
-                    @nodeItemsCache[key] = nodeItem
-                  }
-                elsif notice["type"] == "DELETED"
-                  key = item["metadata"]["uid"]
-                  @nodeCacheMutex.synchronize {
-                    @nodeItemsCache.delete(key)
-                  }
-                end
-              when "ERROR"
-                nodesResourceVersion = nil
-                $log.warn("in_kube_nodes::watch_nodes:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
-                break
-              else
-                $log.warn("in_kube_nodes::watch_nodes:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
               end
             end
+          rescue Net::ReadTimeout => errorStr
+            $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+          rescue => errorStr
+            $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            nodesResourceVersion = nil
+            sleep(5) # do not overwhelm the api-server if api-server broken
+          ensure
+            watcher.finish if watcher
           end
-        rescue Net::ReadTimeout => errorStr
-          $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
         rescue => errorStr
           $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           nodesResourceVersion = nil
-          sleep(5) # do not overwhelm the api-server if api-server broken
-        ensure
-          watcher.finish if watcher
         end
       end
+      $log.info("in_kube_nodes::watch_nodes:End @ #{Time.now.utc.iso8601}")
     end
   end # Kube_Node_Input
 
