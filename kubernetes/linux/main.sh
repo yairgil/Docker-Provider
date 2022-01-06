@@ -335,7 +335,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
 
       cat agent_config_env_var | while read line; do
             echo $line >> ~/.bashrc
-            done
+      done
       source agent_config_env_var
 
       #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
@@ -733,16 +733,19 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   echo "checking for listener on tcp #25229 and waiting for 30 secs if not.."
                   waitforlisteneronTCPport 25229 30
             else
-                  echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
-                  waitforlisteneronTCPport 25226 30
-                  echo "checking for listener on tcp #25228 and waiting for 30 secs if not.."
-                  waitforlisteneronTCPport 25228 30
+                  echo "no metrics to scrape, not checking for listener on tcp #25229"
             fi
       else
             echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
             waitforlisteneronTCPport 25226 30
+            echo "checking for listener on tcp #25228 and waiting for 30 secs if not.."
+            waitforlisteneronTCPport 25228 30
       fi
+else
+      echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
+      waitforlisteneronTCPport 25226 30
 fi
+
 
 #start telegraf
 if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
