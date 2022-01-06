@@ -546,7 +546,7 @@ MDSD_AAD_MSI_AUTH_ARGS=""
 # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH
 export AAD_MSI_AUTH_MODE=false
 if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
-   echo "*** activating oneagent in aad auth msi mode ***"
+   echo "*** setting up oneagent in aad auth msi mode ***"
    # msi auth specific args
    MDSD_AAD_MSI_AUTH_ARGS="-a -A"
    export AAD_MSI_AUTH_MODE=true
@@ -563,7 +563,7 @@ if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
    export MDSD_USE_LOCAL_PERSISTENCY="false"
    echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
 else
-  echo "*** activating oneagent in legacy auth mode ***"
+  echo "*** setting up oneagent in legacy auth mode ***"
   CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
   #use the file path as its secure than env
   CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"
@@ -592,6 +592,8 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
       mkdir /var/run/mdsd-${CONTAINER_TYPE}
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+    else
+      echo "not starting mdsd (no metrics to scrape)"
     fi
 else
     echo "starting mdsd mode in main container..."
@@ -656,10 +658,10 @@ fi
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+            telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
             if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
                   echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
                   /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
-                  telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
             else
                   echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape)"
             fi
