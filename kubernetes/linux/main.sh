@@ -565,9 +565,6 @@ else
   # enable libcurl for both ODS Uploads and OMS homing service calls
   export ENABLE_CURL_UPLOAD=true
   echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
-  # increase release rate to reduce memory growth
-  export TCMALLOC_RELEASE_RATE=3
-  echo "export TCMALLOC_RELEASE_RATE=$TCMALLOC_RELEASE_RATE" >> ~/.bashrc
 fi
 source ~/.bashrc
 
