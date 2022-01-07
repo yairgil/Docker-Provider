@@ -437,5 +437,5 @@ func slice_contains_str(str_slice []string, target_str string) bool {
 
 func is_linux() bool {
 	osType := os.Getenv("OS_TYPE")
-	return strings.Compare(strings.ToLower(osType), "windows") == 0
+	return strings.Compare(strings.ToLower(osType), "windows") != 0
 }

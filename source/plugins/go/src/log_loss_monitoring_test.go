@@ -38,102 +38,102 @@ func Test_setupLogLossTracker(t *testing.T) {
 	// would be a good opertunity to add some real test cases.
 	tests := []test_struct{
 		{
-			"enable_by_configmap",
-			"DaemonSet",
-			"false",
-			"true",
-			"true",
-			"false",
-			"true",
-			"true",
-			"",
-			"",
-			true,
-			make(map[string]bool),
+			"enable_by_configmap", // name
+			"DaemonSet",           // CONTROLLER_TYPE
+			"false",               // IN_UNIT_TEST
+			"true",                // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"true",                // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"true",                // AZMON_COLLECT_STDOUT_LOGS
+			"true",                // AZMON_COLLECT_STDERR_LOGS
+			"",                    // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                    // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			true,                  // enabled
+			make(map[string]bool), // disabled_namespaces
 		},
 		{
-			"disable_by_configmap",
-			"DaemonSet",
-			"false",
-			"false",
-			"true",
-			"true",
-			"true",
-			"true",
-			"",
-			"",
-			false,
-			make(map[string]bool),
+			"disable_by_configmap", // name
+			"DaemonSet",            // CONTROLLER_TYPE
+			"false",                // IN_UNIT_TEST
+			"false",                // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"true",                 // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"true",                 // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"true",                 // AZMON_COLLECT_STDOUT_LOGS
+			"true",                 // AZMON_COLLECT_STDERR_LOGS
+			"",                     // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                     // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			false,                  // enabled
+			make(map[string]bool),  // disabled_namespaces
 		},
 		{
-			"enabled_by_toggle",
-			"DaemonSet",
-			"false",
-			"false",
-			"false",
-			"true",
-			"true",
-			"true",
-			"",
-			"",
-			true,
-			make(map[string]bool),
+			"enabled_by_toggle",   // name
+			"DaemonSet",           // CONTROLLER_TYPE
+			"false",               // IN_UNIT_TEST
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"true",                // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"true",                // AZMON_COLLECT_STDOUT_LOGS
+			"true",                // AZMON_COLLECT_STDERR_LOGS
+			"",                    // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                    // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			true,                  // enabled
+			make(map[string]bool), // disabled_namespaces
 		},
 		{
-			"disabled_by_toggle",
-			"DaemonSet",
-			"false",
-			"false",
-			"false",
-			"false",
-			"true",
-			"true",
-			"",
-			"",
-			false,
-			make(map[string]bool),
+			"disabled_by_toggle",  // name
+			"DaemonSet",           // CONTROLLER_TYPE
+			"false",               // IN_UNIT_TEST
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"true",                // AZMON_COLLECT_STDOUT_LOGS
+			"true",                // AZMON_COLLECT_STDERR_LOGS
+			"",                    // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                    // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			false,                 // enabled
+			make(map[string]bool), // disabled_namespaces
 		},
 		{
-			"disabled_by_stdout",
-			"DaemonSet",
-			"false",
-			"false",
-			"false",
-			"false",
-			"false",
-			"true",
-			"",
-			"",
-			false,
-			make(map[string]bool),
+			"disabled_by_stdout",  // name
+			"DaemonSet",           // CONTROLLER_TYPE
+			"false",               // IN_UNIT_TEST
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"false",               // AZMON_COLLECT_STDOUT_LOGS
+			"true",                // AZMON_COLLECT_STDERR_LOGS
+			"",                    // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                    // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			false,                 // enabled
+			make(map[string]bool), // disabled_namespaces
 		},
 		{
-			"disabled_by_stderr",
-			"DaemonSet",
-			"false",
-			"false",
-			"false",
-			"false",
-			"true",
-			"false",
-			"",
-			"",
-			false,
-			make(map[string]bool),
+			"disabled_by_stderr",  // name
+			"DaemonSet",           // CONTROLLER_TYPE
+			"false",               // IN_UNIT_TEST
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"true",                // AZMON_COLLECT_STDOUT_LOGS
+			"false",               // AZMON_COLLECT_STDERR_LOGS
+			"",                    // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                    // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			false,                 // enabled
+			make(map[string]bool), // disabled_namespaces
 		},
 		{
-			"disabled_namespaces",
-			"DaemonSet",
-			"false",
-			"false",
-			"false",
-			"false",
-			"true",
-			"false",
-			`["default", "ns2"]`,
-			"",
-			false,
-			map[string]bool{"default": true, "ns2": true},
+			"disabled_namespaces", // name
+			"DaemonSet",           // CONTROLLER_TYPE
+			"false",               // IN_UNIT_TEST
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"true",                // AZMON_COLLECT_STDOUT_LOGS
+			"false",               // AZMON_COLLECT_STDERR_LOGS
+			`["default", "ns2"]`,  // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                    // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			false,                 // enabled
+			map[string]bool{"default": true, "ns2": true}, // disabled_namespaces
 		},
 	}
 
@@ -156,11 +156,13 @@ func Test_setupLogLossTracker(t *testing.T) {
 				mock.EXPECT().Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES").Return(tt.AZMON_STDERR_EXCLUDED_NAMESPACES).Times(1)
 				mock.EXPECT().Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES").Return(tt.AZMON_STDOUT_EXCLUDED_NAMESPACES).Times(1)
 			}
-
 			env_mock = mock
 
 			setupLogLossTracker()
 
+			if enabled != tt.enabled {
+				t.Errorf("Expected log loss tracking to be %v, was actually %v", tt.enabled, enabled)
+			}
 		})
 	}
 

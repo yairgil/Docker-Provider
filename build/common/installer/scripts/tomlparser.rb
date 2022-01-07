@@ -304,6 +304,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     file.write(commands)
     commands = get_command_windows('AZMON_ENABLE_LOG_LOSS_TRACKING', @disableLogLossTracking)
     file.write(commands)
+    commands = get_command_windows('AZMON_ENABLE_LOG_LOSS_TRACKING_SET', @disableLogLossTrackingSet)
+    file.write(commands)
 
     # Close file after writing all environment variables
     file.close
