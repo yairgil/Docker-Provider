@@ -120,8 +120,8 @@ func (GetEnvVarImpl) Getenv(name string) string {
 
 func setupLogLossTracker() {
 	enabled = env_mock.Getenv("CONTROLLER_TYPE") == "DaemonSet"
-
 	enabled = enabled && !(strings.ToLower(env_mock.Getenv("IN_UNIT_TEST")) == "true")
+	enabled = enabled && !(strings.ToLower(env_mock.Getenv("CONTAINER_RUNTIME")) == "docker")
 
 	// toggle env var is meant to be set by Microsoft, customer can set AZMON_ENABLE_LOG_LOSS_TRACKING through a configmap
 	if env_mock.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET") == "true" {

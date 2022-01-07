@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -21,6 +20,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 	type test_struct struct {
 		name                                  string
 		CONTROLLER_TYPE                       string
+		CONTAINER_RUNTIME                     string
 		IN_UNIT_TEST                          string
 		AZMON_ENABLE_LOG_LOSS_TRACKING        string
 		AZMON_ENABLE_LOG_LOSS_TRACKING_SET    string
@@ -38,8 +38,39 @@ func Test_setupLogLossTracker(t *testing.T) {
 	// would be a good opertunity to add some real test cases.
 	tests := []test_struct{
 		{
+			"disable_by_replicaset", // name
+			"ReplicaSet",            // CONTROLLER_TYPE
+			"containerd",            // CONTAINER_RUNTIME
+			"false",                 // IN_UNIT_TEST
+			"true",                  // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"true",                  // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"true",                  // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"true",                  // AZMON_COLLECT_STDOUT_LOGS
+			"true",                  // AZMON_COLLECT_STDERR_LOGS
+			"",                      // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                      // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			false,                   // enabled
+			make(map[string]bool),   // disabled_namespaces
+		},
+		{
+			"disable_by_container_runtime", // name
+			"DaemonSet",                    // CONTROLLER_TYPE
+			"docker",                       // CONTAINER_RUNTIME
+			"false",                        // IN_UNIT_TEST
+			"true",                         // AZMON_ENABLE_LOG_LOSS_TRACKING
+			"true",                         // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
+			"true",                         // AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE
+			"true",                         // AZMON_COLLECT_STDOUT_LOGS
+			"true",                         // AZMON_COLLECT_STDERR_LOGS
+			"",                             // AZMON_STDERR_EXCLUDED_NAMESPACES
+			"",                             // AZMON_STDOUT_EXCLUDED_NAMESPACES
+			false,                          // enabled
+			make(map[string]bool),          // disabled_namespaces
+		},
+		{
 			"enable_by_configmap", // name
 			"DaemonSet",           // CONTROLLER_TYPE
+			"containerd",          // CONTAINER_RUNTIME
 			"false",               // IN_UNIT_TEST
 			"true",                // AZMON_ENABLE_LOG_LOSS_TRACKING
 			"true",                // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
@@ -54,6 +85,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 		{
 			"disable_by_configmap", // name
 			"DaemonSet",            // CONTROLLER_TYPE
+			"containerd",           // CONTAINER_RUNTIME
 			"false",                // IN_UNIT_TEST
 			"false",                // AZMON_ENABLE_LOG_LOSS_TRACKING
 			"true",                 // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
@@ -68,6 +100,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 		{
 			"enabled_by_toggle",   // name
 			"DaemonSet",           // CONTROLLER_TYPE
+			"containerd",          // CONTAINER_RUNTIME
 			"false",               // IN_UNIT_TEST
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
@@ -82,6 +115,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 		{
 			"disabled_by_toggle",  // name
 			"DaemonSet",           // CONTROLLER_TYPE
+			"containerd",          // CONTAINER_RUNTIME
 			"false",               // IN_UNIT_TEST
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
@@ -96,6 +130,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 		{
 			"disabled_by_stdout",  // name
 			"DaemonSet",           // CONTROLLER_TYPE
+			"containerd",          // CONTAINER_RUNTIME
 			"false",               // IN_UNIT_TEST
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
@@ -110,6 +145,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 		{
 			"disabled_by_stderr",  // name
 			"DaemonSet",           // CONTROLLER_TYPE
+			"containerd",          // CONTAINER_RUNTIME
 			"false",               // IN_UNIT_TEST
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
@@ -124,6 +160,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 		{
 			"disabled_namespaces", // name
 			"DaemonSet",           // CONTROLLER_TYPE
+			"containerd",          // CONTAINER_RUNTIME
 			"false",               // IN_UNIT_TEST
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING
 			"false",               // AZMON_ENABLE_LOG_LOSS_TRACKING_SET
@@ -140,22 +177,17 @@ func Test_setupLogLossTracker(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
 			mock := NewMockIGetEnvVar(mockCtrl)
-			mock.EXPECT().Getenv("CONTROLLER_TYPE").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("IN_UNIT_TEST").Return(tt.IN_UNIT_TEST).Times(1)
-			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING_SET).Times(1)
-			if strings.ToLower(tt.AZMON_ENABLE_LOG_LOSS_TRACKING_SET) == "true" {
-				mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING).Times(1)
-			} else {
-				mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE).Times(1)
-			}
-			if tt.enabled {
-				mock.EXPECT().Getenv("AZMON_COLLECT_STDOUT_LOGS").Return(tt.AZMON_COLLECT_STDOUT_LOGS).Times(1)
-				mock.EXPECT().Getenv("AZMON_COLLECT_STDERR_LOGS").Return(tt.AZMON_COLLECT_STDERR_LOGS).Times(1)
-				mock.EXPECT().Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES").Return(tt.AZMON_STDERR_EXCLUDED_NAMESPACES).Times(1)
-				mock.EXPECT().Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES").Return(tt.AZMON_STDOUT_EXCLUDED_NAMESPACES).Times(1)
-			}
+			mock.EXPECT().Getenv("CONTROLLER_TYPE").Return(tt.CONTROLLER_TYPE).AnyTimes()
+			mock.EXPECT().Getenv("CONTAINER_RUNTIME").Return(tt.CONTAINER_RUNTIME).AnyTimes()
+			mock.EXPECT().Getenv("IN_UNIT_TEST").Return(tt.IN_UNIT_TEST).AnyTimes()
+			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING_SET).AnyTimes()
+			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING).AnyTimes()
+			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE).AnyTimes()
+			mock.EXPECT().Getenv("AZMON_COLLECT_STDOUT_LOGS").Return(tt.AZMON_COLLECT_STDOUT_LOGS).AnyTimes()
+			mock.EXPECT().Getenv("AZMON_COLLECT_STDERR_LOGS").Return(tt.AZMON_COLLECT_STDERR_LOGS).AnyTimes()
+			mock.EXPECT().Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES").Return(tt.AZMON_STDERR_EXCLUDED_NAMESPACES).AnyTimes()
+			mock.EXPECT().Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES").Return(tt.AZMON_STDOUT_EXCLUDED_NAMESPACES).AnyTimes()
 			env_mock = mock
 
 			setupLogLossTracker()
@@ -163,6 +195,8 @@ func Test_setupLogLossTracker(t *testing.T) {
 			if enabled != tt.enabled {
 				t.Errorf("Expected log loss tracking to be %v, was actually %v", tt.enabled, enabled)
 			}
+
+			mockCtrl.Finish()
 		})
 	}
 
