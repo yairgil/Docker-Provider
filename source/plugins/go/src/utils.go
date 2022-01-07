@@ -276,6 +276,7 @@ func getSizeOfAllFilesInDirImpl(root_dir *string, preceeding_dir string, storage
 	files_and_folders, err := ioutil.ReadDir(filepath.Join(*root_dir, preceeding_dir))
 	if err != nil {
 		Log("ERROR: reading dir " + err.Error())
+		return
 	}
 	for _, next_file := range files_and_folders {
 		file_name := filepath.Join(preceeding_dir, next_file.Name())
@@ -297,6 +298,7 @@ type AddressableMap struct {
 	free_list             []int
 	string_to_arr_index   map[string]int
 	management_mut        *sync.Mutex
+	debug_mode            bool
 }
 
 func Make_AddressableMap() AddressableMap {
@@ -308,6 +310,7 @@ func Make_AddressableMap() AddressableMap {
 	retval.free_list = make([]int, 0, 300)
 	retval.string_to_arr_index = make(map[string]int)
 	retval.management_mut = &sync.Mutex{}
+	retval.debug_mode = false // this turns on internal consistency checks
 
 	return retval
 }
@@ -333,6 +336,10 @@ func (collection *AddressableMap) get(container_identifier string) (*int64, bool
 		collection.string_to_arr_index[container_identifier] = slice_index
 	}
 
+	if collection.debug_mode {
+		collection._verify_state()
+	}
+
 	return &collection.log_counts[slice_index], !container_seen
 }
 
@@ -340,18 +347,26 @@ func (collection *AddressableMap) delete(container_identifier string) {
 	collection.management_mut.Lock()
 	defer collection.management_mut.Unlock()
 
-	index := collection.string_to_arr_index[container_identifier]
+	index, value_exists := collection.string_to_arr_index[container_identifier]
+	if !value_exists {
+		//TODO: is it worth throwing an error here? probably not, but think about it
+		return
+	}
 
 	collection.log_counts[index] = -1
 	collection.container_identifiers[index] = ""
 	collection.free_list = append(collection.free_list, index)
 	delete(collection.string_to_arr_index, container_identifier)
+
+	if collection.debug_mode {
+		collection._verify_state()
+	}
 }
 
 func (collection *AddressableMap) len() int {
 	collection.management_mut.Lock()
 	defer collection.management_mut.Unlock()
-	return len(collection.container_identifiers)
+	return len(collection.string_to_arr_index)
 }
 
 func (collection *AddressableMap) export_values() ([]string, []int64) {
@@ -367,6 +382,48 @@ func (collection *AddressableMap) export_values() ([]string, []int64) {
 	}
 
 	return identifiers, values
+}
+
+// This is just meant for use in tests
+func (collection *AddressableMap) _verify_state() {
+	// make sure string_to_arr_index, log_counts, and container_identifiers all have the same length
+	if len(collection.log_counts) != len(collection.container_identifiers) {
+		panic("AddressableMap: len(collection.log_counts) != len(collection.container_identifiers)")
+	}
+	if len(collection.log_counts)-len(collection.free_list) != len(collection.string_to_arr_index) {
+		panic("AddressableMap: len(collection.log_counts) - len(collection.free_list) != len(collection.string_to_arr_index)")
+	}
+
+	// make sure the free list doesn't have duplicate values
+	free_list_items := make(map[int]bool)
+	for i := 0; i < len(collection.free_list); i++ {
+		if _, seen := free_list_items[collection.free_list[i]]; seen {
+			panic(fmt.Sprintf("free list has duplicate value %d at index %d", collection.free_list[i], i))
+		}
+		if collection.free_list[i] < 0 {
+			panic(fmt.Sprintf("free list has illegal value %d at index %d", collection.free_list[i], i))
+		}
+		free_list_items[collection.free_list[i]] = true
+	}
+
+	// make sure all the entries in the free list actually are free and any entries not in the free list have legal values
+	for i := 0; i < len(collection.container_identifiers); i++ {
+		if _, should_be_free := free_list_items[i]; should_be_free {
+			if collection.log_counts[i] != -1 {
+				panic(fmt.Sprintf("freed value in log_counts isn't -1 (value is %d at index %d)", collection.log_counts[i], i))
+			}
+			if collection.container_identifiers[i] != "" {
+				panic(fmt.Sprintf("freed value in container_identifiers is not empty string (value is %s at index %d)", collection.container_identifiers[i], i))
+			}
+		} else {
+			if collection.log_counts[i] == -1 {
+				panic(fmt.Sprintf("unfreed value in log_counts is -1 (value is %d at index %d)", collection.log_counts[i], i))
+			}
+			if collection.container_identifiers[i] == "" {
+				panic(fmt.Sprintf("unfreed value in container_identifiers is empty string (value is %s at index %d)", collection.container_identifiers[i], i))
+			}
+		}
+	}
 }
 
 func slice_contains_str(str_slice []string, target_str string) bool {

@@ -1,7 +1,5 @@
 package main
 
-//TODO: replace all panics with actuall error handling
-
 import (
 	"fmt"
 	"log"
@@ -11,6 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 )
+
+const log_loss_telemetry_interval = 5 * time.Minute
+const log_loss_track_rotations_interval = 10 * time.Second
+
+// increase for lower memory usage and higher cpu usage, decrese for the opposite. Do not set lower than 2.
+const garbage_collection_agressiveness = 5
 
 /*
 Garbage collection:
@@ -63,8 +67,8 @@ var FW_records map[string]FwRecord // identifier -> file names
 var num_containers_on_disk int32
 
 // Shared objects
-var deleted_containers_query chan string    // There might be a lot more than 5 containers  of 10 chosen arbitrairly
-var deleted_containers_response chan string // capacity of 10 chosen arbitrairly
+var deleted_containers_query chan string
+var deleted_containers_response chan string
 
 var process_logs_mut sync.Mutex
 var read_disk_mut sync.Mutex
@@ -91,8 +95,8 @@ func init_log_loss_monitoring_globals() {
 	num_containers_on_disk = 0
 
 	// Shared objects
-	deleted_containers_query = make(chan string, 5)    // There might be a lot more than 5 containers  of 10 chosen arbitrairly
-	deleted_containers_response = make(chan string, 5) // capacity of 10 chosen arbitrairly
+	deleted_containers_query = make(chan string, garbage_collection_agressiveness)
+	deleted_containers_response = make(chan string, garbage_collection_agressiveness)
 
 	process_logs_mut = sync.Mutex{}
 	read_disk_mut = sync.Mutex{}
@@ -100,33 +104,59 @@ func init_log_loss_monitoring_globals() {
 	disabled_namespaces = make(map[string]bool)
 }
 
-func SetupLogLossTracker() {
-	enabled = os.Getenv("CONTROLLER_TYPE") == "DaemonSet"
+// //go:generate mockgen -destination=log_loss_monitoring_mock.go -self_package=main Docker-Provider/source/plugins/go/src IGetEnvVar
+//go:generate mockgen -source=log_loss_monitoring.go -destination=log_loss_monitoring_mock.go -packag=main
+type IGetEnvVar interface {
+	Getenv(key string) string
+}
+type GetEnvVarImpl struct{}
 
-	enabled = enabled && !(strings.ToLower(os.Getenv("IN_UNIT_TEST")) == "true")
+var env IGetEnvVar = GetEnvVarImpl{}
 
-	// toggle env var is meant to be set by Microsoft, customer can set AZMON_DISABLE_LOG_LOSS_TRACKING through a configmap
-	enabled = enabled && (os.Getenv("AZMON_DISABLE_LOG_LOSS_TRACKING") != "true") && (os.Getenv("AZMON_DISABLE_LOG_LOSS_TRACKING_TOGGLE") != "true")
+// This is here for unit tests (mocking)
+func (GetEnvVarImpl) Getenv(name string) string {
+	return os.Getenv(name)
+}
+
+func setupLogLossTracker() {
+	enabled = env.Getenv("CONTROLLER_TYPE") == "DaemonSet"
+
+	enabled = enabled && !(strings.ToLower(env.Getenv("IN_UNIT_TEST")) == "true")
+
+	// toggle env var is meant to be set by Microsoft, customer can set AZMON_ENABLE_LOG_LOSS_TRACKING through a configmap
+	if env.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET") == "true" {
+		enabled = enabled && (env.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING") == "true")
+	} else {
+		enabled = enabled && (env.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE") == "true")
+	}
 
 	// don't count logs if stdout or stderr log collection is globally disabled
-	enabled = enabled && strings.ToLower(os.Getenv("AZMON_COLLECT_STDOUT_LOGS")) == "true" && strings.ToLower(os.Getenv("AZMON_COLLECT_STDERR_LOGS")) == "true"
+	enabled = enabled && strings.ToLower(env.Getenv("AZMON_COLLECT_STDOUT_LOGS")) == "true" && strings.ToLower(env.Getenv("AZMON_COLLECT_STDERR_LOGS")) == "true"
+
+	if enabled {
+		for _, excluded_namespace := range strings.Split(env.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES"), ",") {
+			disabled_namespaces[excluded_namespace] = true
+		}
+
+		for _, excluded_namespace := range strings.Split(env.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES"), ",") {
+			disabled_namespaces[excluded_namespace] = true
+		}
+	}
+}
+
+func StartLogLossTracker() {
+
+	// This is broken out into a separate function for unit-testability
+	setupLogLossTracker()
 
 	if enabled {
 		log_loss_logger = createLogger("", "container-log-counts.log")
 
-		for _, excluded_namespace := range strings.Split(os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES"), ",") {
-			disabled_namespaces[excluded_namespace] = true
-		}
-
-		for _, excluded_namespace := range strings.Split(os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES"), ",") {
-			disabled_namespaces[excluded_namespace] = true
-		}
-
-		write_counts_ticker := time.NewTicker(5 * time.Minute)
+		write_counts_ticker := time.NewTicker(log_loss_telemetry_interval)
 		go write_telemetry(write_counts_ticker.C)
 
 		//TODO: turn this frequency down
-		track_rotations_ticker := time.NewTicker(10 * time.Second)
+		track_rotations_ticker := time.NewTicker(log_loss_track_rotations_interval)
 		go track_log_rotations(track_rotations_ticker.C, "/var/log/pods")
 	}
 }
@@ -144,18 +174,20 @@ func Process_log(containerID *string, k8sNamespace *string, k8sPodName *string, 
 			defer process_logs_mut.Unlock()
 
 			// do garbage collection
-			if float32(atomic.LoadInt32(&num_containers_on_disk)) > float32(m_bytes_logged_storage.len())*3 {
+			if float32(atomic.LoadInt32(&num_containers_on_disk))*1.2 < float32(m_bytes_logged_storage.len()) {
 				// send some containerIDs to the FW thread to check if they are deleted from disk
 			write_to_chan:
-				for i := 0; i < 5; i++ {
-					deletion_query_index := (m_deletion_query_index + 1) % m_bytes_logged_storage.len()
+				for i := 0; i < garbage_collection_agressiveness; i++ {
+					m_deletion_query_index = (m_deletion_query_index + 1) % len(m_bytes_logged_storage.container_identifiers)
 
-					// use select to write to the channel in a non-blocking way
-					select {
-					case deleted_containers_query <- m_bytes_logged_storage.container_identifiers[deletion_query_index]:
-						continue
-					default:
-						break write_to_chan
+					if m_bytes_logged_storage.container_identifiers[m_deletion_query_index] != "" {
+						// use select to write to the channel in a non-blocking way
+						select {
+						case deleted_containers_query <- m_bytes_logged_storage.container_identifiers[m_deletion_query_index]:
+							continue
+						default:
+							break write_to_chan
+						}
 					}
 				}
 				// now delete any returned containers (this will probably run the next time a container is added)

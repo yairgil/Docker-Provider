@@ -1,15 +1,83 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
 )
 
+func Test_setupLogLossTracker(t *testing.T) {
+	init_log_loss_monitoring_globals() // This turns on consistency checks in m_bytes_logged_storage
+	m_bytes_logged_storage.debug_mode = true
+
+	_get_env_var_old := _get_env_var
+
+	type test_struct struct {
+		name                                  string
+		CONTROLLER_TYPE                       string
+		IN_UNIT_TEST                          string
+		AZMON_ENABLE_LOG_LOSS_TRACKING        string
+		AZMON_ENABLE_LOG_LOSS_TRACKING_SET    string
+		AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE string
+		AZMON_COLLECT_STDOUT_LOGS             string
+		AZMON_COLLECT_STDERR_LOGS             string
+		AZMON_STDERR_EXCLUDED_NAMESPACES      string
+		AZMON_STDOUT_EXCLUDED_NAMESPACES      string
+		enabled                               bool
+	}
+
+	// This is a pretty useless unit test, but it demonstrates the concept (putting together a real test
+	// would require some large json structs). If getDataTypeToStreamIdMapping() is ever updated, that
+	// would be a good opertunity to add some real test cases.
+	tests := []test_struct{
+		{
+			"enable_by_configmap",
+			"DaemonSet",
+			"false",
+			"true",
+			"true",
+			"false",
+			"true",
+			"true",
+			"",
+			"",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			mock := NewMockIGetEnvVar
+			mock.EXPECT().Getenv("CONTROLLER_TYPE").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("IN_UNIT_TEST").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("AZMON_COLLECT_STDOUT_LOGS").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("AZMON_COLLECT_STDERR_LOGS").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES").Return(tt.CONTROLLER_TYPE).Times(1)
+
+			_get_env_var = mock.Getenv
+
+			setupLogLossTracker()
+
+		})
+	}
+
+	_get_env_var = _get_env_var_old
+}
+
 func Test_Process_log(t *testing.T) {
-	init_log_loss_monitoring_globals()
+	init_log_loss_monitoring_globals() // This turns on consistency checks in m_bytes_logged_storage
+	m_bytes_logged_storage.debug_mode = true
 
 	containerID := "containerID"
 	k8sNamespace := "k8sNamespace"
@@ -21,8 +89,8 @@ func Test_Process_log(t *testing.T) {
 	enabled = true
 
 	identifier := k8sNamespace + "_" + k8sPodName + "_" + containerName
-	if len(m_bytes_logged_storage.container_identifiers) != 0 {
-		t.Error("m_bytes_logged_storage didn't start empty")
+	if len(m_bytes_logged_storage.string_to_arr_index) != 0 {
+		t.Error("m_bytes_logged_storage.string_to_arr_index didn't start empty")
 	}
 
 	if len(m_bytes_logged_storage.container_identifiers) != 0 {
@@ -40,10 +108,76 @@ func Test_Process_log(t *testing.T) {
 	if *val != int64(len("1234567890")+len(logTime)+len(" stdout f ")+1) {
 		t.Error("log count wrong")
 	}
+
+	// test garbage collection
+	select {
+	case deleted_identifier := <-deleted_containers_query:
+		if deleted_identifier != k8sNamespace+"_"+k8sPodName+"_"+containerName {
+			t.Error("got wrong container from Process_log for garbage collection")
+		}
+	default:
+		t.Error("Process_log did not write a container for garbage collection")
+	}
+
+	deleted_containers_response <- k8sNamespace + "_" + k8sPodName + "_" + containerName
+
+	containerName2 := "secondContainer"
+	Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerName2, &logEntry, &logTime)
+
+	if m_bytes_logged_storage.len() != 1 {
+		t.Error("m_bytes_logged_storage didn't have the right number of entries, did garbage collection fail?")
+	}
+
+	if _, new := m_bytes_logged_storage.get(k8sNamespace + "_" + k8sPodName + "_" + containerName2); new == true {
+		t.Error("m_bytes_logged_storage didn't have the stored container identifier?")
+	}
+}
+
+// This test adds 100 containers then makes sure all but one are gone within a few calls to Process_log()
+func Test_track_log_rotations_garbage_collection(t *testing.T) {
+	init_log_loss_monitoring_globals()
+	m_bytes_logged_storage.debug_mode = true
+	enabled = true
+
+	containerID := "containerID"
+	k8sNamespace := "k8sNamespace"
+	k8sPodName := "k8sPodName"
+	logEntry := "1234567890"
+	logTime := "1970/01/01T01:01:01.00001Z"
+
+	num_containers_on_disk = 1
+
+	for i := 0; i < 100; i++ {
+		containerNameTemp := fmt.Sprintf("containerName_%d", i)
+		Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerNameTemp, &logEntry, &logTime)
+	}
+
+	for i := 0; i < 50; i++ {
+		containerNameTemp := fmt.Sprintf("containerName2_%d", i)
+		Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerNameTemp, &logEntry, &logTime)
+	read_from_chan:
+		for {
+			select {
+			case deleted_identifier := <-deleted_containers_query:
+				if deleted_identifier != containerNameTemp {
+					deleted_containers_response <- deleted_identifier
+				}
+			default:
+				break read_from_chan
+			}
+		}
+	}
+
+	// It won't actually get down to 1 container since the previous loop added a container each iteration. But if
+	// most of them are gone then it's good enough
+	if m_bytes_logged_storage.len() >= 25 {
+		t.Error("m_bytes_logged_storage didn't have the right number of entries, garbage collection failed?")
+	}
 }
 
 func Test_track_log_rotations(t *testing.T) {
 	init_log_loss_monitoring_globals()
+	m_bytes_logged_storage.debug_mode = true
 
 	test_dir := filepath.Join(get_repo_root_dir(), "test", "unit-tests", "other-test-directories", "log-loss-detection", "pods_1")
 
@@ -117,7 +251,6 @@ func Test_track_log_rotations(t *testing.T) {
 }
 
 func get_repo_root_dir() string {
-	init_log_loss_monitoring_globals()
 
 	dir, err := os.Getwd()
 	if err != nil {

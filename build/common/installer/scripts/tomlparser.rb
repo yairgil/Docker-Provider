@@ -27,7 +27,8 @@ require_relative "ConfigParseErrorLogger"
 @collectAllKubeEvents = false
 @containerLogsRoute = "v2" # default for linux
 @adxDatabaseName = "containerinsights" # default for all configurations
-@disableLogLossTracking = "false"
+@enableLogLossTracking = "false"
+@enableLogLossTrackingSet = "false"
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
 end
@@ -195,10 +196,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
     #Get log loss tracking disablement setting
     begin
-      if !parsedConfig[:log_collection_settings][:track_lost_logs].nil? && !parsedConfig[:log_collection_settings][:track_lost_logs][:enabled].nil?
-        if !parsedConfig[:log_collection_settings][:track_lost_logs][:enabled].empty?
-           @disableLogLossTracking = parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled]
-           puts "config::Using config map setting for log loss tracking : #{@disableLogLossTracking}"
+      if !parsedConfig[:log_collection_settings][:track_dropped_logs].nil? && !parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled].nil?
+        if !parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled].empty?
+           @enableLogLossTracking = parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled]
+           @enableLogLossTrackingSet = true
+           puts "config::Using config map setting for log loss tracking : #{@enableLogLossTracking}"
           end
         end
       rescue => errorStr
@@ -248,7 +250,8 @@ if !file.nil?
   file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{@containerLogsRoute}\n")
   file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{@containerLogSchemaVersion}\n")
   file.write("export AZMON_ADX_DATABASE_NAME=#{@adxDatabaseName}\n")
-  file.write("export AZMON_DISABLE_LOG_LOSS_TRACKING=#{@disableLogLossTracking}")
+  file.write("export AZMON_ENABLE_LOG_LOSS_TRACKING=#{@enableLogLossTracking}")
+  file.write("export AZMON_ENABLE_LOG_LOSS_TRACKING_SET=#{@enableLogLossTrackingSet}")
   # Close file after writing all environment variables
   file.close
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
@@ -299,7 +302,7 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     file.write(commands)
     commands = get_command_windows('AZMON_ADX_DATABASE_NAME', @adxDatabaseName)
     file.write(commands)
-    commands = get_command_windows('AZMON_DISABLE_LOG_LOSS_TRACKING', @disableLogLossTracking)
+    commands = get_command_windows('AZMON_ENABLE_LOG_LOSS_TRACKING', @disableLogLossTracking)
     file.write(commands)
 
     # Close file after writing all environment variables
