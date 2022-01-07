@@ -343,13 +343,13 @@ func (collection *AddressableMap) get(container_identifier string) (*int64, bool
 	return &collection.log_counts[slice_index], !container_seen
 }
 
+// note: this function silently returns if the passed container is not already stored
 func (collection *AddressableMap) delete(container_identifier string) {
 	collection.management_mut.Lock()
 	defer collection.management_mut.Unlock()
 
 	index, value_exists := collection.string_to_arr_index[container_identifier]
 	if !value_exists {
-		//TODO: is it worth throwing an error here? probably not, but think about it
 		return
 	}
 

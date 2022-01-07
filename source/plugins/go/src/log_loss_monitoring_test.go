@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,7 +16,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 	init_log_loss_monitoring_globals() // This turns on consistency checks in m_bytes_logged_storage
 	m_bytes_logged_storage.debug_mode = true
 
-	_get_env_var_old := _get_env_var
+	env_mock_old := env_mock
 
 	type test_struct struct {
 		name                                  string
@@ -29,6 +30,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 		AZMON_STDERR_EXCLUDED_NAMESPACES      string
 		AZMON_STDOUT_EXCLUDED_NAMESPACES      string
 		enabled                               bool
+		disabled_namespaces                   map[string]bool
 	}
 
 	// This is a pretty useless unit test, but it demonstrates the concept (putting together a real test
@@ -47,32 +49,122 @@ func Test_setupLogLossTracker(t *testing.T) {
 			"",
 			"",
 			true,
+			make(map[string]bool),
+		},
+		{
+			"disable_by_configmap",
+			"DaemonSet",
+			"false",
+			"false",
+			"true",
+			"true",
+			"true",
+			"true",
+			"",
+			"",
+			false,
+			make(map[string]bool),
+		},
+		{
+			"enabled_by_toggle",
+			"DaemonSet",
+			"false",
+			"false",
+			"false",
+			"true",
+			"true",
+			"true",
+			"",
+			"",
+			true,
+			make(map[string]bool),
+		},
+		{
+			"disabled_by_toggle",
+			"DaemonSet",
+			"false",
+			"false",
+			"false",
+			"false",
+			"true",
+			"true",
+			"",
+			"",
+			false,
+			make(map[string]bool),
+		},
+		{
+			"disabled_by_stdout",
+			"DaemonSet",
+			"false",
+			"false",
+			"false",
+			"false",
+			"false",
+			"true",
+			"",
+			"",
+			false,
+			make(map[string]bool),
+		},
+		{
+			"disabled_by_stderr",
+			"DaemonSet",
+			"false",
+			"false",
+			"false",
+			"false",
+			"true",
+			"false",
+			"",
+			"",
+			false,
+			make(map[string]bool),
+		},
+		{
+			"disabled_namespaces",
+			"DaemonSet",
+			"false",
+			"false",
+			"false",
+			"false",
+			"true",
+			"false",
+			`["default", "ns2"]`,
+			"",
+			false,
+			map[string]bool{"default": true, "ns2": true},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
-			mock := NewMockIGetEnvVar
+			mock := NewMockIGetEnvVar(mockCtrl)
 			mock.EXPECT().Getenv("CONTROLLER_TYPE").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("IN_UNIT_TEST").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("AZMON_COLLECT_STDOUT_LOGS").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("AZMON_COLLECT_STDERR_LOGS").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES").Return(tt.CONTROLLER_TYPE).Times(1)
-			mock.EXPECT().Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES").Return(tt.CONTROLLER_TYPE).Times(1)
+			mock.EXPECT().Getenv("IN_UNIT_TEST").Return(tt.IN_UNIT_TEST).Times(1)
+			mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING_SET).Times(1)
+			if strings.ToLower(tt.AZMON_ENABLE_LOG_LOSS_TRACKING_SET) == "true" {
+				mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING).Times(1)
+			} else {
+				mock.EXPECT().Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE").Return(tt.AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE).Times(1)
+			}
+			if tt.enabled {
+				mock.EXPECT().Getenv("AZMON_COLLECT_STDOUT_LOGS").Return(tt.AZMON_COLLECT_STDOUT_LOGS).Times(1)
+				mock.EXPECT().Getenv("AZMON_COLLECT_STDERR_LOGS").Return(tt.AZMON_COLLECT_STDERR_LOGS).Times(1)
+				mock.EXPECT().Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES").Return(tt.AZMON_STDERR_EXCLUDED_NAMESPACES).Times(1)
+				mock.EXPECT().Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES").Return(tt.AZMON_STDOUT_EXCLUDED_NAMESPACES).Times(1)
+			}
 
-			_get_env_var = mock.Getenv
+			env_mock = mock
 
 			setupLogLossTracker()
 
 		})
 	}
 
-	_get_env_var = _get_env_var_old
+	env_mock = env_mock_old
 }
 
 func Test_Process_log(t *testing.T) {

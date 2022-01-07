@@ -104,14 +104,14 @@ func init_log_loss_monitoring_globals() {
 	disabled_namespaces = make(map[string]bool)
 }
 
-// //go:generate mockgen -destination=log_loss_monitoring_mock.go -self_package=main Docker-Provider/source/plugins/go/src IGetEnvVar
-//go:generate mockgen -source=log_loss_monitoring.go -destination=log_loss_monitoring_mock.go -packag=main
+// The next few type definitions are for unit testing (to mock os.Genenv())
+//go:generate mockgen -source=log_loss_monitoring.go -destination=log_loss_monitoring_mock.go -package=main  IGetEnvVar
 type IGetEnvVar interface {
 	Getenv(key string) string
 }
 type GetEnvVarImpl struct{}
 
-var env IGetEnvVar = GetEnvVarImpl{}
+var env_mock IGetEnvVar = GetEnvVarImpl{}
 
 // This is here for unit tests (mocking)
 func (GetEnvVarImpl) Getenv(name string) string {
@@ -119,26 +119,26 @@ func (GetEnvVarImpl) Getenv(name string) string {
 }
 
 func setupLogLossTracker() {
-	enabled = env.Getenv("CONTROLLER_TYPE") == "DaemonSet"
+	enabled = env_mock.Getenv("CONTROLLER_TYPE") == "DaemonSet"
 
-	enabled = enabled && !(strings.ToLower(env.Getenv("IN_UNIT_TEST")) == "true")
+	enabled = enabled && !(strings.ToLower(env_mock.Getenv("IN_UNIT_TEST")) == "true")
 
 	// toggle env var is meant to be set by Microsoft, customer can set AZMON_ENABLE_LOG_LOSS_TRACKING through a configmap
-	if env.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET") == "true" {
-		enabled = enabled && (env.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING") == "true")
+	if env_mock.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_SET") == "true" {
+		enabled = enabled && (env_mock.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING") == "true")
 	} else {
-		enabled = enabled && (env.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE") == "true")
+		enabled = enabled && (env_mock.Getenv("AZMON_ENABLE_LOG_LOSS_TRACKING_TOGGLE") == "true")
 	}
 
 	// don't count logs if stdout or stderr log collection is globally disabled
-	enabled = enabled && strings.ToLower(env.Getenv("AZMON_COLLECT_STDOUT_LOGS")) == "true" && strings.ToLower(env.Getenv("AZMON_COLLECT_STDERR_LOGS")) == "true"
+	enabled = enabled && strings.ToLower(env_mock.Getenv("AZMON_COLLECT_STDOUT_LOGS")) == "true" && strings.ToLower(env_mock.Getenv("AZMON_COLLECT_STDERR_LOGS")) == "true"
 
 	if enabled {
-		for _, excluded_namespace := range strings.Split(env.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES"), ",") {
+		for _, excluded_namespace := range strings.Split(env_mock.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES"), ",") {
 			disabled_namespaces[excluded_namespace] = true
 		}
 
-		for _, excluded_namespace := range strings.Split(env.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES"), ",") {
+		for _, excluded_namespace := range strings.Split(env_mock.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES"), ",") {
 			disabled_namespaces[excluded_namespace] = true
 		}
 	}
@@ -155,14 +155,11 @@ func StartLogLossTracker() {
 		write_counts_ticker := time.NewTicker(log_loss_telemetry_interval)
 		go write_telemetry(write_counts_ticker.C)
 
-		//TODO: turn this frequency down
 		track_rotations_ticker := time.NewTicker(log_loss_track_rotations_interval)
 		go track_log_rotations(track_rotations_ticker.C, "/var/log/pods")
 	}
 }
 
-// TODO: when scale testing also measure disk usage (should measure cpu, mem, disk, and lost logs when scale testing)
-// 			does running a separate process impact cpu/mem/disk/lost logs
 func Process_log(containerID *string, k8sNamespace *string, k8sPodName *string, containerName *string, logEntry *string, logTime *string) {
 	if enabled {
 		identifier := *k8sNamespace + "_" + *k8sPodName + "_" + *containerName
