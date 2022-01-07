@@ -392,6 +392,8 @@ spec:
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
             - name: ISTEST
               value: "true"
+            - name: EMIT_CACHE_TELEMETRY
+              value: "false"
             #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"

@@ -65,7 +65,6 @@ module Fluent::Plugin
       @NodeCache = NodeStatsCache.new()
       @watchNodesThread = nil
       @nodeItemsCache = {}
-      #@nodeItemsCacheSizeKB = 0
     end
 
     config_param :run_interval, :time, :default => 60
@@ -153,9 +152,12 @@ module Fluent::Plugin
         # Initializing continuation token to nil
         continuationToken = nil
         nodeInventory = {}
+        nodeItemsCacheSizeKB = 0
         @nodeCacheMutex.synchronize {
           nodeInventory["items"] = @nodeItemsCache.values.clone
-          #@nodeItemsCacheSizeKB = @nodeItemsCache.to_s.length / 1024
+          if KubernetesApiClient.isEmitCacheTelemetry()
+            nodeItemsCacheSizeKB = @nodeItemsCache.to_s.length / 1024
+          end
         }
         nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
@@ -169,8 +171,12 @@ module Fluent::Plugin
         timeDifference = (DateTime.now.to_time.to_i - @@nodeInventoryLatencyTelemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
-          @applicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, {})
-          @applicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, {})
+          telemetryProperties = {}
+          if KubernetesApiClient.isEmitCacheTelemetry()
+            telemetryProperties["NODE_ITEMS_CACHE_SIZE_KB"] = nodeItemsCacheSizeKB
+          end
+          @applicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, telemetryProperties)
+          @applicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, telemetryProperties)
           @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
         # Setting this to nil so that we dont hold memory until GC kicks in
@@ -556,7 +562,6 @@ module Fluent::Plugin
         end
         properties["NODES_CHUNK_SIZE"] = @NODES_CHUNK_SIZE
         properties["NODES_EMIT_STREAM_BATCH_SIZE"] = @NODES_EMIT_STREAM_BATCH_SIZE
-        #properties["NODE_ITEMS_CACHE_SIZE_KB"] = @nodeItemsCacheSizeKB
       rescue => errorStr
         $log.warn "in_kube_nodes::getContainerNodeIngetNodeTelemetryPropsventoryRecord:Failed: #{errorStr}"
       end

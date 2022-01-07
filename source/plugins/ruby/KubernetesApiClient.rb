@@ -1182,5 +1182,13 @@ class KubernetesApiClient
       end
       return item
     end
+
+    def isEmitCacheTelemetry
+      isEmitCacheTelemtryEnabled = false
+      if !ENV["EMIT_CACHE_TELEMETRY"].nil? && !ENV["EMIT_CACHE_TELEMETRY"].empty? && ENV["EMIT_CACHE_TELEMETRY"].downcase == "true"
+        isEmitCacheTelemtryEnabled = true
+      end
+      return isEmitCacheTelemtryEnabled
+    end
   end
 end

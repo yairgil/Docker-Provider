@@ -144,8 +144,12 @@ module Fluent::Plugin
         end
 
         serviceInventory = {}
+        serviceItemsCacheSizeKB = 0
         @serviceCacheMutex.synchronize {
           serviceInventory["items"] = @serviceItemsCache.values.clone
+          if KubernetesApiClient.isEmitCacheTelemetry()
+            serviceItemsCacheSizeKB = @serviceItemsCache.to_s.length / 1024
+          end
         }
         serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceInventory, batchTime)
         # updating for telemetry
@@ -157,11 +161,13 @@ module Fluent::Plugin
         podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
         continuationToken = nil
-        #podItemsCacheSizeKB = 0
+        podItemsCacheSizeKB = 0
         podInventory = {}
         @podCacheMutex.synchronize {
           podInventory["items"] = @podItemsCache.values.clone
-          #podItemsCacheSizeKB = @podItemsCache.to_s.length / 1024
+          if KubernetesApiClient.isEmitCacheTelemetry()
+            podItemsCacheSizeKB = @podItemsCache.to_s.length / 1024
+          end
         }
         podsAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @podsAPIE2ELatencyMs = (podsAPIChunkEndTime - podsAPIChunkStartTime)
@@ -189,7 +195,10 @@ module Fluent::Plugin
           telemetryProperties["Computer"] = @@hostName
           telemetryProperties["PODS_CHUNK_SIZE"] = @PODS_CHUNK_SIZE
           telemetryProperties["PODS_EMIT_STREAM_BATCH_SIZE"] = @PODS_EMIT_STREAM_BATCH_SIZE
-          #telemetryProperties["POD_ITEMS_CACHE_SIZE_KB"] = podItemsCacheSizeKB
+          if KubernetesApiClient.isEmitCacheTelemetry()
+            telemetryProperties["POD_ITEMS_CACHE_SIZE_KB"] = podItemsCacheSizeKB
+            telemetryProperties["SERVICE_ITEMS_CACHE_SIZE_KB"] = serviceItemsCacheSizeKB
+          end
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
           ApplicationInsightsUtility.sendMetricTelemetry("ServiceCount", @serviceCount, {})
