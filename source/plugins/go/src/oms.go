@@ -1579,7 +1579,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	osType := os.Getenv("OS_TYPE")
 	IsWindows = false
 	// Linux
-	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
+	if is_linux() {
 		Log("Reading configuration for Linux from %s", pluginConfPath)
 		WorkspaceID = os.Getenv("WSID")
 		if WorkspaceID == "" {
