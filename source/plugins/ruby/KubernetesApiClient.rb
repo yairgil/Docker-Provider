@@ -871,10 +871,10 @@ class KubernetesApiClient
       end
     end
 
-    def getOptimizedItem(resource, resourceItem, winNodes = [])
+    def getOptimizedItem(resource, resourceItem)
       case resource
       when "pods"
-        return getPodOptimizedItem(resourceItem, winNodes)
+        return getPodOptimizedItem(resourceItem)
       when "nodes"
         return getNodeOptimizedItem(resourceItem)
       when "services"
@@ -917,18 +917,23 @@ class KubernetesApiClient
       return item
     end
 
-    def isWindowsPodItem(podItem, winNodes)
+    def isWindowsPodItem(podItem)
       isWindowsPod = false
-      if !winNodes.nil? && !winNodes.empty?
-        nodeName = (!podItem["spec"].nil? && !podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
-        if !nodeName.empty? && winNodes.include?(nodeName)
-          isWindowsPod = true
+      begin
+        winNodes = KubernetesApiClient.getWindowsNodesArray()
+        if !winNodes.nil? && !winNodes.empty? && winNodes.length > 0
+          nodeName = (!podItem["spec"].nil? && !podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
+          if !nodeName.empty? && winNodes.include?(nodeName)
+            isWindowsPod = true
+          end
         end
+      rescue => errorStr
+        $Log.warn "KubernetesApiClient::::isWindowsPodItem: failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}"
       end
       return isWindowsPod
     end
 
-    def getPodOptimizedItem(resourceItem, winNodes)
+    def getPodOptimizedItem(resourceItem)
       item = {}
       begin
         item["metadata"] = {}
@@ -951,7 +956,7 @@ class KubernetesApiClient
             item["metadata"]["deletionTimestamp"] = resourceItem["metadata"]["deletionTimestamp"]
           end
         end
-        isWindowsPod = isWindowsPodItem(resourceItem, winNodes)
+        isWindowsPod = isWindowsPodItem(resourceItem)
         item["spec"] = {}
         if !resourceItem["spec"].nil?
           item["spec"]["containers"] = []
@@ -970,7 +975,7 @@ class KubernetesApiClient
                 currentContainer["image"] = container["image"]
                 currentContainer["ports"] = container["ports"]
                 currentContainer["command"] = container["command"]
-                currentContainer["EnvironmentVar"] = ""
+                currentContainer["env"] = ""
                 if !isDisableClusterCollectEnvVar
                   currentContainer["env"] = KubernetesContainerInventory.obtainContainerEnvironmentVarsFromPodsResponse(resourceItem, container)
                 end
@@ -989,7 +994,7 @@ class KubernetesApiClient
                 currentContainer["image"] = container["image"]
                 currentContainer["ports"] = container["ports"]
                 currentContainer["command"] = container["command"]
-                currentContainer["EnvironmentVar"] = ""
+                currentContainer["env"] = ""
                 if !isDisableClusterCollectEnvVar
                   currentContainer["env"] = KubernetesContainerInventory.obtainContainerEnvironmentVarsFromPodsResponse(resourceItem, container)
                 end

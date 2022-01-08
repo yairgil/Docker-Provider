@@ -676,16 +676,10 @@ module Fluent::Plugin
     def watch_pods
       $log.info("in_kube_podinventory::watch_pods:Start @ #{Time.now.utc.iso8601}")
       podsResourceVersion = nil
-      isCheckedWindowsNodes = false
+      # invoke getWindowsNodes to get windowsnodearray cache populated
+      KubernetesApiClient.getWindowsNodes()
       loop do
         begin
-          # check if the cluster has windows nodes since windows container records requires inventory specific fields
-          winNodes = KubernetesApiClient.getWindowsNodesArray()
-          if !isCheckedWindowsNodes && winNodes.empty?
-            winNodes = KubernetesApiClient.getWindowsNodes()
-            isCheckedWindowsNodes = true
-          end
-          $log.info("in_kube_podinventory::watch_pods:number of windows nodes: #{winNodes.length} @ #{Time.now.utc.iso8601}")
           if podsResourceVersion.nil?
             # clear cache before filling the cache with list
             @podCacheMutex.synchronize {
@@ -702,7 +696,7 @@ module Fluent::Plugin
                 podInventory["items"].each do |item|
                   key = item["metadata"]["uid"]
                   if !key.nil? && !key.empty?
-                    podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
+                    podItem = KubernetesApiClient.getOptimizedItem("pods", item)
                     if !podItem.nil? && !podItem.empty?
                       @podCacheMutex.synchronize {
                         @podItemsCache[key] = podItem
@@ -727,7 +721,7 @@ module Fluent::Plugin
                   podInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
-                      podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
+                      podItem = KubernetesApiClient.getOptimizedItem("pods", item)
                       if !podItem.nil? && !podItem.empty?
                         @podCacheMutex.synchronize {
                           @podItemsCache[key] = podItem
@@ -770,7 +764,7 @@ module Fluent::Plugin
                   if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
-                      podItem = KubernetesApiClient.getOptimizedItem("pods", item, winNodes)
+                      podItem = KubernetesApiClient.getOptimizedItem("pods", item)
                       if !podItem.nil? && !podItem.empty?
                         @podCacheMutex.synchronize {
                           @podItemsCache[key] = podItem
