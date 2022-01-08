@@ -153,6 +153,7 @@ module Fluent::Plugin
         continuationToken = nil
         nodeInventory = {}
         nodeItemsCacheSizeKB = 0
+        nodeCount = 0
         @nodeCacheMutex.synchronize {
           nodeInventory["items"] = @nodeItemsCache.values.clone
           if KubernetesApiClient.isEmitCacheTelemetry()
@@ -162,7 +163,8 @@ module Fluent::Plugin
         nodesAPIChunkEndTime = (Time.now.to_f * 1000).to_i
         @nodesAPIE2ELatencyMs = (nodesAPIChunkEndTime - nodesAPIChunkStartTime)
         if (!nodeInventory.nil? && !nodeInventory.empty? && nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+          nodeCount = nodeInventory["items"].length
+          $log.info("in_kube_nodes::enumerate : number of node items :#{nodeCount} from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(nodeInventory, batchTime)
         else
           $log.warn "in_kube_nodes::enumerate:Received empty nodeInventory"
@@ -171,12 +173,13 @@ module Fluent::Plugin
         timeDifference = (DateTime.now.to_time.to_i - @@nodeInventoryLatencyTelemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          @applicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, {})
+          @applicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, {})
           telemetryProperties = {}
           if KubernetesApiClient.isEmitCacheTelemetry()
             telemetryProperties["NODE_ITEMS_CACHE_SIZE_KB"] = nodeItemsCacheSizeKB
           end
-          @applicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, telemetryProperties)
-          @applicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, telemetryProperties)
+          ApplicationInsightsUtility.sendMetricTelemetry("NodeCount", nodeCount, telemetryProperties)
           @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
         # Setting this to nil so that we dont hold memory until GC kicks in
