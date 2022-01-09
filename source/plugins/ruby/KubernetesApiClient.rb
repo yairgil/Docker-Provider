@@ -939,17 +939,21 @@ class KubernetesApiClient
         item["metadata"] = {}
         if !resourceItem["metadata"].nil?
           if !resourceItem["metadata"]["annotations"].nil?
-            item["metadata"]["annotations"] = resourceItem["metadata"]["annotations"]
+            item["metadata"]["annotations"] = {}
+            item["metadata"]["annotations"]["kubernetes.io/config.hash"] = resourceItem["metadata"]["annotations"]["kubernetes.io/config.hash"]
           end
           if !resourceItem["metadata"]["labels"].nil?
             item["metadata"]["labels"] = resourceItem["metadata"]["labels"]
           end
-          if !resourceItem["metadata"]["ownerReferences"].nil?
-            item["metadata"]["ownerReferences"] = resourceItem["metadata"]["ownerReferences"]
+          if !resourceItem["metadata"]["ownerReferences"].nil? && resourceItem["metadata"]["ownerReferences"].length > 0
+            item["metadata"]["ownerReferences"] = []
+            ownerReference = {}
+            ownerReference["name"] = resourceItem["metadata"]["ownerReferences"][0]["name"]
+            ownerReference["kind"] = resourceItem["metadata"]["ownerReferences"][0]["kind"]
+            item["metadata"]["ownerReferences"].push(ownerReference)
           end
           item["metadata"]["name"] = resourceItem["metadata"]["name"]
           item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
-          item["metadata"]["resourceVersion"] = resourceItem["metadata"]["resourceVersion"]
           item["metadata"]["uid"] = resourceItem["metadata"]["uid"]
           item["metadata"]["creationTimestamp"] = resourceItem["metadata"]["creationTimestamp"]
           if !resourceItem["metadata"]["deletionTimestamp"].nil?
@@ -1021,14 +1025,12 @@ class KubernetesApiClient
           if !resourceItem["status"]["phase"].nil?
             item["status"]["phase"] = resourceItem["status"]["phase"]
           end
-          item["status"]["conditions"] = []
           if !resourceItem["status"]["conditions"].nil?
+            item["status"]["conditions"] = []
             resourceItem["status"]["conditions"].each do |condition|
               currentCondition = {}
               currentCondition["type"] = condition["type"]
               currentCondition["status"] = condition["status"]
-              ## TODO - check if we need this
-              currentCondition["lastTransitionTime"] = condition["lastTransitionTime"]
               item["status"]["conditions"].push(currentCondition)
             end
           end
@@ -1083,12 +1085,25 @@ class KubernetesApiClient
         item["spec"] = {}
         if !resourceItem["spec"].nil?
           if !resourceItem["spec"]["providerID"].nil? && !resourceItem["spec"]["providerID"].empty?
-            item["spec"]["providerID"] = resourceItem["spec"]["providerID"]
+            provider = resourceItem["spec"]["providerID"].split(":")[0]
+            if !provider.nil? && !provider.empty?
+              item["spec"]["providerID"] = provider
+            end
           end
         end
         item["status"] = {}
         if !resourceItem["status"].nil?
-          item["status"]["conditions"] = resourceItem["status"]["conditions"]
+          item["status"]["conditions"] = []
+          if !resourceItem["status"]["conditions"].nil?
+            resourceItem["status"]["conditions"].each do |condition|
+              currentCondition = {}
+              currentCondition["type"] = condition["type"]
+              currentCondition["status"] = condition["status"]
+              currentCondition["lastTransitionTime"] = condition["lastTransitionTime"]
+              item["status"]["conditions"].push(currentCondition)
+            end
+          end
+
           item["status"]["nodeInfo"] = {}
           nodeInfo = {}
           if !resourceItem["status"]["nodeInfo"].nil? && !resourceItem["status"]["nodeInfo"].empty?
@@ -1100,8 +1115,26 @@ class KubernetesApiClient
             nodeInfo["kernelVersion"] = resourceItem["status"]["nodeInfo"]["kernelVersion"]
           end
           item["status"]["nodeInfo"] = nodeInfo
-          item["status"]["allocatable"] = resourceItem["status"]["allocatable"]
-          item["status"]["capacity"] = resourceItem["status"]["capacity"]
+
+          item["status"]["allocatable"] = {}
+          nodeAllocatable = {}
+          if !resourceItem["status"]["allocatable"].nil? && !resourceItem["status"]["allocatable"].empty?
+            nodeAllocatable["cpu"] = resourceItem["status"]["allocatable"]["cpu"]
+            nodeAllocatable["memory"] = resourceItem["status"]["allocatable"]["memory"]
+            nodeAllocatable["nvidia.com/gpu"] = resourceItem["status"]["allocatable"]["nvidia.com/gpu"]
+            nodeAllocatable["amd.com/gpu"] = resourceItem["status"]["allocatable"]["amd.com/gpu"]
+          end
+          item["status"]["allocatable"] = nodeAllocatable
+
+          item["status"]["capacity"] = {}
+          nodeCapacity = {}
+          if !resourceItem["status"]["capacity"].nil? && !resourceItem["status"]["capacity"].empty?
+            nodeCapacity["cpu"] = resourceItem["status"]["allocatable"]["cpu"]
+            nodeCapacity["memory"] = resourceItem["status"]["allocatable"]["memory"]
+            nodeCapacity["nvidia.com/gpu"] = resourceItem["status"]["allocatable"]["nvidia.com/gpu"]
+            nodeCapacity["amd.com/gpu"] = resourceItem["status"]["allocatable"]["amd.com/gpu"]
+          end
+          item["status"]["capacity"] = nodeCapacity
         end
       rescue => errorStr
         @Log.warn "KubernetesApiClient::getNodeOptimizedItem:Failed with an error : #{errorStr}"
