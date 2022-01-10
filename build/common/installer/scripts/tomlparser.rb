@@ -194,17 +194,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       ConfigParseErrorLogger.logError("Exception while reading config map settings for adx database name - #{errorStr}, using default #{@adxDatabaseName}, please check config map for errors")
     end
 
-    #Get log loss tracking disablement setting
+    #Get log loss tracking setting
     begin
       if !parsedConfig[:log_collection_settings][:track_dropped_logs].nil? && !parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled].nil?
-        if !parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled].empty?
-           @enableLogLossTracking = parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled]
-           @enableLogLossTrackingSet = true
-           puts "config::Using config map setting for log loss tracking : #{@enableLogLossTracking}"
-          end
+          @enableLogLossTracking = parsedConfig[:log_collection_settings][:track_dropped_logs][:enabled]
+          @enableLogLossTrackingSet = true
+          puts "config::Using config map setting for log loss tracking : #{@enableLogLossTracking}"
         end
       rescue => errorStr
-        ConfigParseErrorLogger.logError("Exception while reading config map settings for cluster level container log enrichment - #{errorStr}, using defaults, please check config map for errors")
+        ConfigParseErrorLogger.logError("Exception while reading config map settings dropped log tracking - #{errorStr}, using defaults, please check config map for errors")
       end
   end
 end
@@ -250,8 +248,8 @@ if !file.nil?
   file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{@containerLogsRoute}\n")
   file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{@containerLogSchemaVersion}\n")
   file.write("export AZMON_ADX_DATABASE_NAME=#{@adxDatabaseName}\n")
-  file.write("export AZMON_ENABLE_LOG_LOSS_TRACKING=#{@enableLogLossTracking}")
-  file.write("export AZMON_ENABLE_LOG_LOSS_TRACKING_SET=#{@enableLogLossTrackingSet}")
+  file.write("export AZMON_ENABLE_LOG_LOSS_TRACKING=#{@enableLogLossTracking}\n")
+  file.write("export AZMON_ENABLE_LOG_LOSS_TRACKING_SET=#{@enableLogLossTrackingSet}\n")
   # Close file after writing all environment variables
   file.close
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "

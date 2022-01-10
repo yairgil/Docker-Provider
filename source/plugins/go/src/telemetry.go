@@ -86,7 +86,7 @@ const (
 	metricNameErrorCountKubeMonEventsMDSDClientCreateError      = "KubeMonEventsMDSDClientCreateErrorsCount"
 	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent  = "ContainerLogs2ADXSendErrorCount"
 	metricNameErrorCountContainerLogsADXClientCreateError       = "ContainerLogsADXClientCreateErrorCount"
-	metricNameLostLogs                                          = "LogsLost"
+	metricNameLostLogs                                          = "ContainerLogsLostBytes"
 
 	defaultTelemetryPushIntervalSeconds = 300
 

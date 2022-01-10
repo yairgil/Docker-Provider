@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -378,23 +377,108 @@ func Test_track_log_rotations(t *testing.T) {
 
 }
 
-func get_repo_root_dir() string {
-
-	dir, err := os.Getwd()
-	if err != nil {
-		panic(err)
+func Test_Make_AddressableMap(t *testing.T) {
+	qs := Make_AddressableMap()
+	if qs.container_identifiers == nil {
+		t.Error("qs.container_identifiers == nil")
 	}
 
-	for {
-		_, err := os.Stat(path.Join(dir, "ReleaseNotes.md"))
-		if !os.IsNotExist(err) {
-			return dir
-		}
-
-		dir = path.Join(dir, "..") // this actually removes the last directory in the path instead of appending /..
-
-		if len(dir) <= 1 {
-			panic("Not run in docker-provider repo")
-		}
+	if qs.free_list == nil {
+		t.Error("qs.free_list == nil")
 	}
+
+	if qs.log_counts == nil {
+		t.Error("qs.log_counts == nil")
+	}
+}
+
+func Test_AddressableMapStuff(t *testing.T) {
+	qs := Make_AddressableMap()
+	first_index, first_new := qs.get("never")
+	*first_index = 1
+	second_index, second_new := qs.get("gonna")
+	*second_index = 2
+	third_index, third_new := qs.get("give")
+	*third_index = 3
+
+	a, b := qs.get("never")
+	assert(t, first_new, "first_new == true")
+	assert(t, b == false, "b == false")
+	assert(t, *a == 1, "a != 1")
+
+	a, b = qs.get("gonna")
+	assert(t, second_new, "second_new == true")
+	assert(t, b == false, "b == false")
+	assert(t, *a == 2, "a != 2")
+
+	a, b = qs.get("give")
+	assert(t, third_new, "third_new == true")
+	assert(t, b == false, "b == false")
+	assert(t, *a == 3, "a != 3")
+
+	qs.delete("gonna")
+	if qs.container_identifiers[1] != "" {
+		t.Error("qs.container_identifiers[1] != \"\"")
+	}
+	assert(t, len(qs.free_list) == 1, `len(qs.free_list) == 1`)
+
+	fourth_index, fourth_new := qs.get("up")
+	*fourth_index = 4
+	a, b = qs.get("up")
+	assert(t, fourth_new, "fourth_new != true")
+	assert(t, b == false, "b == false")
+	assert(t, *a == 4, "a != 4")
+
+	assert(t, qs.container_identifiers[0] == "never", `qs.container_identifiers[0] == "never"`)
+	assert(t, qs.container_identifiers[1] == "up", `qs.container_identifiers[1] == "up"`)
+	assert(t, qs.container_identifiers[2] == "give", `qs.container_identifiers[2] == "give"`)
+
+	assert(t, qs.log_counts[0] == 1, `qs.log_counts[0] == 1`)
+	assert(t, qs.log_counts[1] == 4, `qs.log_counts[1] == 4`)
+	assert(t, qs.log_counts[2] == 3, `qs.log_counts[2] == 3`)
+
+	assert(t, len(qs.free_list) == 0, `len(qs.free_list) == 0`)
+
+	qs.delete("never")
+	assert(t, qs.container_identifiers[0] == "", `qs.container_identifiers[0] != ""`)
+	assert(t, qs.container_identifiers[1] == "up", `qs.container_identifiers[1] != "up"`)
+	assert(t, qs.container_identifiers[2] == "give", `qs.container_identifiers[2] != "give"`)
+	assert(t, len(qs.free_list) == 1, `len(qs.free_list) == 1`)
+
+	qs.delete("up")
+	assert(t, len(qs.free_list) == 2, `len(qs.free_list) == 2`)
+
+	qs.delete("give")
+	assert(t, len(qs.free_list) == 3, `len(qs.free_list) == give`)
+	assert(t, len(qs.string_to_arr_index) == 0, `len(qs.string_to_arr_index) == 0`)
+}
+
+func Test_duplicate_addressable_map(t *testing.T) {
+	qs1 := Make_AddressableMap()
+	a, b := qs1.export_values()
+	assert(t, len(a) == 0, `len(a) == 0`)
+	assert(t, len(b) == 0, `len(b) == 0`)
+
+	qs2 := Make_AddressableMap()
+	first_index, _ := qs2.get("never")
+	*first_index = 1
+	second_index, _ := qs2.get("gonna")
+	*second_index = 2
+	third_index, _ := qs2.get("give")
+	*third_index = 3
+	qs2.delete("gonna")
+
+	get_index := func(str_slice []string, target_val string) int {
+		for ind, val := range str_slice {
+			if val == target_val {
+				return ind
+			}
+		}
+		panic("string not found in slice")
+	}
+
+	a, b = qs2.export_values()
+	assert(t, len(b) == 2, `qs2_copy.len(b) == 2`)
+	assert(t, b[get_index(a, "never")] == 1, `b[get_index(a, "never")] == 1`)
+	assert(t, b[get_index(a, "give")] == 3, `b[get_index(a, "give")] == 3`)
 }

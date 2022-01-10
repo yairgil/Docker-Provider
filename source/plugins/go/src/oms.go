@@ -377,10 +377,14 @@ func createLogger(base_path string, log_file_name string) *log.Logger {
 	var logPath string
 	var log_underlying_file *os.File
 
-	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
-		logPath = "/var/opt/microsoft/docker-cimprov/log/" + log_file_name
+	if base_path == "" {
+		if strings.Compare(strings.ToLower(osType), "windows") != 0 {
+			logPath = "/var/opt/microsoft/docker-cimprov/log/" + log_file_name
+		} else {
+			logPath = "/etc/omsagentwindows/" + log_file_name
+		}
 	} else {
-		logPath = "/etc/omsagentwindows/" + log_file_name
+		logPath = base_path
 	}
 
 	if _, err := os.Stat(logPath); err == nil {
