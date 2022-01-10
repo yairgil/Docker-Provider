@@ -1104,7 +1104,6 @@ class KubernetesApiClient
             end
           end
 
-          item["status"]["nodeInfo"] = {}
           nodeInfo = {}
           if !resourceItem["status"]["nodeInfo"].nil? && !resourceItem["status"]["nodeInfo"].empty?
             nodeInfo["kubeletVersion"] = resourceItem["status"]["nodeInfo"]["kubeletVersion"]
@@ -1116,7 +1115,6 @@ class KubernetesApiClient
           end
           item["status"]["nodeInfo"] = nodeInfo
 
-          item["status"]["allocatable"] = {}
           nodeAllocatable = {}
           if !resourceItem["status"]["allocatable"].nil? && !resourceItem["status"]["allocatable"].empty?
             nodeAllocatable["cpu"] = resourceItem["status"]["allocatable"]["cpu"]
@@ -1126,13 +1124,12 @@ class KubernetesApiClient
           end
           item["status"]["allocatable"] = nodeAllocatable
 
-          item["status"]["capacity"] = {}
           nodeCapacity = {}
           if !resourceItem["status"]["capacity"].nil? && !resourceItem["status"]["capacity"].empty?
-            nodeCapacity["cpu"] = resourceItem["status"]["allocatable"]["cpu"]
-            nodeCapacity["memory"] = resourceItem["status"]["allocatable"]["memory"]
-            nodeCapacity["nvidia.com/gpu"] = resourceItem["status"]["allocatable"]["nvidia.com/gpu"]
-            nodeCapacity["amd.com/gpu"] = resourceItem["status"]["allocatable"]["amd.com/gpu"]
+            nodeCapacity["cpu"] = resourceItem["status"]["capacity"]["cpu"]
+            nodeCapacity["memory"] = resourceItem["status"]["capacity"]["memory"]
+            nodeCapacity["nvidia.com/gpu"] = resourceItem["status"]["capacity"]["nvidia.com/gpu"]
+            nodeCapacity["amd.com/gpu"] = resourceItem["status"]["capacity"]["amd.com/gpu"]
           end
           item["status"]["capacity"] = nodeCapacity
         end
