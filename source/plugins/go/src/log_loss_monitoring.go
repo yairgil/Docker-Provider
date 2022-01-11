@@ -133,8 +133,8 @@ func Process_log(containerID *string, k8sNamespace *string, k8sPodName *string, 
 	if enable_log_loss_detection {
 		identifier := *k8sNamespace + "_" + *k8sPodName + "_" + *containerName
 		// log_count_index, container_new := m_bytes_logged_storage.get(identifier)
-		log_count, container_new := container_logs_current[identifier]
-		if container_new {
+		log_count, container_already_exists := container_logs_current[identifier]
+		if !container_already_exists {
 			log_count = 0
 		}
 		log_bytes := len(*logTime) + len(" stdout f ") + len(*logEntry) + 1 // (an extra byte for the trailing \n in the source log file)

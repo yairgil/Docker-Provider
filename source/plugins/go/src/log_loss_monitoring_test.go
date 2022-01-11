@@ -231,6 +231,18 @@ func Test_Process_log(t *testing.T) {
 	if val != int64(len("1234567890")+len(logTime)+len(" stdout f ")+1) {
 		t.Error("Process_log() had incorrect log count")
 	}
+
+	Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerName, &logEntry, &logTime)
+
+	val, exists = container_logs_current[identifier]
+
+	if !exists {
+		t.Error("Process_log() didn't create record for container")
+	}
+
+	if val != int64((len("1234567890")+len(logTime)+len(" stdout f ")+1)*2) {
+		t.Error("Process_log() had incorrect log count")
+	}
 }
 
 func Test_Process_log_send_snapshot(t *testing.T) {
