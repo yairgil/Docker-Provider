@@ -37,7 +37,6 @@ class KubernetesApiClient
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
   @@TokenFileName = "/var/run/secrets/kubernetes.io/serviceaccount/token"
   @@TokenStr = nil
-  @@NodeMetrics = Hash.new
   @@WinNodeArray = []
   @@telemetryTimeTracker = DateTime.now.to_time.to_i
   @@resourceLimitsTelemetryHash = {}
@@ -411,7 +410,7 @@ class KubernetesApiClient
       return podUid
     end
 
-    def getContainerResourceRequestsAndLimits(pod, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
+    def getContainerResourceRequestsAndLimits(pod, metricCategory, metricNameToCollect, metricNametoReturn, nodeAllocatableRecord, metricTime = Time.now.utc.iso8601)
       metricItems = []
       begin
         clusterId = getClusterId
@@ -466,11 +465,8 @@ class KubernetesApiClient
               metricItems.push(metricProps)
               #No container level limit for the given metric, so default to node level limit
             else
-              nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
-              if (metricCategory == "limits" && @@NodeMetrics.has_key?(nodeMetricsHashKey))
-                metricValue = @@NodeMetrics[nodeMetricsHashKey]
-                #@Log.info("Limits not set for container #{clusterId + "/" + podUid + "/" + containerName} using node level limits: #{nodeMetricsHashKey}=#{metricValue} ")
-
+              if (metricCategory == "limits" && !nodeAllocatableRecord.nil? && !nodeAllocatableRecord.empty? && nodeAllocatableRecord.has_key?(metricNameToCollect))
+                metricValue = nodeAllocatableRecord[metricNameToCollect]
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
                 metricProps["Host"] = nodeName
@@ -498,7 +494,7 @@ class KubernetesApiClient
       return metricItems
     end #getContainerResourceRequestAndLimits
 
-    def getContainerResourceRequestsAndLimitsAsInsightsMetrics(pod, metricCategory, metricNameToCollect, metricNametoReturn, metricTime = Time.now.utc.iso8601)
+    def getContainerResourceRequestsAndLimitsAsInsightsMetrics(pod, metricCategory, metricNameToCollect, metricNametoReturn, nodeAllocatableRecord, metricTime = Time.now.utc.iso8601)
       metricItems = []
       begin
         clusterId = getClusterId
@@ -543,8 +539,9 @@ class KubernetesApiClient
             else
               #No container level limit for the given metric, so default to node level limit for non-gpu metrics
               if (metricNameToCollect.downcase != "nvidia.com/gpu") && (metricNameToCollect.downcase != "amd.com/gpu")
-                nodeMetricsHashKey = clusterId + "/" + nodeName + "_" + "allocatable" + "_" + metricNameToCollect
-                metricValue = @@NodeMetrics[nodeMetricsHashKey]
+                if !nodeAllocatableRecord.nil? && !nodeAllocatableRecord.empty? && nodeAllocatableRecord.has_key?(metricNameToCollect)
+                  metricValue = nodeAllocatableRecord[metricNameToCollect]
+                end
               end
             end
             if (!metricValue.nil?)
@@ -621,11 +618,6 @@ class KubernetesApiClient
 
           metricItem["json_Collections"] = []
           metricItem["json_Collections"] = metricCollections.to_json
-
-          #push node level metrics to a inmem hash so that we can use it looking up at container level.
-          #Currently if container level cpu & memory limits are not defined we default to node level limits
-          @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
-          #@Log.info ("Node metric hash: #{@@NodeMetrics}")
         end
       rescue => error
         @Log.warn("parseNodeLimitsFromNodeItem failed: #{error} for metric #{metricCategory} #{metricNameToCollect}")
@@ -659,13 +651,6 @@ class KubernetesApiClient
           metricTags[Constants::INSIGHTSMETRICS_TAGS_GPU_VENDOR] = metricNameToCollect
 
           metricItem["Tags"] = metricTags
-
-          #push node level metrics (except gpu ones) to a inmem hash so that we can use it looking up at container level.
-          #Currently if container level cpu & memory limits are not defined we default to node level limits
-          if (metricNameToCollect.downcase != "nvidia.com/gpu") && (metricNameToCollect.downcase != "amd.com/gpu")
-            @@NodeMetrics[clusterId + "/" + node["metadata"]["name"] + "_" + metricCategory + "_" + metricNameToCollect] = metricValue
-            #@Log.info ("Node metric hash: #{@@NodeMetrics}")
-          end
         end
       rescue => error
         @Log.warn("parseNodeLimitsAsInsightsMetrics failed: #{error} for metric #{metricCategory} #{metricNameToCollect}")
@@ -917,6 +902,22 @@ class KubernetesApiClient
       return item
     end
 
+    def isWindowsNodeItem(nodeResourceItem)
+      isWindowsNodeItem = false
+      begin
+        nodeStatus = nodeResourceItem["status"]
+        if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
+          operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
+          if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
+            isWindowsNodeItem = true
+          end
+        end
+      rescue => errorStr
+        $Log.warn "KubernetesApiClient::::isWindowsNodeItem: failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}"
+      end
+      return isWindowsNodeItem
+    end
+
     def isWindowsPodItem(podItem)
       isWindowsPod = false
       begin
@@ -1071,6 +1072,21 @@ class KubernetesApiClient
       return item
     end
 
+    def getNodeAllocatableValues(nodeResourceItem)
+      nodeAllocatable = {}
+      begin
+        if !nodeResourceItem["status"].nil? &&
+           !nodeResourceItem["status"]["allocatable"].nil? &&
+           !nodeResourceItem["status"]["allocatable"].empty?
+          nodeAllocatable["cpu"] = nodeResourceItem["status"]["allocatable"]["cpu"]
+          nodeAllocatable["memory"] = nodeResourceItem["status"]["allocatable"]["memory"]
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getNodeAllocatableValues:Failed with an error : #{errorStr}"
+      end
+      return nodeAllocatable
+    end
+
     def getNodeOptimizedItem(resourceItem)
       item = {}
       begin
@@ -1119,8 +1135,12 @@ class KubernetesApiClient
           if !resourceItem["status"]["allocatable"].nil? && !resourceItem["status"]["allocatable"].empty?
             nodeAllocatable["cpu"] = resourceItem["status"]["allocatable"]["cpu"]
             nodeAllocatable["memory"] = resourceItem["status"]["allocatable"]["memory"]
-            nodeAllocatable["nvidia.com/gpu"] = resourceItem["status"]["allocatable"]["nvidia.com/gpu"]
-            nodeAllocatable["amd.com/gpu"] = resourceItem["status"]["allocatable"]["amd.com/gpu"]
+            if !resourceItem["status"]["allocatable"]["nvidia.com/gpu"].nil?
+              nodeAllocatable["nvidia.com/gpu"] = resourceItem["status"]["allocatable"]["nvidia.com/gpu"]
+            end
+            if !resourceItem["status"]["allocatable"]["amd.com/gpu"].nil?
+              nodeAllocatable["amd.com/gpu"] = resourceItem["status"]["allocatable"]["amd.com/gpu"]
+            end
           end
           item["status"]["allocatable"] = nodeAllocatable
 
@@ -1128,8 +1148,12 @@ class KubernetesApiClient
           if !resourceItem["status"]["capacity"].nil? && !resourceItem["status"]["capacity"].empty?
             nodeCapacity["cpu"] = resourceItem["status"]["capacity"]["cpu"]
             nodeCapacity["memory"] = resourceItem["status"]["capacity"]["memory"]
-            nodeCapacity["nvidia.com/gpu"] = resourceItem["status"]["capacity"]["nvidia.com/gpu"]
-            nodeCapacity["amd.com/gpu"] = resourceItem["status"]["capacity"]["amd.com/gpu"]
+            if !resourceItem["status"]["capacity"]["nvidia.com/gpu"].nil?
+              nodeCapacity["nvidia.com/gpu"] = resourceItem["status"]["capacity"]["nvidia.com/gpu"]
+            end
+            if !resourceItem["status"]["capacity"]["amd.com/gpu"].nil?
+              nodeCapacity["amd.com/gpu"] = resourceItem["status"]["capacity"]["amd.com/gpu"]
+            end
           end
           item["status"]["capacity"] = nodeCapacity
         end
