@@ -30,3 +30,7 @@ source/plugins/go/src/*.h
 *_log.txt
 *.log
 *.byebug_history
+
+run_scale_test.py
+scale-test.yaml
+steps
