@@ -2,8 +2,6 @@ package main
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -78,92 +76,4 @@ func Test_ReadFileContents(t *testing.T) {
 			}
 		})
 	}
-}
-
-func Test_GetSizeOfAllFilesInDir(t *testing.T) {
-	pwd, err := os.Getwd()
-	if err != nil {
-		panic(err) // HAHAHAHAHAHAHAHAHAHA
-	}
-
-	// if we upgrade to golang 1.15 then the testing lib will automatically create and clean up a temprorary dir for us
-	testdir := filepath.Join(pwd, "TempTestyboiDir")
-	os.Mkdir(testdir, 0777)
-
-	defer func() {
-		err := os.RemoveAll(testdir)
-		if err != nil {
-			t.Error("could not remove temp dir, future test runs will fail:", err)
-		}
-	}()
-
-	first_result := GetSizeOfAllFilesInDir(testdir)
-	if len(first_result) != 0 {
-		t.Errorf("GetSizeOfAllFilesInDir returned incorrect result for empty dir: %v", first_result)
-	}
-
-	file, err := os.Create(filepath.Join(testdir, "a.txt"))
-	if err != nil {
-		t.Error(err)
-	}
-	linesToWrite := []string{"aaaaaaaaaa"}
-	for _, line := range linesToWrite {
-		file.WriteString(line)
-	}
-	file.Close()
-
-	second_result := GetSizeOfAllFilesInDir(testdir)
-	if len(second_result) != 1 {
-		t.Error("GetSizeOfAllFilesInDir returned incorrect result for dir with one file:", second_result)
-	}
-	if second_result["a.txt"] != 10 {
-		t.Error("GetSizeOfAllFilesInDir returned incorrect result for dir with one file:", second_result)
-	}
-
-	os.Mkdir(filepath.Join(testdir, "asdf"), 0777)
-	file, err = os.Create(filepath.Join(testdir, "asdf", "b.txt"))
-	if err != nil {
-		t.Error(err)
-	}
-	linesToWrite = []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
-	for _, line := range linesToWrite {
-		file.WriteString(line)
-	}
-	file.Close()
-
-	third_result := GetSizeOfAllFilesInDir(testdir)
-	if len(third_result) != 2 {
-		t.Error("GetSizeOfAllFilesInDir returned incorrect result for dir with two files:", third_result)
-	}
-	if third_result["a.txt"] != 10 {
-		t.Error("GetSizeOfAllFilesInDir returned incorrect result for dir with two files:", third_result)
-	}
-	if third_result[filepath.Join("asdf", "b.txt")] != 41+1 {
-		t.Error("GetSizeOfAllFilesInDir returned incorrect result for dir with two files:", third_result)
-	}
-}
-
-func Test_slice_contains_str(t *testing.T) {
-	a := []string{}
-	if slice_contains_str(a, "asdf") {
-		t.Errorf("!slice_contains_str(%v, \"asdf\")", a)
-	}
-
-	b := []string{"asdf", "asdfasdf", "asdfasdfasdf"}
-	if !slice_contains_str(b, "asdf") {
-		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
-	}
-	if !slice_contains_str(b, "asdfasdf") {
-		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
-	}
-	if !slice_contains_str(b, "asdfasdfasdf") {
-		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
-	}
-	if slice_contains_str(b, "foobar") {
-		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
-	}
-	if slice_contains_str(b, "") {
-		t.Errorf("!slice_contains_str(%v, \"asdf\")", b)
-	}
-
 }

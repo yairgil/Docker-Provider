@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -261,43 +260,16 @@ func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []
 	return msgpBytes
 }
 
-// includes files in subdirectories
-// TODO: consider replacing this with a iterator of some sort, constructing the map of
-// files all at once might use more memory than necessary
-func GetSizeOfAllFilesInDir(root_dir string) map[string]int64 {
-	output_map := make(map[string]int64)
-	getSizeOfAllFilesInDirImpl(&root_dir, "", &output_map)
-	return output_map
-}
-
-func getSizeOfAllFilesInDirImpl(root_dir *string, preceeding_dir string, storage_dict *map[string]int64) {
-	// container_full_path := filepath.Join(preceeding_dir_segments)
-	files_and_folders, err := ioutil.ReadDir(filepath.Join(*root_dir, preceeding_dir))
-	if err != nil {
-		Log("ERROR: reading dir " + err.Error())
-		return
-	}
-	for _, next_file := range files_and_folders {
-		file_name := filepath.Join(preceeding_dir, next_file.Name())
-		if next_file.IsDir() {
-			// need to recurse more
-			getSizeOfAllFilesInDirImpl(root_dir, file_name, storage_dict)
-		} else {
-			(*storage_dict)[file_name] = next_file.Size()
-		}
-	}
-}
-
-func slice_contains_str(str_slice []string, target_str string) bool {
-	for _, val := range str_slice {
-		if val == target_str {
-			return true
-		}
-	}
-	return false
-}
-
 func is_linux() bool {
 	osType := os.Getenv("OS_TYPE")
 	return strings.Compare(strings.ToLower(osType), "windows") != 0
+}
+
+func get_timeout_chan(wait_duration time.Duration) chan bool {
+	channel := make(chan bool)
+	go func() {
+		time.Sleep(wait_duration)
+		channel <- true
+	}()
+	return channel
 }

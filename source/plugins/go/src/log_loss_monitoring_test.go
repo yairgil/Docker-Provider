@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 
 func Test_setupLogLossTracker(t *testing.T) {
 	init_log_loss_monitoring_globals() // This turns on consistency checks in m_bytes_logged_storage
-	m_bytes_logged_storage.debug_mode = true
 
 	env_mock_old := env_mock
 
@@ -191,8 +191,8 @@ func Test_setupLogLossTracker(t *testing.T) {
 
 			setupLogLossTracker()
 
-			if enabled != tt.enabled {
-				t.Errorf("Expected log loss tracking to be %v, was actually %v", tt.enabled, enabled)
+			if enable_log_loss_detection != tt.enabled {
+				t.Errorf("Expected log loss tracking to be %v, was actually %v", tt.enabled, enable_log_loss_detection)
 			}
 
 			mockCtrl.Finish()
@@ -204,7 +204,7 @@ func Test_setupLogLossTracker(t *testing.T) {
 
 func Test_Process_log(t *testing.T) {
 	init_log_loss_monitoring_globals() // This turns on consistency checks in m_bytes_logged_storage
-	m_bytes_logged_storage.debug_mode = true
+	// m_bytes_logged_storage.debug_mode = true
 
 	containerID := "containerID"
 	k8sNamespace := "k8sNamespace"
@@ -213,58 +213,29 @@ func Test_Process_log(t *testing.T) {
 	logEntry := "1234567890"
 	logTime := "1970/01/01T01:01:01.00001Z"
 
-	enabled = true
+	enable_log_loss_detection = true
 
 	identifier := k8sNamespace + "_" + k8sPodName + "_" + containerName
-	if len(m_bytes_logged_storage.string_to_arr_index) != 0 {
-		t.Error("m_bytes_logged_storage.string_to_arr_index didn't start empty")
-	}
-
-	if len(m_bytes_logged_storage.container_identifiers) != 0 {
-		t.Error("m_bytes_logged_storage.container_identifiers didn't start empty")
-	}
-
-	if len(m_bytes_logged_storage.log_counts) != 0 {
-		t.Error("m_bytes_logged_storage.log_counts didn't start empty")
+	if len(container_logs_current) != 0 {
+		t.Error("container_logs_current didn't start empty")
 	}
 
 	Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerName, &logEntry, &logTime)
 
-	val, _ := m_bytes_logged_storage.get(identifier)
+	val, exists := container_logs_current[identifier]
 
-	if *val != int64(len("1234567890")+len(logTime)+len(" stdout f ")+1) {
-		t.Error("log count wrong")
+	if !exists {
+		t.Error("Process_log() didn't create record for container")
 	}
 
-	// test garbage collection
-	select {
-	case deleted_identifier := <-deleted_containers_query:
-		if deleted_identifier != k8sNamespace+"_"+k8sPodName+"_"+containerName {
-			t.Error("got wrong container from Process_log for garbage collection")
-		}
-	default:
-		t.Error("Process_log did not write a container for garbage collection")
-	}
-
-	deleted_containers_response <- k8sNamespace + "_" + k8sPodName + "_" + containerName
-
-	containerName2 := "secondContainer"
-	Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerName2, &logEntry, &logTime)
-
-	if m_bytes_logged_storage.len() != 1 {
-		t.Error("m_bytes_logged_storage didn't have the right number of entries, did garbage collection fail?")
-	}
-
-	if _, new := m_bytes_logged_storage.get(k8sNamespace + "_" + k8sPodName + "_" + containerName2); new == true {
-		t.Error("m_bytes_logged_storage didn't have the stored container identifier?")
+	if val != int64(len("1234567890")+len(logTime)+len(" stdout f ")+1) {
+		t.Error("Process_log() had incorrect log count")
 	}
 }
 
-// This test adds 100 containers then makes sure all but one are gone within a few calls to Process_log()
-func Test_track_log_rotations_garbage_collection(t *testing.T) {
+func Test_Process_log_send_snapshot(t *testing.T) {
 	init_log_loss_monitoring_globals()
-	m_bytes_logged_storage.debug_mode = true
-	enabled = true
+	enable_log_loss_detection = true
 
 	containerID := "containerID"
 	k8sNamespace := "k8sNamespace"
@@ -272,39 +243,32 @@ func Test_track_log_rotations_garbage_collection(t *testing.T) {
 	logEntry := "1234567890"
 	logTime := "1970/01/01T01:01:01.00001Z"
 
-	num_containers_on_disk = 1
-
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		containerNameTemp := fmt.Sprintf("containerName_%d", i)
 		Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerNameTemp, &logEntry, &logTime)
 	}
 
-	for i := 0; i < 50; i++ {
-		containerNameTemp := fmt.Sprintf("containerName2_%d", i)
-		Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerNameTemp, &logEntry, &logTime)
-	read_from_chan:
-		for {
-			select {
-			case deleted_identifier := <-deleted_containers_query:
-				if deleted_identifier != containerNameTemp {
-					deleted_containers_response <- deleted_identifier
-				}
-			default:
-				break read_from_chan
-			}
-		}
+	atomic.StoreInt32(&request_snapshot, 1)
+	containerNameTemp := fmt.Sprintf("containerName_%d", -1)
+	Process_log(&containerID, &k8sNamespace, &k8sPodName, &containerNameTemp, &logEntry, &logTime)
+
+	if len(container_logs_current) != 0 {
+		t.Error("m_bytes_logged_storage didn't have the right number of entries, garbage collection failed?")
 	}
 
-	// It won't actually get down to 1 container since the previous loop added a container each iteration. But if
-	// most of them are gone then it's good enough
-	if m_bytes_logged_storage.len() >= 25 {
-		t.Error("m_bytes_logged_storage didn't have the right number of entries, garbage collection failed?")
+	select {
+	case snapshot := <-snapshot_chan:
+		if len(snapshot) != 11 {
+			t.Errorf("Process_log() sent a wrong snapshot, should have had 11 containers in it: %v", snapshot)
+		}
+	default:
+		t.Error("Process_log() didn't send a snapshot after one was requested")
 	}
 }
 
 func Test_track_log_rotations(t *testing.T) {
 	init_log_loss_monitoring_globals()
-	m_bytes_logged_storage.debug_mode = true
+	// m_bytes_logged_storage.debug_mode = true
 
 	test_dir := filepath.Join(get_repo_root_dir(), "test", "unit-tests", "other-test-directories", "log-loss-detection", "pods_1")
 
@@ -329,156 +293,39 @@ func Test_track_log_rotations(t *testing.T) {
 		t.Errorf("FW_records did not have the correct number of records, actually had actually %d", len(FW_records))
 	}
 
-	if num_containers_on_disk != 15 {
-		t.Errorf("num_containers_on_disk != 15, was actually %d", num_containers_on_disk)
+	if sum_undeleted_bytes(FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].existing_log_files) != 30 {
+		t.Errorf("incorrect number of undeleted bytes, was actually %d", sum_undeleted_bytes(FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].existing_log_files))
 	}
 
-	if FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].unrotated_bytes != 10 {
-		t.Errorf("incorrect number of bytes unrotated, was actually %d", FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].unrotated_bytes)
+	if FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].deleted_bytes != 0 {
+		t.Errorf("incorrect number of deleted bytes, was actually %d", FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].deleted_bytes)
 	}
 
-	if FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].rotated_bytes != 20 {
-		t.Errorf("incorrect number of bytes rotated, was actually %d", FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].rotated_bytes)
-	}
-
-	if len(FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].existing_log_files) != 1 &&
-		FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].existing_log_files[0] != "0.log.20211214-201022" {
+	if len(FW_records["default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"].existing_log_files) != 2 {
 		t.Error("incorrect set of existing log files")
 	}
 
-	deleted_containers_query <- "default_highscale-deployment-x-mb-minute-58f4b769-l894d_highscale"
-	deleted_containers_query <- "doesn't exist"
+	// now test garbage collection. The second test directory has one fewer pod folders
 
-	ch = make(chan time.Time)
-
+	test_dir_2 := filepath.Join(get_repo_root_dir(), "test", "unit-tests", "other-test-directories", "log-loss-detection", "pods_1_removed")
+	ch2 := make(chan time.Time)
 	go func() {
-		ch <- time.Now()
-		close(ch)
+		ch2 <- time.Now()
+		close(ch2)
 	}()
-	track_log_rotations(ch, test_dir)
+	track_log_rotations_impl(ch2, test_dir_2, 1)
 
-	should_not_exist := ""
-
-	select {
-	case should_not_exist = <-deleted_containers_response:
-	default:
-		t.Error("track_log_rotations didn't return any containers for garbage collection")
+	if len(FW_records) != 14 {
+		t.Errorf("FW_records did not have the correct number of records, actually had actually %d", len(FW_records))
 	}
 
-	if should_not_exist != "doesn't exist" {
-		t.Errorf("track_log_rotations returned a wrong container for garbage collection (%s)\n", should_not_exist)
+	if FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].deleted_bytes != 30 {
+		t.Errorf(`FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].deleted_bytes != 30`+", actual value was %d", FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].deleted_bytes)
 	}
-
-	select {
-	case <-deleted_containers_response:
-		t.Error("track_log_rotations returned too many containers for garbage collection")
-	default:
+	if len(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files) != 2 {
+		t.Errorf(`len(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files) != 2`+", actual value was %d", len(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files))
 	}
-
-}
-
-func Test_Make_AddressableMap(t *testing.T) {
-	qs := Make_AddressableMap()
-	if qs.container_identifiers == nil {
-		t.Error("qs.container_identifiers == nil")
+	if sum_undeleted_bytes(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files) != 15 {
+		t.Errorf(`sum_undeleted_bytes(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files) != 15`+", actual value was %d", sum_undeleted_bytes(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files))
 	}
-
-	if qs.free_list == nil {
-		t.Error("qs.free_list == nil")
-	}
-
-	if qs.log_counts == nil {
-		t.Error("qs.log_counts == nil")
-	}
-}
-
-func Test_AddressableMapStuff(t *testing.T) {
-	qs := Make_AddressableMap()
-	first_index, first_new := qs.get("never")
-	*first_index = 1
-	second_index, second_new := qs.get("gonna")
-	*second_index = 2
-	third_index, third_new := qs.get("give")
-	*third_index = 3
-
-	a, b := qs.get("never")
-	assert(t, first_new, "first_new == true")
-	assert(t, b == false, "b == false")
-	assert(t, *a == 1, "a != 1")
-
-	a, b = qs.get("gonna")
-	assert(t, second_new, "second_new == true")
-	assert(t, b == false, "b == false")
-	assert(t, *a == 2, "a != 2")
-
-	a, b = qs.get("give")
-	assert(t, third_new, "third_new == true")
-	assert(t, b == false, "b == false")
-	assert(t, *a == 3, "a != 3")
-
-	qs.delete("gonna")
-	if qs.container_identifiers[1] != "" {
-		t.Error("qs.container_identifiers[1] != \"\"")
-	}
-	assert(t, len(qs.free_list) == 1, `len(qs.free_list) == 1`)
-
-	fourth_index, fourth_new := qs.get("up")
-	*fourth_index = 4
-	a, b = qs.get("up")
-	assert(t, fourth_new, "fourth_new != true")
-	assert(t, b == false, "b == false")
-	assert(t, *a == 4, "a != 4")
-
-	assert(t, qs.container_identifiers[0] == "never", `qs.container_identifiers[0] == "never"`)
-	assert(t, qs.container_identifiers[1] == "up", `qs.container_identifiers[1] == "up"`)
-	assert(t, qs.container_identifiers[2] == "give", `qs.container_identifiers[2] == "give"`)
-
-	assert(t, qs.log_counts[0] == 1, `qs.log_counts[0] == 1`)
-	assert(t, qs.log_counts[1] == 4, `qs.log_counts[1] == 4`)
-	assert(t, qs.log_counts[2] == 3, `qs.log_counts[2] == 3`)
-
-	assert(t, len(qs.free_list) == 0, `len(qs.free_list) == 0`)
-
-	qs.delete("never")
-	assert(t, qs.container_identifiers[0] == "", `qs.container_identifiers[0] != ""`)
-	assert(t, qs.container_identifiers[1] == "up", `qs.container_identifiers[1] != "up"`)
-	assert(t, qs.container_identifiers[2] == "give", `qs.container_identifiers[2] != "give"`)
-	assert(t, len(qs.free_list) == 1, `len(qs.free_list) == 1`)
-
-	qs.delete("up")
-	assert(t, len(qs.free_list) == 2, `len(qs.free_list) == 2`)
-
-	qs.delete("give")
-	assert(t, len(qs.free_list) == 3, `len(qs.free_list) == give`)
-	assert(t, len(qs.string_to_arr_index) == 0, `len(qs.string_to_arr_index) == 0`)
-}
-
-func Test_duplicate_addressable_map(t *testing.T) {
-	qs1 := Make_AddressableMap()
-	a, b := qs1.export_values()
-	assert(t, len(a) == 0, `len(a) == 0`)
-	assert(t, len(b) == 0, `len(b) == 0`)
-
-	qs2 := Make_AddressableMap()
-	first_index, _ := qs2.get("never")
-	*first_index = 1
-	second_index, _ := qs2.get("gonna")
-	*second_index = 2
-	third_index, _ := qs2.get("give")
-	*third_index = 3
-	qs2.delete("gonna")
-
-	get_index := func(str_slice []string, target_val string) int {
-		for ind, val := range str_slice {
-			if val == target_val {
-				return ind
-			}
-		}
-		panic("string not found in slice")
-	}
-
-	a, b = qs2.export_values()
-	assert(t, len(b) == 2, `qs2_copy.len(b) == 2`)
-	assert(t, b[get_index(a, "never")] == 1, `b[get_index(a, "never")] == 1`)
-	assert(t, b[get_index(a, "give")] == 3, `b[get_index(a, "give")] == 3`)
 }
