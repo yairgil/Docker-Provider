@@ -1,0 +1,100 @@
+2021-12-14T00:24:16.904184103Z stdout F customResourceId:/subscriptions/3b875bf3-0eec-4d8c-bdee-25c7ccc1f130/resourceGroups/davidscaletest_group/providers/Microsoft.ContainerService/managedClusters/davidscaletest
+2021-12-14T00:24:16.904225803Z stdout F customRegion:westus2
+2021-12-14T00:24:16.911425457Z stdout F AZMON_AGENT_CFG_SCHEMA_VERSION:v1
+2021-12-14T00:24:16.918313214Z stdout F AZMON_AGENT_CFG_FILE_VERSION:ver1
+2021-12-14T00:24:16.920269902Z stdout F Making curl request to oms endpint with domain: opinsights.azure.com
+2021-12-14T00:24:16.931512531Z stderr F   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+2021-12-14T00:24:16.931823629Z stderr F                                  Dload  Upload   Total   Spent    Left  Speed
+2021-12-14T00:24:16.967708302Z stderr F   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2021-12-14T00:24:16.970248386Z stdout F curl request to oms endpoint succeeded.
+2021-12-14T00:24:17.126089901Z stdout F ****************Start Config Processing********************
+2021-12-14T00:24:17.126143Z stdout F config::configmap container-azm-ms-agentconfig for settings mounted, parsing values
+2021-12-14T00:24:17.1261716Z stdout F config::Successfully parsed mounted config map
+2021-12-14T00:24:17.1262012Z stdout F config::Using config map setting for stdout log collection
+2021-12-14T00:24:17.1262092Z stdout F config::Using config map setting for stdout log collection to exclude namespace
+2021-12-14T00:24:17.1262166Z stdout F config::Using config map setting for stderr log collection
+2021-12-14T00:24:17.1262231Z stdout F config::Using config map setting for stderr log collection to exclude namespace
+2021-12-14T00:24:17.1262296Z stdout F config::Using config map setting for cluster level environment variable collection
+2021-12-14T00:24:17.1262423Z stdout F config::Using config map setting for cluster level container log enrichment
+2021-12-14T00:24:17.1262627Z stdout F config::Using config map setting for kube event collection
+2021-12-14T00:24:17.1262665Z stdout F config::Using config map setting for container logs route: adx
+2021-12-14T00:24:17.1262709Z stdout F Both stdout & stderr log collection are turned off for namespaces: '*.csv2,*_kube-system_*.log' 
+2021-12-14T00:24:17.1262762Z stdout F ****************End Config Processing********************
+2021-12-14T00:24:17.247017437Z stdout F ****************Start Config Processing********************
+2021-12-14T00:24:17.247051736Z stdout F config::configmap container-azm-ms-agentconfig for agent settings mounted, parsing values
+2021-12-14T00:24:17.247094836Z stdout F config::Successfully parsed mounted config map
+2021-12-14T00:24:17.247101936Z stdout F Using config map value: log_flush_interval_secs = 1
+2021-12-14T00:24:17.247108836Z stdout F Using config map value: tail_buf_chunksize_megabytes  = 2
+2021-12-14T00:24:17.247115936Z stdout F Using config map value: tail_buf_maxsize_megabytes = 5
+2021-12-14T00:24:17.247130336Z stdout F Using config map value: tail_mem_buf_limit_megabytes  = 10
+2021-12-14T00:24:17.36996936Z stdout F ****************Start NPM Config Processing********************
+2021-12-14T00:24:17.369991759Z stdout F config::configmap container-azm-ms-agentconfig for npm metrics found, parsing values
+2021-12-14T00:24:17.370000759Z stdout F config::Successfully parsed mounted config map for npm metrics
+2021-12-14T00:24:17.370007059Z stdout F config::npm::got:integrations.azure_network_policy_manager.collect_advanced_metrics='false'
+2021-12-14T00:24:17.370023459Z stdout F config::npm::set:integrations.azure_network_policy_manager.collect_advanced_metrics=false
+2021-12-14T00:24:17.370029259Z stdout F config::npm::got:integrations.azure_network_policy_manager.collect_basic_metrics='false'
+2021-12-14T00:24:17.370035159Z stdout F config::npm::set:integrations.azure_network_policy_manager.collect_basic_metrics=false
+2021-12-14T00:24:17.370040859Z stdout F config::npm::Successfully substituted the NPM placeholders into /etc/opt/microsoft/docker-cimprov/telegraf-rs.conf file for ReplicaSet
+2021-12-14T00:24:17.515354141Z stdout F ****************Start Prometheus Config Processing********************
+2021-12-14T00:24:17.515379441Z stdout F config::configmap container-azm-ms-agentconfig for settings mounted, parsing values for prometheus config map
+2021-12-14T00:24:17.51539404Z stdout F config::Successfully parsed mounted prometheus config map
+2021-12-14T00:24:17.51540514Z stdout F config::Successfully passed typecheck for config settings for replicaset
+2021-12-14T00:24:17.51541334Z stdout F config::Starting to substitute the placeholders in telegraf conf copy file for replicaset
+2021-12-14T00:24:17.51542134Z stdout F config::Successfully substituted the placeholders in telegraf conf file for replicaset
+2021-12-14T00:24:17.51543454Z stdout F config::Successfully created telemetry file for replicaset
+2021-12-14T00:24:17.51544044Z stdout F ****************End Prometheus Config Processing********************
+2021-12-14T00:24:17.654412762Z stdout F ****************Start MDM Metrics Config Processing********************
+2021-12-14T00:24:17.654467462Z stdout F config::configmap container-azm-ms-agentconfig for MDM metric settings mounted, parsing values
+2021-12-14T00:24:17.654485261Z stdout F config::Successfully parsed mounted config map
+2021-12-14T00:24:17.654495461Z stdout F config::Using config map settings for MDM metric configuration settings for container resource utilization
+2021-12-14T00:24:17.654505461Z stdout F config::Using config map settings for MDM metric configuration settings for PV utilization
+2021-12-14T00:24:17.654513461Z stdout F config::Using config map settings for MDM metric configuration settings for job completion
+2021-12-14T00:24:17.654521261Z stdout F ****************End MDM Metrics Config Processing********************
+2021-12-14T00:24:17.783025449Z stdout F ****************Start Metric Collection Settings Processing********************
+2021-12-14T00:24:17.783058749Z stdout F config::configmap container-azm-ms-agentconfig for metric collection settings mounted, parsing values
+2021-12-14T00:24:17.783067849Z stdout F config::Successfully parsed mounted config map
+2021-12-14T00:24:17.783076049Z stdout F config::Using config map setting for PV kube-system collection
+2021-12-14T00:24:17.783083049Z stdout F ****************End Metric Collection Settings Processing********************
+2021-12-14T00:24:17.786782225Z stdout F Making wget request to cadvisor endpoint with port 10250
+2021-12-14T00:24:17.936767177Z stdout F Wget request using port 10250 succeeded. Using 10250
+2021-12-14T00:24:17.936810977Z stdout F Making curl request to cadvisor endpoint /pods with port 10250 to get the configured container runtime on kubelet
+2021-12-14T00:24:18.001687367Z stdout F configured container runtime on kubelet is : containerd
+2021-12-14T00:24:18.002113865Z stdout F set caps for ruby process to read container env from proc
+2021-12-14T00:24:18.018335462Z stdout F aks-agentpool-29318601-vmss000005
+2021-12-14T00:24:18.029187693Z stdout F  * Starting periodic command scheduler cron
+2021-12-14T00:24:18.035789752Z stdout F    ...done.
+2021-12-14T00:24:18.047630877Z stdout F docker-cimprov 16.0.0.0
+2021-12-14T00:24:18.06922894Z stdout F DOCKER_CIMPROV_VERSION=16.0.0.0
+2021-12-14T00:24:18.072892217Z stdout F *** activating oneagent in legacy auth mode ***
+2021-12-14T00:24:18.077982885Z stdout F setting mdsd workspaceid & key for workspace:c3b6a23a-7e35-4884-b307-c1ebf0c1e025
+2021-12-14T00:24:18.090855004Z stdout F azure-mdsd 1.14.2-build.master.284
+2021-12-14T00:24:18.092681392Z stdout F starting mdsd mode in main container...
+2021-12-14T00:24:18.092703192Z stdout F setting up cronjob for ci agent log rotation
+2021-12-14T00:24:18.092712092Z stdout F *** starting fluentd v1 in replicaset
+2021-12-14T00:24:18.092719292Z stdout F ****************Start Telegraf in Test Mode**************************
+2021-12-14T00:24:18.383872752Z stderr F 2021-12-14T00:24:18Z I! Starting Telegraf 1.18.0
+2021-12-14T00:24:18.39042731Z stdout F Moving test conf file to telegraf replicaset conf since test run succeeded
+2021-12-14T00:24:18.39048261Z stdout F ****************End Telegraf Run in Test Mode**************************
+2021-12-14T00:24:18.390694409Z stdout F starting fluent-bit and setting telegraf conf file for replicaset
+2021-12-14T00:24:18.465988033Z stdout F nodename: aks-agentpool-29318601-vmss000005
+2021-12-14T00:24:18.466015433Z stdout F replacing nodename in telegraf config
+2021-12-14T00:24:18.47278479Z stdout F checking for listener on tcp #25226 and waiting for 30 secs if not..
+2021-12-14T00:24:18.587501165Z stdout F File Doesnt Exist. Creating file...
+2021-12-14T00:24:18.587651064Z stderr F [1mFluent Bit v1.6.8[0m
+2021-12-14T00:24:18.587670164Z stderr F * [1m[93mCopyright (C) 2019-2020 The Fluent Bit Authors[0m
+2021-12-14T00:24:18.587676464Z stderr F * [1m[93mCopyright (C) 2015-2018 Treasure Data[0m
+2021-12-14T00:24:18.587681664Z stderr F * Fluent Bit is a CNCF sub-project under the umbrella of Fluentd
+2021-12-14T00:24:18.587686064Z stderr F * https://fluentbit.io
+2021-12-14T00:24:18.587691164Z stderr F 
+2021-12-14T00:24:18.604684756Z stdout F Routing container logs thru adx route...
+2021-12-14T00:24:19.487586877Z stdout F waitforlisteneronTCPport found listener on port:25226 in 1 secs
+2021-12-14T00:24:19.772879074Z stderr F 2021-12-14T00:24:19Z I! Starting Telegraf 1.18.0
+2021-12-14T00:24:19.867326577Z stdout F Telegraf 1.18.0 (git: HEAD ac5c7f6a)
+2021-12-14T00:24:19.883095677Z stdout F td-agent-bit 1.6.8
+2021-12-14T00:24:19.884705667Z stdout F stopping rsyslog...
+2021-12-14T00:24:19.892240419Z stdout F  * Stopping enhanced syslogd rsyslogd
+2021-12-14T00:24:19.893462412Z stdout F    ...done.
+2021-12-14T00:24:19.89370821Z stdout F getting rsyslog status...
+2021-12-14T00:24:19.902955452Z stdout F  * rsyslogd is not running
+2021-12-14T00:24:19.905667034Z stdout F 2021-12-14T00:24:18.5742570Z: Onboarding success. Sucessfully registered certificate with OMS Homing service.
+2021-12-14T00:24:19.905961433Z stdout F Onboarding success

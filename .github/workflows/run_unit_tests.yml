@@ -17,8 +17,11 @@ jobs:
         uses: actions/checkout@v2
       - name: Run unit tests
         run: |
+          sudo mkdir -p /var/opt/microsoft/docker-cimprov/log/
+          sudo chmod 777 /var/opt/microsoft/docker-cimprov/log/
           cd ${{ github.workspace }}
-          ./test/unit-tests/run_go_tests.sh
+          cd test/unit-tests
+          ./run_go_tests.sh
   Ruby-Tests:
     runs-on: ubuntu-latest
     steps:

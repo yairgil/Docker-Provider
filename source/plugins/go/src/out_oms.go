@@ -46,7 +46,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		return output.FLB_OK
 	}
 
-	SetupLogLossTracker()
+	StartLogLossTracker()
 	return output.FLB_OK
 }
 

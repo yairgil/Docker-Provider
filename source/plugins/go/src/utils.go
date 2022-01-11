@@ -11,9 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Azure/azure-kusto-go/kusto"
@@ -262,122 +260,16 @@ func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []
 	return msgpBytes
 }
 
-// includes files in subdirectories
-// TODO: consider replacing this with a iterator of some sort, constructing the map of
-// files all at once might use more memory than necessary
-func GetSizeOfAllFilesInDir(root_dir string) map[string]int64 {
-	output_map := make(map[string]int64)
-	getSizeOfAllFilesInDirImpl(&root_dir, "", &output_map)
-	return output_map
+func is_linux() bool {
+	osType := os.Getenv("OS_TYPE")
+	return strings.Compare(strings.ToLower(osType), "windows") != 0
 }
 
-func getSizeOfAllFilesInDirImpl(root_dir *string, preceeding_dir string, storage_dict *map[string]int64) {
-	// container_full_path := filepath.Join(preceeding_dir_segments)
-	files_and_folders, err := ioutil.ReadDir(filepath.Join(*root_dir, preceeding_dir))
-	if err != nil {
-		Log("ERROR: reading dir " + err.Error())
-	}
-	for _, next_file := range files_and_folders {
-		file_name := filepath.Join(preceeding_dir, next_file.Name())
-		if next_file.IsDir() {
-			// need to recurse more
-			getSizeOfAllFilesInDirImpl(root_dir, file_name, storage_dict)
-		} else {
-			(*storage_dict)[file_name] = next_file.Size()
-		}
-	}
-}
-
-/*
-Requirements:
-	- multiple threads can read at once or update log counts
-*/
-type AddressableMap struct {
-	log_counts            []int64
-	container_identifiers []string
-	free_list             []int
-	string_to_arr_index   map[string]int
-	management_mut        *sync.Mutex
-}
-
-func Make_AddressableMap() AddressableMap {
-	retval := AddressableMap{}
-	// default size is 300 because a single node is unlikely to have more than 300 containers. This way the data structure is unlikely to ever need
-	// to stop and copy all the values.
-	retval.log_counts = make([]int64, 0, 300)
-	retval.container_identifiers = make([]string, 0, 300)
-	retval.free_list = make([]int, 0, 300)
-	retval.string_to_arr_index = make(map[string]int)
-	retval.management_mut = &sync.Mutex{}
-
-	return retval
-}
-
-//TODO: better func name
-// creates an entry for new containers (the second return value will be true if the container is new)
-func (collection *AddressableMap) get(container_identifier string) (*int64, bool) {
-	slice_index, container_seen := collection.string_to_arr_index[container_identifier]
-	if !container_seen {
-		collection.management_mut.Lock()
-		defer collection.management_mut.Unlock()
-
-		if len(collection.free_list) > 0 {
-			slice_index = collection.free_list[len(collection.free_list)-1]
-			collection.free_list = collection.free_list[:len(collection.free_list)-1]
-			collection.log_counts[slice_index] = 0
-			collection.container_identifiers[slice_index] = ""
-		} else {
-			collection.log_counts = append(collection.log_counts, 0)
-			collection.container_identifiers = append(collection.container_identifiers, "")
-			slice_index = len(collection.log_counts) - 1
-		}
-		collection.container_identifiers[slice_index] = container_identifier
-		collection.string_to_arr_index[container_identifier] = slice_index
-	}
-
-	return &collection.log_counts[slice_index], !container_seen
-}
-
-func (collection *AddressableMap) delete(container_identifier string) {
-	collection.management_mut.Lock()
-	defer collection.management_mut.Unlock()
-
-	index := collection.string_to_arr_index[container_identifier]
-
-	collection.log_counts[index] = -1
-	collection.container_identifiers[index] = ""
-	collection.free_list = append(collection.free_list, index)
-	delete(collection.string_to_arr_index, container_identifier)
-}
-
-func (collection *AddressableMap) len() int {
-	collection.management_mut.Lock()
-	defer collection.management_mut.Unlock()
-	return len(collection.container_identifiers)
-}
-
-func (collection *AddressableMap) export_values() ([]string, []int64) {
-	identifiers, 
-
-	collection.management_mut.Lock()
-	defer collection.management_mut.Unlock()
-
-	for k, v := range collection.string_to_arr_index {
-		new_map.string_to_arr_index[k] = v
-	}
-
-	new_map.container_identifiers = append([]string(nil), collection.container_identifiers...)
-	new_map.log_counts = append([]int64(nil), collection.log_counts...)
-	new_map.free_list = append([]int(nil), collection.free_list...)
-
-	return new_map
-}
-
-func slice_contains(str_slice []string, target_str string) bool {
-	for _, val := range str_slice {
-		if val == target_str {
-			return true
-		}
-	}
-	return false
+func get_timeout_chan(wait_duration time.Duration) chan bool {
+	channel := make(chan bool)
+	go func() {
+		time.Sleep(wait_duration)
+		channel <- true
+	}()
+	return channel
 }

@@ -225,7 +225,7 @@ var (
 
 var (
 	// FLBLogger stream
-	FLBLogger = createLogger("fluent-bit-out-oms-runtime.log")
+	FLBLogger = createLogger("", "fluent-bit-out-oms-runtime.log")
 	// Log wrapper function
 	Log = FLBLogger.Printf
 )
@@ -369,17 +369,22 @@ const (
 	InsightsMetrics
 )
 
-func createLogger(log_file_name string) *log.Logger {
+// base_path should be "" in production. It exists for unit tests
+func createLogger(base_path string, log_file_name string) *log.Logger {
 
 	osType := os.Getenv("OS_TYPE")
 
 	var logPath string
 	var log_underlying_file *os.File
 
-	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
-		logPath = "/var/opt/microsoft/docker-cimprov/log/" + log_file_name
+	if base_path == "" {
+		if strings.Compare(strings.ToLower(osType), "windows") != 0 {
+			logPath = "/var/opt/microsoft/docker-cimprov/log/" + log_file_name
+		} else {
+			logPath = "/etc/omsagentwindows/" + log_file_name
+		}
 	} else {
-		logPath = "/etc/omsagentwindows/" + log_file_name
+		logPath = base_path
 	}
 
 	if _, err := os.Stat(logPath); err == nil {
@@ -387,7 +392,7 @@ func createLogger(log_file_name string) *log.Logger {
 		log_underlying_file, err = os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
 			SendException(err.Error())
-			fmt.Printf(err.Error())
+			fmt.Printf("%s, (file is %s)", err.Error(), logPath)
 		}
 	}
 
@@ -396,7 +401,7 @@ func createLogger(log_file_name string) *log.Logger {
 		log_underlying_file, err = os.Create(logPath)
 		if err != nil {
 			SendException(err.Error())
-			fmt.Printf(err.Error())
+			fmt.Printf("%s, (file is %s)", err.Error(), logPath)
 		}
 	}
 
@@ -1578,7 +1583,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	osType := os.Getenv("OS_TYPE")
 	IsWindows = false
 	// Linux
-	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
+	if is_linux() {
 		Log("Reading configuration for Linux from %s", pluginConfPath)
 		WorkspaceID = os.Getenv("WSID")
 		if WorkspaceID == "" {
