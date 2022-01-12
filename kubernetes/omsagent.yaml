@@ -368,7 +368,7 @@ spec:
             value: "3"
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cirshs01122022"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -456,7 +456,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         # - name: omsagent-prometheus
-        #   image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021"
+        #   image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cirshs01122022"
         #   imagePullPolicy: IfNotPresent
         #   resources:
         #     limits:
@@ -605,7 +605,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10132021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:cirshs01122022"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -615,6 +615,8 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
+            - name: EMIT_CACHE_TELEMETRY
+              value: "true"
             - name: NUM_OF_FLUENTD_WORKERS
               value: "3" # This value should be same as number of CPU cores specified under limits
             - name: AKS_RESOURCE_ID

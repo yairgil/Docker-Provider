@@ -37,7 +37,6 @@ class KubernetesApiClient
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
   @@TokenFileName = "/var/run/secrets/kubernetes.io/serviceaccount/token"
   @@TokenStr = nil
-  @@WinNodeArray = []
   @@telemetryTimeTracker = DateTime.now.to_time.to_i
   @@resourceLimitsTelemetryHash = {}
 
@@ -293,8 +292,6 @@ class KubernetesApiClient
         resourceUri = getNodesResourceUri("nodes?labelSelector=kubernetes.io%2Fos%3Dwindows")
         nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
         @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
-        # Resetting the windows node cache
-        @@WinNodeArray.clear
         if (!nodeInventory.empty?)
           nodeInventory["items"].each do |item|
             # check for windows operating system in node metadata
@@ -304,11 +301,6 @@ class KubernetesApiClient
             if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
               operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
               if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
-                # Adding windows nodes to winNodeArray so that it can be used in kubepodinventory to send ContainerInventory data
-                # to get images and image tags for containers in windows nodes
-                if !nodeMetadata.nil? && !nodeMetadata["name"].nil?
-                  @@WinNodeArray.push(nodeMetadata["name"])
-                end
                 nodeStatusAddresses = nodeStatus["addresses"]
                 if !nodeStatusAddresses.nil?
                   nodeStatusAddresses.each do |address|
@@ -328,7 +320,33 @@ class KubernetesApiClient
     end
 
     def getWindowsNodesArray
-      return @@WinNodeArray
+      winNodeArray = []
+      begin
+        # get only windows nodes
+        resourceUri = getNodesResourceUri("nodes?labelSelector=kubernetes.io%2Fos%3Dwindows")
+        nodeInventory = JSON.parse(getKubeResourceInfo(resourceUri).body)
+        @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
+        if (!nodeInventory.empty?)
+          nodeInventory["items"].each do |item|
+            # check for windows operating system in node metadata
+            nodeStatus = item["status"]
+            nodeMetadata = item["metadata"]
+            if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
+              operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
+              if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
+                # Adding windows nodes to winNodeArray so that it can be used in kubepodinventory to send ContainerInventory data
+                # to get images and image tags for containers in windows nodes
+                if !nodeMetadata.nil? && !nodeMetadata["name"].nil?
+                  winNodeArray.push(nodeMetadata["name"])
+                end
+              end
+            end
+          end
+        end
+      rescue => error
+        @Log.warn("KubernetesApiClient::getWindowsNodesArray:failed with an error: #{error}")
+      end
+      return winNodeArray
     end
 
     def getContainerIDs(namespace)
@@ -856,10 +874,10 @@ class KubernetesApiClient
       end
     end
 
-    def getOptimizedItem(resource, resourceItem)
+    def getOptimizedItem(resource, resourceItem, isWindowsItem = false)
       case resource
       when "pods"
-        return getPodOptimizedItem(resourceItem)
+        return getPodOptimizedItem(resourceItem, isWindowsItem)
       when "nodes"
         return getNodeOptimizedItem(resourceItem)
       when "services"
@@ -918,23 +936,23 @@ class KubernetesApiClient
       return isWindowsNodeItem
     end
 
-    def isWindowsPodItem(podItem)
-      isWindowsPod = false
-      begin
-        winNodes = KubernetesApiClient.getWindowsNodesArray()
-        if !winNodes.nil? && !winNodes.empty? && winNodes.length > 0
-          nodeName = (!podItem["spec"].nil? && !podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
-          if !nodeName.empty? && winNodes.include?(nodeName)
-            isWindowsPod = true
-          end
-        end
-      rescue => errorStr
-        $Log.warn "KubernetesApiClient::::isWindowsPodItem: failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}"
-      end
-      return isWindowsPod
-    end
+    # def isWindowsPodItem(podItem)
+    #   isWindowsPod = false
+    #   begin
+    #     winNodes = KubernetesApiClient.getWindowsNodesArray()
+    #     if !winNodes.nil? && !winNodes.empty? && winNodes.length > 0
+    #       nodeName = (!podItem["spec"].nil? && !podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
+    #       if !nodeName.empty? && winNodes.include?(nodeName)
+    #         isWindowsPod = true
+    #       end
+    #     end
+    #   rescue => errorStr
+    #     $Log.warn "KubernetesApiClient::::isWindowsPodItem: failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}"
+    #   end
+    #   return isWindowsPod
+    # end
 
-    def getPodOptimizedItem(resourceItem)
+    def getPodOptimizedItem(resourceItem, isWindowsPodItem)
       item = {}
       begin
         item["metadata"] = {}
@@ -961,7 +979,7 @@ class KubernetesApiClient
             item["metadata"]["deletionTimestamp"] = resourceItem["metadata"]["deletionTimestamp"]
           end
         end
-        isWindowsPod = isWindowsPodItem(resourceItem)
+
         item["spec"] = {}
         if !resourceItem["spec"].nil?
           item["spec"]["containers"] = []
@@ -976,7 +994,7 @@ class KubernetesApiClient
               currentContainer["name"] = container["name"]
               currentContainer["resources"] = container["resources"]
               # fields required for windows containers records
-              if isWindowsPod
+              if isWindowsPodItem
                 currentContainer["image"] = container["image"]
                 currentContainer["ports"] = container["ports"]
                 currentContainer["command"] = container["command"]
@@ -995,7 +1013,7 @@ class KubernetesApiClient
               currentContainer["name"] = container["name"]
               currentContainer["resources"] = container["resources"]
               # fields required for windows containers records
-              if isWindowsPod
+              if isWindowsPodItem
                 currentContainer["image"] = container["image"]
                 currentContainer["ports"] = container["ports"]
                 currentContainer["command"] = container["command"]
@@ -1059,11 +1077,16 @@ class KubernetesApiClient
               currentContainerStatus["restartCount"] = containerStatus["restartCount"]
               currentContainerStatus["state"] = containerStatus["state"]
               currentContainerStatus["lastState"] = containerStatus["lastState"]
-              if isWindowsPod
+              if isWindowsPodItem
                 currentContainerStatus["imageID"] = containerStatus["imageID"]
               end
               item["status"]["containerStatuses"].push(currentContainerStatus)
             end
+          end
+          # this metadata used to identify the pod scheduled onto windows node
+          # so that pod inventory can make decision to extract containerinventory records or not
+          if isWindowsPodItem
+            item["isWindows"] = "true"
           end
         end
       rescue => errorStr

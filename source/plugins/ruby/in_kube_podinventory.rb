@@ -50,7 +50,8 @@ module Fluent::Plugin
 
       @watchNodesThread = nil
       @nodeAllocatableCache = {}
-      @windowsNodeCache = {}
+      @windowsNodeNameListCache = []
+      @windowsContainerRecordsCacheSizeBytes = 0
 
       @kubeperfTag = "oneagent.containerInsights.LINUX_PERF_BLOB"
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
@@ -102,11 +103,11 @@ module Fluent::Plugin
         @podCacheMutex = Mutex.new
         @serviceCacheMutex = Mutex.new
         @nodeAllocatableCacheMutex = Mutex.new
-        #  @windowsNodeCacheMutex = Mutex.new
+        @windowsNodeNameCacheMutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
+        @watchNodesThread = Thread.new(&method(:watch_nodes))
         @watchPodsThread = Thread.new(&method(:watch_pods))
         @watchServicesThread = Thread.new(&method(:watch_services))
-        @watchNodesThread = Thread.new(&method(:watch_nodes))
         @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
       end
     end
@@ -133,6 +134,7 @@ module Fluent::Plugin
         @serviceCount = 0
         @controllerSet = Set.new []
         @winContainerCount = 0
+        @windowsContainerRecordsCacheSizeBytes = 0
         @controllerData = {}
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
@@ -229,6 +231,7 @@ module Fluent::Plugin
             telemetryProperties["POD_ITEMS_CACHE_SIZE_KB"] = podItemsCacheSizeKB
             telemetryProperties["SERVICE_ITEMS_CACHE_SIZE_KB"] = serviceItemsCacheSizeKB
             telemetryProperties["NODE_ALLOCATABLE_ITEMS_CACHE_SIZE_KB"] = nodeAllocatableCacheSizeKB
+            telemetryProperties["WINDOWS_CONTAINER_RECORDS_CACHE_SIZE_KB"] = @windowsContainerRecordsCacheSizeBytes / 1024
           end
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
@@ -261,8 +264,8 @@ module Fluent::Plugin
       @@istestvar = ENV["ISTEST"]
 
       begin #begin block start
-        # Getting windows nodes from kubeapi
-        winNodes = KubernetesApiClient.getWindowsNodesArray
+        # # Getting windows nodes from kubeapi
+        # winNodes = KubernetesApiClient.getWindowsNodesArray
         podInventory["items"].each do |item| #podInventory block start
           # pod inventory records
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
@@ -278,17 +281,18 @@ module Fluent::Plugin
           if !item["spec"]["nodeName"].nil?
             nodeName = item["spec"]["nodeName"]
           end
-          if winNodes.length > 0
-            if (!nodeName.empty? && (winNodes.include? nodeName))
-              clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
-              #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
-              containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar, true)
-              # Send container inventory records for containers on windows nodes
-              @winContainerCount += containerInventoryRecords.length
-              containerInventoryRecords.each do |cirecord|
-                if !cirecord.nil?
-                  containerInventoryStream.add(emitTime, cirecord) if cirecord
-                end
+          if (!item["isWindows"].nil? && !item["isWindows"].empty? && item["isWindows"].downcase == "true")
+            clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
+            #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
+            containerInventoryRecords = KubernetesContainerInventory.getContainerInventoryRecords(item, batchTime, clusterCollectEnvironmentVar, true)
+            if KubernetesApiClient.isEmitCacheTelemetry()
+              @windowsContainerRecordsCacheSizeBytes += containerInventoryRecords.to_s.length
+            end
+            # Send container inventory records for containers on windows nodes
+            @winContainerCount += containerInventoryRecords.length
+            containerInventoryRecords.each do |cirecord|
+              if !cirecord.nil?
+                containerInventoryStream.add(emitTime, cirecord) if cirecord
               end
             end
           end
@@ -711,14 +715,23 @@ module Fluent::Plugin
     def watch_pods
       $log.info("in_kube_podinventory::watch_pods:Start @ #{Time.now.utc.iso8601}")
       podsResourceVersion = nil
-      # invoke getWindowsNodes to get windowsnodearray cache populated
-      KubernetesApiClient.getWindowsNodes()
+      # invoke getWindowsNodes to handle scenario where windowsNodeNameCache not populated yet on containerstart
+      winNodes = KubernetesApiClient.getWindowsNodesArray()
+      if winNodes.length > 0
+        @windowsNodeNameCacheMutex.synchronize {
+          @windowsNodeNameListCache = winNodes.dup
+        }
+      end
       loop do
         begin
           if podsResourceVersion.nil?
             # clear cache before filling the cache with list
             @podCacheMutex.synchronize {
               @podItemsCache.clear()
+            }
+            currentWindowsNodeNameList = []
+            @windowsNodeNameCacheMutex.synchronize {
+              currentWindowsNodeNameList = @windowsNodeNameListCache.dup
             }
             continuationToken = nil
             $log.info("in_kube_podinventory::watch_pods:Getting pods from Kube API since podsResourceVersion is #{podsResourceVersion}  @ #{Time.now.utc.iso8601}")
@@ -731,7 +744,12 @@ module Fluent::Plugin
                 podInventory["items"].each do |item|
                   key = item["metadata"]["uid"]
                   if !key.nil? && !key.empty?
-                    podItem = KubernetesApiClient.getOptimizedItem("pods", item)
+                    nodeName = (!item["spec"].nil? && !item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
+                    isWindowsPodItem = false
+                    if !nodeName.empty? && !currentWindowsNodeNameList.nil? && !currentWindowsNodeNameList.empty? && currentWindowsNodeNameList.include?(nodeName)
+                      isWindowsPodItem = true
+                    end
+                    podItem = KubernetesApiClient.getOptimizedItem("pods", item, isWindowsPodItem)
                     if !podItem.nil? && !podItem.empty?
                       @podCacheMutex.synchronize {
                         @podItemsCache[key] = podItem
@@ -756,7 +774,15 @@ module Fluent::Plugin
                   podInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
-                      podItem = KubernetesApiClient.getOptimizedItem("pods", item)
+                      nodeName = (!item["spec"].nil? && !item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
+                      isWindowsPodItem = false
+                      if !nodeName.empty? &&
+                         !currentWindowsNodeNameList.nil? &&
+                         !currentWindowsNodeNameList.empty? &&
+                         currentWindowsNodeNameList.include?(nodeName)
+                        isWindowsPodItem = true
+                      end
+                      podItem = KubernetesApiClient.getOptimizedItem("pods", item, isWindowsPodItem)
                       if !podItem.nil? && !podItem.empty?
                         @podCacheMutex.synchronize {
                           @podItemsCache[key] = podItem
@@ -799,7 +825,19 @@ module Fluent::Plugin
                   if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
-                      podItem = KubernetesApiClient.getOptimizedItem("pods", item)
+                      currentWindowsNodeNameList = []
+                      @windowsNodeNameCacheMutex.synchronize {
+                        currentWindowsNodeNameList = @windowsNodeNameListCache.dup
+                      }
+                      isWindowsPodItem = false
+                      nodeName = (!item["spec"].nil? && !item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
+                      if !nodeName.empty? &&
+                         !currentWindowsNodeNameList.nil? &&
+                         !currentWindowsNodeNameList.empty? &&
+                         currentWindowsNodeNameList.include?(nodeName)
+                        isWindowsPodItem = true
+                      end
+                      podItem = KubernetesApiClient.getOptimizedItem("pods", item, isWindowsPodItem)
                       if !podItem.nil? && !podItem.empty?
                         @podCacheMutex.synchronize {
                           @podItemsCache[key] = podItem
@@ -970,9 +1008,9 @@ module Fluent::Plugin
             @nodeAllocatableCacheMutex.synchronize {
               @nodeAllocatableCache.clear()
             }
-            # @windowsNodeCacheMutex.synchronize {
-            #   @windowsNodeCache.clear()
-            # }
+            @windowsNodeNameCacheMutex.synchronize {
+              @windowsNodeNameListCache.clear()
+            }
             continuationToken = nil
             $log.info("in_kube_podinventory::watch_nodes:Getting nodes from Kube API since nodesResourceVersion is #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
             resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
@@ -986,6 +1024,14 @@ module Fluent::Plugin
                   key = item["metadata"]["name"]
                   if !key.nil? && !key.empty?
                     nodeAllocatable = KubernetesApiClient.getNodeAllocatableValues(item)
+                    isWindowsNodeItem = KubernetesApiClient.isWindowsNodeItem(item)
+                    if isWindowsNodeItem
+                      @windowsNodeNameCacheMutex.synchronize {
+                        if !@windowsNodeNameListCache.include?(key)
+                          @windowsNodeNameListCache.push(key)
+                        end
+                      }
+                    end
                     if !nodeAllocatable.nil? && !nodeAllocatable.empty?
                       @nodeAllocatableCacheMutex.synchronize {
                         @nodeAllocatableCache[key] = nodeAllocatable
@@ -1011,6 +1057,14 @@ module Fluent::Plugin
                     key = item["metadata"]["name"]
                     if !key.nil? && !key.empty?
                       nodeAllocatable = KubernetesApiClient.getNodeAllocatableValues(item)
+                      isWindowsNodeItem = KubernetesApiClient.isWindowsNodeItem(item)
+                      if isWindowsNodeItem
+                        @windowsNodeNameCacheMutex.synchronize {
+                          if !@windowsNodeNameListCache.include?(key)
+                            @windowsNodeNameListCache.push(key)
+                          end
+                        }
+                      end
                       if !nodeAllocatable.nil? && !nodeAllocatable.empty?
                         @nodeAllocatableCacheMutex.synchronize {
                           @nodeAllocatableCache[key] = nodeAllocatable
@@ -1052,6 +1106,14 @@ module Fluent::Plugin
                   end
                   if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
                     key = item["metadata"]["name"]
+                    isWindowsNodeItem = KubernetesApiClient.isWindowsNodeItem(item)
+                    if isWindowsNodeItem
+                      @windowsNodeNameCacheMutex.synchronize {
+                        if !@windowsNodeNameListCache.include?(key)
+                          @windowsNodeNameListCache.push(key)
+                        end
+                      }
+                    end
                     if !key.nil? && !key.empty?
                       nodeAllocatable = KubernetesApiClient.getNodeAllocatableValues(item)
                       if !nodeAllocatable.nil? && !nodeAllocatable.empty?
@@ -1066,6 +1128,12 @@ module Fluent::Plugin
                     end
                   elsif notice["type"] == "DELETED"
                     key = item["metadata"]["name"]
+                    isWindowsNodeItem = KubernetesApiClient.isWindowsNodeItem(item)
+                    if isWindowsNodeItem
+                      @windowsNodeNameCacheMutex.synchronize {
+                        @windowsNodeNameListCache.delete(key)
+                      }
+                    end
                     if !key.nil? && !key.empty?
                       @nodeAllocatableCacheMutex.synchronize {
                         @nodeAllocatableCache.delete(key)
