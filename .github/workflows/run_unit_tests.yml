@@ -23,6 +23,7 @@ jobs:
           cd test/unit-tests
           export GOROOT=$GOROOT_1_15_X64
           export PATH=$GOROOT/bin:$PATH
+          export PATH=/home/runner/go/bin:$PATH
           # export GOROOT=$HOME/go
           # export PATH=$GOROOT/bin:$PATH
           go get -u github.com/golang/mock/gomock
