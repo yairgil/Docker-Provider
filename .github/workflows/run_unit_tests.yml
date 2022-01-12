@@ -26,6 +26,11 @@ jobs:
           go get -u golang.org/x/mod/modfile
           go get -u golang.org/x/tools/imports
           go install github.com/golang/mock/mockgen
+          echo ********************************************************************************
+          env | sort
+          echo ********************************************************************************
+          find | grep mockgen
+          echo ********************************************************************************
           ./run_go_tests.sh
   Ruby-Tests:
     runs-on: ubuntu-latest
