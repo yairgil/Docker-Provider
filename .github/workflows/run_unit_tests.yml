@@ -21,16 +21,17 @@ jobs:
           sudo chmod 777 /var/opt/microsoft/docker-cimprov/log/
           cd ${{ github.workspace }}
           cd test/unit-tests
-          export PATH=$PATH:$GOPATH/bin
+          export GOROOT=GOROOT_1_15_X64
+          export PATH=$GOROOT/bin:$PATH
           go get -u github.com/golang/mock/gomock
           go get -u golang.org/x/mod/modfile
           go get -u golang.org/x/tools/imports
           go install github.com/golang/mock/mockgen
-          echo ********************************************************************************
+          echo '********************************************************************************'
           env | sort
-          echo ********************************************************************************
-          find | grep mockgen
-          echo ********************************************************************************
+          echo '********************************************************************************'
+          cd / && find | grep mockgen && cd -
+          echo '********************************************************************************'
           ./run_go_tests.sh
   Ruby-Tests:
     runs-on: ubuntu-latest
