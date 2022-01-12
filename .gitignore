@@ -28,7 +28,6 @@ kubernetes/linux/Linux_ULINUX_1.0_x64_64_Release
 source/plugins/go/src/*.h
 *_mock.go
 *_log.txt
-*.log
 *.byebug_history
 
 run_scale_test.py

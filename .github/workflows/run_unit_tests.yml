@@ -24,15 +24,10 @@ jobs:
           export GOROOT=$GOROOT_1_15_X64
           export PATH=$GOROOT/bin:$PATH
           export PATH=/home/runner/go/bin:$PATH
-          # export GOROOT=$HOME/go
-          # export PATH=$GOROOT/bin:$PATH
           go get -u github.com/golang/mock/gomock
           go get -u golang.org/x/mod/modfile
           go get -u golang.org/x/tools/imports
           go install github.com/golang/mock/mockgen
-          echo '********************************************************************************'
-          env | sort
-          echo '********************************************************************************'
           ./run_go_tests.sh
   Ruby-Tests:
     runs-on: ubuntu-latest

@@ -1,0 +1,5 @@
+2021-12-06T22:07:13.219404865Z stderr F I1206 22:07:13.219086       1 serving.go:312] Generated self-signed cert (apiserver.local.config/certificates/apiserver.crt, apiserver.local.config/certificates/apiserver.key)
+2021-12-06T22:07:18.877451526Z stderr F I1206 22:07:18.877148       1 secure_serving.go:116] Serving securely on [::]:443
+2021-12-06T22:15:51.834940877Z stderr F W1206 22:15:51.834771       1 reflector.go:289] k8s.io/client-go/informers/factory.go:133: watch of *v1.Node ended with: very short watch: k8s.io/client-go/informers/factory.go:133: Unexpected watch close - watch lasted less than a second and no items received
+2021-12-06T22:15:52.287690284Z stderr F W1206 22:15:52.287484       1 reflector.go:289] k8s.io/client-go/informers/factory.go:133: watch of *v1.Pod ended with: too old resource version: 995252 (995737)
+2021-12-13T20:18:58.176264187Z stderr F W1213 20:18:58.175666       1 reflector.go:289] k8s.io/client-go/informers/factory.go:133: watch of *v1.Node ended with: very short watch: k8s.io/client-go/informers/factory.go:133: Unexpected watch close - watch lasted less than a second and no items received
