@@ -1,0 +1,3 @@
+there might be random files in the container log directories (maybe due to a future update?)
+
+The log loss tracker should probably ignore them
