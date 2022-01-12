@@ -21,7 +21,7 @@ jobs:
           sudo chmod 777 /var/opt/microsoft/docker-cimprov/log/
           cd ${{ github.workspace }}
           cd test/unit-tests
-          export GOROOT=GOROOT_1_15_X64
+          export GOROOT=$GOROOT_1_15_X64
           export PATH=$GOROOT/bin:$PATH
           go get -u github.com/golang/mock/gomock
           go get -u golang.org/x/mod/modfile
