@@ -29,7 +29,3 @@ source/plugins/go/src/*.h
 *_mock.go
 *_log.txt
 *.byebug_history
-
-run_scale_test.py
-scale-test.yaml
-steps
