@@ -17,6 +17,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Run unit tests
         run: |
+          go get -u github.com/golang/mock/gomock
+          go install github.com/golang/mock/mockgen
           sudo mkdir -p /var/opt/microsoft/docker-cimprov/log/
           sudo chmod 777 /var/opt/microsoft/docker-cimprov/log/
           cd ${{ github.workspace }}
