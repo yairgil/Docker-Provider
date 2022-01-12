@@ -301,7 +301,7 @@ func Test_track_log_rotations(t *testing.T) {
 	}()
 	track_log_rotations(ch, test_dir)
 
-	if len(FW_records) != 15 {
+	if len(FW_records) != 8 {
 		t.Errorf("FW_records did not have the correct number of records, actually had actually %d", len(FW_records))
 	}
 
@@ -327,7 +327,7 @@ func Test_track_log_rotations(t *testing.T) {
 	}()
 	track_log_rotations_impl(ch2, test_dir_2, 1)
 
-	if len(FW_records) != 14 {
+	if len(FW_records) != 7 {
 		t.Errorf("FW_records did not have the correct number of records, actually had actually %d", len(FW_records))
 	}
 
