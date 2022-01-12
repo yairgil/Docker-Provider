@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,8 +13,6 @@ import (
 
 const log_loss_telemetry_interval = 5 * time.Minute
 const log_loss_track_rotations_interval = 5 * time.Second
-
-var log_file_is_unrotated_regexpr *regexp.Regexp
 
 // used exclusive by the main thread
 var container_logs_current = make(map[string]int64)
@@ -61,8 +58,6 @@ func init_log_loss_monitoring_globals() {
 	read_disk_mut = sync.Mutex{}
 
 	disabled_namespaces = make(map[string]bool)
-
-	log_file_is_unrotated_regexpr = regexp.MustCompile("(?P<number>[0-9]+)\\.log$")
 }
 
 // The next few type definitions are for unit testing (to mock os.Genenv())
@@ -222,6 +217,9 @@ func write_telemetry(ticker <-chan time.Time) {
 	}
 
 	for range ticker {
+		if !enable_log_loss_detection {
+			return
+		}
 		inner_func()
 	}
 }
@@ -248,7 +246,8 @@ func track_log_rotations_impl(ticker <-chan time.Time, watch_dir string, current
 		// this needs a way to return an error
 		all_files_and_sizes, err := GetAllContainerLogFilesAndSizes(watch_dir)
 		if err != nil {
-			//TODO: figure out what error reporting to do here. Probably don't send an exception because this loop runs every few seconds?
+			// turn off log loss detection if there's an error, don't attempt to recover (maybe change this in the future)
+			enable_log_loss_detection = false
 			return
 		}
 		// containers_seen_this_iter := make(map[string]bool)
@@ -266,7 +265,7 @@ func track_log_rotations_impl(ticker <-chan time.Time, watch_dir string, current
 
 			container_record, container_already_tracked := FW_records[container_identifier]
 			if !container_already_tracked {
-				container_record = FwRecord{existing_log_files: make(map[string]int64, 0), deleted_bytes: 0, last_generation_seen: current_generation}
+				container_record = FwRecord{existing_log_files: make(map[string]int64), deleted_bytes: 0, last_generation_seen: current_generation}
 			}
 
 			// if the previous list of container log files (container_record.existing_log_files) has any log files which are not on disk, then count them as deleted.
@@ -293,6 +292,9 @@ func track_log_rotations_impl(ticker <-chan time.Time, watch_dir string, current
 	for range ticker {
 		inner_func()
 		current_generation += 1
+		if !enable_log_loss_detection {
+			return
+		}
 	}
 }
 

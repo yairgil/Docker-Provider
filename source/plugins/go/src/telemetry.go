@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fluent/fluent-bit-go/output"
@@ -64,7 +66,16 @@ var (
 	LogsLostInFluentBit int64
 	//Number of logs written to disk by application containers (what we should be sending to LA) (in bytes)
 	LogsWrittenToDisk int64
+	// these variables are for getting rates for log loss (instead of sending cumulative counts to telemetry)
+	lastLogsLostInFluentBit int64
+	lastLogsWrittenToDisk   int64
+	lastLogsTime            time.Time
+	LogsLostTelemMutex      sync.Mutex
 )
+
+func init() {
+	LogsLostTelemMutex = sync.Mutex{}
+}
 
 const (
 	clusterTypeACS                                              = "ACS"
@@ -86,7 +97,7 @@ const (
 	metricNameErrorCountKubeMonEventsMDSDClientCreateError      = "KubeMonEventsMDSDClientCreateErrorsCount"
 	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent  = "ContainerLogs2ADXSendErrorCount"
 	metricNameErrorCountContainerLogsADXClientCreateError       = "ContainerLogsADXClientCreateErrorCount"
-	metricNameLostLogs                                          = "ContainerLogsLostBytes"
+	metricNameLostLogs                                          = "ContainerLogsLostBytesPerSecond"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -230,14 +241,29 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		if kubeMonEventsMDSDClientCreateErrors > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountKubeMonEventsMDSDClientCreateError, kubeMonEventsMDSDClientCreateErrors))
 		}
-		select { // this is how to read from a channel in a non-blocking way
-		case <-TenMinuteTicker.C:
-			if LogsLostInFluentBit > 0 {
-				metric := appinsights.NewMetricTelemetry(metricNameLostLogs, float64(logsLostInFluentBit))
-				metric.Properties["bytes_logged_to_disk"] = strconv.FormatInt(logsWrittenToDisk, 10)
-				TelemetryClient.Track(metric)
+		if enable_log_loss_detection {
+			select { // this is how to read from a channel in a non-blocking way
+			case <-TenMinuteTicker.C:
+				if LogsLostInFluentBit > 0 {
+					func() { // Wrapping this in a function for defer
+						LogsLostTelemMutex.Lock()
+						defer LogsLostTelemMutex.Unlock()
+						current_time := time.Now()
+
+						logs_lost_per_sec := float64(logsLostInFluentBit-lastLogsLostInFluentBit) / current_time.Sub(lastLogsTime).Seconds()
+						logs_to_disk_per_sec := float64(logsWrittenToDisk-lastLogsWrittenToDisk) / current_time.Sub(lastLogsTime).Seconds()
+						lastLogsTime = current_time
+						lastLogsLostInFluentBit = LogsLostInFluentBit
+						lastLogsWrittenToDisk = LogsWrittenToDisk
+
+						metric := appinsights.NewMetricTelemetry(metricNameLostLogs, float64(logs_lost_per_sec))
+						metric.Properties["bytes_logged_to_disk_per_second"] = fmt.Sprint(logs_to_disk_per_sec)
+						TelemetryClient.Track(metric)
+					}()
+
+				}
+			default:
 			}
-		default:
 		}
 		start = time.Now()
 	}

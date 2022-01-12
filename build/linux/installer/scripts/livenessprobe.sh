@@ -4,7 +4,7 @@
 (ps -ef | grep "mdsd" | grep -v "grep")
 if [ $? -ne 0 ]
 then
-  echo "mdsd is not running" > /dev/termination-log
+  echo "mdsd is not running" >> /dev/termination-log
   exit 1
 fi
 
@@ -15,7 +15,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
   (ps -ef | grep "fluentd" | grep -v "grep")
   if [ $? -ne 0 ]
   then
-   echo "fluentd is not running" > /dev/termination-log
+   echo "fluentd is not running" >> /dev/termination-log
    exit 1
   fi
   # fluentd launches by default supervisor and worker process
@@ -24,14 +24,14 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
   (ps -ef | grep "fluentd" | grep "supervisor" | grep -v "grep")
   if [ $? -ne 0 ]
   then
-   echo "fluentd supervisor is not running" > /dev/termination-log
+   echo "fluentd supervisor is not running" >> /dev/termination-log
    exit 1
   fi
   # worker process
   (ps -ef | grep "fluentd" | grep -v "supervisor" | grep -v "grep" )
   if [ $? -ne 0 ]
   then
-   echo "fluentd worker is not running" > /dev/termination-log
+   echo "fluentd worker is not running" >> /dev/termination-log
    exit 1
   fi
 fi
@@ -40,7 +40,7 @@ fi
 (ps -ef | grep td-agent-bit | grep -v "grep")
 if [ $? -ne 0 ]
 then
- echo "Fluentbit is not running" > /dev/termination-log
+ echo "Fluentbit is not running" >> /dev/termination-log
  exit 1
 fi
 
@@ -48,15 +48,15 @@ fi
 (ps -ef | grep telegraf | grep -v "grep")
 if [ $? -ne 0 ]
 then
- # echo "Telegraf is not running" > /dev/termination-log
- echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" > /dev/write-to-traces  # this file is tailed and sent to traces
+ # echo "Telegraf is not running" >> /dev/termination-log
+ echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" >> /dev/termination-log  # this file is tailed and sent to traces
  # exit 1
 fi
 
 if [ -s "inotifyoutput.txt" ]
 then
   # inotifyoutput file has data(config map was applied)
-  echo "inotifyoutput.txt has been updated - config changed" > /dev/termination-log
+  echo "inotifyoutput.txt has been updated - config changed" >> /dev/termination-log
   exit 1
 fi
 
@@ -66,7 +66,7 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
     if [ -s "inotifyoutput-osm.txt" ]
     then
       # inotifyoutput-osm file has data(config map was applied)
-      echo "inotifyoutput-osm.txt has been updated - config changed" > /dev/termination-log
+      echo "inotifyoutput-osm.txt has been updated - config changed" >> /dev/termination-log
       exit 1
     fi
 fi
