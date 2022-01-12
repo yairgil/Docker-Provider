@@ -18,6 +18,7 @@ jobs:
       - name: Run unit tests
         run: |
           go get -u github.com/golang/mock/gomock
+          go get -u golang.org/x/mod/modfile
           go install github.com/golang/mock/mockgen
           export PATH=$PATH:/root/go/bin
           sudo mkdir -p /var/opt/microsoft/docker-cimprov/log/
