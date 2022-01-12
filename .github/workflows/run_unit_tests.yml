@@ -17,11 +17,11 @@ jobs:
         uses: actions/checkout@v2
       - name: Run unit tests
         run: |
-          # export PATH=$PATH:/root/go/bin
           sudo mkdir -p /var/opt/microsoft/docker-cimprov/log/
           sudo chmod 777 /var/opt/microsoft/docker-cimprov/log/
           cd ${{ github.workspace }}
           cd test/unit-tests
+          export PATH=$PATH:$GOPATH/bin
           go get -u github.com/golang/mock/gomock
           go get -u golang.org/x/mod/modfile
           go get -u golang.org/x/tools/imports
