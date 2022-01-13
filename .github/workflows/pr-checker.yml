@@ -1,5 +1,8 @@
 name: pullrequest-build-and-scan
 on:
+  push:
+    branches:
+      - grace/upgrade-telegraf
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
@@ -56,7 +59,7 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
           vuln-type: 'os,library'
-          skip-dirs: '/opt,/usr/sbin'
+          skip-dirs: ''
           exit-code: '1'
           timeout: '5m0s'
   WINDOWS-build:
