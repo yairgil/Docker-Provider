@@ -63,7 +63,7 @@ module Fluent::Plugin
       @nodesAPIE2ELatencyMs = 0
       require_relative "constants"
 
-      @NodeCache = NodeStatsCache.new()
+      # @NodeCache = NodeStatsCache.new()
     end
 
     config_param :run_interval, :time, :default => 60
@@ -254,19 +254,19 @@ module Fluent::Plugin
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
-            if is_windows_node
-              metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
-              @NodeCache.cpu.set_capacity(nodeMetricRecord["Host"], metricVal)
-            end
+            # if is_windows_node
+            #   metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
+            #   @NodeCache.cpu.set_capacity(nodeMetricRecord["Host"], metricVal)
+            # end
           end
           nodeMetricRecord = KubernetesApiClient.parseNodeLimitsFromNodeItem(item, "capacity", "memory", "memoryCapacityBytes", batchTime)
           if !nodeMetricRecord.nil? && !nodeMetricRecord.empty?
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
-            if is_windows_node
-              metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
-              @NodeCache.mem.set_capacity(nodeMetricRecord["Host"], metricVal)
-            end
+            # if is_windows_node
+            #   metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
+            #   @NodeCache.mem.set_capacity(nodeMetricRecord["Host"], metricVal)
+            # end
           end
           nodeMetricRecords.each do |metricRecord|
             kubePerfEventStream.add(emitTime, metricRecord) if metricRecord
@@ -572,74 +572,75 @@ module Fluent::Plugin
       return properties
     end
   end # Kube_Node_Input
-  class NodeStatsCache
-    # inner class for caching implementation (CPU and memory caching is handled the exact same way, so logic to do so is moved to a private inner class)
-    # (to reduce code duplication)
-    class NodeCache
 
-      @@RECORD_TIME_TO_LIVE = 60*20  # units are seconds, so clear the cache every 20 minutes.
+  # class NodeStatsCache
+  #   # inner class for caching implementation (CPU and memory caching is handled the exact same way, so logic to do so is moved to a private inner class)
+  #   # (to reduce code duplication)
+  #   class NodeCache
 
-      def initialize
-        @cacheHash = {}
-        @timeAdded = {}  # records when an entry was last added
-        @lock = Mutex.new
-        @lastCacheClearTime = 0
+  #     @@RECORD_TIME_TO_LIVE = 60*20  # units are seconds, so clear the cache every 20 minutes.
 
-        @cacheHash.default = 0.0
-        @lastCacheClearTime = DateTime.now.to_time.to_i
-      end
+  #     def initialize
+  #       @cacheHash = {}
+  #       @timeAdded = {}  # records when an entry was last added
+  #       @lock = Mutex.new
+  #       @lastCacheClearTime = 0
 
-      def get_capacity(node_name)
-        @lock.synchronize do
-          retval = @cacheHash[node_name]
-          return retval
-        end
-      end
+  #       @cacheHash.default = 0.0
+  #       @lastCacheClearTime = DateTime.now.to_time.to_i
+  #     end
 
-      def set_capacity(host, val)
-        # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
-        current_time = DateTime.now.to_time.to_i
-        if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
-          clean_cache
-          @lastCacheClearTime = current_time
-        end
+  #     def get_capacity(node_name)
+  #       @lock.synchronize do
+  #         retval = @cacheHash[node_name]
+  #         return retval
+  #       end
+  #     end
 
-        @lock.synchronize do
-          @cacheHash[host] = val
-          @timeAdded[host] = current_time
-        end
-      end
+  #     def set_capacity(host, val)
+  #       # check here if the cache has not been cleaned in a while. This way calling code doesn't have to remember to clean the cache
+  #       current_time = DateTime.now.to_time.to_i
+  #       if current_time - @lastCacheClearTime > @@RECORD_TIME_TO_LIVE
+  #         clean_cache
+  #         @lastCacheClearTime = current_time
+  #       end
 
-      def clean_cache()
-        $log.info "in_kube_nodes::clean_cache: cleaning node cpu/mem cache"
-        cacheClearTime = DateTime.now.to_time.to_i
-        @lock.synchronize do
-          nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
-          # list is used so that we aren't modifying a hash while iterating through it.
-          @cacheHash.each do |key, val|
-            if cacheClearTime - @timeAdded[key] > @@RECORD_TIME_TO_LIVE
-              nodes_to_remove.append(key)
-            end
-          end
+  #       @lock.synchronize do
+  #         @cacheHash[host] = val
+  #         @timeAdded[host] = current_time
+  #       end
+  #     end
 
-          nodes_to_remove.each {|node_name|
-            @cacheHash.delete(node_name)
-            @timeAdded.delete(node_name)
-          }
-        end
-      end
-    end  # NodeCache
+  #     def clean_cache()
+  #       $log.info "in_kube_nodes::clean_cache: cleaning node cpu/mem cache"
+  #       cacheClearTime = DateTime.now.to_time.to_i
+  #       @lock.synchronize do
+  #         nodes_to_remove = []  # first make a list of nodes to remove, then remove them. This intermediate
+  #         # list is used so that we aren't modifying a hash while iterating through it.
+  #         @cacheHash.each do |key, val|
+  #           if cacheClearTime - @timeAdded[key] > @@RECORD_TIME_TO_LIVE
+  #             nodes_to_remove.append(key)
+  #           end
+  #         end
+
+  #         nodes_to_remove.each {|node_name|
+  #           @cacheHash.delete(node_name)
+  #           @timeAdded.delete(node_name)
+  #         }
+  #       end
+  #     end
+  #   end  # NodeCache
 
 
-    @@cpuCache = NodeCache.new
-    @@memCache = NodeCache.new
+  #   @@cpuCache = NodeCache.new
+  #   @@memCache = NodeCache.new
 
-    def cpu()
-      return @@cpuCache
-    end
+  #   def cpu()
+  #     return @@cpuCache
+  #   end
 
-    def mem()
-      return @@memCache
-    end
-  end
+  #   def mem()
+  #     return @@memCache
+  #   end
+  # end
 end # module

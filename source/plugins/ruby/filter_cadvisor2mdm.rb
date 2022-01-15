@@ -75,7 +75,7 @@ module Fluent::Plugin
           @containerResourceDimensionHash = {}
           @pvUsageHash = {}
           @@metric_threshold_hash = MdmMetricsGenerator.getContainerResourceUtilizationThresholds
-          @NodeCache = Fluent::Plugin::NodeStatsCache.new()
+          # @NodeCache = Fluent::Plugin::NodeStatsCache.new()
         end
       rescue => e
         @log.info "Error initializing plugin #{e}"
@@ -178,6 +178,7 @@ module Fluent::Plugin
               metric_name = Constants::CPU_USAGE_MILLI_CORES
               metric_value /= 1000000 #cadvisor record is in nanocores. Convert to mc
               if @@controller_type.downcase == "replicaset"
+                mylog("ALARM BELL: THIS CODE IS STILL USED")
                 target_node_cpu_capacity_mc = @NodeCache.cpu.get_capacity(record["Host"]) / 1000000
                 target_node_cpu_allocatable_mc = 0.0 # We do not need this value in the replicaset
               else
@@ -198,6 +199,7 @@ module Fluent::Plugin
             if counter_name.start_with?("memory")
               metric_name = counter_name
               if @@controller_type.downcase == "replicaset"
+                mylog("ALARM BELL: THIS CODE IS STILL USED")
                 target_node_mem_capacity = @NodeCache.mem.get_capacity(record["Host"])
                 target_node_mem_allocatable = 0.0 # We do not need this value in the replicaset
               else
@@ -422,4 +424,8 @@ module Fluent::Plugin
       new_es
     end
   end
+end
+
+def mylog(str)
+  caller_locations(1, 1).first.tap{|loc| puts "#{loc.path}:#{loc.lineno}:#{str}"}
 end
