@@ -599,15 +599,15 @@ module Fluent::Plugin
                         @nodeItemsCache[key] = nodeItem
                       }
                     else
-                      $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty"
+                      $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   else
-                    $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty"
+                    $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty  @ #{Time.now.utc.iso8601}"
                   end
                 end
               end
             else
-              $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory"
+              $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory @ #{Time.now.utc.iso8601}"
             end
             while (!continuationToken.nil? && !continuationToken.empty?)
               continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
@@ -624,15 +624,15 @@ module Fluent::Plugin
                           @nodeItemsCache[key] = nodeItem
                         }
                       else
-                        $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty"
+                        $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
                       end
                     else
-                      $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty"
+                      $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   end
                 end
               else
-                $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory"
+                $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
               end
             end
           end
@@ -667,10 +667,10 @@ module Fluent::Plugin
                           @nodeItemsCache[key] = nodeItem
                         }
                       else
-                        $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty"
+                        $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
                       end
                     else
-                      $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty"
+                      $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   elsif notice["type"] == "DELETED"
                     key = item["metadata"]["uid"]

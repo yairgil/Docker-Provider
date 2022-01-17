@@ -755,10 +755,10 @@ module Fluent::Plugin
                         @podItemsCache[key] = podItem
                       }
                     else
-                      $log.warn "in_kube_podinventory::watch_pods:Received podItem either empty or nil"
+                      $log.warn "in_kube_podinventory::watch_pods:Received podItem either empty or nil  @ #{Time.now.utc.iso8601}"
                     end
                   else
-                    $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty"
+                    $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty  @ #{Time.now.utc.iso8601}"
                   end
                 end
               end
@@ -788,15 +788,15 @@ module Fluent::Plugin
                           @podItemsCache[key] = podItem
                         }
                       else
-                        $log.warn "in_kube_podinventory::watch_pods:Received podItem is empty or nil"
+                        $log.warn "in_kube_podinventory::watch_pods:Received podItem is empty or nil  @ #{Time.now.utc.iso8601}"
                       end
                     else
-                      $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty"
+                      $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   end
                 end
               else
-                $log.warn "in_kube_podinventory::watch_pods:Received empty podInventory"
+                $log.warn "in_kube_podinventory::watch_pods:Received empty podInventory  @ #{Time.now.utc.iso8601}"
               end
             end
           end
@@ -843,10 +843,10 @@ module Fluent::Plugin
                           @podItemsCache[key] = podItem
                         }
                       else
-                        $log.warn "in_kube_podinventory::watch_pods:Received podItem is empty or nil"
+                        $log.warn "in_kube_podinventory::watch_pods:Received podItem is empty or nil  @ #{Time.now.utc.iso8601}"
                       end
                     else
-                      $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty"
+                      $log.warn "in_kube_podinventory::watch_pods:Received poduid either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   elsif notice["type"] == "DELETED"
                     key = item["metadata"]["uid"]
@@ -915,15 +915,15 @@ module Fluent::Plugin
                           @serviceItemsCache[key] = serviceItem
                         }
                       else
-                        $log.warn "in_kube_podinventory::watch_services:Received serviceItem either nil or empty"
+                        $log.warn "in_kube_podinventory::watch_services:Received serviceItem either nil or empty  @ #{Time.now.utc.iso8601}"
                       end
                     else
-                      $log.warn "in_kube_podinventory::watch_services:Received serviceuid either nil or empty"
+                      $log.warn "in_kube_podinventory::watch_services:Received serviceuid either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   end
                 end
               else
-                $log.warn "in_kube_podinventory::watch_services:Received empty serviceInventory"
+                $log.warn "in_kube_podinventory::watch_services:Received empty serviceInventory  @ #{Time.now.utc.iso8601}"
               end
               serviceInventory = nil
             end
@@ -959,10 +959,10 @@ module Fluent::Plugin
                           @serviceItemsCache[key] = serviceItem
                         }
                       else
-                        $log.warn "in_kube_podinventory::watch_services:Received serviceItem either nil or empty"
+                        $log.warn "in_kube_podinventory::watch_services:Received serviceItem either nil or empty  @ #{Time.now.utc.iso8601}"
                       end
                     else
-                      $log.warn "in_kube_podinventory::watch_services:Received serviceuid either nil or empty"
+                      $log.warn "in_kube_podinventory::watch_services:Received serviceuid either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   elsif notice["type"] == "DELETED"
                     key = item["metadata"]["uid"]
@@ -1037,15 +1037,15 @@ module Fluent::Plugin
                         @nodeAllocatableCache[key] = nodeAllocatable
                       }
                     else
-                      $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty"
+                      $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   else
-                    $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty"
+                    $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
                   end
                 end
               end
             else
-              $log.warn "in_kube_podinventory::watch_nodes:Received empty nodeInventory"
+              $log.warn "in_kube_podinventory::watch_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
             end
             while (!continuationToken.nil? && !continuationToken.empty?)
               continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
@@ -1070,15 +1070,15 @@ module Fluent::Plugin
                           @nodeAllocatableCache[key] = nodeAllocatable
                         }
                       else
-                        $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty"
+                        $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
                       end
                     else
-                      $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty"
+                      $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   end
                 end
               else
-                $log.warn "in_kube_podinventory::watch_nodes:Received empty nodeInventory"
+                $log.warn "in_kube_podinventory::watch_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
               end
             end
           end
@@ -1121,10 +1121,10 @@ module Fluent::Plugin
                           @nodeAllocatableCache[key] = nodeAllocatable
                         }
                       else
-                        $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty"
+                        $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
                       end
                     else
-                      $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty"
+                      $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   elsif notice["type"] == "DELETED"
                     key = item["metadata"]["name"]
