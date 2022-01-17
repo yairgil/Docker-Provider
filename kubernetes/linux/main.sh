@@ -588,16 +588,25 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
             case $NUM_OF_FLUENTD_WORKERS in
+            4)
+                  export NUM_OF_FLUENTD_WORKERS=4
+                  export FLUENTD_POD_INVENTORY_WORKER_ID=3
+                  export FLUENTD_NODE_INVENTORY_WORKER_ID=2
+                  export FLUENTD_EVENT_INVENTORY_WORKER_ID=1
+                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+                  ;;
             3)
                   export NUM_OF_FLUENTD_WORKERS=3
                   export FLUENTD_POD_INVENTORY_WORKER_ID=2
                   export FLUENTD_NODE_INVENTORY_WORKER_ID=1
+                  export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
                   export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
                   ;;
             2)
                  export NUM_OF_FLUENTD_WORKERS=2
                  export FLUENTD_POD_INVENTORY_WORKER_ID=1
                  export FLUENTD_NODE_INVENTORY_WORKER_ID=1
+                 export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
                   ;;
 
@@ -605,12 +614,14 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
                  export NUM_OF_FLUENTD_WORKERS=1
                  export FLUENTD_POD_INVENTORY_WORKER_ID=0
                  export FLUENTD_NODE_INVENTORY_WORKER_ID=0
+                 export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
                   ;;
             esac
             echo "export NUM_OF_FLUENTD_WORKERS=$NUM_OF_FLUENTD_WORKERS" >>~/.bashrc
             echo "export FLUENTD_POD_INVENTORY_WORKER_ID=$FLUENTD_POD_INVENTORY_WORKER_ID" >>~/.bashrc
             echo "export FLUENTD_NODE_INVENTORY_WORKER_ID=$FLUENTD_NODE_INVENTORY_WORKER_ID" >>~/.bashrc
+            echo "export FLUENTD_EVENT_INVENTORY_WORKER_ID=$FLUENTD_EVENT_INVENTORY_WORKER_ID" >>~/.bashrc
             echo "export FLUENTD_OTHER_INVENTORY_WORKER_ID=$FLUENTD_OTHER_INVENTORY_WORKER_ID" >>~/.bashrc
             source ~/.bashrc
 
@@ -618,6 +629,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             echo "num of workers:${NUM_OF_FLUENTD_WORKERS}"
             echo "pod inventory worker id: ${FLUENTD_POD_INVENTORY_WORKER_ID}"
             echo "node inventory worker id: ${FLUENTD_NODE_INVENTORY_WORKER_ID}"
+            echo "event inventory worker id: ${FLUENTD_EVENT_INVENTORY_WORKER_ID}"
             echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
 
             echo "*** starting fluentd v1 in replicaset"
