@@ -878,6 +878,8 @@ class KubernetesApiClient
       case resource
       when "pods"
         return getPodOptimizedItem(resourceItem, isWindowsItem)
+      when "pods-perf"
+        return getPodPerfOptimizedItem(resourceItem)
       when "nodes"
         return getNodeOptimizedItem(resourceItem)
       when "services"
@@ -936,21 +938,58 @@ class KubernetesApiClient
       return isWindowsNodeItem
     end
 
-    # def isWindowsPodItem(podItem)
-    #   isWindowsPod = false
-    #   begin
-    #     winNodes = KubernetesApiClient.getWindowsNodesArray()
-    #     if !winNodes.nil? && !winNodes.empty? && winNodes.length > 0
-    #       nodeName = (!podItem["spec"].nil? && !podItem["spec"]["nodeName"].nil?) ? podItem["spec"]["nodeName"] : ""
-    #       if !nodeName.empty? && winNodes.include?(nodeName)
-    #         isWindowsPod = true
-    #       end
-    #     end
-    #   rescue => errorStr
-    #     $Log.warn "KubernetesApiClient::::isWindowsPodItem: failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}"
-    #   end
-    #   return isWindowsPod
-    # end
+    def getPodPerfOptimizedItem(resourceItem)
+      item = {}
+      begin
+        item["metadata"] = {}
+        if !resourceItem["metadata"].nil?
+          if !resourceItem["metadata"]["annotations"].nil?
+            item["metadata"]["annotations"] = {}
+            item["metadata"]["annotations"]["kubernetes.io/config.hash"] = resourceItem["metadata"]["annotations"]["kubernetes.io/config.hash"]
+          end
+
+          if !resourceItem["metadata"]["ownerReferences"].nil? && resourceItem["metadata"]["ownerReferences"].length > 0
+            item["metadata"]["ownerReferences"] = []
+            ownerReference = {}
+            ownerReference["name"] = resourceItem["metadata"]["ownerReferences"][0]["name"]
+            ownerReference["kind"] = resourceItem["metadata"]["ownerReferences"][0]["kind"]
+            item["metadata"]["ownerReferences"].push(ownerReference)
+          end
+          item["metadata"]["name"] = resourceItem["metadata"]["name"]
+          item["metadata"]["namespace"] = resourceItem["metadata"]["namespace"]
+          item["metadata"]["uid"] = resourceItem["metadata"]["uid"]
+        end
+
+        item["spec"] = {}
+        if !resourceItem["spec"].nil?
+          item["spec"]["containers"] = []
+          if !resourceItem["spec"]["containers"].nil?
+            resourceItem["spec"]["containers"].each do |container|
+              currentContainer = {}
+              currentContainer["name"] = container["name"]
+              currentContainer["resources"] = container["resources"]
+              item["spec"]["containers"].push(currentContainer)
+            end
+          end
+          item["spec"]["initContainers"] = []
+          if !resourceItem["spec"]["initContainers"].nil?
+            resourceItem["spec"]["initContainers"].each do |container|
+              currentContainer = {}
+              currentContainer["name"] = container["name"]
+              currentContainer["resources"] = container["resources"]
+              item["spec"]["initContainers"].push(currentContainer)
+            end
+          end
+          item["spec"]["nodeName"] = ""
+          if !resourceItem["spec"]["nodeName"].nil?
+            item["spec"]["nodeName"] = resourceItem["spec"]["nodeName"]
+          end
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getPodPerfOptimizedItem:Failed with an error : #{errorStr}"
+      end
+      return item
+    end
 
     def getPodOptimizedItem(resourceItem, isWindowsPodItem)
       item = {}
@@ -983,54 +1022,60 @@ class KubernetesApiClient
         item["spec"] = {}
         if !resourceItem["spec"].nil?
           item["spec"]["containers"] = []
+          item["spec"]["initContainers"] = []
           isDisableClusterCollectEnvVar = false
           clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
           if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
             isDisableClusterCollectEnvVar = true
           end
-          if !resourceItem["spec"]["containers"].nil?
-            resourceItem["spec"]["containers"].each do |container|
-              currentContainer = {}
-              currentContainer["name"] = container["name"]
-              currentContainer["resources"] = container["resources"]
-              # fields required for windows containers records
-              if isWindowsPodItem
-                currentContainer["image"] = container["image"]
-                currentContainer["ports"] = container["ports"]
-                currentContainer["command"] = container["command"]
-                currentContainer["env"] = ""
-                if !isDisableClusterCollectEnvVar
-                  currentContainer["env"] = KubernetesContainerInventory.obtainContainerEnvironmentVarsFromPodsResponse(resourceItem, container)
+
+          # container spec required only for windows container inventory records
+          if isWindowsPodItem
+            if !resourceItem["spec"]["containers"].nil?
+              resourceItem["spec"]["containers"].each do |container|
+                currentContainer = {}
+                currentContainer["name"] = container["name"]
+                currentContainer["resources"] = container["resources"]
+                # fields required for windows containers records
+                if isWindowsPodItem
+                  currentContainer["image"] = container["image"]
+                  currentContainer["ports"] = container["ports"]
+                  currentContainer["command"] = container["command"]
+                  currentContainer["env"] = ""
+                  if !isDisableClusterCollectEnvVar
+                    currentContainer["env"] = KubernetesContainerInventory.obtainContainerEnvironmentVarsFromPodsResponse(resourceItem, container)
+                  end
                 end
+                item["spec"]["containers"].push(currentContainer)
               end
-              item["spec"]["containers"].push(currentContainer)
+            end
+            if !resourceItem["spec"]["initContainers"].nil?
+              resourceItem["spec"]["initContainers"].each do |container|
+                currentContainer = {}
+                currentContainer["name"] = container["name"]
+                currentContainer["resources"] = container["resources"]
+                # fields required for windows containers records
+                if isWindowsPodItem
+                  currentContainer["image"] = container["image"]
+                  currentContainer["ports"] = container["ports"]
+                  currentContainer["command"] = container["command"]
+                  currentContainer["env"] = ""
+                  if !isDisableClusterCollectEnvVar
+                    currentContainer["env"] = KubernetesContainerInventory.obtainContainerEnvironmentVarsFromPodsResponse(resourceItem, container)
+                  end
+                end
+                item["spec"]["initContainers"].push(currentContainer)
+              end
             end
           end
-          item["spec"]["initContainers"] = []
-          if !resourceItem["spec"]["initContainers"].nil?
-            resourceItem["spec"]["initContainers"].each do |container|
-              currentContainer = {}
-              currentContainer["name"] = container["name"]
-              currentContainer["resources"] = container["resources"]
-              # fields required for windows containers records
-              if isWindowsPodItem
-                currentContainer["image"] = container["image"]
-                currentContainer["ports"] = container["ports"]
-                currentContainer["command"] = container["command"]
-                currentContainer["env"] = ""
-                if !isDisableClusterCollectEnvVar
-                  currentContainer["env"] = KubernetesContainerInventory.obtainContainerEnvironmentVarsFromPodsResponse(resourceItem, container)
-                end
-              end
-              item["spec"]["initContainers"].push(currentContainer)
-            end
-          end
+
           item["spec"]["nodeName"] = ""
           if !resourceItem["spec"]["nodeName"].nil?
             item["spec"]["nodeName"] = resourceItem["spec"]["nodeName"]
           end
         end
         item["status"] = {}
+
         if !resourceItem["status"].nil?
           if !resourceItem["status"]["startTime"].nil?
             item["status"]["startTime"] = resourceItem["status"]["startTime"]

@@ -49,14 +49,11 @@ module Fluent::Plugin
       @serviceItemsCache = {}
 
       @watchNodesThread = nil
-      # @nodeAllocatableCache = {}
       @windowsNodeNameListCache = []
       @windowsContainerRecordsCacheSizeBytes = 0
 
-      # @kubeperfTag = "oneagent.containerInsights.LINUX_PERF_BLOB"
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
       @containerInventoryTag = "oneagent.containerInsights.CONTAINER_INVENTORY_BLOB"
-      # @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
     end
 
     config_param :run_interval, :time, :default => 60
@@ -102,10 +99,9 @@ module Fluent::Plugin
         @mutex = Mutex.new
         @podCacheMutex = Mutex.new
         @serviceCacheMutex = Mutex.new
-        # @nodeAllocatableCacheMutex = Mutex.new
         @windowsNodeNameCacheMutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
-        @watchNodesThread = Thread.new(&method(:watch_nodes))
+        @watchNodesThread = Thread.new(&method(:watch_windows_nodes))
         @watchPodsThread = Thread.new(&method(:watch_pods))
         @watchServicesThread = Thread.new(&method(:watch_services))
         @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
@@ -143,25 +139,18 @@ module Fluent::Plugin
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
         if ExtensionUtils.isAADMSIAuthMode()
           $log.info("in_kube_podinventory::enumerate: AAD AUTH MSI MODE")
-          # if @kubeperfTag.nil? || !@kubeperfTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
-          #   @kubeperfTag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
-          # end
           if @kubeservicesTag.nil? || !@kubeservicesTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @kubeservicesTag = ExtensionUtils.getOutputStreamId(Constants::KUBE_SERVICES_DATA_TYPE)
           end
           if @containerInventoryTag.nil? || !@containerInventoryTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @containerInventoryTag = ExtensionUtils.getOutputStreamId(Constants::CONTAINER_INVENTORY_DATA_TYPE)
           end
-          # if @insightsMetricsTag.nil? || !@insightsMetricsTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
-          #   @insightsMetricsTag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
-          # end
           if @tag.nil? || !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_POD_INVENTORY_DATA_TYPE)
           end
-          # $log.info("in_kube_podinventory::enumerate: using perf tag -#{@kubeperfTag} @ #{Time.now.utc.iso8601}")
+
           $log.info("in_kube_podinventory::enumerate: using kubeservices tag -#{@kubeservicesTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_podinventory::enumerate: using containerinventory tag -#{@containerInventoryTag} @ #{Time.now.utc.iso8601}")
-          # $log.info("in_kube_podinventory::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_podinventory::enumerate: using kubepodinventory tag -#{@tag} @ #{Time.now.utc.iso8601}")
         end
 
@@ -178,16 +167,6 @@ module Fluent::Plugin
         @serviceCount = serviceRecords.length
         $log.info("in_kube_podinventory::enumerate : number of service items :#{@serviceCount} from Kube API @ #{Time.now.utc.iso8601}")
 
-        # nodeAllocatableRecords = {}
-        # nodeAllocatableCacheSizeKB = 0
-        # @nodeAllocatableCacheMutex.synchronize {
-        #   nodeAllocatableRecords = @nodeAllocatableCache.clone
-        # }
-        # if KubernetesApiClient.isEmitCacheTelemetry()
-        #   nodeAllocatableCacheSizeKB = nodeAllocatableRecords.to_s.length / 1024
-        # end
-        # $log.info("in_kube_podinventory::enumerate : number of nodeAllocatableRecords :#{nodeAllocatableRecords.length} from Kube API @ #{Time.now.utc.iso8601}")
-        # to track e2e processing latency
         @podsAPIE2ELatencyMs = 0
         podsAPIChunkStartTime = (Time.now.to_f * 1000).to_i
         # Initializing continuation token to nil
@@ -212,7 +191,6 @@ module Fluent::Plugin
         # Setting these to nil so that we dont hold memory until GC kicks in
         podInventory = nil
         serviceRecords = nil
-        # nodeAllocatableRecords = nil
 
         # Adding telemetry to send pod telemetry every 5 minutes
         timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
@@ -230,7 +208,6 @@ module Fluent::Plugin
           if KubernetesApiClient.isEmitCacheTelemetry()
             telemetryProperties["POD_ITEMS_CACHE_SIZE_KB"] = podItemsCacheSizeKB
             telemetryProperties["SERVICE_ITEMS_CACHE_SIZE_KB"] = serviceItemsCacheSizeKB
-            # telemetryProperties["NODE_ALLOCATABLE_ITEMS_CACHE_SIZE_KB"] = nodeAllocatableCacheSizeKB
             telemetryProperties["WINDOWS_CONTAINER_RECORDS_CACHE_SIZE_KB"] = @windowsContainerRecordsCacheSizeBytes / 1024
           end
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
@@ -264,8 +241,6 @@ module Fluent::Plugin
       @@istestvar = ENV["ISTEST"]
 
       begin #begin block start
-        # # Getting windows nodes from kubeapi
-        # winNodes = KubernetesApiClient.getWindowsNodesArray
         podInventory["items"].each do |item| #podInventory block start
           # pod inventory records
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
@@ -305,49 +280,6 @@ module Fluent::Plugin
             router.emit_stream(@tag, eventStream) if eventStream
             eventStream = Fluent::MultiEventStream.new
           end
-
-          # nodeAllocatableRecord = {}
-          # if !nodeName.empty? && !nodeAllocatableRecords.nil? && !nodeAllocatableRecords.empty? && nodeAllocatableRecords.has_key?(nodeName)
-          #   nodeAllocatableRecord = nodeAllocatableRecords[nodeName]
-          # end
-          # #container perf records
-          # containerMetricDataItems = []
-          # containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "cpu", "cpuRequestNanoCores", nodeAllocatableRecord, batchTime))
-          # containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "requests", "memory", "memoryRequestBytes", nodeAllocatableRecord, batchTime))
-          # containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "cpu", "cpuLimitNanoCores", nodeAllocatableRecord, batchTime))
-          # containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(item, "limits", "memory", "memoryLimitBytes", nodeAllocatableRecord, batchTime))
-
-          # containerMetricDataItems.each do |record|
-          #   kubePerfEventStream.add(emitTime, record) if record
-          # end
-
-          # if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
-          #   $log.info("in_kube_podinventory::parse_and_emit_records: number of container perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
-          #   router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-          #   if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-          #     $log.info("kubeContainerPerfEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-          #   end
-          #   kubePerfEventStream = Fluent::MultiEventStream.new
-          # end
-
-          # # container GPU records
-          # containerGPUInsightsMetricsDataItems = []
-          # containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "nvidia.com/gpu", "containerGpuRequests", nodeAllocatableRecord, batchTime))
-          # containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "nvidia.com/gpu", "containerGpuLimits", nodeAllocatableRecord, batchTime))
-          # containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "requests", "amd.com/gpu", "containerGpuRequests", nodeAllocatableRecord, batchTime))
-          # containerGPUInsightsMetricsDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimitsAsInsightsMetrics(item, "limits", "amd.com/gpu", "containerGpuLimits", nodeAllocatableRecord, batchTime))
-          # containerGPUInsightsMetricsDataItems.each do |insightsMetricsRecord|
-          #   insightsMetricsEventStream.add(emitTime, insightsMetricsRecord) if insightsMetricsRecord
-          # end
-
-          # if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && insightsMetricsEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
-          #   $log.info("in_kube_podinventory::parse_and_emit_records: number of GPU insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
-          #   if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-          #     $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-          #   end
-          #   router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
-          #   insightsMetricsEventStream = Fluent::MultiEventStream.new
-          # end
         end  #podInventory block end
 
         if eventStream.count > 0
@@ -367,24 +299,6 @@ module Fluent::Plugin
           end
           containerInventoryStream = nil
         end
-
-        # if kubePerfEventStream.count > 0
-        #   $log.info("in_kube_podinventory::parse_and_emit_records: number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
-        #   router.emit_stream(@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-        #   kubePerfEventStream = nil
-        #   if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-        #     $log.info("kubeContainerPerfEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-        #   end
-        # end
-
-        # if insightsMetricsEventStream.count > 0
-        #   $log.info("in_kube_podinventory::parse_and_emit_records: number of insights metrics records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
-        #   router.emit_stream(@insightsMetricsTag, insightsMetricsEventStream) if insightsMetricsEventStream
-        #   if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
-        #     $log.info("kubePodInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-        #   end
-        #   insightsMetricsEventStream = nil
-        # end
 
         if continuationToken.nil? #no more chunks in this batch to be sent, get all mdm pod inventory records to send
           @log.info "Sending pod inventory mdm records to out_mdm"
@@ -746,7 +660,10 @@ module Fluent::Plugin
                   if !key.nil? && !key.empty?
                     nodeName = (!item["spec"].nil? && !item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
                     isWindowsPodItem = false
-                    if !nodeName.empty? && !currentWindowsNodeNameList.nil? && !currentWindowsNodeNameList.empty? && currentWindowsNodeNameList.include?(nodeName)
+                    if !nodeName.empty? &&
+                       !currentWindowsNodeNameList.nil? &&
+                       !currentWindowsNodeNameList.empty? &&
+                       currentWindowsNodeNameList.include?(nodeName)
                       isWindowsPodItem = true
                     end
                     podItem = KubernetesApiClient.getOptimizedItem("pods", item, isWindowsPodItem)
@@ -998,95 +915,69 @@ module Fluent::Plugin
       $log.info("in_kube_podinventory::watch_services:End @ #{Time.now.utc.iso8601}")
     end
 
-    def watch_nodes
-      $log.info("in_kube_podinventory::watch_nodes:Start @ #{Time.now.utc.iso8601}")
+    def watch_windows_nodes
+      $log.info("in_kube_podinventory::watch_windows_nodes:Start @ #{Time.now.utc.iso8601}")
       nodesResourceVersion = nil
       loop do
         begin
           if nodesResourceVersion.nil?
-            # # clear node limits cache before filling the cache with list
-            # @nodeAllocatableCacheMutex.synchronize {
-            #   @nodeAllocatableCache.clear()
-            # }
             @windowsNodeNameCacheMutex.synchronize {
               @windowsNodeNameListCache.clear()
             }
             continuationToken = nil
-            $log.info("in_kube_podinventory::watch_nodes:Getting nodes from Kube API since nodesResourceVersion is #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
-            resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
+            $log.info("in_kube_podinventory::watch_windows_nodes:Getting windows nodes from Kube API since nodesResourceVersion is #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+            resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?labelSelector=kubernetes.io%2Fos%3Dwindows&limit=#{@NODES_CHUNK_SIZE}")
             continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
-            $log.info("in_kube_podinventory::watch_nodes:Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+            $log.info("in_kube_podinventory::watch_windows_nodes:Done getting windows nodes from Kube API @ #{Time.now.utc.iso8601}")
             if (!nodeInventory.nil? && !nodeInventory.empty?)
               nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
               if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-                $log.info("in_kube_podinventory::watch_nodes: number of node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
+                $log.info("in_kube_podinventory::watch_windows_nodes: number of windows node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
                 nodeInventory["items"].each do |item|
                   key = item["metadata"]["name"]
                   if !key.nil? && !key.empty?
-                    # nodeAllocatable = KubernetesApiClient.getNodeAllocatableValues(item)
-                    isWindowsNodeItem = KubernetesApiClient.isWindowsNodeItem(item)
-                    if isWindowsNodeItem
-                      @windowsNodeNameCacheMutex.synchronize {
-                        if !@windowsNodeNameListCache.include?(key)
-                          @windowsNodeNameListCache.push(key)
-                        end
-                      }
-                    end
-                    # if !nodeAllocatable.nil? && !nodeAllocatable.empty?
-                    #   @nodeAllocatableCacheMutex.synchronize {
-                    #     @nodeAllocatableCache[key] = nodeAllocatable
-                    #   }
-                    # else
-                    #   $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
-                    # end
+                    @windowsNodeNameCacheMutex.synchronize {
+                      if !@windowsNodeNameListCache.include?(key)
+                        @windowsNodeNameListCache.push(key)
+                      end
+                    }
                   else
-                    $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
+                    $log.warn "in_kube_podinventory::watch_windows_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
                   end
                 end
               end
             else
-              $log.warn "in_kube_podinventory::watch_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
+              $log.warn "in_kube_podinventory::watch_windows_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
             end
             while (!continuationToken.nil? && !continuationToken.empty?)
               continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
               if (!nodeInventory.nil? && !nodeInventory.empty?)
                 nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
                 if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-                  $log.info("in_kube_podinventory::watch_nodes : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+                  $log.info("in_kube_podinventory::watch_windows_nodes : number of windows node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
                   nodeInventory["items"].each do |item|
                     key = item["metadata"]["name"]
                     if !key.nil? && !key.empty?
-                      # nodeAllocatable = KubernetesApiClient.getNodeAllocatableValues(item)
-                      isWindowsNodeItem = KubernetesApiClient.isWindowsNodeItem(item)
-                      if isWindowsNodeItem
-                        @windowsNodeNameCacheMutex.synchronize {
-                          if !@windowsNodeNameListCache.include?(key)
-                            @windowsNodeNameListCache.push(key)
-                          end
-                        }
-                      end
-                      # if !nodeAllocatable.nil? && !nodeAllocatable.empty?
-                      #   @nodeAllocatableCacheMutex.synchronize {
-                      #     @nodeAllocatableCache[key] = nodeAllocatable
-                      #   }
-                      # else
-                      #   $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
-                      # end
+                      @windowsNodeNameCacheMutex.synchronize {
+                        if !@windowsNodeNameListCache.include?(key)
+                          @windowsNodeNameListCache.push(key)
+                        end
+                      }
                     else
-                      $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
+                      $log.warn "in_kube_podinventory::watch_windows_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
                   end
                 end
               else
-                $log.warn "in_kube_podinventory::watch_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
+                $log.warn "in_kube_podinventory::watch_windows_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
               end
             end
           end
           begin
-            $log.info("in_kube_podinventory::watch_nodes:Establishing Watch connection for nodes with resourceversion: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
-            watcher = KubernetesApiClient.watch("nodes", resource_version: nodesResourceVersion, allow_watch_bookmarks: true)
+            $log.info("in_kube_podinventory::watch_windows_nodes:Establishing Watch connection for nodes with resourceversion: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+            watcher = KubernetesApiClient.watch("nodes", label_selector: "kubernetes.io/os=windows", resource_version: nodesResourceVersion, allow_watch_bookmarks: true)
             if watcher.nil?
-              $log.warn("in_kube_podinventory::watch_nodes:watch API returned nil watcher for watch connection with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+              $log.warn("in_kube_podinventory::watch_windows_nodes:watch API returned nil watcher for watch connection with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
             else
               watcher.each do |notice|
                 case notice["type"]
@@ -1097,73 +988,50 @@ module Fluent::Plugin
                      !item["metadata"].nil? && !item["metadata"].empty? &&
                      !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
                     nodesResourceVersion = item["metadata"]["resourceVersion"]
-                    $log.info("in_kube_podinventory::watch_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+                    $log.info("in_kube_podinventory::watch_windows_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
                   else
-                    $log.info("in_kube_podinventory::watch_nodes: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                    $log.info("in_kube_podinventory::watch_windows_nodes: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
                     nodesResourceVersion = nil
                     # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
                     break
                   end
-                  if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
+                  if notice["type"] == "ADDED" # we dont need to worry about modified event since we only need name
                     key = item["metadata"]["name"]
-                    isWindowsNodeItem = KubernetesApiClient.isWindowsNodeItem(item)
-                    if isWindowsNodeItem
-                      @windowsNodeNameCacheMutex.synchronize {
-                        if !@windowsNodeNameListCache.include?(key)
-                          @windowsNodeNameListCache.push(key)
-                        end
-                      }
-                    end
-                    # if !key.nil? && !key.empty?
-                    #   nodeAllocatable = KubernetesApiClient.getNodeAllocatableValues(item)
-                    #   if !nodeAllocatable.nil? && !nodeAllocatable.empty?
-                    #     @nodeAllocatableCacheMutex.synchronize {
-                    #       @nodeAllocatableCache[key] = nodeAllocatable
-                    #     }
-                    #   else
-                    #     $log.warn "in_kube_podinventory::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
-                    #   end
-                    # else
-                    #   $log.warn "in_kube_podinventory::watch_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
-                    # end
+                    @windowsNodeNameCacheMutex.synchronize {
+                      if !@windowsNodeNameListCache.include?(key)
+                        @windowsNodeNameListCache.push(key)
+                      end
+                    }
                   elsif notice["type"] == "DELETED"
                     key = item["metadata"]["name"]
-                    isWindowsNodeItem = KubernetesApiClient.isWindowsNodeItem(item)
-                    if isWindowsNodeItem
-                      @windowsNodeNameCacheMutex.synchronize {
-                        @windowsNodeNameListCache.delete(key)
-                      }
-                    end
-                    # if !key.nil? && !key.empty?
-                    #   @nodeAllocatableCacheMutex.synchronize {
-                    #     @nodeAllocatableCache.delete(key)
-                    #   }
-                    # end
+                    @windowsNodeNameCacheMutex.synchronize {
+                      @windowsNodeNameListCache.delete(key)
+                    }
                   end
                 when "ERROR"
                   nodesResourceVersion = nil
-                  $log.warn("in_kube_podinventory::watch_nodes:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
+                  $log.warn("in_kube_podinventory::watch_windows_nodes:ERROR event with :#{notice["object"]} @ #{Time.now.utc.iso8601}")
                   break
                 else
-                  $log.warn("in_kube_podinventory::watch_nodes:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
+                  $log.warn("in_kube_podinventory::watch_windows_nodes:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
                 end
               end
             end
           rescue Net::ReadTimeout => errorStr
-            $log.warn("in_kube_podinventory::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            $log.warn("in_kube_podinventory::watch_windows_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           rescue => errorStr
-            $log.warn("in_kube_podinventory::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            $log.warn("in_kube_podinventory::watch_windows_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
             nodesResourceVersion = nil
             sleep(5) # do not overwhelm the api-server if api-server broken
           ensure
             watcher.finish if watcher
           end
         rescue => errorStr
-          $log.warn("in_kube_podinventory::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+          $log.warn("in_kube_podinventory::watch_windows_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           nodesResourceVersion = nil
         end
       end
-      $log.info("in_kube_podinventory::watch_nodes:End @ #{Time.now.utc.iso8601}")
+      $log.info("in_kube_podinventory::watch_windows_nodes:End @ #{Time.now.utc.iso8601}")
     end
   end # Kube_Pod_Input
 end # module

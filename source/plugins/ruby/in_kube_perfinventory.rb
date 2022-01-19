@@ -156,7 +156,6 @@ module Fluent::Plugin
 
       begin #begin block start
         # # Getting windows nodes from kubeapi
-        # winNodes = KubernetesApiClient.getWindowsNodesArray
         podInventory["items"].each do |item| #podInventory block start
           nodeName = ""
           if !item["spec"]["nodeName"].nil?
@@ -285,7 +284,7 @@ module Fluent::Plugin
                 podInventory["items"].each do |item|
                   key = item["metadata"]["uid"]
                   if !key.nil? && !key.empty?
-                    podItem = KubernetesApiClient.getOptimizedItem("pods", item)
+                    podItem = KubernetesApiClient.getOptimizedItem("pods-perf", item)
                     if !podItem.nil? && !podItem.empty?
                       @podCacheMutex.synchronize {
                         @podItemsCache[key] = podItem
@@ -310,7 +309,7 @@ module Fluent::Plugin
                   podInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
-                      podItem = KubernetesApiClient.getOptimizedItem("pods", item)
+                      podItem = KubernetesApiClient.getOptimizedItem("pods-perf", item)
                       if !podItem.nil? && !podItem.empty?
                         @podCacheMutex.synchronize {
                           @podItemsCache[key] = podItem
@@ -353,7 +352,7 @@ module Fluent::Plugin
                   if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
-                      podItem = KubernetesApiClient.getOptimizedItem("pods", item)
+                      podItem = KubernetesApiClient.getOptimizedItem("pods-perf", item)
                       if !podItem.nil? && !podItem.empty?
                         @podCacheMutex.synchronize {
                           @podItemsCache[key] = podItem
