@@ -323,7 +323,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
             File.open(file_name, "w") { |file| file.puts new_contents }
             puts "config::Successfully substituted the placeholders in telegraf conf file for custom prometheus scraping"
-            #Set environment variables for telemetry in the sidecar container
+            #Set environment variables in the sidecar container
             if (!@containerType.nil? && @containerType.casecmp(@promSideCar) == 0)
               file = File.open("prom_config_env_var", "w")
               if !file.nil?
