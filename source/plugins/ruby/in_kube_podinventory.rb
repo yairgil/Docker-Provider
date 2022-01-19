@@ -995,7 +995,7 @@ module Fluent::Plugin
                     # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
                     break
                   end
-                  if notice["type"] == "ADDED" # we dont need to worry about modified event since we only need name
+                  if notice["type"] == "ADDED" # we dont need to worry about modified event since we only need node name
                     key = item["metadata"]["name"]
                     @windowsNodeNameCacheMutex.synchronize {
                       if !@windowsNodeNameListCache.include?(key)

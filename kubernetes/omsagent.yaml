@@ -615,10 +615,13 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
-            - name: EMIT_CACHE_TELEMETRY
-              value: "true"
             - name: NUM_OF_FLUENTD_WORKERS
-              value: "4" # This value should be same as number of CPU cores specified under limits
+              valueFrom:
+                resourceFieldRef:
+                  containerName: omsagent
+                  resource: limits.cpu
+            - name: EMIT_CACHE_TELEMETRY
+              value: "true" # enable only debug or test purpose and disable for prod
             - name: AKS_RESOURCE_ID
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
