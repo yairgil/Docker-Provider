@@ -114,7 +114,7 @@ func StartLogLossTracker() {
 
 	if enable_log_loss_detection {
 		Log("log_loss_monitoring.go: starting")
-		log_loss_logger = createLogger("", "container-log-counts.log")
+		log_loss_logger = createLogger("", "container-log-counts-cumulative.log")
 
 		write_counts_ticker := time.NewTicker(log_loss_telemetry_interval)
 		go write_telemetry(write_counts_ticker.C)
@@ -179,7 +179,7 @@ func write_telemetry(ticker <-chan time.Time) {
 		// request a new snapshot. This flag signals the main thread that it should send its current snapshot
 		atomic.StoreInt32(&request_snapshot, 1)
 
-		// TODO: test that calling the get_timeout_chan() function inside the select block works
+		// don't wait forever for a new snapshot because they are only sent when data is being logged.
 		select {
 		case incoming_snapshot := <-snapshot_chan:
 			update_state_from_snapshot(incoming_snapshot)
@@ -239,7 +239,6 @@ func track_log_rotations(ticker <-chan time.Time, watch_dir string) {
 // This function is broken out for unit testing
 func track_log_rotations_impl(ticker <-chan time.Time, watch_dir string, current_generation int64) {
 	inner_func := func() {
-		Log("log_loss_monitoring.go: about to index container logs on disk")
 		read_disk_mut.Lock()
 		defer read_disk_mut.Unlock()
 

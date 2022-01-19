@@ -48,8 +48,7 @@ fi
 (ps -ef | grep telegraf | grep -v "grep")
 if [ $? -ne 0 ]
 then
- # echo "Telegraf is not running" > /dev/termination-log
- echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" > /dev/write-to-traces  # this file is tailed and sent to traces
+ echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" > /dev/termination-log
  # exit 1
 fi
 
