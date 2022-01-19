@@ -89,7 +89,7 @@ func setupLogLossTracker() {
 	// don't count logs if stdout or stderr log collection is globally disabled
 	enabled = enabled && strings.ToLower(env_mock.Getenv("AZMON_COLLECT_STDOUT_LOGS")) == "true" && strings.ToLower(env_mock.Getenv("AZMON_COLLECT_STDERR_LOGS")) == "true"
 
-	// remove this after testing on windows (in theory windows should work just fine, some paths might need to be changed)
+	// remove this after adding windows support (which should very simple)
 	if !is_linux() {
 		enabled = false
 	}
