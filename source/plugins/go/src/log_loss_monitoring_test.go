@@ -340,4 +340,8 @@ func Test_track_log_rotations(t *testing.T) {
 	if sum_undeleted_bytes(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files) != 15 {
 		t.Errorf(`sum_undeleted_bytes(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files) != 15`+", actual value was %d", sum_undeleted_bytes(FW_records["default_highscale-deployment-10-kb-minute-569b8b9988-rc7l8_highscale"].existing_log_files))
 	}
+
+	if disk_bytes_from_deleted_containers != 300 {
+		t.Errorf(`disk_bytes_from_deleted_containers != 300, actual value was %d`, disk_bytes_from_deleted_containers)
+	}
 }

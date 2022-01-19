@@ -34,6 +34,7 @@ type FwRecord struct {
 }
 
 var FW_records map[string]FwRecord
+var disk_bytes_from_deleted_containers int64 = 0
 var read_disk_mut sync.Mutex
 
 var disabled_namespaces map[string]bool
@@ -190,7 +191,7 @@ func write_telemetry(ticker <-chan time.Time) {
 		defer read_disk_mut.Unlock()
 
 		var total_bytes_logged int64 = 0
-		var total_bytes_on_disk int64 = 0
+		var total_bytes_on_disk int64 = disk_bytes_from_deleted_containers // account for containers which were deleted on disk
 
 		deleted_containers := make([]string, 0)
 
@@ -283,6 +284,9 @@ func track_log_rotations_impl(ticker <-chan time.Time, watch_dir string, current
 		// garbage collection: delete any containers which didn't have log files.
 		for container_identifier, container_record := range FW_records {
 			if container_record.last_generation_seen != current_generation {
+				// keep a count of bytes from deleted containers
+				disk_bytes_from_deleted_containers += sum_undeleted_bytes(container_record.existing_log_files)
+				disk_bytes_from_deleted_containers += container_record.deleted_bytes
 				delete(FW_records, container_identifier)
 			}
 		}
