@@ -357,7 +357,7 @@ spec:
         component: oms-agent
         tier: node
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "azure-mdsd-1.14.2"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -596,7 +596,7 @@ spec:
       labels:
         rsName: "omsagent-rs"
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "azure-mdsd-1.14.2"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -765,7 +765,7 @@ spec:
         component: oms-agent-win
         tier: node-win
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "azure-mdsd-1.14.2"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
