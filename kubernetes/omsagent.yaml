@@ -780,7 +780,7 @@ spec:
          imagePullPolicy: IfNotPresent
          resources:
           limits:
-           cpu: 200m
+           cpu: 500m
            memory: 600Mi
          env:
           - name: FBIT_SERVICE_FLUSH_INTERVAL

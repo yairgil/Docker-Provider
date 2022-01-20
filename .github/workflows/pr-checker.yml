@@ -1,8 +1,5 @@
 name: pullrequest-build-and-scan
 on:
-  push:
-    branches:
-      - grace/upgrade-telegraf
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
