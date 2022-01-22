@@ -61,6 +61,7 @@ rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+rm -f $TMPDIR/telegraf-*.tar.gz
 
 # remove build dependencies
 sudo apt-get remove ruby2.6-dev gcc make -y
