@@ -34,6 +34,7 @@ module Fluent::Plugin
       @PODS_EMIT_STREAM_BATCH_SIZE = 0
 
       @podCount = 0
+      @containerCount = 0
       @serviceCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
@@ -104,6 +105,7 @@ module Fluent::Plugin
         podInventory = podList
         telemetryFlush = false
         @podCount = 0
+        @containerCount = 0
         @serviceCount = 0
         @controllerSet = Set.new []
         @winContainerCount = 0
@@ -211,6 +213,7 @@ module Fluent::Plugin
           telemetryProperties["PODS_EMIT_STREAM_BATCH_SIZE"] = @PODS_EMIT_STREAM_BATCH_SIZE
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
+          ApplicationInsightsUtility.sendMetricTelemetry("ContainerCount", @containerCount, {})
           ApplicationInsightsUtility.sendMetricTelemetry("ServiceCount", @serviceCount, {})
           telemetryProperties["ControllerData"] = @controllerData.to_json
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
@@ -256,6 +259,7 @@ module Fluent::Plugin
         podInventory["items"].each do |item| #podInventory block start
           # pod inventory records
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
+          @containerCount += podInventoryRecords.length
           podInventoryRecords.each do |record|
             if !record.nil?
               eventStream.add(emitTime, record) if record
