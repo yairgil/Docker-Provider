@@ -181,10 +181,9 @@ module Fluent::Plugin
         timeDifference = (DateTime.now.to_time.to_i - @@nodeInventoryLatencyTelemetryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
-          properties = {}
-          properties["NodeCount"] = nodeCount
-          @applicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, properties)
-          @applicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, properties)
+          @applicationInsightsUtility.sendMetricTelemetry("NodeInventoryE2EProcessingLatencyMs", @nodeInventoryE2EProcessingLatencyMs, {})
+          @applicationInsightsUtility.sendMetricTelemetry("NodesAPIE2ELatencyMs", @nodesAPIE2ELatencyMs, {})
+          @applicationInsightsUtility.sendMetricTelemetry("NodeCount", nodeCount, {})
           @@nodeInventoryLatencyTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
         # Setting this to nil so that we dont hold memory until GC kicks in

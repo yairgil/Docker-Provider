@@ -220,7 +220,7 @@ module Fluent::Plugin
           if @winContainerCount > 0
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
             telemetryProperties["WindowsNodeCount"] = @windowsNodeCount
-            telemetryProperties["WinContainerInventoryTotalSizeKB"] = @winContainerInventoryTotalSizeBytes / 1024
+            telemetryProperties["ClusterWideWindowsContainerInventoryTotalSizeKB"] = @winContainerInventoryTotalSizeBytes / 1024
             if @winContainerCountWithEnvVarSize64KBOrMore > 0
               telemetryProperties["WinContainerCountWithEnvVarSize64KBOrMore"] = @winContainerCountWithEnvVarSize64KBOrMore
             end
@@ -283,7 +283,7 @@ module Fluent::Plugin
               containerInventoryRecords.each do |cirecord|
                 if !cirecord.nil?
                   containerInventoryStream.add(emitTime, cirecord) if cirecord
-                  @winContainerInventoryTotalSizeBytes += ci.record.to_s.length
+                  @winContainerInventoryTotalSizeBytes += cirecord.to_s.length
                   # collect the telemetry of variable fields of windows container records if its >= 64KB
                   if !cirecord["EnvironmentVar"].nil? && !cirecord["EnvironmentVar"].empty? && cirecord["EnvironmentVar"].length >= 65536
                     @winContainerCountWithEnvVarSize64KBOrMore += 1
