@@ -40,6 +40,7 @@ module Fluent::Plugin
       @winContainerCount = 0
       @windowsNodeCount = 0
       @winContainerInventoryTotalSizeBytes = 0
+      @winContainerCountWithInventoryRecordSize64KBOrMore = 0
       @winContainerCountWithEnvVarSize64KBOrMore = 0
       @winContainerCountWithPortsSize64KBOrMore = 0
       @winContainerCountWithCommandSize64KBOrMore = 0
@@ -110,6 +111,7 @@ module Fluent::Plugin
         @controllerSet = Set.new []
         @winContainerCount = 0
         @winContainerInventoryTotalSizeBytes = 0
+        @winContainerCountWithInventoryRecordSize64KBOrMore = 0
         @winContainerCountWithEnvVarSize64KBOrMore = 0
         @winContainerCountWithPortsSize64KBOrMore = 0
         @winContainerCountWithCommandSize64KBOrMore = 0
@@ -221,6 +223,7 @@ module Fluent::Plugin
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
             telemetryProperties["WindowsNodeCount"] = @windowsNodeCount
             telemetryProperties["ClusterWideWindowsContainerInventoryTotalSizeKB"] = @winContainerInventoryTotalSizeBytes / 1024
+            telemetryProperties["WindowsContainerCountWithInventoryRecordSize64KBorMore"] = @winContainerCountWithInventoryRecordSize64KBOrMore
             if @winContainerCountWithEnvVarSize64KBOrMore > 0
               telemetryProperties["WinContainerCountWithEnvVarSize64KBOrMore"] = @winContainerCountWithEnvVarSize64KBOrMore
             end
@@ -283,8 +286,11 @@ module Fluent::Plugin
               containerInventoryRecords.each do |cirecord|
                 if !cirecord.nil?
                   containerInventoryStream.add(emitTime, cirecord) if cirecord
-                  @winContainerInventoryTotalSizeBytes += cirecord.to_s.length
-                  # collect the telemetry of variable fields of windows container records if its >= 64KB
+                  ciRecordSize = cirecord.to_s.length
+                  @winContainerInventoryTotalSizeBytes += ciRecordSize
+                  if ciRecordSize >= 65536
+                    @winContainerCountWithInventoryRecordSize64KBOrMore += 1
+                  end
                   if !cirecord["EnvironmentVar"].nil? && !cirecord["EnvironmentVar"].empty? && cirecord["EnvironmentVar"].length >= 65536
                     @winContainerCountWithEnvVarSize64KBOrMore += 1
                   end
