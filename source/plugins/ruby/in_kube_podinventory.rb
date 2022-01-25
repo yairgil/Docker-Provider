@@ -288,7 +288,7 @@ module Fluent::Plugin
                   containerInventoryStream.add(emitTime, cirecord) if cirecord
                   ciRecordSize = cirecord.to_s.length
                   @winContainerInventoryTotalSizeBytes += ciRecordSize
-                  if ciRecordSize >= 65536
+                  if ciRecordSize >= 65536 # 64KB
                     @winContainerCountWithInventoryRecordSize64KBOrMore += 1
                   end
                   if !cirecord["EnvironmentVar"].nil? && !cirecord["EnvironmentVar"].empty? && cirecord["EnvironmentVar"].length >= 65536
