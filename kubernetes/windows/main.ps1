@@ -497,7 +497,7 @@ function Start-Telegraf {
     }
 
     $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
-    Write-Host "nodename: $hostName"
+    Write-Host "nodename: $($hostName)"
     Write-Host "replacing nodename in telegraf config"
     (Get-Content "C:\etc\telegraf\telegraf.conf").replace('placeholder_hostname', $hostName) | Set-Content "C:\etc\telegraf\telegraf.conf"
 
