@@ -492,6 +492,9 @@ spec:
         #    securityContext:
         #     privileged: true
         #   volumeMounts:
+        #     - mountPath: /hostfs
+        #       name: host-root
+        #       readOnly: true
         #     - mountPath: /etc/kubernetes/host
         #       name: azure-json-path
         #     - mountPath: /etc/omsagent-secret
@@ -648,6 +651,9 @@ spec:
               protocol: TCP
               name: in-rs-tcp
           volumeMounts:
+            - mountPath: /hostfs
+              name: host-root
+              readOnly: true
             - mountPath: /var/run/host
               name: docker-sock
             - mountPath: /var/log
@@ -713,6 +719,9 @@ spec:
         - operator: "Exists"
           effect: "PreferNoSchedule"
       volumes:
+        - name: host-root
+          hostPath:
+            path: /
         - name: docker-sock
           hostPath:
             path: /var/run
@@ -933,4 +942,3 @@ spec:
   names:
     plural: healthstates
     kind: HealthState
-    

@@ -98,6 +98,12 @@ class ApplicationInsightsUtility
         elsif !encodedAppInsightsKey.nil?
           decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
 
+          LogPath = "/var/opt/microsoft/docker-cimprov/log/appinsights_error.log"
+          if @@isWindows
+            LogPath = "/etc/omsagentwindows/appinsights_error.log"
+          end
+          logger = Logger.new(LogPath, 1, 2 * 1024 * 1024)
+
           #override ai endpoint if its available otherwise use default.
           if appInsightsEndpoint && !appInsightsEndpoint.nil? && !appInsightsEndpoint.empty?
             $log.info("AppInsightsUtility: Telemetry client uses overrided endpoint url : #{appInsightsEndpoint}")
@@ -105,20 +111,20 @@ class ApplicationInsightsUtility
             #telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
             #telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
             if !isProxyConfigured
-              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint
+              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, logger
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration since proxy configured")
-              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, @@proxy
+              sender = ApplicationInsights::Channel::AsynchronousSender.new appInsightsEndpoint, logger, @@proxy
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
             @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, channel
           else
             if !isProxyConfigured
-              sender = ApplicationInsights::Channel::AsynchronousSender.new
+              sender = ApplicationInsights::Channel::AsynchronousSender.new nil, logger
             else
               $log.info("AppInsightsUtility: Telemetry client uses provided proxy configuration since proxy configured")
-              sender = ApplicationInsights::Channel::AsynchronousSender.new nil, @@proxy
+              sender = ApplicationInsights::Channel::AsynchronousSender.new nil, logger, @@proxy
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue

@@ -20,9 +20,10 @@ module ApplicationInsights
       SERVICE_ENDPOINT_URI = 'https://dc.services.visualstudio.com/v2/track'
       # Initializes a new instance of the class.
       # @param [String] service_endpoint_uri the address of the service to send
+      # @param [Logger] instance of the logger to write the logs
       # @param [Hash] proxy server configuration to send (optional)
       #   telemetry data to.
-      def initialize(service_endpoint_uri = SERVICE_ENDPOINT_URI, proxy = {})
+      def initialize(service_endpoint_uri = SERVICE_ENDPOINT_URI, logger, proxy = {})
         # callers which requires proxy dont require to maintain service endpoint uri which potentially can change
         if service_endpoint_uri.nil? || service_endpoint_uri.empty?
           service_endpoint_uri = SERVICE_ENDPOINT_URI
@@ -33,7 +34,7 @@ module ApplicationInsights
         @lock_work_thread = Mutex.new
         @work_thread = nil
         @start_notification_processed = true
-        super service_endpoint_uri, proxy
+        super service_endpoint_uri, logger, proxy
       end
 
       # The time span in seconds at which the the worker thread will check the

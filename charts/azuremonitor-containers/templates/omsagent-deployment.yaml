@@ -88,6 +88,9 @@ spec:
          protocol: TCP
          name: in-rs-tcp
        volumeMounts:
+        - mountPath: /hostfs
+          name: host-root
+          readOnly: true
         - mountPath: /var/run/host
           name: docker-sock
         - mountPath: /var/log
@@ -130,6 +133,9 @@ spec:
    tolerations: {{- toYaml . | nindent 8 }}
    {{- end }}
    volumes:
+    - name: host-root
+      hostPath:
+       path: /
     - name: docker-sock
       hostPath:
        path: /var/run
