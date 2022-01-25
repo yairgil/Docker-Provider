@@ -78,7 +78,7 @@ const (
 	metricNameNumberofTelegrafMetricsSentSuccessfully           = "TelegrafMetricsSentCount"
 	metricNameNumberofSendErrorsTelegrafMetrics                 = "TelegrafMetricsSendErrorCount"
 	metricNameNumberofSend429ErrorsTelegrafMetrics              = "TelegrafMetricsSend429ErrorCount"
-	metricNameNumberofWinTelegrafMetricsWithTagsSize64KBorMore  = "winTelegrafMetricsCountWithTagsSize64KBorMore"
+	metricNameNumberofWinTelegrafMetricsWithTagsSize64KBorMore  = "WinTelegrafMetricsCountWithTagsSize64KBorMore"
 	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent = "ContainerLogs2MdsdSendErrorCount"
 	metricNameErrorCountContainerLogsMDSDClientCreateError      = "ContainerLogsMdsdClientCreateErrorCount"
 	metricNameErrorCountInsightsMetricsMDSDClientCreateError    = "InsightsMetricsMDSDClientCreateErrorsCount"
