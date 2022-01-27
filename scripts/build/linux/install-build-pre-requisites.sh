@@ -58,8 +58,24 @@ install_docker()
     sudo apt-get install docker-ce docker-ce-cli containerd.io -y
     # Allow your user to access the Docker CLI without needing root access.
     sudo usermod -aG docker $USER
+    newgrp docker
     echo "installing docker completed"
   fi
+}
+
+install_docker_buildx()
+{
+    # install the buildx plugin
+    sudo curl -O https://github.com/docker/buildx/releases/download/v0.7.1/buildx-v0.7.1.linux-amd64
+    sudo mkdir -p $HOME/.docker/cli-plugins
+    sudo mv buildx-v* $HOME/.docker/cli-plugins
+
+    # install the emulator support
+    sudo apt-get -y install qemu binfmt-support qemu-user-static
+    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+    docker buildx create --name testbuilder
+    docker buildx use testbuilder
 }
 
 install_python()
@@ -124,6 +140,9 @@ install_build_dependencies
 
 # install docker
 install_docker
+
+# install buildx
+install_docker_buildx
 
 # install go
 install_go_lang
