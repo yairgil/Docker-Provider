@@ -151,6 +151,25 @@ bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag>
 ```
 > Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
+You can also build and push images for multiple architectures. This is powered by docker buildx
+```
+cd ~/Docker-Provider/kubernetes/linux/dockerbuild
+sudo docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
+# build and publish using docker buildx
+bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag> --multiarch
+```
+
+or directly use the docker buildx commands
+```
+# multiple platforms
+cd ~/Docker-Provider
+docker buildx build --platform linux/arm64/v8,linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> -f kubernetes/linux/Dockerfile.multiarch --push .
+
+# single platform
+cd ~/Docker-Provider
+docker buildx build --platform linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> -f kubernetes/linux/Dockerfile.multiarch --push .
+```
+
 If you prefer to build docker provider shell bundle and image separately, then you can follow below instructions
 
 ##### Build Docker Provider shell bundle

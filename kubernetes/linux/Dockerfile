@@ -23,7 +23,7 @@ ENV AGENT_VERSION ${IMAGE_TAG}
 WORKDIR ${tmpdir}
 
 # copy docker provider shell bundle to use the agent image
-COPY ./Linux_ULINUX_1.0_x64_64_Release/docker-cimprov-*.*.*-*.x86_64.sh .
+COPY ./Linux_ULINUX_1.0_*_64_Release/docker-cimprov-*.*.*-*.*.*.sh .
 # Note: If you prefer remote destination, uncomment below line and comment above line
 # wget https://github.com/microsoft/Docker-Provider/releases/download/10.0.0-1/docker-cimprov-10.0.0-1.universal.x86_64.sh
 
