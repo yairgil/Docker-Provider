@@ -128,7 +128,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		promMonitorPodsNamespaceLength := PromMonitorPodsNamespaceLength
 		promMonitorPodsLabelSelectorLength := PromMonitorPodsLabelSelectorLength
 		promMonitorPodsFieldSelectorLength := PromMonitorPodsFieldSelectorLength
-		ContainerLogRecordCountWithEmptyTimeStamp := ContainerLogRecordCountWithEmptyTimeStamp
+		containerLogRecordCountWithEmptyTimeStamp := ContainerLogRecordCountWithEmptyTimeStamp
 
 		TelegrafMetricsSentCount = 0.0
 		TelegrafMetricsSendErrorCount = 0.0
@@ -228,7 +228,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountKubeMonEventsMDSDClientCreateError, kubeMonEventsMDSDClientCreateErrors))
 		}
 		if ContainerLogRecordCountWithEmptyTimeStamp > 0.0 {
-			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameContainerLogRecordCountWithEmptyTimeStamp, ContainerLogRecordCountWithEmptyTimeStamp))
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameContainerLogRecordCountWithEmptyTimeStamp, containerLogRecordCountWithEmptyTimeStamp))
 		}
 
 		start = time.Now()
