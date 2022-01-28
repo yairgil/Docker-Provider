@@ -52,6 +52,8 @@ var (
 	ContainerLogsSendErrorsToADXFromFluent float64
 	//Tracks the number of ADX client create errors for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsADXClientCreateErrors float64
+	//Tracks the number of container log records with empty Timestamp (uses ContainerLogTelemetryTicker)
+	ContainerLogRecordCountWithEmptyTimeStamp float64
 	//Tracks the number of OSM namespaces and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
 	OSMNamespaceCount int
 	//Tracks whether monitor kubernetes pods is set to true and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
@@ -85,6 +87,7 @@ const (
 	metricNameErrorCountKubeMonEventsMDSDClientCreateError      = "KubeMonEventsMDSDClientCreateErrorsCount"
 	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent  = "ContainerLogs2ADXSendErrorCount"
 	metricNameErrorCountContainerLogsADXClientCreateError       = "ContainerLogsADXClientCreateErrorCount"
+	metricNameContainerLogRecordCountWithEmptyTimeStamp         = "ContainerLogRecordCountWithEmptyTimeStamp"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -129,6 +132,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		promMonitorPodsNamespaceLength := PromMonitorPodsNamespaceLength
 		promMonitorPodsLabelSelectorLength := PromMonitorPodsLabelSelectorLength
 		promMonitorPodsFieldSelectorLength := PromMonitorPodsFieldSelectorLength
+		containerLogRecordCountWithEmptyTimeStamp := ContainerLogRecordCountWithEmptyTimeStamp
 
 		TelegrafMetricsSentCount = 0.0
 		TelegrafMetricsSendErrorCount = 0.0
@@ -147,6 +151,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		ContainerLogsADXClientCreateErrors = 0.0
 		InsightsMetricsMDSDClientCreateErrors = 0.0
 		KubeMonEventsMDSDClientCreateErrors = 0.0
+		ContainerLogRecordCountWithEmptyTimeStamp = 0.0
 		ContainerLogTelemetryMutex.Unlock()
 
 		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
@@ -229,6 +234,9 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		}
 		if winTelegrafMetricsCountWithTagsSize64KBorMore > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameNumberofWinTelegrafMetricsWithTagsSize64KBorMore, winTelegrafMetricsCountWithTagsSize64KBorMore))
+		}
+		if ContainerLogRecordCountWithEmptyTimeStamp > 0.0 {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameContainerLogRecordCountWithEmptyTimeStamp, containerLogRecordCountWithEmptyTimeStamp))
 		}
 
 		start = time.Now()

@@ -102,9 +102,6 @@ const ContainerLogsV2Route = "v2"
 
 const ContainerLogsADXRoute = "adx"
 
-//fallback option v1 route i.e. ODS direct if required in any case
-const ContainerLogsV1Route = "v1"
-
 //container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
 
@@ -1237,6 +1234,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					maxLatencyContainer = name + "=" + id
 				}
 			}
+		} else {
+			ContainerLogTelemetryMutex.Lock()
+			ContainerLogRecordCountWithEmptyTimeStamp += 1
+			ContainerLogTelemetryMutex.Unlock()
 		}
 	}
 
@@ -1754,9 +1755,6 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 	} else if strings.Compare(strings.ToLower(osType), "windows") != 0 { //for linux, oneagent will be default route
 		ContainerLogsRouteV2 = true //default is mdsd route
-		if strings.Compare(ContainerLogsRoute, ContainerLogsV1Route) == 0 {
-			ContainerLogsRouteV2 = false //fallback option when hiddensetting set
-		}
 		Log("Routing container logs thru %s route...", ContainerLogsRoute)
 		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsRoute)
 	}

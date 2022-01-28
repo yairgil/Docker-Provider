@@ -178,7 +178,7 @@ omsagent:
         memory: 750Mi
     daemonsetwindows:
       limits:
-        cpu: 200m
+        cpu: 500m
         memory: 600Mi
     deployment:
       requests:
