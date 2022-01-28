@@ -52,29 +52,23 @@ function Set-EnvironmentVariables {
             if ($domain -eq "opinsights.azure.com") {
                 $cloud_environment = "azurepubliccloud"
                 $mcs_endpoint = "monitor.azure.com"
-            }
-            elseif ($domain -eq "opinsights.azure.cn") {
+            } elseif ($domain -eq "opinsights.azure.cn") {
                 $cloud_environment = "azurechinacloud"
                 $mcs_endpoint = "monitor.azure.cn"
-            }
-            elseif ($domain -eq "opinsights.azure.us") {
+            } elseif ($domain -eq "opinsights.azure.us") {
                 $cloud_environment = "azureusgovernmentcloud"
                 $mcs_endpoint = "monitor.azure.us"
-            }
-            elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
+            } elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
                 $cloud_environment = "usnat"
                 $mcs_endpoint = "monitor.azure.eaglex.ic.gov"
-            }
-            elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
+            } elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
                 $cloud_environment = "ussec"
                 $mcs_endpoint = "monitor.azure.microsoft.scloud"
-            }
-            else {
+            } else {
                 Write-Host "Invalid or Unsupported domain name $($domain). EXITING....."
                 exit 1
             }
-        }
-        else {
+        } else {
             Write-Host "Domain name either null or empty. EXITING....."
             exit 1
         }
@@ -496,11 +490,6 @@ function Start-Telegraf {
         Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
     }
 
-    $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
-    Write-Host "nodename: $($hostName)"
-    Write-Host "replacing nodename in telegraf config"
-    (Get-Content "C:\etc\telegraf\telegraf.conf").replace('placeholder_hostname', $hostName) | Set-Content "C:\etc\telegraf\telegraf.conf"
-
     Write-Host "Installing telegraf service"
     C:\opt\telegraf\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
 
@@ -600,12 +589,10 @@ if (![string]::IsNullOrEmpty($requiresCertBootstrap) -and `
 $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH")
 if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
     Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
-}
-else {
+} else {
     Generate-Certificates
     Test-CertificatePath
 }
-
 Start-Fluent-Telegraf
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
