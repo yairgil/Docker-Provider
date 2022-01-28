@@ -288,16 +288,16 @@ module Fluent::Plugin
                   containerInventoryStream.add(emitTime, cirecord) if cirecord
                   ciRecordSize = cirecord.to_s.length
                   @winContainerInventoryTotalSizeBytes += ciRecordSize
-                  if ciRecordSize >= 65536 # 64KB
+                  if ciRecordSize >= Constants::MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY
                     @winContainerCountWithInventoryRecordSize64KBOrMore += 1
                   end
-                  if !cirecord["EnvironmentVar"].nil? && !cirecord["EnvironmentVar"].empty? && cirecord["EnvironmentVar"].length >= 65536
+                  if !cirecord["EnvironmentVar"].nil? && !cirecord["EnvironmentVar"].empty? && cirecord["EnvironmentVar"].length >= Constants::MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY
                     @winContainerCountWithEnvVarSize64KBOrMore += 1
                   end
-                  if !cirecord["Ports"].nil? && !cirecord["Ports"].empty? && cirecord["Ports"].length >= 65536
+                  if !cirecord["Ports"].nil? && !cirecord["Ports"].empty? && cirecord["Ports"].length >= Constants::MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY
                     @winContainerCountWithPortsSize64KBOrMore += 1
                   end
-                  if !cirecord["Command"].nil? && !cirecord["Command"].empty? && cirecord["Command"].length >= 65536
+                  if !cirecord["Command"].nil? && !cirecord["Command"].empty? && cirecord["Command"].length >= Constants::MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY
                     @winContainerCountWithCommandSize64KBOrMore += 1
                   end
                 end
