@@ -7,7 +7,8 @@ trigger:
 - ci_dev
 
 pool:
-  vmImage: ubuntu-latest
+  name: Azure-Pipelines-CI-Test-EO
+
 
 steps:
 - script: echo Hello, world!
