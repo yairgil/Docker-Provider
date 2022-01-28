@@ -1229,6 +1229,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					maxLatencyContainer = name + "=" + id
 				}
 			}
+		} else {
+			ContainerLogTelemetryMutex.Lock()
+			ContainerLogRecordCountWithEmptyTimeStamp += 1
+			ContainerLogTelemetryMutex.Unlock()
 		}
 	}
 
