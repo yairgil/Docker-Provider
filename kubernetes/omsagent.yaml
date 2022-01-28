@@ -357,7 +357,7 @@ spec:
         component: oms-agent
         tier: node
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "azure-mdsd-1.14.2"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -596,7 +596,7 @@ spec:
       labels:
         rsName: "omsagent-rs"
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "azure-mdsd-1.14.2"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -765,7 +765,7 @@ spec:
         component: oms-agent-win
         tier: node-win
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "0.0.0-0"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -783,6 +783,12 @@ spec:
            cpu: 200m
            memory: 600Mi
          env:
+          - name: FBIT_SERVICE_FLUSH_INTERVAL
+            value: "15"
+          - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+            value: "1"
+          - name: FBIT_TAIL_BUFFER_MAX_SIZE
+            value: "1"
           # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
           - name: AKS_RESOURCE_ID
             value: "VALUE_AKS_RESOURCE_ID_VALUE"
@@ -927,3 +933,4 @@ spec:
   names:
     plural: healthstates
     kind: HealthState
+    

@@ -299,6 +299,13 @@ function Set-EnvironmentVariables {
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
     .\setenv.ps1
+    
+    #Parse the configmap to set the right environment variables for agent config.
+    ruby /opt/omsagentwindows/scripts/ruby/tomlparser-agent-config.rb
+    .\setagentenv.ps1
+
+    #Replace placeholders in fluent-bit.conf
+    ruby /opt/omsagentwindows/scripts/ruby/td-agent-bit-conf-customizer.rb
 
     # run mdm config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
@@ -420,18 +427,18 @@ function Get-ContainerRuntime {
 
 function Start-Fluent-Telegraf {
 
-    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
+    $containerRuntime = Get-ContainerRuntime
+
+    # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
     # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\omsagentwindows\out_oms.so") }
-
-    $containerRuntime = Get-ContainerRuntime
 
     #register fluentd as a service and start
     # there is a known issues with win32-service https://github.com/chef/win32-service/issues/70
     if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
-        (Get-Content -Path C:/etc/fluent/fluent.conf -Raw) -replace 'fluent-docker-parser.conf', 'fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
+        (Get-Content -Path C:/etc/fluent-bit/fluent-bit.conf -Raw) -replace 'docker', 'cri' | Set-Content C:/etc/fluent-bit/fluent-bit.conf
     }
 
     # Start telegraf only in sidecar scraping mode

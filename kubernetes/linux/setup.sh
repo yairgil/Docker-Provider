@@ -44,7 +44,7 @@ chmod 777 /opt/telegraf
 wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
 sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
 sudo apt-get update
-sudo apt-get install td-agent-bit=1.6.8 -y
+sudo apt-get install td-agent-bit=1.7.8 -y
 
 # install ruby2.6
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
@@ -52,7 +52,7 @@ sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >>
 sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
 # fluentd v1 gem
-gem install fluentd -v "1.12.2" --no-document
+gem install fluentd -v "1.14.2" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 

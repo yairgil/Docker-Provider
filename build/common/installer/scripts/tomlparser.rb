@@ -29,6 +29,8 @@ require_relative "ConfigParseErrorLogger"
 @adxDatabaseName = "containerinsights" # default for all configurations
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
+  # This path format is necessary for fluent-bit in windows
+  @logTailPath = "C:\\var\\log\\containers\\*.log"
 end
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -190,8 +192,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       end
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for adx database name - #{errorStr}, using default #{@adxDatabaseName}, please check config map for errors")
-    end
-
     end
   end
 end
