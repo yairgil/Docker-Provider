@@ -209,7 +209,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
                echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
             fi
             if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
-               export PROXY_CA_CERT=tc/omsagent-secret/PROXYCERT.crt
+               export PROXY_CA_CERT=/etc/omsagent-secret/PROXYCERT.crt
                echo "export PROXY_CA_CERT=$PROXY_CA_CERT" >> ~/.bashrc
             fi
       fi
