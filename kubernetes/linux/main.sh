@@ -208,6 +208,10 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
                export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
                echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
             fi
+            if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+               export PROXY_CA_CERT=tc/omsagent-secret/PROXYCERT.crt
+               echo "export PROXY_CA_CERT=$PROXY_CA_CERT" >> ~/.bashrc
+            fi
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
