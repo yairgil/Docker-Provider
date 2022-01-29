@@ -357,7 +357,7 @@ spec:
         component: oms-agent
         tier: node
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "azure-mdsd-1.14.2"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -492,9 +492,6 @@ spec:
         #    securityContext:
         #     privileged: true
         #   volumeMounts:
-        #     - mountPath: /hostfs
-        #       name: host-root
-        #       readOnly: true
         #     - mountPath: /etc/kubernetes/host
         #       name: azure-json-path
         #     - mountPath: /etc/omsagent-secret
@@ -599,7 +596,7 @@ spec:
       labels:
         rsName: "omsagent-rs"
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "azure-mdsd-1.14.2"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -651,9 +648,6 @@ spec:
               protocol: TCP
               name: in-rs-tcp
           volumeMounts:
-            - mountPath: /hostfs
-              name: host-root
-              readOnly: true
             - mountPath: /var/run/host
               name: docker-sock
             - mountPath: /var/log
@@ -719,9 +713,6 @@ spec:
         - operator: "Exists"
           effect: "PreferNoSchedule"
       volumes:
-        - name: host-root
-          hostPath:
-            path: /
         - name: docker-sock
           hostPath:
             path: /var/run
@@ -774,7 +765,7 @@ spec:
         component: oms-agent-win
         tier: node-win
       annotations:
-        agentVersion: "1.10.0.1"
+        agentVersion: "0.0.0-0"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -789,7 +780,7 @@ spec:
          imagePullPolicy: IfNotPresent
          resources:
           limits:
-           cpu: 200m
+           cpu: 500m
            memory: 600Mi
          env:
           - name: FBIT_SERVICE_FLUSH_INTERVAL
@@ -942,3 +933,4 @@ spec:
   names:
     plural: healthstates
     kind: HealthState
+    
