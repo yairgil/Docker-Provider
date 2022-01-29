@@ -286,6 +286,8 @@ chmod 666 /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 touch /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 
+touch /var/opt/microsoft/docker-cimprov/log/appinsights_error.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/appinsights_error.log
 
 touch /var/opt/microsoft/docker-cimprov/log/fluentd.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/fluentd.log
@@ -309,7 +311,7 @@ if ${{PERFORMING_UPGRADE_NOT}}; then
    rmdir /etc/opt/microsoft/docker-cimprov/conf 2> /dev/null
    rmdir /etc/opt/microsoft/docker-cimprov 2> /dev/null
    rmdir /etc/opt/microsoft 2> /dev/null
-   rmdir /etc/opt 2> /dev/null  
+   rmdir /etc/opt 2> /dev/null
 fi
 
 %Preinstall_0
