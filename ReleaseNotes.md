@@ -23,11 +23,13 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
   - Ignore new disk path that comes from containerd starting with k8s version >= 1.19.x, which was adding unnecessary InsightsMetrics logs and increasing cost
   - Route the AI SDK logs to log file instead of stdout
   - Telemetry to collect ContainerLog Records with empty Timestamp
+  - FluentBit version upgrade from 1.6.8 to 1.7.8
 - Windows Agent
   - Update to use FluentBit for container log collection and removed FluentD dependency for container log collection
   - Telemetry to track if any of the variable fields of windows container inventory records has field size >= 64KB
   - Add windows os check in in_cadvisor_perf plugin to avoid making call in MDSD in MSI auth mode
   - Bug fix for placeholder_hostname in telegraf metrics
+  - FluentBit version upgrade from 1.4.0 to 1.7.8
 - Common
     - Upgrade FluentD gem version from 1.12.2 to 1.14.2
     - Upgrade Telegraf version from 1.18.0 to 1.20.3
