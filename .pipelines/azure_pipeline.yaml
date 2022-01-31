@@ -20,6 +20,7 @@ steps:
   inputs:
     azureSubscription: ${{ variables.armServiceConnectionName }}
     scriptType: bash
+    scriptLocation: inlineScript
     inlineScript: |
       pwd
       ls -ltr
