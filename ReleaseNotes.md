@@ -24,7 +24,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
   - Route the AI SDK logs to log file instead of stdout
   - Telemetry to collect ContainerLog Records with empty Timestamp
 - Windows Agent
-  - Update to use FluentBit for container log collection
+  - Update to use FluentBit for container log collection and removed FluentD dependency for container log collection
   - Telemetry to track if any of the variable fields of windows container inventory records has field size >= 64KB
   - Add windows os check in in_cadvisor_perf plugin to avoid making call in MDSD in MSI auth mode
   - Bug fix for placeholder_hostname in telegraf metrics
