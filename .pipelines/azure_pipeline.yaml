@@ -24,9 +24,6 @@ steps:
       pwd
       ls -ltr
 
-      az --version
-      az account show
-
       commit=$(git rev-parse --short HEAD)
       echo "##vso[task.setvariable variable=commitID;isOutput=true;]$commit"
 
@@ -38,5 +35,10 @@ steps:
 
       docker buildx create --name testbuilder
       docker buildx use testbuilder
+
+      az --version
+      az account show
+      az account set -s ${{ variables.subscription }}
+      az acr login -n ${{ variables.containerRegistry }}
 
       docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }} -f kubernetes/linux/Dockerfile.multiarch --push .
