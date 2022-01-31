@@ -23,8 +23,6 @@ import (
 
 	"Docker-Provider/source/plugins/go/src/extension"
 
-	"Docker-Provider/source/plugins/go/src/extension"
-
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
