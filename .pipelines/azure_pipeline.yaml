@@ -26,10 +26,10 @@ steps:
       ls -ltr
 
       commit=$(git rev-parse --short HEAD)
-      echo "##vso[task.setvariable variable=commitID;isOutput=true;]$commit"
+      echo "##vso[task.setvariable variable=commitID;]$commit"
 
       datetime=$(date +'%Y%m%d%s')
-      echo "##vso[task.setvariable variable=datetime;isOutput=true;]$datetime"
+      echo "##vso[task.setvariable variable=datetime;]$datetime"
 
       sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
       docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
@@ -42,4 +42,5 @@ steps:
       az account set -s ${{ variables.subscription }}
       az acr login -n ${{ variables.containerRegistry }}
 
-      docker buildx build --platform linux/amd64,linux/arm64 --tag '${{ variables.repoImageName }}:cidev-${{ variables.$datetime }}-${{ variables.commit }}' -f kubernetes/linux/Dockerfile.multiarch --push .
+      docker buildx build --platform linux/amd64,linux/arm64 --tag '${{ variables.repoImageName }}:cidev-$(datetime)-$(commit)' -f kubernetes/linux/Dockerfile.multiarch --push .
+
