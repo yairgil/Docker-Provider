@@ -23,7 +23,7 @@ module ApplicationInsights
         @service_endpoint_uri = service_endpoint_uri
         @queue = nil
         @send_buffer_size = 100
-        if !logger.nil? && !logger.empty?
+        if !logger.nil?
           @logger = logger
         else
           @logger = Logger.new(STDOUT)
