@@ -4,16 +4,16 @@
 # https://aka.ms/yaml
 
 trigger:
-- ci_prod
+- ci_dev
 
 pool:
-  name: Azure-Pipelines-CI-Prod-EO
+  name: Azure-Pipelines-CI-Test-EO
 
 variables:
-  armServiceConnectionName: 'ci-1es-acr-connection-prod'
-  subscription: '30c56c3a-54da-46ea-b004-06eb33432687'
-  containerRegistry: 'containerinsightsbuild'
-  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/official/build'
+  armServiceConnectionName: 'ci-1es-acr-connection'
+  subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+  containerRegistry: 'containerinsightsprod'
+  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/cidev'
 
 steps:
 - bash: |
@@ -41,5 +41,5 @@ steps:
       az account set -s ${{ variables.subscription }}
       az acr login -n ${{ variables.containerRegistry }}
 
-      docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --push .
+      docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --push .
 
