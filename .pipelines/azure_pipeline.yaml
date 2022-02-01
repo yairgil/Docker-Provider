@@ -7,13 +7,13 @@ trigger:
 - ci_dev
 
 pool:
-  name: Azure-Pipelines-CI-Test-EO
+  name: Azure-Pipelines-CI-Prod-EO
 
 variables:
-  armServiceConnectionName: 'ci-1es-acr-connection'
-  subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
-  containerRegistry: 'amoltest'
-  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/citest:multiarch'
+  armServiceConnectionName: 'ci-1es-acr-connection-prod'
+  subscription: '30c56c3a-54da-46ea-b004-06eb33432687'
+  containerRegistry: 'containerinsightsbuild'
+  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/official/build'
 
 steps:
 - task: AzureCLI@2
@@ -42,4 +42,4 @@ steps:
       az account set -s ${{ variables.subscription }}
       az acr login -n ${{ variables.containerRegistry }}
 
-      docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }} -f kubernetes/linux/Dockerfile.multiarch --push .
+      docker buildx build --platform linux/amd64,linux/arm64 --tag '${{ variables.repoImageName }}:cidev-${{ variables.$datetime }}-${{ variables.commit }}' -f kubernetes/linux/Dockerfile.multiarch --push .
