@@ -578,23 +578,6 @@ else
       echo "starting mdsd in main container..."
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
-
-      ## TODO- evaluate again multiplace instances of mdsd
-      # echo "starting mdsd tenant instance 2 in main container..."
-      # echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in main container..."
-      # #use tenant name to avoid unix socket conflict and different ports for port conflict
-      # #roleprefix to use container specific mdsd socket
-      # MDSD_INSTANCE_ID="tenant2"
-      # export TENANT_NAME="${MDSD_INSTANCE_ID}"
-      # echo "export TENANT_NAME=$TENANT_NAME" >>~/.bashrc
-      # export MDSD_ROLE_PREFIX=/var/run/mdsd-${TENANT_NAME}/default
-      # echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >>~/.bashrc
-      # export MDSD_FLUENT_SOCKET_PORT_TENANT2="26230"
-      # echo "export MDSD_FLUENT_SOCKET_PORT_TENANT2=$MDSD_FLUENT_SOCKET_PORT_TENANT2" >>~/.bashrc
-      # source ~/.bashrc
-      # mkdir /var/run/mdsd-${MDSD_INSTANCE_ID}
-      # # add -T 0xFFFF for full traces
-      # mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd2.err -w ${MDSD_LOG}/mdsd2.warn -o ${MDSD_LOG}/mdsd2.info -q ${MDSD_LOG}/mdsd2.qos &
 fi
 
 # Set up a cron job for logrotation
