@@ -123,6 +123,7 @@ module Fluent::Plugin
         nodeInventory = nil
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
+        nodeCount = 0
 
         @nodesAPIE2ELatencyMs = 0
         @nodeInventoryE2EProcessingLatencyMs = 0

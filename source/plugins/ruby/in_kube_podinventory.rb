@@ -36,9 +36,16 @@ module Fluent::Plugin
       @NODES_CHUNK_SIZE = 0
 
       @podCount = 0
+      @containerCount = 0
       @serviceCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
+      @windowsNodeCount = 0
+      @winContainerInventoryTotalSizeBytes = 0
+      @winContainerCountWithInventoryRecordSize64KBOrMore = 0
+      @winContainerCountWithEnvVarSize64KBOrMore = 0
+      @winContainerCountWithPortsSize64KBOrMore = 0
+      @winContainerCountWithCommandSize64KBOrMore = 0
       @controllerData = {}
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
@@ -127,10 +134,17 @@ module Fluent::Plugin
         podInventory = podList
         telemetryFlush = false
         @podCount = 0
+        @containerCount = 0
         @serviceCount = 0
         @controllerSet = Set.new []
         @winContainerCount = 0
         @windowsContainerRecordsCacheSizeBytes = 0
+        @winContainerInventoryTotalSizeBytes = 0
+        @winContainerCountWithInventoryRecordSize64KBOrMore = 0
+        @winContainerCountWithEnvVarSize64KBOrMore = 0
+        @winContainerCountWithPortsSize64KBOrMore = 0
+        @winContainerCountWithCommandSize64KBOrMore = 0
+        @windowsNodeCount = 0
         @controllerData = {}
         currentTime = Time.now
         batchTime = currentTime.utc.iso8601
@@ -139,18 +153,25 @@ module Fluent::Plugin
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
         if ExtensionUtils.isAADMSIAuthMode()
           $log.info("in_kube_podinventory::enumerate: AAD AUTH MSI MODE")
+          if @kubeperfTag.nil? || !@kubeperfTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @kubeperfTag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
+          end
           if @kubeservicesTag.nil? || !@kubeservicesTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @kubeservicesTag = ExtensionUtils.getOutputStreamId(Constants::KUBE_SERVICES_DATA_TYPE)
           end
           if @containerInventoryTag.nil? || !@containerInventoryTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @containerInventoryTag = ExtensionUtils.getOutputStreamId(Constants::CONTAINER_INVENTORY_DATA_TYPE)
           end
+          if @insightsMetricsTag.nil? || !@insightsMetricsTag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
+            @insightsMetricsTag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
+          end
           if @tag.nil? || !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::KUBE_POD_INVENTORY_DATA_TYPE)
           end
-
+          $log.info("in_kube_podinventory::enumerate: using perf tag -#{@kubeperfTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_podinventory::enumerate: using kubeservices tag -#{@kubeservicesTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_podinventory::enumerate: using containerinventory tag -#{@containerInventoryTag} @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::enumerate: using insightsmetrics tag -#{@insightsMetricsTag} @ #{Time.now.utc.iso8601}")
           $log.info("in_kube_podinventory::enumerate: using kubepodinventory tag -#{@tag} @ #{Time.now.utc.iso8601}")
         end
 
@@ -212,11 +233,24 @@ module Fluent::Plugin
           end
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
+          ApplicationInsightsUtility.sendMetricTelemetry("ContainerCount", @containerCount, {})
           ApplicationInsightsUtility.sendMetricTelemetry("ServiceCount", @serviceCount, {})
           telemetryProperties["ControllerData"] = @controllerData.to_json
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
           if @winContainerCount > 0
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
+            telemetryProperties["WindowsNodeCount"] = @windowsNodeCount
+            telemetryProperties["ClusterWideWindowsContainerInventoryTotalSizeKB"] = @winContainerInventoryTotalSizeBytes / 1024
+            telemetryProperties["WindowsContainerCountWithInventoryRecordSize64KBorMore"] = @winContainerCountWithInventoryRecordSize64KBOrMore
+            if @winContainerCountWithEnvVarSize64KBOrMore > 0
+              telemetryProperties["WinContainerCountWithEnvVarSize64KBOrMore"] = @winContainerCountWithEnvVarSize64KBOrMore
+            end
+            if @winContainerCountWithPortsSize64KBOrMore > 0
+              telemetryProperties["WinContainerCountWithPortsSize64KBOrMore"] = @winContainerCountWithPortsSize64KBOrMore
+            end
+            if @winContainerCountWithCommandSize64KBOrMore > 0
+              telemetryProperties["WinContainerCountWithCommandSize64KBOrMore"] = @winContainerCountWithCommandSize64KBOrMore
+            end
             ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
           end
           ApplicationInsightsUtility.sendMetricTelemetry("PodInventoryE2EProcessingLatencyMs", @podInventoryE2EProcessingLatencyMs, telemetryProperties)
@@ -244,6 +278,7 @@ module Fluent::Plugin
         podInventory["items"].each do |item| #podInventory block start
           # pod inventory records
           podInventoryRecords = getPodInventoryRecords(item, serviceRecords, batchTime)
+          @containerCount += podInventoryRecords.length
           podInventoryRecords.each do |record|
             if !record.nil?
               eventStream.add(emitTime, record) if record
@@ -263,11 +298,26 @@ module Fluent::Plugin
             if KubernetesApiClient.isEmitCacheTelemetry()
               @windowsContainerRecordsCacheSizeBytes += containerInventoryRecords.to_s.length
             end
+            @windowsNodeCount = winNodes.length
             # Send container inventory records for containers on windows nodes
             @winContainerCount += containerInventoryRecords.length
             containerInventoryRecords.each do |cirecord|
               if !cirecord.nil?
                 containerInventoryStream.add(emitTime, cirecord) if cirecord
+                ciRecordSize = cirecord.to_s.length
+                @winContainerInventoryTotalSizeBytes += ciRecordSize
+                if ciRecordSize >= Constants::MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY
+                  @winContainerCountWithInventoryRecordSize64KBOrMore += 1
+                end
+                if !cirecord["EnvironmentVar"].nil? && !cirecord["EnvironmentVar"].empty? && cirecord["EnvironmentVar"].length >= Constants::MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY
+                  @winContainerCountWithEnvVarSize64KBOrMore += 1
+                end
+                if !cirecord["Ports"].nil? && !cirecord["Ports"].empty? && cirecord["Ports"].length >= Constants::MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY
+                  @winContainerCountWithPortsSize64KBOrMore += 1
+                end
+                if !cirecord["Command"].nil? && !cirecord["Command"].empty? && cirecord["Command"].length >= Constants::MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY
+                  @winContainerCountWithCommandSize64KBOrMore += 1
+                end
               end
             end
           end
@@ -320,7 +370,7 @@ module Fluent::Plugin
               kubeServiceRecord["ClusterName"] = KubernetesApiClient.getClusterName
               kubeServicesEventStream.add(emitTime, kubeServiceRecord) if kubeServiceRecord
               if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubeServicesEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
-                $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
+                $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
                 router.emit_stream(@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
                 kubeServicesEventStream = Fluent::MultiEventStream.new
                 if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
