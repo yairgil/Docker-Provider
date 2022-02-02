@@ -558,7 +558,7 @@ module Fluent::Plugin
         properties["KernelVersion"] = nodeInfo["kernelVersion"]
         properties["OSImage"] = nodeInfo["osImage"]
         if nodeInfo["architecture"] == "arm64"
-          properties["Architecture"] = properties["architecture"]
+          properties["Architecture"] = nodeInfo["architecture"]
         end
         containerRuntimeVersion = nodeInfo["containerRuntimeVersion"]
         if containerRuntimeVersion.downcase.start_with?("docker://")
