@@ -43,6 +43,14 @@ steps:
 
       docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --push .
 
+      docker pull ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit)
+
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  displayName: 'Generation Task'
+  inputs:
+    BuildDropPath: '$(Build.ArtifactStagingDirectory)'
+    DockerImagesToScan: 'golang:1.14, ubuntu:18.04, ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit)'
+
 - task: PublishBuildArtifacts@1
   inputs:
     pathToPublish: '$(Build.ArtifactStagingDirectory)'
