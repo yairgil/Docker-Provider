@@ -41,7 +41,7 @@ steps:
       az account set -s ${{ variables.subscription }}
       az acr login -n ${{ variables.containerRegistry }}
 
-      docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --push .
+      docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) --push .
 
       docker pull ${{ variables.repoImageName }}:$(datetime)-$(commit)
 
