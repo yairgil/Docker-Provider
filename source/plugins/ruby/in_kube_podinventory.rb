@@ -20,6 +20,7 @@ module Fluent::Plugin
       require "set"
       require "time"
       require "net/http"
+      require "fileutils"
 
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
@@ -150,6 +151,7 @@ module Fluent::Plugin
         batchTime = currentTime.utc.iso8601
         serviceRecords = []
         @podInventoryE2EProcessingLatencyMs = 0
+        @mdmPodRecords = {}
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
         if ExtensionUtils.isAADMSIAuthMode()
           $log.info("in_kube_podinventory::enumerate: AAD AUTH MSI MODE")
@@ -212,6 +214,7 @@ module Fluent::Plugin
         # Setting these to nil so that we dont hold memory until GC kicks in
         podInventory = nil
         serviceRecords = nil
+        @mdmPodRecords = nil
 
         # Adding telemetry to send pod telemetry every 5 minutes
         timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
@@ -239,7 +242,7 @@ module Fluent::Plugin
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
           if @winContainerCount > 0
             telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
-            telemetryProperties["WindowsNodeCount"] = @windowsNodeCount
+            telemetryProperties["WindowsNodeCount"] = @windowsNodeNameListCache.length
             telemetryProperties["ClusterWideWindowsContainerInventoryTotalSizeKB"] = @winContainerInventoryTotalSizeBytes / 1024
             telemetryProperties["WindowsContainerCountWithInventoryRecordSize64KBorMore"] = @winContainerCountWithInventoryRecordSize64KBOrMore
             if @winContainerCountWithEnvVarSize64KBOrMore > 0
@@ -298,7 +301,6 @@ module Fluent::Plugin
             if KubernetesApiClient.isEmitCacheTelemetry()
               @windowsContainerRecordsCacheSizeBytes += containerInventoryRecords.to_s.length
             end
-            @windowsNodeCount = winNodes.length
             # Send container inventory records for containers on windows nodes
             @winContainerCount += containerInventoryRecords.length
             containerInventoryRecords.each do |cirecord|
@@ -351,14 +353,11 @@ module Fluent::Plugin
         end
 
         if continuationToken.nil? #no more chunks in this batch to be sent, get all mdm pod inventory records to send
-          @log.info "Sending pod inventory mdm records to out_mdm"
-          pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
-          @log.info "pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
-          mdm_pod_inventory_es = Fluent::MultiEventStream.new
-          pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
-            mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
-          } if pod_inventory_mdm_records
-          router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
+          if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
+            mdmPodRecordsJson = @mdmPodRecords.to_s
+            @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
+            atomic_file_write(Constants::MDM_POD_INVENTORY_STATE_FILE, Constants::MDM_POD_INVENTORY_STATE_TEMP_FILE, mdmPodRecordsJson)
+          end
         end
 
         if continuationToken.nil? # sending kube services inventory records
@@ -437,6 +436,7 @@ module Fluent::Plugin
       record = {}
 
       begin
+        mdmPodRecord = {}
         record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
         record["Name"] = item["metadata"]["name"]
         podNameSpace = item["metadata"]["namespace"]
@@ -512,7 +512,13 @@ module Fluent::Plugin
         record["PodRestartCount"] = 0
 
         #Invoke the helper method to compute ready/not ready mdm metric
-        @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
+        mdmPodRecord["PodUid"] = podUid
+        mdmPodRecord["ControllerName"] = record["ControllerName"]
+        mdmPodRecord["Namespace"] = record["Namespace"]
+        mdmPodRecord["status"] = {}
+        mdmPodRecord["status"]["conditions"] = item["status"]["conditions"]
+        mdmPodRecord["containeRecords"] = []
+        #@inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
 
         podContainers = []
         if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
@@ -549,6 +555,13 @@ module Fluent::Plugin
             record["ContainerRestartCount"] = containerRestartCount
 
             containerStatus = container["state"]
+
+            mdmContainerRecord = {}
+            mdmContainerRecord["state"] = containerStatus
+            mdmContainerRecord["restartCount"] = containerRestartCount
+            mdmContainerRecord["lastState"] = container["lastState"]
+            mdmPodRecord["containeRecords"].push(mdmContainerRecord.dup)
+
             record["ContainerStatusReason"] = ""
             # state is of the following form , so just picking up the first key name
             # "state": {
@@ -628,6 +641,8 @@ module Fluent::Plugin
         else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
           records.push(record)
         end  #container status block end
+
+        @mdmPodRecords[podUid] = mdmPodRecord
 
         records.each do |record|
           if !record.nil?
@@ -1082,6 +1097,17 @@ module Fluent::Plugin
         end
       end
       $log.info("in_kube_podinventory::watch_windows_nodes:End @ #{Time.now.utc.iso8601}")
+    end
+
+    def atomic_file_write(path, temp_path, content)
+      begin
+        File.open(temp_path, "w+") do |f|
+          f.write(content)
+        end
+        FileUtils.mv(temp_path, path)
+      rescue => err
+        $log.warn "in_kube_podinventory::atomic_file_write: failed with an error: #{err}"
+      end
     end
   end # Kube_Pod_Input
 end # module

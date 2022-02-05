@@ -136,4 +136,8 @@ class Constants
   #This is for telemetry to track if any of the windows customer has any of the field size >= 64KB
   #To evaluate switching to Windows AMA 64KB impacts any existing customers
   MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY = 65536
+
+  # FileName for MDM POD Inventory records
+  MDM_POD_INVENTORY_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/MDMPodInventoryState.json"
+  MDM_POD_INVENTORY_STATE_TEMP_FILE = "/var/opt/microsoft/docker-cimprov/state/MDMPodInventoryStateTemp.json"
 end
