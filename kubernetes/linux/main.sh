@@ -593,17 +593,27 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
             case $NUM_OF_FLUENTD_WORKERS in
+            5)
+                  export NUM_OF_FLUENTD_WORKERS=5
+                  export FLUENTD_POD_INVENTORY_WORKER_ID=4
+                  export FLUENTD_NODE_INVENTORY_WORKER_ID=3
+                  export FLUENTD_EVENT_INVENTORY_WORKER_ID=2
+                  export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=1
+                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+                  ;;
             4)
                   export NUM_OF_FLUENTD_WORKERS=4
                   export FLUENTD_POD_INVENTORY_WORKER_ID=3
                   export FLUENTD_NODE_INVENTORY_WORKER_ID=2
                   export FLUENTD_EVENT_INVENTORY_WORKER_ID=1
+                  export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
                   export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
                   ;;
             3)
                   export NUM_OF_FLUENTD_WORKERS=3
                   export FLUENTD_POD_INVENTORY_WORKER_ID=2
                   export FLUENTD_NODE_INVENTORY_WORKER_ID=1
+                  export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
                   export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
                   export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
                   ;;
@@ -611,6 +621,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
                  export NUM_OF_FLUENTD_WORKERS=2
                  export FLUENTD_POD_INVENTORY_WORKER_ID=1
                  export FLUENTD_NODE_INVENTORY_WORKER_ID=1
+                 export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
                  export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
                   ;;
@@ -620,6 +631,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
                  export FLUENTD_POD_INVENTORY_WORKER_ID=0
                  export FLUENTD_NODE_INVENTORY_WORKER_ID=0
                  export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
+                 export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
                   ;;
             esac

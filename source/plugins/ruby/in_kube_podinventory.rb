@@ -4,12 +4,9 @@
 require "fluent/plugin/input"
 
 module Fluent::Plugin
-  require_relative "podinventory_to_mdm"
-
   class Kube_PodInventory_Input < Input
     Fluent::Plugin.register_input("kube_podinventory", self)
 
-    @@MDMKubePodInventoryTag = "mdm.kubepodinventory"
     @@hostName = (OMS::Common.get_hostname)
 
     def initialize
@@ -69,7 +66,6 @@ module Fluent::Plugin
 
     def configure(conf)
       super
-      @inventoryToMdmConvertor = Inventory2MdmConvertor.new()
     end
 
     def start
@@ -285,7 +281,6 @@ module Fluent::Plugin
           podInventoryRecords.each do |record|
             if !record.nil?
               eventStream.add(emitTime, record) if record
-              @inventoryToMdmConvertor.process_pod_inventory_record(record)
             end
           end
           # Setting this flag to true so that we can send ContainerInventory records for containers
@@ -520,7 +515,6 @@ module Fluent::Plugin
         mdmPodRecord["PodReadyCondition"] = getPodReadyCondition(item["status"]["conditions"])
         mdmPodRecord["ControllerKind"] = record["ControllerKind"]
         mdmPodRecord["containeRecords"] = []
-        #@inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
 
         podContainers = []
         if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
@@ -584,7 +578,6 @@ module Fluent::Plugin
               # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
               if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
                 mdmContainerRecord["state"] = containerStatus
-                @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
               end
             end
 
@@ -613,7 +606,6 @@ module Fluent::Plugin
                   #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
                   if lastStateReason.downcase == Constants::REASON_OOM_KILLED
                     mdmContainerRecord["lastState"] = container["lastState"]
-                    @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
                   end
                   lastStateReason = nil
                 else
@@ -627,7 +619,6 @@ module Fluent::Plugin
               if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
                 mdmContainerRecord["restartCount"] = containerRestartCount
                 mdmContainerRecord["lastState"] = container["lastState"]
-                @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
               end
             rescue => errorStr
               $log.warn "Failed in parse_and_emit_record pod inventory while processing ContainerLastStatus: #{errorStr}"
