@@ -151,7 +151,7 @@ module Fluent::Plugin
         batchTime = currentTime.utc.iso8601
         serviceRecords = []
         @podInventoryE2EProcessingLatencyMs = 0
-        @mdmPodRecords = {}
+        @mdmPodRecords = []
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
         if ExtensionUtils.isAADMSIAuthMode()
           $log.info("in_kube_podinventory::enumerate: AAD AUTH MSI MODE")
@@ -354,7 +354,7 @@ module Fluent::Plugin
 
         if continuationToken.nil? #no more chunks in this batch to be sent, get all mdm pod inventory records to send
           if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
-            mdmPodRecordsJson = @mdmPodRecords.to_s
+            mdmPodRecordsJson = @mdmPodRecords.to_json
             @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
             atomic_file_write(Constants::MDM_POD_INVENTORY_STATE_FILE, Constants::MDM_POD_INVENTORY_STATE_TEMP_FILE, mdmPodRecordsJson)
           end
@@ -513,10 +513,12 @@ module Fluent::Plugin
 
         #Invoke the helper method to compute ready/not ready mdm metric
         mdmPodRecord["PodUid"] = podUid
+        mdmPodRecord["Computer"] = nodeName
         mdmPodRecord["ControllerName"] = record["ControllerName"]
         mdmPodRecord["Namespace"] = record["Namespace"]
-        mdmPodRecord["status"] = {}
-        mdmPodRecord["status"]["conditions"] = item["status"]["conditions"]
+        mdmPodRecord["PodStatus"] = record["PodStatus"]
+        mdmPodRecord["PodReadyCondition"] = getPodReadyCondition(item["status"]["conditions"])
+        mdmPodRecord["ControllerKind"] = record["ControllerKind"]
         mdmPodRecord["containeRecords"] = []
         #@inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], item["status"]["conditions"])
 
@@ -557,11 +559,6 @@ module Fluent::Plugin
             containerStatus = container["state"]
 
             mdmContainerRecord = {}
-            mdmContainerRecord["state"] = containerStatus
-            mdmContainerRecord["restartCount"] = containerRestartCount
-            mdmContainerRecord["lastState"] = container["lastState"]
-            mdmPodRecord["containeRecords"].push(mdmContainerRecord.dup)
-
             record["ContainerStatusReason"] = ""
             # state is of the following form , so just picking up the first key name
             # "state": {
@@ -586,6 +583,7 @@ module Fluent::Plugin
               end
               # Process the record to see if job was completed 6 hours ago. If so, send metric to mdm
               if !record["ControllerKind"].nil? && record["ControllerKind"].downcase == Constants::CONTROLLER_KIND_JOB
+                mdmContainerRecord["state"] = containerStatus
                 @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerStatus)
               end
             end
@@ -614,6 +612,7 @@ module Fluent::Plugin
 
                   #Populate mdm metric for OOMKilled container count if lastStateReason is OOMKilled
                   if lastStateReason.downcase == Constants::REASON_OOM_KILLED
+                    mdmContainerRecord["lastState"] = container["lastState"]
                     @inventoryToMdmConvertor.process_record_for_oom_killed_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
                   end
                   lastStateReason = nil
@@ -626,6 +625,8 @@ module Fluent::Plugin
 
               #Populate mdm metric for container restart count if greater than 0
               if (!containerRestartCount.nil? && (containerRestartCount.is_a? Integer) && containerRestartCount > 0)
+                mdmContainerRecord["restartCount"] = containerRestartCount
+                mdmContainerRecord["lastState"] = container["lastState"]
                 @inventoryToMdmConvertor.process_record_for_container_restarts_metric(record["ControllerName"], record["Namespace"], lastFinishedTime)
               end
             rescue => errorStr
@@ -635,6 +636,10 @@ module Fluent::Plugin
               record["ContainerLastStatus"] = Hash.new
             end
 
+            if !mdmContainerRecord.empty?
+              mdmPodRecord["containeRecords"].push(mdmContainerRecord.dup)
+            end
+
             podRestartCount += containerRestartCount
             records.push(record.dup)
           end
@@ -642,7 +647,7 @@ module Fluent::Plugin
           records.push(record)
         end  #container status block end
 
-        @mdmPodRecords[podUid] = mdmPodRecord
+        @mdmPodRecords.push(mdmPodRecord.dup)
 
         records.each do |record|
           if !record.nil?
@@ -1108,6 +1113,25 @@ module Fluent::Plugin
       rescue => err
         $log.warn "in_kube_podinventory::atomic_file_write: failed with an error: #{err}"
       end
+    end
+
+    def getPodReadyCondition(podStatusConditions)
+      podReadyCondition = false
+      begin
+        if !podStatusConditions.nil? && !podStatusConditions.empty?
+          podStatusConditions.each do |condition|
+            if condition["type"] == "Ready"
+              if condition["status"].downcase == "true"
+                podReadyCondition = true
+              end
+              break #Exit the for loop since we found the ready condition
+            end
+          end
+        end
+      rescue => err
+        $log.warn "in_kube_podinventory::getPodReadyCondition failed with an error: #{err}"
+      end
+      return podReadyCondition
     end
   end # Kube_Pod_Input
 end # module
