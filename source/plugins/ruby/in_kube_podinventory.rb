@@ -347,11 +347,13 @@ module Fluent::Plugin
           containerInventoryStream = nil
         end
 
-        if continuationToken.nil? #no more chunks in this batch to be sent, get all mdm pod inventory records to send
+        if continuationToken.nil? #no more chunks in this batch to be sent, write all mdm pod inventory records to send
           if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
             mdmPodRecordsJson = @mdmPodRecords.to_json
             @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
+            @log.info "in_kube_podinventory::parse_and_emit_records:Start:atomic_file_write @ #{Time.now.utc.iso8601}"
             atomic_file_write(Constants::MDM_POD_INVENTORY_STATE_FILE, Constants::MDM_POD_INVENTORY_STATE_TEMP_FILE, mdmPodRecordsJson)
+            @log.info "in_kube_podinventory::parse_and_emit_records:End:atomic_file_write @ #{Time.now.utc.iso8601}"
           end
         end
 
