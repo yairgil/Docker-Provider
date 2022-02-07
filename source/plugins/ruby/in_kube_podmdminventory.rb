@@ -57,6 +57,7 @@ module Fluent::Plugin
 
     def enumerate
       begin
+        currentTime = Time.now
         batchTime = currentTime.utc.iso8601
         parse_and_emit_records(batchTime)
       rescue => errorStr
@@ -67,12 +68,13 @@ module Fluent::Plugin
     end
 
     def parse_and_emit_records(batchTime = Time.utc.iso8601)
-      currentTime = Time.now
       begin
         if File.exists?(Constants::MDM_POD_INVENTORY_STATE_FILE)
           content = File.read(Constants::MDM_POD_INVENTORY_STATE_FILE)
           if !content.empty?
+            $log.info "in_kube_podmdminventory:parse_and_emit_records:Start:Parsing MDM pod records using yajl @ #{Time.now.utc.iso8601}"
             mdmPodRecords = Yajl::Parser.parse(StringIO.new(content))
+            $log.info "in_kube_podmdminventory:parse_and_emit_records:End:Parsing MDM pod records using yajl @ #{Time.now.utc.iso8601}"
             if !mdmPodRecords.nil? && !mdmPodRecords.empty?
               mdmPodRecords.each do |record|
                 @inventoryToMdmConvertor.process_pod_inventory_record(record)
@@ -84,9 +86,9 @@ module Fluent::Plugin
                       @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerRecord["state"])
                     end
                     begin
-                      if !container["lastState"].nil? && container["lastState"].keys.length == 1
-                        lastStateName = container["lastState"].keys[0]
-                        lastStateObject = container["lastState"][lastStateName]
+                      if !containerRecord["lastState"].nil? && containerRecord["lastState"].keys.length == 1
+                        lastStateName = containerRecord["lastState"].keys[0]
+                        lastStateObject = containerRecord["lastState"][lastStateName]
                         if !lastStateObject.is_a?(Hash)
                           raise "expected a hash object. This could signify a bug or a kubernetes API change"
                         end

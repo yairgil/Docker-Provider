@@ -640,6 +640,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             echo "export FLUENTD_NODE_INVENTORY_WORKER_ID=$FLUENTD_NODE_INVENTORY_WORKER_ID" >>~/.bashrc
             echo "export FLUENTD_EVENT_INVENTORY_WORKER_ID=$FLUENTD_EVENT_INVENTORY_WORKER_ID" >>~/.bashrc
             echo "export FLUENTD_OTHER_INVENTORY_WORKER_ID=$FLUENTD_OTHER_INVENTORY_WORKER_ID" >>~/.bashrc
+            echo "export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=$FLUENTD_POD_MDM_INVENTORY_WORKER_ID" >>~/.bashrc
             source ~/.bashrc
 
             echo "*** fluentd worker configuration ***"
@@ -647,6 +648,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             echo "pod inventory worker id: ${FLUENTD_POD_INVENTORY_WORKER_ID}"
             echo "node inventory worker id: ${FLUENTD_NODE_INVENTORY_WORKER_ID}"
             echo "event inventory worker id: ${FLUENTD_EVENT_INVENTORY_WORKER_ID}"
+            echo "pod mdm inventory worker id: ${FLUENTD_POD_MDM_INVENTORY_WORKER_ID}"
             echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
 
             echo "*** starting fluentd v1 in replicaset"
