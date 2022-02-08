@@ -102,9 +102,6 @@ const ContainerLogsV2Route = "v2"
 
 const ContainerLogsADXRoute = "adx"
 
-//fallback option v1 route i.e. ODS direct if required in any case
-const ContainerLogsV1Route = "v1"
-
 //container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
 
@@ -986,7 +983,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 			if er != nil {
 				Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
-				UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
+				UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0, 0)
 				if MdsdInsightsMetricsMsgpUnixSocketClient != nil {
 					MdsdInsightsMetricsMsgpUnixSocketClient.Close()
 					MdsdInsightsMetricsMsgpUnixSocketClient = nil
@@ -998,7 +995,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 				return output.FLB_RETRY
 			} else {
 				numTelegrafMetricsRecords := len(msgPackEntries)
-				UpdateNumTelegrafMetricsSentTelemetry(numTelegrafMetricsRecords, 0, 0)
+				UpdateNumTelegrafMetricsSentTelemetry(numTelegrafMetricsRecords, 0, 0, 0)
 				Log("Success::mdsd::Successfully flushed %d telegraf metrics records that was %d bytes to mdsd in %s ", numTelegrafMetricsRecords, bts, elapsed)
 			}
 		}
@@ -1007,9 +1004,13 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 		var metrics []laTelegrafMetric
 		var i int
+		numWinMetricsWithTagsSize64KBorMore := 0
 
 		for i = 0; i < len(laMetrics); i++ {
 			metrics = append(metrics, *laMetrics[i])
+			if len(*&laMetrics[i].Tags) >= (64 * 1024) {
+				numWinMetricsWithTagsSize64KBorMore += 1
+			}
 		}
 
 		laTelegrafMetrics := InsightsMetricsBlob{
@@ -1061,7 +1062,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		if err != nil {
 			message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending %v metrics. duration:%v err:%q \n", len(laMetrics), elapsed, err.Error())
 			Log(message)
-			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
+			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0, 0)
 			return output.FLB_RETRY
 		}
 
@@ -1070,7 +1071,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 				Log("PostTelegrafMetricsToLA::Error:(retriable) RequestID %s Response Status %v Status Code %v", reqID, resp.Status, resp.StatusCode)
 			}
 			if resp != nil && resp.StatusCode == 429 {
-				UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
+				UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1, 0)
 			}
 			return output.FLB_RETRY
 		}
@@ -1078,18 +1079,19 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		defer resp.Body.Close()
 
 		numMetrics := len(laMetrics)
-		UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0)
+		UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0, numWinMetricsWithTagsSize64KBorMore)
 		Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
 	}
 
 	return output.FLB_OK
 }
 
-func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int, numSend429Errors int) {
+func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int, numSend429Errors int, numWinMetricswith64KBorMoreSize int) {
 	ContainerLogTelemetryMutex.Lock()
 	TelegrafMetricsSentCount += float64(numMetricsSent)
 	TelegrafMetricsSendErrorCount += float64(numSendErrors)
 	TelegrafMetricsSend429ErrorCount += float64(numSend429Errors)
+	WinTelegrafMetricsCountWithTagsSize64KBorMore += float64(numWinMetricswith64KBorMoreSize)
 	ContainerLogTelemetryMutex.Unlock()
 }
 
@@ -1254,6 +1256,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					maxLatencyContainer = name + "=" + id
 				}
 			}
+		} else {
+			ContainerLogTelemetryMutex.Lock()
+			ContainerLogRecordCountWithEmptyTimeStamp += 1
+			ContainerLogTelemetryMutex.Unlock()
 		}
 	}
 
@@ -1771,9 +1777,6 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 	} else if strings.Compare(strings.ToLower(osType), "windows") != 0 { //for linux, oneagent will be default route
 		ContainerLogsRouteV2 = true //default is mdsd route
-		if strings.Compare(ContainerLogsRoute, ContainerLogsV1Route) == 0 {
-			ContainerLogsRouteV2 = false //fallback option when hiddensetting set
-		}
 		Log("Routing container logs thru %s route...", ContainerLogsRoute)
 		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsRoute)
 	}

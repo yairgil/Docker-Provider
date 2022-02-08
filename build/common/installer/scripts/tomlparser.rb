@@ -31,6 +31,8 @@ require_relative "ConfigParseErrorLogger"
 @enableLogLossTrackingSet = "false"
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
+  # This path format is necessary for fluent-bit in windows
+  @logTailPath = "C:\\var\\log\\containers\\*.log"
 end
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
