@@ -652,7 +652,7 @@ module Fluent::Plugin
                      !item["metadata"].nil? && !item["metadata"].empty? &&
                      !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
                     nodesResourceVersion = item["metadata"]["resourceVersion"]
-                    $log.info("in_kube_nodes::watch_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+                    # $log.info("in_kube_nodes::watch_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
                   else
                     $log.info("in_kube_nodes::watch_nodes: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
                     nodesResourceVersion = nil
@@ -691,7 +691,8 @@ module Fluent::Plugin
               end
             end
           rescue Net::ReadTimeout => errorStr
-            $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            ## This expected if there is no activity on the cluster for more than readtimeout value used in the connection
+            # $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           rescue => errorStr
             $log.warn("in_kube_nodes::watch_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
             nodesResourceVersion = nil

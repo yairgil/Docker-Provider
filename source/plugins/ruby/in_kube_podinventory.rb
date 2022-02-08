@@ -795,9 +795,9 @@ module Fluent::Plugin
                      !item["metadata"].nil? && !item["metadata"].empty? &&
                      !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
                     podsResourceVersion = item["metadata"]["resourceVersion"]
-                    $log.info("in_kube_podinventory::watch_pods:received event type: #{notice["type"]} with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
+                    # $log.info("in_kube_podinventory::watch_pods:received event type: #{notice["type"]} with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
                   else
-                    $log.info("in_kube_podinventory::watch_pods:received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                    $log.warn("in_kube_podinventory::watch_pods:received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
                     podsResourceVersion = nil
                     # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
                     break
@@ -844,11 +844,11 @@ module Fluent::Plugin
                   $log.warn("in_kube_podinventory::watch_pods:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
                 end
               end
-              $log.info("in_kube_podinventory::watch_pods:Watch connection got disconnected for pods with resourceversion: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
+              $log.warn("in_kube_podinventory::watch_pods:Watch connection got disconnected for pods with resourceversion: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
             end
           rescue Net::ReadTimeout => errorStr
-            ## This expected if there is no activity more than readtimeout value used in the connection
-            $log.warn("in_kube_podinventory::watch_pods:Watch failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            ## This expected if there is no activity on the cluster for more than readtimeout value used in the connection
+            # $log.warn("in_kube_podinventory::watch_pods:Watch failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           rescue => errorStr
             $log.warn("in_kube_podinventory::watch_pods:Watch failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
             podsResourceVersion = nil
@@ -923,9 +923,9 @@ module Fluent::Plugin
                      !item["metadata"].nil? && !item["metadata"].empty? &&
                      !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
                     servicesResourceVersion = item["metadata"]["resourceVersion"]
-                    $log.info("in_kube_podinventory::watch_services: received event type: #{notice["type"]} with resource version: #{servicesResourceVersion} @ #{Time.now.utc.iso8601}")
+                    # $log.info("in_kube_podinventory::watch_services: received event type: #{notice["type"]} with resource version: #{servicesResourceVersion} @ #{Time.now.utc.iso8601}")
                   else
-                    $log.info("in_kube_podinventory::watch_services: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                    $log.warn("in_kube_podinventory::watch_services: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
                     servicesResourceVersion = nil
                     # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
                     break
@@ -962,7 +962,7 @@ module Fluent::Plugin
               end
             end
           rescue Net::ReadTimeout => errorStr
-            $log.warn("in_kube_podinventory::watch_services:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            # $log.warn("in_kube_podinventory::watch_services:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           rescue => errorStr
             $log.warn("in_kube_podinventory::watch_services:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
             servicesResourceVersion = nil
@@ -1051,9 +1051,9 @@ module Fluent::Plugin
                      !item["metadata"].nil? && !item["metadata"].empty? &&
                      !item["metadata"]["resourceVersion"].nil? && !item["metadata"]["resourceVersion"].empty?
                     nodesResourceVersion = item["metadata"]["resourceVersion"]
-                    $log.info("in_kube_podinventory::watch_windows_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
+                    # $log.info("in_kube_podinventory::watch_windows_nodes: received event type: #{notice["type"]} with resource version: #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
                   else
-                    $log.info("in_kube_podinventory::watch_windows_nodes: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
+                    $log.warn("in_kube_podinventory::watch_windows_nodes: received event type with no resourceVersion hence stopping watcher to reconnect @ #{Time.now.utc.iso8601}")
                     nodesResourceVersion = nil
                     # We have to abort here because this might cause lastResourceVersion inconsistency by skipping a potential RV with valid data!
                     break
@@ -1081,7 +1081,8 @@ module Fluent::Plugin
               end
             end
           rescue Net::ReadTimeout => errorStr
-            $log.warn("in_kube_podinventory::watch_windows_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
+            ## This expected if there is no activity more than readtimeout value used in the connection
+            # $log.warn("in_kube_podinventory::watch_windows_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           rescue => errorStr
             $log.warn("in_kube_podinventory::watch_windows_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
             nodesResourceVersion = nil
