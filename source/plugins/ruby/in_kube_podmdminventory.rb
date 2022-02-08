@@ -72,7 +72,7 @@ module Fluent::Plugin
         $log.info "in_kube_podmdminventory:parse_and_emit_records:Start:readMDMRecords @ #{Time.now.utc.iso8601}"
         mdmPodRecords = readMDMRecords()
         $log.info "in_kube_podmdminventory:parse_and_emit_records:End:readMDMRecords @ #{Time.now.utc.iso8601}"
-        if !mdmPodRecords.nil? && !mdmPodRecords.empty? && mdmRecords.length > 0
+        if !mdmPodRecords.nil? && !mdmPodRecords.empty? && mdmPodRecords.length > 0
           mdmPodRecords.each do |record|
             @inventoryToMdmConvertor.process_pod_inventory_record(record)
             @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], record["PodReadyCondition"])
