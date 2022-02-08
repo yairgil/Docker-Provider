@@ -72,13 +72,13 @@ module Fluent::Plugin
         $log.info "in_kube_podmdminventory:parse_and_emit_records:Start:readMDMRecords @ #{Time.now.utc.iso8601}"
         mdmPodRecords = readMDMRecords()
         $log.info "in_kube_podmdminventory:parse_and_emit_records:End:readMDMRecords @ #{Time.now.utc.iso8601}"
-        if !mdmPodRecords.nil? && !mdmPodRecords.empty?
+        if !mdmPodRecords.nil? && !mdmPodRecords.empty? && mdmRecords.length > 0
           mdmPodRecords.each do |record|
             @inventoryToMdmConvertor.process_pod_inventory_record(record)
             @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], record["PodReadyCondition"])
-            containeRecords = record["containeRecords"]
-            if !containeRecords.nil? && !containeRecords.empty? && containeRecords.length > 0
-              containeRecords.each do |containerRecord|
+            containerRecords = record["containerRecords"]
+            if !containerRecords.nil? && !containerRecords.empty? && containerRecords.length > 0
+              containerRecords.each do |containerRecord|
                 if !containerRecord["state"].nil? && !containerRecord["state"].empty?
                   @inventoryToMdmConvertor.process_record_for_terminated_job_metric(record["ControllerName"], record["Namespace"], containerRecord["state"])
                 end
@@ -118,17 +118,20 @@ module Fluent::Plugin
           mdm_pod_inventory_es = Fluent::MultiEventStream.new
           pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
             mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
+            if mdm_pod_inventory_es.count >= 5000 # 5k records of MDM is ~2MB and each record is ~400 bytes
+              router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es)
+              mdm_pod_inventory_es = Fluent::MultiEventStream.new
+            end
           } if pod_inventory_mdm_records
-          router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es) if mdm_pod_inventory_es
+          if mdm_pod_inventory_es.count > 0
+            router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es)
+          end
+          mdm_pod_inventory_es = nil
         end
       rescue => errorStr
         $log.warn "in_kube_podmdminventory:parse_and_emit_records: failed with an error #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-      ensure
-        if !file.nil?
-          file.close
-        end
       end
     end
 
@@ -168,31 +171,31 @@ module Fluent::Plugin
       maxRetryCount = 3
       initialRetryDelaySecs = 0.5
       retryAttemptCount = 1
-      mdmRecords = {}
+      mdmRecords = []
       begin
         f = File.open(Constants::MDM_POD_INVENTORY_STATE_FILE, "r")
         if !f.nil?
           isAcquiredLock = f.flock(File::LOCK_EX | File::LOCK_NB)
-          raise "readMDMRecords:Failed to acquire file lock" if !isAcquiredLock
+          raise "in_kube_podmdminventory:readMDMRecords:Failed to acquire file lock" if !isAcquiredLock
           startTime = (Time.now.to_f * 1000).to_i
           mdmRecords = Yajl::Parser.parse(f)
           timetakenMs = ((Time.now.to_f * 1000).to_i - startTime)
           $log.info "in_kube_podmdminventory:readMDMRecords:Number of MDM records: #{mdmRecords.length} with time taken(ms) for read: #{timetakenMs} @  #{Time.now.utc.iso8601}"
         else
-          raise "readMDMRecords:Failed to open file for read"
+          raise "in_kube_podmdminventory:readMDMRecords:Failed to open file for read"
         end
       rescue => err
-        if retryAttemptCount < MaxRetryCount
+        if retryAttemptCount < maxRetryCount
+          f.flock(File::LOCK_UN) if !f.nil?
+          f.close if !f.nil?
           retryAttemptCount = retryAttemptCount + 1
-          sleep (initialRetryDelay * retryAttemptCount)
+          sleep (initialRetryDelaySecs * retryAttemptCount)
           retry
         end
         $log.warn "in_kube_podmdminventory:readMDMRecords failed with an error: #{err} after retries: #{maxRetryCount} @  #{Time.now.utc.iso8601}"
       ensure
-        if !f.nil?
-          f.flock(File::LOCK_UN)
-          f.close
-        end
+        f.flock(File::LOCK_UN) if !f.nil?
+        f.close if !f.nil?
       end
       return mdmRecords
     end

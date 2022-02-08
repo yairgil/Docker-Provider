@@ -516,7 +516,7 @@ module Fluent::Plugin
         mdmPodRecord["PodStatus"] = record["PodStatus"]
         mdmPodRecord["PodReadyCondition"] = getPodReadyCondition(item["status"]["conditions"])
         mdmPodRecord["ControllerKind"] = record["ControllerKind"]
-        mdmPodRecord["containeRecords"] = []
+        mdmPodRecord["containerRecords"] = []
 
         podContainers = []
         if item["status"].key?("containerStatuses") && !item["status"]["containerStatuses"].empty?
@@ -630,7 +630,7 @@ module Fluent::Plugin
             end
 
             if !mdmContainerRecord.empty?
-              mdmPodRecord["containeRecords"].push(mdmContainerRecord.dup)
+              mdmPodRecord["containerRecords"].push(mdmContainerRecord.dup)
             end
 
             podRestartCount += containerRestartCount
@@ -1105,28 +1105,27 @@ module Fluent::Plugin
         f = File.open(Constants::MDM_POD_INVENTORY_STATE_FILE, "w")
         if !f.nil?
           isAcquiredLock = f.flock(File::LOCK_EX | File::LOCK_NB)
-          raise "writeMDMRecords:Failed to acquire file lock" if !isAcquiredLock
+          raise "in_kube_podinventory:writeMDMRecords:Failed to acquire file lock" if !isAcquiredLock
           startTime = (Time.now.to_f * 1000).to_i
-          f.truncate(0)
           f.write(mdmRecordsJson)
           f.flush
           timetakenMs = ((Time.now.to_f * 1000).to_i - startTime)
           $log.info "in_kube_podinventory:writeMDMRecords:Successfull and with time taken(ms): #{timetakenMs}"
         else
-          raise "writeMDMRecords:Failed to open file for write"
+          raise "in_kube_podinventory:writeMDMRecords:Failed to open file for write"
         end
       rescue => err
-        if retryAttemptCount < MaxRetryCount
+        if retryAttemptCount < maxRetryCount
+          f.flock(File::LOCK_UN) if !f.nil?
+          f.close if !f.nil?
           retryAttemptCount = retryAttemptCount + 1
-          sleep (initialRetryDelay * retryAttemptCount)
+          sleep (initialRetryDelaySecs * retryAttemptCount)
           retry
         end
         $log.warn "in_kube_podinventory:writeMDMRecords failed with an error: #{err} after retries: #{maxRetryCount} @  #{Time.now.utc.iso8601}"
       ensure
-        if !f.nil?
-          f.flock(File::LOCK_UN)
-          f.close
-        end
+        f.flock(File::LOCK_UN) if !f.nil?
+        f.close if !f.nil?
       end
     end
 
