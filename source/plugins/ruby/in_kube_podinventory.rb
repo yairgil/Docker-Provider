@@ -351,9 +351,9 @@ module Fluent::Plugin
           if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
             mdmPodRecordsJson = @mdmPodRecords.to_json
             @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
-            @log.info "in_kube_podinventory::parse_and_emit_records:Start:atomic_file_write @ #{Time.now.utc.iso8601}"
-            atomic_file_write(Constants::MDM_POD_INVENTORY_STATE_FILE, Constants::MDM_POD_INVENTORY_STATE_TEMP_FILE, mdmPodRecordsJson)
-            @log.info "in_kube_podinventory::parse_and_emit_records:End:atomic_file_write @ #{Time.now.utc.iso8601}"
+            @log.info "in_kube_podinventory::parse_and_emit_records:Start:writeMDMRecords @ #{Time.now.utc.iso8601}"
+            writeMDMRecords(mdmPodRecordsJson)
+            @log.info "in_kube_podinventory::parse_and_emit_records:End:writeMDMRecords @ #{Time.now.utc.iso8601}"
           end
         end
 
@@ -1097,14 +1097,36 @@ module Fluent::Plugin
       $log.info("in_kube_podinventory::watch_windows_nodes:End @ #{Time.now.utc.iso8601}")
     end
 
-    def atomic_file_write(path, temp_path, content)
+    def writeMDMRecords(mdmRecordsJson)
+      maxRetryCount = 3
+      initialRetryDelaySecs = 0.5
+      retryAttemptCount = 1
       begin
-        File.open(temp_path, "w+") do |f|
-          f.write(content)
+        f = File.open(Constants::MDM_POD_INVENTORY_STATE_FILE, "w")
+        if !f.nil?
+          isAcquiredLock = f.flock(File::LOCK_EX | File::LOCK_NB)
+          raise "writeMDMRecords:Failed to acquire file lock" if !isAcquiredLock
+          startTime = (Time.now.to_f * 1000).to_i
+          f.truncate(0)
+          f.write(mdmRecordsJson)
+          f.flush
+          timetakenMs = ((Time.now.to_f * 1000).to_i - startTime)
+          $log.info "in_kube_podinventory:writeMDMRecords:Successfull and with time taken(ms): #{timetakenMs}"
+        else
+          raise "writeMDMRecords:Failed to open file for write"
         end
-        FileUtils.mv(temp_path, path)
       rescue => err
-        $log.warn "in_kube_podinventory::atomic_file_write: failed with an error: #{err}"
+        if retryAttemptCount < MaxRetryCount
+          retryAttemptCount = retryAttemptCount + 1
+          sleep (initialRetryDelay * retryAttemptCount)
+          retry
+        end
+        $log.warn "in_kube_podinventory:writeMDMRecords failed with an error: #{err} after retries: #{maxRetryCount} @  #{Time.now.utc.iso8601}"
+      ensure
+        if !f.nil?
+          f.flock(File::LOCK_UN)
+          f.close
+        end
       end
     end
 

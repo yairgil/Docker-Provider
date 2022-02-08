@@ -139,5 +139,4 @@ class Constants
 
   # FileName for MDM POD Inventory records
   MDM_POD_INVENTORY_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/MDMPodInventoryState.json"
-  MDM_POD_INVENTORY_STATE_TEMP_FILE = "/var/opt/microsoft/docker-cimprov/state/MDMPodInventoryStateTemp.json"
 end

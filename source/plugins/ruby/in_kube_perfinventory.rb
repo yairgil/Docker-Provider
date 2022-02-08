@@ -155,7 +155,6 @@ module Fluent::Plugin
       @@istestvar = ENV["ISTEST"]
 
       begin #begin block start
-        # # Getting windows nodes from kubeapi
         podInventory["items"].each do |item| #podInventory block start
           nodeName = ""
           if !item["spec"]["nodeName"].nil?
@@ -272,7 +271,6 @@ module Fluent::Plugin
             @podCacheMutex.synchronize {
               @podItemsCache.clear()
             }
-            currentWindowsNodeNameList = []
             continuationToken = nil
             $log.info("in_kube_perfinventory::watch_pods:Getting pods from Kube API since podsResourceVersion is #{podsResourceVersion}  @ #{Time.now.utc.iso8601}")
             continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
