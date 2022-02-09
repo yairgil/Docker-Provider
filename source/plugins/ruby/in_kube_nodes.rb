@@ -202,10 +202,19 @@ module Fluent::Plugin
         insightsMetricsEventStream = Fluent::MultiEventStream.new
         kubePerfEventStream = Fluent::MultiEventStream.new
         @@istestvar = @env["ISTEST"]
+        nodeAllocatableRecords = {}
         #get node inventory
         nodeInventory["items"].each do |item|
           # node inventory
           nodeInventoryRecord = getNodeInventoryRecord(item, batchTime)
+          # node allocatble records for the kube perf plugin
+          nodeName = item["metadata"]["name"]
+          if !nodeName.nil? && !nodeName.empty?
+            nodeAllocatable = KubernetesApiClient.getNodeAllocatableValues(item)
+            if !nodeAllocatable.nil? && !nodeAllocatable.empty?
+              nodeAllocatableRecords[nodeName] = nodeAllocatable
+            end
+          end
           eventStream.add(emitTime, nodeInventoryRecord) if nodeInventoryRecord
           if @NODES_EMIT_STREAM_BATCH_SIZE > 0 && eventStream.count >= @NODES_EMIT_STREAM_BATCH_SIZE
             $log.info("in_kube_node::parse_and_emit_records: number of node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
@@ -424,6 +433,17 @@ module Fluent::Plugin
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
             $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
+        end
+        if !nodeAllocatableRecords.nil? && !nodeAllocatableRecords.empty?
+          nodeAllocatableRecordsJson = nodeAllocatableRecords.to_json
+          if !nodeAllocatableRecordsJson.empty?
+            @log.info "Writing node allocatable records to state file with size(bytes): #{nodeAllocatableRecordsJson.length}"
+            @log.info "in_kube_nodes::parse_and_emit_records:Start:writeNodeAllocatableRecords @ #{Time.now.utc.iso8601}"
+            writeNodeAllocatableRecords(nodeAllocatableRecordsJson)
+            @log.info "in_kube_nodes::parse_and_emit_records:End:writeNodeAllocatableRecords @ #{Time.now.utc.iso8601}"
+          end
+          nodeAllocatableRecordsJson = nil
+          nodeAllocatableRecords = nil
         end
       rescue => errorStr
         $log.warn "Failed to retrieve node inventory: #{errorStr}"
@@ -706,6 +726,39 @@ module Fluent::Plugin
         end
       end
       $log.info("in_kube_nodes::watch_nodes:End @ #{Time.now.utc.iso8601}")
+    end
+
+    def writeNodeAllocatableRecords(nodeAllocatbleRecordsJson)
+      maxRetryCount = 3
+      initialRetryDelaySecs = 0.5
+      retryAttemptCount = 1
+      begin
+        f = File.open(Constants::NODE_ALLOCATABLE_RECORDS_STATE_FILE, "w")
+        if !f.nil?
+          isAcquiredLock = f.flock(File::LOCK_EX | File::LOCK_NB)
+          raise "in_kube_nodes::writeNodeAllocatableRecords:Failed to acquire file lock" if !isAcquiredLock
+          startTime = (Time.now.to_f * 1000).to_i
+          f.write(nodeAllocatbleRecordsJson)
+          f.flush
+          timetakenMs = ((Time.now.to_f * 1000).to_i - startTime)
+          $log.info "in_kube_nodes::writeNodeAllocatableRecords:Successfull and with time taken(ms): #{timetakenMs}"
+        else
+          raise "in_kube_nodes::writeNodeAllocatableRecords:Failed to open file for write"
+        end
+      rescue => err
+        if retryAttemptCount < maxRetryCount
+          f.flock(File::LOCK_UN) if !f.nil?
+          f.close if !f.nil?
+          retryAttemptCount = retryAttemptCount + 1
+          sleep (initialRetryDelaySecs * retryAttemptCount)
+          retry
+        end
+        $log.warn "in_kube_nodes::writeNodeAllocatableRecords failed with an error: #{err} after retries: #{maxRetryCount} @  #{Time.now.utc.iso8601}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(err)
+      ensure
+        f.flock(File::LOCK_UN) if !f.nil?
+        f.close if !f.nil?
+      end
     end
   end # Kube_Node_Input
 

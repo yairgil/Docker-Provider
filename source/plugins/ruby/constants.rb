@@ -139,4 +139,5 @@ class Constants
 
   # FileName for MDM POD Inventory records
   MDM_POD_INVENTORY_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/MDMPodInventoryState.json"
+  NODE_ALLOCATABLE_RECORDS_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/NodeAllocatableRecords.json"
 end
