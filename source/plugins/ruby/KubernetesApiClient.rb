@@ -1310,6 +1310,25 @@ class KubernetesApiClient
       return item
     end
 
+    def getPodReadyCondition(podStatusConditions)
+      podReadyCondition = false
+      begin
+        if !podStatusConditions.nil? && !podStatusConditions.empty?
+          podStatusConditions.each do |condition|
+            if condition["type"] == "Ready"
+              if condition["status"].downcase == "true"
+                podReadyCondition = true
+              end
+              break #Exit the for loop since we found the ready condition
+            end
+          end
+        end
+      rescue => err
+        @Log.warn "in_kube_podinventory::getPodReadyCondition failed with an error: #{err}"
+      end
+      return podReadyCondition
+    end
+
     def isEmitCacheTelemetry
       isEmitCacheTelemtryEnabled = false
       if !ENV["EMIT_CACHE_TELEMETRY"].nil? && !ENV["EMIT_CACHE_TELEMETRY"].empty? && ENV["EMIT_CACHE_TELEMETRY"].downcase == "true"

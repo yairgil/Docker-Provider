@@ -27,12 +27,9 @@ module Fluent::Plugin
       # this configurable via configmap
       @PODS_CHUNK_SIZE = 0
       @PODS_EMIT_STREAM_BATCH_SIZE = 0
-      @NODES_CHUNK_SIZE = 0
 
       @watchPodsThread = nil
       @podItemsCache = {}
-
-      @watchNodesThread = nil
 
       @kubeperfTag = "oneagent.containerInsights.LINUX_PERF_BLOB"
       @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
@@ -66,15 +63,6 @@ module Fluent::Plugin
         end
         $log.info("in_kube_perfinventory::start: PODS_EMIT_STREAM_BATCH_SIZE  @ #{@PODS_EMIT_STREAM_BATCH_SIZE}")
 
-        if !ENV["NODES_CHUNK_SIZE"].nil? && !ENV["NODES_CHUNK_SIZE"].empty? && ENV["NODES_CHUNK_SIZE"].to_i > 0
-          @NODES_CHUNK_SIZE = ENV["NODES_CHUNK_SIZE"].to_i
-        else
-          # this shouldnt happen just setting default here as safe guard
-          $log.warn("in_kube_perfinventory::start: setting to default value since got NODES_CHUNK_SIZE nil or empty")
-          @NODES_CHUNK_SIZE = 250
-        end
-        $log.info("in_kube_perfinventory::start : NODES_CHUNK_SIZE  @ #{@NODES_CHUNK_SIZE}")
-
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -92,7 +80,6 @@ module Fluent::Plugin
         }
         @thread.join
         @watchPodsThread.join
-        @watchNodesThread.join
         super # This super must be at the end of shutdown method
       end
     end

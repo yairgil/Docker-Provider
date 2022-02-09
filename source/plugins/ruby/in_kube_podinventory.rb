@@ -348,12 +348,16 @@ module Fluent::Plugin
         end
 
         if continuationToken.nil? #no more chunks in this batch to be sent, write all mdm pod inventory records to send
-          if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
-            mdmPodRecordsJson = @mdmPodRecords.to_json
-            @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
-            @log.info "in_kube_podinventory::parse_and_emit_records:Start:writeMDMRecords @ #{Time.now.utc.iso8601}"
-            writeMDMRecords(mdmPodRecordsJson)
-            @log.info "in_kube_podinventory::parse_and_emit_records:End:writeMDMRecords @ #{Time.now.utc.iso8601}"
+          begin
+            if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
+              mdmPodRecordsJson = @mdmPodRecords.to_json
+              @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
+              @log.info "in_kube_podinventory::parse_and_emit_records:Start:writeMDMRecords @ #{Time.now.utc.iso8601}"
+              writeMDMRecords(mdmPodRecordsJson)
+              @log.info "in_kube_podinventory::parse_and_emit_records:End:writeMDMRecords @ #{Time.now.utc.iso8601}"
+            end
+          rescue => err
+            @log.warn "in_kube_podinventory::parse_and_emit_records: failed to write MDMRecords with an error: #{err} @ #{Time.now.utc.iso8601}"
           end
         end
 
@@ -514,7 +518,7 @@ module Fluent::Plugin
         mdmPodRecord["ControllerName"] = record["ControllerName"]
         mdmPodRecord["Namespace"] = record["Namespace"]
         mdmPodRecord["PodStatus"] = record["PodStatus"]
-        mdmPodRecord["PodReadyCondition"] = getPodReadyCondition(item["status"]["conditions"])
+        mdmPodRecord["PodReadyCondition"] = KubernetesApiClient.getPodReadyCondition(item["status"]["conditions"])
         mdmPodRecord["ControllerKind"] = record["ControllerKind"]
         mdmPodRecord["containerRecords"] = []
 
@@ -1129,25 +1133,6 @@ module Fluent::Plugin
         f.flock(File::LOCK_UN) if !f.nil?
         f.close if !f.nil?
       end
-    end
-
-    def getPodReadyCondition(podStatusConditions)
-      podReadyCondition = false
-      begin
-        if !podStatusConditions.nil? && !podStatusConditions.empty?
-          podStatusConditions.each do |condition|
-            if condition["type"] == "Ready"
-              if condition["status"].downcase == "true"
-                podReadyCondition = true
-              end
-              break #Exit the for loop since we found the ready condition
-            end
-          end
-        end
-      rescue => err
-        $log.warn "in_kube_podinventory::getPodReadyCondition failed with an error: #{err}"
-      end
-      return podReadyCondition
     end
   end # Kube_Pod_Input
 end # module

@@ -137,7 +137,8 @@ class Constants
   #To evaluate switching to Windows AMA 64KB impacts any existing customers
   MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY = 65536
 
-  # FileName for MDM POD Inventory records
+  # FileName for MDM POD Inventory state
   MDM_POD_INVENTORY_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/MDMPodInventoryState.json"
+  # FileName for NodeAllocatable Records state
   NODE_ALLOCATABLE_RECORDS_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/NodeAllocatableRecords.json"
 end
