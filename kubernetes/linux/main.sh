@@ -80,6 +80,66 @@ checkAgentOnboardingStatus() {
       fi
 }
 
+configureFluentDWorkerIDsForRS() {
+      echo "num of fluentd workers:${NUM_OF_FLUENTD_WORKERS}"
+      case $NUM_OF_FLUENTD_WORKERS in
+      5)
+            export NUM_OF_FLUENTD_WORKERS=5
+            export FLUENTD_POD_INVENTORY_WORKER_ID=4
+            export FLUENTD_NODE_INVENTORY_WORKER_ID=3
+            export FLUENTD_EVENT_INVENTORY_WORKER_ID=2
+            export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=1
+            export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            ;;
+      4)
+            export NUM_OF_FLUENTD_WORKERS=4
+            export FLUENTD_POD_INVENTORY_WORKER_ID=3
+            export FLUENTD_NODE_INVENTORY_WORKER_ID=2
+            export FLUENTD_EVENT_INVENTORY_WORKER_ID=1
+            export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
+            export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            ;;
+      3)
+            export NUM_OF_FLUENTD_WORKERS=3
+            export FLUENTD_POD_INVENTORY_WORKER_ID=2
+            export FLUENTD_NODE_INVENTORY_WORKER_ID=1
+            export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
+            export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
+            export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            ;;
+      2)
+            export NUM_OF_FLUENTD_WORKERS=2
+            export FLUENTD_POD_INVENTORY_WORKER_ID=1
+            export FLUENTD_NODE_INVENTORY_WORKER_ID=1
+            export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
+            export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
+            export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            ;;
+
+      *)
+            export NUM_OF_FLUENTD_WORKERS=1
+            export FLUENTD_POD_INVENTORY_WORKER_ID=0
+            export FLUENTD_NODE_INVENTORY_WORKER_ID=0
+            export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
+            export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
+            export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            ;;
+      esac
+      echo "export NUM_OF_FLUENTD_WORKERS=$NUM_OF_FLUENTD_WORKERS" >>~/.bashrc
+      echo "export FLUENTD_POD_INVENTORY_WORKER_ID=$FLUENTD_POD_INVENTORY_WORKER_ID" >>~/.bashrc
+      echo "export FLUENTD_NODE_INVENTORY_WORKER_ID=$FLUENTD_NODE_INVENTORY_WORKER_ID" >>~/.bashrc
+      echo "export FLUENTD_EVENT_INVENTORY_WORKER_ID=$FLUENTD_EVENT_INVENTORY_WORKER_ID" >>~/.bashrc
+      echo "export FLUENTD_OTHER_INVENTORY_WORKER_ID=$FLUENTD_OTHER_INVENTORY_WORKER_ID" >>~/.bashrc
+      echo "export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=$FLUENTD_POD_MDM_INVENTORY_WORKER_ID" >>~/.bashrc
+      source ~/.bashrc
+
+      echo "pod inventory worker id: ${FLUENTD_POD_INVENTORY_WORKER_ID}"
+      echo "node inventory worker id: ${FLUENTD_NODE_INVENTORY_WORKER_ID}"
+      echo "event inventory worker id: ${FLUENTD_EVENT_INVENTORY_WORKER_ID}"
+      echo "pod mdm inventory worker id: ${FLUENTD_POD_MDM_INVENTORY_WORKER_ID}"
+      echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
+}
+
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
 mkdir -p /var/opt/microsoft/docker-cimprov/state
 
@@ -202,7 +262,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             export MDSD_PROXY_USERNAME=$user
             echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >>~/.bashrc
             export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
-            echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
+            echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >>~/.bashrc
 
             #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
             export MDSD_ODS_COMPRESSION_LEVEL=0
@@ -434,7 +494,6 @@ fi
 export CONTAINER_RUNTIME="containerd"
 export NODE_NAME=""
 
-
 if [ "$cAdvisorIsSecure" = true ]; then
       echo "Using port 10250"
       export IS_SECURE_CADVISOR_PORT=true
@@ -460,7 +519,7 @@ if [ ! -z "$podWithValidContainerId" ]; then
       containerRuntime=$(echo $containerRuntime | tr "[:upper:]" "[:lower:]")
       nodeName=$(echo $nodeName | tr "[:upper:]" "[:lower:]")
       # use default container runtime if obtained runtime value is either empty or null
-      if [ -z "$containerRuntime" -o "$containerRuntime" == null  ]; then
+      if [ -z "$containerRuntime" -o "$containerRuntime" == null ]; then
             echo "using default container runtime as $CONTAINER_RUNTIME since got containeRuntime as empty or null"
       else
             export CONTAINER_RUNTIME=$containerRuntime
@@ -592,65 +651,8 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             echo "*** starting fluentd v1 in daemonset"
             fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
-            case $NUM_OF_FLUENTD_WORKERS in
-            5)
-                  export NUM_OF_FLUENTD_WORKERS=5
-                  export FLUENTD_POD_INVENTORY_WORKER_ID=4
-                  export FLUENTD_NODE_INVENTORY_WORKER_ID=3
-                  export FLUENTD_EVENT_INVENTORY_WORKER_ID=2
-                  export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=1
-                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-                  ;;
-            4)
-                  export NUM_OF_FLUENTD_WORKERS=4
-                  export FLUENTD_POD_INVENTORY_WORKER_ID=3
-                  export FLUENTD_NODE_INVENTORY_WORKER_ID=2
-                  export FLUENTD_EVENT_INVENTORY_WORKER_ID=1
-                  export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
-                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-                  ;;
-            3)
-                  export NUM_OF_FLUENTD_WORKERS=3
-                  export FLUENTD_POD_INVENTORY_WORKER_ID=2
-                  export FLUENTD_NODE_INVENTORY_WORKER_ID=1
-                  export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
-                  export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
-                  export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-                  ;;
-            2)
-                 export NUM_OF_FLUENTD_WORKERS=2
-                 export FLUENTD_POD_INVENTORY_WORKER_ID=1
-                 export FLUENTD_NODE_INVENTORY_WORKER_ID=1
-                 export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
-                 export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
-                 export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-                  ;;
-
-            *)
-                 export NUM_OF_FLUENTD_WORKERS=1
-                 export FLUENTD_POD_INVENTORY_WORKER_ID=0
-                 export FLUENTD_NODE_INVENTORY_WORKER_ID=0
-                 export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
-                 export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
-                 export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-                  ;;
-            esac
-            echo "export NUM_OF_FLUENTD_WORKERS=$NUM_OF_FLUENTD_WORKERS" >>~/.bashrc
-            echo "export FLUENTD_POD_INVENTORY_WORKER_ID=$FLUENTD_POD_INVENTORY_WORKER_ID" >>~/.bashrc
-            echo "export FLUENTD_NODE_INVENTORY_WORKER_ID=$FLUENTD_NODE_INVENTORY_WORKER_ID" >>~/.bashrc
-            echo "export FLUENTD_EVENT_INVENTORY_WORKER_ID=$FLUENTD_EVENT_INVENTORY_WORKER_ID" >>~/.bashrc
-            echo "export FLUENTD_OTHER_INVENTORY_WORKER_ID=$FLUENTD_OTHER_INVENTORY_WORKER_ID" >>~/.bashrc
-            echo "export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=$FLUENTD_POD_MDM_INVENTORY_WORKER_ID" >>~/.bashrc
-            source ~/.bashrc
-
-            echo "*** fluentd worker configuration ***"
-            echo "num of workers:${NUM_OF_FLUENTD_WORKERS}"
-            echo "pod inventory worker id: ${FLUENTD_POD_INVENTORY_WORKER_ID}"
-            echo "node inventory worker id: ${FLUENTD_NODE_INVENTORY_WORKER_ID}"
-            echo "event inventory worker id: ${FLUENTD_EVENT_INVENTORY_WORKER_ID}"
-            echo "pod mdm inventory worker id: ${FLUENTD_POD_MDM_INVENTORY_WORKER_ID}"
-            echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
-
+            echo "*** configure fluentd worker ids"
+            configureFluentDWorkerIDsForRS
             echo "*** starting fluentd v1 in replicaset"
             fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       fi

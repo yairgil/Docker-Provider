@@ -53,7 +53,7 @@ module Fluent::Plugin
       @watchServicesThread = nil
       @serviceItemsCache = {}
 
-      @watchNodesThread = nil
+      @watchWinNodesThread = nil
       @windowsNodeNameListCache = []
       @windowsContainerRecordsCacheSizeBytes = 0
 
@@ -105,7 +105,7 @@ module Fluent::Plugin
         @serviceCacheMutex = Mutex.new
         @windowsNodeNameCacheMutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
-        @watchNodesThread = Thread.new(&method(:watch_windows_nodes))
+        @watchWinNodesThread = Thread.new(&method(:watch_windows_nodes))
         @watchPodsThread = Thread.new(&method(:watch_pods))
         @watchServicesThread = Thread.new(&method(:watch_services))
         @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
@@ -121,7 +121,7 @@ module Fluent::Plugin
         @thread.join
         @watchPodsThread.join
         @watchServicesThread.join
-        @watchNodesThread.join
+        @watchWinNodesThread.join
         super # This super must be at the end of shutdown method
       end
     end
