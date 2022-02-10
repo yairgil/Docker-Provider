@@ -580,9 +580,13 @@ else
   echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
   export MDSD_FLUENT_SOCKET_PORT="29230"
   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
-  # enable libcurl for both ODS Uploads and OMS homing service calls
+  # set the libcurl specific env and configuration
   export ENABLE_CURL_UPLOAD=true
   echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
+  export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+  echo "export CURL_CA_BUNDLE=$CURL_CA_BUNDLE" >> ~/.bashrc
+  mkdir -p /etc/pki/tls/certs
+  cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 fi
 source ~/.bashrc
 
