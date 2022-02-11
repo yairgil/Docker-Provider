@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require 'fluent/plugin/output'
+require "fluent/plugin/output"
 
 module Fluent::Plugin
   class OutputMDM < Output
@@ -12,6 +12,7 @@ module Fluent::Plugin
       super
       require "net/http"
       require "net/https"
+      require "securerandom"
       require "uri"
       require "yajl/json_gem"
       require_relative "KubernetesApiClient"
@@ -326,47 +327,49 @@ module Fluent::Plugin
         else
           access_token = get_access_token
         end
+        requestId = SecureRandom.uuid.to_s
         request = Net::HTTP::Post.new(@post_request_uri.request_uri)
         request["Content-Type"] = "application/x-ndjson"
         request["Authorization"] = "Bearer #{access_token}"
+        request["x-request-id"] = requestId
 
         request.body = post_body.join("\n")
-        @log.info "REQUEST BODY SIZE #{request.body.bytesize / 1024}"
+        @log.info "REQUEST BODY SIZE #{request.body.bytesize / 1024} for requestId: #{requestId}"
         response = @http_client.request(request)
         response.value # this throws for non 200 HTTP response code
-        @log.info "HTTP Post Response Code : #{response.code}"
+        @log.info "HTTP Post Response Code : #{response.code} for requestId: #{requestId}"
         if @last_telemetry_sent_time.nil? || @last_telemetry_sent_time + 60 * 60 < Time.now
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
           @last_telemetry_sent_time = Time.now
         end
-      rescue Net::HTTPClientException  => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException
+      rescue Net::HTTPClientException => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException
         if !response.nil? && !response.body.nil? #body will have actual error
-          @log.info "Failed to Post Metrics to MDM : #{e} Response.body: #{response.body}"
+          @log.info "Failed to Post Metrics to MDM for requestId: #{requestId} exception: #{e} Response.body: #{response.body}"
         else
-          @log.info "Failed to Post Metrics to MDM : #{e} Response: #{response}"
+          @log.info "Failed to Post Metrics to MDM for requestId: #{requestId} exception: #{e} Response: #{response}"
         end
         @log.debug_backtrace(e.backtrace)
         if !response.code.empty? && response.code == 403.to_s
-          @log.info "Response Code #{response.code} Updating @last_post_attempt_time"
+          @log.info "Response Code #{response.code} for requestId: #{requestId} Updating @last_post_attempt_time"
           @last_post_attempt_time = Time.now
           @first_post_attempt_made = true
           # Not raising exception, as that will cause retries to happen
         elsif !response.code.empty? && response.code.start_with?("4")
           # Log 400 errors and continue
-          @log.info "Non-retryable HTTPClientException when POSTing Metrics to MDM #{e} Response: #{response}"
+          @log.info "Non-retryable HTTPClientException when POSTing Metrics to MDM for requestId: #{requestId} exception: #{e} Response: #{response}"
         else
           # raise if the response code is non-400
-          @log.info "HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
+          @log.info "HTTPServerException when POSTing Metrics to MDM for requestId: #{requestId} exception: #{e} Response: #{response}"
           raise e
         end
         # Adding exceptions to hash to aggregate and send telemetry for all 400 error codes
         exception_aggregator(e)
       rescue Errno::ETIMEDOUT => e
-        @log.info "Timed out when POSTing Metrics to MDM : #{e} Response: #{response}"
+        @log.info "Timed out when POSTing Metrics to MDM for requestId: #{requestId} exception: #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
         raise e
       rescue Exception => e
-        @log.info "Exception POSTing Metrics to MDM : #{e} Response: #{response}"
+        @log.info "Exception POSTing Metrics to MDM for requestId: #{requestId} exception: #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
         raise e
       end
