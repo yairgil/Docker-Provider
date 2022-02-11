@@ -19,7 +19,7 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 if [ "${ARCH}" != "arm64" ]; then
     wget https://github.com/microsoft/Docker-Provider/releases/download/1.14/azure-mdsd_1.14.2-build.master.284_x86_64.deb -O azure-mdsd.deb
 else
-    wget "https://adme2epublic.blob.core.windows.net/privatefiles/azure-mdsd_1.15.0-build.dev_aarch64_3.deb?sp=r&st=2022-01-26T13:41:51Z&se=2022-02-24T21:41:51Z&spr=https&sv=2020-08-04&sr=b&sig=uW2MnQ%2F8mUtq4gMb78SaY5AnqsRlk6UQEPo469fafGo%3D" -O azure-mdsd.deb
+    wget "https://adme2epublic.blob.core.windows.net/publicfiles/azure-mdsd_1.17.0-build.develop.2693_aarch64.deb" -O azure-mdsd.deb
 fi
 
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
