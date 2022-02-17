@@ -80,8 +80,9 @@ checkAgentOnboardingStatus() {
       fi
 }
 
-configureFluentDWorkerIDsForRS() {
+configureFluentDConfigForRS() {
       echo "num of fluentd workers:${NUM_OF_FLUENTD_WORKERS}"
+      export FLUENTD_FLUSH_INTERVAL="20s" # default 20s, evaluate if required lower flush interval at high scale
       case $NUM_OF_FLUENTD_WORKERS in
       5)
             export NUM_OF_FLUENTD_WORKERS=5
@@ -90,6 +91,7 @@ configureFluentDWorkerIDsForRS() {
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=2
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=1
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            #export FLUENTD_FLUSH_INTERVAL="5s"
             ;;
       4)
             export NUM_OF_FLUENTD_WORKERS=4
@@ -98,6 +100,7 @@ configureFluentDWorkerIDsForRS() {
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=1
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            #export FLUENTD_FLUSH_INTERVAL="10s"
             ;;
       3)
             export NUM_OF_FLUENTD_WORKERS=3
@@ -106,6 +109,7 @@ configureFluentDWorkerIDsForRS() {
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+           #export FLUENTD_FLUSH_INTERVAL="15s"
             ;;
       2)
             export NUM_OF_FLUENTD_WORKERS=2
@@ -114,6 +118,7 @@ configureFluentDWorkerIDsForRS() {
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            #export FLUENTD_FLUSH_INTERVAL="20s"
             ;;
 
       *)
@@ -123,6 +128,7 @@ configureFluentDWorkerIDsForRS() {
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
+            #export FLUENTD_FLUSH_INTERVAL="20s"
             ;;
       esac
       echo "export NUM_OF_FLUENTD_WORKERS=$NUM_OF_FLUENTD_WORKERS" >>~/.bashrc
@@ -131,6 +137,9 @@ configureFluentDWorkerIDsForRS() {
       echo "export FLUENTD_EVENT_INVENTORY_WORKER_ID=$FLUENTD_EVENT_INVENTORY_WORKER_ID" >>~/.bashrc
       echo "export FLUENTD_OTHER_INVENTORY_WORKER_ID=$FLUENTD_OTHER_INVENTORY_WORKER_ID" >>~/.bashrc
       echo "export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=$FLUENTD_POD_MDM_INVENTORY_WORKER_ID" >>~/.bashrc
+      echo "export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=$FLUENTD_POD_MDM_INVENTORY_WORKER_ID" >>~/.bashrc
+      echo "export FLUENTD_FLUSH_INTERVAL=$FLUENTD_FLUSH_INTERVAL" >>~/.bashrc
+
       source ~/.bashrc
 
       echo "pod inventory worker id: ${FLUENTD_POD_INVENTORY_WORKER_ID}"
@@ -138,6 +147,7 @@ configureFluentDWorkerIDsForRS() {
       echo "event inventory worker id: ${FLUENTD_EVENT_INVENTORY_WORKER_ID}"
       echo "pod mdm inventory worker id: ${FLUENTD_POD_MDM_INVENTORY_WORKER_ID}"
       echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
+      echo "fluentd flush interval: ${FLUENTD_FLUSH_INTERVAL}"
 }
 
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
@@ -264,9 +274,6 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
             echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >>~/.bashrc
 
-            #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
-            export MDSD_ODS_COMPRESSION_LEVEL=0
-            echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >>~/.bashrc
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
@@ -616,6 +623,13 @@ else
       echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >>~/.bashrc
       export MDSD_FLUENT_SOCKET_PORT="29230"
       echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >>~/.bashrc
+      # set the libcurl specific env and configuration
+      export ENABLE_CURL_UPLOAD=true
+      echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
+      export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+      echo "export CURL_CA_BUNDLE=$CURL_CA_BUNDLE" >> ~/.bashrc
+      mkdir -p /etc/pki/tls/certs
+      cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 fi
 source ~/.bashrc
 
@@ -651,8 +665,8 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             echo "*** starting fluentd v1 in daemonset"
             fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
-            echo "*** configure fluentd worker ids"
-            configureFluentDWorkerIDsForRS
+            echo "*** configure fluentd config"
+            configureFluentDConfigForRS
             echo "*** starting fluentd v1 in replicaset"
             fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       fi

@@ -357,7 +357,7 @@ spec:
         component: oms-agent
         tier: node
       annotations:
-        agentVersion: "azure-mdsd-1.14.2"
+        agentVersion: "azure-mdsd-1..17.0"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -598,7 +598,7 @@ spec:
       labels:
         rsName: "omsagent-rs"
       annotations:
-        agentVersion: "azure-mdsd-1.14.2"
+        agentVersion: "azure-mdsd-1..17.0"
         dockerProviderVersion: "16.0.0-0"
         schema-versions: "v1"
     spec:
@@ -620,6 +620,8 @@ spec:
                 resourceFieldRef:
                   containerName: omsagent
                   resource: limits.cpu
+            # - name: MONITORING_MAX_EVENT_RATE
+            #   value: "50000" # default 20KPS for MDSD, for large cluster validate 50KPS
             - name: EMIT_CACHE_TELEMETRY
               value: "true" # enable only debug or test purpose and disable for prod
             - name: AKS_RESOURCE_ID

@@ -25,7 +25,7 @@ omsagent:
     tagWindows: "win-ciprod01312022"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "16.0.0-0"
-    agentVersion: "azure-mdsd-1.14.2"
+    agentVersion: "azure-mdsd-1..17.0"
     winAgentVersion: "0.0.0-0" # there is no base agent version for windows agent
 
   # The priority used by the omsagent priority class for the daemonset pods

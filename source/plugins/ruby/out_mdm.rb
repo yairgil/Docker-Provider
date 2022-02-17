@@ -43,7 +43,6 @@ module Fluent::Plugin
 
       @data_hash = {}
       @parsed_token_uri = nil
-      @http_client = nil
       @token_expiry_time = Time.now
       @cached_access_token = String.new
       @last_post_attempt_time = Time.now
@@ -62,6 +61,7 @@ module Fluent::Plugin
       @mdm_exceptions_hash = {}
       @mdm_exceptions_count = 0
       @mdm_exception_telemetry_time_tracker = DateTime.now.to_time.to_i
+      @proxy = nil
     end
 
     def configure(conf)
@@ -97,18 +97,7 @@ module Fluent::Plugin
           end
           @@post_request_url = @@post_request_url_template % { aks_region: aks_region, aks_resource_id: aks_resource_id }
           @post_request_uri = URI.parse(@@post_request_url)
-          if (!!@isArcK8sCluster)
-            proxy = (ProxyUtils.getProxyConfiguration)
-            if proxy.nil? || proxy.empty?
-              @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
-            else
-              @log.info "Proxy configured on this cluster: #{aks_resource_id}"
-              @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
-            end
-          else
-            @http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
-          end
-          @http_client.use_ssl = true
+          @proxy = (ProxyUtils.getProxyConfiguration)
           @log.info "POST Request url: #{@@post_request_url}"
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPluginStart", {})
 
@@ -327,6 +316,13 @@ module Fluent::Plugin
         else
           access_token = get_access_token
         end
+        if @proxy.nil? || @proxy.empty?
+          http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
+        else
+          @log.info "Proxy configured on this cluster: #{aks_resource_id}"
+          http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass])
+        end
+        http_client.use_ssl = true
         requestId = SecureRandom.uuid.to_s
         request = Net::HTTP::Post.new(@post_request_uri.request_uri)
         request["Content-Type"] = "application/x-ndjson"
@@ -335,7 +331,7 @@ module Fluent::Plugin
 
         request.body = post_body.join("\n")
         @log.info "REQUEST BODY SIZE #{request.body.bytesize / 1024} for requestId: #{requestId}"
-        response = @http_client.request(request)
+        response = http_client.request(request)
         response.value # this throws for non 200 HTTP response code
         @log.info "HTTP Post Response Code : #{response.code} for requestId: #{requestId}"
         if @last_telemetry_sent_time.nil? || @last_telemetry_sent_time + 60 * 60 < Time.now
