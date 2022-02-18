@@ -80,9 +80,10 @@ checkAgentOnboardingStatus() {
       fi
 }
 
-configureFluentDConfigForRS() {
+setReplicaSetSpecificConfig() {
       echo "num of fluentd workers:${NUM_OF_FLUENTD_WORKERS}"
-      export FLUENTD_FLUSH_INTERVAL="20s" # default 20s, evaluate if required lower flush interval at high scale
+      export FLUENTD_FLUSH_INTERVAL="20s"
+      export FLUENTD_QUEUE_LIMIT_LENGTH="20" # default
       case $NUM_OF_FLUENTD_WORKERS in
       5)
             export NUM_OF_FLUENTD_WORKERS=5
@@ -91,7 +92,9 @@ configureFluentDConfigForRS() {
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=2
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=1
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-            #export FLUENTD_FLUSH_INTERVAL="5s"
+            export FLUENTD_FLUSH_INTERVAL="5s"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="50"
+            export MONITORING_MAX_EVENT_RATE="50000" # default MDSD EPS is 20K which is not enough for large scale
             ;;
       4)
             export NUM_OF_FLUENTD_WORKERS=4
@@ -100,7 +103,9 @@ configureFluentDConfigForRS() {
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=1
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-            #export FLUENTD_FLUSH_INTERVAL="10s"
+            export FLUENTD_FLUSH_INTERVAL="10s"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="40"
+            export MONITORING_MAX_EVENT_RATE="40000" # default MDSD EPS is 20K which is not enough for large scale
             ;;
       3)
             export NUM_OF_FLUENTD_WORKERS=3
@@ -109,7 +114,9 @@ configureFluentDConfigForRS() {
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-           #export FLUENTD_FLUSH_INTERVAL="15s"
+            export FLUENTD_FLUSH_INTERVAL="15s"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="30"
+            export MONITORING_MAX_EVENT_RATE="30000" # default MDSD EPS is 20K which is not enough for large scale
             ;;
       2)
             export NUM_OF_FLUENTD_WORKERS=2
@@ -118,7 +125,9 @@ configureFluentDConfigForRS() {
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-            #export FLUENTD_FLUSH_INTERVAL="20s"
+            export FLUENTD_FLUSH_INTERVAL="20s"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="20"
+            export MONITORING_MAX_EVENT_RATE="25000" # default MDSD EPS is 20K which is not enough for large scale
             ;;
 
       *)
@@ -128,7 +137,8 @@ configureFluentDConfigForRS() {
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
-            #export FLUENTD_FLUSH_INTERVAL="20s"
+            export FLUENTD_FLUSH_INTERVAL="20s"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="20"
             ;;
       esac
       echo "export NUM_OF_FLUENTD_WORKERS=$NUM_OF_FLUENTD_WORKERS" >>~/.bashrc
@@ -139,6 +149,12 @@ configureFluentDConfigForRS() {
       echo "export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=$FLUENTD_POD_MDM_INVENTORY_WORKER_ID" >>~/.bashrc
       echo "export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=$FLUENTD_POD_MDM_INVENTORY_WORKER_ID" >>~/.bashrc
       echo "export FLUENTD_FLUSH_INTERVAL=$FLUENTD_FLUSH_INTERVAL" >>~/.bashrc
+      echo "export FLUENTD_QUEUE_LIMIT_LENGTH=$FLUENTD_QUEUE_LIMIT_LENGTH" >>~/.bashrc
+
+      if [ ! -z $MONITORING_MAX_EVENT_RATE ]; then
+        echo "export MONITORING_MAX_EVENT_RATE=$MONITORING_MAX_EVENT_RATE" >>~/.bashrc
+        echo "Configured MDSD Max EPS is: ${MONITORING_MAX_EVENT_RATE}"
+      fi
 
       source ~/.bashrc
 
@@ -148,6 +164,7 @@ configureFluentDConfigForRS() {
       echo "pod mdm inventory worker id: ${FLUENTD_POD_MDM_INVENTORY_WORKER_ID}"
       echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
       echo "fluentd flush interval: ${FLUENTD_FLUSH_INTERVAL}"
+      echo "fluentd buffer plugin queue length=$FLUENTD_QUEUE_LIMIT_LENGTH" >>~/.bashrc
 }
 
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
@@ -581,6 +598,10 @@ echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >>~/.bashrc
 
+if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ]; then
+      echo "*** set applicable replicaset config ***"
+      setReplicaSetSpecificConfig
+fi
 #skip imds lookup since not used either legacy or aad msi auth path
 export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
 echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >>~/.bashrc
@@ -665,10 +686,8 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             echo "*** starting fluentd v1 in daemonset"
             fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
-            echo "*** configure fluentd config"
-            configureFluentDConfigForRS
-            echo "*** starting fluentd v1 in replicaset"
-            fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+           echo "*** starting fluentd v1 in replicaset"
+           fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       fi
 fi
 

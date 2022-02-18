@@ -112,9 +112,9 @@ module Fluent::Plugin
               end
             end
           end
-          @log.info "in_kube_podmdminventory:parse_and_emit_records:Sending pod inventory mdm records to out_mdm"
+          @log.info "in_kube_podmdminventory:parse_and_emit_records:Sending pod inventory mdm records to out_mdm @ #{Time.now.utc.iso8601}"
           pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
-          @log.info "in_kube_podmdminventory:parse_and_emit_records:pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size}"
+          @log.info "in_kube_podmdminventory:parse_and_emit_records:pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size} @ #{Time.now.utc.iso8601}"
           mdm_pod_inventory_es = Fluent::MultiEventStream.new
           pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
             mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
