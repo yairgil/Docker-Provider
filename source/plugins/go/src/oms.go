@@ -1224,7 +1224,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if logEntryTimeStamp != "" {
 			loggedTime, e := time.Parse(time.RFC3339, logEntryTimeStamp)
 			if e != nil {
-				message := fmt.Sprintf("Error while converting logEntryTimeStamp for telemetry purposes: %s", e.Error())
+				message := fmt.Sprintf("timeexception - Error while converting logEntryTimeStamp for telemetry purposes: %s, logentrytimestamp: %s, logentry: %s, containerid: %s, k8sPodName:%s, namespace:%s",
+					e.Error(), logEntryTimeStamp, logEntry, containerID, k8sPodName, k8sNamespace)
 				Log(message)
 				SendException(message)
 			} else {
