@@ -35,7 +35,7 @@ tar -zxvf telegraf-1.20.3_linux_amd64.tar.gz
 
 mv /opt/telegraf-1.20.3/usr/bin/telegraf /opt/telegraf
 
-chmod 777 /opt/telegraf
+chmod 554 /opt/telegraf
 
 # Use wildcard version so that it doesnt require to touch this file
 /$TMPDIR/docker-cimprov-*.*.*-*.x86_64.sh --install
