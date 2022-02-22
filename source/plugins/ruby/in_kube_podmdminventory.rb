@@ -24,6 +24,7 @@ module Fluent::Plugin
       require_relative "oms_common"
       require_relative "omslog"
       require_relative "constants"
+      require_relative "CustomMetricsUtils"
     end
 
     config_param :run_interval, :time, :default => 60
@@ -37,6 +38,7 @@ module Fluent::Plugin
       if @run_interval
         super
         $log.info("in_kube_podmdminventory::start @ #{Time.now.utc.iso8601}")
+        @isCustomMetricsAvailability = CustomMetricsUtils.check_custom_metrics_availability
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -57,9 +59,13 @@ module Fluent::Plugin
 
     def enumerate
       begin
-        currentTime = Time.now
-        batchTime = currentTime.utc.iso8601
-        parse_and_emit_records(batchTime)
+        if !@isCustomMetricsAvailability
+          $log.warn "in_kube_podmdminventory::enumerate:skipping since custom metrics not available either for this cluster type or the region"
+        else
+          currentTime = Time.now
+          batchTime = currentTime.utc.iso8601
+          parse_and_emit_records(batchTime)
+        end
       rescue => errorStr
         $log.warn "in_kube_podmdminventory::enumerate:Failed in enumerate: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
@@ -120,7 +126,7 @@ module Fluent::Plugin
             recordCount = pod_inventory_mdm_records.length
             while recordCount > 0
               record_array = pod_inventory_mdm_records.take(Constants::POD_MDM_EMIT_STREAM_BATCH_SIZE)
-              time_array = Array.new(records.length) { batchTime }
+              time_array = Array.new(record_array.length) { batchTime }
               mdm_pod_inventory_es = Fluent::MultiEventStream.new(time_array, record_array)
               router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es)
               pod_inventory_mdm_records = pod_inventory_mdm_records.drop(Constants::POD_MDM_EMIT_STREAM_BATCH_SIZE)

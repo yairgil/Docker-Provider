@@ -26,6 +26,7 @@ module Fluent::Plugin
       require_relative "omslog"
       require_relative "constants"
       require_relative "extension_utils"
+      require_relative "CustomMetricsUtils"
 
       # refer tomlparser-agent-config for updating defaults
       # this configurable via configmap
@@ -348,16 +349,18 @@ module Fluent::Plugin
         end
 
         if continuationToken.nil? #no more chunks in this batch to be sent, write all mdm pod inventory records to send
-          begin
-            if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
-              mdmPodRecordsJson = @mdmPodRecords.to_json
-              @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
-              @log.info "in_kube_podinventory::parse_and_emit_records:Start:writeMDMRecords @ #{Time.now.utc.iso8601}"
-              writeMDMRecords(mdmPodRecordsJson)
-              @log.info "in_kube_podinventory::parse_and_emit_records:End:writeMDMRecords @ #{Time.now.utc.iso8601}"
+          if CustomMetricsUtils.check_custom_metrics_availability
+            begin
+              if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
+                mdmPodRecordsJson = @mdmPodRecords.to_json
+                @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
+                @log.info "in_kube_podinventory::parse_and_emit_records:Start:writeMDMRecords @ #{Time.now.utc.iso8601}"
+                writeMDMRecords(mdmPodRecordsJson)
+                @log.info "in_kube_podinventory::parse_and_emit_records:End:writeMDMRecords @ #{Time.now.utc.iso8601}"
+              end
+            rescue => err
+              @log.warn "in_kube_podinventory::parse_and_emit_records: failed to write MDMRecords with an error: #{err} @ #{Time.now.utc.iso8601}"
             end
-          rescue => err
-            @log.warn "in_kube_podinventory::parse_and_emit_records: failed to write MDMRecords with an error: #{err} @ #{Time.now.utc.iso8601}"
           end
         end
 

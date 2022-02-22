@@ -166,8 +166,8 @@ setReplicaSetSpecificConfig() {
       echo "pod mdm inventory worker id: ${FLUENTD_POD_MDM_INVENTORY_WORKER_ID}"
       echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
       echo "fluentd flush interval: ${FLUENTD_FLUSH_INTERVAL}"
-      echo "fluentd out mdm flush thread count: $FLUENTD_MDM_FLUSH_THREAD_COUNT" >>~/.bashrc
-      echo "fluentd buffer plugin queue length: $FLUENTD_QUEUE_LIMIT_LENGTH" >>~/.bashrc
+      echo "fluentd buffer plugin queue length: ${FLUENTD_QUEUE_LIMIT_LENGTH}"
+      echo "fluentd out mdm flush thread count: ${FLUENTD_MDM_FLUSH_THREAD_COUNT}"
 }
 
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
