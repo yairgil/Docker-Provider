@@ -141,6 +141,10 @@ module Fluent::Plugin
       end
     end
 
+    def multi_workers_ready?
+      return true
+    end
+
     # get the access token only if the time to expiry is less than 5 minutes and get_access_token_backoff has expired
     def get_access_token
       if (Time.now > @get_access_token_backoff_expiry)

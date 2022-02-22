@@ -115,18 +115,21 @@ module Fluent::Plugin
           @log.info "in_kube_podmdminventory:parse_and_emit_records:Sending pod inventory mdm records to out_mdm @ #{Time.now.utc.iso8601}"
           pod_inventory_mdm_records = @inventoryToMdmConvertor.get_pod_inventory_mdm_records(batchTime)
           @log.info "in_kube_podmdminventory:parse_and_emit_records:pod_inventory_mdm_records.size #{pod_inventory_mdm_records.size} @ #{Time.now.utc.iso8601}"
-          mdm_pod_inventory_es = Fluent::MultiEventStream.new
-          pod_inventory_mdm_records.each { |pod_inventory_mdm_record|
-            mdm_pod_inventory_es.add(batchTime, pod_inventory_mdm_record) if pod_inventory_mdm_record
-            if mdm_pod_inventory_es.count >= 5000 # 5k records of MDM is ~2MB and each record is ~400 bytes
+          if !pod_inventory_mdm_records.nil? && pod_inventory_mdm_records.length > 0
+            startTime = (Time.now.to_f * 1000).to_i
+            recordCount = pod_inventory_mdm_records.length
+            while recordCount > 0
+              record_array = pod_inventory_mdm_records.take(Constants::POD_MDM_EMIT_STREAM_BATCH_SIZE)
+              time_array = Array.new(records.length) { batchTime }
+              mdm_pod_inventory_es = Fluent::MultiEventStream.new(time_array, record_array)
               router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es)
-              mdm_pod_inventory_es = Fluent::MultiEventStream.new
+              pod_inventory_mdm_records = pod_inventory_mdm_records.drop(Constants::POD_MDM_EMIT_STREAM_BATCH_SIZE)
+              recordCount = pod_inventory_mdm_records.length
+              time_array = nil
             end
-          } if pod_inventory_mdm_records
-          if mdm_pod_inventory_es.count > 0
-            router.emit_stream(@@MDMKubePodInventoryTag, mdm_pod_inventory_es)
+            flushTimeMs = (Time.now.to_f * 1000).to_i - startTime
+            @log.info "in_kube_podmdminventory:parse_and_emit_records:timetaken to flush all Pod MDM records: #{flushTimeMs} @ #{Time.now.utc.iso8601}"
           end
-          mdm_pod_inventory_es = nil
         end
       rescue => errorStr
         $log.warn "in_kube_podmdminventory:parse_and_emit_records: failed with an error #{errorStr}"

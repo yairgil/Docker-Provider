@@ -129,7 +129,7 @@ class Inventory2MdmConvertor
             controllerNameDimValue: podControllerNameDimValue,
             podCountMetricValue: value,
           }
-          records.push(JSON.parse(record))
+          records.push(Yajl::Parser.parse(record))
         }
 
         #Add pod metric records

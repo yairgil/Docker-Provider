@@ -141,4 +141,6 @@ class Constants
   MDM_POD_INVENTORY_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/MDMPodInventoryState.json"
   # FileName for NodeAllocatable Records state
   NODE_ALLOCATABLE_RECORDS_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/NodeAllocatableRecords.json"
+  # Emit Stream size for Pod MDM metric
+  POD_MDM_EMIT_STREAM_BATCH_SIZE = 5000 # each record is 200 bytes, 5k records ~2MB
 end
