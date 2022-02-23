@@ -84,6 +84,7 @@ setReplicaSetSpecificConfig() {
       echo "num of fluentd workers:${NUM_OF_FLUENTD_WORKERS}"
       export FLUENTD_FLUSH_INTERVAL="20s"
       export FLUENTD_QUEUE_LIMIT_LENGTH="20" # default
+      export FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH="20"
       export FLUENTD_MDM_FLUSH_THREAD_COUNT="5" # default
       case $NUM_OF_FLUENTD_WORKERS in
       5)
@@ -94,7 +95,8 @@ setReplicaSetSpecificConfig() {
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=1
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
             export FLUENTD_FLUSH_INTERVAL="5s"
-            export FLUENTD_QUEUE_LIMIT_LENGTH="60"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="50"
+            export FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH="100" # kube perf is high volume so would need large queue limit to avoid data loss
             export MONITORING_MAX_EVENT_RATE="100000" # default MDSD EPS is 20K which is not enough for large scale
             export FLUENTD_MDM_FLUSH_THREAD_COUNT="20" # if the pod mdm inventory running on separate worker
             ;;
@@ -106,7 +108,8 @@ setReplicaSetSpecificConfig() {
             export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
             export FLUENTD_FLUSH_INTERVAL="10s"
-            export FLUENTD_QUEUE_LIMIT_LENGTH="50"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="40"
+            export FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH="80" # kube perf is high volume so would need large queue limit
             export MONITORING_MAX_EVENT_RATE="80000" # default MDSD EPS is 20K which is not enough for large scale
             ;;
       3)
@@ -117,7 +120,8 @@ setReplicaSetSpecificConfig() {
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
             export FLUENTD_FLUSH_INTERVAL="15s"
-            export FLUENTD_QUEUE_LIMIT_LENGTH="40"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="30"
+            export FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH="60" # kube perf is high volume so would need large queue limit
             export MONITORING_MAX_EVENT_RATE="60000" # default MDSD EPS is 20K which is not enough for large scale
             ;;
       2)
@@ -128,7 +132,8 @@ setReplicaSetSpecificConfig() {
             export FLUENTD_EVENT_INVENTORY_WORKER_ID=0
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
             export FLUENTD_FLUSH_INTERVAL="20s"
-            export FLUENTD_QUEUE_LIMIT_LENGTH="30"
+            export FLUENTD_QUEUE_LIMIT_LENGTH="20"
+            export FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH="40" # kube perf is high volume so would need large queue limit
             export MONITORING_MAX_EVENT_RATE="40000" # default MDSD EPS is 20K which is not enough for large scale
             ;;
 
@@ -141,6 +146,7 @@ setReplicaSetSpecificConfig() {
             export FLUENTD_OTHER_INVENTORY_WORKER_ID=0
             export FLUENTD_FLUSH_INTERVAL="20s"
             export FLUENTD_QUEUE_LIMIT_LENGTH="20"
+            export FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH="20"
             ;;
       esac
       echo "export NUM_OF_FLUENTD_WORKERS=$NUM_OF_FLUENTD_WORKERS" >>~/.bashrc
@@ -150,6 +156,7 @@ setReplicaSetSpecificConfig() {
       echo "export FLUENTD_POD_MDM_INVENTORY_WORKER_ID=$FLUENTD_POD_MDM_INVENTORY_WORKER_ID" >>~/.bashrc
       echo "export FLUENTD_OTHER_INVENTORY_WORKER_ID=$FLUENTD_OTHER_INVENTORY_WORKER_ID" >>~/.bashrc
       echo "export FLUENTD_FLUSH_INTERVAL=$FLUENTD_FLUSH_INTERVAL" >>~/.bashrc
+      echo "export FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH=$FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH" >>~/.bashrc
       echo "export FLUENTD_QUEUE_LIMIT_LENGTH=$FLUENTD_QUEUE_LIMIT_LENGTH" >>~/.bashrc
       echo "export FLUENTD_MDM_FLUSH_THREAD_COUNT=$FLUENTD_MDM_FLUSH_THREAD_COUNT" >>~/.bashrc
 
@@ -166,7 +173,8 @@ setReplicaSetSpecificConfig() {
       echo "pod mdm inventory worker id: ${FLUENTD_POD_MDM_INVENTORY_WORKER_ID}"
       echo "other inventory worker id: ${FLUENTD_OTHER_INVENTORY_WORKER_ID}"
       echo "fluentd flush interval: ${FLUENTD_FLUSH_INTERVAL}"
-      echo "fluentd buffer plugin queue length: ${FLUENTD_QUEUE_LIMIT_LENGTH}"
+      echo "fluentd kube perf buffer plugin queue length: ${FLUENTD_KUBE_PERF_QUEUE_LIMIT_LENGTH}"
+      echo "fluentd buffer plugin queue length for all other non kube perf plugin: ${FLUENTD_QUEUE_LIMIT_LENGTH}"
       echo "fluentd out mdm flush thread count: ${FLUENTD_MDM_FLUSH_THREAD_COUNT}"
 }
 
