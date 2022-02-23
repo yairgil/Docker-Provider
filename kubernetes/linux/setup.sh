@@ -17,7 +17,7 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 
 #install oneagent - Official bits (10/7/2021)
 if [ "${ARCH}" != "arm64" ]; then
-    wget "https://adme2epublic.blob.core.windows.net/publicfiles/azure-mdsd_1.17.0-build.develop.2706_x86_64.deb" -O azure-mdsd.deb
+    wget "https://github.com/microsoft/Docker-Provider/releases/download/1.17.0/azure-mdsd_1.17.0-build.master.354_x86_64.deb" -O azure-mdsd.deb
 else
     wget "https://adme2epublic.blob.core.windows.net/publicfiles/azure-mdsd_1.17.0-build.develop.2717_aarch64.deb" -O azure-mdsd.deb
 fi
