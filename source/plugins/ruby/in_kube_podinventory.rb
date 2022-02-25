@@ -758,7 +758,7 @@ module Fluent::Plugin
               end
               while (!continuationToken.nil? && !continuationToken.empty?)
                 resourceUri = "pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}"
-                continuationToken, podInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
+                continuationToken, podInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationTokenV2(resourceUri)
                 if responseCode.nil? || responseCode != "200"
                   $log.warn("in_kube_podinventory::watch_pods: getting pods from Kube API: #{resourceUri} failed with statuscode: #{responseCode} @ #{Time.now.utc.iso8601}")
                   podsResourceVersion = nil
