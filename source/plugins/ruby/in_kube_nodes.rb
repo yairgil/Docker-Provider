@@ -603,39 +603,17 @@ module Fluent::Plugin
               @nodeItemsCache.clear()
             }
             continuationToken = nil
-            $log.info("in_kube_nodes::watch_nodes:Getting nodes from Kube API since nodesResourceVersion is #{nodesResourceVersion} @ #{Time.now.utc.iso8601}")
             resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
-            continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
-            $log.info("in_kube_nodes::watch_nodes:Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-            if (!nodeInventory.nil? && !nodeInventory.empty?)
-              nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
-              if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-                $log.info("in_kube_nodes::watch_nodes: number of node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
-                nodeInventory["items"].each do |item|
-                  key = item["metadata"]["uid"]
-                  if !key.nil? && !key.empty?
-                    nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
-                    if !nodeItem.nil? && !nodeItem.empty?
-                      @nodeCacheMutex.synchronize {
-                        @nodeItemsCache[key] = nodeItem
-                      }
-                    else
-                      $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
-                    end
-                  else
-                    $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty  @ #{Time.now.utc.iso8601}"
-                  end
-                end
-              end
+            $log.info("in_kube_nodes::watch_nodes:Getting nodes from Kube API: #{resourceUri} @ #{Time.now.utc.iso8601}")
+            continuationToken, nodeInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationTokenV2(resourceUri)
+            if responseCode.nil? || responseCode != "200"
+              $log.warn("in_kube_nodes::watch_nodes:Getting nodes from Kube API: #{resourceUri} failed with statuscode: #{responseCode} @ #{Time.now.utc.iso8601}")
             else
-              $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory @ #{Time.now.utc.iso8601}"
-            end
-            while (!continuationToken.nil? && !continuationToken.empty?)
-              continuationToken, nodeInventory = KubernetesApiClient.getResourcesAndContinuationToken(resourceUri + "&continue=#{continuationToken}")
+              $log.info("in_kube_nodes::watch_nodes:Done getting nodes from Kube API: #{resourceUri} @ #{Time.now.utc.iso8601}")
               if (!nodeInventory.nil? && !nodeInventory.empty?)
                 nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
                 if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-                  $log.info("in_kube_nodes::watch_nodes : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+                  $log.info("in_kube_nodes::watch_nodes: number of node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
                   nodeInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
@@ -653,13 +631,45 @@ module Fluent::Plugin
                   end
                 end
               else
-                $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
+                $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory @ #{Time.now.utc.iso8601}"
+              end
+              while (!continuationToken.nil? && !continuationToken.empty?)
+                continuationToken, nodeInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationTokenV2(resourceUri + "&continue=#{continuationToken}")
+                if responseCode.nil? || responseCode != "200"
+                  $log.warn("in_kube_nodes::watch_nodes:Getting nodes from Kube API: #{resourceUri}&continue=#{continuationToken} failed with statuscode: #{responseCode} @ #{Time.now.utc.iso8601}")
+                  nodesResourceVersion = nil # break, if any of the pagination call failed so that full cache can be rebuild with LIST again
+                  break
+                else
+                  if (!nodeInventory.nil? && !nodeInventory.empty?)
+                    nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
+                    if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
+                      $log.info("in_kube_nodes::watch_nodes : number of node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+                      nodeInventory["items"].each do |item|
+                        key = item["metadata"]["uid"]
+                        if !key.nil? && !key.empty?
+                          nodeItem = KubernetesApiClient.getOptimizedItem("nodes", item)
+                          if !nodeItem.nil? && !nodeItem.empty?
+                            @nodeCacheMutex.synchronize {
+                              @nodeItemsCache[key] = nodeItem
+                            }
+                          else
+                            $log.warn "in_kube_nodes::watch_nodes:Received nodeItem nil or empty  @ #{Time.now.utc.iso8601}"
+                          end
+                        else
+                          $log.warn "in_kube_nodes::watch_nodes:Received node uid either nil or empty  @ #{Time.now.utc.iso8601}"
+                        end
+                      end
+                    end
+                  else
+                    $log.warn "in_kube_nodes::watch_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
+                  end
+                end
               end
             end
           end
           if nodesResourceVersion.nil? || nodesResourceVersion.empty? || nodesResourceVersion == "0"
             # https://github.com/kubernetes/kubernetes/issues/74022
-            $log.warn("in_kube_nodes::watch_nodes:received nodesResourceVersion: #{nodesResourceVersion} either nil or empty or 0 @ #{Time.now.utc.iso8601}")
+            $log.warn("in_kube_nodes::watch_nodes:received nodesResourceVersion either nil or empty or 0 @ #{Time.now.utc.iso8601}")
             nodesResourceVersion = nil # for the LIST to happen again
             sleep(30) # do not overwhelm the api-server if api-server broken
           else

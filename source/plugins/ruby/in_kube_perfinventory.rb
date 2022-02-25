@@ -252,38 +252,17 @@ module Fluent::Plugin
               @podItemsCache.clear()
             }
             continuationToken = nil
-            $log.info("in_kube_perfinventory::watch_pods:Getting pods from Kube API since podsResourceVersion is #{podsResourceVersion}  @ #{Time.now.utc.iso8601}")
-            continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}")
-            $log.info("in_kube_perfinventory::watch_pods:Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
-            if (!podInventory.nil? && !podInventory.empty?)
-              podsResourceVersion = podInventory["metadata"]["resourceVersion"]
-              if (podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-                $log.info("in_kube_perfinventory::watch_pods:number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
-                podInventory["items"].each do |item|
-                  key = item["metadata"]["uid"]
-                  if !key.nil? && !key.empty?
-                    podItem = KubernetesApiClient.getOptimizedItem("pods-perf", item)
-                    if !podItem.nil? && !podItem.empty?
-                      @podCacheMutex.synchronize {
-                        @podItemsCache[key] = podItem
-                      }
-                    else
-                      $log.warn "in_kube_perfinventory::watch_pods:Received podItem either empty or nil  @ #{Time.now.utc.iso8601}"
-                    end
-                  else
-                    $log.warn "in_kube_perfinventory::watch_pods:Received poduid either nil or empty  @ #{Time.now.utc.iso8601}"
-                  end
-                end
-              end
+            resourceUri = "pods?limit=#{@PODS_CHUNK_SIZE}"
+            $log.info("in_kube_perfinventory::watch_pods:Getting pods from Kube API: #{resourceUri}  @ #{Time.now.utc.iso8601}")
+            continuationToken, podInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationTokenV2(resourceUri)
+            if responseCode.nil? || responseCode != "200"
+              $log.warn("in_kube_perfinventory::watch_pods:Getting pods from Kube API: #{resourceUri} failed with statuscode: #{responseCode} @ #{Time.now.utc.iso8601}")
             else
-              $log.warn "in_kube_perfinventory::watch_pods:Received empty podInventory"
-            end
-            while (!continuationToken.nil? && !continuationToken.empty?)
-              continuationToken, podInventory = KubernetesApiClient.getResourcesAndContinuationToken("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+              $log.info("in_kube_perfinventory::watch_pods:Done getting pods from Kube API:#{resourceUri} @ #{Time.now.utc.iso8601}")
               if (!podInventory.nil? && !podInventory.empty?)
                 podsResourceVersion = podInventory["metadata"]["resourceVersion"]
                 if (podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
-                  $log.info("in_kube_perfinventory::watch_pods:number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+                  $log.info("in_kube_perfinventory::watch_pods:number of pod items :#{podInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
                   podInventory["items"].each do |item|
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
@@ -293,7 +272,7 @@ module Fluent::Plugin
                           @podItemsCache[key] = podItem
                         }
                       else
-                        $log.warn "in_kube_perfinventory::watch_pods:Received podItem is empty or nil  @ #{Time.now.utc.iso8601}"
+                        $log.warn "in_kube_perfinventory::watch_pods:Received podItem either empty or nil  @ #{Time.now.utc.iso8601}"
                       end
                     else
                       $log.warn "in_kube_perfinventory::watch_pods:Received poduid either nil or empty  @ #{Time.now.utc.iso8601}"
@@ -301,7 +280,40 @@ module Fluent::Plugin
                   end
                 end
               else
-                $log.warn "in_kube_perfinventory::watch_pods:Received empty podInventory  @ #{Time.now.utc.iso8601}"
+                $log.warn "in_kube_perfinventory::watch_pods:Received empty podInventory"
+              end
+              while (!continuationToken.nil? && !continuationToken.empty?)
+                resourceUri = "pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}"
+                continuationToken, podInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationTokenV2(resourceUri)
+                if responseCode.nil? || responseCode != "200"
+                  $log.warn("in_kube_perfinventory::watch_pods:Getting pods from Kube API: #{resourceUri} failed with statuscode: #{responseCode} @ #{Time.now.utc.iso8601}")
+                  podsResourceVersion = nil
+                  break  # break, if any of the pagination call failed so that full cache will rebuild with LIST again
+                else
+                  if (!podInventory.nil? && !podInventory.empty?)
+                    podsResourceVersion = podInventory["metadata"]["resourceVersion"]
+                    if (podInventory.key?("items") && !podInventory["items"].nil? && !podInventory["items"].empty?)
+                      $log.info("in_kube_perfinventory::watch_pods:number of pod items :#{podInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
+                      podInventory["items"].each do |item|
+                        key = item["metadata"]["uid"]
+                        if !key.nil? && !key.empty?
+                          podItem = KubernetesApiClient.getOptimizedItem("pods-perf", item)
+                          if !podItem.nil? && !podItem.empty?
+                            @podCacheMutex.synchronize {
+                              @podItemsCache[key] = podItem
+                            }
+                          else
+                            $log.warn "in_kube_perfinventory::watch_pods:Received podItem is empty or nil  @ #{Time.now.utc.iso8601}"
+                          end
+                        else
+                          $log.warn "in_kube_perfinventory::watch_pods:Received poduid either nil or empty  @ #{Time.now.utc.iso8601}"
+                        end
+                      end
+                    end
+                  else
+                    $log.warn "in_kube_perfinventory::watch_pods:Received empty podInventory  @ #{Time.now.utc.iso8601}"
+                  end
+                end
               end
             end
           end
@@ -364,7 +376,7 @@ module Fluent::Plugin
                     $log.warn("in_kube_perfinventory::watch_pods:Unsupported event type #{notice["type"]} @ #{Time.now.utc.iso8601}")
                   end
                 end
-                $log.warn("in_kube_perfinventory::watch_pods:Watch connection got disconnected for pods with resourceversion: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
+                $log.warn("in_kube_perfinventory::watch_pods:Watch connection got disconnected for pods @ #{Time.now.utc.iso8601}")
               end
             rescue Net::ReadTimeout => errorStr
               ## This expected if there is no activity more than readtimeout value used in the connection

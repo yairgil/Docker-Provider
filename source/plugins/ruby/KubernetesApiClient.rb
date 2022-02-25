@@ -75,6 +75,39 @@ class KubernetesApiClient
       return response
     end
 
+    def getKubeResourceInfoV2(resource, api_group: nil)
+      headers = {}
+      response = nil
+      responseCode = nil
+      @Log.info "Getting Kube resource: #{resource}"
+      begin
+        resourceUri = getResourceUri(resource, api_group)
+        if !resourceUri.nil?
+          uri = URI.parse(resourceUri)
+          if !File.exist?(@@CaFile)
+            raise "#{@@CaFile} doesnt exist"
+          else
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
+              kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
+              kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
+              @Log.info "KubernetesAPIClient::getKubeResourceInfoV2 : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+              response = http.request(kubeApiRequest)
+              responseCode = response.code
+              @Log.info "KubernetesAPIClient::getKubeResourceInfoV2 : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+            end
+          end
+        end
+      rescue => error
+        @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.iso8601}")
+      end
+      if (!response.nil?)
+        if (!response.body.nil? && response.body.empty?)
+          @Log.warn("KubernetesAPIClient::getKubeResourceInfoV2 : Got empty response from Kube API for #{resource} @ #{Time.now.utc.iso8601}")
+        end
+      end
+      return responseCode, response
+    end
+
     def getTokenStr
       return @@TokenStr if !@@TokenStr.nil?
       begin
@@ -759,12 +792,37 @@ class KubernetesApiClient
       return metricValue
     end # getMetricNumericValue
 
+    def getResourcesAndContinuationTokenV2(uri, api_group: nil)
+      continuationToken = nil
+      resourceInventory = nil
+      responseCode = nil
+      begin
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2 : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
+        responseCode, resourceInfo = getKubeResourceInfoV2(uri, api_group: api_group)
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2 : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
+        if !responseCode.nil? && responseCode == "200" && !resourceInfo.nil?
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          resourceInventory = Yajl::Parser.parse(StringIO.new(resourceInfo.body))
+          @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2:End:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
+          resourceInfo = nil
+        end
+        if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
+          continuationToken = resourceInventory["metadata"]["continue"]
+        end
+      rescue => errorStr
+        @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2:Failed in get resources for #{uri} and continuation token: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        resourceInventory = nil
+      end
+      return continuationToken, resourceInventory, responseCode
+    end #getResourcesAndContinuationTokenV2
+
     def getResourcesAndContinuationToken(uri, api_group: nil)
       continuationToken = nil
       resourceInventory = nil
       begin
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
-        resourceInfo = getKubeResourceInfo(uri, api_group: api_group)
+        responseCode, resourceInfo = getKubeResourceInfo(uri, api_group: api_group)
         @Log.info "KubernetesApiClient::getResourcesAndContinuationToken : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
         if !resourceInfo.nil?
           @Log.info "KubernetesApiClient::getResourcesAndContinuationToken:Start:Parsing data for #{uri} using yajl @ #{Time.now.utc.iso8601}"
@@ -1107,7 +1165,7 @@ class KubernetesApiClient
               currentContainerStatus["restartCount"] = containerStatus["restartCount"]
               currentContainerStatus["state"] = containerStatus["state"]
               currentContainerStatus["lastState"] = containerStatus["lastState"]
-              if isWindowsPod
+              if isWindowsPodItem
                 currentContainerStatus["imageID"] = containerStatus["imageID"]
               end
               item["status"]["initContainerStatuses"].push(currentContainerStatus)
