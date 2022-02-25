@@ -634,7 +634,7 @@ spec:
               value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             # Add the below environment variable to true only in sidecar enabled regions, else set it to false
             - name: SIDECAR_SCRAPING_ENABLED
-              value: "false"
+              value: "true"
             - name: USING_AAD_MSI_AUTH
               value: "false"
           securityContext:
@@ -811,7 +811,7 @@ spec:
                fieldRef:
                  fieldPath: status.hostIP
           - name: SIDECAR_SCRAPING_ENABLED
-            value: "false"
+            value: "true"
           # Update this with the user assigned msi client id for omsagent
           - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
             value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
