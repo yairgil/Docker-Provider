@@ -48,5 +48,18 @@ class ProxyUtils
       # Convert nammed matches to a hash
       Hash[matches.names.map { |name| name.to_sym }.zip(matches.captures)]
     end
+
+    def isProxyCACertConfigured()
+      isProxyCACertExist = false
+      begin
+        proxy_cert_path = "/etc/omsagent-secret/PROXYCERT.crt"
+        if File.exist?(proxy_cert_path)
+          isProxyCACertExist = true
+        end
+      rescue => error
+        $log.warn("Failed to check the existence of Proxy CA cert '#{proxy_cert_path}'")
+      end
+      return isProxyCACertExist
+    end
   end
 end
