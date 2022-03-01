@@ -24,10 +24,19 @@ steps:
     echo "##vso[task.setvariable variable=datetime;]$datetime"
 
 - task: CopyFiles@2
+  displayName: "Copy ev2 deployment artifacts"
   inputs:
+    SourceFolder: "$(Build.SourcesDirectory)/deployment"
     Contents: |
-      deployment/**
-      .pipelines/*.sh
+      **/*
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+- task: CopyFiles@2
+  displayName: "Copy ev2 deployment scripts"
+  inputs:
+    SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
+    Contents: |
+      **/*.sh
     TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
 - task: AzureCLI@2
