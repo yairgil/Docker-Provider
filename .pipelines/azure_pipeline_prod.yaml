@@ -23,6 +23,13 @@ steps:
     datetime=$(date +'%Y%m%d%s')
     echo "##vso[task.setvariable variable=datetime;]$datetime"
 
+- task: CopyFiles@2
+  inputs:
+    Contents: |
+      deployment/**
+      .pipelines/*.sh
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
 - task: AzureCLI@2
   inputs:
     azureSubscription: ${{ variables.armServiceConnectionName }}
