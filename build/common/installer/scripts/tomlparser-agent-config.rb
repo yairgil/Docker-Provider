@@ -228,3 +228,37 @@ else
   puts "Exception while opening file for writing config environment variables"
   puts "****************End Config Processing********************"
 end
+
+def get_command_windows(env_variable_name, env_variable_value)
+  return "[System.Environment]::SetEnvironmentVariable(\"#{env_variable_name}\", \"#{env_variable_value}\", \"Process\")" + "\n" + "[System.Environment]::SetEnvironmentVariable(\"#{env_variable_name}\", \"#{env_variable_value}\", \"Machine\")" + "\n"
+end
+
+if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
+  # Write the settings to file, so that they can be set as environment variables
+  file = File.open("setagentenv.ps1", "w")
+
+  if !file.nil?
+    if @fbitFlushIntervalSecs > 0
+      commands = get_command_windows('FBIT_SERVICE_FLUSH_INTERVAL', @fbitFlushIntervalSecs)
+      file.write(commands)
+    end
+    if @fbitTailBufferChunkSizeMBs > 0
+      commands = get_command_windows('FBIT_TAIL_BUFFER_CHUNK_SIZE', @fbitTailBufferChunkSizeMBs)
+      file.write(commands)
+    end
+    if @fbitTailBufferMaxSizeMBs > 0
+      commands = get_command_windows('FBIT_TAIL_BUFFER_MAX_SIZE', @fbitTailBufferMaxSizeMBs)
+      file.write(commands)
+    end 
+    if @fbitTailMemBufLimitMBs > 0
+      commands = get_command_windows('FBIT_TAIL_MEM_BUF_LIMIT', @fbitTailMemBufLimitMBs)
+      file.write(commands)
+    end 
+    # Close file after writing all environment variables
+    file.close
+    puts "****************End Config Processing********************"
+  else
+    puts "Exception while opening file for writing config environment variables for WINDOWS LOG"
+    puts "****************End Config Processing********************"
+  end
+end

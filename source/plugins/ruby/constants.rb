@@ -119,7 +119,7 @@ class Constants
   KUBE_MON_AGENT_EVENTS_DATA_TYPE = "KUBE_MON_AGENT_EVENTS_BLOB"
   KUBE_HEALTH_DATA_TYPE = "KUBE_HEALTH_BLOB"
   CONTAINERLOGV2_DATA_TYPE = "CONTAINERINSIGHTS_CONTAINERLOGV2"
-  CONTAINERLOG_DATA_TYPE  = "CONTAINER_LOG_BLOB"
+  CONTAINERLOG_DATA_TYPE = "CONTAINER_LOG_BLOB"
 
   #ContainerInsights Extension (AMCS)
   CI_EXTENSION_NAME = "ContainerInsights"
@@ -136,4 +136,8 @@ class Constants
   # make sure both AKS and Arc K8s have same contract for imds host for windows
   # this makes easy transition for windows AMA since this being used for Arc in AMA already
   IMDS_ENDPOINT_HOST_WINDOWS_SIDECAR = "localhost:40342"
+
+  #This is for telemetry to track if any of the windows customer has any of the field size >= 64KB
+  #To evaluate switching to Windows AMA 64KB impacts any existing customers
+  MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY = 65536
 end

@@ -30,12 +30,12 @@ sudo apt-get install jq=1.5+dfsg-2 -y
 #used to setcaps for ruby process to read /proc/env
 sudo apt-get install libcap2-bin -y
 
-wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_linux_amd64.tar.gz
-tar -zxvf telegraf-1.18.0_linux_amd64.tar.gz
+wget https://dl.influxdata.com/telegraf/releases/telegraf-1.20.3_linux_amd64.tar.gz
+tar -zxvf telegraf-1.20.3_linux_amd64.tar.gz
 
-mv /opt/telegraf-1.18.0/usr/bin/telegraf /opt/telegraf
+mv /opt/telegraf-1.20.3/usr/bin/telegraf /opt/telegraf
 
-chmod 777 /opt/telegraf
+chmod 544 /opt/telegraf
 
 # Use wildcard version so that it doesnt require to touch this file
 /$TMPDIR/docker-cimprov-*.*.*-*.x86_64.sh --install
@@ -44,7 +44,7 @@ chmod 777 /opt/telegraf
 wget -qO - https://packages.fluentbit.io/fluentbit.key | sudo apt-key add -
 sudo echo "deb https://packages.fluentbit.io/ubuntu/xenial xenial main" >> /etc/apt/sources.list
 sudo apt-get update
-sudo apt-get install td-agent-bit=1.6.8 -y
+sudo apt-get install td-agent-bit=1.7.8 -y
 
 # install ruby2.6
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
@@ -61,6 +61,7 @@ rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+rm -f $TMPDIR/telegraf-*.tar.gz
 
 # remove build dependencies
 sudo apt-get remove ruby2.6-dev gcc make -y
