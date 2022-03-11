@@ -23,6 +23,25 @@ steps:
     datetime=$(date +'%Y%m%d%s')
     echo "##vso[task.setvariable variable=datetime;]$datetime"
 
+    cd deployment/multiarch-agent-deployment/ServiceGroupRoot/Scripts
+    tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
+
+- task: CopyFiles@2
+  displayName: "Copy ev2 deployment artifacts"
+  inputs:
+    SourceFolder: "$(Build.SourcesDirectory)/deployment"
+    Contents: |
+      **/*
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+- task: CopyFiles@2
+  displayName: "Copy ev2 deployment scripts"
+  inputs:
+    SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
+    Contents: |
+      **/*.sh
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
 - task: AzureCLI@2
   inputs:
     azureSubscription: ${{ variables.armServiceConnectionName }}

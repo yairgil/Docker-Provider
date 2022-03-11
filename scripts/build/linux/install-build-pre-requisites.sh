@@ -16,7 +16,7 @@ install_go_lang()
     sudo tar -xvf go1.15.14.linux-amd64.tar.gz
     sudo mv -f go /usr/local
     echo "set file permission for go bin"
-    sudo chmod 777 /usr/local/go/bin
+    sudo chmod 744 /usr/local/go/bin
     echo "installation of go 1.15.14 completed."
     echo "installation of go 1.15.14 completed."
   fi

@@ -19,7 +19,7 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 if [ "${ARCH}" != "arm64" ]; then
     wget "https://github.com/microsoft/Docker-Provider/releases/download/1.17.0/azure-mdsd_1.17.0-build.master.354_x86_64.deb" -O azure-mdsd.deb
 else
-    wget "https://github.com/microsoft/Docker-Provider/releases/download/1.17.0-arm64-dev/azure-mdsd_1.17.0-build.develop.2717_aarch64.deb" -O azure-mdsd.deb
+    wget "https://github.com/microsoft/Docker-Provider/releases/download/1.17.1-arm64-master/azure-mdsd_1.17.1-build.master.366_aarch64.deb" -O azure-mdsd.deb
 fi
 
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
@@ -45,7 +45,7 @@ tar -zxvf telegraf-1.20.3_linux_$ARCH.tar.gz
 
 mv /opt/telegraf-1.20.3/usr/bin/telegraf /opt/telegraf
 
-chmod 777 /opt/telegraf
+chmod 544 /opt/telegraf
 
 # Use wildcard version so that it doesnt require to touch this file
 /$TMPDIR/docker-cimprov-*.*.*-*.*.sh --install

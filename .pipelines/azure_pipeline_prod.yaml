@@ -13,7 +13,7 @@ variables:
   armServiceConnectionName: 'ci-1es-acr-connection-prod'
   subscription: '30c56c3a-54da-46ea-b004-06eb33432687'
   containerRegistry: 'containerinsightsbuild'
-  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/official/build'
+  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/official/linux'
 
 steps:
 - bash: |
@@ -22,6 +22,25 @@ steps:
 
     datetime=$(date +'%Y%m%d%s')
     echo "##vso[task.setvariable variable=datetime;]$datetime"
+
+    cd deployment/multiarch-agent-deployment/ServiceGroupRoot/Scripts
+    tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
+
+- task: CopyFiles@2
+  displayName: "Copy ev2 deployment artifacts"
+  inputs:
+    SourceFolder: "$(Build.SourcesDirectory)/deployment"
+    Contents: |
+      **/*
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+- task: CopyFiles@2
+  displayName: "Copy ev2 deployment scripts"
+  inputs:
+    SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
+    Contents: |
+      **/*.sh
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
 - task: AzureCLI@2
   inputs:
