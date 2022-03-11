@@ -56,9 +56,10 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
           vuln-type: 'os,library'
-          skip-dirs: '/usr/sbin'
+          skip-dirs: '/opt/telegraf, /usr/sbin'
           exit-code: '1'
           timeout: '5m0s'
+          ignore-unfixed: true
   WINDOWS-build:
     runs-on: windows-2019
     steps:
