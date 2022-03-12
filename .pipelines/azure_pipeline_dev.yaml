@@ -29,7 +29,6 @@ steps:
 - task: CopyFiles@2
   displayName: "Copy ev2 deployment artifacts"
   inputs:
-    SourceFolder: "$(Build.SourcesDirectory)/deployment"
     Contents: |
       $(Build.SourcesDirectory)/deployment/**/*
       $(Build.SourcesDirectory)/.pipelines/**/*.sh
