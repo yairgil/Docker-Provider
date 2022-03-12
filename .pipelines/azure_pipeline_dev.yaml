@@ -31,15 +31,11 @@ steps:
   inputs:
     SourceFolder: "$(Build.SourcesDirectory)/deployment"
     Contents: |
-      **/*
-    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
-
-- task: CopyFiles@2
-  displayName: "Copy ev2 deployment scripts"
-  inputs:
-    SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
-    Contents: |
-      **/*.sh
+      $(Build.SourcesDirectory)/deployment/**/*
+      $(Build.SourcesDirectory)/.pipelines/**/*.sh
+      $(Build.SourcesDirectory)/kubernetes/*.yaml
+      $(Build.SourcesDirectory)/charts/**/*
+      $(Build.SourcesDirectory)/test/e2e/*.yaml
     TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
 - task: AzureCLI@2
