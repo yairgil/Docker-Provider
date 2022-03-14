@@ -175,7 +175,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             # convert the protocol prefix in lowercase for validation
             proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
             if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+               echo "-e error proxy endpoint should be in this format http(s)://<hostOrIP>:<port> or http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             fi
             # remove the protocol
             url="$(echo ${PROXY_ENDPOINT/$proto/})"
@@ -190,8 +190,8 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             # extract the port
             port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
 
-            if [ -z "$user" -o -z "$pwd" -o -z "$host" -o -z "$port" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+            if [ -z "$host" -o -z "$port" ]; then
+               echo "-e error proxy endpoint should be in this format http(s)://<hostOrIP>:<port> or http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             else
                echo "successfully validated provided proxy endpoint is valid and expected format"
             fi
@@ -202,19 +202,26 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             echo "export MDSD_PROXY_MODE=$MDSD_PROXY_MODE" >> ~/.bashrc
             export MDSD_PROXY_ADDRESS=$proto$hostport
             echo "export MDSD_PROXY_ADDRESS=$MDSD_PROXY_ADDRESS" >> ~/.bashrc
-            export MDSD_PROXY_USERNAME=$user
-            echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
-            export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
-            echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
-
-            #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
-            export MDSD_ODS_COMPRESSION_LEVEL=0
-            echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
+            if [ ! -z "$user" -a ! -z "$pwd" ]; then
+               export MDSD_PROXY_USERNAME=$user
+               echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
+               export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
+               echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
+            fi
+            if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+               export PROXY_CA_CERT=/etc/omsagent-secret/PROXYCERT.crt
+               echo "export PROXY_CA_CERT=$PROXY_CA_CERT" >> ~/.bashrc
+            fi
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
-         echo "Making curl request to oms endpint with domain: $domain and proxy: $PROXY_ENDPOINT"
-         curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+         if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+           echo "Making curl request to oms endpint with domain: $domain and proxy endpoint, and proxy CA cert"
+           curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT --proxy-cacert /etc/omsagent-secret/PROXYCERT.crt
+         else
+           echo "Making curl request to oms endpint with domain: $domain and proxy endpoint"
+           curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+         fi
       else
          echo "Making curl request to oms endpint with domain: $domain"
          curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
@@ -222,8 +229,13 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
 
       if [ $? -ne 0 ]; then
             if [ ! -z "$PROXY_ENDPOINT" ]; then
-               echo "Making curl request to ifconfig.co with proxy: $PROXY_ENDPOINT"
-               RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT`
+               if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+                  echo "Making curl request to ifconfig.co with proxy and proxy CA cert"
+                  RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT --proxy-cacert /etc/omsagent-secret/PROXYCERT.crt`
+               else
+                  echo "Making curl request to ifconfig.co with proxy"
+                  RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT`
+               fi
             else
                echo "Making curl request to ifconfig.co"
                RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co`
@@ -233,8 +245,13 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             else
                   # Retrying here to work around network timing issue
                   if [ ! -z "$PROXY_ENDPOINT" ]; then
-                    echo "ifconfig check succeeded, retrying oms endpoint with proxy..."
-                    curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+                    if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+                        echo "ifconfig check succeeded, retrying oms endpoint with proxy and proxy CA cert..."
+                        curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT --proxy-cacert /etc/omsagent-secret/PROXYCERT.crt
+                    else
+                       echo "ifconfig check succeeded, retrying oms endpoint with proxy..."
+                       curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+                    fi
                   else
                     echo "ifconfig check succeeded, retrying oms endpoint..."
                     curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
@@ -563,6 +580,7 @@ else
   echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
   export MDSD_FLUENT_SOCKET_PORT="29230"
   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+  # set the libcurl specific env and configuration
   export ENABLE_CURL_UPLOAD=true
   echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
   export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
