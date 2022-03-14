@@ -175,7 +175,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             # convert the protocol prefix in lowercase for validation
             proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
             if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+               echo "-e error proxy endpoint should be in this format http(s)://<hostOrIP>:<port> or http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             fi
             # remove the protocol
             url="$(echo ${PROXY_ENDPOINT/$proto/})"
@@ -190,8 +190,8 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             # extract the port
             port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
 
-            if [ -z "$user" -o -z "$pwd" -o -z "$host" -o -z "$port" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
+            if [ -z "$host" -o -z "$port" ]; then
+               echo "-e error proxy endpoint should be in this format http(s)://<hostOrIP>:<port> or http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             else
                echo "successfully validated provided proxy endpoint is valid and expected format"
             fi
@@ -202,19 +202,26 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             echo "export MDSD_PROXY_MODE=$MDSD_PROXY_MODE" >> ~/.bashrc
             export MDSD_PROXY_ADDRESS=$proto$hostport
             echo "export MDSD_PROXY_ADDRESS=$MDSD_PROXY_ADDRESS" >> ~/.bashrc
-            export MDSD_PROXY_USERNAME=$user
-            echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
-            export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
-            echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
-            
-            #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
-            export MDSD_ODS_COMPRESSION_LEVEL=0
-            echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
+            if [ ! -z "$user" -a ! -z "$pwd" ]; then
+               export MDSD_PROXY_USERNAME=$user
+               echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
+               export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
+               echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
+            fi
+            if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+               export PROXY_CA_CERT=/etc/omsagent-secret/PROXYCERT.crt
+               echo "export PROXY_CA_CERT=$PROXY_CA_CERT" >> ~/.bashrc
+            fi
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
-         echo "Making curl request to oms endpint with domain: $domain and proxy: $PROXY_ENDPOINT"
-         curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+         if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+           echo "Making curl request to oms endpint with domain: $domain and proxy endpoint, and proxy CA cert"
+           curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT --proxy-cacert /etc/omsagent-secret/PROXYCERT.crt
+         else
+           echo "Making curl request to oms endpint with domain: $domain and proxy endpoint"
+           curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+         fi
       else
          echo "Making curl request to oms endpint with domain: $domain"
          curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
@@ -222,8 +229,13 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
 
       if [ $? -ne 0 ]; then
             if [ ! -z "$PROXY_ENDPOINT" ]; then
-               echo "Making curl request to ifconfig.co with proxy: $PROXY_ENDPOINT"
-               RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT`
+               if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+                  echo "Making curl request to ifconfig.co with proxy and proxy CA cert"
+                  RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT --proxy-cacert /etc/omsagent-secret/PROXYCERT.crt`
+               else
+                  echo "Making curl request to ifconfig.co with proxy"
+                  RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co --proxy $PROXY_ENDPOINT`
+               fi
             else
                echo "Making curl request to ifconfig.co"
                RET=`curl --max-time 10 -s -o /dev/null -w "%{http_code}" ifconfig.co`
@@ -233,8 +245,13 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             else
                   # Retrying here to work around network timing issue
                   if [ ! -z "$PROXY_ENDPOINT" ]; then
-                    echo "ifconfig check succeeded, retrying oms endpoint with proxy..."
-                    curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+                    if [ -e "/etc/omsagent-secret/PROXYCERT.crt" ]; then
+                        echo "ifconfig check succeeded, retrying oms endpoint with proxy and proxy CA cert..."
+                        curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT --proxy-cacert /etc/omsagent-secret/PROXYCERT.crt
+                    else
+                       echo "ifconfig check succeeded, retrying oms endpoint with proxy..."
+                       curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest --proxy $PROXY_ENDPOINT
+                    fi
                   else
                     echo "ifconfig check succeeded, retrying oms endpoint..."
                     curl --max-time 10 https://$workspaceId.oms.$domain/AgentService.svc/LinuxAgentTopologyRequest
@@ -311,7 +328,7 @@ source ~/.bashrc
 
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       #Parse the configmap to set the right environment variables.
-      /usr/bin/ruby2.6 tomlparser.rb
+      /usr/bin/ruby2.7 tomlparser.rb
 
       cat config_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -322,7 +339,7 @@ fi
 #Parse the configmap to set the right environment variables for agent config.
 #Note > tomlparser-agent-config.rb has to be parsed first before td-agent-bit-conf-customizer.rb for fbit agent settings
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.6 tomlparser-agent-config.rb
+      /usr/bin/ruby2.7 tomlparser-agent-config.rb
 
       cat agent_config_env_var | while read line; do
             #echo $line
@@ -331,7 +348,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       source agent_config_env_var
 
       #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
-      /usr/bin/ruby2.6 tomlparser-npm-config.rb
+      /usr/bin/ruby2.7 tomlparser-npm-config.rb
 
       cat integration_npm_config_env_var | while read line; do
             #echo $line
@@ -342,11 +359,11 @@ fi
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
 if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.6 td-agent-bit-conf-customizer.rb
+      /usr/bin/ruby2.7 td-agent-bit-conf-customizer.rb
 fi
 
 #Parse the prometheus configmap to create a file with new custom settings.
-/usr/bin/ruby2.6 tomlparser-prom-customconfig.rb
+/usr/bin/ruby2.7 tomlparser-prom-customconfig.rb
 
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
@@ -380,7 +397,7 @@ fi
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             #Parse the agent configmap to create a file with new custom settings.
-            /usr/bin/ruby2.6 tomlparser-prom-agent-config.rb
+            /usr/bin/ruby2.7 tomlparser-prom-agent-config.rb
             #Sourcing config environment variable file if it exists
             if [ -e "side_car_fbit_config_env_var" ]; then
                   cat side_car_fbit_config_env_var | while read line; do
@@ -394,7 +411,7 @@ fi
 
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.6 tomlparser-mdm-metrics-config.rb
+      /usr/bin/ruby2.7 tomlparser-mdm-metrics-config.rb
 
       cat config_mdm_metrics_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -402,7 +419,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       source config_mdm_metrics_env_var
 
       #Parse the configmap to set the right environment variables for metric collection settings
-      /usr/bin/ruby2.6 tomlparser-metric-collection-config.rb
+      /usr/bin/ruby2.7 tomlparser-metric-collection-config.rb
 
       cat config_metric_collection_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -413,7 +430,7 @@ fi
 # OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
 if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
       ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
-      /usr/bin/ruby2.6 tomlparser-osm-config.rb
+      /usr/bin/ruby2.7 tomlparser-osm-config.rb
 
       if [ -e "integration_osm_config_env_var" ]; then
             cat integration_osm_config_env_var | while read line; do
@@ -425,19 +442,24 @@ fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
-#Defaults to use port 10255
-cAdvisorIsSecure=false
-RET_CODE=`wget --server-response https://$NODE_IP:10250/stats/summary --no-check-certificate --header="Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" 2>&1 | awk '/^  HTTP/{print $2}'`
-if [ $RET_CODE -eq 200 ]; then
-      cAdvisorIsSecure=true
+#Defaults to use secure port: 10250
+cAdvisorIsSecure=true
+RET_CODE=$(wget --server-response https://$NODE_IP:10250/stats/summary --no-check-certificate --header="Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" 2>&1 | awk '/^  HTTP/{print $2}')
+if [ -z "$RET_CODE" ] || [ $RET_CODE -ne 200 ]; then
+      echo "Making wget request to cadvisor endpoint with port 10255 since failed with port 10250"
+      RET_CODE=$(wget --server-response http://$NODE_IP:10255/stats/summary 2>&1 | awk '/^  HTTP/{print $2}')
+      if [ ! -z "$RET_CODE" ] && [ $RET_CODE -eq 200 ]; then
+            cAdvisorIsSecure=false
+      fi
 fi
 
-# default to docker since this is default in AKS as of now and change to containerd once this becomes default in AKS
-export CONTAINER_RUNTIME="docker"
+# default to containerd since this is common default in AKS and non-AKS
+export CONTAINER_RUNTIME="containerd"
 export NODE_NAME=""
 
+
 if [ "$cAdvisorIsSecure" = true ]; then
-      echo "Wget request using port 10250 succeeded. Using 10250"
+      echo "Using port 10250"
       export IS_SECURE_CADVISOR_PORT=true
       echo "export IS_SECURE_CADVISOR_PORT=true" >> ~/.bashrc
       export CADVISOR_METRICS_URL="https://$NODE_IP:10250/metrics"
@@ -445,7 +467,7 @@ if [ "$cAdvisorIsSecure" = true ]; then
       echo "Making curl request to cadvisor endpoint /pods with port 10250 to get the configured container runtime on kubelet"
       podWithValidContainerId=$(curl -s -k -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://$NODE_IP:10250/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
 else
-      echo "Wget request using port 10250 failed. Using port 10255"
+      echo "Using port 10255"
       export IS_SECURE_CADVISOR_PORT=false
       echo "export IS_SECURE_CADVISOR_PORT=false" >> ~/.bashrc
       export CADVISOR_METRICS_URL="http://$NODE_IP:10255/metrics"
@@ -460,10 +482,10 @@ if [ ! -z "$podWithValidContainerId" ]; then
       # convert to lower case so that everywhere else can be used in lowercase
       containerRuntime=$(echo $containerRuntime | tr "[:upper:]" "[:lower:]")
       nodeName=$(echo $nodeName | tr "[:upper:]" "[:lower:]")
-      # update runtime only if its not empty, not null and not startswith docker
+      # use default container runtime if obtained runtime value is either empty or null
       if [ -z "$containerRuntime" -o "$containerRuntime" == null  ]; then
             echo "using default container runtime as $CONTAINER_RUNTIME since got containeRuntime as empty or null"
-      elif [[ $containerRuntime != docker* ]]; then
+      else
             export CONTAINER_RUNTIME=$containerRuntime
       fi
 
@@ -495,7 +517,7 @@ if [ "$CONTAINER_RUNTIME" != "docker" ]; then
 fi
 
 echo "set caps for ruby process to read container env from proc"
-sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby2.6
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby2.7
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
 
@@ -558,6 +580,13 @@ else
   echo "export CIWORKSPACE_keyFile=$CIWORKSPACE_keyFile" >> ~/.bashrc
   export MDSD_FLUENT_SOCKET_PORT="29230"
   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+  # set the libcurl specific env and configuration
+  export ENABLE_CURL_UPLOAD=true
+  echo "export ENABLE_CURL_UPLOAD=$ENABLE_CURL_UPLOAD" >> ~/.bashrc
+  export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+  echo "export CURL_CA_BUNDLE=$CURL_CA_BUNDLE" >> ~/.bashrc
+  mkdir -p /etc/pki/tls/certs
+  cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 fi
 source ~/.bashrc
 
