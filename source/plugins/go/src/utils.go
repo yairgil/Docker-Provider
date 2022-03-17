@@ -192,6 +192,7 @@ func CreateADXClient() {
 		//log.Fatalf("Unable to create ADX connection %s", err.Error())
 	} else {
 		Log("Successfully created ADX Client. Creating Ingestor...")
+		Log("AdxDatabaseName=%s", AdxDatabaseName)
 		ingestor, ingestorErr := ingest.New(client, AdxDatabaseName, "ContainerLogV2")
 		if ingestorErr != nil {
 			Log("Error::mdsd::Unable to create ADX ingestor %s", ingestorErr.Error())

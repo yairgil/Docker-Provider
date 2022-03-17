@@ -52,7 +52,6 @@ class KubeletUtils
 
         cpu_allocatable = 1.0
         memory_allocatable = 1.0
-
         allocatable_response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode: nil)
         parsed_response = JSON.parse(allocatable_response.body)
 
@@ -103,19 +102,19 @@ class KubeletUtils
           @log.error "Error in get_node_allocatable::explicitlyReserved_cpu: #{errorStr}"
           explicitlyReserved_cpu = "0.0"
           ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::explicitlyReserved_cpu: #{errorStr}")
-        end
+        end 
 
         begin
-          systemReserved_memory = parsed_response["kubeletconfig"]["systemReserved"]["memory"]
-          if systemReserved_memory.nil? || systemReserved_memory == ""
+           systemReserved_memory = parsed_response["kubeletconfig"]["systemReserved"]["memory"]
+           if systemReserved_memory.nil? || systemReserved_memory == ""
             systemReserved_memory = "0.0"
-          end
-          @log.info "get_node_allocatable::systemReserved_memory #{systemReserved_memory}"
+           end
+           @log.info "get_node_allocatable::systemReserved_memory #{systemReserved_memory}"
         rescue => errorStr
-          @log.error "Error in get_node_allocatable::systemReserved_memory: #{errorStr}"
-          systemReserved_memory = "0.0"
+           @log.error "Error in get_node_allocatable::systemReserved_memory: #{errorStr}"
+           systemReserved_memory = "0.0"
           ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::systemReserved_memory: #{errorStr}")
-        end
+        end 
 
         begin
           evictionHard_memory = parsed_response["kubeletconfig"]["evictionHard"]["memory.available"]
@@ -134,9 +133,9 @@ class KubeletUtils
         # subtract to get allocatable. Formula : Allocatable = Capacity - ( kube reserved + system reserved + eviction threshold )
         # https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
         if KubernetesApiClient.getMetricNumericValue("cpu", explicitlyReserved_cpu) > 0
-          cpu_allocatable = cpu_capacity_number - KubernetesApiClient.getMetricNumericValue("cpu", explicitlyReserved_cpu)
+          cpu_allocatable  = cpu_capacity_number - KubernetesApiClient.getMetricNumericValue("cpu", explicitlyReserved_cpu)
         else
-          cpu_allocatable = cpu_capacity_number - (KubernetesApiClient.getMetricNumericValue("cpu", kubereserved_cpu) + KubernetesApiClient.getMetricNumericValue("cpu", systemReserved_cpu))
+          cpu_allocatable  = cpu_capacity_number - (KubernetesApiClient.getMetricNumericValue("cpu", kubereserved_cpu) + KubernetesApiClient.getMetricNumericValue("cpu", systemReserved_cpu))
         end
         # convert back to units similar to what we get for capacity
         cpu_allocatable = cpu_allocatable / (1000.0 ** 2)

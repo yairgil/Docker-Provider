@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require "fluent/plugin/input"
+require 'fluent/plugin/input'
 
 module Fluent::Plugin
   class Kube_PVInventory_Input < Input
@@ -130,7 +130,7 @@ module Fluent::Plugin
           record["ClusterName"] = KubernetesApiClient.getClusterName
           record["PVName"] = item["metadata"]["name"]
           record["PVStatus"] = item["status"]["phase"]
-          record["PVAccessModes"] = item["spec"]["accessModes"].join(", ")
+          record["PVAccessModes"] = item["spec"]["accessModes"].join(', ')
           record["PVStorageClassName"] = item["spec"]["storageClassName"]
           record["PVCapacityBytes"] = KubernetesApiClient.getMetricNumericValue("memory", item["spec"]["capacity"]["storage"])
           record["PVCreationTimeStamp"] = item["metadata"]["creationTimestamp"]
