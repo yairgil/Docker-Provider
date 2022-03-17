@@ -120,12 +120,12 @@ function Set-EnvironmentVariables {
                 $proxy = [string]$proxy.Trim();
                 $parts = $proxy -split "@"
                 if ($parts.Length -ne 2) {
-                    Write-Host "Invalid ProxyConfiguration $($proxy). EXITING....."
+                    Write-Host "Invalid ProxyConfiguration. EXITING....."
                     exit 1
                 }
                 $subparts1 = $parts[0] -split "//"
                 if ($subparts1.Length -ne 2) {
-                    Write-Host "Invalid ProxyConfiguration $($proxy). EXITING....."
+                    Write-Host "Invalid ProxyConfiguration. EXITING....."
                     exit 1
                 }
                 $protocol = $subparts1[0].ToLower().TrimEnd(":")
@@ -133,14 +133,16 @@ function Set-EnvironmentVariables {
                     Write-Host "Unsupported protocol in ProxyConfiguration $($proxy). EXITING....."
                     exit 1
                 }
-                $subparts2 = $parts[1] -split ":"
-                if ($subparts2.Length -ne 2) {
-                    Write-Host "Invalid ProxyConfiguration $($proxy). EXITING....."
-                    exit 1
-                }
+
             }
         }
+
         Write-Host "Provided Proxy configuration is valid"
+    }
+
+    if (Test-Path /etc/omsagent-secret/PROXYCERT.crt) {
+        Write-Host "Importing Proxy CA cert since Proxy CA cert configured"
+        Import-Certificate -FilePath /etc/omsagent-secret/PROXYCERT.crt -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
     }
 
     # Set PROXY
@@ -196,6 +198,7 @@ function Set-EnvironmentVariables {
                 Write-Host $_.Exception
             }
         }
+
         # Check if the fetched IKey was properly encoded. if not then turn off telemetry
         if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
             Write-Host "Using cloud-specific instrumentation key"
@@ -302,7 +305,7 @@ function Set-EnvironmentVariables {
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
     .\setenv.ps1
-
+    
     #Parse the configmap to set the right environment variables for agent config.
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser-agent-config.rb
     .\setagentenv.ps1
