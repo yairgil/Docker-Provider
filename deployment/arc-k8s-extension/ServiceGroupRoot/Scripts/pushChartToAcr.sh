@@ -10,7 +10,11 @@ export REPO_TYPE="stable"
 export CANARY_REGION_REPO_PATH="azuremonitor/containerinsights/canary/${REPO_TYPE}/azuremonitor-containers"
 # pilot region
 export PILOT_REGION_REPO_PATH="azuremonitor/containerinsights/prod1/${REPO_TYPE}/azuremonitor-containers"
+<<<<<<< HEAD
 # light load regions
+=======
+# light load regions 
+>>>>>>> ci_dev
 export LIGHT_LOAD_REGION_REPO_PATH="azuremonitor/containerinsights/prod2/${REPO_TYPE}/azuremonitor-containers"
 # medium load regions
 export MEDIUM_LOAD_REGION_REPO_PATH="azuremonitor/containerinsights/prod3/${REPO_TYPE}/azuremonitor-containers"
@@ -18,7 +22,11 @@ export MEDIUM_LOAD_REGION_REPO_PATH="azuremonitor/containerinsights/prod3/${REPO
 export HIGH_LOAD_REGION_REPO_PATH="azuremonitor/containerinsights/prod4/${REPO_TYPE}/azuremonitor-containers"
 # FairFax regions
 export FF_REGION_REPO_PATH="azuremonitor/containerinsights/prod5/${REPO_TYPE}/azuremonitor-containers"
+<<<<<<< HEAD
 # Mooncake regions
+=======
+# Mooncake regions 
+>>>>>>> ci_dev
 export MC_REGION_REPO_PATH="azuremonitor/containerinsights/prod6/${REPO_TYPE}/azuremonitor-containers"
 
 # pull chart from previous stage mcr and push chart to next stage acr
@@ -35,6 +43,10 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
        echo "-e error dest acr path must be provided "
        exit 1
     fi
+<<<<<<< HEAD
+=======
+    
+>>>>>>> ci_dev
     echo "Pulling chart from MCR:${srcMcrFullPath} ..."
     helm chart pull ${srcMcrFullPath}
     if [ $? -eq 0 ]; then
@@ -42,15 +54,22 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
     else
       echo "-e error Pulling chart from MCR:${srcMcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
       exit 1
+<<<<<<< HEAD
     fi
 
     echo "Exporting chart to current directory ..."
+=======
+    fi   
+
+    echo "Exporting chart to current directory ..."    
+>>>>>>> ci_dev
     helm chart export ${srcMcrFullPath}
     if [ $? -eq 0 ]; then
       echo "Exporting chart to current directory completed successfully."
     else
       echo "-e error Exporting chart to current directory failed. Please review Ev2 pipeline logs for more details on the error."
       exit 1
+<<<<<<< HEAD
     fi
 
     echo "save the chart locally with dest acr full path : ${destAcrFullPath} ..."
@@ -70,6 +89,27 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
       echo "-e error pushing the chart to acr path: ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
       exit 1
     fi
+=======
+    fi      
+
+    echo "save the chart locally with dest acr full path : ${destAcrFullPath} ..."    
+    helm chart save azuremonitor-containers/ ${destAcrFullPath} 
+    if [ $? -eq 0 ]; then      
+      echo "save the chart locally with dest acr full path : ${destAcrFullPath} completed successfully."
+    else     
+      echo "-e error save the chart locally with dest acr full path : ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+      exit 1
+    fi      
+    
+    echo "pushing the chart to acr path: ${destAcrFullPath} ..."
+    helm chart push ${destAcrFullPath} 
+    if [ $? -eq 0 ]; then            
+      echo "pushing the chart to acr path: ${destAcrFullPath} completed successfully."
+    else     
+      echo "-e error pushing the chart to acr path: ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+      exit 1
+    fi       
+>>>>>>> ci_dev
 }
 
 # push to local release candidate chart to canary region
@@ -80,6 +120,7 @@ push_local_chart_to_canary_region() {
       exit 1
   fi
 
+<<<<<<< HEAD
   echo "save the chart locally with dest acr full path : ${destAcrFullPath} ..."
   helm chart save charts/azuremonitor-containers/ $destAcrFullPath
   if [ $? -eq 0 ]; then
@@ -97,6 +138,25 @@ push_local_chart_to_canary_region() {
     echo "-e error pushing the chart to acr path: ${destAcrFullPath} failed.Please review Ev2 pipeline logs for more details on the error."
     exit 1
   fi
+=======
+  echo "save the chart locally with dest acr full path : ${destAcrFullPath} ..."    
+  helm chart save charts/azuremonitor-containers/ $destAcrFullPath
+  if [ $? -eq 0 ]; then            
+    echo "save the chart locally with dest acr full path : ${destAcrFullPath} completed."
+  else     
+    echo "-e error save the chart locally with dest acr full path : ${destAcrFullPath} failed. Please review Ev2 pipeline logs for more details on the error."
+    exit 1
+  fi       
+
+  echo "pushing the chart to acr path: ${destAcrFullPath} ..."
+  helm chart push $destAcrFullPath
+  if [ $? -eq 0 ]; then            
+    echo "pushing the chart to acr path: ${destAcrFullPath} completed successfully."
+  else     
+    echo "-e error pushing the chart to acr path: ${destAcrFullPath} failed.Please review Ev2 pipeline logs for more details on the error."
+    exit 1
+  fi       
+>>>>>>> ci_dev
 }
 
 echo "START - Release stage : ${RELEASE_STAGE}"
@@ -116,7 +176,11 @@ else
 fi
 
 ACCESS_TOKEN=$(az acr login --name ${ACR_NAME} --expose-token --output tsv --query accessToken)
+<<<<<<< HEAD
 if [ $? -ne 0 ]; then
+=======
+if [ $? -ne 0 ]; then         
+>>>>>>> ci_dev
    echo "-e error az acr login failed. Please review the Ev2 pipeline logs for more details on the error."
    exit 1
 fi
@@ -128,12 +192,17 @@ if [ $? -eq 0 ]; then
 else
   echo "-e error login to acr:${ACR_NAME} using helm failed. Please review Ev2 pipeline logs for more details on the error."
   exit 1
+<<<<<<< HEAD
 fi
+=======
+fi   
+>>>>>>> ci_dev
 
 case $RELEASE_STAGE in
 
   Canary)
     echo "START: Release stage - Canary"
+<<<<<<< HEAD
     destAcrFullPath=${ACR_NAME}/public/${CANARY_REGION_REPO_PATH}:${CHART_VERSION}
     push_local_chart_to_canary_region $destAcrFullPath
     echo "END: Release stage - Canary"
@@ -186,6 +255,60 @@ case $RELEASE_STAGE in
     pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath
     echo "END: Release stage - MC"
     ;;
+=======
+    destAcrFullPath=${ACR_NAME}/public/${CANARY_REGION_REPO_PATH}:${CHART_VERSION}  
+    push_local_chart_to_canary_region $destAcrFullPath     
+    echo "END: Release stage - Canary"
+    ;;
+
+  Pilot | Prod1)    
+    echo "START: Release stage - Pilot"    
+    srcMcrFullPath=${MCR_NAME}/${CANARY_REGION_REPO_PATH}:${CHART_VERSION}   
+    destAcrFullPath=${ACR_NAME}/public/${PILOT_REGION_REPO_PATH}:${CHART_VERSION}   
+    pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath          
+    echo "END: Release stage - Pilot"    
+    ;;
+
+  LightLoad | Pord2)    
+    echo "START: Release stage - Light Load Regions"    
+    srcMcrFullPath=${MCR_NAME}/${PILOT_REGION_REPO_PATH}:${CHART_VERSION}
+    destAcrFullPath=${ACR_NAME}/public/${LIGHT_LOAD_REGION_REPO_PATH}:${CHART_VERSION}
+    pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath              
+    echo "END: Release stage - Light Load Regions"    
+    ;;
+   
+  MediumLoad | Prod3)    
+    echo  "START: Release stage - Medium Load Regions"    
+    srcMcrFullPath=${MCR_NAME}/${LIGHT_LOAD_REGION_REPO_PATH}:${CHART_VERSION}
+    destAcrFullPath=${ACR_NAME}/public/${MEDIUM_LOAD_REGION_REPO_PATH}:${CHART_VERSION}
+    pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath     
+    echo  "END: Release stage - Medium Load Regions"
+    ;;
+
+  HighLoad | Prod4)    
+    echo  "START: Release stage - High Load Regions"    
+    srcMcrFullPath=${MCR_NAME}/${MEDIUM_LOAD_REGION_REPO_PATH}:${CHART_VERSION} 
+    destAcrFullPath=${ACR_NAME}/public/${HIGH_LOAD_REGION_REPO_PATH}:${CHART_VERSION}   
+    pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath         
+    echo  "END: Release stage - High Load Regions"  
+    ;;  
+
+  FF | Prod5)    
+    echo  "START: Release stage - FF"    
+    srcMcrFullPath=${MCR_NAME}/${HIGH_LOAD_REGION_REPO_PATH}:${CHART_VERSION}        
+    destAcrFullPath=${ACR_NAME}/public/${FF_REGION_REPO_PATH}:${CHART_VERSION}
+    pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath                   
+    echo  "END: Release stage - FF"     
+    ;;    
+
+  MC | Prod6)
+    echo "START: Release stage - MC"    
+    srcMcrFullPath=${MCR_NAME}/${FF_REGION_REPO_PATH}:${CHART_VERSION}            
+    destAcrFullPath=${ACR_NAME}/public/${MC_REGION_REPO_PATH}:${CHART_VERSION}
+    pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath
+    echo "END: Release stage - MC"     
+    ;;    
+>>>>>>> ci_dev
 
   *)
     echo -n "unknown release stage"
@@ -193,4 +316,8 @@ case $RELEASE_STAGE in
     ;;
 esac
 
+<<<<<<< HEAD
 echo "END - Release stage : ${RELEASE_STAGE}"
+=======
+echo "END - Release stage : ${RELEASE_STAGE}"
+>>>>>>> ci_dev

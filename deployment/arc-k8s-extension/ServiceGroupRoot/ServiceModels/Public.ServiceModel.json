@@ -28,17 +28,29 @@
         ]
       }
     ],
+<<<<<<< HEAD
     "ServiceResourceGroups": [
+=======
+    "ServiceResourceGroups": [     
+>>>>>>> ci_dev
       {
         "AzureResourceGroupName": "ContainerInsightsExtension-Canary-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+<<<<<<< HEAD
         "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
+=======
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
+>>>>>>> ci_dev
         "ScopeTags": [
           {
             "Name": "Canary"
           }
+<<<<<<< HEAD
         ],
+=======
+        ],     
+>>>>>>> ci_dev
         "ServiceResources": [
           {
             "Name": "PushChartToACR-Canary",
@@ -51,12 +63,20 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-Pilot-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+<<<<<<< HEAD
         "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
+=======
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
+>>>>>>> ci_dev
         "ScopeTags": [
           {
             "Name": "Pilot"
           }
+<<<<<<< HEAD
         ],
+=======
+        ],     
+>>>>>>> ci_dev
         "ServiceResources": [
           {
             "Name": "PushChartToACR-Pilot",
@@ -69,12 +89,20 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-LightLoad-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+<<<<<<< HEAD
         "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
+=======
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
+>>>>>>> ci_dev
         "ScopeTags": [
           {
             "Name": "LightLoad"
           }
+<<<<<<< HEAD
         ],
+=======
+        ],     
+>>>>>>> ci_dev
         "ServiceResources": [
           {
             "Name": "PushChartToACR-LightLoad",
@@ -87,12 +115,20 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-MediumLoad-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+<<<<<<< HEAD
         "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
+=======
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
+>>>>>>> ci_dev
         "ScopeTags": [
           {
             "Name": "MediumLoad"
           }
+<<<<<<< HEAD
         ],
+=======
+        ],     
+>>>>>>> ci_dev
         "ServiceResources": [
           {
             "Name": "PushChartToACR-MediumLoad",
@@ -105,12 +141,20 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-HighLoad-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+<<<<<<< HEAD
         "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
+=======
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
+>>>>>>> ci_dev
         "ScopeTags": [
           {
             "Name": "HighLoad"
           }
+<<<<<<< HEAD
         ],
+=======
+        ],     
+>>>>>>> ci_dev
         "ServiceResources": [
           {
             "Name": "PushChartToACR-HighLoad",
@@ -123,12 +167,20 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-FF-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+<<<<<<< HEAD
         "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
+=======
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
+>>>>>>> ci_dev
         "ScopeTags": [
           {
             "Name": "FF"
           }
+<<<<<<< HEAD
         ],
+=======
+        ],     
+>>>>>>> ci_dev
         "ServiceResources": [
           {
             "Name": "PushChartToACR-FF",
@@ -141,12 +193,20 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-MC-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+<<<<<<< HEAD
         "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
+=======
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
+>>>>>>> ci_dev
         "ScopeTags": [
           {
             "Name": "MC"
           }
+<<<<<<< HEAD
         ],
+=======
+        ],     
+>>>>>>> ci_dev
         "ServiceResources": [
           {
             "Name": "PushChartToACR-MC",
@@ -154,6 +214,12 @@
             "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
           }
         ]
+<<<<<<< HEAD
       }
     ]
   }
+=======
+      }                                                                                                  
+    ]
+  }
+>>>>>>> ci_dev

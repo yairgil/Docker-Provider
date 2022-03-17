@@ -39,7 +39,11 @@
             "name": "CHART_VERSION",
             "value": "__CHART_VERSION__"
           }
+<<<<<<< HEAD
         ],
+=======
+        ], 
+>>>>>>> ci_dev
         "identity": {
           "type": "userAssigned",
           "userAssignedIdentities": [
@@ -49,4 +53,8 @@
       }
     }
   ]
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> ci_dev
