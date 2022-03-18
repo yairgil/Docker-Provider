@@ -246,6 +246,7 @@ else
   puts "****************End Config Processing********************"
 end
 
+
 =begin
 This section generates the file that will set the environment variables for windows. This script will be called by the main.ps1 script
 which is the ENTRYPOINT script for the windows aks log container
@@ -272,27 +273,25 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     end
     commands = get_command_windows("AZMON_COLLECT_STDOUT_LOGS", @collectStdoutLogs)
     file.write(commands)
-    commands = get_command_windows("AZMON_LOG_EXCLUSION_REGEX_PATTERN", @logExclusionRegexPattern)
+    commands = get_command_windows('AZMON_LOG_TAIL_PATH', @logTailPath)
     file.write(commands)
     commands = get_command_windows('AZMON_LOG_EXCLUSION_REGEX_PATTERN', @logExclusionRegexPattern)
     file.write(commands)
-    commands = get_command_windows("AZMON_COLLECT_STDERR_LOGS", @collectStderrLogs)
+    commands = get_command_windows('AZMON_STDOUT_EXCLUDED_NAMESPACES', @stdoutExcludeNamespaces)
     file.write(commands)
-    commands = get_command_windows("AZMON_STDERR_EXCLUDED_NAMESPACES", @stderrExcludeNamespaces)
+    commands = get_command_windows('AZMON_COLLECT_STDERR_LOGS', @collectStderrLogs)
     file.write(commands)
-    commands = get_command_windows("AZMON_CLUSTER_COLLECT_ENV_VAR", @collectClusterEnvVariables)
+    commands = get_command_windows('AZMON_STDERR_EXCLUDED_NAMESPACES', @stderrExcludeNamespaces)
     file.write(commands)
-    commands = get_command_windows("AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH", @excludePath)
+    commands = get_command_windows('AZMON_CLUSTER_COLLECT_ENV_VAR', @collectClusterEnvVariables)
     file.write(commands)
-    commands = get_command_windows("AZMON_CLUSTER_CONTAINER_LOG_ENRICH", @enrichContainerLogs)
+    commands = get_command_windows('AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH', @excludePath)
     file.write(commands)
-    commands = get_command_windows("AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS", @collectAllKubeEvents)
+    commands = get_command_windows('AZMON_CLUSTER_CONTAINER_LOG_ENRICH', @enrichContainerLogs)
     file.write(commands)
-    commands = get_command_windows("AZMON_CONTAINER_LOGS_ROUTE", @containerLogsRoute)
+    commands = get_command_windows('AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS', @collectAllKubeEvents)
     file.write(commands)
-    commands = get_command_windows("AZMON_CONTAINER_LOG_SCHEMA_VERSION", @containerLogSchemaVersion)
-    file.write(commands)
-    commands = get_command_windows("AZMON_ADX_DATABASE_NAME", @adxDatabaseName)
+    commands = get_command_windows('AZMON_CONTAINER_LOGS_ROUTE', @containerLogsRoute)
     file.write(commands)
     commands = get_command_windows('AZMON_CONTAINER_LOG_SCHEMA_VERSION', @containerLogSchemaVersion)
     file.write(commands)
