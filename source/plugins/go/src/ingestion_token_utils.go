@@ -246,31 +246,6 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	for retryCount := 0; retryCount < MaxRetries; retryCount++ {
 		resp, err = HTTPClient.Do(req)
 		if err != nil {
-		    if resp.StatusCode == 421 { // AMCS returns redirected endpoint incase of private link
-				agentConfigEndpoint := resp.Header.Get("x-ms-agent-config-endpoint")
-				if agentConfigEndpoint != "" {
-					endpoint, err := url.Parse(agentConfigEndpoint)
-					if err != nil {
-						message := fmt.Sprintf("getAgentConfiguration: Error Parsing value of x-ms-agent-config-endpoint: %s", err.Error())
-			            Log(message)
-			            SendException(message)
-					} else {
-						AmcsEndpointHOST = strings.Split(endpoint.Host, ".")[0]
-						// reconstruct request with redirected endpoint
-						var err error
-						redirected_amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpointHOST, mcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
-						var bearer = "Bearer " + imdsAccessToken
-						req, err = http.NewRequest("GET", redirected_amcs_endpoint_string, nil)
-						if err != nil {
-							message := fmt.Sprintf("getAgentConfiguration: Error creating HTTP request for AMCS endpoint: %s", err.Error())
-							Log(message)
-							return configurationId, channelId, err
-						}
-						req.Header.Set("Authorization", bearer)
-						continue
-					}
-				}
-			}
 			message := fmt.Sprintf("getAgentConfiguration: Error calling AMCS endpoint: %s", err.Error())
 			Log(message)
 			SendException(message)
@@ -280,6 +255,31 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 			defer resp.Body.Close()
 	    }
 		Log("getAgentConfiguration Response Status: %d", resp.StatusCode)
+		if resp.StatusCode == 421 { // AMCS returns redirected endpoint incase of private link
+			agentConfigEndpoint := resp.Header.Get("x-ms-agent-config-endpoint")
+			if agentConfigEndpoint != "" {
+				endpoint, err := url.Parse(agentConfigEndpoint)
+				if err != nil {
+					message := fmt.Sprintf("getAgentConfiguration: Error Parsing value of x-ms-agent-config-endpoint: %s", err.Error())
+					Log(message)
+					SendException(message)
+				} else {
+					AmcsEndpointHOST = strings.Split(endpoint.Host, ".")[0]
+					// reconstruct request with redirected endpoint
+					var err error
+					redirected_amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpointHOST, mcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
+					var bearer = "Bearer " + imdsAccessToken
+					req, err = http.NewRequest("GET", redirected_amcs_endpoint_string, nil)
+					if err != nil {
+						message := fmt.Sprintf("getAgentConfiguration: Error creating HTTP request for AMCS endpoint: %s", err.Error())
+						Log(message)
+						return configurationId, channelId, err
+					}
+					req.Header.Set("Authorization", bearer)
+					continue
+				}
+			}
+		}
 		if IsRetriableError(resp.StatusCode) {
 			message := fmt.Sprintf("getAgentConfiguration: Request failed with an error code: %d, retryCount: %d", resp.StatusCode, retryCount)
 			Log(message)
