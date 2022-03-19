@@ -27,7 +27,7 @@ var ChannelId string
 
 var IngestionAuthToken string
 var IngestionAuthTokenExpiration int64
-var AmcsEndpointHOST string = "global"
+var AMCSRedirectedEndpoint string = ""
 
 type IMDSResponse struct {
 	AccessToken  string `json:"access_token"`
@@ -219,11 +219,17 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	configurationId = ""
 	channelId = ""
 	var amcs_endpoint *url.URL
+	var AmcsEndpoint string
 	osType := os.Getenv("OS_TYPE")
 	resourceId := os.Getenv("AKS_RESOURCE_ID")
 	resourceRegion := os.Getenv("AKS_REGION")
 	mcsEndpoint := os.Getenv("MCS_ENDPOINT")
-	amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpointHOST, mcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
+
+	AmcsEndpoint = fmt.Sprintf("https://global.handler.control.%s", mcsEndpoint)
+	if AMCSRedirectedEndpoint != "" {
+		AmcsEndpoint = AMCSRedirectedEndpoint
+	}
+	amcs_endpoint_string := fmt.Sprintf("%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
 
 	amcs_endpoint, err = url.Parse(amcs_endpoint_string)
 	if err != nil {
@@ -264,10 +270,10 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 					Log(message)
 					SendException(message)
 				} else {
-					AmcsEndpointHOST = strings.Split(endpoint.Host, ".")[0]
+					AMCSRedirectedEndpoint = endpoint.String()
 					// reconstruct request with redirected endpoint
 					var err error
-					redirected_amcs_endpoint_string := fmt.Sprintf("https://%s.handler.control.%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpointHOST, mcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
+					redirected_amcs_endpoint_string := fmt.Sprintf("%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
 					var bearer = "Bearer " + imdsAccessToken
 					req, err = http.NewRequest("GET", redirected_amcs_endpoint_string, nil)
 					if err != nil {
