@@ -268,7 +268,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 				AMCSRedirectedEndpoint = agentConfigEndpoint
 				// reconstruct request with redirected endpoint
 				var err error
-				redirected_amcs_endpoint_string := fmt.Sprintf("%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
+				redirected_amcs_endpoint_string := fmt.Sprintf("%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AMCSRedirectedEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
 				var bearer = "Bearer " + imdsAccessToken
 				req, err = http.NewRequest("GET", redirected_amcs_endpoint_string, nil)
 				if err != nil {
