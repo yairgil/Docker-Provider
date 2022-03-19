@@ -263,27 +263,21 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 		Log("getAgentConfiguration Response Status: %d", resp.StatusCode)
 		if resp.StatusCode == 421 { // AMCS returns redirected endpoint incase of private link
 			agentConfigEndpoint := resp.Header.Get("x-ms-agent-config-endpoint")
+			Log("getAgentConfiguration x-ms-agent-config-endpoint: %s", agentConfigEndpoint)
 			if agentConfigEndpoint != "" {
-				endpoint, err := url.Parse(agentConfigEndpoint)
+				AMCSRedirectedEndpoint = agentConfigEndpoint
+				// reconstruct request with redirected endpoint
+				var err error
+				redirected_amcs_endpoint_string := fmt.Sprintf("%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
+				var bearer = "Bearer " + imdsAccessToken
+				req, err = http.NewRequest("GET", redirected_amcs_endpoint_string, nil)
 				if err != nil {
-					message := fmt.Sprintf("getAgentConfiguration: Error Parsing value of x-ms-agent-config-endpoint: %s", err.Error())
+					message := fmt.Sprintf("getAgentConfiguration: Error creating HTTP request for AMCS endpoint: %s", err.Error())
 					Log(message)
-					SendException(message)
-				} else {
-					AMCSRedirectedEndpoint = endpoint.String()
-					// reconstruct request with redirected endpoint
-					var err error
-					redirected_amcs_endpoint_string := fmt.Sprintf("%s%s/agentConfigurations?operatingLocation=%s&platform=%s&api-version=%s", AmcsEndpoint, resourceId, resourceRegion, osType, AMCSAgentConfigAPIVersion)
-					var bearer = "Bearer " + imdsAccessToken
-					req, err = http.NewRequest("GET", redirected_amcs_endpoint_string, nil)
-					if err != nil {
-						message := fmt.Sprintf("getAgentConfiguration: Error creating HTTP request for AMCS endpoint: %s", err.Error())
-						Log(message)
-						return configurationId, channelId, err
-					}
-					req.Header.Set("Authorization", bearer)
-					continue
+					return configurationId, channelId, err
 				}
+				req.Header.Set("Authorization", bearer)
+				continue
 			}
 		}
 		if IsRetriableError(resp.StatusCode) {
