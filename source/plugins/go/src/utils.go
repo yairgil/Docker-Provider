@@ -127,7 +127,7 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
 		mdsdfluentSocket = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket", containerType)
 	}
-	genevaLogsIntegration := strings.TrimSpace(strings.ToLower(os.Getenv("GENEVA_LOGS_INTEGRATION")))
+	genevaLogsEnabled := strings.TrimSpace(strings.ToLower(os.Getenv("GENEVA_LOGS_CONFIG_ENABLED")))
 
 	switch dataType {
 	case ContainerLogV2:
@@ -150,7 +150,7 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 		}
 	case KubeMonAgentEvents:
 		// incase of geneva logs integration mode, KubeMonAgentEvents ingested via sidecar container socket
-		if genevaLogsIntegration != "" && strings.Compare(strings.ToLower(genevaLogsIntegration), "true") == 0 {
+		if genevaLogsEnabled != "" && strings.Compare(strings.ToLower(genevaLogsEnabled), "true") == 0 {
 			mdsdfluentSocket = "/var/run/mdsd-PrometheusSidecar/default_fluent.socket"
 		}
 		if MdsdKubeMonMsgpUnixSocketClient != nil {
@@ -168,7 +168,7 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 		}
 	case InsightsMetrics:
 		// incase of geneva logs integration mode, InsightsMetrics ingested via sidecar container socket
-		if genevaLogsIntegration != "" && strings.Compare(strings.ToLower(genevaLogsIntegration), "true") == 0 {
+		if genevaLogsEnabled != "" && strings.Compare(strings.ToLower(genevaLogsEnabled), "true") == 0 {
 			mdsdfluentSocket = "/var/run/mdsd-PrometheusSidecar/default_fluent.socket"
 		}
 		if MdsdInsightsMetricsMsgpUnixSocketClient != nil {

@@ -379,24 +379,24 @@ spec:
               memory: 325Mi
           env:
             # For Geneva integration
-            - name: GENEVA_LOGS_INTEGRATION
-              value: "true"
+            # - name: GENEVA_LOGS_CONFIG_ENABLED
+            #   value: "true"
             # Incase of Multi-tenancy Geneva account pulled from CR
-            - name: GENEVA_MULTI_TENANCY
-              value: "false"
+            # - name: GENEVA_MULTI_TENANCY
+            #   value: "false"
             # Following environment variables only required in case of single tenancy mode
-            - name: MONITORING_GCS_ENVIRONMENT
-              value: "Stage"
-            - name: MONITORING_GCS_ACCOUNT
-              value: "cilogstest"
-            - name: MONITORING_GCS_NAMESPACE
-              value: "cilogstest"
-            - name: MONITORING_GCS_REGION
-              value: "eastus2"
-            - name: MONITORING_CONFIG_VERSION
-              value: "1.0"
-            - name: MONITORING_USE_GENEVA_CONFIG_SERVICE
-              value: "true"
+            # - name: MONITORING_GCS_ENVIRONMENT
+            #   value: "Stage"
+            # - name: MONITORING_GCS_ACCOUNT
+            #   value: "cilogstest"
+            # - name: MONITORING_GCS_NAMESPACE
+            #   value: "cilogstest"
+            # - name: MONITORING_GCS_REGION
+            #   value: "eastus2"
+            # - name: MONITORING_CONFIG_VERSION
+            #   value: "1.0"
+            # - name: MONITORING_USE_GENEVA_CONFIG_SERVICE
+            #   value: "true"
             # Enable this when GCS supports MI auth until then cert auth
             # - name: MONITORING_GCS_AUTH_ID_TYPE
             #   value: "AuthMSIToken"

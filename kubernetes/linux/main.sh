@@ -551,7 +551,9 @@ source /etc/mdsd.d/envmdsd
 MDSD_AAD_MSI_AUTH_ARGS=""
 # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH
 export AAD_MSI_AUTH_MODE=false
-if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ]; then
+if [ "${GENEVA_LOGS_CONFIG_ENABLED}" == "true" ]; then
+    #TODO - Valid if there is any scenario where GCS Region & Resource Region will be different
+    echo "export MONITORING_GCS_REGION=$AKS_REGION" >> ~/.bashrc
     MDSD_AAD_MSI_AUTH_ARGS="-A"
     if [ "${MONITORING_GCS_AUTH_ID_TYPE}" == "AuthMSIToken" ]; then
         echo "*** activating oneagent in geneva in GCS MSI auth mode with multi-tenacy: ${GENEVA_MULTI_TENANCY}***"

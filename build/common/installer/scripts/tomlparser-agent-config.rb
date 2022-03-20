@@ -61,6 +61,16 @@ require_relative "ConfigParseErrorLogger"
 @fbitTailBufferMaxSizeMBs = 0
 @fbitTailMemBufLimitMBs = 0
 
+# configmap settings related to geneva logs config
+@genevaLogsConfig = false
+@genevaMultiTenancy = false
+@genevaEnvironment = ""
+@genevaAccount = ""
+@genevaNamespace = ""
+@genevaConfigVersion = ""
+@genevaAuthMode = ""
+GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "FirstpartyProd", "BillingProd", "ExternalProd", "CaMooncake", "CaFairfax", "CaBlackforest"]
+GENEVA_SUPPORTED_AUTH_METHODS = ["MSI", "CERT"]
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -154,7 +164,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
 
         fbitTailBufferMaxSizeMBs = fbit_config[:tail_buf_maxsize_megabytes]
-        if !fbitTailBufferMaxSizeMBs.nil? && is_number?(fbitTailBufferMaxSizeMBs) && fbitTailBufferMaxSizeMBs.to_i > 0           
+        if !fbitTailBufferMaxSizeMBs.nil? && is_number?(fbitTailBufferMaxSizeMBs) && fbitTailBufferMaxSizeMBs.to_i > 0
           if fbitTailBufferMaxSizeMBs.to_i >= @fbitTailBufferChunkSizeMBs
             @fbitTailBufferMaxSizeMBs = fbitTailBufferMaxSizeMBs.to_i
             puts "Using config map value: tail_buf_maxsize_megabytes = #{@fbitTailBufferMaxSizeMBs}"
@@ -165,15 +175,48 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           end
         end
         # in scenario - tail_buf_chunksize_megabytes provided but not tail_buf_maxsize_megabytes to prevent fbit crash
-        if  @fbitTailBufferChunkSizeMBs > 0  && @fbitTailBufferMaxSizeMBs == 0
+        if @fbitTailBufferChunkSizeMBs > 0 && @fbitTailBufferMaxSizeMBs == 0
           @fbitTailBufferMaxSizeMBs = @fbitTailBufferChunkSizeMBs
           puts "config::warn: since tail_buf_maxsize_megabytes not provided hence using tail_buf_maxsize_megabytes=#{@fbitTailBufferMaxSizeMBs} which is same as the value of tail_buf_chunksize_megabytes"
-        end 
+        end
 
         fbitTailMemBufLimitMBs = fbit_config[:tail_mem_buf_limit_megabytes]
         if !fbitTailMemBufLimitMBs.nil? && is_number?(fbitTailMemBufLimitMBs) && fbitTailMemBufLimitMBs.to_i > 0
           @fbitTailMemBufLimitMBs = fbitTailMemBufLimitMBs.to_i
           puts "Using config map value: tail_mem_buf_limit_megabytes  = #{@fbitTailMemBufLimitMBs}"
+        end
+      end
+      # geneva logs config settings
+      geneva_logs_config = parsedConfig[:agent_settings][:geneva_logs_config]
+      if !geneva_logs_config.nil?
+        genevaLogsMultiTenancy = geneva_logs_config[:multitenancy]
+        if !genevaLogsMultiTenancy.nil? && genevaLogsMultiTenancy
+          @genevaMultiTenancy = genevaLogsMultiTenancy
+          @genevaLogsConfig = true
+        else
+          genevaEnvironment = geneva_logs_config[:environment]
+          genevaAccount = geneva_logs_config[:account]
+          genevaNamespace = geneva_logs_config[:namespace]
+          genevaConfigversion = geneva_logs_config[:configversion]
+          if !genevaEnvironment.nil? && !genevaAccount.nil? && !genevaNamespace.nil? && !genevaConfigversion.nil?
+            if GENEVA_SUPPORTED_ENVIRONMENTS.include?(genevaEnvironment)
+              @genevaEnvironment = genevaEnvironment
+              @genevaAccount = genevaAccount
+              @genevaNamespace = genevaNamespace
+              @genevaConfigversion = genevaConfigversion
+              @genevaLogsConfig = true
+            else
+              puts "config::error:unsupported geneva config environment"
+            end
+          else
+            puts "config::error:invalid geneva logs config"
+          end
+        end
+        genevaAuthMode = geneva_logs_config[:authmethod]
+        if !genevaAuthMode.nil? && GENEVA_SUPPORTED_AUTH_METHODS.include?(genevaAuthMode)
+          @genevaAuthMode = genevaAuthMode
+        else
+          puts "config::info:using default geneva auth mode"
         end
       end
     end
@@ -218,10 +261,28 @@ if !file.nil?
   end
   if @fbitTailBufferMaxSizeMBs > 0
     file.write("export FBIT_TAIL_BUFFER_MAX_SIZE=#{@fbitTailBufferMaxSizeMBs}\n")
-  end 
+  end
   if @fbitTailMemBufLimitMBs > 0
     file.write("export FBIT_TAIL_MEM_BUF_LIMIT=#{@fbitTailMemBufLimitMBs}\n")
-  end 
+  end
+
+  if @genevaLogsConfig
+    file.write("export GENEVA_LOGS_CONFIG_ENABLED=#{@genevaLogsConfig}\n")
+    file.write("export MONITORING_USE_GENEVA_CONFIG_SERVICE=#{@genevaLogsConfig}\n")
+    if !@genevaMultiTenancy
+      if !@genevaEnvironment.empty? && !@genevaAccount.empty? && !@genevaNamespace.empty? && !@genevaConfigVersion.empty?
+        file.write("export MONITORING_GCS_ENVIRONMENT=#{@genevaEnvironment}\n")
+        file.write("export MONITORING_GCS_ACCOUNT=#{@genevaAccount}\n")
+        file.write("export MONITORING_GCS_NAMESPACE=#{@genevaNamespace}\n")
+        file.write("export MONITORING_CONFIG_VERSION=#{@genevaConfigVersion}\n")
+      end
+    else
+      puts "config::info:multitenancy configured in geneva config hence dynamic geneva config used from k8s genevaconfig crd"
+    end
+    if !@genevaAuthMode.empty? && @genevaAuthMode == "MSI"
+      file.write("export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken\n")
+    end
+  end
   # Close file after writing all environment variables
   file.close
 else
@@ -239,21 +300,21 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
 
   if !file.nil?
     if @fbitFlushIntervalSecs > 0
-      commands = get_command_windows('FBIT_SERVICE_FLUSH_INTERVAL', @fbitFlushIntervalSecs)
+      commands = get_command_windows("FBIT_SERVICE_FLUSH_INTERVAL", @fbitFlushIntervalSecs)
       file.write(commands)
     end
     if @fbitTailBufferChunkSizeMBs > 0
-      commands = get_command_windows('FBIT_TAIL_BUFFER_CHUNK_SIZE', @fbitTailBufferChunkSizeMBs)
+      commands = get_command_windows("FBIT_TAIL_BUFFER_CHUNK_SIZE", @fbitTailBufferChunkSizeMBs)
       file.write(commands)
     end
     if @fbitTailBufferMaxSizeMBs > 0
-      commands = get_command_windows('FBIT_TAIL_BUFFER_MAX_SIZE', @fbitTailBufferMaxSizeMBs)
+      commands = get_command_windows("FBIT_TAIL_BUFFER_MAX_SIZE", @fbitTailBufferMaxSizeMBs)
       file.write(commands)
-    end 
+    end
     if @fbitTailMemBufLimitMBs > 0
-      commands = get_command_windows('FBIT_TAIL_MEM_BUF_LIMIT', @fbitTailMemBufLimitMBs)
+      commands = get_command_windows("FBIT_TAIL_MEM_BUF_LIMIT", @fbitTailMemBufLimitMBs)
       file.write(commands)
-    end 
+    end
     # Close file after writing all environment variables
     file.close
     puts "****************End Config Processing********************"
