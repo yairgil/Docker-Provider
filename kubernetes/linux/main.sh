@@ -553,12 +553,13 @@ MDSD_AAD_MSI_AUTH_ARGS=""
 export AAD_MSI_AUTH_MODE=false
 if [ "${GENEVA_LOGS_CONFIG_ENABLED}" == "true" ]; then
     #TODO - Valid if there is any scenario where GCS Region & Resource Region will be different
+    export MONITORING_GCS_REGION=$AKS_REGION
     echo "export MONITORING_GCS_REGION=$AKS_REGION" >> ~/.bashrc
     MDSD_AAD_MSI_AUTH_ARGS="-A"
     if [ "${MONITORING_GCS_AUTH_ID_TYPE}" == "AuthMSIToken" ]; then
-        echo "*** activating oneagent in geneva in GCS MSI auth mode with multi-tenacy: ${GENEVA_MULTI_TENANCY}***"
+        echo "*** activating oneagent in geneva in GCS MSI auth mode with multi-tenacy enabled: ${GENEVA_LOGS_MULTI_TENANCY_ENABLED}***"
     else
-        echo "*** activating oneagent in geneva in GCS Cert auth mode with multi-tenacy: ${GENEVA_MULTI_TENANCY}***"
+        echo "*** activating oneagent in geneva in GCS Cert auth mode with multi-tenacy enabled: ${GENEVA_LOGS_MULTI_TENANCY_ENABLED}***"
         if [ -e "/mnt/geneva-secrets/gcscert" -a -e "/mnt/geneva-secrets/gcskey" ]; then
            cat /mnt/geneva-secrets/gcscert | base64 -d >> /etc/mdsd.d/gcscert.pem
            export MONITORING_GCS_CERT_CERTFILE=/etc/mdsd.d/gcscert.pem

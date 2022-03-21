@@ -2,7 +2,9 @@
 
 #this should be require relative in Linux and require in windows, since it is a gem install on windows
 @os_type = ENV["OS_TYPE"]
+@isWindows = false
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
+  @isWindows = true
   require "tomlrb"
 else
   require_relative "tomlrb"
@@ -62,6 +64,8 @@ require_relative "ConfigParseErrorLogger"
 @fbitTailMemBufLimitMBs = 0
 
 # configmap settings related to geneva logs config
+@controllerType = ENV["CONTROLLER_TYPE"]
+@containerType = ENV["CONTAINER_TYPE"]
 @genevaLogsConfig = false
 @genevaMultiTenancy = false
 @genevaEnvironment = ""
@@ -186,37 +190,41 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "Using config map value: tail_mem_buf_limit_megabytes  = #{@fbitTailMemBufLimitMBs}"
         end
       end
-      # geneva logs config settings
-      geneva_logs_config = parsedConfig[:agent_settings][:geneva_logs_config]
-      if !geneva_logs_config.nil?
-        genevaLogsMultiTenancy = geneva_logs_config[:multitenancy]
-        if !genevaLogsMultiTenancy.nil? && genevaLogsMultiTenancy
-          @genevaMultiTenancy = genevaLogsMultiTenancy
-          @genevaLogsConfig = true
-        else
-          genevaEnvironment = geneva_logs_config[:environment]
-          genevaAccount = geneva_logs_config[:account]
-          genevaNamespace = geneva_logs_config[:namespace]
-          genevaConfigversion = geneva_logs_config[:configversion]
-          if !genevaEnvironment.nil? && !genevaAccount.nil? && !genevaNamespace.nil? && !genevaConfigversion.nil?
-            if GENEVA_SUPPORTED_ENVIRONMENTS.include?(genevaEnvironment)
-              @genevaEnvironment = genevaEnvironment
-              @genevaAccount = genevaAccount
-              @genevaNamespace = genevaNamespace
-              @genevaConfigversion = genevaConfigversion
-              @genevaLogsConfig = true
-            else
-              puts "config::error:unsupported geneva config environment"
-            end
+      # geneva logs config settings only applicable in main conatiner of Linux Daemonset
+      if !@isWindows && @controllerType.downcase == "daemonset" && (@containerType.nil? || @containerType.downcase != "prometheussidecar")
+        geneva_logs_config = parsedConfig[:agent_settings][:geneva_logs_config]
+        if !geneva_logs_config.nil?
+          puts "config: parsing geneva_logs_config settings"
+          genevaLogsMultiTenancy = geneva_logs_config[:multitenancy]
+          if !genevaLogsMultiTenancy.nil? && genevaLogsMultiTenancy
+            @genevaMultiTenancy = genevaLogsMultiTenancy
+            @genevaLogsConfig = true
           else
-            puts "config::error:invalid geneva logs config"
+            genevaEnvironment = geneva_logs_config[:environment]
+            genevaAccount = geneva_logs_config[:account]
+            genevaNamespace = geneva_logs_config[:namespace]
+            genevaConfigVersion = geneva_logs_config[:configversion]
+            if !genevaEnvironment.nil? && !genevaAccount.nil? && !genevaNamespace.nil? && !genevaConfigVersion.nil?
+              if GENEVA_SUPPORTED_ENVIRONMENTS.include?(genevaEnvironment)
+                @genevaEnvironment = genevaEnvironment
+                @genevaAccount = genevaAccount
+                @genevaNamespace = genevaNamespace
+                @genevaConfigVersion = genevaConfigVersion
+                @genevaLogsConfig = true
+              else
+                puts "config::error:unsupported geneva config environment"
+              end
+            else
+              puts "config::error:invalid geneva logs config"
+            end
           end
-        end
-        genevaAuthMode = geneva_logs_config[:authmethod]
-        if !genevaAuthMode.nil? && GENEVA_SUPPORTED_AUTH_METHODS.include?(genevaAuthMode)
-          @genevaAuthMode = genevaAuthMode
-        else
-          puts "config::info:using default geneva auth mode"
+          genevaAuthMode = geneva_logs_config[:authmethod]
+          if !genevaAuthMode.nil? && GENEVA_SUPPORTED_AUTH_METHODS.include?(genevaAuthMode)
+            @genevaAuthMode = genevaAuthMode
+          else
+            puts "config::info:using default geneva auth mode"
+          end
+          puts "config::info:successfully parsed geneva_logs_config settings"
         end
       end
     end
@@ -269,6 +277,7 @@ if !file.nil?
   if @genevaLogsConfig
     file.write("export GENEVA_LOGS_CONFIG_ENABLED=#{@genevaLogsConfig}\n")
     file.write("export MONITORING_USE_GENEVA_CONFIG_SERVICE=#{@genevaLogsConfig}\n")
+    file.write("export GENEVA_LOGS_MULTI_TENANCY_ENABLED=#{@genevaMultiTenancy}\n")
     if !@genevaMultiTenancy
       if !@genevaEnvironment.empty? && !@genevaAccount.empty? && !@genevaNamespace.empty? && !@genevaConfigVersion.empty?
         file.write("export MONITORING_GCS_ENVIRONMENT=#{@genevaEnvironment}\n")
