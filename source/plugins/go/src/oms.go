@@ -124,6 +124,10 @@ var (
 	HTTPClient http.Client
 	// Client for MDSD msgp Unix socket
 	MdsdMsgpUnixSocketClient net.Conn
+	// Client for MDSD msgp Unix socket for KubeSystem
+	MdsdMsgpUnixSocketClientSystem net.Conn
+	// Client for MDSD msgp Unix socket for User
+	MdsdMsgpUnixSocketClientUser net.Conn
 	// Client for MDSD msgp Unix socket for KubeMon Agent events
 	MdsdKubeMonMsgpUnixSocketClient net.Conn
 	// Client for MDSD msgp Unix socket for Insights Metrics
@@ -180,6 +184,10 @@ var (
 	ContainerType string
 	// flag to check whether LA AAD MSI Auth Enabled or not
 	IsAADMSIAuthMode bool
+	// flag to check whether Geneva Multitenancy enabled or not
+	IsGenevaMultiTenancyEnabled bool
+	// flag to check whether Geneva Logs enabled or not
+	IsGenevaLogsEnabled bool
 )
 
 var (
@@ -731,7 +739,7 @@ func flushKubeMonAgentEventRecords() {
 				msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdKubeMonAgentEventsTagName, msgPackEntries)
 				if MdsdKubeMonMsgpUnixSocketClient == nil {
 					Log("Error::mdsd::mdsd connection for KubeMonAgentEvents does not exist. re-connecting ...")
-					CreateMDSDClient(KubeMonAgentEvents, ContainerType)
+					CreateMDSDClient(KubeMonAgentEvents, ContainerType, "")
 					if MdsdKubeMonMsgpUnixSocketClient == nil {
 						Log("Error::mdsd::Unable to create mdsd client for KubeMonAgentEvents. Please check error log.")
 						ContainerLogTelemetryMutex.Lock()
@@ -946,7 +954,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 			msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdInsightsMetricsTagName, msgPackEntries)
 			if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
 				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-				CreateMDSDClient(InsightsMetrics, ContainerType)
+				CreateMDSDClient(InsightsMetrics, ContainerType, "")
 				if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
 					Log("Error::mdsd::Unable to create mdsd client for insights metrics. Please check error log.")
 					ContainerLogTelemetryMutex.Lock()
@@ -1085,6 +1093,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	var msgPackEntries []MsgPackEntry
 	var stringMap map[string]string
+	msgPackEntriesByNamespace := make(map[string][]MsgPackEntry)
 	var elapsed time.Duration
 
 	var maxLatency float64
@@ -1166,7 +1175,15 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				//Time: time.Now().Unix(),
 				Record: stringMap,
 			}
-			msgPackEntries = append(msgPackEntries, msgPackEntry)
+			if IsGenevaMultiTenancyEnabled {
+				if k8sNamespace == "kube-system" {
+					msgPackEntriesByNamespace["system"] =  append(msgPackEntriesByNamespace["system"], msgPackEntry)
+				} else {
+					msgPackEntriesByNamespace["user"] =  append(msgPackEntriesByNamespace["user"], msgPackEntry)
+				}
+			} else {
+				msgPackEntries = append(msgPackEntries, msgPackEntry)
+			}
 		} else if ContainerLogsRouteADX == true {
 			if ResourceCentric == true {
 				stringMap["AzureResourceId"] = ResourceID
@@ -1243,7 +1260,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	numContainerLogRecords := 0
 
-	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
+	if (len(msgPackEntries) > 0 || len(msgPackEntriesByNamespace["system"]) > 0  || len(msgPackEntriesByNamespace["user"]) > 0)&& ContainerLogsRouteV2 == true {
 		//flush to mdsd
 		if IsAADMSIAuthMode == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false {
 			Log("Info::mdsd::obtaining output stream id")
@@ -1255,68 +1272,207 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Log("Info::mdsd:: using mdsdsource name: %s", MdsdContainerLogTagName)
 		}
 
-		fluentForward := MsgPackForward{
-			Tag:     MdsdContainerLogTagName,
-			Entries: msgPackEntries,
-		}
+		if IsGenevaMultiTenancyEnabled {
+			if len(msgPackEntriesByNamespace["system"]) > 0  {
+				fluentForward := MsgPackForward{
+					Tag:     MdsdContainerLogTagName,
+					Entries: msgPackEntriesByNamespace["system"],
+				}
 
-		//determine the size of msgp message
-		msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
-		for i := range fluentForward.Entries {
-			msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
-		}
+				//determine the size of msgp message
+				msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
+				for i := range fluentForward.Entries {
+					msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
+				}
 
-		//allocate buffer for msgp message
-		var msgpBytes []byte
-		msgpBytes = msgp.Require(nil, msgpSize)
+				//allocate buffer for msgp message
+				var msgpBytes []byte
+				msgpBytes = msgp.Require(nil, msgpSize)
 
-		//construct the stream
-		msgpBytes = append(msgpBytes, 0x92)
-		msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
-		msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
-		batchTime := time.Now().Unix()
-		for entry := range fluentForward.Entries {
+				//construct the stream
+				msgpBytes = append(msgpBytes, 0x92)
+				msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
+				msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+				batchTime := time.Now().Unix()
+				for entry := range fluentForward.Entries {
+					msgpBytes = append(msgpBytes, 0x92)
+					msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
+					msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
+				}
+
+
+				if MdsdMsgpUnixSocketClientSystem == nil {
+					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+					CreateMDSDClient(ContainerLogV2, ContainerType, "system")
+					if MdsdMsgpUnixSocketClientSystem == nil {
+						Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+
+						ContainerLogTelemetryMutex.Lock()
+						defer ContainerLogTelemetryMutex.Unlock()
+						ContainerLogsMDSDClientCreateErrors += 1
+
+						return output.FLB_RETRY
+					}
+				}
+
+				deadline := 10 * time.Second
+				MdsdMsgpUnixSocketClientSystem.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
+
+				bts, er := MdsdMsgpUnixSocketClientSystem.Write(msgpBytes)
+
+				elapsed = time.Since(start)
+
+				if er != nil {
+					Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntriesByNamespace["system"]), elapsed, er.Error())
+					if MdsdMsgpUnixSocketClientSystem != nil {
+						MdsdMsgpUnixSocketClientSystem.Close()
+						MdsdMsgpUnixSocketClientSystem = nil
+					}
+
+					ContainerLogTelemetryMutex.Lock()
+					defer ContainerLogTelemetryMutex.Unlock()
+					ContainerLogsSendErrorsToMDSDFromFluent += 1
+
+					return output.FLB_RETRY
+				} else {
+					numContainerLogRecords = len(msgPackEntriesByNamespace["system"])
+					Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
+				}
+			}
+
+			if len(msgPackEntriesByNamespace["user"]) > 0  {
+				fluentForward := MsgPackForward{
+					Tag:     MdsdContainerLogTagName,
+					Entries: msgPackEntriesByNamespace["user"],
+				}
+
+				//determine the size of msgp message
+				msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
+				for i := range fluentForward.Entries {
+					msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
+				}
+
+				//allocate buffer for msgp message
+				var msgpBytes []byte
+				msgpBytes = msgp.Require(nil, msgpSize)
+
+				//construct the stream
+				msgpBytes = append(msgpBytes, 0x92)
+				msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
+				msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+				batchTime := time.Now().Unix()
+				for entry := range fluentForward.Entries {
+					msgpBytes = append(msgpBytes, 0x92)
+					msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
+					msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
+				}
+
+
+				if MdsdMsgpUnixSocketClientUser == nil {
+					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+					CreateMDSDClient(ContainerLogV2, ContainerType, "user")
+					if MdsdMsgpUnixSocketClientUser == nil {
+						Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+
+						ContainerLogTelemetryMutex.Lock()
+						defer ContainerLogTelemetryMutex.Unlock()
+						ContainerLogsMDSDClientCreateErrors += 1
+
+						return output.FLB_RETRY
+					}
+				}
+
+				deadline := 10 * time.Second
+				MdsdMsgpUnixSocketClientUser.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
+
+				bts, er := MdsdMsgpUnixSocketClientUser.Write(msgpBytes)
+
+				elapsed = time.Since(start)
+
+				if er != nil {
+					Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntriesByNamespace["user"]), elapsed, er.Error())
+					if MdsdMsgpUnixSocketClientUser != nil {
+						MdsdMsgpUnixSocketClientUser.Close()
+						MdsdMsgpUnixSocketClientUser = nil
+					}
+
+					ContainerLogTelemetryMutex.Lock()
+					defer ContainerLogTelemetryMutex.Unlock()
+					ContainerLogsSendErrorsToMDSDFromFluent += 1
+
+					return output.FLB_RETRY
+				} else {
+					numContainerLogRecords = len(msgPackEntriesByNamespace["user"])
+					Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
+				}
+			}
+
+		} else {
+
+			fluentForward := MsgPackForward{
+				Tag:     MdsdContainerLogTagName,
+				Entries: msgPackEntries,
+			}
+
+			//determine the size of msgp message
+			msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
+			for i := range fluentForward.Entries {
+				msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
+			}
+
+			//allocate buffer for msgp message
+			var msgpBytes []byte
+			msgpBytes = msgp.Require(nil, msgpSize)
+
+			//construct the stream
 			msgpBytes = append(msgpBytes, 0x92)
-			msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
-			msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
-		}
+			msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
+			msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+			batchTime := time.Now().Unix()
+			for entry := range fluentForward.Entries {
+				msgpBytes = append(msgpBytes, 0x92)
+				msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
+				msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
+			}
 
-		if MdsdMsgpUnixSocketClient == nil {
-			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-			CreateMDSDClient(ContainerLogV2, ContainerType)
+
 			if MdsdMsgpUnixSocketClient == nil {
-				Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+				CreateMDSDClient(ContainerLogV2, ContainerType, "")
+				if MdsdMsgpUnixSocketClient == nil {
+					Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+
+					ContainerLogTelemetryMutex.Lock()
+					defer ContainerLogTelemetryMutex.Unlock()
+					ContainerLogsMDSDClientCreateErrors += 1
+
+					return output.FLB_RETRY
+				}
+			}
+
+			deadline := 10 * time.Second
+			MdsdMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
+
+			bts, er := MdsdMsgpUnixSocketClient.Write(msgpBytes)
+
+			elapsed = time.Since(start)
+
+			if er != nil {
+				Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
+				if MdsdMsgpUnixSocketClient != nil {
+					MdsdMsgpUnixSocketClient.Close()
+					MdsdMsgpUnixSocketClient = nil
+				}
 
 				ContainerLogTelemetryMutex.Lock()
 				defer ContainerLogTelemetryMutex.Unlock()
-				ContainerLogsMDSDClientCreateErrors += 1
+				ContainerLogsSendErrorsToMDSDFromFluent += 1
 
 				return output.FLB_RETRY
+			} else {
+				numContainerLogRecords = len(msgPackEntries)
+				Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 			}
-		}
-
-		deadline := 10 * time.Second
-		MdsdMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
-
-		bts, er := MdsdMsgpUnixSocketClient.Write(msgpBytes)
-
-		elapsed = time.Since(start)
-
-		if er != nil {
-			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
-			if MdsdMsgpUnixSocketClient != nil {
-				MdsdMsgpUnixSocketClient.Close()
-				MdsdMsgpUnixSocketClient = nil
-			}
-
-			ContainerLogTelemetryMutex.Lock()
-			defer ContainerLogTelemetryMutex.Unlock()
-			ContainerLogsSendErrorsToMDSDFromFluent += 1
-
-			return output.FLB_RETRY
-		} else {
-			numContainerLogRecords = len(msgPackEntries)
-			Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 		}
 	} else if ContainerLogsRouteADX == true && len(dataItemsADX) > 0 {
 		// Route to ADX
@@ -1759,8 +1915,25 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsRoute)
 	}
 
+	genevaLogsEnabled := strings.TrimSpace(strings.ToLower(os.Getenv("GENEVA_LOGS_CONFIG_ENABLED")))
+	IsGenevaLogsEnabled = false
+	if genevaLogsEnabled != "" && strings.Compare(strings.ToLower(genevaLogsEnabled), "true") == 0 {
+		IsGenevaLogsEnabled = true
+	}
+
+	IsGenevaMultiTenancyEnabled = false
+	genevaLogsMultiTenacyEnabled := strings.TrimSpace(strings.ToLower(os.Getenv("GENEVA_LOGS_MULTI_TENANCY_ENABLED")))
+	if genevaLogsMultiTenacyEnabled != "" && strings.Compare(strings.ToLower(genevaLogsMultiTenacyEnabled), "true") == 0 {
+		IsGenevaMultiTenancyEnabled = true
+	}
+
 	if ContainerLogsRouteV2 == true {
-		CreateMDSDClient(ContainerLogV2, ContainerType)
+        if IsGenevaMultiTenancyEnabled {
+			CreateMDSDClient(ContainerLogV2, ContainerType, "system")
+			CreateMDSDClient(ContainerLogV2, ContainerType, "user")
+		} else {
+		  CreateMDSDClient(ContainerLogV2, ContainerType, "")
+	    }
 	} else if ContainerLogsRouteADX == true {
 		CreateADXClient()
 	} else { // v1 or windows
@@ -1770,8 +1943,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	if IsWindows == false { // mdsd linux specific
 		Log("Creating MDSD clients for KubeMonAgentEvents & InsightsMetrics")
-		CreateMDSDClient(KubeMonAgentEvents, ContainerType)
-		CreateMDSDClient(InsightsMetrics, ContainerType)
+		CreateMDSDClient(KubeMonAgentEvents, ContainerType, "")
+		CreateMDSDClient(InsightsMetrics, ContainerType, "")
 	}
 
 	ContainerLogSchemaVersion := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
@@ -1810,7 +1983,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
 	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
-	Log("ContainerLogsRouteADX: %v, IsWindows: %v, IsAADMSIAuthMode = %v \n", ContainerLogsRouteADX, IsWindows, IsAADMSIAuthMode)
+	Log("ContainerLogsRouteADX: %v, IsWindows: %v, IsAADMSIAuthMode = %v, GenevaLogsEnabled = %v, GenevaMultiTenacy = %v \n", ContainerLogsRouteADX, IsWindows, IsAADMSIAuthMode, IsGenevaLogsEnabled, IsGenevaMultiTenancyEnabled)
 	if !ContainerLogsRouteADX && IsWindows && IsAADMSIAuthMode {
 		Log("defaultIngestionAuthTokenRefreshIntervalSeconds = %d \n", defaultIngestionAuthTokenRefreshIntervalSeconds)
 		IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(defaultIngestionAuthTokenRefreshIntervalSeconds))

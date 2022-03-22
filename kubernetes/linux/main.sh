@@ -538,9 +538,6 @@ echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
-#skip imds lookup since not used either legacy or aad msi auth path
-export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
-echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
 # this used by mdsd to determine cloud specific LA endpoints
 export OMS_TLD=$domain
 echo "export OMS_TLD=$OMS_TLD" >> ~/.bashrc
@@ -574,6 +571,13 @@ if [ "${GENEVA_LOGS_CONFIG_ENABLED}" == "true" ]; then
         # except logs, all other data types ingested via sidecar container MDSD port
         export MDSD_FLUENT_SOCKET_PORT="26230"
         echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+    fi
+    if [ "${GENEVA_LOGS_MULTI_TENANCY_ENABLED}" == "true" ]; then
+         echo "starting MDSDMGR since multitenancy enabled"
+         cp /opt/system /etc/mdsd.d/tenants/
+         cp /opt/user /etc/mdsd.d/tenants/
+         cp /opt/mdsdmgr_tenants.ini /etc/mdsd.d/tenants/
+         /usr/sbin/mdsdmgr -D -t /etc/mdsd.d/tenants/ &
     fi
 else
       if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
@@ -613,6 +617,9 @@ else
             mkdir -p /etc/pki/tls/certs
             cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
       fi
+      #skip imds lookup since not used either legacy or aad msi auth path
+      export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
+      echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH" >> ~/.bashrc
 fi
 source ~/.bashrc
 
@@ -631,9 +638,13 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     # add -T 0xFFFF for full traces
     mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 else
-    echo "starting mdsd mode in main container..."
-    # add -T 0xFFFF for full traces
-    mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>> /dev/null &
+   if [ "${GENEVA_LOGS_MULTI_TENANCY_ENABLED}" == "true" ]; then
+      echo "not starting mdsd mode in main container since MDSDMGR will be used for the Multitenacy..."
+   else
+      echo "starting mdsd mode in main container..."
+      # add -T 0xFFFF for full traces
+      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>> /dev/null &
+   fi
 fi
 
 # Set up a cron job for logrotation
