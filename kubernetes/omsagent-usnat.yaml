@@ -369,7 +369,7 @@ spec:
             value: "3"
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03112022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:ca-cert-host-032122"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -636,7 +636,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03112022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:ca-cert-host-032122"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
