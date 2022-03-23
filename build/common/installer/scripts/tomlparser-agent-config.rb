@@ -73,6 +73,7 @@ require_relative "ConfigParseErrorLogger"
 @genevaNamespace = ""
 @genevaConfigVersion = ""
 @genevaAuthMode = ""
+@genevaAuthId = ""
 GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "FirstpartyProd", "BillingProd", "ExternalProd", "CaMooncake", "CaFairfax", "CaBlackforest"]
 GENEVA_SUPPORTED_AUTH_METHODS = ["MSI", "CERT"]
 
@@ -224,6 +225,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           else
             puts "config::info:using default geneva auth mode"
           end
+          genevaAuthId = geneva_logs_config[:authid]
+          if !genevaAuthId.nil?
+            if genevaAuthId.start_with?("client_id#") || genevaAuthId.start_with?("object_id#") || genevaAuthId.start_with?("mi_res_id#")
+              @genevaAuthId = genevaAuthId
+            else
+              puts "config:error: auth id must be in one of the suppported formats: object_id#<guid> or client_id#<guid> or mi_res_id#<identity resource id>"
+            end
+          end
           puts "config::info:successfully parsed geneva_logs_config settings"
         end
       end
@@ -290,6 +299,9 @@ if !file.nil?
     end
     if !@genevaAuthMode.empty? && @genevaAuthMode == "MSI"
       file.write("export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken\n")
+    end
+    if !@genevaAuthId.empty?
+      file.write("export MONITORING_GCS_AUTH_ID=#{@genevaAuthId}\n")
     end
   end
   # Close file after writing all environment variables

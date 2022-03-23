@@ -368,7 +368,7 @@ spec:
             value: "3"
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:test03162022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:devpreview03232022"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -378,28 +378,6 @@ spec:
               cpu: 75m
               memory: 325Mi
           env:
-            # For Geneva integration
-            # - name: GENEVA_LOGS_CONFIG_ENABLED
-            #   value: "true"
-            # Incase of Multi-tenancy Geneva account pulled from CR
-            # - name: GENEVA_MULTI_TENANCY
-            #   value: "false"
-            # Following environment variables only required in case of single tenancy mode
-            # - name: MONITORING_GCS_ENVIRONMENT
-            #   value: "Stage"
-            # - name: MONITORING_GCS_ACCOUNT
-            #   value: "cilogstest"
-            # - name: MONITORING_GCS_NAMESPACE
-            #   value: "cilogstest"
-            # - name: MONITORING_GCS_REGION
-            #   value: "eastus2"
-            # - name: MONITORING_CONFIG_VERSION
-            #   value: "1.0"
-            # - name: MONITORING_USE_GENEVA_CONFIG_SERVICE
-            #   value: "true"
-            # Enable this when GCS supports MI auth until then cert auth
-            # - name: MONITORING_GCS_AUTH_ID_TYPE
-            #   value: "AuthMSIToken"
             - name: FBIT_SERVICE_FLUSH_INTERVAL
               value: "15"
             - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
@@ -438,9 +416,6 @@ spec:
             - containerPort: 25224
               protocol: UDP
           volumeMounts:
-            - name: geneva-secrets
-              mountPath: "/mnt/geneva-secrets"
-              readOnly: true
             - mountPath: /hostfs
               name: host-root
               readOnly: true
@@ -479,7 +454,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: omsagent-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod01312022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:devpreview03232022"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -517,9 +492,6 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
-            - name: geneva-secrets
-              mountPath: "/mnt/geneva-secrets"
-              readOnly: true
             - mountPath: /etc/kubernetes/host
               name: azure-json-path
             - mountPath: /etc/omsagent-secret
@@ -564,13 +536,6 @@ spec:
         - operator: "Exists"
           effect: "PreferNoSchedule"
       volumes:
-        # For Geneva GCS certs and key
-        - name: geneva-secrets
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: "azure-kvname-user-msi"
         - name: host-root
           hostPath:
             path: /
@@ -638,7 +603,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:test03162022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:devpreview03232022"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -683,9 +648,6 @@ spec:
               protocol: TCP
               name: in-rs-tcp
           volumeMounts:
-            - name: geneva-secrets
-              mountPath: "/mnt/geneva-secrets"
-              readOnly: true
             - mountPath: /var/run/host
               name: docker-sock
             - mountPath: /var/log
@@ -751,12 +713,6 @@ spec:
         - operator: "Exists"
           effect: "PreferNoSchedule"
       volumes:
-        - name: geneva-secrets
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: "azure-kvname-user-msi"
         - name: docker-sock
           hostPath:
             path: /var/run
@@ -977,30 +933,3 @@ spec:
   names:
     plural: healthstates
     kind: HealthState
----
-# This is a SecretProviderClass using user-assigned identity to access your key vault
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata:
-  name: azure-kvname-user-msi
-  namespace: kube-system
-spec:
-  provider: azure
-  parameters:
-    usePodIdentity: "false"
-    useVMManagedIdentity: "true"          # Set to true for using managed identity
-    userAssignedIdentityID: 7c6f8afe-ebb7-4bb0-aa6c-bbf3fafa334e   # Set the clientID of the user-assigned managed identity to use
-    keyvaultName: gangams-geneva-akv       # Set to the name of your key vault
-    cloudName: ""                         # [OPTIONAL for Azure] if not provided, the Azure environment defaults to AzurePublicCloud
-    objects:  |
-      array:
-        - |
-          objectName: gcscert
-          objectType: secret              # object types: secret, key, or cert
-          objectVersion: ""               # [OPTIONAL] object versions, default to latest if empty
-        - |
-          objectName: gcskey
-          objectType: secret              # object types: secret, key, or cert
-          objectVersion: ""               # [OPTIONAL] object versions, default to latest if empty
-    tenantId: 72f988bf-86f1-41af-91ab-2d7cd011db47                # The tenant ID of the key vault
-

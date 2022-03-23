@@ -568,17 +568,19 @@ if [ "${GENEVA_LOGS_CONFIG_ENABLED}" == "true" ]; then
         else
            echo "-error either geneva cert or key file doesnt exists"
         fi
-        # except logs, all other data types ingested via sidecar container MDSD port
-        export MDSD_FLUENT_SOCKET_PORT="26230"
-        echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
     fi
     if [ "${GENEVA_LOGS_MULTI_TENANCY_ENABLED}" == "true" ]; then
          echo "starting MDSDMGR since multitenancy enabled"
+         echo "MONITORING_GCS_AUTH_ID=$MONITORING_GCS_AUTH_ID" >> /opt/system
+         echo "MONITORING_GCS_AUTH_ID=$MONITORING_GCS_AUTH_ID" >> /opt/user
          cp /opt/system /etc/mdsd.d/tenants/
          cp /opt/user /etc/mdsd.d/tenants/
          cp /opt/mdsdmgr_tenants.ini /etc/mdsd.d/tenants/
          /usr/sbin/mdsdmgr -D -t /etc/mdsd.d/tenants/ &
     fi
+    # except logs, all other data types ingested via sidecar container MDSD port
+    export MDSD_FLUENT_SOCKET_PORT="26230"
+    echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
 else
       if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
             echo "*** activating oneagent in aad auth msi mode ***"
