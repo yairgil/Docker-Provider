@@ -74,7 +74,6 @@ type AgentConfiguration struct {
 						ContainerinsightsContainerlogv2 string `json:"CONTAINERINSIGHTS_CONTAINERLOGV2"`
 						ContainerNodeInventoryBlob      string `json:"CONTAINER_NODE_INVENTORY_BLOB"`
 						KubeEventsBlob                  string `json:"KUBE_EVENTS_BLOB"`
-						KubeHealthBlob                  string `json:"KUBE_HEALTH_BLOB"`
 						KubeMonAgentEventsBlob          string `json:"KUBE_MON_AGENT_EVENTS_BLOB"`
 						KubeNodeInventoryBlob           string `json:"KUBE_NODE_INVENTORY_BLOB"`
 						KubePodInventoryBlob            string `json:"KUBE_POD_INVENTORY_BLOB"`
