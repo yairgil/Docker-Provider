@@ -368,7 +368,7 @@ spec:
             value: "3"
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03112022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:waitforport-032122-2"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -443,15 +443,6 @@ spec:
             - mountPath: /etc/config/settings/adx
               name: omsagent-adx-secret
               readOnly: true
-          livenessProbe:
-            exec:
-              command:
-                - /bin/bash
-                - -c
-                - /opt/livenessprobe.sh
-            initialDelaySeconds: 60
-            periodSeconds: 60
-            timeoutSeconds: 15
 #Only in sidecar scraping mode
         # - name: omsagent-prometheus
         #   image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03112022"
