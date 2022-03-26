@@ -21,17 +21,23 @@
         },
         "dceName": {
             "type": "string",
-            "defaultValue": "[concat('dce-', parameters('monitoringAccountName'))]"
+            "defaultValue": "[concat('dce-', parameters('monitoringAccountName'), '-', uniqueString(parameters('targetAKSResource')))]"
         },
         "dcrName": {
             "type": "string",
-            "defaultValue": "[concat('dcr-', parameters('monitoringAccountName'))]"
+            "defaultValue": "[concat('dcr-', parameters('monitoringAccountName'), '-', uniqueString(parameters('targetAKSResource')))]"
         },
         "dcraName": {
             "type": "string",
-            "defaultValue": "[concat('dcra-', parameters('monitoringAccountName'))]"
+            "defaultValue": "[concat('dcra-', parameters('monitoringAccountName'), '-', uniqueString(parameters('targetAKSResource')))]"
         },
         "targetAKSResource": {
+            "type": "string"
+        },
+        "AKSSubId": {
+            "type": "string"
+        },
+        "AKSRg": {
             "type": "string"
         }
     },
@@ -123,16 +129,57 @@
             }
         },
         {
-            "type": "Microsoft.Insights/dataCollectionRuleAssociations",
-            "apiVersion": "2021-09-01-preview",
-            "name": "[parameters('dcraName')]",
-            "scope": "[parameters('targetAKSResource')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2021-04-01",
+            "name": "nestedDCRADeployment",
             "dependsOn": [
                 "[resourceId('Microsoft.Insights/dataCollectionRules/', parameters('dcrName'))]"
             ],
+            "subscriptionId": "[parameters('AKSSubId')]",
+            "resourceGroup": "[parameters('AKSRg')]",
             "properties": {
-                "dataCollectionRuleId": "[resourceId('Microsoft.Insights/dataCollectionRules/', parameters('dcrName'))]",
-                "description": "Data collection association between DCR, DCE and target AKS resource"
+                "mode": "Incremental",
+                "expressionEvaluationOptions": {
+                    "scope": "inner"
+                },
+                "parameters": {
+                    "dcrId": {
+                        "value": "[resourceId('Microsoft.Insights/dataCollectionRules/', parameters('dcrName'))]"
+                    },
+                    "dcraName": {
+                        "value": "[parameters('dcraName')]"
+                    },
+                    "targetAKSResource": {
+                        "value": "[parameters('targetAKSResource')]"
+                    }
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "dcrId": {
+                            "type": "string"
+                        },
+                        "dcraName": {
+                            "type": "string"
+                        },
+                        "targetAKSResource": {
+                            "type": "string"
+                        }
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+                            "apiVersion": "2021-09-01-preview",
+                            "name": "[parameters('dcraName')]",
+                            "scope": "[parameters('targetAKSResource')]",
+                            "properties": {
+                                "dataCollectionRuleId": "[parameters('dcrId')]",
+                                "description": "Data collection association between DCR, DCE and target AKS resource"
+                            }
+                        }
+                    ]
+                }
             }
         }
     ]
