@@ -15,13 +15,13 @@
 #
 # For example:
 #
-# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-script-3" "rashmi-canary-grafana-2" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template"
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-4" "rashmi-canary-grafana-3" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template"
 #
 # Cross rg for aks resource -
 # bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-script-3" "rashmi-canary-grafana-2" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template-2/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template-2"
 #
 # Cross sub for aks resource -
-# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-script-3" "rashmi-canary-grafana-2" "eastus2euap" /subscriptions/8f6da2d9-ff10-4800-9239-c7e0e8b3407f/resourcegroups/rashmi-canary-10/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-10
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-4" "rashmi-canary-grafana-3" "eastus2euap" /subscriptions/8f6da2d9-ff10-4800-9239-c7e0e8b3407f/resourcegroups/rashmi-canary-10/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-10
 echo "subscriptionId"= ${1}
 echo "resourceGroup" = ${2}
 echo "monitoringAccountName"= ${3}
