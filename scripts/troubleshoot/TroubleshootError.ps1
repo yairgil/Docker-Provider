@@ -688,7 +688,8 @@ else {
         }
         catch {
             Write-Host("")
-            Write-Host("Failed to get the data collection Rule '" + $dcrRuleName + "'. Please make sure that it hasn't been deleted and you have access to it.") -ForegroundColor Red
+            Write-Host("Failed to get the data collection Rule: '" + $dcrRuleName + "'. Please make sure that it hasn't been deleted and you have access to it.") -ForegroundColor Red
+            Write-Host("If  DataCollectionRule :'" + $dcrRuleName + "' has been deleted accidentally, disable and enable Monitoring addon back to get this fixed.") -ForegroundColor Red
             Write-Host("")
             Stop-Transcript
             exit 1
@@ -711,6 +712,7 @@ else {
         catch {
             Write-Host("")
             Write-Host("Failed to get the data collection Rule Association. Please make sure that it hasn't been deleted and you have access to it.") -ForegroundColor Red
+            Write-Host("If ContainerInsightsExtension DataCollectionRule Association has been deleted accidentally, disable and enable Monitoring addon back to get this fixed.") -ForegroundColor Red
             Write-Host("")
             Stop-Transcript
             exit 1
