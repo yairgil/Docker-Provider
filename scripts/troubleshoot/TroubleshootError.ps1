@@ -672,7 +672,9 @@ else {
                     Write-Host("Successfully validated Data Collection Rule is valid...") -ForegroundColor Green
                 } else {
                     Write-Host("")
-                    Write-Host("Data Collection Rule: '" + $dcrRuleName + "' found has log anlytics workspace which different from the log anlytics  workspace  in Monitoring addon.") -ForegroundColor Red
+                    Write-Host("Data Collection Rule: '" + $dcrRuleName + "' found has Log Analytics(LA) workspace which different from the Log Analytics  workspace  in Monitoring addon.") -ForegroundColor Red
+                    $laWorkspaceResIdInDCR = $laDestinations[0].WorkspaceResourceId
+                    Write-Host("LA workspace found in Data Collection Rule: '" + $laWorkspaceResIdInDCR + "' but where as LA workspace in Monitoring Addon: '" + $LogAnalyticsWorkspaceResourceID + "'.") -ForegroundColor Red
                     Write-Host("")
                     Stop-Transcript
                     exit 1
