@@ -838,7 +838,7 @@ if ("AKS" -eq $ClusterType ) {
 
         Write-Host("Switch to cluster context to:", $ClusterName )
         kubectl config use-context $ClusterName
-        Write-Host("Successfully switche current context of the k8s cluster to:", $ClusterName)
+        Write-Host("Successfully switched current context of the k8s cluster to:", $ClusterName)
 
         Write-Host("Check whether the omsagent replicaset pod running correctly ...")
         $rsPod = kubectl get deployments omsagent-rs -n kube-system -o json | ConvertFrom-Json
