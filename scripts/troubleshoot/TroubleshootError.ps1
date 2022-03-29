@@ -672,7 +672,7 @@ else {
                     Write-Host("Successfully validated Data Collection Rule is valid...") -ForegroundColor Green
                 } else {
                     Write-Host("")
-                    Write-Host("Data Collection Rule: '" + $dcrRuleName + "' found is not valid ContainerInsights extension DCR.") -ForegroundColor Red
+                    Write-Host("Data Collection Rule: '" + $dcrRuleName + "' found has log anlytics workspace which different from the log anlytics  workspace  in Monitoring addon.") -ForegroundColor Red
                     Write-Host("")
                     Stop-Transcript
                     exit 1
