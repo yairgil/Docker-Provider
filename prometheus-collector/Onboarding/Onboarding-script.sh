@@ -2,26 +2,28 @@
 #
 # Execute this directly in Azure Cloud Shell (https://shell.azure.com) by pasting (SHIFT+INS on Windows, CTRL+V on Mac or Linux)
 # the following line (beginning with curl...) at the command prompt and then replacing the args:
+# curl https://raw.githubusercontent.com/microsoft/Docker-Provider/prometheus-collector/prometheus-collector/Onboarding/Onboarding-script.sh
+# Also download the ARM template that creates MAC, Data Collection Rules and Custom role to query data using grafana
 # This script configures required artifacts for MAC and Grafana usage
 # Azure CLI:  https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest
 #
-#   [Required]  ${1}  subscriptionId    subscriptionId where resources are created
-#   [Required]  ${2}  resourceGroup      resource group of the AKS cluster
-#   [Required]  ${3}  monitoringAccountName           name of the AKS cluster
-#   [Required]  ${3}  grafanaName           name of the AKS cluster
-#   [Required]  ${3}  location           name of the AKS cluster
-#   [Required]  ${3}  aksResourceId           name of the AKS cluster
+#   [Required]  ${1}  subscriptionId             SubscriptionId where resources(MAC, DCR, Grafana) are created
+#   [Required]  ${2}  resourceGroup              Resource group where resources(MAC, DCR, Grafana) are created
+#   [Required]  ${3}  monitoringAccountName      Name of the Monitoring Account that will be created
+#   [Required]  ${4}  grafanaName                Name of the Grafana instance that will be created
+#   [Required]  ${5}  location                   Location where resources(MAC, DCR, Grafana) are created
+#   [Required]  ${6}  aksResourceId              Azure resource id of the AKS Cluster ("/subscriptions/subid/resourcegroups/rg-name/providers/Microsoft.ContainerService/managedClusters/clustername")
 
 #
 # For example:
 #
 # bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-4" "rashmi-canary-grafana-3" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template"
 #
-# Cross rg for aks resource -
-# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-script-3" "rashmi-canary-grafana-2" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template-2/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template-2"
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-6" "rashmi-canary-grafana-6" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template-2/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template-2"
 #
 # Cross sub for aks resource -
 # bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-4" "rashmi-canary-grafana-3" "eastus2euap" /subscriptions/8f6da2d9-ff10-4800-9239-c7e0e8b3407f/resourcegroups/rashmi-canary-10/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-10
+
 echo "subscriptionId"= ${1}
 echo "resourceGroup" = ${2}
 echo "monitoringAccountName"= ${3}
