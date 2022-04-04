@@ -317,15 +317,16 @@ Navigate to Kubernetes directory and update the yamls with latest docker image o
 For DEV and PROD branches, automatically deployed latest yaml with latest agent image (which automatically built by the azure devops pipeline) onto CIDEV and CIPROD AKS clusters in build subscription.  So, you can use CIDEV and CIPROD AKS cluster to validate E2E. Similarly, you can set up build and release pipelines for your feature branch.
 
 # Testing MSI Auth Mode Using Yaml
-  1. Enable Monitoring addon with Managed Idenity Auth Mode either using Portal or CLI
+  1. Enable Monitoring addon with Managed Idenity Auth Mode either using Portal or CLI or Template
   2. Deploy [ARM template](./scripts/onboarding/aks/onboarding-using-msi-auth/) with enabled = false to create DCR, DCR-A and link the workspace to Portal
    > Note - Make sure to update the parameter values in existingClusterParam.json file and have enabled = true in template file
     `az deployment group create --resource-group <ResourceGroupName> --template-file ./existingClusterOnboarding.json --parameters @./existingClusterParam.json`
   3. Get the MSI token (which is valid for 24 hrs.) value via `kubectl get secrets -n kube-system  omsagent-aad-msi-token -o=jsonpath='{.data.token}'`
   4. Disable Monitoring addon via `az aks disable-addons -a monitoring -g <rgName> -n <clusterName>`
-  5. Uncomment MSI auth related yaml lines, replace all the placeholder values including the MSI token value in the omsagent.yaml
+  5. Uncomment MSI auth related yaml lines, replace all the placeholder values, MSI token value and image tag in the omsagent.yaml
   6. Deploy the omsagent.yaml via `kubectl apply -f omsagent.yaml`
-  > Note: use the image toggle for release E2E validation
+    > Note: use the image toggle for release E2E validation
+  7. valiade E2E
 
 # E2E Tests
 
