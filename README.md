@@ -317,6 +317,7 @@ Navigate to Kubernetes directory and update the yamls with latest docker image o
 For DEV and PROD branches, automatically deployed latest yaml with latest agent image (which automatically built by the azure devops pipeline) onto CIDEV and CIPROD AKS clusters in build subscription.  So, you can use CIDEV and CIPROD AKS cluster to validate E2E. Similarly, you can set up build and release pipelines for your feature branch.
 
 # Testing MSI Auth Mode Using Yaml
+
   1. Enable Monitoring addon with Managed Idenity Auth Mode either using Portal or CLI or Template
   2. Deploy [ARM template](./scripts/onboarding/aks/onboarding-using-msi-auth/) with enabled = false to create DCR, DCR-A and link the workspace to Portal
    > Note - Make sure to update the parameter values in existingClusterParam.json file and have enabled = true in template file
