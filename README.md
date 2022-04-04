@@ -327,7 +327,7 @@ For DEV and PROD branches, automatically deployed latest yaml with latest agent 
   5. Uncomment MSI auth related yaml lines, replace all the placeholder values, MSI token value and image tag in the omsagent.yaml
   6. Deploy the omsagent.yaml via `kubectl apply -f omsagent.yaml`
     > Note: use the image toggle for release E2E validation
-  7. validate E2E for
+  7. validate E2E for LA & Metrics data flows, and other scenarios
 
 # E2E Tests
 
