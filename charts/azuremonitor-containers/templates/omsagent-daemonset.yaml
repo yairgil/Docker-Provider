@@ -74,7 +74,7 @@ spec:
 {{ toYaml .Values.omsagent.resources.daemonsetlinux | indent 9 }}
        env:
        - name: USING_AAD_MSI_AUTH
-         value: {{ .Values.omsagent.enableMSIAuth | quote }}
+         value: {{ .Values.omsagent.useMSIAuth | quote }}
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.omsagent.env.clusterId | quote }}
@@ -178,7 +178,7 @@ spec:
 {{ toYaml .Values.omsagent.resources.daemonsetlinuxsidecar | indent 9 }}
        env:
        - name: USING_AAD_MSI_AUTH
-         value: {{ .Values.omsagent.enableMSIAuth | quote }}
+         value: {{ .Values.omsagent.useMSIAuth | quote }}
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.omsagent.env.clusterId | quote }}
