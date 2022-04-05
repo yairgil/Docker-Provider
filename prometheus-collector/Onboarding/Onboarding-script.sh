@@ -19,10 +19,38 @@
 #
 # bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-4" "rashmi-canary-grafana-3" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template"
 #
-# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-6" "rashmi-canary-grafana-6" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template-2/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template-2"
+# Multiple DCRs for rashmi-canary-template
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-5" "rashmi-canary-grafana-3" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template"
+#
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-6" "rashmi-canary-grafana-3" "eastus2euap" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-canary-template-2/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-template-2"
 #
 # Cross sub for aks resource -
 # bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-canary-template" "rashmi-canary-mac-4" "rashmi-canary-grafana-3" "eastus2euap" /subscriptions/8f6da2d9-ff10-4800-9239-c7e0e8b3407f/resourcegroups/rashmi-canary-10/providers/Microsoft.ContainerService/managedClusters/rashmi-canary-10
+#
+# eastus2 -
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-eus2-template" "rashmi-mac-eus2-1" "rashmi-eus2-grafana" "eastus2" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eastus2-template/providers/Microsoft.ContainerService/managedClusters/rashmi-eastus2-template"
+#
+# eastus2-1 -
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-eus2-1-rg" "rashmi-eus2-1-mac" "rashmi-eus2-1-grafana" "eastus2" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eastus2-1/providers/Microsoft.ContainerService/managedClusters/rashmi-eastus2-1"
+#
+# eastus -
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-eus2-1-rg" "rashmi-eus-1-mac" "rashmi-eus2-1-grafana" "eastus" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eus-1/providers/Microsoft.ContainerService/managedClusters/rashmi-eus-1"
+# using this grafana because of the limitations - rashmi-eus2-1-grafana
+# eastus - #2
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-eus-2-rg" "rashmi-eus-2-mac" "rashmi-eus-2-grafana" "eastus" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eus-1/providers/Microsoft.ContainerService/managedClusters/rashmi-eus-1"
+# set HELM_EXPERIMENTAL_OCI=1
+# ./helm pull oci://mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector --version 2.0.0-feature-mac-03-31-2022-2bab9264
+# helm uninstall my-collector-dev-release -n kube-system
+# ./helm upgrade --install my-collector-dev-release ./prometheus-collector-2.0.0-feature-mac-03-31-2022-2bab9264.tgz --dependency-update --set useMonitoringAccount=true --set azureResourceId="/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eus-1/providers/Microsoft.ContainerService/managedClusters/rashmi-eus-1" --set azureResourceRegion="eastus" --set mode.advanced=true --namespace=kube-system --create-namespace
+
+# westeurope -
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-weu-2-rg" "rashmi-weu-2-mac" "rashmi-weu-2-grafana" "westeurope" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-weu-1/providers/Microsoft.ContainerService/managedClusters/rashmi-weu-1"
+#
+# set HELM_EXPERIMENTAL_OCI=1
+# ./helm pull oci://mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector --version 2.0.0-feature-mac-03-31-2022-2bab9264
+# ./helm uninstall my-collector-dev-release -n kube-system
+# ./helm upgrade --install my-collector-dev-release ./prometheus-collector-2.0.0-feature-mac-03-31-2022-2bab9264.tgz --dependency-update --set useMonitoringAccount=true --set azureResourceId="/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-weu-1/providers/Microsoft.ContainerService/managedClusters/rashmi-weu-1" --set azureResourceRegion="westeurope" --set mode.advanced=true --namespace=kube-system --create-namespace
+
 
 echo "subscriptionId"= ${1}
 echo "resourceGroup" = ${2}
@@ -51,7 +79,7 @@ fi
 
 trimmedLocation=$(echo $location | sed 's/ //g' | awk '{print tolower($0)}')
 echo $trimmedLocation
-if [ $trimmedLocation != "eastus2euap" ] && [ $trimmedLocation != "eastus" ] && [ $trimmedLocation != "eastus2" ] && [ $trimmedLocation != "weseurope" ]
+if [ $trimmedLocation != "eastus2euap" ] && [ $trimmedLocation != "eastus" ] && [ $trimmedLocation != "eastus2" ] && [ $trimmedLocation != "westeurope" ]
 then
     echo "Location not in a supported region - eastus, eastus2, westeurope"
     exit 1
@@ -78,13 +106,24 @@ az account set -s $subscriptionId
 
 az group create --location $trimmedLocation --name $resourceGroup
 
-echo "Creating Grafana instance, if it doesnt exist: $grafanaName"
-az grafana create -g $resourceGroup -n $grafanaName
+echo "Creating Grafana instance, if it doesnt exist: $grafanaName" 
+if [ $trimmedLocation == "eastus2" ]
+then
+    echo "Using EastUS for Grafana instance creation since EASTUS2 is not supported"
+    grafanalocation="eastus"
+else
+    echo "Using $trimmedLocation for Grafana instance creation"
+    grafanalocation=$trimmedLocation
+fi
+az grafana create -g $resourceGroup -n $grafanaName -l $grafanalocation
 
 grafanaSmsi=$(az grafana show -g $resourceGroup -n $grafanaName --query 'identity.principalId')
 echo "Got System Assigned Identity for Grafana instance: $grafanaSmsi"
 echo "Removing quotes from MSI"
 grafanaSmsi=$(sed -e 's/^"//' -e 's/"$//' <<<"$grafanaSmsi")
+
+echo "Creating role definition to be able to read data from MAC"
+az deployment sub create --location $trimmedLocation --template-file RoleDefinition.json 
 
 #Template to create all resources required for MAC ingestion e2e
 echo "Creating all resources required for MAC ingestion"
@@ -98,7 +137,7 @@ echo "Removing quotes from MAC Id"
 macId=$(sed -e 's/^"//' -e 's/"$//' <<<"$macId")
 
 echo "Assigning MAC reader role to grafana's system assigned MSI"
-az role assignment create --assignee-object-id $grafanaSmsi --assignee-principal-type ServicePrincipal --scope $macId --role "Monitoring Data Reader MAC"
+az role assignment create --assignee-object-id $grafanaSmsi --assignee-principal-type ServicePrincipal --scope $macId --role "Monitoring Data Reader-"${subscriptionId}
 
 promQLEndpoint=$(az resource show -g $resourceGroup -n $monitoringAccountName --resource-type "Microsoft.Monitor/Accounts" --query 'properties.metrics.prometheusQueryEndpoint')
 echo "PromQLEndpoint: $promQLEndpoint"
