@@ -131,10 +131,6 @@ class Constants
 
   LINUX_LOG_PATH = $in_unit_test.nil? ? "/var/opt/microsoft/docker-cimprov/log/" : "./"
   WINDOWS_LOG_PATH = $in_unit_test.nil? ? "/etc/omsagentwindows/" : "./"
-  DEFAULT_IMDS_ENDPOINT_HOST = "169.254.169.254"
-  # make sure both AKS and Arc K8s have same contract for imds host for windows
-  # this makes easy transition for windows AMA since this being used for Arc in AMA already
-  IMDS_ENDPOINT_HOST_WINDOWS_SIDECAR = "localhost:40342"
 
   #This is for telemetry to track if any of the windows customer has any of the field size >= 64KB
   #To evaluate switching to Windows AMA 64KB impacts any existing customers
