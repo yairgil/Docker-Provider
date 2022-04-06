@@ -41,7 +41,7 @@ spec:
         value: "false"
       - name: TOKEN_NAMESPACE
         value: "azure-arc"
-{{ toyaml | .Values.Azure.Identity.MSIAdapterYaml | indent 11}}
+{{ toyaml | .Values.Azure.Identity.MSIAdapterYaml | indent 6 }}
 {{- end }}
      - name: omsagent
        {{- if  eq (.Values.omsagent.domain | lower) "opinsights.azure.cn" }}
