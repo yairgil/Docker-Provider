@@ -10,7 +10,7 @@ spec:
   serviceAccounts:
     - name: omsagent
       namespace: kube-system
-  tokenNamespace: kube-system
+  tokenNamespace: azure-arc
 ---
 {{- end }}
 apiVersion:  clusterconfig.azure.com/v1beta1
