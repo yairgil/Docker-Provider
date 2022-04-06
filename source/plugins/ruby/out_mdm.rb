@@ -108,16 +108,16 @@ module Fluent::Plugin
           @log.info "POST Request url: #{@@post_request_url}"
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMPluginStart", {})
 
-          # arc k8s cluster uses cluster identity
           if (!!@isArcK8sCluster)
             if ExtensionUtils.isAADMSIAuthMode() && !isWindows()
-              @log.info "using aad msi auth"
+              @log.info "using aad msi auth for arc k8s cluster since useMSIAuth configured"
               @useMsi = true
               @isAADMSIAuth = true
               msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
               @parsed_token_uri = URI.parse(msi_endpoint)
               @cached_access_token = get_access_token
             else
+              # switch to IMDS endpoint for the windows once the Arc K8s team supports
               @log.info "using cluster identity token since cluster is azure arc k8s cluster"
               @cluster_identity = ArcK8sClusterIdentity.new
               @cached_access_token = @cluster_identity.get_cluster_identity_token
@@ -328,6 +328,7 @@ module Fluent::Plugin
           if ExtensionUtils.isAADMSIAuthMode() && !isWindows()
             access_token = get_access_token
           else
+            # switch to IMDS endpoint for the windows once the Arc K8s team supports
             if @cluster_identity.nil?
               @cluster_identity = ArcK8sClusterIdentity.new
             end

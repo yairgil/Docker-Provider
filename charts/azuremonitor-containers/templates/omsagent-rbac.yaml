@@ -35,24 +35,6 @@ rules:
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
 ---
-kind: Role
-{{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
-apiVersion: rbac.authorization.k8s.io/v1
-{{- else }}
-apiVersion: rbac.authorization.k8s.io/v1beta1
-{{- end }}
-metadata:
-  namespace: kube-system
-  name: omsagent-extension-identity-reader
-  labels:
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-rules:
-- apiGroups: ["clusterconfig.azure.com"]
-  resources: ["azureclusteridentityrequests", "azureclusteridentityrequests/status"]
-  verbs: ["list", "get", "create", "patch"]
----
 kind: ClusterRoleBinding
 {{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
 apiVersion: rbac.authorization.k8s.io/v1
@@ -72,27 +54,5 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: omsagent-reader
-  apiGroup: rbac.authorization.k8s.io
----
-kind: RoleBinding
-{{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
-apiVersion: rbac.authorization.k8s.io/v1
-{{- else }}
-apiVersion: rbac.authorization.k8s.io/v1beta1
-{{- end }}
-metadata:
-  name: omsagentrolebinding
-  namespace: kube-system
-  labels:
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-subjects:
-  - kind: ServiceAccount
-    name: omsagent
-    namespace: kube-system
-roleRef:
-  kind: Role
-  name: omsagent-extension-identity-reader
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
