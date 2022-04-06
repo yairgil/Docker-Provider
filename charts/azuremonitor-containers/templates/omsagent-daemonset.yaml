@@ -37,32 +37,9 @@ spec:
    serviceAccountName: omsagent
    {{- end }}
    containers:
-     - name: addon-token-adapter
-       image: azurearcfork8sdev.azurecr.io/arc-preview/msi-adapter:0.0.10
-       imagePullPolicy: IfNotPresent
-       env:
-       - name: AZMON_COLLECT_ENV
-         value: "false"
-       - name: TOKEN_NAMESPACE
-         value: kube-system
-       - name: EXTENSION_ARMID
-         value: {{ .Values.Azure.Extension.ResourceId }}
-       - name: EXTENSION_NAME
-         value: {{ .Values.Azure.Extension.Name }}
-       - name: CLUSTER_IDENTITY
-         value: "false"
-       - name: CLUSTER_TYPE
-         value: ConnectedClusters
-       - name: MANAGED_IDENTITY_AUTH
-         value: "true"
-       - name: TEST_MODE
-         value: "false"
-       - name: TEST_FILE
-         value: "/data/token"
-       securityContext:
-         capabilities:
-           add:
-             - NET_ADMIN
+{{- if .Values.omsagent.useMSIAuth }}
+{{ toYaml .Values.Azure.Identity.MSIAdapterYaml | indent 9 }}
+{{- end }}
      - name: omsagent
        {{- if eq (.Values.omsagent.domain | lower) "opinsights.azure.cn" }}
        image: "mcr.azk8s.cn/azuremonitor/containerinsights/ciprod:{{ .Values.omsagent.image.tag }}"

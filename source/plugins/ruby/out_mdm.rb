@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require 'fluent/plugin/output'
+require "fluent/plugin/output"
 
 module Fluent::Plugin
   class OutputMDM < Output
@@ -20,8 +20,6 @@ module Fluent::Plugin
       require_relative "arc_k8s_cluster_identity"
       require_relative "proxy_utils"
       require_relative "extension_utils"
-
-
       @@token_resource_url = "https://monitoring.azure.com/"
       # AAD auth supported only in public cloud and handle other clouds when enabled
       # this is unified new token audience for LA AAD MSI auth & metrics
@@ -34,7 +32,7 @@ module Fluent::Plugin
       # msiEndpoint is the well known endpoint for getting MSI authentications tokens
       @@msi_endpoint_template = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&client_id=%{user_assigned_client_id}&resource=%{resource}"
       # IMDS msiEndpoint for AAD MSI Auth is the proxy endpoint whcih serves the MSI auth tokens with resource claim
-      @@imds_msi_endpoint_template = "http://%{IMDS_ENDPOINT_HOST}/metadata/identity/oauth2/token?api-version=2018-02-01&resource=%{resource}"
+      @@imds_msi_endpoint_template = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=%{resource}"
       @@user_assigned_client_id = ENV["USER_ASSIGNED_IDENTITY_CLIENT_ID"]
 
       @@plugin_name = "AKSCustomMetricsMDM"
@@ -112,17 +110,15 @@ module Fluent::Plugin
 
           # arc k8s cluster uses cluster identity
           if (!!@isArcK8sCluster)
-            @log.info "using cluster extension identity token since cluster is azure arc k8s cluster"
-            if ExtensionUtils.isAADMSIAuthMode()
+            if ExtensionUtils.isAADMSIAuthMode() && !isWindows()
               @log.info "using aad msi auth"
-              @isAADMSIAuth = true
               @useMsi = true
-              imds_endpoint_host = ExtensionUtils.getIMDSEndpointHost()
-              @log.info "imds_endpoint_host: #{imds_endpoint_host}"
-              msi_endpoint = @@imds_msi_endpoint_template % { IMDS_ENDPOINT_HOST: imds_endpoint_host, resource: @@token_resource_audience }
+              @isAADMSIAuth = true
+              msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
               @parsed_token_uri = URI.parse(msi_endpoint)
               @cached_access_token = get_access_token
             else
+              @log.info "using cluster identity token since cluster is azure arc k8s cluster"
               @cluster_identity = ArcK8sClusterIdentity.new
               @cached_access_token = @cluster_identity.get_cluster_identity_token
             end
@@ -146,9 +142,7 @@ module Fluent::Plugin
                 # in case of aad msi auth user_assigned_client_id will be empty
                 @log.info "using aad msi auth"
                 @isAADMSIAuth = true
-                imds_endpoint_host = ExtensionUtils.getIMDSEndpointHost()
-                @log.info "imds_endpoint_host: #{imds_endpoint_host}"
-                msi_endpoint = @@imds_msi_endpoint_template % { IMDS_ENDPOINT_HOST: imds_endpoint_host, resource: @@token_resource_audience }
+                msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
               end
               @parsed_token_uri = URI.parse(msi_endpoint)
             end
@@ -331,7 +325,7 @@ module Fluent::Plugin
     def send_to_mdm(post_body)
       begin
         if (!!@isArcK8sCluster)
-          if (!!@isAADMSIAuth)
+          if ExtensionUtils.isAADMSIAuthMode() && !isWindows()
             access_token = get_access_token
           else
             if @cluster_identity.nil?
@@ -355,7 +349,7 @@ module Fluent::Plugin
           ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
           @last_telemetry_sent_time = Time.now
         end
-      rescue Net::HTTPClientException  => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException
+      rescue Net::HTTPClientException => e # see https://docs.ruby-lang.org/en/2.6.0/NEWS.html about deprecating HTTPServerException and adding HTTPClientException
         if !response.nil? && !response.body.nil? #body will have actual error
           @log.info "Failed to Post Metrics to MDM : #{e} Response.body: #{response.body}"
         else
@@ -386,6 +380,19 @@ module Fluent::Plugin
         @log.debug_backtrace(e.backtrace)
         raise e
       end
+    end
+
+    def isWindows()
+      isWindows = false
+      begin
+        os_type = ENV["OS_TYPE"]
+        if !os_type.nil? && !os_type.empty? && os_type.strip.casecmp("windows") == 0
+          isWindows = true
+        end
+      rescue => error
+        @log.warn "Error in MDM isWindows method: #{error}"
+      end
+      return isWindows
     end
   end # class OutputMDM
 end # module Fluent
