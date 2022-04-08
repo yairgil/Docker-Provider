@@ -34,14 +34,14 @@ spec:
   {{- end }}
    containers:
 {{- if .Values.omsagent.useMSIAuth }}
-    - name: addon-token-adapter
-      imagePullPolicy: IfNotPresent
-      env:
-      - name: AZMON_COLLECT_ENV
-        value: "false"
-      - name: TOKEN_NAMESPACE
-        value: "azure-arc"
-{{ toYaml .Values.Azure.Identity.MSIAdapterYaml | indent 6 }}
+     - name: addon-token-adapter
+       imagePullPolicy: IfNotPresent
+       env:
+       - name: AZMON_COLLECT_ENV
+         value: "false"
+       - name: TOKEN_NAMESPACE
+         value: "azure-arc"
+{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
 {{- end }}
      - name: omsagent
        {{- if  eq (.Values.omsagent.domain | lower) "opinsights.azure.cn" }}

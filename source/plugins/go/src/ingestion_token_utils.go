@@ -31,6 +31,13 @@ var IngestionAuthToken string
 var IngestionAuthTokenExpiration int64
 var AMCSRedirectedEndpoint string = ""
 
+
+// Arc k8s MSI related
+const ArcK8sClusterConfigCRDAPIVersion = "clusterconfig.azure.com/v1beta1"
+const ArcK8sClusterIdentityResourceName = "container-insights-clusteridentityrequest"
+const ArcK8sClusterIdentityResourceNameSpace = "azure-arc"
+const ArcK8sMSITokenSecretNameSpace = "azure-arc"
+
 type IMDSResponse struct {
 	AccessToken  string `json:"access_token"`
 	ClientID     string `json:"client_id"`
@@ -228,7 +235,8 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 			Log("getAccessTokenFromIMDS: Info Getting MSI Access Token from file CRD & secret for Azure Arc K8s cluster")
             var crdResponseBytes byte[]
 			for retryCount := 0; retryCount < MaxRetries; retryCount++ {
-				crdResponseBytes, err := ClientSet.RESTClient().Get().AbsPath("/apis/clusterconfig.azure.com/v1beta1/namespaces/azure-arc/azureclusteridentityrequests/container-insights-clusteridentityrequest").DoRaw(context.TODO())
+				crd_request_endpoint := fmt.Sprintf("/apis/%s/namespaces/%s/azureclusteridentityrequests/%s", ArcK8sClusterConfigCRDAPIVersion, ArcK8sClusterIdentityResourceNameSpace,ArcK8sClusterIdentityResourceName)
+				crdResponseBytes, err := ClientSet.RESTClient().Get().AbsPath(crd_request_endpoint).DoRaw(context.TODO())
 				if err != nil {
 					Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s, retryCount: %d", err.Error(), retryCount)
 					time.Sleep(time.Duration((retryCount+1)*100) * time.Millisecond)
@@ -242,23 +250,33 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 				if err != nil {
 				  Log("getAccessTokenFromIMDS: Error unmarshalling the crdResponseBytes: %s", err.Error())
 				} else {
-                    tokenReference := ciCRDRequest.Status.TokenReference
-					dataFieldName := ciCRDRequest.Status.TokenReference.dataName
-					secretName := ciCRDRequest.Status.TokenReference.SecretName
-					var secret *v1.Secret
-					for retryCount := 0; retryCount < MaxRetries; retryCount++ {
-					   secret, err := ClientSet.CoreV1().Secrets("azure-arc").Get(context.TODO(), secretName, metav1.GetOptions{})
-					   if err != nil {
-						Log("getAccessTokenFromIMDS: Failed to read secret: %s, error: %s, retryCount: %d", secretName, err.Error(), retryCount)
-						time.Sleep(time.Duration((retryCount+1)*100) * time.Millisecond)
-						continue
-					   }
-					   break
-				    }
-					if secret != nil {
-						 token := string(secret.Data[dataFieldName])
-						 responseBytes, _ = base64.StdEncoding.DecodeString(token)
-					}
+                    status := ciCRDRequest.Status
+                    tokenReference := status.TokenReference
+					dataFieldName := tokenReference.dataName
+					secretName := tokenReference.SecretName
+					expirationTime := status.ExpirationTime
+					if dataFieldName == "" || secretName == "" || expirationTime.isZero() {
+						Log("getAccessTokenFromIMDS: Either dataName or SecretName or ExpirationTime values empty which indicates token not refreshed")
+						Log("getAccessTokenFromIMDS: dataName: %s, secretName: %s, expirationTime: %s", dataFieldName, secretName, expirationTime)
+					} else {
+						var secret *v1.Secret
+						for retryCount := 0; retryCount < MaxRetries; retryCount++ {
+							secret, err := ClientSet.CoreV1().Secrets(ArcK8sMSITokenSecretNameSpace).Get(context.TODO(), secretName, metav1.GetOptions{})
+							if err != nil {
+								Log("getAccessTokenFromIMDS: Failed to read the secret: %s, error: %s, retryCount: %d", secretName, err.Error(), retryCount)
+								time.Sleep(time.Duration((retryCount+1)*100) * time.Millisecond)
+								continue
+							}
+							break
+						}
+						if secret != nil {
+							token := string(secret.Data[dataFieldName])
+							responseBytes, err = base64.StdEncoding.DecodeString(token)
+							if err != nil {
+								Log("getAccessTokenFromIMDS: Failed to base64 decode MSI token from secret: %s", err.Error())
+							}
+						}
+				   }
 				}
 			}
 		}
