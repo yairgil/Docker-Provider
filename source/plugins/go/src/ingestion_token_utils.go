@@ -14,6 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const IMDSTokenPathForWindows = "c:/etc/imds-access-token/token" // only used in windows
@@ -30,7 +33,6 @@ var ChannelId string
 var IngestionAuthToken string
 var IngestionAuthTokenExpiration int64
 var AMCSRedirectedEndpoint string = ""
-
 
 // Arc k8s MSI related
 const ArcK8sClusterConfigCRDAPIVersion = "clusterconfig.azure.com/v1beta1"
@@ -232,13 +234,13 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 				break
 			}
 		} else {
-			Log("getAccessTokenFromIMDS: Info Getting MSI Access Token from file CRD & secret for Azure Arc K8s cluster")
-            var crdResponseBytes byte[]
+			Log("getAccessTokenFromIMDS: Info Getting MSI Access Token reference from CRD and token from secret for Azure Arc K8s cluster")
+			var crdResponseBytes []byte
 			for retryCount := 0; retryCount < MaxRetries; retryCount++ {
-				crd_request_endpoint := fmt.Sprintf("/apis/%s/namespaces/%s/azureclusteridentityrequests/%s", ArcK8sClusterConfigCRDAPIVersion, ArcK8sClusterIdentityResourceNameSpace,ArcK8sClusterIdentityResourceName)
-				crdResponseBytes, err := ClientSet.RESTClient().Get().AbsPath(crd_request_endpoint).DoRaw(context.TODO())
+				crd_request_endpoint := fmt.Sprintf("/apis/%s/namespaces/%s/azureclusteridentityrequests/%s", ArcK8sClusterConfigCRDAPIVersion, ArcK8sClusterIdentityResourceNameSpace, ArcK8sClusterIdentityResourceName)
+				crdResponseBytes, err = ClientSet.RESTClient().Get().AbsPath(crd_request_endpoint).DoRaw(context.TODO())
 				if err != nil {
-					Log("getAccessTokenFromIMDS: Could not read IMDS token from file: %s, retryCount: %d", err.Error(), retryCount)
+					Log("getAccessTokenFromIMDS: Failed to get the CRD: %s in namespace: %s, retryCount: %d", ArcK8sClusterIdentityResourceName, ArcK8sClusterIdentityResourceNameSpace, err.Error(), retryCount)
 					time.Sleep(time.Duration((retryCount+1)*100) * time.Millisecond)
 					continue
 				}
@@ -248,22 +250,22 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 				var ciCRDRequest ContainerInsightsIdentityRequest
 				err = json.Unmarshal(crdResponseBytes, &ciCRDRequest)
 				if err != nil {
-				  Log("getAccessTokenFromIMDS: Error unmarshalling the crdResponseBytes: %s", err.Error())
+					Log("getAccessTokenFromIMDS: Error unmarshalling the crdResponseBytes: %s", err.Error())
 				} else {
-                    status := ciCRDRequest.Status
-                    tokenReference := status.TokenReference
-					dataFieldName := tokenReference.dataName
+					status := ciCRDRequest.Status
+					tokenReference := status.TokenReference
+					dataFieldName := tokenReference.DataName
 					secretName := tokenReference.SecretName
 					expirationTime := status.ExpirationTime
-					if dataFieldName == "" || secretName == "" || expirationTime.isZero() {
+					if dataFieldName == "" || secretName == "" || expirationTime.IsZero() {
 						Log("getAccessTokenFromIMDS: Either dataName or SecretName or ExpirationTime values empty which indicates token not refreshed")
 						Log("getAccessTokenFromIMDS: dataName: %s, secretName: %s, expirationTime: %s", dataFieldName, secretName, expirationTime)
 					} else {
 						var secret *v1.Secret
 						for retryCount := 0; retryCount < MaxRetries; retryCount++ {
-							secret, err := ClientSet.CoreV1().Secrets(ArcK8sMSITokenSecretNameSpace).Get(context.TODO(), secretName, metav1.GetOptions{})
+							secret, err = ClientSet.CoreV1().Secrets(ArcK8sMSITokenSecretNameSpace).Get(context.TODO(), secretName, metav1.GetOptions{})
 							if err != nil {
-								Log("getAccessTokenFromIMDS: Failed to read the secret: %s, error: %s, retryCount: %d", secretName, err.Error(), retryCount)
+								Log("getAccessTokenFromIMDS: Failed to read the secret: %s in namespace: %s, error: %s, retryCount: %d", secretName, ArcK8sMSITokenSecretNameSpace, err.Error(), retryCount)
 								time.Sleep(time.Duration((retryCount+1)*100) * time.Millisecond)
 								continue
 							}
@@ -276,7 +278,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 								Log("getAccessTokenFromIMDS: Failed to base64 decode MSI token from secret: %s", err.Error())
 							}
 						}
-				   }
+					}
 				}
 			}
 		}
