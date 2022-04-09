@@ -45,7 +45,7 @@
     "clusterSubscriptionId": "[split(parameters('clusterResourceId'),'/')[2]]",
     "clusterResourceGroup": "[split(parameters('clusterResourceId'),'/')[4]]",
     "clusterName": "[split(parameters('clusterResourceId'),'/')[8]]",
-    "clusterLocation": "[replace(parameters('clusterResourceId'),' ', '')]",
+    "clusterLocation": "[replace(parameters('clusterRegion'),' ', '')]",
     "workspaceSubscriptionId": "[split(parameters('workspaceResourceId'),'/')[2]]",
     "workspaceResourceGroup": "[split(parameters('workspaceResourceId'),'/')[4]]",
     "dcrName": "[Concat('MSCI', '-', variables('clusterName'), '-', variables('clusterLocation'))]",
@@ -170,7 +170,7 @@
       "subscriptionId": "[split(parameters('clusterResourceId'),'/')[2]]",
       "resourceGroup": "[split(parameters('clusterResourceId'),'/')[4]]",
       "dependsOn": [
-        "[Concat('arc-k8s-monitoring-msi-dcra', '-',  uniqueString(parameters('aksResourceId')))]"
+        "[Concat('arc-k8s-monitoring-msi-dcra', '-',  uniqueString(parameters('clusterResourceId')))]"
       ],
       "properties": {
         "mode": "Incremental",
