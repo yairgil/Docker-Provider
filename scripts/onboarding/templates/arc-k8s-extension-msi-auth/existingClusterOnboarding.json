@@ -150,7 +150,7 @@
           "variables": {},
           "resources": [
             {
-              "type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+              "type": "Microsoft.Kubernetes/connectedClusters/providers/dataCollectionRuleAssociations",
               "name": "[concat(variables('clusterName'),'/microsoft.insights/', variables('associationName'))]",
               "apiVersion": "2019-11-01-preview",
               "properties": {
