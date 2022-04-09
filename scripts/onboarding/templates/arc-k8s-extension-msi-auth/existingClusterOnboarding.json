@@ -71,7 +71,7 @@
               "type": "Microsoft.Insights/dataCollectionRules",
               "apiVersion": "2019-11-01-preview",
               "name": "[variables('dcrName')]",
-              "location": "[parameters('workspaceLocation')]",
+              "location": "[parameters('workspaceRegion')]",
               "kind": "Linux",
               "properties": {
                 "dataSources": {
