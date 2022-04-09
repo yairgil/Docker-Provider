@@ -94,7 +94,7 @@ spec:
        - name: SIDECAR_SCRAPING_ENABLED
          value: {{ .Values.omsagent.sidecarscraping | quote }}
        - name: USING_AAD_MSI_AUTH
-         value: {{ .Values.omsagent.useMSIAuth | quote }}
+         value: {{ .Values.omsagent.useAADAuth | quote }}
        volumeMounts:
         - mountPath: C:\ProgramData\docker\containers
           name: docker-windows-containers

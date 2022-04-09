@@ -37,7 +37,7 @@ spec:
    serviceAccountName: omsagent
    {{- end }}
    containers:
-{{- if .Values.omsagent.useMSIAuth }}
+{{- if .Values.omsagent.useAADAuth }}
      - name: addon-token-adapter
        imagePullPolicy: IfNotPresent
        env:
@@ -58,7 +58,7 @@ spec:
 {{ toYaml .Values.omsagent.resources.daemonsetlinux | indent 9 }}
        env:
        - name: USING_AAD_MSI_AUTH
-         value: {{ .Values.omsagent.useMSIAuth | quote }}
+         value: {{ .Values.omsagent.useAADAuth | quote }}
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.omsagent.env.clusterId | quote }}
@@ -162,7 +162,7 @@ spec:
 {{ toYaml .Values.omsagent.resources.daemonsetlinuxsidecar | indent 9 }}
        env:
        - name: USING_AAD_MSI_AUTH
-         value: {{ .Values.omsagent.useMSIAuth | quote }}
+         value: {{ .Values.omsagent.useAADAuth | quote }}
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.omsagent.env.clusterId | quote }}
