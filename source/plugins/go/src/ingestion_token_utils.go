@@ -275,7 +275,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 							token := string(secret.Data[dataFieldName])
 							responseBytes, err = base64.StdEncoding.DecodeString(token)
 							if err != nil {
-								Log("getAccessTokenFromIMDS: Failed to base64 decode MSI token from secret: %s", err.Error())
+								Log("getAccessTokenFromIMDS: Failed to base64 decode MSI token read from secret: %s", err.Error())
 							}
 						}
 					}
