@@ -7,7 +7,7 @@
 ## Values of under Azure are being populated by Azure Arc K8s RP during the installation of the extension
 Azure:
   Cluster:
-    Cloud: ""
+    Cloud: <your_cluster_cloud>
     Region: <your_cluster_region>
     ResourceId: <your_cluster_id>
   Extension:
@@ -46,7 +46,7 @@ omsagent:
   # if set to true additional agent workflow logs will be emitted which are used for e2e and arc k8s conformance testing
   ISTEST: false
 
-  # This flag used to determine whether to use AAD MSI auth or not
+  # This flag used to determine whether to use AAD MSI auth or not for Arc K8s cluster
   useAADAuth: false
 
   ## To get your workspace id and key do the following

@@ -33,7 +33,7 @@ spec:
    serviceAccountName: omsagent
   {{- end }}
    containers:
-{{- if .Values.omsagent.useAADAuth }}
+{{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.omsagent.useAADAuth) }}
      - name: addon-token-adapter
        imagePullPolicy: IfNotPresent
        env:
@@ -53,8 +53,6 @@ spec:
        resources:
 {{ toYaml .Values.omsagent.resources.deployment | indent 9 }}
        env:
-       - name: USING_AAD_MSI_AUTH
-         value: {{ .Values.omsagent.useAADAuth | quote }}
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.omsagent.env.clusterId | quote }}
@@ -65,6 +63,8 @@ spec:
        {{- else if ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.Azure.Cluster.ResourceId | quote }}
+       - name: USING_AAD_MSI_AUTH
+         value: {{ .Values.omsagent.useAADAuth | quote }}
        {{- if ne .Values.Azure.Cluster.Region "<your_cluster_region>" }}
        - name: AKS_REGION
          value: {{ .Values.Azure.Cluster.Region | quote }}
