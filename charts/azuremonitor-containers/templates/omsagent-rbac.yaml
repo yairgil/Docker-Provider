@@ -30,7 +30,7 @@ rules:
   verbs: ["list"]
 - apiGroups: ["clusterconfig.azure.com"]
   resources: ["azureclusteridentityrequests", "azureclusteridentityrequests/status"]
-  verbs: ["get", "create", "patch"]
+  verbs: ["get", "create", "patch", "list", "update", "delete"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
 ---
