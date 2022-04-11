@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -272,11 +271,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 							break
 						}
 						if secret != nil {
-							token := string(secret.Data[dataFieldName])
-							responseBytes, err = base64.StdEncoding.DecodeString(token)
-							if err != nil {
-								Log("getAccessTokenFromIMDS: Failed to base64 decode MSI token read from secret: %s", err.Error())
-							}
+							responseBytes = secret.Data[dataFieldName]
 						}
 					}
 				}
