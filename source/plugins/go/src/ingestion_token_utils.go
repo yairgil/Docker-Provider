@@ -139,6 +139,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 	Log("Info getAccessTokenFromIMDS: start")
 	useIMDSTokenProxyEndPoint := os.Getenv("USE_IMDS_TOKEN_PROXY_END_POINT")
 	imdsAccessToken := ""
+	var expiration int64
 	var responseBytes []byte
 	var err error
 
@@ -150,12 +151,12 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 		msi_endpoint, err := url.Parse(msi_endpoint_string)
 		if err != nil {
 			Log("getAccessTokenFromIMDS: Error creating IMDS endpoint URL: %s", err.Error())
-			return imdsAccessToken, 0, err
+			return imdsAccessToken, expiration, err
 		}
 		req, err := http.NewRequest("GET", msi_endpoint.String(), nil)
 		if err != nil {
 			Log("getAccessTokenFromIMDS: Error creating HTTP request: %s", err.Error())
-			return imdsAccessToken, 0, err
+			return imdsAccessToken, expiration, err
 		}
 		req.Header.Add("Metadata", "true")
 
@@ -197,21 +198,21 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 				message := fmt.Sprintf("getAccessTokenFromIMDS: IMDS Request failed with nonretryable error code: %d, retryCount: %d", resp.StatusCode, retryCount)
 				Log(message)
 				SendException(message)
-				return imdsAccessToken, 0, err
+				return imdsAccessToken, expiration, err
 			}
 			IsSuccess = true
 			break // call succeeded, don't retry any more
 		}
 		if !IsSuccess || resp == nil || resp.Body == nil {
 			Log("getAccessTokenFromIMDS: IMDS Request ran out of retries")
-			return imdsAccessToken, 0, err
+			return imdsAccessToken, expiration, err
 		}
 
 		// Pull out response body
 		responseBytes, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			Log("getAccessTokenFromIMDS: Error reading response body: %s", err.Error())
-			return imdsAccessToken, 0, err
+			return imdsAccessToken, expiration, err
 		}
 
 	} else {
@@ -220,7 +221,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 			Log("Info Reading IMDS Access Token from file : %s", IMDSTokenPathForWindows)
 			if _, err = os.Stat(IMDSTokenPathForWindows); os.IsNotExist(err) {
 				Log("getAccessTokenFromIMDS: IMDS token file doesnt exist: %s", err.Error())
-				return imdsAccessToken, 0, err
+				return imdsAccessToken, expiration, err
 			}
 			//adding retries incase if we ended up reading the token file while the token file being written
 			for retryCount := 0; retryCount < MaxRetries; retryCount++ {
@@ -235,6 +236,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 		} else {
 			Log("getAccessTokenFromIMDS: Info Getting MSI Access Token reference from CRD and token from secret for Azure Arc K8s cluster")
 			var crdResponseBytes []byte
+			var errorMessage string
 			for retryCount := 0; retryCount < MaxRetries; retryCount++ {
 				crd_request_endpoint := fmt.Sprintf("/apis/%s/namespaces/%s/azureclusteridentityrequests/%s", ArcK8sClusterConfigCRDAPIVersion, ArcK8sClusterIdentityResourceNameSpace, ArcK8sClusterIdentityResourceName)
 				crdResponseBytes, err = ClientSet.RESTClient().Get().AbsPath(crd_request_endpoint).DoRaw(context.TODO())
@@ -249,7 +251,9 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 				var ciCRDRequest ContainerInsightsIdentityRequest
 				err = json.Unmarshal(crdResponseBytes, &ciCRDRequest)
 				if err != nil {
-					Log("getAccessTokenFromIMDS: Error unmarshalling the crdResponseBytes: %s", err.Error())
+					errorMessage = fmt.Sprintf("getAccessTokenFromIMDS: Error unmarshalling the crdResponseBytes: %s", err.Error())
+					Log(errorMessage)
+					return imdsAccessToken, expiration, errors.New(errorMessage)
 				} else {
 					status := ciCRDRequest.Status
 					tokenReference := status.TokenReference
@@ -257,8 +261,10 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 					secretName := tokenReference.SecretName
 					expirationTime := status.ExpirationTime
 					if dataFieldName == "" || secretName == "" || expirationTime.IsZero() {
-						Log("getAccessTokenFromIMDS: Either dataName or SecretName or ExpirationTime values empty which indicates token not refreshed")
+						errorMessage = "getAccessTokenFromIMDS: Either dataName or SecretName or ExpirationTime values empty which indicates token not refreshed"
+						Log(errorMessage)
 						Log("getAccessTokenFromIMDS: dataName: %s, secretName: %s, expirationTime: %s", dataFieldName, secretName, expirationTime)
+						return imdsAccessToken, expiration, errors.New(errorMessage)
 					} else {
 						var secret *v1.Secret
 						for retryCount := 0; retryCount < MaxRetries; retryCount++ {
@@ -270,18 +276,25 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 							}
 							break
 						}
-						if secret != nil {
-							responseBytes = secret.Data[dataFieldName]
+						if secret == nil {
+							errorMessage = fmt.Sprintf("getAccessTokenFromIMDS: value of secret: %s in nil in namespace: %s", secretName, ArcK8sMSITokenSecretNameSpace)
+							return imdsAccessToken, expiration, errors.New(errorMessage)
 						}
+						imdsAccessToken = string(secret.Data[dataFieldName])
+						expiration = expirationTime.Unix()
+						return imdsAccessToken, expiration, nil
 					}
 				}
+			} else {
+				errorMessage = fmt.Sprintf("getAccessTokenFromIMDS: faled to get the CRD: %s in namespace: %s", ArcK8sClusterIdentityResourceName, ArcK8sClusterIdentityResourceNameSpace)
+				return imdsAccessToken, expiration, errors.New(errorMessage)
 			}
 		}
 	}
 
 	if responseBytes == nil {
 		Log("getAccessTokenFromIMDS: Error responseBytes is nil")
-		return imdsAccessToken, 0, err
+		return imdsAccessToken, expiration, err
 	}
 
 	// Unmarshall response body into struct
@@ -289,14 +302,14 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 	err = json.Unmarshal(responseBytes, &imdsResponse)
 	if err != nil {
 		Log("getAccessTokenFromIMDS: Error unmarshalling the response: %s", err.Error())
-		return imdsAccessToken, 0, err
+		return imdsAccessToken, expiration, err
 	}
 	imdsAccessToken = imdsResponse.AccessToken
 
-	expiration, err := strconv.ParseInt(imdsResponse.ExpiresOn, 10, 64)
+	expiration, err = strconv.ParseInt(imdsResponse.ExpiresOn, 10, 64)
 	if err != nil {
 		Log("getAccessTokenFromIMDS: Error parsing ExpiresOn field from IMDS response: %s", err.Error())
-		return imdsAccessToken, 0, err
+		return imdsAccessToken, expiration, err
 	}
 	Log("Info getAccessTokenFromIMDS: end")
 	return imdsAccessToken, expiration, nil
