@@ -19,14 +19,7 @@ if [ $? -ne 0 ]; then
    echo "-e error unable to get list of mcr tags for azuremonitor/containerinsights/ciprod repository"
    exit 1
 fi
-
-if [[ "$AGENT_IMAGE_FULL_PATH" == *"win-"* ]]; then
-  echo "checking windows tags"
-  TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'"win-$AGENT_RELEASE$AGENT_IMAGE_TAG_SUFFIX"'"])')
-else
-  echo "checking linux tags"
-  TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'"$AGENT_RELEASE$AGENT_IMAGE_TAG_SUFFIX"'"])')
-fi
+TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'"$AGENT_RELEASE$AGENT_IMAGE_TAG_SUFFIX"'"])')
 
 if $TAG_EXISTS; then
   echo "-e error ${AGENT_IMAGE_TAG_SUFFIX} already exists in mcr. make sure the image tag is unique"
