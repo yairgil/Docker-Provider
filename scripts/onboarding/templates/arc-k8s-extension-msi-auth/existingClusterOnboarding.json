@@ -71,6 +71,7 @@
               "apiVersion": "2015-11-01-preview",
               "type": "Microsoft.OperationsManagement/solutions",
               "location": "[parameters('workspaceRegion')]",
+              "tags": "[parameters('resourceTagValues')]",
               "name": "[Concat('ContainerInsights', '(', split(parameters('workspaceResourceId'),'/')[8], ')')]",
               "properties": {
                 "workspaceResourceId": "[parameters('workspaceResourceId')]"
@@ -106,6 +107,7 @@
               "apiVersion": "2019-11-01-preview",
               "name": "[variables('dcrName')]",
               "location": "[parameters('workspaceRegion')]",
+              "tags": "[parameters('resourceTagValues')]",
               "kind": "Linux",
               "properties": {
                 "dataSources": {
