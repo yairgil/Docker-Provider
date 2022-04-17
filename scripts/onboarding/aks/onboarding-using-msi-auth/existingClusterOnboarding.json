@@ -53,6 +53,40 @@
     "resources": [
         {
             "type": "Microsoft.Resources/deployments",
+            "name": "[Concat('ContainerInsights', '-',  uniqueString(parameters('workspaceResourceId')))]",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[variables('workspaceSubscriptionId')]",
+            "resourceGroup": "[variables('workspaceResourceGroup')]",
+            "properties": {
+              "mode": "Incremental",
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                  {
+                    "apiVersion": "2015-11-01-preview",
+                    "type": "Microsoft.OperationsManagement/solutions",
+                    "location": "[parameters('workspaceLocation')]",
+                    "name": "[Concat('ContainerInsights', '(', split(parameters('workspaceResourceId'),'/')[8], ')')]",
+                    "properties": {
+                      "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                    },
+                    "plan": {
+                      "name": "[Concat('ContainerInsights', '(', split(parameters('workspaceResourceId'),'/')[8], ')')]",
+                      "product": "[Concat('OMSGallery/', 'ContainerInsights')]",
+                      "promotionCode": "",
+                      "publisher": "Microsoft"
+                    }
+                  }
+                ]
+              },
+              "parameters": {}
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
             "name": "[Concat('aks-monitoring-msi-dcr', '-',  uniqueString(variables('dcrName')))]",
             "apiVersion": "2017-05-10",
             "subscriptionId": "[variables('workspaceSubscriptionId')]",
@@ -170,6 +204,7 @@
             "subscriptionId": "[variables('clusterSubscriptionId')]",
             "resourceGroup": "[variables('clusterResourceGroup')]",
             "dependsOn": [
+                "[Concat('ContainerInsights', '-',  uniqueString(parameters('workspaceResourceId')))]",
                 "[Concat('aks-monitoring-msi-dcra', '-',  uniqueString(parameters('aksResourceId')))]"
             ],
             "properties": {
