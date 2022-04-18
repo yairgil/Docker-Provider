@@ -21,8 +21,8 @@ Azure:
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "ciprodpreview03012022"
-    tagWindows: "win-ciprod01312022"
+    tag: "ciprod03172022"
+    tagWindows: "win-ciprod03172022"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "16.0.0-0"
     agentVersion: "azure-mdsd-1.17.0"

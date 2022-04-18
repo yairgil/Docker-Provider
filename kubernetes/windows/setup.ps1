@@ -1,3 +1,7 @@
+# speed up Invoke-WebRequest 
+# https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
+$ProgressPreference = 'SilentlyContinue'
+
 Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
 
@@ -66,10 +70,3 @@ Remove-Item /installation -Recurse
 
 #Remove gemfile.lock for http_parser gem 0.6.0
 #see  - https://github.com/fluent/fluentd/issues/3374 https://github.com/tmm1/http_parser.rb/issues/70
-
-$gemfile = "\ruby26\lib\ruby\gems\2.6.0\gems\http_parser.rb-0.6.0\Gemfile.lock"
-$gemfileFullPath = $Env:SYSTEMDRIVE + "\" + $gemfile
-If (Test-Path -Path $gemfile ) {
-    Write-Host ("Renaming unused gemfile.lock for http_parser 0.6.0")
-    Rename-Item -Path $gemfileFullPath -NewName  "renamed_Gemfile_lock.renamed"
-}
