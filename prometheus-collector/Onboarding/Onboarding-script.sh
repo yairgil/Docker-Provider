@@ -38,10 +38,12 @@
 # using this grafana because of the limitations - rashmi-eus2-1-grafana
 # eastus - #2
 # bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-eus-2-rg" "rashmi-eus-2-mac" "rashmi-eus-2-grafana" "eastus" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eus-1/providers/Microsoft.ContainerService/managedClusters/rashmi-eus-1"
+# eastus - #3
+# bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-eus-3p-1-rg" "rashmi-eus-3p-1-mac" "rashmi-eus-3p-1-grafana" "eastus" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eus-3p-1/providers/Microsoft.ContainerService/managedClusters/rashmi-eus-3p-1"
 # set HELM_EXPERIMENTAL_OCI=1
-# ./helm pull oci://mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector --version 2.0.0-feature-mac-03-31-2022-2bab9264
+# ./helm pull oci://mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector --version 3.0.0-main-04-07-2022-33676484
 # helm uninstall my-collector-dev-release -n kube-system
-# ./helm upgrade --install my-collector-dev-release ./prometheus-collector-2.0.0-feature-mac-03-31-2022-2bab9264.tgz --dependency-update --set useMonitoringAccount=true --set azureResourceId="/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eus-1/providers/Microsoft.ContainerService/managedClusters/rashmi-eus-1" --set azureResourceRegion="eastus" --set mode.advanced=true --namespace=kube-system --create-namespace
+# ./helm upgrade --install my-collector-dev-release ./prometheus-collector-3.0.0-main-04-07-2022-33676484.tgz --dependency-update --set useMonitoringAccount=true --set azureResourceId="/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-eus-3p-1/providers/Microsoft.ContainerService/managedClusters/rashmi-eus-3p-1" --set azureResourceRegion="eastus" --set mode.advanced=true --namespace=kube-system --create-namespace
 
 # westeurope -
 # bash Onboarding-script.sh "0e4773a2-8221-441a-a06f-17db16ab16d4" "rashmi-weu-2-rg" "rashmi-weu-2-mac" "rashmi-weu-2-grafana" "westeurope" "/subscriptions/0e4773a2-8221-441a-a06f-17db16ab16d4/resourcegroups/rashmi-weu-1/providers/Microsoft.ContainerService/managedClusters/rashmi-weu-1"
