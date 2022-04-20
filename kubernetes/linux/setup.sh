@@ -9,11 +9,15 @@ fi
 
 #Download utf-8 encoding capability on the omsagent container.
 #upgrade apt to latest version
-apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
+# apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
+# dnf clean expire-cache && dnf check-update && tdnf install -y locales
 
-sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
-    dpkg-reconfigure --frontend=noninteractive locales && \
-    update-locale LANG=en_US.UTF-8
+# sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+#     dpkg-reconfigure --frontend=noninteractive locales && \
+#     update-locale LANG=en_US.UTF-8
+
+export releasever="2.0"
+tdnf install ca-certificates-microsoft -y
 
 #install oneagent - Official bits (3/14/2022)
 if [ "${ARCH}" != "arm64" ]; then
@@ -22,7 +26,9 @@ else
     wget "https://github.com/microsoft/Docker-Provider/releases/download/1.17.1-arm64-master/azure-mdsd_1.17.1-build.master.366_aarch64.deb" -O azure-mdsd.deb
 fi
 
-/usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
+# /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
+sudo tdnf install -y which
+sudo tdnf --disablerepo="*" --enablerepo=packages-microsoft-com-azurecore install azure-mdsd -y
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 
@@ -30,15 +36,15 @@ cp -f $TMPDIR/envmdsd /etc/mdsd.d
 cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
 
 #download inotify tools for watching configmap changes
-sudo apt-get update
-sudo apt-get install inotify-tools -y
+sudo tdnf check-update
+sudo tdnf install inotify-tools -y
 
 #used to parse response of kubelet apis
 #ref: https://packages.ubuntu.com/search?keywords=jq
-sudo apt-get install jq=1.5+dfsg-2 -y
+sudo tdnf install jq -y
 
 #used to setcaps for ruby process to read /proc/env
-sudo apt-get install libcap2-bin -y
+sudo tdnf install libcap -y
 
 wget https://dl.influxdata.com/telegraf/releases/telegraf-1.20.3_linux_$ARCH.tar.gz
 tar -zxvf telegraf-1.20.3_linux_$ARCH.tar.gz

@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM cblmariner2preview.azurecr.io/base/core:2.0
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
@@ -14,8 +14,11 @@ ENV AZMON_COLLECT_ENV False
 ENV KUBE_CLIENT_BACKOFF_BASE 1
 ENV KUBE_CLIENT_BACKOFF_DURATION 0
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y libc-bin wget openssl curl sudo python-ctypes init-system-helpers  net-tools rsyslog cron vim dmidecode apt-transport-https gnupg && rm -rf /var/lib/apt/lists/*
+# RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y libc-bin wget openssl curl sudo python-ctypes init-system-helpers  net-tools rsyslog cron vim dmidecode apt-transport-https gnupg && rm -rf /var/lib/apt/lists/*
+RUN tdnf install -y dnf && dnf clean expire-cache && dnf check-update
+RUN tdnf install -y wget openssl curl sudo net-tools rsyslog cronie vim dmidecode gnupg && rm -rf /var/lib/apt/lists/*
 COPY setup.sh main.sh defaultpromenvvariables defaultpromenvvariables-rs defaultpromenvvariables-sidecar mdsd.xml envmdsd logrotate.conf $tmpdir/
+COPY azurecore.repo /etc/yum.repos.d/
 
 ARG IMAGE_TAG=ciprod03172022
 ENV AGENT_VERSION ${IMAGE_TAG}
