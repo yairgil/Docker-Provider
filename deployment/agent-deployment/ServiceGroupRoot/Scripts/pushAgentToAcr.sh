@@ -15,7 +15,7 @@ fi
 
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
 MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/containerinsights/ciprod/tags/list`"
-if [ $? -ne 0 ]; then
+if [ $? -ne 0 ]; then         
    echo "-e error unable to get list of mcr tags for azuremonitor/containerinsights/ciprod repository"
    exit 1
 fi
@@ -67,7 +67,7 @@ if [ $? -eq 0 ]; then
 else
   echo "-e error failed to login to az with managed identity credentials"
   exit 1
-fi
+fi     
 
 echo "Pushing ${AGENT_IMAGE_FULL_PATH} to ${ACR_NAME}"
 az acr import --name $ACR_NAME --registry $CDPX_REGISTRY --source official/${CDPX_REPO_NAME}:${CDPX_TAG} --image $AGENT_IMAGE_FULL_PATH

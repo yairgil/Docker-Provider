@@ -657,8 +657,8 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
             limits:
-              cpu: 5
-              memory: 5Gi
+              cpu: 1
+              memory: 1Gi
             requests:
               cpu: 150m
               memory: 250Mi
@@ -667,7 +667,7 @@ spec:
               valueFrom:
                 resourceFieldRef:
                   containerName: omsagent
-                  resource: limits.cpu           
+                  resource: limits.cpu
             - name: EMIT_CACHE_TELEMETRY
               value: "false" # enable only debug or test purpose and disable for prod
             - name: AKS_RESOURCE_ID
