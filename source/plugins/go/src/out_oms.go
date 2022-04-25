@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/fluent/fluent-bit-go/output"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 import (
 	"C"
@@ -36,9 +36,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 			Log("Using %s for plugin config \n", DaemonSetContainerLogPluginConfFilePath)
 			InitializePlugin(DaemonSetContainerLogPluginConfFilePath, agentVersion)
 		}
-	}
+output.FLBPluginConfigKey(ctx, "EnableTelemetry")	}
 
-	enableTelemetry := output.FLBPluginConfigKey(ctx, "EnableTelemetry")
+	enableTelemetry :=
 	if strings.Compare(strings.ToLower(enableTelemetry), "true") == 0 {
 		telemetryPushInterval := output.FLBPluginConfigKey(ctx, "TelemetryPushIntervalSeconds")
 		go SendContainerLogPluginMetrics(telemetryPushInterval)
@@ -55,6 +55,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	var record map[interface{}]interface{}
 	var records []map[interface{}]interface{}
 
+	Log("FLBPluginFlush Invoked")
 	// Create Fluent Bit decoder
 	dec := output.NewDecoder(data, int(length))
 
@@ -76,6 +77,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 		return PostTelegrafMetricsToLA(records)
 	}
 
+	Log("Received Number of Container Log Records: %d \n", len(records))
 	return PostDataHelper(records)
 }
 

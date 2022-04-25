@@ -1102,8 +1102,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		nameIDMap[k] = v
 	}
 	DataUpdateMutex.Unlock()
-
 	for _, record := range tailPluginRecords {
+		Log("ContainerLog file path for the container log record: %s\n", ToString(record["filepath"]))
 		containerID, k8sNamespace, k8sPodName, containerName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
