@@ -90,6 +90,7 @@ const defaultContainerInventoryRefreshInterval = 60
 
 const kubeMonAgentConfigEventFlushInterval = 60
 const defaultIngestionAuthTokenRefreshIntervalSeconds = 3600
+const genevaTenantConfigRefreshIntervalSeconds = 3600
 
 //Eventsource name in mdsd
 const MdsdContainerLogSourceName = "ContainerLogSource"
@@ -217,6 +218,12 @@ var (
 	IngestionAuthTokenUpdateMutex = &sync.Mutex{}
 	// ODSIngestionAuthToken for windows agent AAD MSI Auth
 	ODSIngestionAuthToken string
+	//GenevaAccountConfigMap caches the geneva tenant info
+	GenevaAccountConfigMap map[string]GenevaAccountConfig
+	//K8SNamespaceGenevaAccountMap caches the k8snamespace and geneva account map
+	K8SNamespaceGenevaAccountMap map[string]string
+	// GenevaTenantConfigUpdateMutex read and write mutex access for Geneva account config
+	GenevaConfigUpdateMutex = &sync.Mutex{}
 )
 
 var (
@@ -226,6 +233,8 @@ var (
 	KubeMonAgentConfigEventsSendTicker *time.Ticker
 	// IngestionAuthTokenRefreshTicker to refresh ingestion token
 	IngestionAuthTokenRefreshTicker *time.Ticker
+	// GenevaTenantConfigRefreshTicker updates geneva tenant config
+	GenevaTenantConfigRefreshTicker *time.Ticker
 )
 
 var (
@@ -1177,9 +1186,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			if IsGenevaMultiTenancyEnabled {
 				if k8sNamespace == "kube-system" {
-					msgPackEntriesByNamespace["system"] =  append(msgPackEntriesByNamespace["system"], msgPackEntry)
+					msgPackEntriesByNamespace["system"] = append(msgPackEntriesByNamespace["system"], msgPackEntry)
 				} else {
-					msgPackEntriesByNamespace["user"] =  append(msgPackEntriesByNamespace["user"], msgPackEntry)
+					msgPackEntriesByNamespace["user"] = append(msgPackEntriesByNamespace["user"], msgPackEntry)
 				}
 			} else {
 				msgPackEntries = append(msgPackEntries, msgPackEntry)
@@ -1260,7 +1269,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	numContainerLogRecords := 0
 
-	if (len(msgPackEntries) > 0 || len(msgPackEntriesByNamespace["system"]) > 0  || len(msgPackEntriesByNamespace["user"]) > 0)&& ContainerLogsRouteV2 == true {
+	if (len(msgPackEntries) > 0 || len(msgPackEntriesByNamespace["system"]) > 0 || len(msgPackEntriesByNamespace["user"]) > 0) && ContainerLogsRouteV2 == true {
 		//flush to mdsd
 		if IsAADMSIAuthMode == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false {
 			Log("Info::mdsd::obtaining output stream id")
@@ -1273,7 +1282,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		if IsGenevaMultiTenancyEnabled {
-			if len(msgPackEntriesByNamespace["system"]) > 0  {
+			if len(msgPackEntriesByNamespace["system"]) > 0 {
 				fluentForward := MsgPackForward{
 					Tag:     MdsdContainerLogTagName,
 					Entries: msgPackEntriesByNamespace["system"],
@@ -1299,7 +1308,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
 					msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
 				}
-
 
 				if MdsdMsgpUnixSocketClientSystem == nil {
 					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
@@ -1340,7 +1348,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				}
 			}
 
-			if len(msgPackEntriesByNamespace["user"]) > 0  {
+			if len(msgPackEntriesByNamespace["user"]) > 0 {
 				fluentForward := MsgPackForward{
 					Tag:     MdsdContainerLogTagName,
 					Entries: msgPackEntriesByNamespace["user"],
@@ -1366,7 +1374,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
 					msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
 				}
-
 
 				if MdsdMsgpUnixSocketClientUser == nil {
 					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
@@ -1434,7 +1441,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
 				msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
 			}
-
 
 			if MdsdMsgpUnixSocketClient == nil {
 				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
@@ -1692,6 +1698,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	StderrIgnoreNsSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
+	K8SNamespaceGenevaAccountMap = make(map[string]string)
+	GenevaAccountConfigMap = make(map[string]GenevaAccountConfig)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
 	ConfigErrorEvent = make(map[string]KubeMonAgentEventTags)
@@ -1920,20 +1928,17 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	if genevaLogsEnabled != "" && strings.Compare(strings.ToLower(genevaLogsEnabled), "true") == 0 {
 		IsGenevaLogsEnabled = true
 	}
-
 	IsGenevaMultiTenancyEnabled = false
 	genevaLogsMultiTenacyEnabled := strings.TrimSpace(strings.ToLower(os.Getenv("GENEVA_LOGS_MULTI_TENANCY_ENABLED")))
 	if genevaLogsMultiTenacyEnabled != "" && strings.Compare(strings.ToLower(genevaLogsMultiTenacyEnabled), "true") == 0 {
 		IsGenevaMultiTenancyEnabled = true
 	}
-
-	if ContainerLogsRouteV2 == true {
-        if IsGenevaMultiTenancyEnabled {
-			CreateMDSDClient(ContainerLogV2, ContainerType, "system")
-			CreateMDSDClient(ContainerLogV2, ContainerType, "user")
-		} else {
-		  CreateMDSDClient(ContainerLogV2, ContainerType, "")
-	    }
+	if IsGenevaMultiTenancyEnabled == true {
+		Log("genevaTenantConfigRefreshIntervalSeconds = %d \n", genevaTenantConfigRefreshIntervalSeconds)
+		GenevaTenantConfigRefreshTicker = time.NewTicker(time.Second * time.Duration(genevaTenantConfigRefreshIntervalSeconds))
+		go updateGenevaTenantConfig()
+	} else if ContainerLogsRouteV2 == true {
+		CreateMDSDClient(ContainerLogV2, ContainerType, "")
 	} else if ContainerLogsRouteADX == true {
 		CreateADXClient()
 	} else { // v1 or windows
