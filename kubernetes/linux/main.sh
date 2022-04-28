@@ -288,6 +288,27 @@ fi
 export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
 
+# Copying over CA certs for airgapped clouds. This is needed for Mariner vs Ubuntu hosts.
+# We are unable to tell if the host is Mariner or Ubuntu,
+# so both /anchors/ubuntu and /anchors/mariner are mounted in the yaml.
+# One will have the certs and the other will be empty.
+# These need to be copied to a different location for Mariner vs Ubuntu containers.
+# OS_ID here is the container distro.
+# Adding Mariner now even though the elif will never currently evaluate. 
+if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ]; then
+  OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2)
+  if [ $OS_ID == "ubuntu" ]; then
+    cp /anchors/ubuntu/* /usr/local/share/ca-certificates/
+    cp /anchors/mariner/* /usr/local/share/ca-certificates/
+    update-ca-certificates
+    cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem
+  elif [ $OS_ID == "mariner" ]; then
+    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
+    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
+    update-ca-trust
+  fi
+fi
+
 #consisten naming conventions with the windows
 export DOMAIN=$domain
 echo "export DOMAIN=$DOMAIN" >> ~/.bashrc
