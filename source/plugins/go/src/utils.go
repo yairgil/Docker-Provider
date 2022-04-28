@@ -122,7 +122,7 @@ func ToString(s interface{}) string {
 }
 
 //mdsdSocketClient to write msgp messages
-func CreateMDSDClient(dataType DataType, containerType, nameSpace string) {
+func CreateMDSDClient(dataType DataType, containerType, tenant string) {
 	mdsdfluentSocket := "/var/run/mdsd/default_fluent.socket"
 	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
 		mdsdfluentSocket = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket", containerType)
@@ -131,11 +131,11 @@ func CreateMDSDClient(dataType DataType, containerType, nameSpace string) {
 	switch dataType {
 	case ContainerLogV2:
 		if IsGenevaLogsEnabled && IsGenevaMultiTenancyEnabled {
-			if nameSpace == "system" {
-				mdsdfluentSocket = "/var/run/mdsd/system/default_fluent.socket"
-				if MdsdMsgpUnixSocketClientSystem != nil {
-					MdsdMsgpUnixSocketClientSystem.Close()
-					MdsdMsgpUnixSocketClientSystem = nil
+			if tenant != "" {
+				mdsdfluentSocket = fmt.Sprintf("/var/run/mdsd/%s/default_fluent.socket", tenant)
+				if MdsdMsgpUnixSocketClientByTenant[tenant] != nil {
+					MdsdMsgpUnixSocketClientByTenant[tenant].Close()
+					MdsdMsgpUnixSocketClientByTenant[tenant] = nil
 				}
 				/*conn, err := fluent.New(fluent.Config{FluentNetwork:"unix",
 				FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
@@ -148,28 +148,9 @@ func CreateMDSDClient(dataType DataType, containerType, nameSpace string) {
 					//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
 				} else {
 					Log("Successfully created MDSD msgp socket connection for ContainerLogV2: %s", mdsdfluentSocket)
-					MdsdMsgpUnixSocketClientSystem = conn
+					MdsdMsgpUnixSocketClientByTenant[tenant] = conn
 				}
 
-			} else if nameSpace == "user" {
-				mdsdfluentSocket = "/var/run/mdsd/user/default_fluent.socket"
-				if MdsdMsgpUnixSocketClientUser != nil {
-					MdsdMsgpUnixSocketClientUser.Close()
-					MdsdMsgpUnixSocketClientUser = nil
-				}
-				/*conn, err := fluent.New(fluent.Config{FluentNetwork:"unix",
-				FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
-				WriteTimeout: 5 * time.Second,
-				RequestAck: true}) */
-				conn, err := net.DialTimeout("unix",
-					mdsdfluentSocket, 10*time.Second)
-				if err != nil {
-					Log("Error::mdsd::Unable to open MDSD msgp socket connection for ContainerLogV2 %s", err.Error())
-					//log.Fatalf("Unable to open MDSD msgp socket connection %s", err.Error())
-				} else {
-					Log("Successfully created MDSD msgp socket connection for ContainerLogV2: %s", mdsdfluentSocket)
-					MdsdMsgpUnixSocketClientUser = conn
-				}
 			}
 		} else {
 			if MdsdMsgpUnixSocketClient != nil {

@@ -570,12 +570,12 @@ if [ "${GENEVA_LOGS_CONFIG_ENABLED}" == "true" ]; then
         fi
     fi
     if [ "${GENEVA_LOGS_MULTI_TENANCY_ENABLED}" == "true" ]; then
-         echo "starting MDSDMGR since multitenancy enabled"
-         echo "MONITORING_GCS_AUTH_ID=$MONITORING_GCS_AUTH_ID" >> /opt/system
-         echo "MONITORING_GCS_AUTH_ID=$MONITORING_GCS_AUTH_ID" >> /opt/user
-         cp /opt/system /etc/mdsd.d/tenants/
-         cp /opt/user /etc/mdsd.d/tenants/
-         cp /opt/mdsdmgr_tenants.ini /etc/mdsd.d/tenants/
+      #    echo "starting MDSDMGR since multitenancy enabled"
+      #    echo "MONITORING_GCS_AUTH_ID=$MONITORING_GCS_AUTH_ID" >> /opt/system
+      #    echo "MONITORING_GCS_AUTH_ID=$MONITORING_GCS_AUTH_ID" >> /opt/user
+      #    cp /opt/system /etc/mdsd.d/tenants/
+      #    cp /opt/user /etc/mdsd.d/tenants/
+      #    cp /opt/mdsdmgr_tenants.ini /etc/mdsd.d/tenants/
          /usr/sbin/mdsdmgr -D -t /etc/mdsd.d/tenants/ &
     fi
     # except logs, all other data types ingested via sidecar container MDSD port

@@ -3,9 +3,45 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"os/exec"
 	"time"
 )
+
+const MDSDTenatDirectoryPath string = "/var/opt/microsoft/linuxmonagent/tenants/"
+
+var tenantConfig string = `
+### Geneva Linux Agent tenant settings file
+TENANT_NAME=%[1]s
+MDSD_VAR=/var/opt/microsoft/linuxmonagent/log
+MDSD_CONFIG_DIR=/var/opt/microsoft/linuxmonagent/log/${TENANT_NAME}
+MDSD_RUN_DIR=/var/run/mdsd/${TENANT_NAME}
+MDSD_ROLE_PREFIX=${MDSD_RUN_DIR}/default
+
+# This is where rsyslog and eventhub messages are spooled.
+MDSD_SPOOL_DIRECTORY=${MDSD_VAR}/spool/${TENANT_NAME}
+
+MDSD_LOG=/var/opt/microsoft/linuxmonagent/log
+# Note: Don't set TCP ports, use instead the UNIX domain sockets already available under this folder $MDSD_RUN_DIR
+# option –R will lookup for available port number
+MDSD_OPTIONS="-A -c /etc/mdsd.d/mdsd.xml -C -d -r ${MDSD_ROLE_PREFIX} -S ${MDSD_SPOOL_DIRECTORY}/eh -R -e ${MDSD_LOG}/${TENANT_NAME}.err -w ${MDSD_LOG}/${TENANT_NAME}.warn -o ${MDSD_LOG}/${TENANT_NAME}.info"
+
+# GCS settings
+MONITORING_GCS_ENVIRONMENT=%[2]s
+MONITORING_GCS_ACCOUNT=%[1]s
+MONITORING_GCS_NAMESPACE=%[3]s
+MONITORING_GCS_REGION=%[4]s
+MONITORING_CONFIG_VERSION=2.0
+MONITORING_USE_GENEVA_CONFIG_SERVICE=true
+MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken
+# Once GCS has support of AMCS Token audience and this is not required until then using it
+MONITORING_GCS_AUTH_ID=%[5]s
+# Both MONITORING_GCS_CERT_CERTFILE and MONITORING_GCS_CERT_KEYFILE not needed for auto-config
+# MONITORING_GCS_CERT_CERTFILE=/etc/mdsd.d/gcscert.pem
+# MONITORING_GCS_CERT_KEYFILE=/etc/mdsd.d/gcskey.pem
+`
 
 type GenevaConfigs struct {
 	APIVersion string `json:"apiVersion"`
@@ -33,13 +69,14 @@ type GenevaAccountConfig struct {
 	GenevaEnvironmentType string
 }
 
-func updateGenevaTenantConfig() {
+func genevaTenantConfigMgr() {
 	for ; true; <-GenevaTenantConfigRefreshTicker.C {
-		_genevaAccountConfigMap := make(map[string]GenevaAccountConfig)
 		_k8sNamespaceGenevaAccountMap := make(map[string]string)
 		var responseBytes []byte
 		var errorMessage string
 		var err error
+		resourceRegion := os.Getenv("AKS_REGION")
+		monitoringGCSAuthID := os.Getenv("MONITORING_GCS_AUTH_ID")
 		for retryCount := 0; retryCount < MaxRetries; retryCount++ {
 			responseBytes, err = ClientSet.RESTClient().Get().AbsPath("/apis/azmon.container.insights/v1/genevaconfigs").DoRaw(context.TODO())
 			if err != nil {
@@ -52,25 +89,50 @@ func updateGenevaTenantConfig() {
 			var genevaconfigs GenevaConfigs
 			err = json.Unmarshal(responseBytes, &genevaconfigs)
 			if err != nil {
-				errorMessage = fmt.Sprintf("updateGenevaTenantConfig: Error unmarshalling the crdResponseBytes: %s", err.Error())
+				errorMessage = fmt.Sprintf("genevaTenantConfigMgr: Error unmarshalling the crdResponseBytes: %s", err.Error())
 				Log(errorMessage)
 			} else {
 				for _, item := range genevaconfigs.Items {
-					genevaAccountConfig := GenevaAccountConfig{
-						GenevaAccount:         item.Spec.GenevaAccount,
-						GenevaEnvironmentType: item.Spec.GenevaEnvironmentType,
-						GenevaNamespace:       item.Spec.GenevaNamespace,
-					}
-					_genevaAccountConfigMap[item.Spec.GenevaAccount] = genevaAccountConfig
+					createTenantConfigFileIfNotExists(item.Spec.GenevaAccount, item.Spec.GenevaEnvironmentType, item.Spec.GenevaNamespace, resourceRegion, monitoringGCSAuthID)
 					_k8sNamespaceGenevaAccountMap[item.Metadata.Namespace] = item.Spec.GenevaAccount
 				}
 				Log("Locking to update geneva tenant account config")
 				GenevaConfigUpdateMutex.Lock()
 				K8SNamespaceGenevaAccountMap = _k8sNamespaceGenevaAccountMap
-				GenevaAccountConfigMap = _genevaAccountConfigMap
 				GenevaConfigUpdateMutex.Unlock()
 				Log("Unlocking to update geneva tenant account config")
 			}
 		}
+	}
+}
+
+func createTenantConfigFileIfNotExists(gcsAccount, gcsEnvironment, gcsNamespace, region, monitoringGCSAuthID string) {
+	tenantConfigFilePath := fmt.Sprintf("%s/%s", MDSDTenatDirectoryPath, gcsAccount)
+	if _, err := os.Stat(tenantConfigFilePath); errors.Is(err, os.ErrNotExist) {
+		f, err := os.Create(tenantConfigFilePath)
+		if err != nil {
+			Log("Failed to create tenant config file: %s", err)
+		}
+		defer f.Close()
+		tenantConfigFileContent := fmt.Sprintf(tenantConfig, gcsAccount, gcsEnvironment, gcsNamespace, region, monitoringGCSAuthID)
+		_, err = f.WriteString(tenantConfigFileContent)
+		if err != nil {
+			Log("Failed to create tenant config file: %s", err)
+		} else {
+			Log("starting Tenant in this path: %s", tenantConfigFilePath)
+			setTenant(tenantConfigFilePath)
+		}
+	}
+	//TODO - Tenant offboarding
+}
+
+func setTenant(tenantConfigFilePath string) {
+	args := fmt.Sprintf("set-tenant %s", tenantConfigFilePath)
+	cmd := exec.Command("mdsdmgrctl", args)
+	err := cmd.Run()
+	if err != nil {
+		Log("Failed to start tenant: %s", err)
+	} else {
+		Log("started Tenant successfully using this path: %s", tenantConfigFilePath)
 	}
 }
