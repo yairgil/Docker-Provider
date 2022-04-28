@@ -577,6 +577,11 @@ if [ "${GENEVA_LOGS_CONFIG_ENABLED}" == "true" ]; then
       #    cp /opt/user /etc/mdsd.d/tenants/
       #    cp /opt/mdsdmgr_tenants.ini /etc/mdsd.d/tenants/
          /usr/sbin/mdsdmgr -D -t /etc/mdsd.d/tenants/ &
+         echo "delete default whitelisted tenants file"
+         rm /etc/mdsd.d/tenants/mdsdmgr_tenants.ini
+         pkill -f mdsdmgr
+          echo "start mdsdmgr after deleting of default tenants file"
+         /usr/sbin/mdsdmgr -D -t /etc/mdsd.d/tenants/ &
     fi
     # except logs, all other data types ingested via sidecar container MDSD port
     export MDSD_FLUENT_SOCKET_PORT="26230"
@@ -800,7 +805,11 @@ service rsyslog stop
 echo "getting rsyslog status..."
 service rsyslog status
 
-checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
+if [ "${GENEVA_LOGS_CONFIG_ENABLED}" == "true" ]; then
+   echo "skipping onboarding status check since geneva logs config enabled"
+else
+  checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
+fi
 
 shutdown() {
 	 pkill -f mdsd

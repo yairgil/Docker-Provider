@@ -1186,7 +1186,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				GenevaConfigUpdateMutex.Lock()
 				tenantAccountName := K8SNamespaceGenevaAccountMap[k8sNamespace]
 				GenevaConfigUpdateMutex.Unlock()
-				msgPackEntriesByTenant[tenantAccountName] = append(msgPackEntriesByTenant[tenantAccountName], msgPackEntry)
+				if tenantAccountName != "" {
+					msgPackEntriesByTenant[tenantAccountName] = append(msgPackEntriesByTenant[tenantAccountName], msgPackEntry)
+				}
 			} else {
 				msgPackEntries = append(msgPackEntries, msgPackEntry)
 			}
@@ -1640,6 +1642,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	NameIDMap = make(map[string]string)
 	K8SNamespaceGenevaAccountMap = make(map[string]string)
 	GenevaAccountConfigMap = make(map[string]GenevaAccountConfig)
+	MdsdMsgpUnixSocketClientByTenant = make(map[string]net.Conn)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
 	ConfigErrorEvent = make(map[string]KubeMonAgentEventTags)

@@ -36,9 +36,15 @@ spec:
                genevaenvironmentType:
                  type: string
                  enum:
-                 - dev
-                 - test
-                 - prod
+                 - Test
+                 - Stage
+                 - DiagnosticsProd
+                 - FirstpartyProd
+                 - BillingProd
+                 - ExternalProd
+                 - CaMooncake
+                 - CaFairfax
+                 - CaBlackforest
                genevanamespace:
                  type: string
              required: ["genevaaccount", "genevaenvironmentType", "genevanamespace"]

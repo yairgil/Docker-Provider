@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,10 +11,9 @@ import (
 	"time"
 )
 
-const MDSDTenatDirectoryPath string = "/var/opt/microsoft/linuxmonagent/tenants/"
+const MDSDTenatDirectoryPath string = "/var/opt/microsoft/linuxmonagent/tenants"
 
-var tenantConfig string = `
-### Geneva Linux Agent tenant settings file
+var tenantConfig string = `### Geneva Linux Agent tenant settings file
 TENANT_NAME=%[1]s
 MDSD_VAR=/var/opt/microsoft/linuxmonagent/log
 MDSD_CONFIG_DIR=/var/opt/microsoft/linuxmonagent/log/${TENANT_NAME}
@@ -71,6 +71,7 @@ type GenevaAccountConfig struct {
 
 func genevaTenantConfigMgr() {
 	for ; true; <-GenevaTenantConfigRefreshTicker.C {
+		Log("genevaTenantConfigMgr: start")
 		_k8sNamespaceGenevaAccountMap := make(map[string]string)
 		var responseBytes []byte
 		var errorMessage string
@@ -87,52 +88,68 @@ func genevaTenantConfigMgr() {
 		}
 		if responseBytes != nil {
 			var genevaconfigs GenevaConfigs
+			//Log("genevaTenantConfigMgr: genevaconfig CRD response: %s", responseBytes)
 			err = json.Unmarshal(responseBytes, &genevaconfigs)
 			if err != nil {
 				errorMessage = fmt.Sprintf("genevaTenantConfigMgr: Error unmarshalling the crdResponseBytes: %s", err.Error())
 				Log(errorMessage)
 			} else {
+				Log("genevaTenantConfigMgr: genevaconfigs: %s", genevaconfigs)
 				for _, item := range genevaconfigs.Items {
 					createTenantConfigFileIfNotExists(item.Spec.GenevaAccount, item.Spec.GenevaEnvironmentType, item.Spec.GenevaNamespace, resourceRegion, monitoringGCSAuthID)
 					_k8sNamespaceGenevaAccountMap[item.Metadata.Namespace] = item.Spec.GenevaAccount
 				}
-				Log("Locking to update geneva tenant account config")
+				Log("genevaTenantConfigMgr: Locking to update geneva tenant account config")
 				GenevaConfigUpdateMutex.Lock()
 				K8SNamespaceGenevaAccountMap = _k8sNamespaceGenevaAccountMap
 				GenevaConfigUpdateMutex.Unlock()
-				Log("Unlocking to update geneva tenant account config")
+				Log("genevaTenantConfigMgr: Unlocking to update geneva tenant account config")
 			}
+		} else {
+			Log("genevaTenantConfigMgr: Error: got the responseBytes nil")
 		}
+		Log("genevaTenantConfigMgr: end")
 	}
 }
 
 func createTenantConfigFileIfNotExists(gcsAccount, gcsEnvironment, gcsNamespace, region, monitoringGCSAuthID string) {
 	tenantConfigFilePath := fmt.Sprintf("%s/%s", MDSDTenatDirectoryPath, gcsAccount)
+	Log("createTenantConfigFileIfNotExists: start")
 	if _, err := os.Stat(tenantConfigFilePath); errors.Is(err, os.ErrNotExist) {
 		f, err := os.Create(tenantConfigFilePath)
 		if err != nil {
-			Log("Failed to create tenant config file: %s", err)
+			Log("createTenantConfigFileIfNotExists: Failed to create tenant config file: %s", err)
 		}
 		defer f.Close()
 		tenantConfigFileContent := fmt.Sprintf(tenantConfig, gcsAccount, gcsEnvironment, gcsNamespace, region, monitoringGCSAuthID)
 		_, err = f.WriteString(tenantConfigFileContent)
 		if err != nil {
-			Log("Failed to create tenant config file: %s", err)
+			Log("createTenantConfigFileIfNotExists: Failed to create tenant config file: %s", err)
 		} else {
-			Log("starting Tenant in this path: %s", tenantConfigFilePath)
+			Log("createTenantConfigFileIfNotExists: starting Tenant in this path: %s", tenantConfigFilePath)
 			setTenant(tenantConfigFilePath)
 		}
 	}
+	Log("genevaTenancreateTenantConfigFileIfNotExiststConfigMgr: end")
 	//TODO - Tenant offboarding
 }
 
 func setTenant(tenantConfigFilePath string) {
-	args := fmt.Sprintf("set-tenant %s", tenantConfigFilePath)
-	cmd := exec.Command("mdsdmgrctl", args)
+	Log("setTenant: start")
+	//args := fmt.Sprintf("set-tenant %s", tenantConfigFilePath)
+	cmd := exec.Command("mdsdmgrctl", "set-tenant", tenantConfigFilePath)
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		Log("Failed to start tenant: %s", err)
+		Log("setTenant: Failed to start tenant: %s", err)
 	} else {
-		Log("started Tenant successfully using this path: %s", tenantConfigFilePath)
+		Log("setTenant: started Tenant successfully using this path: %s", tenantConfigFilePath)
 	}
+	Log("setTenant: stdoutput of the exec command: %s", stdout.String())
+	Log("setTenant: stderr of the exec command: %s", stderr.String())
+
+	Log("setTenant: end")
 }

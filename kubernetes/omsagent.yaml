@@ -30,6 +30,9 @@ rules:
   - apiGroups: ["azmon.container.insights"]
     resources: ["healthstates"]
     verbs: ["get", "create", "patch"]
+  - apiGroups: ["azmon.container.insights"]
+    resources: ["genevaconfigs"]
+    verbs: ["get", "list"]
   - nonResourceURLs: ["/metrics"]
     verbs: ["get"]
 ---
