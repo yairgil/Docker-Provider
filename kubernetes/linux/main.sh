@@ -296,16 +296,19 @@ echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
 # OS_ID here is the container distro.
 # Adding Mariner now even though the elif will never currently evaluate. 
 if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ]; then
-  OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2)
-  if [ $OS_ID == "ubuntu" ]; then
+  OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+  if [ $OS_ID == "mariner" ]; then
+    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
+    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
+    update-ca-trust
+  else
+    if [ $OS_ID != "ubuntu" ]; then
+      echo "Error: The ID in /etc/os-release is not ubuntu or mariner. Defaulting to ubuntu."
+    fi
     cp /anchors/ubuntu/* /usr/local/share/ca-certificates/
     cp /anchors/mariner/* /usr/local/share/ca-certificates/
     update-ca-certificates
     cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem
-  elif [ $OS_ID == "mariner" ]; then
-    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
-    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
-    update-ca-trust
   fi
 fi
 
