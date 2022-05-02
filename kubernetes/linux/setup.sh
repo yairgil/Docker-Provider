@@ -11,6 +11,12 @@ fi
 #upgrade apt to latest version
 apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
+gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+curl -sSL https://get.rvm.io | bash -s
+source /etc/profile.d/rvm.sh
+rvm install 3.1.1
+rvm --default use 3.1.1
+
 sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
@@ -57,10 +63,12 @@ sudo apt-get update
 sudo apt-get install td-agent-bit=1.7.8 -y
 
 # install ruby2.7
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
-sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >> /etc/apt/sources.list
-sudo apt-get update
-sudo apt-get install ruby2.7 ruby2.7-dev gcc make -y
+# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
+# sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >> /etc/apt/sources.list
+# sudo apt-get update
+# sudo apt-get install ruby2.7 ruby2.7-dev gcc make -y
+
+
 # fluentd v1 gem
 gem install fluentd -v "1.14.2" --no-document
 fluentd --setup ./fluent
