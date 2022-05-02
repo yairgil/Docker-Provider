@@ -87,6 +87,7 @@ checkAgentOnboardingStatus() {
 mkdir -p /var/opt/microsoft/docker-cimprov/state
 
 #Run inotify as a daemon to track changes to the mounted configmap.
+touch /opt/inotifyoutput.txt
 inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 
 #Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
@@ -328,7 +329,7 @@ source ~/.bashrc
 
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       #Parse the configmap to set the right environment variables.
-      /usr/bin/ruby2.7 tomlparser.rb
+      /usr/bin/ruby tomlparser.rb
 
       cat config_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -339,7 +340,7 @@ fi
 #Parse the configmap to set the right environment variables for agent config.
 #Note > tomlparser-agent-config.rb has to be parsed first before td-agent-bit-conf-customizer.rb for fbit agent settings
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.7 tomlparser-agent-config.rb
+      /usr/bin/ruby tomlparser-agent-config.rb
 
       cat agent_config_env_var | while read line; do
             #echo $line
@@ -348,7 +349,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       source agent_config_env_var
 
       #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
-      /usr/bin/ruby2.7 tomlparser-npm-config.rb
+      /usr/bin/ruby tomlparser-npm-config.rb
 
       cat integration_npm_config_env_var | while read line; do
             #echo $line
@@ -359,11 +360,11 @@ fi
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
 if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.7 td-agent-bit-conf-customizer.rb
+      /usr/bin/ruby td-agent-bit-conf-customizer.rb
 fi
 
 #Parse the prometheus configmap to create a file with new custom settings.
-/usr/bin/ruby2.7 tomlparser-prom-customconfig.rb
+/usr/bin/ruby tomlparser-prom-customconfig.rb
 
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
@@ -397,7 +398,7 @@ fi
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             #Parse the agent configmap to create a file with new custom settings.
-            /usr/bin/ruby2.7 tomlparser-prom-agent-config.rb
+            /usr/bin/ruby tomlparser-prom-agent-config.rb
             #Sourcing config environment variable file if it exists
             if [ -e "side_car_fbit_config_env_var" ]; then
                   cat side_car_fbit_config_env_var | while read line; do
@@ -411,7 +412,7 @@ fi
 
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.7 tomlparser-mdm-metrics-config.rb
+      /usr/bin/ruby tomlparser-mdm-metrics-config.rb
 
       cat config_mdm_metrics_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -419,7 +420,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       source config_mdm_metrics_env_var
 
       #Parse the configmap to set the right environment variables for metric collection settings
-      /usr/bin/ruby2.7 tomlparser-metric-collection-config.rb
+      /usr/bin/ruby tomlparser-metric-collection-config.rb
 
       cat config_metric_collection_env_var | while read line; do
             echo $line >> ~/.bashrc
@@ -430,7 +431,7 @@ fi
 # OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
 if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
       ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
-      /usr/bin/ruby2.7 tomlparser-osm-config.rb
+      /usr/bin/ruby tomlparser-osm-config.rb
 
       if [ -e "integration_osm_config_env_var" ]; then
             cat integration_osm_config_env_var | while read line; do
@@ -517,7 +518,7 @@ if [ "$CONTAINER_RUNTIME" != "docker" ]; then
 fi
 
 echo "set caps for ruby process to read container env from proc"
-sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby2.7
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
 
@@ -528,12 +529,14 @@ echo $NODE_NAME > /var/opt/microsoft/docker-cimprov/state/containerhostname
 cat /var/opt/microsoft/docker-cimprov/state/containerhostname
 
 #start cron daemon for logrotate
-service cron start
+# service cron start
+/usr/sbin/crond -n -s &
+
 #get  docker-provider versions
 
-dpkg -l | grep docker-cimprov | awk '{print $2 " " $3}'
+#dpkg -l | grep docker-cimprov | awk '{print $2 " " $3}'
 
-DOCKER_CIMPROV_VERSION=$(dpkg -l | grep docker-cimprov | awk '{print $3}')
+DOCKER_CIMPROV_VERSION=$(tdnf list | grep docker-cimprov | awk '{print $2}')
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
 export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
 echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
@@ -590,7 +593,7 @@ else
 fi
 source ~/.bashrc
 
-dpkg -l | grep mdsd | awk '{print $2 " " $3}'
+#dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
 if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."
@@ -664,23 +667,23 @@ fi
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
-            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            fluent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
       else
             echo "starting fluent-bit and setting telegraf conf file for daemonset"
             if [ "$CONTAINER_RUNTIME" == "docker" ]; then
-                  /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
+                  fluent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
                   telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
             else
                   echo "since container run time is $CONTAINER_RUNTIME update the container log fluentbit Parser to cri from docker"
                   sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf
-                  /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
+                  fluent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
                   telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
             fi
       fi
 else
       echo "starting fluent-bit and setting telegraf conf file for replicaset"
-      /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
+      fluent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
 fi
 
@@ -748,7 +751,7 @@ fi
 #start telegraf
 /opt/telegraf --config $telegrafConfFile &
 /opt/telegraf --version
-dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
+#dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
@@ -756,10 +759,12 @@ dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 touch /dev/write-to-traces
 
 echo "stopping rsyslog..."
-service rsyslog stop
+# service rsyslog stop
+systemctl stop rsyslog
 
 echo "getting rsyslog status..."
-service rsyslog status
+# service rsyslog status
+systemctl status rsyslog
 
 checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
 

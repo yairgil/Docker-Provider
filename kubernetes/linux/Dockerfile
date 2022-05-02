@@ -16,7 +16,7 @@ ENV KUBE_CLIENT_BACKOFF_DURATION 0
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
 # RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y libc-bin wget openssl curl sudo python-ctypes init-system-helpers  net-tools rsyslog cron vim dmidecode apt-transport-https gnupg && rm -rf /var/lib/apt/lists/*
 RUN tdnf install -y dnf && dnf clean expire-cache && dnf check-update
-RUN tdnf install -y wget openssl curl sudo net-tools rsyslog cronie vim dmidecode gnupg && rm -rf /var/lib/apt/lists/*
+RUN tdnf install -y wget openssl curl sudo net-tools cronie vim dmidecode gnupg && rm -rf /var/lib/apt/lists/*
 COPY setup.sh main.sh defaultpromenvvariables defaultpromenvvariables-rs defaultpromenvvariables-sidecar mdsd.xml envmdsd logrotate.conf $tmpdir/
 COPY azurecore.repo /etc/yum.repos.d/
 
