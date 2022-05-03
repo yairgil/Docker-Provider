@@ -1,3 +1,5 @@
+#!/bin/bash
+
 TMPDIR="/opt"
 cd $TMPDIR
 
