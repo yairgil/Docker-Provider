@@ -13,9 +13,17 @@ fi
 #upgrade apt to latest version
 apt-get update && apt-get install -y apt && DEBIAN_FRONTEND=noninteractive apt-get install -y locales
 
-gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
-curl -sSL https://get.rvm.io | bash -s
-source /etc/profile.d/rvm.sh
+
+curl -sSL https://rvm.io/mpapis.asc | gpg --import -
+curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
+curl -sSL https://get.rvm.io | bash -s stable
+
+# setup paths for ruby and rvm
+if [ -f /etc/profile.d/rvm.sh ]; then
+    source /etc/profile.d/rvm.sh
+    echo "[ -f /etc/profile.d/rvm.sh ] && source /etc/profile.d/rvm.sh" >> ~/.bashrc
+fi
+
 rvm install 3.1.0
 rvm --default use 3.1.0
 
@@ -85,6 +93,7 @@ rm -f $TMPDIR/telegraf-*.tar.gz
 
 # remove build dependencies
 sudo apt-get remove ruby2.7-dev gcc make -y
+sudo apt autoremove -y
 
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
