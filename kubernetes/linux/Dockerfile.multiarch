@@ -34,7 +34,6 @@ ENV AGENT_VERSION ${IMAGE_TAG}
 
 WORKDIR ${tmpdir}
 
-SHELL [ "/bin/bash", "-l", "-c" ] 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh ${TARGETARCH}
 
 # Do vulnerability scan in a seperate stage to avoid adding layer
