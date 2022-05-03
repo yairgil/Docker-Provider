@@ -36,9 +36,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 			Log("Using %s for plugin config \n", DaemonSetContainerLogPluginConfFilePath)
 			InitializePlugin(DaemonSetContainerLogPluginConfFilePath, agentVersion)
 		}
-output.FLBPluginConfigKey(ctx, "EnableTelemetry")	}
+	}
 
-	enableTelemetry :=
+	enableTelemetry := output.FLBPluginConfigKey(ctx, "EnableTelemetry")
 	if strings.Compare(strings.ToLower(enableTelemetry), "true") == 0 {
 		telemetryPushInterval := output.FLBPluginConfigKey(ctx, "TelemetryPushIntervalSeconds")
 		go SendContainerLogPluginMetrics(telemetryPushInterval)
