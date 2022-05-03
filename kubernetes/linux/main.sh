@@ -543,7 +543,8 @@ if [ "$CONTAINER_RUNTIME" != "docker" ]; then
 fi
 
 echo "set caps for ruby process to read container env from proc"
-sudo setcap cap_sys_ptrace,cap_dac_read_search+ep ruby
+RUBY_PATH=$(which ruby)
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep "$RUBY_PATH"
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
 
