@@ -83,7 +83,7 @@ checkAgentOnboardingStatus() {
 }
 
 # setup paths for ruby
-source ~/.bashrc
+[ -f /etc/profile.d/rvm.sh ] && source /etc/profile.d/rvm.sh
 
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
 mkdir -p /var/opt/microsoft/docker-cimprov/state
