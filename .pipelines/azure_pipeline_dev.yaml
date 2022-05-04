@@ -227,7 +227,7 @@ jobs:
         if ("$(Build.Reason)" -ne "PullRequest") {
           docker push ${{ variables.repoImageName }}:$(windows2022ImageTag)
         }
-- job: build_windows_multi-arc
+- job: build_windows_multi_arc
   dependsOn: build_windows_2019, build_windows_2022
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
@@ -271,7 +271,6 @@ jobs:
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
       DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, mcr.microsoft.com/windows/servercore:ltsc2022, ${{ variables.repoImageName }}:$(windowsImageTag)'
-
   - task: PublishBuildArtifacts@1
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
