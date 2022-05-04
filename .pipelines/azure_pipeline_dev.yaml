@@ -250,10 +250,12 @@ jobs:
 
         @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
 
-        docker pull ${{ variables.repoImageName }}:$(windowsImageTag)-{windows2019BaseImageVersion}
-        docker pull ${{ variables.repoImageName }}:$(windowsImageTag)-{windows2022BaseImageVersion}
+        docker pull ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
 
-        docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-{windows2019BaseImageVersion} ${{ variables.repoImageName }}:$(windowsImageTag)-{windows2022BaseImageVersion}
+        docker pull ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+
+        docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+
         docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
