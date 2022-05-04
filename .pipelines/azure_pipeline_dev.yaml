@@ -176,7 +176,6 @@ jobs:
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
-        windows2019ImageTag=$(windowsImageTag)-$(windowsBaseImageVersion)
 
         docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windowsBaseImageVersion) --build-arg WINDOWS_VERSION=$(windowsBaseImageVersion) IMAGE_TAG=$(windowsImageTag) .
 
@@ -217,7 +216,6 @@ jobs:
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
-        windows2022ImageTag=$(windowsImageTag)-$(windowsBaseImageVersion)
 
         docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windowsBaseImageVersion) --build-arg WINDOWS_VERSION=$(windowsBaseImageVersion) IMAGE_TAG=$(windowsImageTag) .
 
