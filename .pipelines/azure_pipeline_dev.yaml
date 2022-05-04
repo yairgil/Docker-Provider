@@ -91,7 +91,7 @@ jobs:
   pool:
     name: Azure-Pipelines-CI-Test-EO
   variables:
-    linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]  
+    linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
 
   steps:
   - task: AzureCLI@2
@@ -146,8 +146,8 @@ jobs:
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
   variables:
-    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]  
-  
+    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+
   steps:
   - task: PowerShell@2
     inputs:
@@ -179,7 +179,7 @@ jobs:
 
         @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
 
-        docker build --tag ${{ variables.repoImageName }}:$(windowsImageTag) --build-arg IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag) --build-arg IMAGE_TAG=$(windowsImageTag) .
 
         if ("$(Build.Reason)" -ne "PullRequest") {
           docker push ${{ variables.repoImageName }}:$(windowsImageTag)
