@@ -72,15 +72,8 @@ sudo echo "deb https://packages.fluentbit.io/ubuntu/bionic bionic main" >> /etc/
 sudo apt-get update
 sudo apt-get install td-agent-bit=1.7.8 -y
 
-# install ruby2.7
-# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F5DA5F09C3173AA6
-# sudo echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" >> /etc/apt/sources.list
-# sudo apt-get update
-# sudo apt-get install ruby2.7 ruby2.7-dev gcc make -y
-
-
 # fluentd v1 gem
-gem install fluentd -v "1.14.2" --no-document
+gem install fluentd -v "1.14.6" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 
@@ -92,7 +85,7 @@ rm -f $TMPDIR/envmdsd
 rm -f $TMPDIR/telegraf-*.tar.gz
 
 # remove build dependencies
-sudo apt-get remove ruby2.7-dev gcc make -y
+sudo apt-get remove gcc make -y
 sudo apt autoremove -y
 
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
