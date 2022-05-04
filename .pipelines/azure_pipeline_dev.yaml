@@ -177,7 +177,7 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windowsBaseImageVersion) --build-arg WINDOWS_VERSION=$(windowsBaseImageVersion) IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windowsBaseImageVersion) --build-arg WINDOWS_VERSION=$(windowsBaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
 
         docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windowsBaseImageVersion)
 - job: build_windows_2022
@@ -217,7 +217,7 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windowsBaseImageVersion) --build-arg WINDOWS_VERSION=$(windowsBaseImageVersion) IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windowsBaseImageVersion) --build-arg WINDOWS_VERSION=$(windowsBaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
 
         docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windowsBaseImageVersion)
 
