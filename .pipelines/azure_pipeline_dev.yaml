@@ -191,37 +191,7 @@ jobs:
            docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
         }
 
-- job: build_windows_2022
-  dependsOn:
-  -  common
-  pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
-  variables:
-    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-    windows2022BaseImageVersion: ltsc2022
-  steps:
-  - task: PowerShell@2
-    inputs:
-      targetType: 'filePath'
-      filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-    displayName: 'install prereqs'
-
-  - script: |
-      setlocal enabledelayedexpansion
-      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
-      endlocal
-      exit /B %ERRORLEVEL%
-    displayName: 'build base'
-
-  - task: AzureCLI@2
-    displayName: "Docker windows build for ltsc2022"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: ps
-      scriptLocation: inlineScript
-      inlineScript: |
-        mkdir -p $(Build.ArtifactStagingDirectory)/windows
-        cd kubernetes/windows
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag) --build-arg IMAGE_TAG=$(windowsImageTag) .
 
         az --version
         az account show
