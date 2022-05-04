@@ -147,7 +147,7 @@ jobs:
     name: Azure-Pipelines-Windows-CI-Test-EO
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-
+    windowsBaseImageVersion: ltsc2019
   steps:
   - task: PowerShell@2
     inputs:
@@ -176,10 +176,9 @@ jobs:
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
-        WINDOWS_VERSION=ltsc2019
-        windows2019ImageTag=$(windowsImageTag)-$(WINDOWS_VERSION)
+        windows2019ImageTag=$(windowsImageTag)-$(windowsBaseImageVersion)
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windows2019ImageTag) --build-arg WINDOWS_VERSION=$(WINDOWS_VERSION) IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windows2019ImageTag) --build-arg WINDOWS_VERSION=$(windowsBaseImageVersion) IMAGE_TAG=$(windowsImageTag) .
 
         if ("$(Build.Reason)" -ne "PullRequest") {
           docker push ${{ variables.repoImageName }}:$(windows2019ImageTag)
@@ -190,6 +189,7 @@ jobs:
     name: Azure-Pipelines-Windows-CI-Test-EO
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+    windowsBaseImageVersion: ltsc2022
 
   steps:
   - task: PowerShell@2
@@ -219,10 +219,9 @@ jobs:
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
-        WINDOWS_VERSION=ltsc2022
-        windows2022ImageTag=$(windowsImageTag)-$(WINDOWS_VERSION)
+        windows2022ImageTag=$(windowsImageTag)-$(windowsBaseImageVersion)
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windows2022ImageTag) --build-arg WINDOWS_VERSION=$(WINDOWS_VERSION) IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windows2022ImageTag) --build-arg WINDOWS_VERSION=$(windowsBaseImageVersion) IMAGE_TAG=$(windowsImageTag) .
 
         if ("$(Build.Reason)" -ne "PullRequest") {
           docker push ${{ variables.repoImageName }}:$(windows2022ImageTag)
