@@ -62,13 +62,13 @@ if ($multiArc) {
     Write-Host "START:Triggering docker image build for ltsc2019: $image"
     $WINDOWS_VERSION="ltsc2019"
     $updateImageLTSC2019 = ${imagerepo} + ":" + ${imageTag} + "-" + ${WINDOWS_VERSION}
-    docker build --isolation=hyperv -t $updateImageLTSC2019  --build-arg WINDOWS_VERSION=$WINDOWS_VERSION IMAGE_TAG=$imageTag  .
+    docker build --isolation=hyperv -t $updateImageLTSC2019  --build-arg WINDOWS_VERSION=$WINDOWS_VERSION --build-arg IMAGE_TAG=$imageTag  .
     Write-Host "END:Triggering docker image build for ltsc2019: $image"
 
     Write-Host "START:Triggering docker image build for ltsc2022: $image"
     $WINDOWS_VERSION="ltsc2022"
     $updateImageLTSC2022 = ${imagerepo} + ":" + ${imageTag} + "-" + ${WINDOWS_VERSION}
-    docker build --isolation=hyperv -t $updateImageLTSC2022  --build-arg WINDOWS_VERSION=$WINDOWS_VERSION IMAGE_TAG=$imageTag  .
+    docker build --isolation=hyperv -t $updateImageLTSC2022  --build-arg WINDOWS_VERSION=$WINDOWS_VERSION --build-arg IMAGE_TAG=$imageTag  .
     Write-Host "END:Triggering docker image build for ltsc2022: $image"
 
     Write-Host "START:pushing docker image with base image ltsc2019 : $updateImageLTSC2019"
