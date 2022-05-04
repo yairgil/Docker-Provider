@@ -176,7 +176,7 @@ jobs:
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
-        export WINDOWS_VERSION=ltsc2019
+        WINDOWS_VERSION=ltsc2019
         windows2019ImageTag=$(windowsImageTag)-$(WINDOWS_VERSION)
 
         docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windows2019ImageTag) --build-arg WINDOWS_VERSION=$(WINDOWS_VERSION) IMAGE_TAG=$(windowsImageTag) .
@@ -219,7 +219,7 @@ jobs:
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
-        export WINDOWS_VERSION=ltsc2022
+        WINDOWS_VERSION=ltsc2022
         windows2022ImageTag=$(windowsImageTag)-$(WINDOWS_VERSION)
 
         docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windows2022ImageTag) --build-arg WINDOWS_VERSION=$(WINDOWS_VERSION) IMAGE_TAG=$(windowsImageTag) .

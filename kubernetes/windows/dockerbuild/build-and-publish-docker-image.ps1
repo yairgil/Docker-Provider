@@ -55,8 +55,20 @@ Write-Host "changing directory to DockerFile dir: $dockerFileDir"
 Set-Location -Path $dockerFileDir
 
 $updateImage = ${imagerepo} + ":" + ${imageTag}
-Write-Host "STAT:Triggering docker image build: $image"
-docker build -t $updateImage  --build-arg IMAGE_TAG=$imageTag  .
+Write-Host "START:Triggering multi-arc docker image build for ltsc2019 & ltsc2022: $image"
+
+Write-Host "START:Triggering docker image build for ltsc2019: $image"
+$WINDOWS_VERSION="ltsc2019"
+$updateImageLTSC2019 = ${imagerepo} + ":" + ${imageTag} + "-" + ${WINDOWS_VERSION}
+docker build --isolation=hyperv -t $updateImageLTSC2019  --build-arg WINDOWS_VERSION=$WINDOWS_VERSION IMAGE_TAG=$imageTag  .
+Write-Host "END:Triggering docker image build for ltsc2019: $image"
+
+Write-Host "START:Triggering docker image build for ltsc2022: $image"
+$WINDOWS_VERSION="ltsc2022"
+$updateImageLTSC2022 = ${imagerepo} + ":" + ${imageTag} + "-" + ${WINDOWS_VERSION}
+docker build --isolation=hyperv -t $updateImageLTSC2022  --build-arg WINDOWS_VERSION=$WINDOWS_VERSION IMAGE_TAG=$imageTag  .
+Write-Host "END:Triggering docker image build for ltsc2022: $image"
+
 Write-Host "END:Triggering docker image build: $updateImage"
 
 Write-Host "STAT:pushing docker image : $updateImage"
