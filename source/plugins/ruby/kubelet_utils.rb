@@ -80,11 +80,7 @@ class KubeletUtils
           ApplicationInsightsUtility.sendExceptionTelemetry("Error in get_node_allocatable::kubereserved_memory: #{errorStr}")
         end 
         begin
-          if (parsed_response["kubeletconfig"]["systemReserved"].has_key?("cpu"))
-           systemReserved_cpu = parsed_response["kubeletconfig"]["systemReserved"]["cpu"]
-          else
-           systemReserved_cpu = nil
-          end
+          systemReserved_cpu = parsed_response["kubeletconfig"]["systemReserved"]["cpu"]
           if systemReserved_cpu.nil? || systemReserved_cpu == ""
             systemReserved_cpu = "0.0"
           end
@@ -110,11 +106,7 @@ class KubeletUtils
         end 
 
         begin
-           if (parsed_response["kubeletconfig"]["systemReserved"].has_key?("memory"))
-            systemReserved_memory = parsed_response["kubeletconfig"]["systemReserved"]["memory"]
-           else
-            systemReserved_memory = nil
-           end
+           systemReserved_memory = parsed_response["kubeletconfig"]["systemReserved"]["memory"]
            if systemReserved_memory.nil? || systemReserved_memory == ""
             systemReserved_memory = "0.0"
            end
