@@ -223,6 +223,7 @@ jobs:
 
 - job: build_windows_multi_arc
   dependsOn:
+  -  common
   -  build_windows_2019
   -  build_windows_2022
   pool:
