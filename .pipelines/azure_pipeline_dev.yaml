@@ -183,9 +183,12 @@ jobs:
 
         docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
         docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
-        docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-        docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
-
+        if ("$(Build.Reason)" -ne "PullRequest") {
+           docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
+           docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+           docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+           docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
+        }
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
     condition: eq(variables.IS_PR, true)
