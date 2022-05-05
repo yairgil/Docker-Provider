@@ -246,6 +246,15 @@ powershell -ExecutionPolicy bypass  # switch to powershell if you are not on pow
 And then run the script to build the image consisting of code and conf changes.
 ```
 .\build-and-publish-dev-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
+By default, multi-arc docker image will be built, but if you want generate test image either with ltsc2019 or ltsc2022 base image, then you can follow the instructions below
+
+For building image with base image version ltsc2019
+.\build-and-publish-dev-docker-image.ps1 -image <repo>/<imagename>:<imagetag> -windowsBaseImageVersion ltsc2019
+
+For building image with base image version ltsc2022
+.\build-and-publish-dev-docker-image.ps1 -image <repo>/<imagename>:<imagetag> -windowsBaseImageVersion ltsc2022
+
+
 ```
 
 For the subsequent builds, you can just run -

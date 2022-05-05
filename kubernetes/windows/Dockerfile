@@ -1,4 +1,4 @@
-# Supported values of windows version is ltsc2019 or ltsc2022 which are being passed by the build script or build pipeline
+# Supported values of windows version are ltsc2019 or ltsc2022 which are being passed by the build script or build pipeline
 ARG WINDOWS_VERSION=
 FROM mcr.microsoft.com/windows/servercore:${WINDOWS_VERSION}
 MAINTAINER OMSContainers@microsoft.com

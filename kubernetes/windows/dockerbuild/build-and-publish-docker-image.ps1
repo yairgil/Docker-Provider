@@ -8,8 +8,7 @@
 param(
     [Parameter(mandatory = $true)]
     [string]$image,
-    [Parameter(mandatory = $true)]
-    [bool]$multiArc= $true
+    [string]$windowsBaseImageVersion="" # Supported values are ltsc2019 or ltsc2022. Default is multi-arc image unless this value specified
 )
 
 $currentdir =  $PSScriptRoot
@@ -57,19 +56,20 @@ Write-Host "changing directory to DockerFile dir: $dockerFileDir"
 Set-Location -Path $dockerFileDir
 
 $updateImage = ${imagerepo} + ":" + ${imageTag}
-if ($multiArc) {
+if ([string]::IsNullOrEmpty($windowsBaseImageVersion)) {
     Write-Host "START:Triggering multi-arc docker image build for ltsc2019 & ltsc2022: $image"
-    Write-Host "START:Triggering docker image build for ltsc2019: $image"
+
     $WINDOWS_VERSION="ltsc2019"
     $updateImageLTSC2019 = ${imagerepo} + ":" + ${imageTag} + "-" + ${WINDOWS_VERSION}
+    Write-Host "START:Triggering docker image build for ltsc2019: $updateImageLTSC2019"
     docker build --isolation=hyperv -t $updateImageLTSC2019  --build-arg WINDOWS_VERSION=$WINDOWS_VERSION --build-arg IMAGE_TAG=$imageTag  .
-    Write-Host "END:Triggering docker image build for ltsc2019: $image"
+    Write-Host "END:Triggering docker image build for ltsc2019: $updateImageLTSC2019"
 
-    Write-Host "START:Triggering docker image build for ltsc2022: $image"
     $WINDOWS_VERSION="ltsc2022"
     $updateImageLTSC2022 = ${imagerepo} + ":" + ${imageTag} + "-" + ${WINDOWS_VERSION}
+    Write-Host "START:Triggering docker image build for ltsc2022: $updateImageLTSC2022"
     docker build --isolation=hyperv -t $updateImageLTSC2022  --build-arg WINDOWS_VERSION=$WINDOWS_VERSION --build-arg IMAGE_TAG=$imageTag  .
-    Write-Host "END:Triggering docker image build for ltsc2022: $image"
+    Write-Host "END:Triggering docker image build for ltsc2022: $updateImageLTSC2022"
 
     Write-Host "START:pushing docker image with base image ltsc2019 : $updateImageLTSC2019"
     docker push  $updateImageLTSC2019
@@ -86,9 +86,16 @@ if ($multiArc) {
 
     Write-Host "END:Triggering multi-arc docker image build for ltsc2019 & ltsc2022: $image"
 } else {
+    if (($windowsBaseImageVersion -eq "ltsc2019") -or ($windowsBaseImageVersion -eq "ltsc2022")) {
+        Write-Host "Provided baseimage version valid and supported: ${windowsBaseImageVersion}"
+    } else {
+        Write-Host "Provided baseimage version neither valid nor supported: ${windowsBaseImageVersion}" -ForegroundColor Red
+        exit 1
+    }
 
-    Write-Host "START:Triggering docker image build: $image"
-    docker build -t $updateImage  --build-arg IMAGE_TAG=$imageTag  .
+    $WINDOWS_VERSION=$windowsBaseImageVersion
+    Write-Host "START:Triggering docker image build: $image with baseImage version: ${windowsBaseImageVersion}"
+    docker build --isolation=hyperv -t $updateImage  --build-arg WINDOWS_VERSION=$windowsBaseImageVersion  --build-arg IMAGE_TAG=$imageTag  .
     Write-Host "END:Triggering docker image build: $updateImage"
 
     Write-Host "START:pushing docker image : $updateImage"
