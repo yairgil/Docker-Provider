@@ -93,7 +93,6 @@ if ([string]::IsNullOrEmpty($windowsBaseImageVersion)) {
         exit 1
     }
 
-    $WINDOWS_VERSION=$windowsBaseImageVersion
     Write-Host "START:Triggering docker image build: $image with baseImage version: ${windowsBaseImageVersion}"
     docker build --isolation=hyperv -t $updateImage  --build-arg WINDOWS_VERSION=$windowsBaseImageVersion  --build-arg IMAGE_TAG=$imageTag  .
     Write-Host "END:Triggering docker image build: $updateImage"
