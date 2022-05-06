@@ -2,8 +2,8 @@
 
 
 ## MAC (Monitoring Account) limitations: 
-* The default limit on the number of timeseries is 50000.  
-* The default limit on the number of events is 250000  
+* The default limit on the number of timeseries is 1M.  
+* The default limit on the number of events is 1M.  
   
 <br/>
 
