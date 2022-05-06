@@ -91,7 +91,7 @@ jobs:
         run: cd ./build/windows/ && & .\Makefile.ps1
       - name: Create-docker-image
         run: |
-            cd ./kubernetes/windows/ && docker build . --file Dockerfile -t $env:IMAGETAG --build-arg IMAGE_TAG=$env:IMAGETAG_TELEMETRY
+            cd ./kubernetes/windows/ && docker build . --file Dockerfile -t $env:IMAGETAG --build-arg WINDOWS_VERSION=ltsc2019 --build-arg IMAGE_TAG=$env:IMAGETAG_TELEMETRY
       - name: List-docker-images
         run: docker images --digests --all
-      
+
