@@ -142,4 +142,6 @@ class Constants
   NODE_ALLOCATABLE_RECORDS_STATE_FILE = "/var/opt/microsoft/docker-cimprov/state/NodeAllocatableRecords.json"
   # Emit Stream size for Pod MDM metric
   POD_MDM_EMIT_STREAM_BATCH_SIZE = 5000 # each record is 200 bytes, 5k records ~2MB
+  # only used in windows in AAD MSI auth mode
+  IMDS_TOKEN_PATH_FOR_WINDOWS = "c:/etc/imds-access-token/token"
 end
