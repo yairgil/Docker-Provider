@@ -183,9 +183,9 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2019BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
         if ("$(Build.Reason)" -ne "PullRequest") {
-           docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
+           docker push ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
         }
 
 - job: build_windows_2022
@@ -225,9 +225,9 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2022BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
         if ("$(Build.Reason)" -ne "PullRequest") {
-           docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+           docker push ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
         }
 
 - job: build_windows_multi_arc
@@ -257,11 +257,11 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
+        @{"image.name"="${{ variables.repoImageNameWindows }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
 
         if ("$(Build.Reason)" -ne "PullRequest") {
-           docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-           docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
+           docker manifest create ${{ variables.repoImageNameWindows }}:$(windowsImageTag) ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+           docker manifest push ${{ variables.repoImageNameWindows }}:$(windowsImageTag)
         }
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
