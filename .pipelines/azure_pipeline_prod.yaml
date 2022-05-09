@@ -183,7 +183,7 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2019BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2019BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) .
         if ("$(Build.Reason)" -ne "PullRequest") {
            docker push ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
         }
@@ -225,7 +225,7 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2022BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2022BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) .
         if ("$(Build.Reason)" -ne "PullRequest") {
            docker push ${{ variables.repoImageNameWindows }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
         }
