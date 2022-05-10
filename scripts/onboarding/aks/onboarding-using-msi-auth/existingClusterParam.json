@@ -3,22 +3,20 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
       "aksResourceId": {
-        "value": "/subscriptions/<SubscriptionId>/resourcegroups/<ResourceGroup>/providers/Microsoft.ContainerService/managedClusters/<ResourceName>"
+        "value": "/subscriptions/692aea0b-2d89-4e7e-ae30-fffe40782ee2/resourcegroups/gangams-aks-msi-uai/providers/Microsoft.ContainerService/managedClusters/gangams-aks-msi-uai"
       },
       "aksResourceLocation": {
-        "value": "<aksClusterLocation>"
+        "value": "centraluseuap"
       },
       "workspaceResourceId": {
-        "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>"
+        "value": "/subscriptions/692aea0b-2d89-4e7e-ae30-fffe40782ee2/resourcegroups/defaultresourcegroup-eap/providers/microsoft.operationalinsights/workspaces/defaultworkspace-692aea0b-2d89-4e7e-ae30-fffe40782ee2-eap"
       },
       "workspaceLocation": {
-        "value": "<workspaceLocation>"
+        "value": "eastus2euap"
       },
       "resourceTagValues": {
         "value": {
-          "<existingOrnew-tag-name1>": "<existingOrnew-tag-value1>",
-          "<existingOrnew-tag-name2>": "<existingOrnew-tag-value2>",
-          "<existingOrnew-tag-nameN>": "<existingOrnew-tag-valueN>"
+          "v1": "k1"
         }
       }
     }
