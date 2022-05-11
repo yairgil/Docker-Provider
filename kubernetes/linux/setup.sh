@@ -73,7 +73,7 @@ sudo apt-get update
 sudo apt-get install td-agent-bit=1.7.8 -y
 
 # fluentd v1 gem
-gem install fluentd -v "1.14.2" --no-document
+gem install fluentd -v "1.14.6" --no-document
 fluentd --setup ./fluent
 gem install gyoku iso8601 --no-doc
 gem install tomlrb -v "2.0.1" --no-document
