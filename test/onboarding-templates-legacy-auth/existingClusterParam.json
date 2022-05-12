@@ -3,13 +3,13 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "aksResourceId": {
-            "value": "/subscriptions/<SubscriptionId>/resourcegroups/<ResourceGroup>/providers/Microsoft.ContainerService/managedClusters/<ResourceName>"
+            "value": "/subscriptions/81895b44-c46d-44c3-9368-42f0386af28e/resourceGroups/marinerv2/providers/Microsoft.ContainerService/managedClusters/test"
         },
         "aksResourceLocation": {
-            "value": "<aksClusterLocation>"
+            "value": "eastus"
         },
         "workspaceResourceId": {
-            "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>"
+            "value": "/subscriptions/81895b44-c46d-44c3-9368-42f0386af28e/resourcegroups/defaultresourcegroup-eus/providers/microsoft.operationalinsights/workspaces/defaultworkspace-81895b44-c46d-44c3-9368-42f0386af28e-eus"
         }
     }
 }

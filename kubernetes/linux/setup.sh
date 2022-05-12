@@ -29,7 +29,7 @@ tdnf install ca-certificates-microsoft -y
 
 # /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
 sudo tdnf install -y which
-sudo tdnf --disablerepo="*" --enablerepo=packages-microsoft-com-azurecore install azure-mdsd -y
+sudo tdnf --disablerepo="*" --enablerepo=packages-microsoft-com-azurecore install azure-mdsd-1.18.0 -y
 echo "Copying files to /etc/mdsd.d"
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
@@ -67,7 +67,7 @@ sudo tdnf install telegraf-1.21.2 -y
 sudo tdnf install fluent-bit-1.8.12 -y
 
 # install ruby2.7
-tdnf install build-essential ruby -y
+tdnf install build-essential ruby-2.7.4-6.cm2 -y
 gem install fluentd -v "1.14.2" --no-document
 # export PATH=$PATH:/usr/lib/ruby/gems/bin
 fluentd --setup ./fluent
@@ -94,3 +94,9 @@ rm -f $TMPDIR/telegraf-*.tar.gz
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
 #rm /etc/logrotate.d/alternatives /etc/logrotate.d/apt /etc/logrotate.d/azure-mdsd /etc/logrotate.d/rsyslog
+rm /etc/logrotate.d/azure-mdsd
+
+DOCKER_CIMPROV_VERSION=$(tdnf list | grep docker-cimprov | awk '{print $2}')
+echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
+export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
+echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> $TMPDIR/docker-cimprov-version.txt

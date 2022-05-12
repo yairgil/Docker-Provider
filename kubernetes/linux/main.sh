@@ -321,7 +321,7 @@ if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSI
 fi
 
 
-aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)
+aikey=$(echo $APPLICATIONINSIGHTS_AUTH | /usr/bin/base64 --decode)
 export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey
 echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc
 
@@ -518,7 +518,7 @@ if [ "$CONTAINER_RUNTIME" != "docker" ]; then
 fi
 
 echo "set caps for ruby process to read container env from proc"
-sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby
+setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
 
@@ -536,10 +536,13 @@ cat /var/opt/microsoft/docker-cimprov/state/containerhostname
 
 #dpkg -l | grep docker-cimprov | awk '{print $2 " " $3}'
 
-DOCKER_CIMPROV_VERSION=$(tdnf list | grep docker-cimprov | awk '{print $2}')
+# DOCKER_CIMPROV_VERSION=$(tdnf list | grep docker-cimprov | awk '{print $2}')
+# echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
+# export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
+# echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
+export $(cat docker-cimprov-version.txt)
+echo "export $(cat docker-cimprov-version.txt)" >> ~/.bashrc
 echo "DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION"
-export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION
-echo "export DOCKER_CIMPROV_VERSION=$DOCKER_CIMPROV_VERSION" >> ~/.bashrc
 
 #skip imds lookup since not used either legacy or aad msi auth path
 export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH="true"
@@ -623,10 +626,10 @@ fi
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -e "/etc/config/kube.conf" ]; then
          echo "*** starting fluentd v1 in daemonset"
-         fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+         /usr/lib/ruby/gems/bin/fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
         echo "*** starting fluentd v1 in replicaset"
-        fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+        /usr/lib/ruby/gems/bin/fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       fi
 fi
 
@@ -634,7 +637,7 @@ fi
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
             echo "****************Start Telegraf in Test Mode**************************"
-            /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
+            /usr/bin/telegraf --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
             if [ $? -eq 0 ]; then
                   mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
                   echo "Moving test conf file to telegraf side-car conf since test run succeeded"
@@ -643,7 +646,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
       else
             if [ -e "/opt/telegraf-test.conf" ]; then
                   echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test.conf --input-filter file -test
+                  /usr/bin/telegraf --config /opt/telegraf-test.conf --input-filter file -test
                   if [ $? -eq 0 ]; then
                         mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
                         echo "Moving test conf file to telegraf daemonset conf since test run succeeded"
@@ -654,7 +657,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
 else
       if [ -e "/opt/telegraf-test-rs.conf" ]; then
                   echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test-rs.conf --input-filter file -test
+                  /usr/bin/telegraf --config /opt/telegraf-test-rs.conf --input-filter file -test
                   if [ $? -eq 0 ]; then
                         mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
                         echo "Moving test conf file to telegraf replicaset conf since test run succeeded"
@@ -749,8 +752,8 @@ else
 fi
 
 #start telegraf
-/opt/telegraf --config $telegrafConfFile &
-/opt/telegraf --version
+/usr/bin/telegraf --config $telegrafConfFile &
+/usr/bin/telegraf --version
 #dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
@@ -758,13 +761,13 @@ fi
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 touch /dev/write-to-traces
 
-echo "stopping rsyslog..."
-# service rsyslog stop
-systemctl stop rsyslog
+# echo "stopping rsyslog..."
+# # service rsyslog stop
+# sudo systemctl stop rsyslog
 
-echo "getting rsyslog status..."
-# service rsyslog status
-systemctl status rsyslog
+# echo "getting rsyslog status..."
+# # service rsyslog status
+# sudo systemctl status rsyslog
 
 checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
 
