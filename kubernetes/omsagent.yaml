@@ -299,8 +299,8 @@ metadata:
 type: Opaque
 data:
   #BASE64 ENCODED (Both WSID & KEY) INSIDE DOUBLE QUOTE ("")
-  WSID: "ZjZmZjU5MmQtNGQ3OS00MDJhLWIxZTEtMzMwNTY4ZmYwNmE4Cg=="
-  KEY: "MFRwU05OdnE2ZEtpalE3UUpDWE9abWxKMHRwdlZhNUlNMm5TVlRVUXRQZkxnQ0tZREpmVXNpTU9wK2xWa29RdEkySExzWGV5L1lNc1psNG1EUnR5Qnc9PQo="
+  WSID: "VALUE_WSID"
+  KEY: "VALUE_KEY"
 ---
 # Uncomment below lines for MSI Auth Mode  testing
 # apiVersion: v1
@@ -379,7 +379,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:mariner_distroless_3"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03172022"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -397,9 +397,9 @@ spec:
               value: "1"
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_RESOURCE_ID
-              value: "/subscriptions/81895b44-c46d-44c3-9368-42f0386af28e/resourceGroups/marinerv2/providers/Microsoft.ContainerService/managedClusters/test"
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
-              value: "eastus"
+              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
             - name: ISTEST
               value: "true"
@@ -414,7 +414,7 @@ spec:
                   fieldPath: status.hostIP
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "2d157884-9578-44d1-b4ec-4211a1c9ed67"
+              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
               value: "koreacentral,norwayeast,eastus2"
             # Uncomment below lines for MSI Auth Mode  testing
@@ -466,7 +466,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: omsagent-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:mariner_distroless_3"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03172022"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -480,9 +480,9 @@ spec:
             - name: AKS_CLUSTER_NAME
               value: "VALUE_AKS_CLUSTER_NAME"
             - name: AKS_RESOURCE_ID
-              value: "/subscriptions/81895b44-c46d-44c3-9368-42f0386af28e/resourceGroups/marinerv2/providers/Microsoft.ContainerService/managedClusters/test"
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
-              value: "eastus"
+              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
             - name: AKS_NODE_RESOURCE_GROUP
               value: "VALUE_AKS_NODE_RESOURCE_GROUP"
             #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
@@ -498,7 +498,7 @@ spec:
                   fieldPath: status.hostIP
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "2d157884-9578-44d1-b4ec-4211a1c9ed67"
+              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             # Uncomment below lines for MSI Auth Mode  testing
             # - name: USING_AAD_MSI_AUTH
             #   value: "true"
@@ -651,7 +651,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:mariner_distroless_3"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03172022"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -662,9 +662,9 @@ spec:
               memory: 250Mi
           env:
             - name: AKS_RESOURCE_ID
-              value: "/subscriptions/81895b44-c46d-44c3-9368-42f0386af28e/resourceGroups/marinerv2/providers/Microsoft.ContainerService/managedClusters/test"
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
-              value: "eastus"
+              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
             - name: ISTEST
               value: "true"
@@ -679,7 +679,7 @@ spec:
                   fieldPath: status.hostIP
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "2d157884-9578-44d1-b4ec-4211a1c9ed67"
+              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             # Add the below environment variable to true only in sidecar enabled regions, else set it to false
             - name: SIDECAR_SCRAPING_ENABLED
               value: "true"
@@ -822,7 +822,7 @@ spec:
             value: "3"
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/cidev:mariner_distroless_3"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03172022"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
@@ -837,9 +837,9 @@ spec:
             value: "1"
           # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
           - name: AKS_RESOURCE_ID
-            value: "/subscriptions/81895b44-c46d-44c3-9368-42f0386af28e/resourceGroups/marinerv2/providers/Microsoft.ContainerService/managedClusters/tests"
+            value: "VALUE_AKS_RESOURCE_ID_VALUE"
           - name: AKS_REGION
-            value: "eastus"
+            value: "VALUE_AKS_RESOURCE_REGION_VALUE"
           #- name: ACS_RESOURCE_NAME
           #  value: "my_acs_cluster_name"
           - name: CONTROLLER_TYPE
@@ -860,7 +860,7 @@ spec:
             value: "true"
           # Update this with the user assigned msi client id for omsagent
           - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-            value: "2d157884-9578-44d1-b4ec-4211a1c9ed67"
+            value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
           # Add this only for clouds that require cert bootstrapping
           # - name: REQUIRES_CERT_BOOTSTRAP
           #   value: "true"
@@ -954,4 +954,3 @@ spec:
       # - name: imds-token
       #   secret:
       #     secretName: omsagent-aad-msi-token
-
