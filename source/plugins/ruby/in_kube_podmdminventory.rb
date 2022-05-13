@@ -62,9 +62,7 @@ module Fluent::Plugin
         if !@isCustomMetricsAvailability
           $log.warn "in_kube_podmdminventory::enumerate:skipping since custom metrics not available either for this cluster type or the region"
         else
-          currentTime = Time.now
-          batchTime = currentTime.utc.iso8601
-          parse_and_emit_records(batchTime)
+          parse_and_emit_records()
         end
       rescue => errorStr
         $log.warn "in_kube_podmdminventory::enumerate:Failed in enumerate: #{errorStr}"
@@ -73,13 +71,15 @@ module Fluent::Plugin
       end
     end
 
-    def parse_and_emit_records(batchTime = Time.utc.iso8601)
+    def parse_and_emit_records()
       begin
         $log.info "in_kube_podmdminventory:parse_and_emit_records:Start:getMDMRecords @ #{Time.now.utc.iso8601}"
         mdmPodRecords = getMDMRecords()
-        $log.info "in_kube_podmdminventory:parse_and_emit_records:End:getMDMRecords @ #{Time.now.utc.iso8601}"
-        if !mdmPodRecords.nil? && !mdmPodRecords.empty? && mdmPodRecords.length > 0
-          mdmPodRecords.each do |record|
+        mdmPodRecordItems =
+          $log.info "in_kube_podmdminventory:parse_and_emit_records:End:getMDMRecords @ #{Time.now.utc.iso8601}"
+        if !mdmPodRecords.nil? && !mdmPodRecords.empty? && mdmPodRecords["items"].length > 0
+          batchTime = mdmPodRecords["collectionTime"] # This is time KubePODinventory plugin collected
+          mdmPodRecords["items"].each do |record|
             @inventoryToMdmConvertor.process_pod_inventory_record(record)
             @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], record["PodReadyCondition"])
             containerRecords = record["containerRecords"]
@@ -180,7 +180,7 @@ module Fluent::Plugin
       maxRetryCount = 3
       initialRetryDelaySecs = 0.5
       retryAttemptCount = 1
-      mdmRecords = []
+      mdmRecords = {}
       begin
         f = File.open(Constants::MDM_POD_INVENTORY_STATE_FILE, "r")
         if !f.nil?
@@ -194,11 +194,11 @@ module Fluent::Plugin
           raise "in_kube_podmdminventory:getMDMRecords:Failed to open file for read"
         end
       rescue => err
-        if retryAttemptCount < maxRetryCount
+        if retryAttemptCount <= maxRetryCount
           f.flock(File::LOCK_UN) if !f.nil?
           f.close if !f.nil?
-          retryAttemptCount = retryAttemptCount + 1
           sleep (initialRetryDelaySecs * retryAttemptCount)
+          retryAttemptCount = retryAttemptCount + 1
           retry
         end
         $log.warn "in_kube_podmdminventory:getMDMRecords failed with an error: #{err} after retries: #{maxRetryCount} @  #{Time.now.utc.iso8601}"

@@ -148,7 +148,7 @@ module Fluent::Plugin
         batchTime = currentTime.utc.iso8601
         serviceRecords = []
         @podInventoryE2EProcessingLatencyMs = 0
-        @mdmPodRecords = []
+        @mdmPodRecordItems = []
         podInventoryStartTime = (Time.now.to_f * 1000).to_i
         if ExtensionUtils.isAADMSIAuthMode()
           $log.info("in_kube_podinventory::enumerate: AAD AUTH MSI MODE")
@@ -211,7 +211,7 @@ module Fluent::Plugin
         # Setting these to nil so that we dont hold memory until GC kicks in
         podInventory = nil
         serviceRecords = nil
-        @mdmPodRecords = nil
+        @mdmPodRecordItems = nil
 
         # Adding telemetry to send pod telemetry every 5 minutes
         timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
@@ -351,11 +351,16 @@ module Fluent::Plugin
         if continuationToken.nil? #no more chunks in this batch to be sent, write all mdm pod inventory records to send
           if CustomMetricsUtils.check_custom_metrics_availability
             begin
-              if !@mdmPodRecords.nil? && @mdmPodRecords.length > 0
+              if !@mdmPodRecordItems.nil? && @mdmPodRecordItems.length > 0
+                mdmPodRecords = {
+                  "collectionTime": batchTime,
+                  "items": @mdmPodRecordItems,
+                }
                 mdmPodRecordsJson = @mdmPodRecords.to_json
                 @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
                 @log.info "in_kube_podinventory::parse_and_emit_records:Start:writeMDMRecords @ #{Time.now.utc.iso8601}"
                 writeMDMRecords(mdmPodRecordsJson)
+                mdmPodRecords = nil
                 @log.info "in_kube_podinventory::parse_and_emit_records:End:writeMDMRecords @ #{Time.now.utc.iso8601}"
               end
             rescue => err
@@ -647,7 +652,7 @@ module Fluent::Plugin
           records.push(record)
         end  #container status block end
 
-        @mdmPodRecords.push(mdmPodRecord.dup)
+        @mdmPodRecordItems.push(mdmPodRecord.dup)
 
         records.each do |record|
           if !record.nil?
@@ -1175,11 +1180,11 @@ module Fluent::Plugin
           raise "in_kube_podinventory:writeMDMRecords:Failed to open file for write"
         end
       rescue => err
-        if retryAttemptCount < maxRetryCount
+        if retryAttemptCount <= maxRetryCount
           f.flock(File::LOCK_UN) if !f.nil?
           f.close if !f.nil?
-          retryAttemptCount = retryAttemptCount + 1
           sleep (initialRetryDelaySecs * retryAttemptCount)
+          retryAttemptCount = retryAttemptCount + 1
           retry
         end
         $log.warn "in_kube_podinventory:writeMDMRecords failed with an error: #{err} after retries: #{maxRetryCount} @  #{Time.now.utc.iso8601}"
