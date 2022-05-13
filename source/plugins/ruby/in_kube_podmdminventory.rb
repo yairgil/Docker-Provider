@@ -78,7 +78,7 @@ module Fluent::Plugin
         mdmPodRecordItems =
           $log.info "in_kube_podmdminventory:parse_and_emit_records:End:getMDMRecords @ #{Time.now.utc.iso8601}"
         if !mdmPodRecords.nil? && !mdmPodRecords.empty? && mdmPodRecords["items"].length > 0
-          batchTime = mdmPodRecords["collectionTime"] # This is time KubePODinventory plugin collected
+          batchTime = mdmPodRecords["collectionTime"] # This is same batchTime used in KubePODinventory
           mdmPodRecords["items"].each do |record|
             @inventoryToMdmConvertor.process_pod_inventory_record(record)
             @inventoryToMdmConvertor.process_record_for_pods_ready_metric(record["ControllerName"], record["Namespace"], record["PodReadyCondition"])

@@ -356,11 +356,12 @@ module Fluent::Plugin
                   "collectionTime": batchTime,
                   "items": @mdmPodRecordItems,
                 }
-                mdmPodRecordsJson = @mdmPodRecords.to_json
+                mdmPodRecordsJson = mdmPodRecords.to_json
                 @log.info "Writing pod inventory mdm records to mdm podinventory state file with size(bytes): #{mdmPodRecordsJson.length}"
                 @log.info "in_kube_podinventory::parse_and_emit_records:Start:writeMDMRecords @ #{Time.now.utc.iso8601}"
                 writeMDMRecords(mdmPodRecordsJson)
                 mdmPodRecords = nil
+                mdmPodRecordsJson = nil
                 @log.info "in_kube_podinventory::parse_and_emit_records:End:writeMDMRecords @ #{Time.now.utc.iso8601}"
               end
             rescue => err
