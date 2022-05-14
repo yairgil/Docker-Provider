@@ -189,7 +189,7 @@ module Fluent::Plugin
           startTime = (Time.now.to_f * 1000).to_i
           mdmRecords = Yajl::Parser.parse(f)
           timetakenMs = ((Time.now.to_f * 1000).to_i - startTime)
-          $log.info "in_kube_podmdminventory:getMDMRecords:Number of MDM records: #{mdmRecords.length} with time taken(ms) for read: #{timetakenMs} @  #{Time.now.utc.iso8601}"
+          $log.info "in_kube_podmdminventory:getMDMRecords:Number of MDM records: #{mdmRecords["items"].length} with time taken(ms) for read: #{timetakenMs} @  #{Time.now.utc.iso8601}"
         else
           raise "in_kube_podmdminventory:getMDMRecords:Failed to open file for read"
         end
