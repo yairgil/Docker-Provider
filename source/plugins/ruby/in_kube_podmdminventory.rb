@@ -40,6 +40,7 @@ module Fluent::Plugin
         $log.info("in_kube_podmdminventory::start @ #{Time.now.utc.iso8601}")
         @isCustomMetricsAvailability = CustomMetricsUtils.check_custom_metrics_availability
         @finished = false
+        @prevCollectionTime = nil
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
@@ -177,7 +178,7 @@ module Fluent::Plugin
     end
 
     def getMDMRecords()
-      maxRetryCount = 3
+      maxRetryCount = 5
       initialRetryDelaySecs = 0.5
       retryAttemptCount = 1
       mdmRecords = {}
@@ -189,6 +190,10 @@ module Fluent::Plugin
           startTime = (Time.now.to_f * 1000).to_i
           mdmRecords = Yajl::Parser.parse(f)
           timetakenMs = ((Time.now.to_f * 1000).to_i - startTime)
+          if mdmRecords.nil? || mdmRecords.empty? || mdmRecords["items"].nil? || mdmRecords["collectionTime"] == @prevCollectionTime
+            raise "in_kube_podmdminventory:getMDMRecords: either read mdmRecords is nil or empty or stale"
+          end
+          @prevCollectionTime = mdmRecords["collectionTime"]
           $log.info "in_kube_podmdminventory:getMDMRecords:Number of MDM records: #{mdmRecords["items"].length} with time taken(ms) for read: #{timetakenMs} @  #{Time.now.utc.iso8601}"
         else
           raise "in_kube_podmdminventory:getMDMRecords:Failed to open file for read"
