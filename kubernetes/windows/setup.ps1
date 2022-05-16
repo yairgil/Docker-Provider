@@ -1,7 +1,6 @@
-#
-################# Dangerous to use appveyor links - the builds are removed after 6 months
-#
-#ARG FLUENTBIT_URL=https://ci.appveyor.com/api/buildjobs/37lho3xf8j5i6crj/artifacts/build%2Ftd-agent-bit-1.4.0-win64.zip
+# speed up Invoke-WebRequest 
+# https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
+$ProgressPreference = 'SilentlyContinue'
 
 Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
@@ -21,7 +20,7 @@ Write-Host ('Creating folder structure')
 Write-Host ('Installing Fluent Bit');
 
     try {
-        $fluentBitUri='https://github.com/microsoft/OMS-docker/releases/download/winakslogagent/td-agent-bit-1.4.0-win64.zip'
+        $fluentBitUri='https://fluentbit.io/releases/1.7/td-agent-bit-1.7.8-win64.zip'
         Invoke-WebRequest -Uri $fluentBitUri -OutFile /installation/td-agent-bit.zip
         Expand-Archive -Path /installation/td-agent-bit.zip -Destination /installation/fluent-bit
         Move-Item -Path /installation/fluent-bit/*/* -Destination /opt/fluent-bit/ -ErrorAction SilentlyContinue
@@ -36,7 +35,7 @@ Write-Host ('Finished Installing Fluentbit')
 
 Write-Host ('Installing Telegraf');
 try {
-    $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_windows_amd64.zip'
+    $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.22.2_windows_amd64.zip'
     Invoke-WebRequest -Uri $telegrafUri -OutFile /installation/telegraf.zip
     Expand-Archive -Path /installation/telegraf.zip -Destination /installation/telegraf
     Move-Item -Path /installation/telegraf/*/* -Destination /opt/telegraf/ -ErrorAction SilentlyContinue
@@ -71,10 +70,3 @@ Remove-Item /installation -Recurse
 
 #Remove gemfile.lock for http_parser gem 0.6.0
 #see  - https://github.com/fluent/fluentd/issues/3374 https://github.com/tmm1/http_parser.rb/issues/70
-
-$gemfile = "\ruby26\lib\ruby\gems\2.6.0\gems\http_parser.rb-0.6.0\Gemfile.lock"
-$gemfileFullPath = $Env:SYSTEMDRIVE + "\" + $gemfile
-If (Test-Path -Path $gemfile ) {
-    Write-Host ("Renaming unused gemfile.lock for http_parser 0.6.0")
-    Rename-Item -Path $gemfileFullPath -NewName  "renamed_Gemfile_lock.renamed"
-}

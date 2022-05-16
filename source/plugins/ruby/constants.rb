@@ -110,26 +110,32 @@ class Constants
   CONTAINER_INVENTORY_DATA_TYPE = "CONTAINER_INVENTORY_BLOB"
   CONTAINER_NODE_INVENTORY_DATA_TYPE = "CONTAINER_NODE_INVENTORY_BLOB"
   PERF_DATA_TYPE = "LINUX_PERF_BLOB"
-  INSIGHTS_METRICS_DATA_TYPE = "INSIGHTS_METRICS_BLOB"  
+  INSIGHTS_METRICS_DATA_TYPE = "INSIGHTS_METRICS_BLOB"
   KUBE_SERVICES_DATA_TYPE = "KUBE_SERVICES_BLOB"
   KUBE_POD_INVENTORY_DATA_TYPE = "KUBE_POD_INVENTORY_BLOB"
   KUBE_NODE_INVENTORY_DATA_TYPE = "KUBE_NODE_INVENTORY_BLOB"
   KUBE_PV_INVENTORY_DATA_TYPE = "KUBE_PV_INVENTORY_BLOB"
   KUBE_EVENTS_DATA_TYPE = "KUBE_EVENTS_BLOB"
   KUBE_MON_AGENT_EVENTS_DATA_TYPE = "KUBE_MON_AGENT_EVENTS_BLOB"
-  KUBE_HEALTH_DATA_TYPE = "KUBE_HEALTH_BLOB"
   CONTAINERLOGV2_DATA_TYPE = "CONTAINERINSIGHTS_CONTAINERLOGV2"
-  CONTAINERLOG_DATA_TYPE  = "CONTAINER_LOG_BLOB"
+  CONTAINERLOG_DATA_TYPE = "CONTAINER_LOG_BLOB"
 
   #ContainerInsights Extension (AMCS)
   CI_EXTENSION_NAME = "ContainerInsights"
-  CI_EXTENSION_VERSION = "1"  
+  CI_EXTENSION_VERSION = "1"
   #Current CI extension config size is ~5KB and going with 20KB to handle any future scenarios
   CI_EXTENSION_CONFIG_MAX_BYTES = 20480
-  ONEAGENT_FLUENT_SOCKET_NAME = "/var/run/mdsd/default_fluent.socket" 
+  ONEAGENT_FLUENT_SOCKET_NAME = "/var/run/mdsd/default_fluent.socket"
   #Tag prefix for output stream
   EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX = "dcr-"
 
   LINUX_LOG_PATH = $in_unit_test.nil? ? "/var/opt/microsoft/docker-cimprov/log/" : "./"
   WINDOWS_LOG_PATH = $in_unit_test.nil? ? "/etc/omsagentwindows/" : "./"
+
+  #This is for telemetry to track if any of the windows customer has any of the field size >= 64KB
+  #To evaluate switching to Windows AMA 64KB impacts any existing customers
+  MAX_RECORD_OR_FIELD_SIZE_FOR_TELEMETRY = 65536
+
+  # only used in windows in AAD MSI auth mode
+  IMDS_TOKEN_PATH_FOR_WINDOWS = "c:/etc/imds-access-token/token"
 end

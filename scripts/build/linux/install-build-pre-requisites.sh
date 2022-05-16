@@ -8,17 +8,17 @@ TEMP_DIR=temp-$RANDOM
 install_go_lang()
 {
   export goVersion="$(echo $(go version))"
-  if [[ $goVersion == *go1.14.1* ]] ; then
-    echo "found existing installation of go version 1.14.1 so skipping the installation of go"
+  if [[ $goVersion == *go1.15.14* ]] ; then
+    echo "found existing installation of go version 1.15.14 so skipping the installation of go"
   else
-    echo "installing go 1.14.1 version ..."
-    sudo curl -O https://dl.google.com/go/go1.14.1.linux-amd64.tar.gz
-    sudo tar -xvf go1.14.1.linux-amd64.tar.gz
+    echo "installing go 1.15.14 version ..."
+    sudo curl -O https://dl.google.com/go/go1.15.14.linux-amd64.tar.gz
+    sudo tar -xvf go1.15.14.linux-amd64.tar.gz
     sudo mv -f go /usr/local
     echo "set file permission for go bin"
-    sudo chmod 777 /usr/local/go/bin
-    echo "installation of go 1.14.1 completed."
-    echo "installation of go 1.14.1 completed."
+    sudo chmod 744 /usr/local/go/bin
+    echo "installation of go 1.15.14 completed."
+    echo "installation of go 1.15.14 completed."
   fi
 
 }
@@ -58,8 +58,24 @@ install_docker()
     sudo apt-get install docker-ce docker-ce-cli containerd.io -y
     # Allow your user to access the Docker CLI without needing root access.
     sudo usermod -aG docker $USER
+    newgrp docker
     echo "installing docker completed"
   fi
+}
+
+install_docker_buildx()
+{
+    # install the buildx plugin
+    sudo curl -O https://github.com/docker/buildx/releases/download/v0.7.1/buildx-v0.7.1.linux-amd64
+    sudo mkdir -p $HOME/.docker/cli-plugins
+    sudo mv buildx-v* $HOME/.docker/cli-plugins
+
+    # install the emulator support
+    sudo apt-get -y install qemu binfmt-support qemu-user-static
+    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+    docker buildx create --name testbuilder
+    docker buildx use testbuilder
 }
 
 install_python()
@@ -125,6 +141,9 @@ install_build_dependencies
 # install docker
 install_docker
 
+# install buildx
+install_docker_buildx
+
 # install go
 install_go_lang
 
@@ -154,4 +173,4 @@ sudo rm -rf $TEMP_DIR
 # set go env vars
 install_go_env_vars
 
-echo "installing build pre-requisites python, go 1.14.1, dotnet, powershell, build dependencies and docker completed"
+echo "installing build pre-requisites python, go 1.15.14, dotnet, powershell, build dependencies and docker completed"

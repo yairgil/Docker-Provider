@@ -2,7 +2,7 @@ function Install-Go {
     $tempDir =  $env:TEMP
     if ($false -eq (Test-Path -Path $tempDir)) {
         Write-Host("Invalid TEMP dir PATH : " + $tempDir + " ") -ForegroundColor Red
-        exit
+        exit 1
     }
 
     $tempGo = Join-Path -Path $tempDir -ChildPath "gotemp"
@@ -10,10 +10,10 @@ function Install-Go {
     New-Item -Path $tempGo -ItemType "directory" -Force -ErrorAction Stop
     if ($false -eq (Test-Path -Path $tempGo)) {
         Write-Host("Invalid tempGo : " + $tempGo + " ") -ForegroundColor Red
-        exit
+        exit 1
     }
 
-   $url = "https://dl.google.com/go/go1.15.14.windows-amd64.msi"
+   $url = "https://go.dev/dl/go1.15.14.windows-amd64.msi"
    $output = Join-Path -Path $tempGo -ChildPath "go1.15.14.windows-amd64.msi"
    Write-Host("downloading go msi into directory path : " + $output + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
@@ -35,7 +35,7 @@ function Build-Dependencies {
     $tempDir =  $env:TEMP
     if ($false -eq (Test-Path -Path $tempDir)) {
         Write-Host("Invalid TEMP dir PATH : " + $tempDir + " ") -ForegroundColor Red
-        exit
+        exit 1
     }
 
     $tempDependencies = Join-Path -Path $tempDir -ChildPath "gcctemp"
@@ -43,7 +43,7 @@ function Build-Dependencies {
     New-Item -Path $tempDependencies -ItemType "directory" -Force -ErrorAction Stop
     if ($false -eq (Test-Path -Path $tempDependencies)) {
         Write-Host("Invalid temp Dir : " + $tempDependencies + " ") -ForegroundColor Red
-        exit
+        exit 1
     }
 
 
@@ -82,7 +82,7 @@ function Install-DotNetCoreSDK() {
     $tempDir =  $env:TEMP
     if ($false -eq (Test-Path -Path $tempDir)) {
         Write-Host("Invalid TEMP dir : " + $tempDir + " ") -ForegroundColor Red
-        exit
+        exit 1
     }
 
     $dotNetSdkTemp = Join-Path -Path $tempDir -ChildPath "dotNetSdk"
@@ -90,7 +90,7 @@ function Install-DotNetCoreSDK() {
     New-Item -Path $dotNetSdkTemp -ItemType "directory" -Force -ErrorAction Stop
     if ($false -eq (Test-Path -Path $dotNetSdkTemp)) {
         Write-Host("Invalid dotNetSdkTemp : " + $tempDir + " ") -ForegroundColor Red
-        exit
+        exit 1
     }
 
    $url = "https://download.visualstudio.microsoft.com/download/pr/4e88f517-196e-4b17-a40c-2692c689661d/eed3f5fca28262f764d8b650585a7278/dotnet-sdk-3.1.301-win-x64.exe"
@@ -102,7 +102,7 @@ function Install-DotNetCoreSDK() {
 
    # install dotNet core sdk
    Write-Host("installing .net core sdk 3.1 ...")
-   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
+   Start-Process -Wait $output -ArgumentList " /q /norestart"
    Write-Host("installing .net core sdk 3.1 completed")
 }
 
@@ -110,7 +110,7 @@ function Install-Docker() {
     $tempDir =  $env:TEMP
     if ($false -eq (Test-Path -Path $tempDir)) {
         Write-Host("Invalid TEMP dir PATH : " + $tempDir + " ") -ForegroundColor Red
-        exit
+        exit 1
     }
 
     $dockerTemp = Join-Path -Path $tempDir -ChildPath "docker"
@@ -118,10 +118,10 @@ function Install-Docker() {
     New-Item -Path $dockerTemp -ItemType "directory" -Force -ErrorAction Stop
     if ($false -eq (Test-Path -Path $dockerTemp)) {
         Write-Host("Invalid dockerTemp : " + $tempDir + " ") -ForegroundColor Red
-        exit
+        exit 1
     }
 
-   $url = "https://download.docker.com/win/stable/Docker%20Desktop%20Installer.exe"
+   $url = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
    $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.exe"
    Write-Host("downloading docker-desktop-installer: " + $dockerTemp + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
@@ -129,11 +129,15 @@ function Install-Docker() {
 
    # install docker
    Write-Host("installing docker for desktop ...")
-   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
+   Start-Process $output -Wait -ArgumentList 'install --quiet'
    Write-Host("installing docker for desktop completed")
 }
 
-Write-Host "Install GO 1.14.1 version"
+# speed up Invoke-WebRequest 
+# https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
+$ProgressPreference = 'SilentlyContinue'
+
+Write-Host "Install GO 1.15.14 version"
 Install-Go
 Write-Host "Install Build dependencies"
 Build-Dependencies

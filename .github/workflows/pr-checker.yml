@@ -56,11 +56,11 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
           vuln-type: 'os,library'
-          skip-dirs: '/opt,/usr/sbin'
           exit-code: '1'
           timeout: '5m0s'
+          ignore-unfixed: true
   WINDOWS-build:
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - name: Set-workflow-initiator
         run: echo ("Initiated by -" + $env:GITHUB_ACTOR)
@@ -91,7 +91,7 @@ jobs:
         run: cd ./build/windows/ && & .\Makefile.ps1
       - name: Create-docker-image
         run: |
-            cd ./kubernetes/windows/ && docker build . --file Dockerfile -t $env:IMAGETAG --build-arg IMAGE_TAG=$env:IMAGETAG_TELEMETRY
+            cd ./kubernetes/windows/ && docker build . --file Dockerfile -t $env:IMAGETAG --build-arg WINDOWS_VERSION=ltsc2019 --build-arg IMAGE_TAG=$env:IMAGETAG_TELEMETRY
       - name: List-docker-images
         run: docker images --digests --all
-      
+

@@ -27,8 +27,6 @@ module Fluent::Plugin
     config_param :run_interval, :time, :default => 60
     config_param :tag, :string, :default => "oneagent.containerInsights.LINUX_PERF_BLOB"
     config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
-    config_param :nodehealthtag, :string, :default => "kubehealth.DaemonSet.Node"
-    config_param :containerhealthtag, :string, :default => "kubehealth.DaemonSet.Container"
     config_param :insightsmetricstag, :string, :default => "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
 
     def configure(conf)
@@ -64,12 +62,12 @@ module Fluent::Plugin
       begin
         eventStream = Fluent::MultiEventStream.new
         insightsMetricsEventStream = Fluent::MultiEventStream.new
-        metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime )
+        metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: nil, metricTime: batchTime)
         metricData.each do |record|
           eventStream.add(time, record) if record
         end
 
-        if ExtensionUtils.isAADMSIAuthMode()
+        if ExtensionUtils.isAADMSIAuthMode() && !@@isWindows.nil? && @@isWindows == false
           $log.info("in_cadvisor_perf::enumerate: AAD AUTH MSI MODE")
           if @tag.nil? || !@tag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @tag = ExtensionUtils.getOutputStreamId(Constants::PERF_DATA_TYPE)
@@ -77,13 +75,11 @@ module Fluent::Plugin
           if @insightsmetricstag.nil? || !@insightsmetricstag.start_with?(Constants::EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX)
             @insightsmetricstag = ExtensionUtils.getOutputStreamId(Constants::INSIGHTS_METRICS_DATA_TYPE)
           end
-	        $log.info("in_cadvisor_perf::enumerate: using perf tag -#{@tag} @ #{Time.now.utc.iso8601}")
+          $log.info("in_cadvisor_perf::enumerate: using perf tag -#{@tag} @ #{Time.now.utc.iso8601}")
           $log.info("in_cadvisor_perf::enumerate: using insightsmetrics tag -#{@insightsmetricstag} @ #{Time.now.utc.iso8601}")
         end
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@mdmtag, eventStream) if eventStream
-        router.emit_stream(@containerhealthtag, eventStream) if eventStream
-        router.emit_stream(@nodehealthtag, eventStream) if eventStream
 
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("cAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
@@ -95,9 +91,9 @@ module Fluent::Plugin
             containerGPUusageInsightsMetricsDataItems = []
             containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: nil, metricTime: batchTime))
 
-          containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
-            insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
-          end
+            containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
+              insightsMetricsEventStream.add(time, insightsMetricsRecord) if insightsMetricsRecord
+            end
 
             router.emit_stream(@insightsmetricstag, insightsMetricsEventStream) if insightsMetricsEventStream
             router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
