@@ -3,11 +3,11 @@
 
 # please use this instead of adding env vars to bashrc directly
 # usage: setGlobalEnvVar ENABLE_SIDECAR_SCRAPING true
-setGlobalEnvVar() {
-      export "$1"="$2"
-      echo "export \"$1\"=\"$2\"" >> /opt/env_vars
-}
-echo "source /opt/env_vars" >> ~/.bashrc
+# setGlobalEnvVar() {
+#       export "$1"="$2"
+#       echo "export \"$1\"=\"$2\"" >> /opt/env_vars
+# }
+# echo "source /opt/env_vars" >> ~/.bashrc
 
 waitforlisteneronTCPport() {
       local sleepdurationsecs=1
@@ -378,7 +378,7 @@ fi
 #Sourcing environment variable file if it exists. This file has telemetry and whether kubernetes pods are monitored
 if [ -e "prom_config_env_var" ]; then
       cat prom_config_env_var | while read line; do
-            echo $line >> /opt/env_vars
+            echo $line >> ~/.bashrc
       done
       source prom_config_env_var
 fi
@@ -424,7 +424,7 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
 
       if [ -e "integration_osm_config_env_var" ]; then
             cat integration_osm_config_env_var | while read line; do
-                  echo $line >> /opt/env_vars
+                  echo $line >> ~/.bashrc
             done
             source integration_osm_config_env_var
       fi
@@ -434,9 +434,13 @@ fi
 if [[ ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) && 
       ( "${CUSTOM_PROM_MONITOR_PODS}" == "false" ) && 
       ( "${OSM_CONFIGURATION_NAMESPACES_COUNT}" -eq 0 ) ]]; then
-      setGlobalEnvVar MUTE_PROM_SIDECAR true
+      export "MUTE_PROM_SIDECAR"="true"
+      echo "export \"MUTE_PROM_SIDECAR\"=\"true\"" >> ~/.bashrc
+      # setGlobalEnvVar MUTE_PROM_SIDECAR true
 else
-      setGlobalEnvVar MUTE_PROM_SIDECAR false
+      export "MUTE_PROM_SIDECAR"="false"
+      echo "export \"MUTE_PROM_SIDECAR\"=\"false\"" >> ~/.bashrc
+      # setGlobalEnvVar MUTE_PROM_SIDECAR false
 fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
