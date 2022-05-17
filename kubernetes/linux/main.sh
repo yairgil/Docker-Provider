@@ -177,6 +177,8 @@ setReplicaSetSpecificConfig() {
       echo "fluentd buffer plugin queue length for all other non kube perf plugin: ${FLUENTD_QUEUE_LIMIT_LENGTH}"
       echo "fluentd out mdm flush thread count: ${FLUENTD_MDM_FLUSH_THREAD_COUNT}"
 }
+# setup paths for ruby
+[ -f /etc/profile.d/rvm.sh ] && source /etc/profile.d/rvm.sh
 
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
 mkdir -p /var/opt/microsoft/docker-cimprov/state
@@ -388,7 +390,7 @@ echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >>~/.bashrc
 # One will have the certs and the other will be empty.
 # These need to be copied to a different location for Mariner vs Ubuntu containers.
 # OS_ID here is the container distro.
-# Adding Mariner now even though the elif will never currently evaluate. 
+# Adding Mariner now even though the elif will never currently evaluate.
 if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ]; then
   OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2 | tr -d '"' | tr -d "'")
   if [ $OS_ID == "mariner" ]; then
@@ -445,7 +447,7 @@ source ~/.bashrc
 
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       #Parse the configmap to set the right environment variables.
-      /usr/bin/ruby2.7 tomlparser.rb
+      ruby tomlparser.rb
 
       cat config_env_var | while read line; do
             echo $line >>~/.bashrc
@@ -456,7 +458,7 @@ fi
 #Parse the configmap to set the right environment variables for agent config.
 #Note > tomlparser-agent-config.rb has to be parsed first before td-agent-bit-conf-customizer.rb for fbit agent settings
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.7 tomlparser-agent-config.rb
+      ruby tomlparser-agent-config.rb
 
       cat agent_config_env_var | while read line; do
             #echo $line
@@ -465,7 +467,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       source agent_config_env_var
 
       #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
-      /usr/bin/ruby2.7 tomlparser-npm-config.rb
+      ruby tomlparser-npm-config.rb
 
       cat integration_npm_config_env_var | while read line; do
             #echo $line
@@ -476,11 +478,11 @@ fi
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
 if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.7 td-agent-bit-conf-customizer.rb
+      ruby td-agent-bit-conf-customizer.rb
 fi
 
 #Parse the prometheus configmap to create a file with new custom settings.
-/usr/bin/ruby2.7 tomlparser-prom-customconfig.rb
+ruby tomlparser-prom-customconfig.rb
 
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
@@ -514,7 +516,7 @@ fi
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             #Parse the agent configmap to create a file with new custom settings.
-            /usr/bin/ruby2.7 tomlparser-prom-agent-config.rb
+            ruby tomlparser-prom-agent-config.rb
             #Sourcing config environment variable file if it exists
             if [ -e "side_car_fbit_config_env_var" ]; then
                   cat side_car_fbit_config_env_var | while read line; do
@@ -527,7 +529,7 @@ fi
 
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-      /usr/bin/ruby2.7 tomlparser-mdm-metrics-config.rb
+      ruby tomlparser-mdm-metrics-config.rb
 
       cat config_mdm_metrics_env_var | while read line; do
             echo $line >>~/.bashrc
@@ -535,7 +537,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       source config_mdm_metrics_env_var
 
       #Parse the configmap to set the right environment variables for metric collection settings
-      /usr/bin/ruby2.7 tomlparser-metric-collection-config.rb
+      ruby tomlparser-metric-collection-config.rb
 
       cat config_metric_collection_env_var | while read line; do
             echo $line >>~/.bashrc
@@ -546,7 +548,7 @@ fi
 # OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
 if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
       ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
-      /usr/bin/ruby2.7 tomlparser-osm-config.rb
+      ruby tomlparser-osm-config.rb
 
       if [ -e "integration_osm_config_env_var" ]; then
             cat integration_osm_config_env_var | while read line; do
@@ -632,7 +634,8 @@ if [ "$CONTAINER_RUNTIME" != "docker" ]; then
 fi
 
 echo "set caps for ruby process to read container env from proc"
-sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby2.7
+RUBY_PATH=$(which ruby)
+sudo setcap cap_sys_ptrace,cap_dac_read_search+ep "$RUBY_PATH"
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
 
