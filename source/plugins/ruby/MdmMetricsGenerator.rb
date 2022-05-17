@@ -4,7 +4,6 @@
 class MdmMetricsGenerator
   require "logger"
   require "yajl/json_gem"
-  require "json"
   require_relative "MdmAlertTemplates"
   require_relative "ApplicationInsightsUtility"
   require_relative "constants"

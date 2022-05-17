@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class ConfigParseErrorLogger
-  require "json"
+  require "yajl/json_gem"
 
   def initialize
   end
