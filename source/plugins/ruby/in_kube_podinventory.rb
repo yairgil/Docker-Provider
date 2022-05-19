@@ -15,7 +15,7 @@ module Fluent::Plugin
     def initialize
       super
       require "yaml"
-      require "json"      
+      require "json"
       require "set"
       require "time"
 
@@ -153,7 +153,7 @@ module Fluent::Plugin
 
         if !serviceInfo.nil?
           $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
-          serviceList = JSON.parse(StringIO.new(serviceInfo.body))
+          serviceList = JSON.parse(serviceInfo.body)
           $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
           serviceInfo = nil
           # service inventory records much smaller and fixed size compared to serviceList
