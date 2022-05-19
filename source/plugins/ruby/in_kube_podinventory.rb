@@ -15,8 +15,7 @@ module Fluent::Plugin
     def initialize
       super
       require "yaml"
-      require "yajl/json_gem"
-      require "yajl"
+      require "json"
       require "set"
       require "time"
 
@@ -153,9 +152,9 @@ module Fluent::Plugin
         $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
 
         if !serviceInfo.nil?
-          $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
-          serviceList = Yajl::Parser.parse(StringIO.new(serviceInfo.body))
-          $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
+          $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using json @ #{Time.now.utc.iso8601}")
+          serviceList = JSON.parse(StringIO.new(serviceInfo.body))
+          $log.info("in_kube_podinventory::enumerate:End:Parsing services data using json @ #{Time.now.utc.iso8601}")
           serviceInfo = nil
           # service inventory records much smaller and fixed size compared to serviceList
           serviceRecords = KubernetesApiClient.getKubeServicesInventoryRecords(serviceList, batchTime)

@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 # frozen_string_literal: true
 
-require 'fluent/plugin/input'
+require "fluent/plugin/input"
 
 module Fluent::Plugin
   class Kube_Event_Input < Input
@@ -10,8 +10,7 @@ module Fluent::Plugin
 
     def initialize
       super
-      require "yajl/json_gem"
-      require "yajl"
+      require "json"
       require "time"
 
       require_relative "KubernetesApiClient"

@@ -2,11 +2,11 @@
 
 # frozen_string_literal: true
 
-require 'fluent/plugin/filter'
+require "fluent/plugin/filter"
 
 module Fluent::Plugin
   require "logger"
-  require "yajl/json_gem"
+  require "json"
   require_relative "oms_common"
   require_relative "kubelet_utils"
   require_relative "MdmMetricsGenerator"
