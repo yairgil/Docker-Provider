@@ -1,4 +1,5 @@
 #!/bin/bash 
+source /opt/env_vars
 
 if [ -s "inotifyoutput.txt" ]
 then
