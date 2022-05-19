@@ -48,7 +48,6 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
   - Added Onboarding templates for legacy auth for internal testing
   - Update the Build pipelines to have separate phase for Windows
 
-
 ### 3/17/2022 -
 ##### Version microsoft/oms:ciprod03172022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03172022 (linux)
 ##### Version microsoft/oms:win-ciprod03172022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03172022 (windows)
