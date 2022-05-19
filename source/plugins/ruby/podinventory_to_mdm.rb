@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 require "logger"
-require "yajl/json_gem"
+require "json"
 require "time"
 require_relative "oms_common"
 require_relative "CustomMetricsUtils"
