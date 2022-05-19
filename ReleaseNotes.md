@@ -19,6 +19,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
   - PodReadyPercentage metric bug fix
   - add cifs & fuse file systems to ignore list
   - CA Cert Fix for Mariner Hosts in Air Gap
+  - Disk usage metrics will no longer be collected for the paths "/mnt/containers" and "/mnt/docker" 
 - Windows Agent
   - Ruby version upgrade from 2.6.5.1 to 2.7.5.1
   - Added Support for Windows Server 2022
@@ -29,6 +30,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
   - AAD Auth MSI feature support for  Arc K8s  (not usable externally yet)
   - MSI onboarding ARM template updates for both AKS & Arc K8s
   - Fixed the bug related to windows metrics in MSI mode for AKS
+  - Configmap updates for log collection settings for v2 schema
 - Misc
   - Improvements related to CI/CD Multi-arc image
       - Do trivy rootfs checks
