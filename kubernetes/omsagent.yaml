@@ -521,7 +521,6 @@ spec:
               command:
                 - /bin/bash
                 - -c
-                - -i
                 - /opt/livenessprobe.sh
             initialDelaySeconds: 60
             periodSeconds: 60

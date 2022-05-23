@@ -474,12 +474,8 @@ fi
 if [[ ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) && 
       ( "${CUSTOM_PROM_MONITOR_PODS}" == "false" ) && 
       ( "${OSM_CONFIGURATION_NAMESPACES_COUNT}" -eq 0 ) ]]; then
-      # export MUTE_PROM_SIDECAR="true"
-      # echo "export MUTE_PROM_SIDECAR=true" >> ~/.bashrc
       setGlobalEnvVar MUTE_PROM_SIDECAR true
 else
-      # export MUTE_PROM_SIDECAR="false"
-      # echo "export MUTE_PROM_SIDECAR=false" >> ~/.bashrc
       setGlobalEnvVar MUTE_PROM_SIDECAR false
 fi
 
