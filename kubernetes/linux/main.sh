@@ -645,7 +645,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
     else
-      echo "not starting mdsd (no metrics to scrape)"
+      echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
     fi
 else
     echo "starting mdsd mode in main container..."
@@ -682,7 +682,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   fi
                   echo "****************End Telegraf Run in Test Mode**************************"
             else
-                  echo "****************Skipping Telegraf Run in Test Mode**************************"
+                  echo "****************Skipping Telegraf Run in Test Mode since MUTE_PROM_SIDECAR is true**************************"
             fi
       else
             if [ -e "/opt/telegraf-test.conf" ]; then
@@ -715,7 +715,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
                   /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
             else
-                  echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape)"
+                  echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
             fi
       else
             echo "starting fluent-bit and setting telegraf conf file for daemonset"
@@ -787,7 +787,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   echo "checking for listener on tcp #25229 and waiting for 30 secs if not.."
                   waitforlisteneronTCPport 25229 30
             else
-                  echo "no metrics to scrape, not checking for listener on tcp #25229"
+                  echo "no metrics to scrape since MUTE_PROM_SIDECAR is true, not checking for listener on tcp #25229"
             fi
       else
             echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
