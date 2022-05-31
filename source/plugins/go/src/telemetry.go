@@ -362,7 +362,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	// Getting the namespace count, monitor kubernetes pods values and namespace count once at start because it wont change unless the configmap is applied and the container is restarted
 
 	OSMNamespaceCount = 0
-	osmNsCount := os.Getenv("OSM_CONFIGURATION_NAMESPACES_COUNT")
+	osmNsCount := os.Getenv("TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT")
 	if osmNsCount != "" {
 		OSMNamespaceCount, err = strconv.Atoi(osmNsCount)
 		if err != nil {
@@ -370,7 +370,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		}
 	}
 
-	PromMonitorPods = os.Getenv("CUSTOM_PROM_MONITOR_PODS")
+	PromMonitorPods = os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS")
 
 	PromMonitorPodsNamespaceLength = 0
 	promMonPodsNamespaceLength := os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS_NS_LENGTH")

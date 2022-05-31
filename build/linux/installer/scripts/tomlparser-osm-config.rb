@@ -151,7 +151,7 @@ if !@osmConfigSchemaVersion.nil? && !@osmConfigSchemaVersion.empty? && @osmConfi
     telemetryFile = File.open("integration_osm_config_env_var", "w")
 
     if !telemetryFile.nil?
-      telemetryFile.write("export OSM_CONFIGURATION_NAMESPACES_COUNT=#{@osmMetricNamespaces.length}\n")
+      telemetryFile.write("export TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT=#{@osmMetricNamespaces.length}\n")
       # Close file after writing all environment variables
       telemetryFile.close
     else

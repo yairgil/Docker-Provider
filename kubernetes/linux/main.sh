@@ -416,11 +416,11 @@ else
 fi
 
 #Sourcing environment variable file if it exists. This file has telemetry and whether kubernetes pods are monitored
-if [ -e "prom_config_env_var" ]; then
-      cat prom_config_env_var | while read line; do
+if [ -e "telemetry_prom_config_env_var" ]; then
+      cat telemetry_prom_config_env_var | while read line; do
             echo $line >> ~/.bashrc
       done
-      source prom_config_env_var
+      source telemetry_prom_config_env_var
 fi
 
 #Parse sidecar agent settings for custom configuration
@@ -472,12 +472,14 @@ fi
 
 # If the prometheus sidecar isn't doing anything then there's no need to run mdsd and telegraf in it. 
 if [[ ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) && 
-      ( "${CUSTOM_PROM_MONITOR_PODS}" == "false" ) && 
-      ( "${OSM_CONFIGURATION_NAMESPACES_COUNT}" -eq 0 ) ]]; then
+      ( "${TELEMETRY_CUSTOM_PROM_MONITOR_PODS}" == "false" ) && 
+      ( "${TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT}" -eq 0 ) ]]; then
       setGlobalEnvVar MUTE_PROM_SIDECAR true
 else
       setGlobalEnvVar MUTE_PROM_SIDECAR false
 fi
+
+echo "MUTE_PROM_SIDECAR = $MUTE_PROM_SIDECAR"
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
@@ -807,7 +809,7 @@ if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
       echo "telegraf version: $(/opt/telegraf --version)"
       dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
 else
-      echo "not starting telegraf (no metrics to scrape)"
+      echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
@@ -823,6 +825,8 @@ service rsyslog status
 
 if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
       checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
+else
+      echo "not checking onboarding status (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
 shutdown() {

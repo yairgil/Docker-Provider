@@ -47,7 +47,7 @@ module Fluent::Plugin
       @@rsPromMonitorPodsLabelSelectorLength = @env["TELEMETRY_RS_PROM_LABEL_SELECTOR_LENGTH"]
       @@rsPromMonitorPodsFieldSelectorLength = @env["TELEMETRY_RS_PROM_FIELD_SELECTOR_LENGTH"]
       @@collectAllKubeEvents = @env["AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS"]
-      @@osmNamespaceCount = @env["OSM_CONFIGURATION_NAMESPACES_COUNT"]
+      @@osmNamespaceCount = @env["TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT"]
 
       @ContainerNodeInventoryTag = "oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB"
       @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"

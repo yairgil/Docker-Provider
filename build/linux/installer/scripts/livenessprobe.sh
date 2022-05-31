@@ -21,7 +21,7 @@ fi
 
 # if this is the prometheus sidecar and there are no prometheus metrics to scrape then the rest of the liveness probe doesn't apply
 if [[ "${CONTAINER_TYPE}" == "PrometheusSidecar" && "${MUTE_PROM_SIDECAR}" == "true" ]]; then
- exit 0
+  exit 0
 fi
 
 #test to exit non zero value if mdsd is not running
