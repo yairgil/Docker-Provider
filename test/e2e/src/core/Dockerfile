@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM mcr.microsoft.com/mirror/docker/library/python:3.7-buster
 
 RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytest pytest-xdist filelock requests kubernetes adal msrestazure
 

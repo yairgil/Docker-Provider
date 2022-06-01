@@ -135,14 +135,14 @@ jobs:
     condition: eq(variables.IS_PR, true)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04'
+      DockerImagesToScan: 'mcr.microsoft.com/oss/go/microsoft/golang:1.18.2, mcr.microsoft.com/mirror/docker/library/ubuntu:18.04'
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
     condition: eq(variables.IS_PR, false)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04, ${{ variables.repoImageName }}:$(linuxImagetag)'
+      DockerImagesToScan: 'mcr.microsoft.com/oss/go/microsoft/golang:1.18.2, mcr.microsoft.com/mirror/docker/library/ubuntu:18.04, ${{ variables.repoImageName }}:$(linuxImagetag)'
 
   - task: PublishBuildArtifacts@1
     inputs:

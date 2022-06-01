@@ -10,7 +10,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 
 ## Common
 - [Visual Studio Code](https://code.visualstudio.com/) for authoring
-- [Go lang](https://golang.org/) for building go code. Go lang version 1.15.14 (both Linux & Windows)
+- [Go lang](https://golang.org/) for building go code. Go lang version 1.18.2 (both Linux & Windows)
 
 > Note: If you are using WSL2, make sure you have cloned the code onto ubuntu not onto windows
 
