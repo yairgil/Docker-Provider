@@ -118,7 +118,6 @@ module Fluent::Plugin
               @useMsi = true
               msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
               @parsed_token_uri = URI.parse(msi_endpoint)
-              @cached_access_token = get_access_token
             else
               # switch to IMDS endpoint for the windows once the Arc K8s team supports the IMDS sidecar for windows
               @log.info "using cluster identity token since cluster is azure arc k8s cluster"
@@ -148,8 +147,6 @@ module Fluent::Plugin
               end
               @parsed_token_uri = URI.parse(msi_endpoint)
             end
-
-            @cached_access_token = get_access_token
           end
         end
       rescue => e
