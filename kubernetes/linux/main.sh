@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# please use this instead of adding env vars to bashrc directly
+# usage: setGlobalEnvVar ENABLE_SIDECAR_SCRAPING true
+setGlobalEnvVar() {
+      export "$1"="$2"
+      echo "export \"$1\"=\"$2\"" >> /opt/env_vars
+}
+echo "source /opt/env_vars" >> ~/.bashrc
+
 waitforlisteneronTCPport() {
       local sleepdurationsecs=1
       local totalsleptsecs=0
@@ -388,7 +396,7 @@ echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >>~/.bashrc
 # One will have the certs and the other will be empty.
 # These need to be copied to a different location for Mariner vs Ubuntu containers.
 # OS_ID here is the container distro.
-# Adding Mariner now even though the elif will never currently evaluate. 
+# Adding Mariner now even though the elif will never currently evaluate.
 if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ]; then
   OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2 | tr -d '"' | tr -d "'")
   if [ $OS_ID == "mariner" ]; then
@@ -459,8 +467,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       /usr/bin/ruby2.7 tomlparser-agent-config.rb
 
       cat agent_config_env_var | while read line; do
-            #echo $line
-            echo $line >>~/.bashrc
+            echo $line >> ~/.bashrc
       done
       source agent_config_env_var
 
@@ -468,8 +475,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       /usr/bin/ruby2.7 tomlparser-npm-config.rb
 
       cat integration_npm_config_env_var | while read line; do
-            #echo $line
-            echo $line >>~/.bashrc
+            echo $line >> ~/.bashrc
       done
       source integration_npm_config_env_var
 fi
@@ -502,7 +508,7 @@ else
       source defaultpromenvvariables-rs
 fi
 
-#Sourcing telemetry environment variable file if it exists
+#Sourcing environment variable file if it exists. This file has telemetry and whether kubernetes pods are monitored
 if [ -e "telemetry_prom_config_env_var" ]; then
       cat telemetry_prom_config_env_var | while read line; do
             echo $line >>~/.bashrc
@@ -555,6 +561,17 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
             source integration_osm_config_env_var
       fi
 fi
+
+# If the prometheus sidecar isn't doing anything then there's no need to run mdsd and telegraf in it.
+if [[ ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) &&
+      ( "${TELEMETRY_CUSTOM_PROM_MONITOR_PODS}" == "false" ) &&
+      ( "${TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT}" -eq 0 ) ]]; then
+      setGlobalEnvVar MUTE_PROM_SIDECAR true
+else
+      setGlobalEnvVar MUTE_PROM_SIDECAR false
+fi
+
+echo "MUTE_PROM_SIDECAR = $MUTE_PROM_SIDECAR"
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
 echo "Making wget request to cadvisor endpoint with port 10250"
@@ -671,24 +688,24 @@ MDSD_AAD_MSI_AUTH_ARGS=""
 # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH
 export AAD_MSI_AUTH_MODE=false
 if [ "${USING_AAD_MSI_AUTH}" == "true" ]; then
-      echo "*** activating oneagent in aad auth msi mode ***"
-      # msi auth specific args
-      MDSD_AAD_MSI_AUTH_ARGS="-a -A"
-      export AAD_MSI_AUTH_MODE=true
-      echo "export AAD_MSI_AUTH_MODE=true" >>~/.bashrc
-      # this used by mdsd to determine the cloud specific AMCS endpoints
-      export customEnvironment=$CLOUD_ENVIRONMENT
-      echo "export customEnvironment=$customEnvironment" >>~/.bashrc
-      export MDSD_FLUENT_SOCKET_PORT="28230"
-      echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >>~/.bashrc
-      export ENABLE_MCS="true"
-      echo "export ENABLE_MCS=$ENABLE_MCS" >>~/.bashrc
-      export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
-      echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >>~/.bashrc
-      export MDSD_USE_LOCAL_PERSISTENCY="false"
-      echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >>~/.bashrc
+   echo "*** setting up oneagent in aad auth msi mode ***"
+   # msi auth specific args
+   MDSD_AAD_MSI_AUTH_ARGS="-a -A"
+   export AAD_MSI_AUTH_MODE=true
+   echo "export AAD_MSI_AUTH_MODE=true" >> ~/.bashrc
+   # this used by mdsd to determine the cloud specific AMCS endpoints
+   export customEnvironment=$CLOUD_ENVIRONMENT
+   echo "export customEnvironment=$customEnvironment" >> ~/.bashrc
+   export MDSD_FLUENT_SOCKET_PORT="28230"
+   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
+   export ENABLE_MCS="true"
+   echo "export ENABLE_MCS=$ENABLE_MCS" >> ~/.bashrc
+   export MONITORING_USE_GENEVA_CONFIG_SERVICE="false"
+   echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
+   export MDSD_USE_LOCAL_PERSISTENCY="false"
+   echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
 else
-  echo "*** activating oneagent in legacy auth mode ***"
+  echo "*** setting up oneagent in legacy auth mode ***"
   CIWORKSPACE_id="$(cat /etc/omsagent-secret/WSID)"
   #use the file path as its secure than env
   CIWORKSPACE_keyFile="/etc/omsagent-secret/KEY"
@@ -712,17 +729,21 @@ source ~/.bashrc
 dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
 if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+    if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
       echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."
       #use tenant name to avoid unix socket conflict and different ports for port conflict
       #roleprefix to use container specific mdsd socket
       export TENANT_NAME="${CONTAINER_TYPE}"
-      echo "export TENANT_NAME=$TENANT_NAME" >>~/.bashrc
+      echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
       export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
-      echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >>~/.bashrc
+      echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
       source ~/.bashrc
       mkdir /var/run/mdsd-${CONTAINER_TYPE}
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+    else
+      echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+    fi
 else
       echo "starting mdsd in main container..."
       # add -T 0xFFFF for full traces
@@ -749,13 +770,17 @@ fi
 #If config parsing was successful, a copy of the conf file with replaced custom settings file is created
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
-            echo "****************Start Telegraf in Test Mode**************************"
-            /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
-            if [ $? -eq 0 ]; then
-                  mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
-                  echo "Moving test conf file to telegraf side-car conf since test run succeeded"
+            if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+                  echo "****************Start Telegraf in Test Mode**************************"
+                  /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
+                  if [ $? -eq 0 ]; then
+                        mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+                        echo "Moving test conf file to telegraf side-car conf since test run succeeded"
+                  fi
+                  echo "****************End Telegraf Run in Test Mode**************************"
+            else
+                  echo "****************Skipping Telegraf Run in Test Mode since MUTE_PROM_SIDECAR is true**************************"
             fi
-            echo "****************End Telegraf Run in Test Mode**************************"
       else
             if [ -e "/opt/telegraf-test.conf" ]; then
                   echo "****************Start Telegraf in Test Mode**************************"
@@ -782,9 +807,13 @@ fi
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
-            /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+            if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+                  echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
+                  /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
+            else
+                  echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+            fi
       else
             echo "starting fluent-bit and setting telegraf conf file for daemonset"
             if [ "$CONTAINER_RUNTIME" == "docker" ]; then
@@ -851,8 +880,12 @@ echo "export HOST_VAR=/hostfs/var" >>~/.bashrc
 
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            echo "checking for listener on tcp #25229 and waiting for 30 secs if not.."
-            waitforlisteneronTCPport 25229 30
+            if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+                  echo "checking for listener on tcp #25229 and waiting for 30 secs if not.."
+                  waitforlisteneronTCPport 25229 30
+            else
+                  echo "no metrics to scrape since MUTE_PROM_SIDECAR is true, not checking for listener on tcp #25229"
+            fi
       else
             echo "checking for listener on tcp #25226 and waiting for 30 secs if not.."
             waitforlisteneronTCPport 25226 30
@@ -864,10 +897,15 @@ else
       waitforlisteneronTCPport 25226 30
 fi
 
+
 #start telegraf
-/opt/telegraf --config $telegrafConfFile &
-/opt/telegraf --version
-dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
+if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+      /opt/telegraf --config $telegrafConfFile &
+      echo "telegraf version: $(/opt/telegraf --version)"
+      dpkg -l | grep td-agent-bit | awk '{print $2 " " $3}'
+else
+      echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+fi
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
 
@@ -880,7 +918,11 @@ service rsyslog stop
 echo "getting rsyslog status..."
 service rsyslog status
 
-checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
+if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+      checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
+else
+      echo "not checking onboarding status (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+fi
 
 shutdown() {
       pkill -f mdsd
