@@ -7,7 +7,7 @@ class ApplicationInsightsUtility
   require_relative "DockerApiClient"
   require_relative "oms_common"
   require_relative "proxy_utils"
-  require "json"
+  require "oj"
   require "base64"
 
   @@HeartBeat = "HeartBeatEvent"

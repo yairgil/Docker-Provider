@@ -15,7 +15,7 @@ module Fluent::Plugin
       super()
 
       require "yaml"
-      require "json"      
+      require "oj"      
       require "time"
 
       require_relative "KubernetesApiClient"
@@ -257,7 +257,7 @@ module Fluent::Plugin
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
             if is_windows_node
-              metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
+              metricVal = Oj.load(nodeMetricRecord["json_Collections"])[0]["Value"]
               @NodeCache.cpu.set_capacity(nodeMetricRecord["Host"], metricVal)
             end
           end
@@ -266,7 +266,7 @@ module Fluent::Plugin
             nodeMetricRecords.push(nodeMetricRecord)
             # add data to the cache so filter_cadvisor2mdm.rb can use it
             if is_windows_node
-              metricVal = JSON.parse(nodeMetricRecord["json_Collections"])[0]["Value"]
+              metricVal = Oj.load(nodeMetricRecord["json_Collections"])[0]["Value"]
               @NodeCache.mem.set_capacity(nodeMetricRecord["Host"], metricVal)
             end
           end

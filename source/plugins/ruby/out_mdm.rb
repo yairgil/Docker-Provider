@@ -13,13 +13,14 @@ module Fluent::Plugin
       require "net/http"
       require "net/https"
       require "uri"
-      require "json"
+      require "oj"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
       require_relative "constants"
       require_relative "arc_k8s_cluster_identity"
       require_relative "proxy_utils"
       require_relative "extension_utils"
+      Oj.mimic_JSON()
       @@token_resource_url = "https://monitoring.azure.com/"
       # AAD auth supported only in public cloud and handle other clouds when enabled
       # this is unified new token audience for LA AAD MSI auth & metrics
@@ -128,7 +129,7 @@ module Fluent::Plugin
           else
             # azure json file only used for aks and doesnt exist in non-azure envs
             file = File.read(@@azure_json_path)
-            @data_hash = JSON.parse(file)
+            @data_hash = Oj.load(file)
             # Check to see if SP exists, if it does use SP. Else, use msi
             sp_client_id = @data_hash["aadClientId"]
             sp_client_secret = @data_hash["aadClientSecret"]
@@ -175,7 +176,7 @@ module Fluent::Plugin
               @log.info "reading the token from IMDS token file since its windows.."
               if File.exist?(Constants::IMDS_TOKEN_PATH_FOR_WINDOWS) && File.readable?(Constants::IMDS_TOKEN_PATH_FOR_WINDOWS)
                 token_content = File.read(Constants::IMDS_TOKEN_PATH_FOR_WINDOWS).strip
-                parsed_json = JSON.parse(token_content)
+                parsed_json = Oj.load(token_content)
                 @token_expiry_time = Time.now + @@token_refresh_back_off_interval * 60 # set the expiry time to be ~ thirty minutes from current time
                 @cached_access_token = parsed_json["access_token"]
                 @log.info "Successfully got access token"
@@ -212,7 +213,7 @@ module Fluent::Plugin
               @log.info "making request to get token.."
               token_response = http_access_token.request(token_request)
               # Handle the case where the response is not 200
-              parsed_json = JSON.parse(token_response.body)
+              parsed_json = Oj.load(token_response.body)
               @token_expiry_time = Time.now + @@token_refresh_back_off_interval * 60 # set the expiry time to be ~ thirty minutes from current time
               @cached_access_token = parsed_json["access_token"]
               @log.info "Successfully got access token"

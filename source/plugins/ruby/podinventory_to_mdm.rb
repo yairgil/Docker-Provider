@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 require "logger"
-require "json"
+require "oj"
 require "time"
 require_relative "oms_common"
 require_relative "CustomMetricsUtils"
@@ -129,7 +129,7 @@ class Inventory2MdmConvertor
             controllerNameDimValue: podControllerNameDimValue,
             podCountMetricValue: value,
           }
-          records.push(JSON.parse(record))
+          records.push(Oj.load(record))
         }
 
         #Add pod metric records

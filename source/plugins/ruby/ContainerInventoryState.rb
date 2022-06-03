@@ -2,8 +2,9 @@
 # frozen_string_literal: true
 
 class ContainerInventoryState
-    require 'json'
+    require "oj"
     require_relative 'omslog'
+    Oj.mimic_JSON()
     @@InventoryDirectory = "/var/opt/microsoft/docker-cimprov/state/ContainerInventory/"
 
     def initialize
@@ -36,7 +37,7 @@ class ContainerInventoryState
                 file = File.open(filepath, "r")
                 if !file.nil?
                     fileContents = file.read
-                    containerObject = JSON.parse(fileContents)
+                    containerObject = Oj.load(fileContents)
                     file.close
                     # Delete the file since the state is update to deleted
                     File.delete(filepath) if File.exist?(filepath)

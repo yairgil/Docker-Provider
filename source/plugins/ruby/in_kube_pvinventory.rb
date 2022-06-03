@@ -12,7 +12,7 @@ module Fluent::Plugin
     def initialize
       super
       require "yaml"
-      require "json"      
+      require "oj"      
       require "time"
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
@@ -20,6 +20,7 @@ module Fluent::Plugin
       require_relative "omslog"
       require_relative "constants"
       require_relative "extension_utils"
+      Oj.mimic_JSON()
 
       # Response size is around 1500 bytes per PV
       @PV_CHUNK_SIZE = "5000"

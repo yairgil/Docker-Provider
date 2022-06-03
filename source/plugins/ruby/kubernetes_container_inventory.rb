@@ -2,10 +2,11 @@
 # frozen_string_literal: true
 
 class KubernetesContainerInventory
-  require "json"
+  require "oj"
   require "time"  
   require_relative "omslog"
   require_relative "ApplicationInsightsUtility"
+  Oj.mimic_JSON()
 
   # cache the container and cgroup parent process
   @@containerCGroupCache = Hash.new

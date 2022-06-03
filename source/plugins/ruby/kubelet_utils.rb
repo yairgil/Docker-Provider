@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 require "logger"
-require "json"
+require "oj"
 require_relative "CAdvisorMetricsAPIClient"
 require_relative "KubernetesApiClient"
 require "bigdecimal"
@@ -54,7 +54,7 @@ class KubeletUtils
         memory_allocatable = 1.0
 
         allocatable_response = CAdvisorMetricsAPIClient.getCongifzCAdvisor(winNode: nil)
-        parsed_response = JSON.parse(allocatable_response.body)
+        parsed_response = Oj.load(allocatable_response.body)
 
         begin
           kubereserved_cpu = parsed_response["kubeletconfig"]["kubeReserved"]["cpu"]
@@ -165,7 +165,7 @@ class KubeletUtils
         containerResourceDimensionHash = {}
         response = CAdvisorMetricsAPIClient.getPodsFromCAdvisor(winNode: nil)
         if !response.nil? && !response.body.nil? && !response.body.empty?
-          podInventory = JSON.parse(response.body)
+          podInventory = Oj.load(response.body)
           podInventory["items"].each do |items|
             @log.info "in pod inventory items..."
             podNameSpace = items["metadata"]["namespace"]

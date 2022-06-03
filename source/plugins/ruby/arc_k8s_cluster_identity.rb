@@ -3,11 +3,12 @@ require "logger"
 require "net/http"
 require "net/https"
 require "uri"
-require "json"
+require "oj"
 require "base64"
 require "time"
 require_relative "KubernetesApiClient"
 require_relative "ApplicationInsightsUtility"
+Oj.mimic_JSON()
 
 class ArcK8sClusterIdentity
   # this arc k8s crd version  and arc k8s  uses corresponding version v1beta1 vs v1 based on the k8s version for apiextensions.k8s.io
@@ -104,7 +105,7 @@ class ArcK8sClusterIdentity
       get_response = @http_client.request(get_request)
       @log.info "Got response of #{get_response.code} for #{secret_request_uri} @ #{Time.now.utc.iso8601}"
       if get_response.code.to_i == 200
-        token_secret = JSON.parse(get_response.body)["data"]
+        token_secret = Oj.load(get_response.body)["data"]
         cluster_identity_token = token_secret[token_secret_data_name]
         token = Base64.decode64(cluster_identity_token)
       end
@@ -132,7 +133,7 @@ class ArcK8sClusterIdentity
       get_response = @http_client.request(get_request)
       @log.info "Got response of #{get_response.code} for #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       if get_response.code.to_i == 200
-        status = JSON.parse(get_response.body)["status"]
+        status = Oj.load(get_response.body)["status"]
         tokenReference["expirationTime"] = status["expirationTime"]
         tokenReference["secretName"] = status["tokenReference"]["secretName"]
         tokenReference["dataName"] = status["tokenReference"]["dataName"]

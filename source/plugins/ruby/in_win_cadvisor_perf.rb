@@ -12,7 +12,7 @@ module Fluent::Plugin
     def initialize
       super
       require "yaml"
-      require "json"
+      require "oj"
       require "time"
 
       require_relative "CAdvisorMetricsAPIClient"

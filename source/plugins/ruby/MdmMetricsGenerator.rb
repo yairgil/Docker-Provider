@@ -3,7 +3,7 @@
 
 class MdmMetricsGenerator
   require "logger"
-  require "json"
+  require "oj"
   require_relative "MdmAlertTemplates"
   require_relative "ApplicationInsightsUtility"
   require_relative "constants"
@@ -139,7 +139,7 @@ class MdmMetricsGenerator
                 containerCountMetricValue: value,
               }
             end
-            records.push(JSON.parse(record))
+            records.push(Oj.load(record))
           }
         else
           @log.info "No records found in hash for metric: #{metricName}"
@@ -333,7 +333,7 @@ class MdmMetricsGenerator
           containerResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
-        records.push(JSON.parse(resourceUtilRecord))
+        records.push(Oj.load(resourceUtilRecord))
 
         # Adding another metric for threshold violation
         resourceThresholdViolatedRecord = MdmAlertTemplates::Container_resource_threshold_violation_template % {
@@ -346,7 +346,7 @@ class MdmMetricsGenerator
           containerResourceThresholdViolated: isZeroFill ? 0 : 1,
           thresholdPercentageDimValue: thresholdPercentage,
         }
-        records.push(JSON.parse(resourceThresholdViolatedRecord))
+        records.push(Oj.load(resourceThresholdViolatedRecord))
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilMetricRecords: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
@@ -373,7 +373,7 @@ class MdmMetricsGenerator
           pvResourceUtilizationPercentage: percentageMetricValue,
           thresholdPercentageDimValue: thresholdPercentage,
         }
-        records.push(JSON.parse(resourceUtilRecord))
+        records.push(Oj.load(resourceUtilRecord))
 
         # Adding another metric for threshold violation
         resourceThresholdViolatedRecord = MdmAlertTemplates::PV_resource_threshold_violation_template % {
@@ -386,7 +386,7 @@ class MdmMetricsGenerator
           pvResourceThresholdViolated: isZeroFill ? 0 : 1,
           thresholdPercentageDimValue: thresholdPercentage,
         }
-        records.push(JSON.parse(resourceThresholdViolatedRecord))
+        records.push(Oj.load(resourceThresholdViolatedRecord))
       rescue => errorStr
         @log.info "Error in getPVResourceUtilMetricRecords: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
@@ -417,7 +417,7 @@ class MdmMetricsGenerator
             devicevalue: deviceName,
             diskUsagePercentageValue: usedPercent,
           }
-          records.push(JSON.parse(diskUsedPercentageRecord))
+          records.push(Oj.load(diskUsedPercentageRecord))
         end
       rescue => errorStr
         @log.info "Error in getDiskUsageMetricRecords: #{errorStr}"
@@ -468,7 +468,7 @@ class MdmMetricsGenerator
                 dimValues: dimValues,
                 metricValue: v,
               }
-              records.push(JSON.parse(metricRecord))
+              records.push(Oj.load(metricRecord))
               #@log.info "pushed mdmgenericmetric: #{k},#{v}"
             end
           }
@@ -544,7 +544,7 @@ class MdmMetricsGenerator
           metricmaxvalue: metric_value,
           metricsumvalue: metric_value,
         }
-        records.push(JSON.parse(custommetricrecord))
+        records.push(Oj.load(custommetricrecord))
 
         if !percentage_metric_value.nil?
           additional_record = MdmAlertTemplates::Node_resource_metrics_template % {
@@ -557,7 +557,7 @@ class MdmMetricsGenerator
             metricmaxvalue: percentage_metric_value,
             metricsumvalue: percentage_metric_value,
           }
-          records.push(JSON.parse(additional_record))
+          records.push(Oj.load(additional_record))
         end
 
         if !allocatable_percentage_metric_value.nil?
@@ -571,7 +571,7 @@ class MdmMetricsGenerator
             metricmaxvalue: allocatable_percentage_metric_value,
             metricsumvalue: allocatable_percentage_metric_value,
           }
-          records.push(JSON.parse(additional_record))
+          records.push(Oj.load(additional_record))
         end
       rescue => errorStr
         @log.info "Error in getNodeResourceMetricRecords: #{errorStr}"

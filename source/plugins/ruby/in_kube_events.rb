@@ -10,7 +10,7 @@ module Fluent::Plugin
 
     def initialize
       super
-      require "json"      
+      require "oj"      
       require "time"
 
       require_relative "KubernetesApiClient"

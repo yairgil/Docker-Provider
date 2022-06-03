@@ -43,10 +43,10 @@ class Extension
       resp = clientSocket.recv(Constants::CI_EXTENSION_CONFIG_MAX_BYTES)
       if !resp.nil? && !resp.empty?
         $log.info("Extension::get_config::successfully read the extension config from fluentsocket and number of bytes read is #{resp.length}")
-        respJSON = JSON.parse(resp)
+        respJSON = Oj.load(resp)
         taggedData = respJSON["TaggedData"]
         if !taggedData.nil? && !taggedData.empty?
-          taggedAgentData = JSON.parse(taggedData)
+          taggedAgentData = Oj.load(taggedData)
           extensionConfigurations = taggedAgentData["extensionConfigurations"]
           if !extensionConfigurations.nil? && !extensionConfigurations.empty?
             extensionConfigurations.each do |extensionConfig|

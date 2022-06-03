@@ -2,13 +2,14 @@
 # frozen_string_literal: true
 
 class CAdvisorMetricsAPIClient
-  require "json"
+  require "oj"
   require "logger"
   require "net/http"
   require "net/https"
   require "uri"
   require "date"
   require "time"
+  Oj.mimic_JSON()
 
   require_relative "oms_common"
   require_relative "KubernetesApiClient"
@@ -137,7 +138,7 @@ class CAdvisorMetricsAPIClient
       begin
         cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
         if !cAdvisorStats.nil?
-          metricInfo = JSON.parse(cAdvisorStats.body)
+          metricInfo = Oj.load(cAdvisorStats.body)
         end
         if !winNode.nil?
           hostName = winNode["Hostname"]
@@ -311,7 +312,7 @@ class CAdvisorMetricsAPIClient
       begin
         cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
         if !cAdvisorStats.nil?
-          metricInfo = JSON.parse(cAdvisorStats.body)
+          metricInfo = Oj.load(cAdvisorStats.body)
         end
         if !winNode.nil?
           hostName = winNode["Hostname"]

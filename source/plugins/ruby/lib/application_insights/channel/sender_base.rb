@@ -1,9 +1,10 @@
-require "json"
+require "oj"
 require "net/http"
 require "openssl"
 require "stringio"
 require "zlib"
 require "logger"
+Oj.mimic_JSON()
 
 module ApplicationInsights
   module Channel

@@ -15,9 +15,10 @@ module Fluent::Plugin
     def initialize
       super
       require "yaml"
-      require "json"
+      require "oj"
       require "set"
       require "time"
+      Oj.mimic_JSON()
 
       require_relative "kubernetes_container_inventory"
       require_relative "KubernetesApiClient"
@@ -148,12 +149,12 @@ module Fluent::Plugin
         # Get services first so that we dont need to make a call for very chunk
         $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
         serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
-        # serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
+        # serviceList = Oj.load(KubernetesApiClient.getKubeResourceInfo("services").body)
         $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
 
         if !serviceInfo.nil?
           $log.info("in_kube_podinventory::enumerate:Start:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
-          serviceList = JSON.parse(serviceInfo.body)
+          serviceList = Oj.load(serviceInfo.body)
           $log.info("in_kube_podinventory::enumerate:End:Parsing services data using yajl @ #{Time.now.utc.iso8601}")
           serviceInfo = nil
           # service inventory records much smaller and fixed size compared to serviceList
