@@ -155,7 +155,14 @@ You can now view fired and resolved Prometheus alerts in the Azure portal, simil
 
 1. In Azure Monitor, select **Alerts** in the left-side menu to see the list of alerts fired and/or resolved.
 2. Set the list filter 'Monitoring Service' to 'Prometheus' to see Prometheus alerts (you may need to add the filter using the 'Add Filter' button). You can further set the filter 'Alert condition' to 'Fired', 'Resolved' or both, as required.
+
+![Prometheus alert details](https://github.com/microsoft/Docker-Provider/blob/saarorOSMdoc/Documentation/OSMPrivatePreview/Image1.jpg)
+
+![Prometheus alert details](./Prom alert details.png)
+
 3. Click the alert name to view the details of a specific fired/resolved alert.
+
+![Prometheus alert details](./Prom alert details.png)
 
 > [!Note]
 > In the preview, editing of rules and rule groups via the portal UI is not supported.
