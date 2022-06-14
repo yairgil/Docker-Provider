@@ -53,6 +53,11 @@ spec:
        resources:
 {{ toYaml .Values.omsagent.resources.deployment | indent 9 }}
        env:
+       - name: NUM_OF_FLUENTD_WORKERS
+         valueFrom:
+           resourceFieldRef:
+             containerName: omsagent
+             resource: limits.cpu
        {{- if ne .Values.omsagent.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.omsagent.env.clusterId | quote }}
