@@ -15,7 +15,7 @@ Prometheus **alert rules** allow you to define alert conditions, using queries w
 
 ### Prometheus recording rules
 
-Recording rules allow you to pre-compute frequently needed or computationally expensive expressions and save their result as a new set of time series. Querying the precomputed result will then often be much faster than executing the original expression every time it is needed. This is especially useful for dashboards, which need to query the same expression repeatedly every time they refresh, or for use in alert rules, where multiple alert rules may be based on the same complex query. Time series created by recording rules are ingested back to your Monitoring Account as new Prometheus metrics.
+**Recording rules** allow you to pre-compute frequently needed or computationally expensive expressions and save their result as a new set of time series. Querying the precomputed result will then often be much faster than executing the original expression every time it is needed. This is especially useful for dashboards, which need to query the same expression repeatedly every time they refresh, or for use in alert rules, where multiple alert rules may be based on the same complex query. Time series created by recording rules are ingested back to your Monitoring Account as new Prometheus metrics.
 
 ## Prometheus alerts and recording rules - private preview onboarding guidelines
 
