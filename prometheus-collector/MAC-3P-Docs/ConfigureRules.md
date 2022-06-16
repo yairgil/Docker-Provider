@@ -7,9 +7,7 @@
 
 ### Prometheus rule groups
 
-Prometheus alert rules and recording rules are configured as part of a **rule group**. Rules within a group are run sequentially in the order they are defined in the group. In the private preview, rule groups, recording rules and alert rules are configured using Azure Resource Manager (ARM) templates, API and provisioning tools. A new ARM resource called Prometheus Rule Group is now added to ARM. Users can create and configure rule group resources, where the alert rules and recording rules are defined as part of the rule group properties.
-
-Azure Prometheus rule groups are defined with a scope of a specific Azure **Monitoring Account (MAC)**. The alert rules in the rule group are executed on the Prometheus Metrics stored in the MDM account that is linked to the rule group MAC.
+Prometheus alert rules and recording rules are configured as part of a **rule group**. Rules within a group are run sequentially in the order they are defined in the group. In the private preview, rule groups, recording rules and alert rules are configured using Azure Resource Manager (ARM) templates, API and provisioning tools. A new ARM resource called Prometheus Rule Group is now added to ARM. Users can create and configure rule group resources, where the alert rules and recording rules are defined as part of the rule group properties. Azure Prometheus rule groups are defined with a scope of a specific Azure **Monitoring Account (MAC)**.
 
 ### Prometheus alert rules
 
