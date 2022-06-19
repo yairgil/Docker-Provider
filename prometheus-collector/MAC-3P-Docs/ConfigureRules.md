@@ -31,7 +31,7 @@ Prometheus alerts and recording rules is a regional service, therefore your aler
 
 Before onboarding to Prometheus alerts and recording rules:
 
-* Your subscription needs to be registered and enabled for the AZure Managed Service for Prometheus private preview
+* Your subscription needs to be registered and enabled for the Azure Managed Service for Prometheus private preview
 * you need to complete onboarding to the [Azure Managed Service for Prometheus private preview](https://github.com/microsoft/Docker-Provider/blob/prometheus-collector/prometheus-collector/MAC-3P-Docs/Instructions%20for%20Private%20Preview%20Onboarding.md), including a successful creation of a Monitoring Account (MAC).
 
 ### Creating Prometheus rule groups with Azure Resource Manager (ARM) template
