@@ -93,16 +93,16 @@ Example: bash Onboarding-script.sh "00000000-0000-0000-0000-000000000000" "rg-na
 
         set HELM_EXPERIMENTAL_OCI=1
 
-        helm pull oci://mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector --version 3.1.0-main-04-29-2022-0a7092d3
+        helm pull oci://mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector --version 3.2.0-main-05-24-2022-0c3a87bc
 
 2.  Install the helm chart with the following parameters.
 
 >Note: At the end of Step 1 you will see the halm upgrade command to run. If you have it, paste it into the Azure Portal Cloud Shell and run it. If not, see the example below and enter the correct information for your azureResourceId and azureResourceRegion.
     
-        helm upgrade --install <release-name> ./prometheus-collector-3.1.0-main-04-29-2022-0a7092d3.tgz --dependency-update --set useMonitoringAccount=true --set azureResourceId="<aks-resource-id>" --set azureResourceRegion="<aks-resource-location>" --set mode.advanced=true --namespace="kube-system" --create-namespace
+        helm upgrade --install <release-name> ./prometheus-collector-3.2.0-main-05-24-2022-0c3a87bc.tgz --dependency-update --set useMonitoringAccount=true --set azureResourceId="<aks-resource-id>" --set azureResourceRegion="<aks-resource-location>" --set mode.advanced=true --namespace="kube-system" --create-namespace
 
 
-   Example: helm upgrade --install my-collector-dev-release ./prometheus-collector-3.1.0-main-04-29-2022-0a7092d3.tgz --dependency-update --set useMonitoringAccount=true --set azureResourceId="/subscriptions/subid/resourcegroups/rg-name/providers/Microsoft.ContainerService/managedClusters/clustername" --set azureResourceRegion="eastus2" --set mode.advanced=true --namespace="kube-system" --create-namespace
+   Example: helm upgrade --install my-collector-dev-release ./prometheus-collector-3.2.0-main-05-24-2022-0c3a87bc.tgz --dependency-update --set useMonitoringAccount=true --set azureResourceId="/subscriptions/subid/resourcegroups/rg-name/providers/Microsoft.ContainerService/managedClusters/clustername" --set azureResourceRegion="eastus2" --set mode.advanced=true --namespace="kube-system" --create-namespace
 
 <br/>
 <br/>
