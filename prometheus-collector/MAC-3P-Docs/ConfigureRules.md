@@ -77,10 +77,10 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                         "expression": "job_type:billing_jobs_duration_seconds:99p5m > 30",
                         "for": "PT3M",
                         "labels": {
-                            "team": "prod",
+                            "team": "prod"
                         },
                         "annotations": {
-                            "description": "enter description here",
+                            "description": "enter description here"
                         },
                         "severity": 3,
                         "resolveConfiguration": {
@@ -89,7 +89,7 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                         },
                         "actions": [
                             {
-                               "actionGroupId": "<actionGroupId>",
+                               "actionGroupId": "<actionGroupId>"
                             }
                         ]
                     }
