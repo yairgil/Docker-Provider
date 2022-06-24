@@ -193,7 +193,7 @@ macPromDataSourceConfig='{
 
 populatedMACPromDataSourceConfig=${macPromDataSourceConfig//PROM_QL_PLACEHOLDER/$promQLEndpoint}
 
-az grafana data-source create -n $grafanaName --definition "$populatedMACPromDataSourceConfig" 
+az grafana data-source create -n $grafanaName -g $resourceGroup --definition "$populatedMACPromDataSourceConfig" 
 # Not adding exit here since if this script is rerun it can fail with data source exists error, which is benign and can be ignored
 
 echo "Downloading dashboards package"
