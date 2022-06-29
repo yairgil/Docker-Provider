@@ -34,9 +34,9 @@ class CAdvisorMetricsAPIClient
 
   @cAdvisorMetricsSecurePort = ENV["IS_SECURE_CADVISOR_PORT"]
   @containerLogsRoute = ENV["AZMON_CONTAINER_LOGS_ROUTE"]
-  @hmEnabled = ENV["AZMON_CLUSTER_ENABLE_HEALTH_MODEL"]
   @npmIntegrationBasic = ENV["TELEMETRY_NPM_INTEGRATION_METRICS_BASIC"]
   @npmIntegrationAdvanced = ENV["TELEMETRY_NPM_INTEGRATION_METRICS_ADVANCED"]
+  @subnetIpUsageMetrics = ENV["TELEMETRY_SUBNET_IP_USAGE_INTEGRATION_METRICS"]
 
   @os_type = ENV["OS_TYPE"]
   if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
@@ -277,16 +277,15 @@ class CAdvisorMetricsAPIClient
                     end
                     #telemetry about containerlog Routing for daemonset
                     telemetryProps["containerLogsRoute"] = @containerLogsRoute
-                   
-                    #telemetry about health model
-                    if (!@hmEnabled.nil? && !@hmEnabled.empty?)
-                      telemetryProps["hmEnabled"] = @hmEnabled
-                    end
                     #telemetry for npm integration
                     if (!@npmIntegrationAdvanced.nil? && !@npmIntegrationAdvanced.empty?)
                       telemetryProps["int-npm-a"] = "1"
                     elsif (!@npmIntegrationBasic.nil? && !@npmIntegrationBasic.empty?)
                       telemetryProps["int-npm-b"] = "1"
+                    end
+                    # telemetry for subnet ip usage integration
+                    if (!@subnetIpUsageMetrics.nil? && !@subnetIpUsageMetrics.empty?)
+                      telemetryProps["int-ipsubnetusage"] = "1"
                     end
                     #telemetry for Container log schema version clusterContainerLogSchemaVersion
                     if (!@clusterContainerLogSchemaVersion.nil? && !@clusterContainerLogSchemaVersion.empty?)
