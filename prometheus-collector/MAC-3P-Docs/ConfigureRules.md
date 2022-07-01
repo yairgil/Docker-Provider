@@ -69,18 +69,20 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                 "interval": "PT1M",
                 "rules": [
                     {
-                        "record": "job_type:billing_jobs_duration_seconds:99p5m",
-                        "expression": "histogram_quantile(0.99, sum(rate(jobs_duration_seconds_bucket{service=\"billing-processing\"}[5m])) by (job_type))"
+                        "record": "instance:node_cpu_utilisation:rate5m",
+                        "expression": "1 - avg without (cpu) (sum without (mode)(rate(node_cpu_seconds_total{job=\"node\", mode=~\"idle|iowait|steal\"}[5m])))"
                     },
                     {
-                        "alert": "Billing_Processing_Very_Slow",
-                        "expression": "job_type:billing_jobs_duration_seconds:99p5m > 30",
-                        "for": "PT3M",
+                        "alert": "KubeCPUQuotaOvercommit",
+                        "expression": "sum(min without(resource) (kube_resourcequota{job=\"kube-state-metrics\", type=\"hard\", resource=~\"(cpu|requests.cpu)\"})) /  sum(kube_node_status_allocatable{resource=\"cpu\", job=\"kube-state-metrics\"}) > 1.5",
+                        "for": "PT5M",
                         "labels": {
                             "team": "prod"
                         },
                         "annotations": {
-                            "description": "enter description here"
+                            "description": "Cluster has overcommitted CPU resource requests for Namespaces.",
+                            "runbook_url": "https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubecpuquotaovercommit",
+                            "summary": "Cluster has overcommitted CPU resource requests."
                         },
                         "severity": 3,
                         "resolveConfiguration": {
@@ -89,7 +91,7 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                         },
                         "actions": [
                             {
-                               "actionGroupId": "<actionGroupId>"
+                               "actionGroupId": "/subscriptions/9b224e0b-fa4c-40eb-9472-d7798d293138/resourceGroups/YAGIL-RG/providers/microsoft.insights/actiongroups/yagil-sms"
                             }
                         ]
                     }
