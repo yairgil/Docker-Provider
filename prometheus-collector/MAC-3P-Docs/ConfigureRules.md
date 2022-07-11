@@ -43,6 +43,16 @@ The basic steps are as follows:
 1. Use the templates below as a JSON file that describes how to create the rule group.
 2. Deploy the template using any deployment method, such as Azure CLI, Azure Powershell, or ARM Rest APIs.
 
+### Limiting rules to a specific cluster 
+
+As an option, you can limit the rules in a rule group to query data originating from a specific cluster, using  the rule group **clusterName** property. 
+As a best practice, it is recommended to limit rules to a single cluster if your MAC contains a large scale of data from multiple clusters, and there is a concern that running a single set of rules on all the data may cause performance or throttling issues. Using the clusterName property, you can create multiple rule groups, each configured with the same rules, limiting each group to cover a different cluster. 
+
+Notes:
+* The clusterName value must be identical to the **cluster** label that is added to the metrics from a specific cluster during data collection.
+* If clusterName is not specified for a specific rule group, the rules in the group will query all the data in the MAC (from all clusters).
+
+
 ### Template example for a Prometheus rule group
 
 To create a Prometheus rule group using a Resource Manager template, you create a resource of type Microsoft.AlertsManagement/prometheusRuleGroups and fill in all related properties. Azure Resource Manager template for a Prometheus rule group configures the group, and one or more alert rules and/or recording rules within the group. Note that alert rules and recording rules are executed in the order they appear within a group. Below is a sample template that creates a Prometheus rule group, including one recording rule and one alert rule.
@@ -66,11 +76,14 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                 "scopes": [
                     "/subscriptions/<subscriptionId>/resourcegroups/<resourceGroupName>/providers/microsoft.monitor/accounts/<monitoringAccountId>"
                 ],
+                "enabled": true,
+                "clusterName": "<myCLusterName>",
                 "interval": "PT1M",
                 "rules": [
                     {
                         "record": "instance:node_cpu_utilisation:rate5m",
-                        "expression": "1 - avg without (cpu) (sum without (mode)(rate(node_cpu_seconds_total{job=\"node\", mode=~\"idle|iowait|steal\"}[5m])))"
+                        "expression": "1 - avg without (cpu) (sum without (mode)(rate(node_cpu_seconds_total{job=\"node\", mode=~\"idle|iowait|steal\"}[5m])))",
+                        "enabled": true
                     },
                     {
                         "alert": "KubeCPUQuotaOvercommit",
@@ -84,6 +97,7 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                             "runbook_url": "https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubecpuquotaovercommit",
                             "summary": "Cluster has overcommitted CPU resource requests."
                         },
+                        "enabled": true,
                         "severity": 3,
                         "resolveConfiguration": {
                             "autoResolved": true,
@@ -111,20 +125,25 @@ The following table provides an explanation of the schema and properties for a P
 | properties.description | False | string | Rule group description | |
 | properties.scopes | True | string[] | Target Monitoring Account (MAC) | Only one scope currently supported |
 | properties.interval | False | string | Group evaluation interval | Default = PT1M |
-| rules.record | False | string | Recording rule name | Required for recording rules <sup>(1)</sup> |
-| rules.alert  | False | string | Alert rule name | Required for alert rules <sup>(1)</sup> |
+| properties.enabled | False | boolean | Enable/disable group | Default = true <sup>(1)</sup>|
+| properties.clusterName | False | string | Apply rule to data from a specific cluster | Default = no cluster filter (apply to all data in MAC) <sup>(2)</sup>|
+| rules.record | False | string | Recording rule name | Required for recording rules <sup>(3)</sup> |
+| rules.alert  | False | string | Alert rule name | Required for alert rules <sup>(3)</sup> |
 | rules.expression | True | string | PromQL expression | Prometheus rule 'expr' clause |
 | rules.for | False | string | Alert firing timeout | Prometheus alert rule 'for' clause. Values - 'PT1M', 'PT5M' etc. |
 | rules.labels | False | object | labels key-value pairs | Prometheus alert rule labels |
 | rules.annotations | False | object | Annotations key-value pairs | Prometheus alert rule annotations |
 | rules.severity | False | integer | Alert severity | 0-4, default is 3 (informational) |
+| rules.enabled | False | boolean | Enable/disable rule| Default = true <sup>(1)</sup>|
 | rules.resolveConfigurations.autoResolved | False | boolean | Alert auto resolution enabled | Default = true |
 | rules.resolveConfigurations.timeToResolve | False | string | Alert auto resolution timeout | Default = "PT5M" |
 | rules.action[].actionGroupId | false | string | action group id | the array of actions that are performed when an alert is fired or resolved |
 
 Notes:
 
-<sup>(1)</sup> Each rule must include either 'record' or 'alert' (but not both)
+<sup>(1)</sup> You can disable a single alert/recording rule or the entire rule group by specifing "enabled" = false
+<sup>(2)</sup> Use 'clusterName' to apply the rule group to the data from a specific cluster. The "clusterName" value must be identical to the 'Cluster' label used on the metrics from this cluster. 
+<sup>(3)</sup> Each rule must include either 'record' or 'alert' (but not both)
 
 ### Deployment of Prometheus rule groups using Azure CLI
 
