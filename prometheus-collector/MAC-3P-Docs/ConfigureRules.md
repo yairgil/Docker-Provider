@@ -70,7 +70,7 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
            "name": "sampleRuleGroup",
            "type": "Microsoft.AlertsManagement/prometheusRuleGroups",
            "apiVersion": "2021-07-22-preview",
-           "location": "northcentralus",
+           "location": "<myLocation?",
            "properties": {
                 "description": "Sample Prometheus Rule Group",
                 "scopes": [
@@ -94,7 +94,6 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                         },
                         "annotations": {
                             "description": "Cluster has overcommitted CPU resource requests for Namespaces.",
-                            "runbook_url": "https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubecpuquotaovercommit",
                             "summary": "Cluster has overcommitted CPU resource requests."
                         },
                         "enabled": true,
@@ -105,7 +104,7 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                         },
                         "actions": [
                             {
-                               "actionGroupId": "/subscriptions/9b224e0b-fa4c-40eb-9472-d7798d293138/resourceGroups/YAGIL-RG/providers/microsoft.insights/actiongroups/yagil-sms"
+                               "actionGroupId": "<myActionGroupId"
                             }
                         ]
                     }
