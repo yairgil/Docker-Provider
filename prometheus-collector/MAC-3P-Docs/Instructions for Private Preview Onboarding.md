@@ -120,6 +120,6 @@ An initial set of default dashboards are created under the folder  ‘Azure Moni
 
 Prometheus **alert rules** allow you to define alert conditions, using queries which are written in Prometheus Query Language (Prom QL) and are applied on Prometheus metrics stored in your **Monitoring Account (MAC)**. **Recording rules** allow you to pre-compute frequently needed or computationally expensive expressions and save their result as a new set of time series. 
 
-Go to [Azure Managed Service for Prometheus Rules Private Preview onboarding](https://github.com/yairgil/Docker-Provider/blob/patch-2/prometheus-collector/MAC-3P-Docs/ConfigureRules.md) for additional information and guidance on creating alert rules and recording rules.
+Go to [Azure Managed Service for Prometheus Rules Private Preview onboarding](https://github.com/microsoft/Docker-Provider/blob/prometheus-collector/prometheus-collector/MAC-3P-Docs/ConfigureRules.md) for additional information and guidance on creating alert rules and recording rules.
 
 --------------------------------------
