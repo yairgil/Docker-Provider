@@ -1,5 +1,7 @@
 # Instructions for Azure Managed Service for Prometheus Private Preview onboarding
 
+> **_NOTE:_** Please ensure that the Azure subscription you provide in the below instructions to provision Azure Prometheus and Grafana resources do not have any Azure policy restrictions/enforcements , more specifically, on resource group(s) created by the Azure Prometheus service in the provided subscription. Ex;- If you have a policy that requires specific tags on newly created resource groups in your subscription, the below steps might fail, as Azure Prometheus service provisions managed resource group(s) as part of below instructions. Please disable such policies before you proceed further. This is a preview limitation, that will be fixed soon.
+
 **1. The steps need to be executed in the order shown below. If not, step 1 has to be rerun after executing step 2.**
 
 **2. Both your Resource Group and Azure Kubernetes (AKS) cluster need to be in the same region as the preview resources these instructions will create.**
