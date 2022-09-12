@@ -60,17 +60,20 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
            "name": "sampleRuleGroup",
            "type": "Microsoft.AlertsManagement/prometheusRuleGroups",
            "apiVersion": "2021-07-22-preview",
-           "location": "northcentralus",
+           "location": "eastus",
            "properties": {
                 "description": "Sample Prometheus Rule Group",
                 "scopes": [
                     "/subscriptions/<subscriptionId>/resourcegroups/<resourceGroupName>/providers/microsoft.monitor/accounts/<monitoringAccountId>"
                 ],
                 "interval": "PT1M",
+                "enabled": true,
+                "clusterName": "<myClusterName>",
                 "rules": [
                     {
                         "record": "instance:node_cpu_utilisation:rate5m",
-                        "expression": "1 - avg without (cpu) (sum without (mode)(rate(node_cpu_seconds_total{job=\"node\", mode=~\"idle|iowait|steal\"}[5m])))"
+                        "expression": "1 - avg without (cpu) (sum without (mode)(rate(node_cpu_seconds_total{job=\"node\", mode=~\"idle|iowait|steal\"}[5m])))",
+                        "enabled": true
                     },
                     {
                         "alert": "KubeCPUQuotaOvercommit",
@@ -84,6 +87,7 @@ Save the json below as samplePromRuleGroup.json for the purpose of this walkthro
                             "runbook_url": "https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubecpuquotaovercommit",
                             "summary": "Cluster has overcommitted CPU resource requests."
                         },
+                        "enabled": true,
                         "severity": 3,
                         "resolveConfiguration": {
                             "autoResolved": true,
@@ -110,9 +114,11 @@ The following table provides an explanation of the schema and properties for a P
 | location             | True      | string | Resource location | From regions supported in the preview |
 | properties.description | False | string | Rule group description | |
 | properties.scopes | True | string[] | Target Monitoring Account (MAC) | Only one scope currently supported |
+| properties.enabled | False | boolean | Enable / diable group | default = false |
+| properties.clusterName | False | string | Apply rule to data from a specific cluster | Default = no cluster limit (apply to all data in workspace) <sup>(1)</sup> |
 | properties.interval | False | string | Group evaluation interval | Default = PT1M |
-| rules.record | False | string | Recording rule name | Required for recording rules <sup>(1)</sup> |
-| rules.alert  | False | string | Alert rule name | Required for alert rules <sup>(1)</sup> |
+| rules.record | False | string | Recording rule name | Required for recording rules <sup>(2)</sup> |
+| rules.alert  | False | string | Alert rule name | Required for alert rules <sup>(2)</sup> |
 | rules.expression | True | string | PromQL expression | Prometheus rule 'expr' clause |
 | rules.for | False | string | Alert firing timeout | Prometheus alert rule 'for' clause. Values - 'PT1M', 'PT5M' etc. |
 | rules.labels | False | object | labels key-value pairs | Prometheus alert rule labels |
@@ -124,7 +130,8 @@ The following table provides an explanation of the schema and properties for a P
 
 Notes:
 
-<sup>(1)</sup> Each rule must include either 'record' or 'alert' (but not both)
+<sup>(1)</sup> Use 'clusterName' to apply the rule group to the data from a specific cluster. The "clusterName" value must be identical to the 'Cluster' label used on the metrics from this cluster.
+<sup>(2)</sup> Each rule must include either 'record' or 'alert' (but not both)
 
 ### Deployment of Prometheus rule groups using Azure CLI
 
